@@ -58,6 +58,7 @@ import {
   Eye,
   Cloud,
   UserPlus,
+  Server,
 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useRef, useState, useEffect } from "react";
@@ -523,6 +524,7 @@ function SettingsContent() {
                         <TableHead>Token</TableHead>
                         <TableHead className="hidden sm:table-cell">描述</TableHead>
                         <TableHead>状态</TableHead>
+                        <TableHead>对应主机</TableHead>
                         <TableHead className="hidden md:table-cell">创建时间</TableHead>
                         <TableHead className="text-right">操作</TableHead>
                       </TableRow>
@@ -552,24 +554,26 @@ function SettingsContent() {
                                   未使用
                                 </Badge>
                               )}
-                              {t.host && (
-                                <div className="max-w-[220px] text-xs leading-5 text-muted-foreground">
-                                  <span className="block truncate font-medium text-foreground" title={t.host.name}>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            {t.host ? (
+                              <div className="flex min-w-0 items-start gap-2 text-xs leading-5">
+                                <Server className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                                <div className="min-w-0">
+                                  <span className="block max-w-[220px] truncate font-medium" title={t.host.name}>
                                     {t.host.name}
                                   </span>
                                   {tokenHostAddress(t.host) && (
-                                    <span className="block truncate font-mono" title={tokenHostAddress(t.host)}>
+                                    <span className="block max-w-[220px] truncate font-mono text-muted-foreground" title={tokenHostAddress(t.host)}>
                                       {tokenHostAddress(t.host)}
                                     </span>
                                   )}
                                 </div>
-                              )}
-                              {t.isUsed && !t.host && (
-                                <div className="text-xs text-muted-foreground">
-                                  关联主机不存在
-                                </div>
-                              )}
-                            </div>
+                              </div>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">{t.isUsed ? "关联主机不存在" : "-"}</span>
+                            )}
                           </TableCell>
                           <TableCell className="hidden md:table-cell">
                             <span className="text-xs text-muted-foreground">

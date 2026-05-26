@@ -1,5 +1,6 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import DashboardLayout from "@/components/DashboardLayout";
+import { PersistentPagination, usePersistentPagination } from "@/components/PersistentPagination";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -307,6 +308,12 @@ function UsersContent() {
   });
 
   const adminCount = useMemo(() => users?.filter((u) => u.role === "admin").length ?? 0, [users]);
+  const userPagination = usePersistentPagination(users || [], {
+    storageKey: "forwardx.users.page",
+    pageSize: 12,
+    isReady: !isLoading && !!users,
+  });
+  const pagedUsers = userPagination.items;
 
   if (currentUser?.role !== "admin") return null;
 
@@ -538,7 +545,7 @@ function UsersContent() {
 
       {!isLoading && users && users.length > 0 && (
         <div className="space-y-3 sm:hidden">
-          {users.map((u: any) => {
+          {pagedUsers.map((u: any) => {
             const limit = Number(u.trafficLimit) || 0;
             const used = Number(u.trafficUsed) || 0;
             const pct = limit > 0 ? Math.min(100, Math.round((used / limit) * 100)) : 0;
@@ -740,7 +747,7 @@ function UsersContent() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {users.map((u: any) => {
+                  {pagedUsers.map((u: any) => {
                     const limit = Number(u.trafficLimit) || 0;
                     const used = Number(u.trafficUsed) || 0;
                     const pct = limit > 0 ? Math.min(100, Math.round((used / limit) * 100)) : 0;
@@ -1007,6 +1014,9 @@ function UsersContent() {
           )}
         </CardContent>
       </Card>
+      {!isLoading && users && users.length > 0 && (
+        <PersistentPagination pagination={userPagination} itemName="个用户" />
+      )}
 
       {/* Create User Dialog */}
       <Dialog open={showCreateUser} onOpenChange={setShowCreateUser}>

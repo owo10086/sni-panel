@@ -1,4 +1,5 @@
 import DashboardLayout from "@/components/DashboardLayout";
+import { PersistentPagination, usePersistentPagination } from "@/components/PersistentPagination";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -98,6 +99,12 @@ function ForwardGroupsContent() {
   const hostById = useMemo(() => new Map<number, any>((hosts || []).map((h: any) => [Number(h.id), h])), [hosts]);
   const tunnelById = useMemo(() => new Map<number, any>((tunnels || []).map((t: any) => [Number(t.id), t])), [tunnels]);
   const activeCount = groups?.filter((g: any) => g.isEnabled && g.lastStatus === "healthy").length ?? 0;
+  const groupPagination = usePersistentPagination(groups || [], {
+    storageKey: "forwardx.forwardGroups.page",
+    pageSize: 12,
+    isReady: !isLoading && !!groups,
+  });
+  const pagedGroups = groupPagination.items;
 
   const resetForm = () => {
     setForm(makeDefaultForm());
@@ -303,7 +310,7 @@ function ForwardGroupsContent() {
       ) : groups && groups.length > 0 ? (
         <>
           <div className="grid gap-3 sm:hidden">
-            {groups.map((group: any) => (
+            {pagedGroups.map((group: any) => (
               <Card key={group.id} className="border-border/40 bg-card/60">
                 <CardContent className="space-y-3 p-4">
                   <div className="flex items-start justify-between gap-3">
@@ -392,7 +399,7 @@ function ForwardGroupsContent() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {groups.map((group: any) => (
+                  {pagedGroups.map((group: any) => (
                     <TableRow key={group.id}>
                       <TableCell>{groupStatusBadge(group)}</TableCell>
                       <TableCell>
@@ -456,6 +463,7 @@ function ForwardGroupsContent() {
             </div>
           </CardContent>
         </Card>
+          <PersistentPagination pagination={groupPagination} itemName="个转发组" />
         </>
       ) : (
         <Card className="border-border/40 bg-card/60">

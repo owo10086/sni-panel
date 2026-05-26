@@ -1,4 +1,5 @@
 import DashboardLayout from "@/components/DashboardLayout";
+import { PersistentPagination, usePersistentPagination } from "@/components/PersistentPagination";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -443,6 +444,12 @@ function TunnelsContent() {
     [forwardProtocolSettings]
   );
   const activeCount = useMemo(() => tunnels?.filter((t: any) => t.isRunning && isTunnelSupported(t)).length ?? 0, [forwardProtocolSettings, tunnels]);
+  const tunnelPagination = usePersistentPagination(tunnels || [], {
+    storageKey: "forwardx.tunnels.page",
+    pageSize: 12,
+    isReady: !isLoading && !!tunnels,
+  });
+  const pagedTunnels = tunnelPagination.items;
   const selectedExitHost = useMemo(
     () => hosts?.find((h: any) => h.id === form.exitHostId),
     [hosts, form.exitHostId]
@@ -601,7 +608,7 @@ function TunnelsContent() {
       ) : tunnels && tunnels.length > 0 ? (
         <>
           <div className="grid gap-3 sm:hidden">
-            {tunnels.map((tunnel: any) => {
+            {pagedTunnels.map((tunnel: any) => {
               const supported = isTunnelSupported(tunnel);
               const protocolKey = getTunnelProtocolKey(tunnel);
               return (
@@ -725,7 +732,7 @@ function TunnelsContent() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {tunnels.map((tunnel: any) => {
+                  {pagedTunnels.map((tunnel: any) => {
                     const supported = isTunnelSupported(tunnel);
                     const protocolKey = getTunnelProtocolKey(tunnel);
                     return (
@@ -847,6 +854,7 @@ function TunnelsContent() {
             </div>
           </CardContent>
         </Card>
+          <PersistentPagination pagination={tunnelPagination} itemName="条隧道" />
         </>
       ) : (
         <Card className="border-border/40 bg-card/60 backdrop-blur-md">

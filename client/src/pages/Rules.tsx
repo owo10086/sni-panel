@@ -1,5 +1,6 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import DashboardLayout from "@/components/DashboardLayout";
+import { PersistentPagination, usePersistentPagination } from "@/components/PersistentPagination";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -63,7 +64,7 @@ import {
   type ForwardType,
   type ForwardProtocolKey,
 } from "@shared/forwardTypes";
-import { useState, useMemo, useEffect, useCallback, type ReactNode } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef, type ReactNode } from "react";
 import { toast } from "sonner";
 import { TcpingDetailDialog } from "@/components/rules/TcpingDetailDialog";
 
@@ -171,6 +172,7 @@ function RulesContent() {
   const [filterHost, setFilterHost] = useState<string>("all");
   const [filterType, setFilterType] = useState<string>("all");
   const [portStatus, setPortStatus] = useState<"idle" | "checking" | "available" | "used">("idle");
+  const latestPortCheckRef = useRef(0);
   const [copySourceHostId, setCopySourceHostId] = useState<string>("");
   const [copyTargetHostIds, setCopyTargetHostIds] = useState<number[]>([]);
   const [copyRuleIds, setCopyRuleIds] = useState<number[]>([]);
@@ -261,10 +263,14 @@ function RulesContent() {
   const [selfTestRule, setSelfTestRule] = useState<{ id: number; name: string } | null>(null);
 
   const setRouteMode = (mode: "local" | "tunnel" | "group") => {
+    if (mode === form.routeMode) return;
     if (editingId && mode !== form.routeMode) return;
     if (mode === "local" && !canUseLocalForward) return;
     if (mode === "tunnel" && !canUseGost) return;
-    if (mode === "tunnel" && availableTunnels.length === 0) return;
+    const nextTunnel = mode === "tunnel"
+      ? (selectedTunnel || availableTunnels[0] || supportedTunnels[0])
+      : null;
+    if (mode === "tunnel" && !nextTunnel) return;
     if (mode === "group" && availableForwardGroups.length === 0) return;
     const nextGroup = mode === "group"
       ? (selectedForwardGroup || availableForwardGroups[0])
@@ -275,13 +281,16 @@ function RulesContent() {
       ? "gost"
       : (usableForwardTypes.includes(form.forwardType) ? form.forwardType : usableForwardTypes[0]);
     if (!nextForwardType) return;
+    latestPortCheckRef.current += 1;
+    setPortStatus("idle");
+    setPortRangeError(null);
     setForm((prev) => ({
       ...prev,
       routeMode: mode,
       forwardType: nextForwardType,
-      tunnelId: mode === "tunnel" ? prev.tunnelId : null,
+      tunnelId: mode === "tunnel" && nextTunnel ? Number(nextTunnel.id) : null,
       forwardGroupId: mode === "group" && nextGroup ? Number(nextGroup.id) : null,
-      hostId: mode === "tunnel" && selectedTunnel ? selectedTunnel.entryHostId : mode === "group" ? null : prev.hostId,
+      hostId: mode === "tunnel" && nextTunnel ? nextTunnel.entryHostId : mode === "group" ? null : prev.hostId,
     }));
   };
 
@@ -464,13 +473,19 @@ function RulesContent() {
   const [portRangeError, setPortRangeError] = useState<string | null>(null);
 
   const checkPort = useCallback(async () => {
+    const checkId = latestPortCheckRef.current + 1;
+    latestPortCheckRef.current = checkId;
+    const routeMode = form.routeMode;
+    const hostId = form.hostId;
+    const tunnelId = form.tunnelId;
+    const sourcePort = form.sourcePort;
     if (form.routeMode === "group") {
       setPortStatus("idle");
       setPortRangeError(null);
       return;
     }
-    if (!form.hostId || !form.sourcePort || form.sourcePort < 1) return;
-    if (!isValidPort(form.sourcePort)) {
+    if (!hostId || !sourcePort || sourcePort < 1) return;
+    if (!isValidPort(sourcePort)) {
       setPortRangeError("端口必须在 1-65535 之间");
       setPortStatus("used");
       return;
@@ -479,7 +494,7 @@ function RulesContent() {
     if (selectedHost) {
       const pStart = (selectedHost as any).portRangeStart;
       const pEnd = (selectedHost as any).portRangeEnd;
-      if (pStart != null && pEnd != null && (form.sourcePort < pStart || form.sourcePort > pEnd)) {
+      if (pStart != null && pEnd != null && (sourcePort < pStart || sourcePort > pEnd)) {
         setPortRangeError(`端口必须在 ${pStart}-${pEnd} 区间内`);
         setPortStatus("used");
         return;
@@ -489,13 +504,15 @@ function RulesContent() {
     setPortStatus("checking");
     try {
       const result = await utils.rules.checkPort.fetch({
-        hostId: form.hostId,
-        tunnelId: form.routeMode === "tunnel" ? form.tunnelId : null,
-        sourcePort: form.sourcePort,
+        hostId,
+        tunnelId: routeMode === "tunnel" ? tunnelId : null,
+        sourcePort,
         excludeRuleId: editingId || undefined,
       });
+      if (latestPortCheckRef.current !== checkId) return;
       setPortStatus(result.used ? "used" : "available");
     } catch {
+      if (latestPortCheckRef.current !== checkId) return;
       setPortStatus("idle");
     }
   }, [form.hostId, form.routeMode, form.sourcePort, form.tunnelId, editingId, utils, selectedHost]);
@@ -675,6 +692,12 @@ function RulesContent() {
       return true;
     });
   }, [rules, filterHost, filterType]);
+  const rulePagination = usePersistentPagination(filteredRules, {
+    storageKey: "forwardx.rules.page",
+    pageSize: 12,
+    isReady: !isLoading && !!rules,
+  });
+  const pagedRules = rulePagination.items;
 
   const getHostName = (hostId: number) => {
     return hosts?.find((h: any) => h.id === hostId)?.name || `主机 #${hostId}`;
@@ -1028,7 +1051,7 @@ function RulesContent() {
           ) : filteredRules.length > 0 ? (
             <>
               <div className="grid gap-3 p-3 lg:hidden">
-                {filteredRules.map((rule: any) => {
+                {pagedRules.map((rule: any) => {
                   const supported = isRuleSupported(rule);
                   const protocolKey = getRuleProtocolKey(rule);
                   return (
@@ -1107,7 +1130,7 @@ function RulesContent() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredRules.map((rule: any) => {
+                    {pagedRules.map((rule: any) => {
                       const supported = isRuleSupported(rule);
                       const protocolKey = getRuleProtocolKey(rule);
                       return (
@@ -1158,6 +1181,9 @@ function RulesContent() {
                     })}
                   </TableBody>
                 </Table>
+              </div>
+              <div className="p-3 pt-0">
+                <PersistentPagination pagination={rulePagination} itemName="条规则" />
               </div>
             </>
           ) : rules && rules.length > 0 ? (

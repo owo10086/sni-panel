@@ -1,5 +1,6 @@
 ﻿import { useAuth } from "@/_core/hooks/useAuth";
 import DashboardLayout from "@/components/DashboardLayout";
+import { PersistentPagination, usePersistentPagination } from "@/components/PersistentPagination";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -559,6 +560,12 @@ function HostsContent() {
     () => hosts?.filter((h) => isAgentVersionBehind(h.agentVersion, latestAgentVersion)).length ?? 0,
     [hosts, latestAgentVersion]
   );
+  const hostPagination = usePersistentPagination(hosts || [], {
+    storageKey: "forwardx.hosts.page",
+    pageSize: 12,
+    isReady: !isLoading && !!hosts,
+  });
+  const pagedHosts = hostPagination.items;
   const requestAgentUpgrade = (host: any) => {
     setUpgradeHost(host);
   };
@@ -652,10 +659,11 @@ function HostsContent() {
           ))}
         </div>
       ) : hosts && hosts.length > 0 ? (
-        viewMode === "card" ? (
+        <>
+        {viewMode === "card" ? (
           /* ========== 卡片式布局 ========== */
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {hosts.map((host) => (
+            {pagedHosts.map((host) => (
               <HostCard
                 key={host.id}
                 host={host}
@@ -672,7 +680,7 @@ function HostsContent() {
           /* ========== 表格式布局 ========== */
           <>
             <div className="grid grid-cols-1 gap-4 sm:hidden">
-              {hosts.map((host) => (
+              {pagedHosts.map((host) => (
                 <HostCard
                   key={host.id}
                   host={host}
@@ -703,7 +711,7 @@ function HostsContent() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {hosts.map((host) => (
+                    {pagedHosts.map((host) => (
                       <TableRow key={host.id}>
                         <TableCell>
                           <div className="flex items-center justify-center">
@@ -819,7 +827,9 @@ function HostsContent() {
               </CardContent>
             </Card>
           </>
-        )
+        )}
+        <PersistentPagination pagination={hostPagination} itemName="台主机" />
+        </>
       ) : (
         <Card className="border-border/40 bg-card/60 backdrop-blur-md">
           <CardContent className="p-0">

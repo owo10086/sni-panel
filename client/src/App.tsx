@@ -4,6 +4,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import type { ComponentType } from "react";
 import { trpc } from "@/lib/trpc";
 import { mobileAuth } from "@/lib/mobileAuth";
+import AppLoadingScreen from "@/components/AppLoadingScreen";
 import NotFound from "@/pages/NotFound";
 import Login from "@/pages/Login";
 import { Redirect, Route, Switch, useLocation } from "wouter";
@@ -29,7 +30,7 @@ import TrafficBilling from "./pages/TrafficBilling";
 
 function AdminRoute({ component: Component }: { component: ComponentType }) {
   const { user, loading } = useAuth();
-  if (loading) return null;
+  if (loading) return <AppLoadingScreen message="正在验证登录状态" />;
   if (!user) return <Redirect to="/login" />;
   if (user.role !== "admin") return <Redirect to="/" />;
   return <Component />;
@@ -84,7 +85,7 @@ function SetupGate() {
     return <Router />;
   }
 
-  if (setup.isLoading) return null;
+  if (setup.isLoading) return <AppLoadingScreen message="正在初始化面板" />;
 
   const ready = !!setup.data?.setupComplete;
   if (!ready && location !== "/setup") return <Redirect to="/setup" />;

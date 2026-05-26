@@ -74,7 +74,7 @@ export default function Login() {
   const [showCaptcha, setShowCaptcha] = useState(false);
   const [telegramLoginCode, setTelegramLoginCode] = useState<string | null>(null);
   const [panelUrlDraft, setPanelUrlDraft] = useState(() => mobileAuth.getPanelUrl());
-  const [showPanelSettings, setShowPanelSettings] = useState(() => mobileAuth.isNative && !mobileAuth.hasPanelUrl());
+  const [showPanelSettings, setShowPanelSettings] = useState(false);
   const telegramWidgetRef = useRef<HTMLDivElement | null>(null);
   const { resolvedTheme, setTheme } = useTheme();
   const hasMobilePanelUrl = !mobileAuth.isNative || mobileAuth.hasPanelUrl();
@@ -257,8 +257,7 @@ export default function Login() {
     e.preventDefault();
     if (mobileAuth.isNative) {
       if (!mobileAuth.hasPanelUrl()) {
-        toast.error("请先在右上角设置面板地址");
-        setShowPanelSettings(true);
+        toast.error("请先点击右上角设置按钮添加服务器地址");
         return;
       }
     }
@@ -286,8 +285,7 @@ export default function Login() {
   const handleRegister = (e: React.FormEvent) => {
     e.preventDefault();
     if (mobileAuth.isNative && !mobileAuth.hasPanelUrl()) {
-      toast.error("请先在右上角设置面板地址");
-      setShowPanelSettings(true);
+      toast.error("请先点击右上角设置按钮添加服务器地址");
       return;
     }
     if (!registrationEnabled) {
@@ -419,7 +417,7 @@ export default function Login() {
                   onClick={() => setShowPanelSettings(true)}
                   className="w-full rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-left text-sm text-amber-700 transition-colors hover:bg-amber-500/15 dark:text-amber-300"
                 >
-                  请先设置面板地址
+                  未添加服务器地址，请点击右上角设置按钮添加
                 </button>
               )}
               <div className="space-y-2">
@@ -491,7 +489,7 @@ export default function Login() {
                 type="submit"
                 className="w-full"
                 size="lg"
-                disabled={isPending || !hasMobilePanelUrl}
+                disabled={isPending}
               >
                 {loginMutation.isPending ? (
                   <>
@@ -561,7 +559,7 @@ export default function Login() {
                   onClick={() => setShowPanelSettings(true)}
                   className="w-full rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-left text-sm text-amber-700 transition-colors hover:bg-amber-500/15 dark:text-amber-300"
                 >
-                  请先设置面板地址
+                  未添加服务器地址，请点击右上角设置按钮添加
                 </button>
               )}
               <div className="space-y-2">
@@ -688,7 +686,7 @@ export default function Login() {
                 type="submit"
                 className="w-full"
                 size="lg"
-                disabled={isPending || !hasMobilePanelUrl}
+                disabled={isPending}
               >
                 {registerMutation.isPending ? (
                   <>
@@ -725,9 +723,9 @@ export default function Login() {
         <Dialog open={showPanelSettings} onOpenChange={setShowPanelSettings}>
           <DialogContent className="w-[calc(100vw-2rem)] max-w-sm">
             <DialogTitle>面板地址</DialogTitle>
-            <DialogDescription>APP 会通过这个地址连接面板。</DialogDescription>
+            <DialogDescription>APP 会通过这个地址连接面板。首次打开不会自动弹出，请在这里手动添加。</DialogDescription>
             <div className="space-y-2">
-              <Label htmlFor="mobile-panel-url">面板地址</Label>
+              <Label htmlFor="mobile-panel-url">服务器地址</Label>
               <Input
                 id="mobile-panel-url"
                 type="url"

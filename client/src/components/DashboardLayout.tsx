@@ -550,20 +550,21 @@ function DashboardLayoutContent({
         </SidebarHeader>
 
         <SidebarContent className="gap-0">
-          <SidebarGroup>
+          <SidebarGroup className="pb-3">
             <SidebarGroupLabel className="text-xs text-muted-foreground/60 uppercase tracking-wider">
               主菜单
             </SidebarGroupLabel>
             <SidebarMenu className="px-2 py-1">
               {[...visibleMainMenuItems, ...userStoreMenuItems, announcementsMenuItem].map((item) => {
                 const isActive = location === item.path;
+                const isAnnouncements = item.path === announcementsMenuItem.path;
                 return (
-                  <SidebarMenuItem key={item.path}>
+                  <SidebarMenuItem key={item.path} className={isAnnouncements ? "z-10" : undefined}>
                     <SidebarMenuButton
                       isActive={isActive}
                       onClick={() => setLocation(item.path)}
                       tooltip={item.label}
-                      className="h-10 transition-all font-normal"
+                      className={`h-10 transition-all font-normal ${isAnnouncements ? "relative z-10" : ""}`}
                     >
                       <item.icon
                         className={`h-4 w-4 ${isActive ? "text-primary" : ""}`}
@@ -577,7 +578,7 @@ function DashboardLayoutContent({
           </SidebarGroup>
 
           {isAdmin && (
-            <SidebarGroup>
+            <SidebarGroup className="mt-2 border-t border-sidebar-border/50 pt-3">
               <SidebarGroupLabel className="text-xs text-muted-foreground/60 uppercase tracking-wider">
                 管理
               </SidebarGroupLabel>
