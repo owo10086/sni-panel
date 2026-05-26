@@ -444,6 +444,11 @@ function SettingsContent() {
     return `bash -c 'S=$(curl -fsSL --max-time 10 ${githubScriptUrl} 2>/dev/null) || S=$(curl -fsSL --max-time 30 "${panelUrl}/api/agent/install.sh"); PANEL_URL="${panelUrl}" bash -c "$S" _ upgrade'`;
   };
 
+  const tokenHostAddress = (host: any) => {
+    if (!host) return "";
+    return host.entryIp || host.ipv4 || host.ipv6 || host.ip || "";
+  };
+
   if (user?.role !== "admin") return null;
 
   return (
@@ -536,16 +541,35 @@ function SettingsContent() {
                             <span className="text-sm text-muted-foreground">{t.description || "-"}</span>
                           </TableCell>
                           <TableCell>
-                            {t.isUsed ? (
-                              <Badge className="bg-chart-2/10 text-chart-2 border-chart-2/20 text-[10px]">
-                                <CheckCircle2 className="h-3 w-3 mr-1" />
-                                已使用
-                              </Badge>
-                            ) : (
-                              <Badge variant="secondary" className="text-[10px]">
-                                未使用
-                              </Badge>
-                            )}
+                            <div className="space-y-1">
+                              {t.isUsed ? (
+                                <Badge className="bg-chart-2/10 text-chart-2 border-chart-2/20 text-[10px]">
+                                  <CheckCircle2 className="h-3 w-3 mr-1" />
+                                  已使用
+                                </Badge>
+                              ) : (
+                                <Badge variant="secondary" className="text-[10px]">
+                                  未使用
+                                </Badge>
+                              )}
+                              {t.host && (
+                                <div className="max-w-[220px] text-xs leading-5 text-muted-foreground">
+                                  <span className="block truncate font-medium text-foreground" title={t.host.name}>
+                                    {t.host.name}
+                                  </span>
+                                  {tokenHostAddress(t.host) && (
+                                    <span className="block truncate font-mono" title={tokenHostAddress(t.host)}>
+                                      {tokenHostAddress(t.host)}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                              {t.isUsed && !t.host && (
+                                <div className="text-xs text-muted-foreground">
+                                  关联主机不存在
+                                </div>
+                              )}
+                            </div>
                           </TableCell>
                           <TableCell className="hidden md:table-cell">
                             <span className="text-xs text-muted-foreground">
@@ -838,7 +862,7 @@ function SettingsContent() {
           <DialogHeader>
             <DialogTitle>编辑 Token 备注</DialogTitle>
             <DialogDescription>
-              修改备注只影响后台展示，不会改变 Token 或已安装 Agent。
+              新主机首次使用此 Token 注册时，会默认使用备注作为主机名称；已安装 Agent 不会自动改名。
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2">

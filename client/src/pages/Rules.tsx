@@ -137,11 +137,11 @@ function getTunnelDisplay(tunnel: any | null | undefined) {
   };
 }
 
-function routeModeCardClass(active: boolean, disabled = false) {
+function routeModeOptionClass(active: boolean, disabled = false) {
   return [
-    "rounded-lg border p-3 text-left transition-colors",
-    active ? "border-primary/40 bg-primary/10 text-primary" : "border-border/60 bg-muted/20 hover:bg-muted/40",
-    disabled ? "cursor-not-allowed opacity-50 hover:bg-muted/20" : "cursor-pointer",
+    "flex min-h-11 items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+    active ? "bg-background text-foreground shadow-sm ring-1 ring-border/60" : "text-muted-foreground hover:bg-background/60 hover:text-foreground",
+    disabled ? "cursor-not-allowed opacity-45 hover:bg-transparent hover:text-muted-foreground" : "cursor-pointer",
   ].join(" ");
 }
 
@@ -1215,7 +1215,7 @@ function RulesContent() {
           setShowDialog(open);
         }}
       >
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-xl">
           <DialogHeader>
             <DialogTitle>{editingId ? "编辑规则" : "添加转发规则"}</DialogTitle>
             <DialogDescription>
@@ -1223,58 +1223,44 @@ function RulesContent() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-              <button
-                type="button"
-                className={routeModeCardClass(form.routeMode === "local", !canUseLocalForward)}
-                onClick={() => setRouteMode("local")}
-                disabled={!canUseLocalForward}
-                title={!canUseLocalForward ? unsupportedProtocolTitle : undefined}
-              >
-                <div className="flex items-start gap-3">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
-                    <ArrowRightLeft className="h-4 w-4" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold">端口转发</p>
-                    <p className="mt-1 text-xs text-muted-foreground">在所选主机监听入口端口，直接转发到目标地址。</p>
-                  </div>
-                </div>
-              </button>
-              <button
-                type="button"
-                className={routeModeCardClass(form.routeMode === "tunnel", !canUseGost)}
-                onClick={() => setRouteMode("tunnel")}
-                disabled={!canUseGost}
-                title={!canUseGost ? unsupportedProtocolTitle : undefined}
-              >
-                <div className="flex items-start gap-3">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-chart-4/10 text-chart-4">
-                    <Network className="h-4 w-4" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold">隧道转发</p>
-                    <p className="mt-1 text-xs text-muted-foreground">选择一条隧道，由入口 Agent 经出口 Agent 转发到最终目标。</p>
-                  </div>
-                </div>
-              </button>
-              <button
-                type="button"
-                className={routeModeCardClass(form.routeMode === "group", !canUseForwardGroup)}
-                onClick={() => setRouteMode("group")}
-                disabled={!canUseForwardGroup}
-                title={!canUseForwardGroup ? "暂无可用转发组" : undefined}
-              >
-                <div className="flex items-start gap-3">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-emerald-500/10 text-emerald-600">
-                    <Layers3 className="h-4 w-4" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold">转发组</p>
-                    <p className="mt-1 text-xs text-muted-foreground">使用转发组成员作为高可用入口，按优先级故障转移。</p>
-                  </div>
-                </div>
-              </button>
+            <div className="rounded-lg border border-border/60 bg-muted/25 p-1">
+              <div className="grid grid-cols-3 gap-1">
+                <button
+                  type="button"
+                  className={routeModeOptionClass(form.routeMode === "local", !canUseLocalForward)}
+                  onClick={() => setRouteMode("local")}
+                  disabled={!canUseLocalForward}
+                  title={!canUseLocalForward ? unsupportedProtocolTitle : undefined}
+                >
+                  <ArrowRightLeft className="h-4 w-4 shrink-0" />
+                  <span className="truncate">端口转发</span>
+                </button>
+                <button
+                  type="button"
+                  className={routeModeOptionClass(form.routeMode === "tunnel", !canUseGost)}
+                  onClick={() => setRouteMode("tunnel")}
+                  disabled={!canUseGost}
+                  title={!canUseGost ? unsupportedProtocolTitle : undefined}
+                >
+                  <Network className="h-4 w-4 shrink-0" />
+                  <span className="truncate">隧道转发</span>
+                </button>
+                <button
+                  type="button"
+                  className={routeModeOptionClass(form.routeMode === "group", !canUseForwardGroup)}
+                  onClick={() => setRouteMode("group")}
+                  disabled={!canUseForwardGroup}
+                  title={!canUseForwardGroup ? "暂无可用转发组" : undefined}
+                >
+                  <Layers3 className="h-4 w-4 shrink-0" />
+                  <span className="truncate">转发组</span>
+                </button>
+              </div>
+              <div className="mt-2 rounded-md bg-background/55 px-3 py-2 text-xs leading-5 text-muted-foreground">
+                {form.routeMode === "local" && "在所选主机监听入口端口，直接转发到目标地址。"}
+                {form.routeMode === "tunnel" && "选择一条隧道，由入口 Agent 经出口 Agent 转发到最终目标。"}
+                {form.routeMode === "group" && "使用转发组成员作为高可用入口，按优先级故障转移。"}
+              </div>
             </div>
 
             {form.routeMode === "tunnel" && (

@@ -1,5 +1,21 @@
 # Changelog
 
+## [2.3.11] - 2026-05-26
+
+### Added
+
+- Added browser-local persistence for the host management card/list view mode.
+- Added Agent Token bound-host display and now use the Agent Token remark as the default name for newly registered hosts.
+- Added a repository fallback release keystore so GitHub Actions can build signed Android release APKs when private signing secrets are not configured.
+
+### Changed
+
+- Reworked the add forwarding rule route selector into a compact segmented control for port forwarding, tunnel forwarding, and forwarding groups.
+- Changed automatic panel update checks to only run on backend visits or browser refreshes, with a 1-minute cache interval.
+- Changed the sidebar upgrade flow so confirming an upgrade starts it in the background, keeps progress visible in the lower-left area, and refreshes the browser after the upgraded panel comes back.
+- Updated web introduction wording to "ForwardX转发管理面板".
+- Bumped panel version to 2.3.11. Agent version remains 2.2.49.
+
 ## [2.3.07] - 2026-05-26
 
 ### Fixed

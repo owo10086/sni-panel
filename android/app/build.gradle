@@ -11,6 +11,7 @@ def releaseKeystoreFile = System.getenv("ANDROID_KEYSTORE_FILE")
 def releaseKeystorePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
 def releaseKeyAlias = System.getenv("ANDROID_KEY_ALIAS")
 def releaseKeyPassword = System.getenv("ANDROID_KEY_PASSWORD")
+def releaseKeystoreType = System.getenv("ANDROID_KEYSTORE_TYPE")
 def hasReleaseSigning = releaseKeystoreFile && releaseKeystorePassword && releaseKeyAlias && releaseKeyPassword
 
 android {
@@ -36,6 +37,9 @@ android {
                 storePassword releaseKeystorePassword
                 keyAlias releaseKeyAlias
                 keyPassword releaseKeyPassword
+                if (releaseKeystoreType) {
+                    storeType releaseKeystoreType
+                }
             }
         }
     }

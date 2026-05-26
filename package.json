@@ -1,7 +1,7 @@
 {
   "name": "forwardx",
-  "version": "2.3.10",
-  "description": "ForwardX forwarding and tunnel orchestration platform",
+  "version": "2.3.11",
+  "description": "ForwardX转发管理面板",
   "license": "AGPL-3.0-only",
   "private": true,
   "type": "module",

@@ -27,10 +27,29 @@ export async function getAgentTokenById(id: number) {
 export async function getAgentTokens(userId?: number) {
   const db = await getDb();
   if (!db) return [];
-  if (userId) {
-    return db.select().from(agentTokens).where(eq(agentTokens.userId, userId)).orderBy(desc(agentTokens.createdAt));
-  }
-  return db.select().from(agentTokens).orderBy(desc(agentTokens.createdAt));
+  const query = db
+    .select({
+      token: agentTokens,
+      host: {
+        id: hosts.id,
+        name: hosts.name,
+        ip: hosts.ip,
+        ipv4: hosts.ipv4,
+        ipv6: hosts.ipv6,
+        entryIp: hosts.entryIp,
+        isOnline: hosts.isOnline,
+        lastHeartbeat: hosts.lastHeartbeat,
+      },
+    })
+    .from(agentTokens)
+    .leftJoin(hosts, eq(agentTokens.hostId, hosts.id));
+  const rows = userId
+    ? await query.where(eq(agentTokens.userId, userId)).orderBy(desc(agentTokens.createdAt))
+    : await query.orderBy(desc(agentTokens.createdAt));
+  return rows.map((row: any) => ({
+    ...row.token,
+    host: row.host?.id ? row.host : null,
+  }));
 }
 
 export async function markAgentTokenUsed(token: string, hostId: number) {

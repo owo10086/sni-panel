@@ -160,6 +160,29 @@ const defaultFormData: HostFormData = {
   portRangeEnd: null,
 };
 
+type HostViewMode = "card" | "table";
+
+const HOST_VIEW_MODE_STORAGE_KEY = "forwardx.hosts.viewMode";
+
+function getStoredHostViewMode(): HostViewMode {
+  if (typeof window === "undefined") return "card";
+  try {
+    const value = window.localStorage.getItem(HOST_VIEW_MODE_STORAGE_KEY);
+    return value === "table" ? "table" : "card";
+  } catch {
+    return "card";
+  }
+}
+
+function storeHostViewMode(viewMode: HostViewMode) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(HOST_VIEW_MODE_STORAGE_KEY, viewMode);
+  } catch {
+    // Ignore storage failures so the page still works in restricted browsers.
+  }
+}
+
 /** 单个主机卡片组件 */
 function HostCard({
   host,
@@ -383,11 +406,16 @@ function HostsContent() {
   const [showDialog, setShowDialog] = useState(false);
   const [upgradeHost, setUpgradeHost] = useState<any>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [viewMode, setViewMode] = useState<"card" | "table">("card");
+  const [viewMode, setViewMode] = useState<HostViewMode>(() => getStoredHostViewMode());
   const [checkingAgentUpdate, setCheckingAgentUpdate] = useState(false);
   const lastAgentUpdateCheck = useRef(0);
   const [form, setForm] = useState<HostFormData>(defaultFormData);
   const watchMetricsMutation = trpc.hosts.watchMetrics.useMutation();
+
+  const handleViewModeChange = (mode: HostViewMode) => {
+    setViewMode(mode);
+    storeHostViewMode(mode);
+  };
 
   const createMutation = trpc.hosts.create.useMutation({
     onSuccess: () => {
@@ -596,7 +624,7 @@ function HostsContent() {
               variant={viewMode === "card" ? "secondary" : "ghost"}
               size="icon"
               className="h-8 w-8 rounded-none"
-              onClick={() => setViewMode("card")}
+              onClick={() => handleViewModeChange("card")}
             >
               <LayoutGrid className="h-4 w-4" />
             </Button>
@@ -604,7 +632,7 @@ function HostsContent() {
               variant={viewMode === "table" ? "secondary" : "ghost"}
               size="icon"
               className="h-8 w-8 rounded-none"
-              onClick={() => setViewMode("table")}
+              onClick={() => handleViewModeChange("table")}
             >
               <List className="h-4 w-4" />
             </Button>

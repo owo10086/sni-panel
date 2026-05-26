@@ -115,9 +115,11 @@ agentRouter.post("/api/agent/register", async (req: Request, res: Response) => {
       return;
     }
 
+    const tokenDescription = String(agentToken.description || "").trim();
+
     // 创建新主机
     const hostId = await db.createHost({
-      name: `Agent-${token.substring(0, 8)}`,
+      name: tokenDescription || `Agent-${token.substring(0, 8)}`,
       ip: ipv4 || ip || "unknown",
       ipv4: ipv4 || null,
       ipv6: ipv6 || null,
