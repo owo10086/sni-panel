@@ -1,14 +1,25 @@
 package main
 
 import (
+	"encoding/json"
 	"io"
 	"net"
+	"os"
 	"strconv"
 	"testing"
 	"time"
 )
 
 func TestForwardXTCPRoundTrip(t *testing.T) {
+	testForwardXTCPRoundTrip(t, fxpVersionV2)
+}
+
+func TestForwardXTCPRoundTripV1(t *testing.T) {
+	testForwardXTCPRoundTrip(t, fxpVersionV1)
+}
+
+func testForwardXTCPRoundTrip(t *testing.T, fxpVersion int) {
+	t.Helper()
 	targetLn, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatal(err)
@@ -47,6 +58,7 @@ func TestForwardXTCPRoundTrip(t *testing.T) {
 			ListenPort: exitPort,
 			Protocol:   "tcp",
 			Key:        key,
+			FXPVersion: fxpVersion,
 		}, sec.aead)
 	}()
 	waitForTCP(t, exitPort)
@@ -63,6 +75,7 @@ func TestForwardXTCPRoundTrip(t *testing.T) {
 			TargetIP:   "127.0.0.1",
 			TargetPort: targetPort,
 			Key:        key,
+			FXPVersion: fxpVersion,
 		}, sec.aead)
 	}()
 	waitForTCP(t, entryPort)
@@ -81,6 +94,83 @@ func TestForwardXTCPRoundTrip(t *testing.T) {
 	}
 	if string(buf) != "forwardx" {
 		t.Fatalf("unexpected echo %q", string(buf))
+	}
+}
+
+func TestFxpV2RejectsReplaySalt(t *testing.T) {
+	c1, s1 := net.Pipe()
+	defer c1.Close()
+	defer s1.Close()
+	c2, s2 := net.Pipe()
+	defer c2.Close()
+	defer s2.Close()
+
+	cfg := config{Role: "exit", TunnelID: 77, RuleID: 0, ListenPort: 12345, Key: "replay-key", FXPVersion: fxpVersionV2}
+	salt := make([]byte, fxpV2SaltSize)
+	for i := range salt {
+		salt[i] = byte(i + 1)
+	}
+	key := replayKey(cfg, salt)
+	fxpReplaySeen.mu.Lock()
+	delete(fxpReplaySeen.seen, key)
+	fxpReplaySeen.mu.Unlock()
+
+	errCh := make(chan error, 2)
+	go func() {
+		sec, err := newV2ServerSecureConn(s1, cfg)
+		if err == nil {
+			_ = sec.conn.Close()
+		}
+		errCh <- err
+	}()
+	if _, err := writeFull(c1, salt); err != nil {
+		t.Fatal(err)
+	}
+	client, err := newV2SecureConn(c1, cfg.Key, salt, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	hello, _ := json.Marshal(v2Handshake{V: fxpVersionV2, TS: time.Now().Unix(), TunnelID: cfg.TunnelID})
+	if err := client.writeFrame(hello); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := client.readFrame(); err != nil {
+		t.Fatal(err)
+	}
+	if err := <-errCh; err != nil {
+		t.Fatalf("first handshake failed: %v", err)
+	}
+
+	go func() {
+		sec, err := newV2ServerSecureConn(s2, cfg)
+		if err == nil {
+			_ = sec.conn.Close()
+		}
+		errCh <- err
+	}()
+	if _, err := writeFull(c2, salt); err != nil {
+		t.Fatal(err)
+	}
+	if err := <-errCh; err == nil {
+		t.Fatal("expected replayed salt to be rejected")
+	}
+}
+
+func TestReadConfigDefaultsMissingFxpVersionToV1(t *testing.T) {
+	f, err := os.CreateTemp(t.TempDir(), "fxp-*.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+	if _, err := f.WriteString(`{"role":"entry","listenPort":1000,"exitHost":"127.0.0.1","exitPort":1001,"targetIp":"127.0.0.1","targetPort":1002,"key":"k"}`); err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := readConfig(f.Name())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.FXPVersion != fxpVersionV1 {
+		t.Fatalf("missing fxpVersion should default to v1, got %d", cfg.FXPVersion)
 	}
 }
 

@@ -55,6 +55,9 @@ import {
   CheckCircle2,
   AlertTriangle,
   Loader2,
+  Download,
+  RefreshCw,
+  ExternalLink,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "wouter";
@@ -67,11 +70,10 @@ import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { renderMixedHtml } from "@/lib/htmlContent";
 import { mobileAuth } from "@/lib/mobileAuth";
-import { checkMobileAppUpdate, getMobileNotificationSettings } from "@/lib/mobileNotifications";
+import { checkMobileAppUpdate, openMobileReleasePage, type MobileAppUpdateResult } from "@/lib/mobileNotifications";
+import { cn } from "@/lib/utils";
 
 const announcementsMenuItem = { icon: Megaphone, label: "公告", path: "/announcements" };
-const MOBILE_UPDATE_AUTO_CHECK_KEY = "forwardx.mobile.lastAutoUpdateCheck";
-const MOBILE_UPDATE_AUTO_CHECK_INTERVAL_MS = 60 * 1000;
 
 const mainMenuItems = [
   { icon: LayoutDashboard, label: "仪表盘", path: "/" },
@@ -215,6 +217,9 @@ function DashboardLayoutContent({
   const [showAnnouncement, setShowAnnouncement] = useState(false);
   const [showTelegramDialog, setShowTelegramDialog] = useState(false);
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
+  const [checkingMobileUpdate, setCheckingMobileUpdate] = useState(false);
+  const [mobileUpdateInfo, setMobileUpdateInfo] = useState<MobileAppUpdateResult | null>(null);
+  const [showMobileUpdateDialog, setShowMobileUpdateDialog] = useState(false);
   const [upgradeRefreshScheduled, setUpgradeRefreshScheduled] = useState(false);
   const [backgroundUpgrade, setBackgroundUpgrade] = useState<{ targetVersion: string; startedAt: number } | null>(() => {
     if (typeof window === "undefined") return null;
@@ -261,21 +266,6 @@ function DashboardLayoutContent({
   useEffect(() => {
     if (popupAnnouncement?.id) setShowAnnouncement(true);
   }, [popupAnnouncement?.id]);
-
-  useEffect(() => {
-    if (!mobileAuth.isNative || !user) return;
-    const settings = getMobileNotificationSettings();
-    if (!settings.upgradeAutoCheck) return;
-    try {
-      const last = Number(window.localStorage.getItem(MOBILE_UPDATE_AUTO_CHECK_KEY) || 0);
-      if (Date.now() - last < MOBILE_UPDATE_AUTO_CHECK_INTERVAL_MS) return;
-      window.localStorage.setItem(MOBILE_UPDATE_AUTO_CHECK_KEY, String(Date.now()));
-    } catch {
-      // If localStorage is unavailable, skip the automatic check for this view.
-      return;
-    }
-    checkMobileAppUpdate({ silent: true }).catch(() => undefined);
-  }, [user?.id]);
 
   useEffect(() => {
     if (upgradeStatus?.job?.status !== "running" || backgroundUpgrade) return;
@@ -455,6 +445,29 @@ function DashboardLayoutContent({
     createTelegramBindMutation.mutate();
   };
 
+  const handleMobileUpdateCheck = async () => {
+    if (!mobileAuth.isNative || checkingMobileUpdate) return;
+    try {
+      setCheckingMobileUpdate(true);
+      const result = await checkMobileAppUpdate({ silent: false });
+      setMobileUpdateInfo(result);
+      if (result?.hasUpdate) {
+        setShowMobileUpdateDialog(true);
+      } else if (result) {
+        toast.success("当前 APP 已是最新版本");
+      }
+    } catch (error: any) {
+      toast.error(error?.message || "APP 更新检查失败");
+    } finally {
+      setCheckingMobileUpdate(false);
+    }
+  };
+
+  const openDetectedMobileRelease = () => {
+    void openMobileReleasePage(mobileUpdateInfo?.releaseUrl);
+    setShowMobileUpdateDialog(false);
+  };
+
   const telegramBindUrl = telegramBind?.botUsername && telegramBind?.code
     ? `https://t.me/${telegramBind.botUsername}?start=${encodeURIComponent(telegramBind.code)}`
     : "";
@@ -553,7 +566,7 @@ function DashboardLayoutContent({
         </SidebarHeader>
 
         <SidebarContent className="gap-1">
-          <SidebarGroup className="pb-5">
+          <SidebarGroup className={cn("pb-5", mobileAuth.isNative && "pb-2")}>
             <SidebarGroupLabel className="text-xs text-muted-foreground/60 uppercase tracking-wider">
               主菜单
             </SidebarGroupLabel>
@@ -566,7 +579,7 @@ function DashboardLayoutContent({
                       isActive={isActive}
                       onClick={() => setLocation(item.path)}
                       tooltip={item.label}
-                      className="h-10 transition-all font-normal"
+                      className={cn("h-10 transition-all font-normal", mobileAuth.isNative && "text-[13px]")}
                     >
                       <item.icon
                         className={`h-4 w-4 ${isActive ? "text-primary" : ""}`}
@@ -580,7 +593,7 @@ function DashboardLayoutContent({
           </SidebarGroup>
 
           {isAdmin && (
-            <SidebarGroup className="mt-2 border-t border-sidebar-border/50 pt-4">
+            <SidebarGroup className={cn("mt-2 pt-4", !mobileAuth.isNative && "border-t border-sidebar-border/50", mobileAuth.isNative && "mt-0 pt-2")}>
               <SidebarGroupLabel className="text-xs text-muted-foreground/60 uppercase tracking-wider">
                 管理
               </SidebarGroupLabel>
@@ -593,7 +606,7 @@ function DashboardLayoutContent({
                         isActive={isActive}
                         onClick={() => setLocation(item.path)}
                         tooltip={item.label}
-                        className="h-10 transition-all font-normal"
+                        className={cn("h-10 transition-all font-normal", mobileAuth.isNative && "text-[13px]")}
                       >
                         <item.icon
                           className={`h-4 w-4 ${isActive ? "text-primary" : ""}`}
@@ -744,6 +757,20 @@ function DashboardLayoutContent({
                 <Send className="mr-2 h-4 w-4" />
                 <span>{telegramStatus?.bound ? "Telegram 已绑定" : "绑定 Telegram"}</span>
               </DropdownMenuItem>
+              {mobileAuth.isNative && (
+                <DropdownMenuItem
+                  onClick={handleMobileUpdateCheck}
+                  disabled={checkingMobileUpdate}
+                  className="cursor-pointer"
+                >
+                  {checkingMobileUpdate ? (
+                    <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Download className="mr-2 h-4 w-4" />
+                  )}
+                  <span>{checkingMobileUpdate ? "检查中..." : "软件更新"}</span>
+                </DropdownMenuItem>
+              )}
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={logout}
@@ -916,6 +943,44 @@ function DashboardLayoutContent({
                 <Rocket className="h-4 w-4" />
               )}
               {displayUpgradeJob?.status === "running" ? "升级中..." : "确认升级"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showMobileUpdateDialog} onOpenChange={setShowMobileUpdateDialog}>
+        <DialogContent className="w-[calc(100vw-2rem)] max-w-[420px] overflow-hidden rounded-xl border-border/60 bg-background p-0 shadow-2xl">
+          <div className="border-b border-border/40 bg-primary/10 px-5 py-4">
+            <DialogTitle className="flex items-center gap-2 text-base">
+              <Download className="h-5 w-5 text-primary" />
+              发现 APP 新版本
+            </DialogTitle>
+            <DialogDescription className="mt-1 text-xs">
+              前往下载页获取新版 APK，安装时会覆盖当前版本。
+            </DialogDescription>
+          </div>
+          <div className="space-y-3 px-5 py-4">
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <div className="rounded-lg border border-border/40 bg-muted/25 p-3">
+                <p className="text-xs text-muted-foreground">当前版本</p>
+                <p className="mt-1 font-mono">v{mobileUpdateInfo?.currentVersion || "-"}</p>
+              </div>
+              <div className="rounded-lg border border-primary/25 bg-primary/10 p-3">
+                <p className="text-xs text-muted-foreground">最新版本</p>
+                <p className="mt-1 font-mono text-primary">v{mobileUpdateInfo?.latestVersion || "-"}</p>
+              </div>
+            </div>
+            <div className="rounded-lg border border-border/40 bg-muted/20 p-3 text-xs leading-5 text-muted-foreground">
+              下载完成后请使用同一签名的安装包更新；本次版本号已提升，可正常覆盖安装。
+            </div>
+          </div>
+          <DialogFooter className="gap-2 border-t border-border/40 px-5 py-4">
+            <Button variant="outline" className="w-full sm:w-auto" onClick={() => setShowMobileUpdateDialog(false)}>
+              稍后再说
+            </Button>
+            <Button className="w-full gap-2 sm:w-auto" onClick={openDetectedMobileRelease}>
+              <ExternalLink className="h-4 w-4" />
+              前往下载
             </Button>
           </DialogFooter>
         </DialogContent>

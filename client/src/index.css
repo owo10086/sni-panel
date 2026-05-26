@@ -213,6 +213,14 @@
     padding-bottom: calc(1rem + env(safe-area-inset-bottom));
   }
 
+  html.capacitor-native [data-sidebar="header"] {
+    padding-top: max(0.5rem, env(safe-area-inset-top));
+  }
+
+  html.capacitor-native [data-sidebar="footer"] {
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+  }
+
   html.capacitor-native .mobile-login-screen {
     min-height: 100dvh;
     padding-top: max(0.75rem, env(safe-area-inset-top));

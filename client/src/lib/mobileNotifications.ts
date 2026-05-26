@@ -4,7 +4,6 @@ import { LocalNotifications } from "@capacitor/local-notifications";
 import { mobileAuth } from "@/lib/mobileAuth";
 
 const SETTINGS_KEY = "forwardx.mobile.notificationSettings";
-const LAST_UPDATE_PROMPT_KEY = "forwardx.mobile.lastUpdatePrompt";
 const RELEASES_URL = "https://github.com/poouo/Forwardx/releases";
 const LATEST_RELEASE_URL = "https://github.com/poouo/Forwardx/releases/latest";
 const LATEST_RELEASE_API_URL = "https://api.github.com/repos/poouo/Forwardx/releases/latest";
@@ -37,7 +36,7 @@ export const defaultMobileNotificationSettings: MobileNotificationSettings = {
   expiryEnabled: false,
   expiryDaysBefore: 3,
   reminderTime: "09:00",
-  upgradeAutoCheck: true,
+  upgradeAutoCheck: false,
 };
 
 function clamp(value: number, min: number, max: number) {
@@ -63,7 +62,7 @@ export function normalizeMobileNotificationSettings(
     expiryEnabled: !!input?.expiryEnabled,
     expiryDaysBefore: clamp(Number(input?.expiryDaysBefore || 3), 1, 30),
     reminderTime: normalizeReminderTime(input?.reminderTime),
-    upgradeAutoCheck: input?.upgradeAutoCheck !== false,
+    upgradeAutoCheck: !!input?.upgradeAutoCheck,
   };
 }
 
@@ -154,9 +153,10 @@ function compareVersions(a: string, b: string) {
   return 0;
 }
 
-export async function openMobileReleasePage() {
-  if (mobileAuth.isNative) await Browser.open({ url: RELEASES_URL });
-  else window.open(RELEASES_URL, "_blank", "noopener,noreferrer");
+export async function openMobileReleasePage(url = RELEASES_URL) {
+  const targetUrl = url || RELEASES_URL;
+  if (mobileAuth.isNative) await Browser.open({ url: targetUrl });
+  else window.open(targetUrl, "_blank", "noopener,noreferrer");
 }
 
 export async function checkMobileAppUpdate(options: { silent?: boolean } = {}): Promise<MobileAppUpdateResult | null> {
@@ -175,21 +175,9 @@ export async function checkMobileAppUpdate(options: { silent?: boolean } = {}): 
     const latest = String(release?.tag_name || "").replace(/^v/i, "");
     const current = String(appInfo.version || "").replace(/^v/i, "");
     const hasUpdate = !!latest && !!current && compareVersions(latest, current) > 0;
+    const releaseUrl = release?.html_url || LATEST_RELEASE_URL;
 
-    if (!hasUpdate) {
-      return { hasUpdate: false, currentVersion: current, latestVersion: latest, releaseUrl: LATEST_RELEASE_URL };
-    }
-
-    if (typeof window !== "undefined") {
-      const lastPrompt = window.localStorage.getItem(LAST_UPDATE_PROMPT_KEY);
-      if (!options.silent || lastPrompt !== latest) {
-        window.localStorage.setItem(LAST_UPDATE_PROMPT_KEY, latest);
-        const ok = window.confirm(`发现 ForwardX APK 新版本 v${latest}，当前版本 v${current}。是否前往 GitHub 下载？`);
-        if (ok) await Browser.open({ url: release?.html_url || LATEST_RELEASE_URL });
-      }
-    }
-
-    return { hasUpdate: true, currentVersion: current, latestVersion: latest, releaseUrl: release?.html_url || LATEST_RELEASE_URL };
+    return { hasUpdate, currentVersion: current, latestVersion: latest, releaseUrl };
   } catch (error) {
     if (!options.silent) throw error;
     return null;

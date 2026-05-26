@@ -67,6 +67,7 @@ type TunnelForm = {
   entryHostId: number | null;
   exitHostId: number | null;
   mode: "forwardx" | "tls" | "wss" | "tcp" | "mtls" | "mwss" | "mtcp";
+  fxpVersion: 1 | 2;
   listenPort: number;
   networkType: "public" | "private";
   connectHost: string;
@@ -80,6 +81,7 @@ const defaultForm: TunnelForm = {
   entryHostId: null,
   exitHostId: null,
   mode: "forwardx",
+  fxpVersion: 2,
   listenPort: 0,
   networkType: "public",
   connectHost: "",
@@ -131,6 +133,10 @@ const tunnelModeLabels: Record<TunnelForm["mode"], string> = {
 
 const gostTunnelModes: TunnelForm["mode"][] = ["tls", "wss", "tcp", "mtls", "mwss", "mtcp"];
 const unsupportedProtocolTitle = "当前不支持，请联系管理员";
+
+function normalizeFxpVersion(value: unknown): 1 | 2 {
+  return Number(value) === 2 ? 2 : 1;
+}
 
 function formatTunnelLatencyTime(value: string | Date) {
   const d = new Date(value);
@@ -438,6 +444,7 @@ function TunnelsContent() {
       entryHostId: tunnel.entryHostId,
       exitHostId: tunnel.exitHostId,
       mode: tunnel.mode || "tls",
+      fxpVersion: normalizeFxpVersion(tunnel.fxpVersion),
       listenPort: tunnel.listenPort,
       networkType: tunnel.networkType === "private" ? "private" : "public",
       connectHost: tunnel.connectHost || "",
@@ -505,6 +512,7 @@ function TunnelsContent() {
       entryHostId: form.entryHostId,
       exitHostId: form.exitHostId,
       mode: form.mode,
+      fxpVersion: form.mode === "forwardx" ? form.fxpVersion : 1,
       listenPort: form.listenPort,
       networkType: connectHost ? "private" : "public",
       connectHost: connectHost || null,
@@ -612,6 +620,11 @@ function TunnelsContent() {
                         <Badge variant="outline" className="text-[10px]">
                           {tunnelModeLabels[tunnel.mode as TunnelForm["mode"]] || String(tunnel.mode).toUpperCase()}
                         </Badge>
+                        {tunnel.mode === "forwardx" && (
+                          <Badge variant="secondary" className="text-[10px]">
+                            FXP V{normalizeFxpVersion(tunnel.fxpVersion)}
+                          </Badge>
+                        )}
                         <code className="rounded bg-muted/50 px-1.5 py-0.5">:{tunnel.listenPort}</code>
                         {String(tunnel.connectHost || "").trim() && (
                           <span className="max-w-full truncate rounded bg-muted/50 px-1.5 py-0.5 text-muted-foreground" title={tunnel.connectHost || ""}>
@@ -731,6 +744,11 @@ function TunnelsContent() {
                           <Badge variant="outline" className="text-[10px]">
                             {tunnelModeLabels[tunnel.mode as TunnelForm["mode"]] || String(tunnel.mode).toUpperCase()}
                           </Badge>
+                          {tunnel.mode === "forwardx" && (
+                            <Badge variant="secondary" className="text-[10px]">
+                              FXP V{normalizeFxpVersion(tunnel.fxpVersion)}
+                            </Badge>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell className="hidden md:table-cell">
@@ -899,6 +917,24 @@ function TunnelsContent() {
               <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-600">
                 {unsupportedProtocolTitle}
               </p>
+            )}
+            {form.mode === "forwardx" && (
+              <div className="space-y-2">
+                <Label>FXP 协议版本</Label>
+                <Select
+                  value={String(form.fxpVersion)}
+                  onValueChange={(v) => setForm({ ...form, fxpVersion: normalizeFxpVersion(v) })}
+                >
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="2">V2 增强版</SelectItem>
+                    <SelectItem value="1">V1 兼容版</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs leading-5 text-muted-foreground">
+                  V2 增加会话 salt、子密钥派生、重放防护和加密长度；V1 用于兼容旧运行时。
+                </p>
+              </div>
             )}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-2">

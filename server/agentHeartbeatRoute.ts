@@ -303,6 +303,10 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
       blockSocks: !!(tunnel as any)?.blockSocks,
       blockTls: !!(tunnel as any)?.blockTls,
     });
+    const tunnelFxpVersion = (tunnel: any) => {
+      const version = Number((tunnel as any)?.fxpVersion || 1);
+      return version === 2 ? 2 : 1;
+    };
     const hasProtocolPolicy = (tunnel: any) => {
       const policy = tunnelProtocolPolicy(tunnel);
       return policy.blockHttp || policy.blockSocks || policy.blockTls;
@@ -594,6 +598,7 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
             listenPort: rule.sourcePort,
             protocol: rule.protocol,
             key: tunnelSecretSeed(tunnel),
+            fxpVersion: tunnelFxpVersion(tunnel),
           } : undefined,
         };
       }
@@ -631,6 +636,7 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
             listenPort: tunnel.listenPort,
             protocol: "both",
             key: tunnelSecretSeed(tunnel),
+            fxpVersion: tunnelFxpVersion(tunnel),
           } : undefined,
         });
       } else if ((!tunnel.isEnabled || !tunnelProtocolEnabled) && tunnel.isRunning) {
@@ -652,6 +658,7 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
             listenPort: tunnel.listenPort,
             protocol: "both",
             key: tunnelSecretSeed(tunnel),
+            fxpVersion: tunnelFxpVersion(tunnel),
           } : undefined,
         });
       }
@@ -906,6 +913,7 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
                 targetIp: rule.targetIp,
                 targetPort: rule.targetPort,
                 key: tunnelSecretSeed(tunnel),
+                fxpVersion: tunnelFxpVersion(tunnel),
                 ...rateLimits,
                 ...accessLimits,
                 accessScope: accessScopeForRule(rule),
@@ -1085,6 +1093,7 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
               listenPort: rule.sourcePort,
               protocol: rule.protocol,
               key: tunnelSecretSeed(tunnel),
+              fxpVersion: tunnelFxpVersion(tunnel),
             } : undefined,
           });
         }

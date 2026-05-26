@@ -1,11 +1,16 @@
 import { useEffect, useState } from "react";
+import { mobileAuth } from "@/lib/mobileAuth";
 
 const MOBILE_BREAKPOINT = 768;
 
 export function useIsMobile() {
-  const [isMobile, setIsMobile] = useState<boolean>(false);
+  const [isMobile, setIsMobile] = useState<boolean>(() => mobileAuth.isNative);
 
   useEffect(() => {
+    if (mobileAuth.isNative) {
+      setIsMobile(true);
+      return;
+    }
     const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`);
     const onChange = () => {
       setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);

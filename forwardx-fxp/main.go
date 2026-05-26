@@ -25,6 +25,8 @@ import (
 	"sync/atomic"
 	"syscall"
 	"time"
+
+	"lukechampine.com/blake3"
 )
 
 type config struct {
@@ -48,6 +50,7 @@ type config struct {
 	BlockTLS       bool   `json:"blockTls"`
 	PanelURL       string `json:"panelUrl"`
 	Token          string `json:"token"`
+	FXPVersion     int    `json:"fxpVersion"`
 }
 
 type helloFrame struct {
@@ -72,10 +75,50 @@ type envelope struct {
 	TS  int64  `json:"ts"`
 }
 
-type secureConn struct {
-	conn net.Conn
-	aead cipher.AEAD
+type v2Handshake struct {
+	V        int   `json:"v"`
+	TS       int64 `json:"ts"`
+	TunnelID int   `json:"tunnelId"`
 }
+
+type secureConn struct {
+	conn          net.Conn
+	aead          cipher.AEAD
+	lenWriteAEAD  cipher.AEAD
+	dataWriteAEAD cipher.AEAD
+	lenReadAEAD   cipher.AEAD
+	dataReadAEAD  cipher.AEAD
+	version       int
+	writeDir      uint32
+	readDir       uint32
+	writeCounter  uint64
+	readCounter   uint64
+}
+
+type replayCache struct {
+	ttl       time.Duration
+	max       int
+	mu        sync.Mutex
+	seen      map[string]time.Time
+	lastSweep time.Time
+}
+
+const (
+	fxpVersionV1 = 1
+	fxpVersionV2 = 2
+
+	fxpV2SaltSize    = 32
+	fxpV2MaxFrame    = 16 * 1024 * 1024
+	fxpV2EntryToExit = uint32(1)
+	fxpV2ExitToEntry = uint32(2)
+)
+
+var (
+	fxpV2Info     = []byte("forwardx-fxp-v2 session")
+	fxpV2LenAD    = []byte("forwardx-fxp-v2 length")
+	fxpV2DataAD   = []byte("forwardx-fxp-v2 payload")
+	fxpReplaySeen = newReplayCache(60*time.Second, 100000)
+)
 
 type connGate struct {
 	maxConnections int64
@@ -144,13 +187,13 @@ func main() {
 	if err != nil {
 		log.Fatalf("init crypto: %v", err)
 	}
-	keyed := sec.aead
+	baseAEAD := sec.aead
 	ctx := shutdownContext()
 	switch strings.ToLower(cfg.Role) {
 	case "entry":
-		err = runEntry(ctx.done, cfg, keyed)
+		err = runEntry(ctx.done, cfg, baseAEAD)
 	case "exit":
-		err = runExit(ctx.done, cfg, keyed)
+		err = runExit(ctx.done, cfg, baseAEAD)
 	default:
 		err = fmt.Errorf("unknown role %q", cfg.Role)
 	}
@@ -187,6 +230,9 @@ func readConfig(path string) (config, error) {
 	cfg.Protocol = normalizeProtocol(cfg.Protocol)
 	cfg.TargetIP = strings.TrimSpace(cfg.TargetIP)
 	cfg.ExitHost = strings.TrimSpace(cfg.ExitHost)
+	if cfg.FXPVersion != fxpVersionV2 {
+		cfg.FXPVersion = fxpVersionV1
+	}
 	return cfg, nil
 }
 
@@ -321,7 +367,10 @@ func handleEntryTCP(client net.Conn, cfg config, aead cipher.AEAD) error {
 		return fmt.Errorf("dial exit: %w", err)
 	}
 	defer exit.Close()
-	sec := &secureConn{conn: exit, aead: aead}
+	sec, err := newEntrySecureConn(exit, cfg, aead)
+	if err != nil {
+		return err
+	}
 	hello, _ := json.Marshal(helloFrame{
 		Network:    "tcp",
 		TargetIP:   cfg.TargetIP,
@@ -371,7 +420,10 @@ func udpRoundTripToExit(cfg config, aead cipher.AEAD, payload []byte) ([]byte, e
 		return nil, err
 	}
 	defer exit.Close()
-	sec := &secureConn{conn: exit, aead: aead}
+	sec, err := newEntrySecureConn(exit, cfg, aead)
+	if err != nil {
+		return nil, err
+	}
 	hello, _ := json.Marshal(helloFrame{
 		Network:    "udp",
 		TargetIP:   cfg.TargetIP,
@@ -417,13 +469,19 @@ func runExit(done <-chan struct{}, cfg config, aead cipher.AEAD) error {
 
 func handleExitSession(conn net.Conn, cfg config, aead cipher.AEAD) error {
 	defer conn.Close()
-	sec := &secureConn{conn: conn, aead: aead}
+	sec, err := newExitSecureConn(conn, cfg, aead)
+	if err != nil {
+		probeDelay()
+		return err
+	}
 	frame, err := sec.readFrame()
 	if err != nil {
+		probeDelay()
 		return err
 	}
 	var hello helloFrame
 	if err := json.Unmarshal(frame, &hello); err != nil {
+		probeDelay()
 		return err
 	}
 	if hello.TargetIP == "" {
@@ -557,10 +615,150 @@ func newSecureConn(conn net.Conn, key string) (*secureConn, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &secureConn{conn: conn, aead: aead}, nil
+	return &secureConn{conn: conn, aead: aead, version: fxpVersionV1}, nil
+}
+
+func newAEAD(key []byte) (cipher.AEAD, error) {
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return nil, err
+	}
+	return cipher.NewGCM(block)
+}
+
+func newEntrySecureConn(conn net.Conn, cfg config, base cipher.AEAD) (*secureConn, error) {
+	if cfg.FXPVersion == fxpVersionV1 {
+		return &secureConn{conn: conn, aead: base, version: fxpVersionV1}, nil
+	}
+	sec, err := newV2ClientSecureConn(conn, cfg)
+	if err == nil {
+		return sec, nil
+	}
+	_ = conn.Close()
+	return nil, err
+}
+
+func newExitSecureConn(conn net.Conn, cfg config, base cipher.AEAD) (*secureConn, error) {
+	if cfg.FXPVersion == fxpVersionV1 {
+		return &secureConn{conn: conn, aead: base, version: fxpVersionV1}, nil
+	}
+	return newV2ServerSecureConn(conn, cfg)
+}
+
+func newV2ClientSecureConn(conn net.Conn, cfg config) (*secureConn, error) {
+	salt := make([]byte, fxpV2SaltSize)
+	if _, err := rand.Read(salt); err != nil {
+		return nil, err
+	}
+	if _, err := writeFull(conn, salt); err != nil {
+		return nil, err
+	}
+	sec, err := newV2SecureConn(conn, cfg.Key, salt, true)
+	if err != nil {
+		return nil, err
+	}
+	hs, _ := json.Marshal(v2Handshake{V: fxpVersionV2, TS: time.Now().Unix(), TunnelID: cfg.TunnelID})
+	if err := sec.writeFrame(hs); err != nil {
+		return nil, err
+	}
+	ack, err := sec.readFrame()
+	if err != nil {
+		return nil, err
+	}
+	var reply v2Handshake
+	if err := json.Unmarshal(ack, &reply); err != nil || reply.V != fxpVersionV2 || reply.TunnelID != cfg.TunnelID {
+		return nil, errors.New("fxp v2 handshake rejected")
+	}
+	return sec, nil
+}
+
+func newV2ServerSecureConn(conn net.Conn, cfg config) (*secureConn, error) {
+	salt := make([]byte, fxpV2SaltSize)
+	if _, err := io.ReadFull(conn, salt); err != nil {
+		return nil, err
+	}
+	if !fxpReplaySeen.Add(replayKey(cfg, salt)) {
+		return nil, errors.New("fxp v2 replay detected")
+	}
+	sec, err := newV2SecureConn(conn, cfg.Key, salt, false)
+	if err != nil {
+		return nil, err
+	}
+	ack, err := sec.readFrame()
+	if err != nil {
+		return nil, err
+	}
+	var hs v2Handshake
+	if err := json.Unmarshal(ack, &hs); err != nil || hs.V != fxpVersionV2 || hs.TunnelID != cfg.TunnelID {
+		return nil, errors.New("fxp v2 handshake rejected")
+	}
+	if ts := time.Unix(hs.TS, 0); hs.TS <= 0 || time.Since(ts) > 30*time.Second || time.Until(ts) > 30*time.Second {
+		return nil, errors.New("fxp v2 handshake rejected")
+	}
+	reply, _ := json.Marshal(v2Handshake{V: fxpVersionV2, TS: time.Now().Unix(), TunnelID: cfg.TunnelID})
+	if err := sec.writeFrame(reply); err != nil {
+		return nil, err
+	}
+	return sec, nil
+}
+
+func newV2SecureConn(conn net.Conn, key string, salt []byte, client bool) (*secureConn, error) {
+	master := sha256.Sum256([]byte(key))
+	material := blake3Derive(master[:], salt, fxpV2Info, 128)
+	c2sLen, err := newAEAD(material[0:32])
+	if err != nil {
+		return nil, err
+	}
+	c2sData, err := newAEAD(material[32:64])
+	if err != nil {
+		return nil, err
+	}
+	s2cLen, err := newAEAD(material[64:96])
+	if err != nil {
+		return nil, err
+	}
+	s2cData, err := newAEAD(material[96:128])
+	if err != nil {
+		return nil, err
+	}
+	sec := &secureConn{
+		conn:    conn,
+		version: fxpVersionV2,
+	}
+	if client {
+		sec.lenWriteAEAD, sec.dataWriteAEAD = c2sLen, c2sData
+		sec.lenReadAEAD, sec.dataReadAEAD = s2cLen, s2cData
+		sec.writeDir, sec.readDir = fxpV2EntryToExit, fxpV2ExitToEntry
+	} else {
+		sec.lenWriteAEAD, sec.dataWriteAEAD = s2cLen, s2cData
+		sec.lenReadAEAD, sec.dataReadAEAD = c2sLen, c2sData
+		sec.writeDir, sec.readDir = fxpV2ExitToEntry, fxpV2EntryToExit
+	}
+	return sec, nil
+}
+
+func blake3Derive(secret, salt, context []byte, length int) []byte {
+	material := make([]byte, 0, len(secret)+len(salt))
+	material = append(material, secret...)
+	material = append(material, salt...)
+	keyMaterial := make([]byte, 32)
+	blake3.DeriveKey(keyMaterial, "forwardx-fxp-v2 master", context)
+	deriver := blake3.New(length, keyMaterial)
+	_, _ = deriver.Write(material)
+	out := make([]byte, length)
+	reader := deriver.XOF()
+	_, _ = io.ReadFull(reader, out)
+	return out
 }
 
 func (c *secureConn) writeFrame(plain []byte) error {
+	if c.version == fxpVersionV2 {
+		return c.writeFrameV2(plain)
+	}
+	return c.writeFrameV1(plain)
+}
+
+func (c *secureConn) writeFrameV1(plain []byte) error {
 	if len(plain) > 16*1024*1024 {
 		return errors.New("frame too large")
 	}
@@ -582,6 +780,13 @@ func (c *secureConn) writeFrame(plain []byte) error {
 }
 
 func (c *secureConn) readFrame() ([]byte, error) {
+	if c.version == fxpVersionV2 {
+		return c.readFrameV2()
+	}
+	return c.readFrameV1()
+}
+
+func (c *secureConn) readFrameV1() ([]byte, error) {
 	var hdr [4]byte
 	if _, err := io.ReadFull(c.conn, hdr[:]); err != nil {
 		return nil, err
@@ -599,6 +804,101 @@ func (c *secureConn) readFrame() ([]byte, error) {
 		return nil, err
 	}
 	return c.aead.Open(nil, nonce, ciphertext, nil)
+}
+
+func (c *secureConn) writeFrameV2(plain []byte) error {
+	if len(plain) > fxpV2MaxFrame {
+		return errors.New("frame too large")
+	}
+	counter := c.writeCounter
+	c.writeCounter++
+	var lenPlain [4]byte
+	binary.BigEndian.PutUint32(lenPlain[:], uint32(len(plain)))
+	lenNonce := fxpV2Nonce(c.writeDir, counter, 0)
+	dataNonce := fxpV2Nonce(c.writeDir, counter, 1)
+	lenCipher := c.lenWriteAEAD.Seal(nil, lenNonce, lenPlain[:], fxpV2LenAD)
+	dataCipher := c.dataWriteAEAD.Seal(nil, dataNonce, plain, fxpV2DataAD)
+	if _, err := writeFull(c.conn, lenCipher); err != nil {
+		return err
+	}
+	_, err := writeFull(c.conn, dataCipher)
+	return err
+}
+
+func (c *secureConn) readFrameV2() ([]byte, error) {
+	counter := c.readCounter
+	c.readCounter++
+	lenCipher := make([]byte, 4+c.lenReadAEAD.Overhead())
+	if _, err := io.ReadFull(c.conn, lenCipher); err != nil {
+		return nil, err
+	}
+	lenNonce := fxpV2Nonce(c.readDir, counter, 0)
+	lenPlain, err := c.lenReadAEAD.Open(nil, lenNonce, lenCipher, fxpV2LenAD)
+	if err != nil {
+		return nil, err
+	}
+	if len(lenPlain) != 4 {
+		return nil, errors.New("invalid frame length")
+	}
+	n := binary.BigEndian.Uint32(lenPlain)
+	if n > fxpV2MaxFrame {
+		return nil, fmt.Errorf("invalid frame size %d", n)
+	}
+	dataCipher := make([]byte, int(n)+c.dataReadAEAD.Overhead())
+	if _, err := io.ReadFull(c.conn, dataCipher); err != nil {
+		return nil, err
+	}
+	dataNonce := fxpV2Nonce(c.readDir, counter, 1)
+	return c.dataReadAEAD.Open(nil, dataNonce, dataCipher, fxpV2DataAD)
+}
+
+func fxpV2Nonce(direction uint32, counter uint64, kind byte) []byte {
+	nonce := make([]byte, 12)
+	binary.BigEndian.PutUint32(nonce[0:4], direction)
+	binary.BigEndian.PutUint64(nonce[4:12], counter)
+	nonce[3] ^= kind
+	return nonce
+}
+
+func replayKey(cfg config, salt []byte) string {
+	scope := fmt.Sprintf("%d:%d:%d:", cfg.TunnelID, cfg.RuleID, cfg.ListenPort)
+	return scope + hex.EncodeToString(salt)
+}
+
+func newReplayCache(ttl time.Duration, max int) *replayCache {
+	return &replayCache{ttl: ttl, max: max, seen: make(map[string]time.Time)}
+}
+
+func (c *replayCache) Add(key string) bool {
+	now := time.Now()
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.lastSweep.IsZero() || now.Sub(c.lastSweep) > time.Minute || len(c.seen) > c.max {
+		c.sweepLocked(now)
+	}
+	if expiresAt, ok := c.seen[key]; ok && expiresAt.After(now) {
+		return false
+	}
+	c.seen[key] = now.Add(c.ttl)
+	if len(c.seen) > c.max {
+		c.sweepLocked(now)
+	}
+	return true
+}
+
+func (c *replayCache) sweepLocked(now time.Time) {
+	c.lastSweep = now
+	for key, expiresAt := range c.seen {
+		if !expiresAt.After(now) || len(c.seen) > c.max {
+			delete(c.seen, key)
+		}
+	}
+}
+
+func probeDelay() {
+	var b [1]byte
+	_, _ = rand.Read(b[:])
+	time.Sleep(time.Duration(150+int(b[0])%350) * time.Millisecond)
 }
 
 func remoteIP(addr net.Addr) string {

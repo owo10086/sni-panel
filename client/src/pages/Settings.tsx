@@ -28,15 +28,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { trpc } from "@/lib/trpc";
-import { mobileAuth } from "@/lib/mobileAuth";
-import {
-  checkMobileAppUpdate,
-  getMobileNotificationSettings,
-  openMobileReleasePage,
-  saveMobileNotificationSettings,
-  type MobileAppUpdateResult,
-  type MobileNotificationSettings,
-} from "@/lib/mobileNotifications";
 import {
   FORWARD_PROTOCOL_LABELS,
   FORWARD_TYPES,
@@ -1486,11 +1477,6 @@ function SystemInfoSection() {
   } | null>(null);
   const [migrationCodeTick, setMigrationCodeTick] = useState(Date.now());
   const [checkingUpdate, setCheckingUpdate] = useState(false);
-  const [checkingMobileUpdate, setCheckingMobileUpdate] = useState(false);
-  const [mobileSettings, setMobileSettings] = useState<MobileNotificationSettings | null>(() =>
-    mobileAuth.isNative ? getMobileNotificationSettings() : null,
-  );
-  const [mobileUpdateInfo, setMobileUpdateInfo] = useState<MobileAppUpdateResult | null>(null);
   const [showUpgradeConfirm, setShowUpgradeConfirm] = useState(false);
   const previousUpgradeStatus = useRef<string | null>(null);
   const lastPanelUpdateCheck = useRef(0);
@@ -1686,27 +1672,6 @@ function SystemInfoSection() {
       toast.error(err?.message || "检查更新失败");
     } finally {
       setCheckingUpdate(false);
-    }
-  };
-
-  const handleMobileAutoCheckChange = (upgradeAutoCheck: boolean) => {
-    if (!mobileSettings) return;
-    const next = { ...mobileSettings, upgradeAutoCheck };
-    setMobileSettings(next);
-    saveMobileNotificationSettings(next);
-    toast.success(upgradeAutoCheck ? "已开启 APK 自动检查更新" : "已关闭 APK 自动检查更新");
-  };
-
-  const handleMobileUpdateCheck = async () => {
-    try {
-      setCheckingMobileUpdate(true);
-      const result = await checkMobileAppUpdate({ silent: false });
-      setMobileUpdateInfo(result);
-      if (result && !result.hasUpdate) toast.success("当前 APK 已是最新版本");
-    } catch (error: any) {
-      toast.error(error?.message || "APK 更新检查失败");
-    } finally {
-      setCheckingMobileUpdate(false);
     }
   };
 
@@ -2152,14 +2117,6 @@ function SystemInfoSection() {
               <p className="text-xs text-muted-foreground">当前版本</p>
               <p className="mt-1 font-mono text-sm">v{upgradeStatus?.currentVersion || settings?.version}</p>
             </div>
-            {mobileAuth.isNative && (
-              <div className="rounded-lg border border-border/40 bg-muted/20 p-3">
-                <p className="text-xs text-muted-foreground">当前 APK</p>
-                <p className="mt-1 font-mono text-sm">
-                  {mobileUpdateInfo?.currentVersion ? `v${mobileUpdateInfo.currentVersion}` : "点击检查后显示"}
-                </p>
-              </div>
-            )}
           </div>
 
           {updateInfo?.error && (
@@ -2204,59 +2161,6 @@ function SystemInfoSection() {
           {updateInfo && !updateInfo.error && !updateInfo.hasUpdate && (
             <div className="rounded-lg border border-border/40 bg-muted/20 p-3 text-sm text-muted-foreground">
               当前已是最新版本，上次检查时间：{new Date(updateInfo.checkedAt).toLocaleString()}
-            </div>
-          )}
-
-          {mobileAuth.isNative && (
-            <div className="rounded-xl border border-border/40 bg-muted/20 p-4">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold">APK 更新检查</p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    自动检查会在用户进入后台时触发，间隔至少 1 分钟；不会在用户停留页面时主动轮询。
-                  </p>
-                  {mobileUpdateInfo && (
-                    <p className="mt-2 break-words text-xs text-muted-foreground">
-                      当前 v{mobileUpdateInfo.currentVersion || "-"}，最新 {mobileUpdateInfo.latestVersion ? `v${mobileUpdateInfo.latestVersion}` : "-"}
-                    </p>
-                  )}
-                </div>
-                <label className="flex shrink-0 items-center justify-between gap-3 rounded-lg border border-border/40 bg-background/50 px-3 py-2 sm:min-w-[220px]">
-                  <span className="text-sm font-medium">自动检查</span>
-                  <Switch
-                    checked={mobileSettings?.upgradeAutoCheck ?? true}
-                    onCheckedChange={handleMobileAutoCheckChange}
-                  />
-                </label>
-              </div>
-
-              {mobileUpdateInfo?.hasUpdate && (
-                <div className="mt-3 rounded-lg border border-primary/30 bg-primary/10 p-3 text-sm text-primary">
-                  发现 APK 新版本 v{mobileUpdateInfo.latestVersion}，可前往 GitHub 下载更新包。
-                </div>
-              )}
-
-              {mobileUpdateInfo && !mobileUpdateInfo.hasUpdate && (
-                <div className="mt-3 rounded-lg border border-emerald-500/25 bg-emerald-500/10 p-3 text-sm text-emerald-600 dark:text-emerald-400">
-                  当前 APK 已是最新版本。
-                </div>
-              )}
-
-              <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-                <Button
-                  variant="outline"
-                  onClick={handleMobileUpdateCheck}
-                  disabled={checkingMobileUpdate}
-                  className="w-full gap-2 sm:w-auto"
-                >
-                  <RefreshCw className={`h-4 w-4 ${checkingMobileUpdate ? "animate-spin" : ""}`} />
-                  {checkingMobileUpdate ? "检查中..." : "检查 APK 更新"}
-                </Button>
-                <Button variant="ghost" onClick={openMobileReleasePage} className="w-full gap-2 sm:w-auto">
-                  <ExternalLink className="h-4 w-4" />
-                  打开下载页
-                </Button>
-              </div>
             </div>
           )}
 

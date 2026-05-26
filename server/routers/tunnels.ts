@@ -9,6 +9,8 @@ import { pushTunnelEndpointRefresh, requireHostAccess } from "./helpers";
 import { requireTunnelProtocolEnabled } from "../forwardProtocolSettings";
 
 const tunnelNetworkTypeSchema = z.enum(["public", "private"]);
+const fxpVersionSchema = z.union([z.literal(1), z.literal(2), z.literal("1"), z.literal("2")])
+  .transform((value) => Number(value));
 
 const normalizeTunnelConnect = (connectHost?: string | null) => {
   const host = String(connectHost || "").trim();
@@ -52,6 +54,7 @@ export const tunnelsRouter = router({
         entryHostId: z.number(),
         exitHostId: z.number(),
         mode: z.enum(["forwardx", "tls", "wss", "tcp", "mtls", "mwss", "mtcp"]).default("forwardx"),
+        fxpVersion: fxpVersionSchema.optional().default("2"),
         listenPort: z.number().min(0).max(65535).optional().default(0),
         portRangeStart: z.number().int().min(1).max(65535).nullable().optional(),
         portRangeEnd: z.number().int().min(1).max(65535).nullable().optional(),
@@ -93,6 +96,7 @@ export const tunnelsRouter = router({
         const connectHost = normalizeTunnelConnect(input.connectHost);
         const id = await db.createTunnel({
           ...input,
+          fxpVersion: input.mode === "forwardx" ? input.fxpVersion : 1,
           portRangeStart: input.portRangeStart ?? null,
           portRangeEnd: input.portRangeEnd ?? null,
           networkType: connectHost ? "private" : "public",
@@ -114,6 +118,7 @@ export const tunnelsRouter = router({
         entryHostId: z.number().optional(),
         exitHostId: z.number().optional(),
         mode: z.enum(["forwardx", "tls", "wss", "tcp", "mtls", "mwss", "mtcp"]).optional(),
+        fxpVersion: fxpVersionSchema.optional(),
         listenPort: z.number().min(0).max(65535).optional(),
         portRangeStart: z.number().int().min(1).max(65535).nullable().optional(),
         portRangeEnd: z.number().int().min(1).max(65535).nullable().optional(),
@@ -168,7 +173,11 @@ export const tunnelsRouter = router({
           (data as any).networkType = normalizedConnectHost ? "private" : "public";
           (data as any).connectHost = normalizedConnectHost;
         }
-        const keyChanged = ["entryHostId", "exitHostId", "mode", "listenPort", "isEnabled", "portRangeStart", "portRangeEnd", "networkType", "connectHost", "blockHttp", "blockSocks", "blockTls"].some((key) => (data as any)[key] !== undefined && (data as any)[key] !== (tunnel as any)[key]);
+        const nextMode = (data as any).mode ?? (tunnel as any).mode;
+        if ((data as any).fxpVersion !== undefined && nextMode !== "forwardx") {
+          (data as any).fxpVersion = 1;
+        }
+        const keyChanged = ["entryHostId", "exitHostId", "mode", "fxpVersion", "listenPort", "isEnabled", "portRangeStart", "portRangeEnd", "networkType", "connectHost", "blockHttp", "blockSocks", "blockTls"].some((key) => (data as any)[key] !== undefined && (data as any)[key] !== (tunnel as any)[key]);
         const enabledChanged = (data as any).isEnabled !== undefined && (data as any).isEnabled !== (tunnel as any).isEnabled;
         if (keyChanged) (data as any).isRunning = false;
         await db.updateTunnel(id, data as any);

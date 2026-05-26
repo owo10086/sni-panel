@@ -141,6 +141,7 @@ type fxpSpec struct {
 	BlockTLS       bool   `json:"blockTls"`
 	PanelURL       string `json:"panelUrl,omitempty"`
 	Token          string `json:"token,omitempty"`
+	FXPVersion     int    `json:"fxpVersion,omitempty"`
 }
 
 type protocolPolicy struct {
@@ -849,6 +850,7 @@ func fxpServerSignature(spec fxpSpec) string {
 		spec.TargetIP,
 		strconv.Itoa(spec.TargetPort),
 		spec.Key,
+		strconv.Itoa(spec.FXPVersion),
 		strconv.FormatInt(spec.LimitIn, 10),
 		strconv.FormatInt(spec.LimitOut, 10),
 		strconv.Itoa(spec.MaxConnections),
