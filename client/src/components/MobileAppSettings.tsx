@@ -8,7 +8,6 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { mobileAuth } from "@/lib/mobileAuth";
 import {
-  checkMobileAppUpdate,
   defaultMobileNotificationSettings,
   getMobileNotificationSettings,
   normalizeMobileNotificationSettings,
@@ -27,13 +26,6 @@ export default function MobileAppSettings({ snapshot }: { snapshot: MobileRemind
   useEffect(() => {
     if (!mobileAuth.isNative) return;
     setSettings(getMobileNotificationSettings());
-  }, []);
-
-  useEffect(() => {
-    if (!mobileAuth.isNative) return;
-    const next = getMobileNotificationSettings();
-    if (!next.upgradeAutoCheck) return;
-    checkMobileAppUpdate({ silent: true }).catch(() => undefined);
   }, []);
 
   useEffect(() => {
@@ -154,13 +146,6 @@ export default function MobileAppSettings({ snapshot }: { snapshot: MobileRemind
               disabled={!settings.trafficEnabled && !settings.expiryEnabled}
             />
           </div>
-          <label className="flex items-center justify-between gap-3 rounded-lg border border-border/50 bg-background/35 p-3">
-            <span className="min-w-0">
-              <span className="block text-sm font-medium">自动检查更新</span>
-              <span className="mt-1 block text-xs text-muted-foreground">有新版本时提示下载。</span>
-            </span>
-            <Switch checked={settings.upgradeAutoCheck} onCheckedChange={(upgradeAutoCheck) => save({ ...settings, upgradeAutoCheck })} />
-          </label>
         </div>
       </CardContent>
     </Card>

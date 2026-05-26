@@ -55,7 +55,6 @@ import {
   CheckCircle2,
   AlertTriangle,
   Loader2,
-  Download,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "wouter";
@@ -68,9 +67,11 @@ import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { renderMixedHtml } from "@/lib/htmlContent";
 import { mobileAuth } from "@/lib/mobileAuth";
-import { checkMobileAppUpdate } from "@/lib/mobileNotifications";
+import { checkMobileAppUpdate, getMobileNotificationSettings } from "@/lib/mobileNotifications";
 
 const announcementsMenuItem = { icon: Megaphone, label: "公告", path: "/announcements" };
+const MOBILE_UPDATE_AUTO_CHECK_KEY = "forwardx.mobile.lastAutoUpdateCheck";
+const MOBILE_UPDATE_AUTO_CHECK_INTERVAL_MS = 60 * 1000;
 
 const mainMenuItems = [
   { icon: LayoutDashboard, label: "仪表盘", path: "/" },
@@ -228,7 +229,6 @@ function DashboardLayoutContent({
     }
   });
   const [telegramBind, setTelegramBind] = useState<any | null>(null);
-  const [checkingMobileUpdate, setCheckingMobileUpdate] = useState(false);
   const { data: upgradeStatus, refetch: refetchUpgradeStatus } = trpc.system.upgradeStatus.useQuery(undefined, {
     enabled: isAdmin,
     refetchInterval: (query) => {
@@ -261,6 +261,21 @@ function DashboardLayoutContent({
   useEffect(() => {
     if (popupAnnouncement?.id) setShowAnnouncement(true);
   }, [popupAnnouncement?.id]);
+
+  useEffect(() => {
+    if (!mobileAuth.isNative || !user) return;
+    const settings = getMobileNotificationSettings();
+    if (!settings.upgradeAutoCheck) return;
+    try {
+      const last = Number(window.localStorage.getItem(MOBILE_UPDATE_AUTO_CHECK_KEY) || 0);
+      if (Date.now() - last < MOBILE_UPDATE_AUTO_CHECK_INTERVAL_MS) return;
+      window.localStorage.setItem(MOBILE_UPDATE_AUTO_CHECK_KEY, String(Date.now()));
+    } catch {
+      // If localStorage is unavailable, skip the automatic check for this view.
+      return;
+    }
+    checkMobileAppUpdate({ silent: true }).catch(() => undefined);
+  }, [user?.id]);
 
   useEffect(() => {
     if (upgradeStatus?.job?.status !== "running" || backgroundUpgrade) return;
@@ -451,18 +466,6 @@ function DashboardLayoutContent({
     setTheme(resolvedTheme === "dark" ? "light" : "dark");
   };
 
-  const handleMobileUpdateCheck = async () => {
-    setCheckingMobileUpdate(true);
-    try {
-      const result = await checkMobileAppUpdate({ silent: false });
-      if (result && !result.hasUpdate) toast.success("当前 APP 已是最新版本");
-    } catch (error: any) {
-      toast.error(error?.message || "检查更新失败");
-    } finally {
-      setCheckingMobileUpdate(false);
-    }
-  };
-
   const visibleMainMenuItems = isAdmin
     ? mainMenuItems
     : mainMenuItems.filter((item) => item.path !== "/hosts" && item.path !== "/tunnels");
@@ -549,22 +552,21 @@ function DashboardLayoutContent({
           </div>
         </SidebarHeader>
 
-        <SidebarContent className="gap-0">
-          <SidebarGroup className="pb-3">
+        <SidebarContent className="gap-1">
+          <SidebarGroup className="pb-5">
             <SidebarGroupLabel className="text-xs text-muted-foreground/60 uppercase tracking-wider">
               主菜单
             </SidebarGroupLabel>
             <SidebarMenu className="px-2 py-1">
               {[...visibleMainMenuItems, ...userStoreMenuItems, announcementsMenuItem].map((item) => {
                 const isActive = location === item.path;
-                const isAnnouncements = item.path === announcementsMenuItem.path;
                 return (
-                  <SidebarMenuItem key={item.path} className={isAnnouncements ? "z-10" : undefined}>
+                  <SidebarMenuItem key={item.path}>
                     <SidebarMenuButton
                       isActive={isActive}
                       onClick={() => setLocation(item.path)}
                       tooltip={item.label}
-                      className={`h-10 transition-all font-normal ${isAnnouncements ? "relative z-10" : ""}`}
+                      className="h-10 transition-all font-normal"
                     >
                       <item.icon
                         className={`h-4 w-4 ${isActive ? "text-primary" : ""}`}
@@ -578,7 +580,7 @@ function DashboardLayoutContent({
           </SidebarGroup>
 
           {isAdmin && (
-            <SidebarGroup className="mt-2 border-t border-sidebar-border/50 pt-3">
+            <SidebarGroup className="mt-2 border-t border-sidebar-border/50 pt-4">
               <SidebarGroupLabel className="text-xs text-muted-foreground/60 uppercase tracking-wider">
                 管理
               </SidebarGroupLabel>
@@ -742,20 +744,6 @@ function DashboardLayoutContent({
                 <Send className="mr-2 h-4 w-4" />
                 <span>{telegramStatus?.bound ? "Telegram 已绑定" : "绑定 Telegram"}</span>
               </DropdownMenuItem>
-              {mobileAuth.isNative && (
-                <DropdownMenuItem
-                  onClick={handleMobileUpdateCheck}
-                  disabled={checkingMobileUpdate}
-                  className="cursor-pointer"
-                >
-                  {checkingMobileUpdate ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <Download className="mr-2 h-4 w-4" />
-                  )}
-                  <span>APP 更新</span>
-                </DropdownMenuItem>
-              )}
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={logout}

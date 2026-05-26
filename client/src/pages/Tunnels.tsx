@@ -36,7 +36,6 @@ import {
   Activity,
   ArrowRight,
   CheckCircle2,
-  Globe2,
   Loader2,
   Network,
   Pencil,
@@ -132,50 +131,6 @@ const tunnelModeLabels: Record<TunnelForm["mode"], string> = {
 
 const gostTunnelModes: TunnelForm["mode"][] = ["tls", "wss", "tcp", "mtls", "mwss", "mtcp"];
 const unsupportedProtocolTitle = "当前不支持，请联系管理员";
-
-const gostTunnelOptions: Array<{
-  mode: Exclude<TunnelForm["mode"], "forwardx">;
-  port: number;
-  title: string;
-  description: string;
-}> = [
-  {
-    mode: "wss",
-    port: 443,
-    title: "WSS 443",
-    description: "WebSocket over TLS，常用于反代、CDN 或 HTTPS 入口环境。",
-  },
-  {
-    mode: "tls",
-    port: 443,
-    title: "TLS 443",
-    description: "TLS 传输，链路结构简单，常用于直接暴露 443 的出口。",
-  },
-  {
-    mode: "tcp",
-    port: 443,
-    title: "TCP 443",
-    description: "TCP 传输，协议层更直接，端口可按网络环境调整。",
-  },
-  {
-    mode: "mtls",
-    port: 443,
-    title: "MTLS 443",
-    description: "TLS + mux，多连接复用，端口默认为 443。",
-  },
-  {
-    mode: "mwss",
-    port: 443,
-    title: "MWSS 443",
-    description: "WSS + mux，多连接复用，常配合 HTTPS 入口使用。",
-  },
-  {
-    mode: "mtcp",
-    port: 443,
-    title: "MTCP 443",
-    description: "TCP + mux，多连接复用，端口可按网络环境调整。",
-  },
-];
 
 function formatTunnelLatencyTime(value: string | Date) {
   const d = new Date(value);
@@ -940,33 +895,10 @@ function TunnelsContent() {
                 </button>
               </div>
             </div>
-            {form.mode !== "forwardx" && (
-              <div className="space-y-2 rounded-lg border border-border/70 bg-muted/20 p-3">
-                <div className="flex items-center gap-2">
-                  <Globe2 className="h-4 w-4 text-muted-foreground" />
-                  <Label>入口 → 出口可选配置</Label>
-                </div>
-                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                  {gostTunnelOptions.filter((preset) => enabledGostTunnelModes.includes(preset.mode)).map((preset) => (
-                    <button
-                      key={preset.mode}
-                      type="button"
-                      onClick={() => setForm({ ...form, mode: preset.mode, listenPort: preset.port })}
-                      className={`rounded-md border p-3 text-left transition-colors ${
-                        form.mode === preset.mode && Number(form.listenPort) === preset.port
-                          ? "border-primary bg-background text-foreground"
-                          : "border-border/60 bg-background/60 hover:border-primary/40"
-                      }`}
-                    >
-                      <span className="block text-sm font-semibold">{preset.title}</span>
-                      <span className="mt-1 block text-[11px] leading-4 text-muted-foreground">{preset.description}</span>
-                    </button>
-                  ))}
-                </div>
-                {enabledGostTunnelModes.length === 0 && (
-                  <p className="text-xs text-amber-600">{unsupportedProtocolTitle}</p>
-                )}
-              </div>
+            {form.mode !== "forwardx" && enabledGostTunnelModes.length === 0 && (
+              <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-600">
+                {unsupportedProtocolTitle}
+              </p>
             )}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-2">

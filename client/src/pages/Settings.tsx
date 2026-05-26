@@ -28,6 +28,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { trpc } from "@/lib/trpc";
+import { mobileAuth } from "@/lib/mobileAuth";
+import {
+  checkMobileAppUpdate,
+  getMobileNotificationSettings,
+  openMobileReleasePage,
+  saveMobileNotificationSettings,
+  type MobileAppUpdateResult,
+  type MobileNotificationSettings,
+} from "@/lib/mobileNotifications";
 import {
   FORWARD_PROTOCOL_LABELS,
   FORWARD_TYPES,
@@ -454,7 +463,7 @@ function SettingsContent() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight">系统设置</h1>
           <p className="text-muted-foreground mt-1 text-sm">
@@ -468,24 +477,24 @@ function SettingsContent() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="bg-muted/30 border border-border/30">
-          <TabsTrigger value="tokens" className="gap-1.5">
+        <TabsList className="grid h-auto w-full grid-cols-2 gap-1 border border-border/30 bg-muted/30 p-1 sm:inline-flex sm:w-auto sm:grid-cols-none">
+          <TabsTrigger value="tokens" className="min-w-0 justify-center gap-1.5 text-xs sm:text-sm">
             <Key className="h-3.5 w-3.5" />
             Agent Token
           </TabsTrigger>
-          <TabsTrigger value="install" className="gap-1.5">
+          <TabsTrigger value="install" className="min-w-0 justify-center gap-1.5 text-xs sm:text-sm">
             <Terminal className="h-3.5 w-3.5" />
             一键安装
           </TabsTrigger>
-          <TabsTrigger value="system" className="gap-1.5">
+          <TabsTrigger value="system" className="min-w-0 justify-center gap-1.5 text-xs sm:text-sm">
             <Settings2 className="h-3.5 w-3.5" />
             系统信息
           </TabsTrigger>
-          <TabsTrigger value="telegram" className="gap-1.5">
+          <TabsTrigger value="telegram" className="min-w-0 justify-center gap-1.5 text-xs sm:text-sm">
             <Send className="h-3.5 w-3.5" />
-            Telegram 机器人
+            Telegram
           </TabsTrigger>
-          <TabsTrigger value="logs" className="gap-1.5">
+          <TabsTrigger value="logs" className="min-w-0 justify-center gap-1.5 text-xs sm:text-sm">
             <FileText className="h-3.5 w-3.5" />
             面板日志
           </TabsTrigger>
@@ -493,11 +502,11 @@ function SettingsContent() {
 
         {/* Token Management Tab */}
         <TabsContent value="tokens" className="space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-muted-foreground">
               Agent Token 用于被控机注册和通信认证
             </p>
-            <Button onClick={() => { setDescription(""); setShowCreate(true); }} className="gap-2">
+            <Button onClick={() => { setDescription(""); setShowCreate(true); }} className="w-full gap-2 sm:w-auto">
               <Plus className="h-4 w-4" />
               创建 Token
             </Button>
@@ -517,7 +526,88 @@ function SettingsContent() {
                   ))}
                 </div>
               ) : tokens && tokens.length > 0 ? (
-                <div className="overflow-x-auto">
+                <>
+                <div className="space-y-3 p-3 sm:hidden">
+                  {tokens.map((t) => (
+                    <div key={t.id} className="rounded-lg border border-border/40 bg-muted/20 p-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="text-xs text-muted-foreground">Token</p>
+                          <code className="mt-1 block break-all rounded bg-background/60 px-2 py-1 font-mono text-xs">
+                            {t.token}
+                          </code>
+                          {t.description && (
+                            <p className="mt-2 break-words text-xs text-muted-foreground">{t.description}</p>
+                          )}
+                        </div>
+                        {t.isUsed ? (
+                          <Badge className="shrink-0 bg-chart-2/10 text-chart-2 border-chart-2/20 text-[10px]">
+                            已使用
+                          </Badge>
+                        ) : (
+                          <Badge variant="secondary" className="shrink-0 text-[10px]">
+                            未使用
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="mt-3 rounded-md bg-background/45 p-2 text-xs">
+                        <p className="text-muted-foreground">对应主机</p>
+                        {t.host ? (
+                          <div className="mt-1 min-w-0">
+                            <p className="break-words font-medium">{t.host.name}</p>
+                            {tokenHostAddress(t.host) && (
+                              <p className="break-all font-mono text-muted-foreground">{tokenHostAddress(t.host)}</p>
+                            )}
+                          </div>
+                        ) : (
+                          <p className="mt-1 text-muted-foreground">{t.isUsed ? "关联主机不存在" : "-"}</p>
+                        )}
+                      </div>
+                      <div className="mt-3 flex items-center justify-between gap-2">
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(t.createdAt).toLocaleString()}
+                        </span>
+                        <div className="flex shrink-0 items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            title="查看安装脚本"
+                            onClick={() => {
+                              setScriptTokenId(t.id);
+                              setShowScript(true);
+                            }}
+                          >
+                            <Terminal className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            title="编辑备注"
+                            onClick={() => {
+                              setEditingToken(t);
+                              setEditDescription(t.description || "");
+                            }}
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-destructive hover:text-destructive"
+                            onClick={() => {
+                              setTokenToDelete(t);
+                            }}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="hidden overflow-x-auto sm:block">
                   <Table>
                     <TableHeader>
                       <TableRow className="hover:bg-transparent">
@@ -623,6 +713,7 @@ function SettingsContent() {
                     </TableBody>
                   </Table>
                 </div>
+                </>
               ) : (
                 <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
                   <div className="h-16 w-16 rounded-2xl bg-muted/30 flex items-center justify-center mb-4">
@@ -699,14 +790,14 @@ function SettingsContent() {
                     <Download className="h-3 w-3" />
                     安装命令（替换 YOUR_TOKEN，GitHub 优先，不可达时自动回退面板）：
                   </p>
-                  <div className="flex items-center gap-2">
-                    <code className="flex-1 text-xs font-mono bg-background/50 p-3 rounded border overflow-x-auto break-all">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                    <code className="min-w-0 flex-1 rounded border bg-background/50 p-3 font-mono text-xs break-all">
                       {getInstallCommand("YOUR_TOKEN")}
                     </code>
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="shrink-0"
+                      className="shrink-0 self-end sm:self-auto"
                       onClick={() => copyToClipboard(getInstallCommand("YOUR_TOKEN"))}
                     >
                       <Copy className="h-4 w-4" />
@@ -718,14 +809,14 @@ function SettingsContent() {
                     <RefreshCw className="h-3 w-3" />
                     升级命令（复用已安装 Agent 的 Token 与面板地址）：
                   </p>
-                  <div className="flex items-center gap-2">
-                    <code className="flex-1 text-xs font-mono bg-background/50 p-3 rounded border overflow-x-auto break-all">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                    <code className="min-w-0 flex-1 rounded border bg-background/50 p-3 font-mono text-xs break-all">
                       {getUpgradeCommand()}
                     </code>
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="shrink-0"
+                      className="shrink-0 self-end sm:self-auto"
                       onClick={() => copyToClipboard(getUpgradeCommand())}
                     >
                       <Copy className="h-4 w-4" />
@@ -737,14 +828,14 @@ function SettingsContent() {
                     <Trash2 className="h-3 w-3" />
                     卸载命令（同样 GitHub 优先，不可达时回退面板）：
                   </p>
-                  <div className="flex items-center gap-2">
-                    <code className="flex-1 text-xs font-mono bg-background/50 p-3 rounded border overflow-x-auto break-all">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                    <code className="min-w-0 flex-1 rounded border bg-background/50 p-3 font-mono text-xs break-all">
                       {getUninstallCommand()}
                     </code>
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="shrink-0"
+                      className="shrink-0 self-end sm:self-auto"
                       onClick={() => copyToClipboard(getUninstallCommand())}
                     >
                       <Copy className="h-4 w-4" />
@@ -933,7 +1024,7 @@ function SettingsContent() {
 
       {/* Install Script Dialog */}
       <Dialog open={showScript} onOpenChange={setShowScript}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="w-[calc(100vw-2rem)] max-w-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Terminal className="h-5 w-5" />
@@ -946,13 +1037,14 @@ function SettingsContent() {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label className="text-xs text-muted-foreground">安装命令</Label>
-              <div className="flex items-center gap-2">
-                <code className="flex-1 text-xs font-mono bg-muted/30 p-3 rounded border overflow-x-auto">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                <code className="min-w-0 flex-1 break-all rounded border bg-muted/30 p-3 font-mono text-xs">
                   {scriptData?.token ? getInstallCommand(scriptData.token) : "加载中..."}
                 </code>
                 <Button
                   variant="ghost"
                   size="icon"
+                  className="shrink-0 self-end sm:self-auto"
                   onClick={() => scriptData?.token && copyToClipboard(getInstallCommand(scriptData.token))}
                 >
                   <Copy className="h-4 w-4" />
@@ -961,13 +1053,14 @@ function SettingsContent() {
             </div>
             <div className="space-y-2">
               <Label className="text-xs text-muted-foreground">卸载命令</Label>
-              <div className="flex items-center gap-2">
-                <code className="flex-1 text-xs font-mono bg-muted/30 p-3 rounded border overflow-x-auto">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                <code className="min-w-0 flex-1 break-all rounded border bg-muted/30 p-3 font-mono text-xs">
                   {getUninstallCommand()}
                 </code>
                 <Button
                   variant="ghost"
                   size="icon"
+                  className="shrink-0 self-end sm:self-auto"
                   onClick={() => copyToClipboard(getUninstallCommand())}
                 >
                   <Copy className="h-4 w-4" />
@@ -976,13 +1069,14 @@ function SettingsContent() {
             </div>
             <div className="space-y-2">
               <Label className="text-xs text-muted-foreground">升级命令</Label>
-              <div className="flex items-center gap-2">
-                <code className="flex-1 text-xs font-mono bg-muted/30 p-3 rounded border overflow-x-auto">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                <code className="min-w-0 flex-1 break-all rounded border bg-muted/30 p-3 font-mono text-xs">
                   {getUpgradeCommand()}
                 </code>
                 <Button
                   variant="ghost"
                   size="icon"
+                  className="shrink-0 self-end sm:self-auto"
                   onClick={() => copyToClipboard(getUpgradeCommand())}
                 >
                   <Copy className="h-4 w-4" />
@@ -1083,9 +1177,9 @@ function PanelLogsSection() {
         </CardHeader>
         <CardContent>
           <Tabs value={logLevel} onValueChange={(v) => setLogLevel(v as typeof logLevel)} className="space-y-3">
-            <TabsList className="grid h-auto w-full grid-cols-5 bg-muted/50">
+            <TabsList className="grid h-auto w-full grid-cols-2 gap-1 bg-muted/50 p-1 sm:grid-cols-5">
               {levelTabs.map((tab) => (
-                <TabsTrigger key={tab.value} value={tab.value} className="gap-1.5 text-xs">
+                <TabsTrigger key={tab.value} value={tab.value} className="min-w-0 gap-1.5 text-xs">
                   {tab.label}
                   <span className="rounded bg-background/70 px-1.5 py-0.5 text-[10px] text-muted-foreground">{tab.count}</span>
                 </TabsTrigger>
@@ -1392,6 +1486,11 @@ function SystemInfoSection() {
   } | null>(null);
   const [migrationCodeTick, setMigrationCodeTick] = useState(Date.now());
   const [checkingUpdate, setCheckingUpdate] = useState(false);
+  const [checkingMobileUpdate, setCheckingMobileUpdate] = useState(false);
+  const [mobileSettings, setMobileSettings] = useState<MobileNotificationSettings | null>(() =>
+    mobileAuth.isNative ? getMobileNotificationSettings() : null,
+  );
+  const [mobileUpdateInfo, setMobileUpdateInfo] = useState<MobileAppUpdateResult | null>(null);
   const [showUpgradeConfirm, setShowUpgradeConfirm] = useState(false);
   const previousUpgradeStatus = useRef<string | null>(null);
   const lastPanelUpdateCheck = useRef(0);
@@ -1587,6 +1686,27 @@ function SystemInfoSection() {
       toast.error(err?.message || "检查更新失败");
     } finally {
       setCheckingUpdate(false);
+    }
+  };
+
+  const handleMobileAutoCheckChange = (upgradeAutoCheck: boolean) => {
+    if (!mobileSettings) return;
+    const next = { ...mobileSettings, upgradeAutoCheck };
+    setMobileSettings(next);
+    saveMobileNotificationSettings(next);
+    toast.success(upgradeAutoCheck ? "已开启 APK 自动检查更新" : "已关闭 APK 自动检查更新");
+  };
+
+  const handleMobileUpdateCheck = async () => {
+    try {
+      setCheckingMobileUpdate(true);
+      const result = await checkMobileAppUpdate({ silent: false });
+      setMobileUpdateInfo(result);
+      if (result && !result.hasUpdate) toast.success("当前 APK 已是最新版本");
+    } catch (error: any) {
+      toast.error(error?.message || "APK 更新检查失败");
+    } finally {
+      setCheckingMobileUpdate(false);
     }
   };
 
@@ -2032,6 +2152,14 @@ function SystemInfoSection() {
               <p className="text-xs text-muted-foreground">当前版本</p>
               <p className="mt-1 font-mono text-sm">v{upgradeStatus?.currentVersion || settings?.version}</p>
             </div>
+            {mobileAuth.isNative && (
+              <div className="rounded-lg border border-border/40 bg-muted/20 p-3">
+                <p className="text-xs text-muted-foreground">当前 APK</p>
+                <p className="mt-1 font-mono text-sm">
+                  {mobileUpdateInfo?.currentVersion ? `v${mobileUpdateInfo.currentVersion}` : "点击检查后显示"}
+                </p>
+              </div>
+            )}
           </div>
 
           {updateInfo?.error && (
@@ -2076,6 +2204,59 @@ function SystemInfoSection() {
           {updateInfo && !updateInfo.error && !updateInfo.hasUpdate && (
             <div className="rounded-lg border border-border/40 bg-muted/20 p-3 text-sm text-muted-foreground">
               当前已是最新版本，上次检查时间：{new Date(updateInfo.checkedAt).toLocaleString()}
+            </div>
+          )}
+
+          {mobileAuth.isNative && (
+            <div className="rounded-xl border border-border/40 bg-muted/20 p-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold">APK 更新检查</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    自动检查会在用户进入后台时触发，间隔至少 1 分钟；不会在用户停留页面时主动轮询。
+                  </p>
+                  {mobileUpdateInfo && (
+                    <p className="mt-2 break-words text-xs text-muted-foreground">
+                      当前 v{mobileUpdateInfo.currentVersion || "-"}，最新 {mobileUpdateInfo.latestVersion ? `v${mobileUpdateInfo.latestVersion}` : "-"}
+                    </p>
+                  )}
+                </div>
+                <label className="flex shrink-0 items-center justify-between gap-3 rounded-lg border border-border/40 bg-background/50 px-3 py-2 sm:min-w-[220px]">
+                  <span className="text-sm font-medium">自动检查</span>
+                  <Switch
+                    checked={mobileSettings?.upgradeAutoCheck ?? true}
+                    onCheckedChange={handleMobileAutoCheckChange}
+                  />
+                </label>
+              </div>
+
+              {mobileUpdateInfo?.hasUpdate && (
+                <div className="mt-3 rounded-lg border border-primary/30 bg-primary/10 p-3 text-sm text-primary">
+                  发现 APK 新版本 v{mobileUpdateInfo.latestVersion}，可前往 GitHub 下载更新包。
+                </div>
+              )}
+
+              {mobileUpdateInfo && !mobileUpdateInfo.hasUpdate && (
+                <div className="mt-3 rounded-lg border border-emerald-500/25 bg-emerald-500/10 p-3 text-sm text-emerald-600 dark:text-emerald-400">
+                  当前 APK 已是最新版本。
+                </div>
+              )}
+
+              <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                <Button
+                  variant="outline"
+                  onClick={handleMobileUpdateCheck}
+                  disabled={checkingMobileUpdate}
+                  className="w-full gap-2 sm:w-auto"
+                >
+                  <RefreshCw className={`h-4 w-4 ${checkingMobileUpdate ? "animate-spin" : ""}`} />
+                  {checkingMobileUpdate ? "检查中..." : "检查 APK 更新"}
+                </Button>
+                <Button variant="ghost" onClick={openMobileReleasePage} className="w-full gap-2 sm:w-auto">
+                  <ExternalLink className="h-4 w-4" />
+                  打开下载页
+                </Button>
+              </div>
             </div>
           )}
 

@@ -24,6 +24,13 @@ export type MobileReminderSnapshot = {
   expiresAt?: string | Date | null;
 };
 
+export type MobileAppUpdateResult = {
+  hasUpdate: boolean;
+  currentVersion: string;
+  latestVersion: string;
+  releaseUrl: string;
+};
+
 export const defaultMobileNotificationSettings: MobileNotificationSettings = {
   trafficEnabled: false,
   trafficThresholdPercent: 20,
@@ -152,7 +159,7 @@ export async function openMobileReleasePage() {
   else window.open(RELEASES_URL, "_blank", "noopener,noreferrer");
 }
 
-export async function checkMobileAppUpdate(options: { silent?: boolean } = {}) {
+export async function checkMobileAppUpdate(options: { silent?: boolean } = {}): Promise<MobileAppUpdateResult | null> {
   if (!mobileAuth.isNative) return null;
 
   try {
