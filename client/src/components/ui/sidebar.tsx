@@ -10,7 +10,7 @@ import { useIsMobile } from "@/hooks/useMobile"
 const SIDEBAR_COOKIE_NAME = "sidebar:state"
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
 const SIDEBAR_WIDTH = "16rem"
-const SIDEBAR_WIDTH_MOBILE = "min(22rem, calc(100vw - 1.25rem))"
+const SIDEBAR_WIDTH_MOBILE = "var(--forwardx-mobile-sidebar-width, min(16.5rem, calc(100vw - 3.5rem)))"
 const SIDEBAR_WIDTH_ICON = "3rem"
 const SIDEBAR_KEYBOARD_SHORTCUT = "b"
 
@@ -112,8 +112,10 @@ const Sidebar = React.forwardRef<HTMLDivElement, React.ComponentProps<"div"> & {
   if (isMobile) {
     return (
       <>
-        {openMobile && <div className="fixed inset-0 z-50 bg-black/80" onClick={() => setOpenMobile(false)} />}
+        {openMobile && <div className="fixed inset-0 z-50 bg-black/55 backdrop-blur-[1px]" onClick={() => setOpenMobile(false)} />}
         <div
+          data-mobile-sidebar="true"
+          data-state={openMobile ? "open" : "closed"}
           className={cn(
             "fixed inset-y-0 z-50 flex h-dvh max-h-dvh flex-col overflow-hidden bg-sidebar text-sidebar-foreground transition-transform duration-200",
             side === "left" ? "left-0" : "right-0",
@@ -226,12 +228,12 @@ const SidebarInset = React.forwardRef<HTMLDivElement, React.ComponentProps<"main
 SidebarInset.displayName = "SidebarInset"
 
 const SidebarHeader = React.forwardRef<HTMLDivElement, React.ComponentProps<"div">>(({ className, ...props }, ref) => {
-  return <div ref={ref} data-sidebar="header" className={cn("flex flex-col gap-2 p-2", className)} {...props} />
+  return <div ref={ref} data-sidebar="header" className={cn("flex shrink-0 flex-col gap-2 p-2", className)} {...props} />
 })
 SidebarHeader.displayName = "SidebarHeader"
 
 const SidebarFooter = React.forwardRef<HTMLDivElement, React.ComponentProps<"div">>(({ className, ...props }, ref) => {
-  return <div ref={ref} data-sidebar="footer" className={cn("flex flex-col gap-2 p-2", className)} {...props} />
+  return <div ref={ref} data-sidebar="footer" className={cn("flex shrink-0 flex-col gap-2 p-2", className)} {...props} />
 })
 SidebarFooter.displayName = "SidebarFooter"
 

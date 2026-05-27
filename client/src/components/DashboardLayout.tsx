@@ -23,7 +23,6 @@ import {
   SidebarGroup,
   SidebarGroupLabel,
 } from "@/components/ui/sidebar";
-import { useIsMobile } from "@/hooks/useMobile";
 import { useTheme } from "@/contexts/ThemeContext";
 import {
   LayoutDashboard,
@@ -59,7 +58,8 @@ import {
   RefreshCw,
   ExternalLink,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { App as CapacitorApp } from "@capacitor/app";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from "./DashboardLayoutSkeleton";
 import { Button } from "./ui/button";
@@ -168,9 +168,9 @@ function DashboardLayoutContent({
 }) {
   const { user, logout } = useAuth();
   const [location, setLocation] = useLocation();
-  const { state, toggleSidebar } = useSidebar();
+  const { state, toggleSidebar, isMobile, openMobile, setOpenMobile } = useSidebar();
+  const openMobileRef = useRef(openMobile);
   const isCollapsed = state === "collapsed";
-  const isMobile = useIsMobile();
   const isAdmin = user?.role === "admin";
   const utils = trpc.useUtils();
   const { resolvedTheme, setTheme } = useTheme();
@@ -516,11 +516,49 @@ function DashboardLayoutContent({
     displayUpgradeJob?.status === "success" ||
     displayUpgradeJob?.status === "error"
   );
+  const navigateFromSidebar = (path: string) => {
+    setLocation(path);
+    if (isMobile) setOpenMobile(false);
+  };
+
+  useEffect(() => {
+    openMobileRef.current = openMobile;
+  }, [openMobile]);
+
+  useEffect(() => {
+    if (!mobileAuth.isNative || !isMobile) return;
+    let disposed = false;
+    let removeListener: (() => void) | undefined;
+    CapacitorApp.addListener("backButton", (event) => {
+      if (openMobileRef.current) {
+        setOpenMobile(false);
+        return;
+      }
+      if (event.canGoBack) {
+        window.history.back();
+        return;
+      }
+      void CapacitorApp.minimizeApp();
+    })
+      .then((handle) => {
+        if (disposed) {
+          handle.remove();
+          return;
+        }
+        removeListener = () => handle.remove();
+      })
+      .catch(() => undefined);
+
+    return () => {
+      disposed = true;
+      removeListener?.();
+    };
+  }, [isMobile, setOpenMobile]);
 
   return (
     <>
       <Sidebar collapsible="icon" className="border-r border-sidebar-border/60 bg-sidebar/75 backdrop-blur-2xl">
-        <SidebarHeader className="h-16 justify-center">
+        <SidebarHeader className="h-16 justify-center mobile-sidebar-header">
           <div className="flex items-center gap-3 px-2 transition-all w-full">
             {!isCollapsed ? (
               <div className="flex items-center justify-between flex-1 min-w-0">
@@ -565,21 +603,21 @@ function DashboardLayoutContent({
           </div>
         </SidebarHeader>
 
-        <SidebarContent className="gap-1">
-          <SidebarGroup className={cn("pb-5", mobileAuth.isNative && "pb-2")}>
+        <SidebarContent className="gap-1 mobile-sidebar-content">
+          <SidebarGroup className={cn("pb-5 mobile-sidebar-group", mobileAuth.isNative && "pb-3")}>
             <SidebarGroupLabel className="text-xs text-muted-foreground/60 uppercase tracking-wider">
               主菜单
             </SidebarGroupLabel>
-            <SidebarMenu className="px-2 py-1">
+            <SidebarMenu className="px-2 py-1 mobile-sidebar-menu">
               {[...visibleMainMenuItems, ...userStoreMenuItems, announcementsMenuItem].map((item) => {
                 const isActive = location === item.path;
                 return (
                   <SidebarMenuItem key={item.path}>
                     <SidebarMenuButton
                       isActive={isActive}
-                      onClick={() => setLocation(item.path)}
+                      onClick={() => navigateFromSidebar(item.path)}
                       tooltip={item.label}
-                      className={cn("h-10 transition-all font-normal", mobileAuth.isNative && "text-[13px]")}
+                      className={cn("h-10 transition-all font-normal mobile-sidebar-menu-button", mobileAuth.isNative && "text-[13px]")}
                     >
                       <item.icon
                         className={`h-4 w-4 ${isActive ? "text-primary" : ""}`}
@@ -593,20 +631,20 @@ function DashboardLayoutContent({
           </SidebarGroup>
 
           {isAdmin && (
-            <SidebarGroup className={cn("mt-2 pt-4", !mobileAuth.isNative && "border-t border-sidebar-border/50", mobileAuth.isNative && "mt-0 pt-2")}>
+            <SidebarGroup className={cn("mt-2 pt-4 mobile-sidebar-group mobile-sidebar-admin-group", !mobileAuth.isNative && "border-t border-sidebar-border/50", mobileAuth.isNative && "mt-0 pt-3 border-t border-sidebar-border/50")}>
               <SidebarGroupLabel className="text-xs text-muted-foreground/60 uppercase tracking-wider">
                 管理
               </SidebarGroupLabel>
-              <SidebarMenu className="px-2 py-1">
+              <SidebarMenu className="px-2 py-1 mobile-sidebar-menu">
                 {adminMenuItems.map((item) => {
                   const isActive = location === item.path;
                   return (
                     <SidebarMenuItem key={item.path}>
                       <SidebarMenuButton
                         isActive={isActive}
-                        onClick={() => setLocation(item.path)}
+                        onClick={() => navigateFromSidebar(item.path)}
                         tooltip={item.label}
-                        className={cn("h-10 transition-all font-normal", mobileAuth.isNative && "text-[13px]")}
+                        className={cn("h-10 transition-all font-normal mobile-sidebar-menu-button", mobileAuth.isNative && "text-[13px]")}
                       >
                         <item.icon
                           className={`h-4 w-4 ${isActive ? "text-primary" : ""}`}
@@ -643,7 +681,7 @@ function DashboardLayoutContent({
           )}
         </SidebarContent>
 
-        <SidebarFooter className="p-3">
+        <SidebarFooter className="p-3 mobile-sidebar-footer">
           {showUpgradeNotice && (
             <button
               type="button"

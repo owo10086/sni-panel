@@ -115,7 +115,11 @@ function StatCard({
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0 space-y-1.5">
             <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{title}</p>
-            {loading ? <Skeleton className="h-8 w-24" /> : <p className="truncate text-2xl font-bold tracking-tight tabular-nums">{value}</p>}
+            {loading ? (
+              <Skeleton className="h-7 w-14 max-w-full rounded-md sm:h-8 sm:w-20" />
+            ) : (
+              <p className="truncate text-2xl font-bold tracking-tight tabular-nums">{value}</p>
+            )}
             {subtitle && <p className="text-xs text-muted-foreground/80">{subtitle}</p>}
           </div>
           <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${tone} shadow-sm`}>
