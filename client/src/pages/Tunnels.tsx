@@ -31,6 +31,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getLatencyYAxisMax, getLatencyYAxisTicks } from "@/lib/latencyChart";
 import { trpc } from "@/lib/trpc";
 import {
   Activity,
@@ -190,13 +191,12 @@ function TunnelLatencyDialog({
     return { total, timeout, lossRate, max: Math.max(...values), min: Math.min(...values), avg: Math.round(sum / values.length) };
   }, [chartData]);
   const yMax = useMemo(() => {
-    if (chartData.length === 0) return 60;
+    if (chartData.length === 0) return 120;
     const maxVal = Math.max(...chartData.filter((d) => !d.isTimeout).map((d) => d.latency), 0);
-    if (maxVal <= 0) return 60;
-    return Math.max(2, Math.ceil(maxVal * 2));
+    return getLatencyYAxisMax(maxVal, 120);
   }, [chartData]);
   const yTicks = useMemo(() => {
-    return Array.from({ length: 5 }, (_, i) => Math.round((yMax / 4) * i));
+    return getLatencyYAxisTicks(yMax);
   }, [yMax]);
 
   return (

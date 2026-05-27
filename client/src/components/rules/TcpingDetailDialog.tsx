@@ -3,6 +3,7 @@ import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip as RToolti
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getLatencyYAxisMax, getLatencyYAxisTicks } from "@/lib/latencyChart";
 import { trpc } from "@/lib/trpc";
 
 type TcpingChartPoint = {
@@ -73,14 +74,11 @@ function TcpingDetailDialog({
     }));
   }, [data]);
 
-  // 动态计算 Y轴最大值：取数据最大值的 2 倍，最小 120ms，最大 500ms
   const yMax = useMemo(() => {
     if (!chartData || chartData.length === 0) return 120;
-    const maxVal = Math.max(...chartData.map((d) => d.latency));
-    if (maxVal <= 0) return 120;
-    const dynamicMax = Math.ceil(maxVal * 2);
-    return Math.min(500, Math.max(120, dynamicMax));
+    return getLatencyYAxisMax(Math.max(...chartData.map((d) => d.latency)), 120);
   }, [chartData]);
+  const yTicks = useMemo(() => getLatencyYAxisTicks(yMax), [yMax]);
 
   const tcpingStats = useMemo(() => {
     const total = chartData.length;
@@ -140,15 +138,7 @@ function TcpingDetailDialog({
                   width={50}
                   domain={[0, yMax]}
                   allowDecimals={false}
-                  ticks={(() => {
-                    const step = yMax <= 120 ? 20 : yMax <= 200 ? 40 : yMax <= 300 ? 50 : 100;
-                    const ticks: number[] = [];
-                    for (let i = 0; i <= yMax; i += step) {
-                      ticks.push(i);
-                    }
-                    if (ticks[ticks.length - 1] !== yMax) ticks.push(yMax);
-                    return ticks;
-                  })()}
+                  ticks={yTicks}
                 />
                 <RTooltip
                   content={<TcpingTooltipContent />}

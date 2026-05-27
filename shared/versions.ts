@@ -1,4 +1,4 @@
-export const APP_VERSION = "2.3.14";
+export const APP_VERSION = "2.3.15";
 export const AGENT_VERSION = "2.2.49";
 
 export const LEGACY_PANEL_VERSIONED_AGENT_MIN = "2.2.63";
