@@ -223,6 +223,98 @@ async function assertEntryPortAllowed(member: any, sourcePort: number) {
   }
 }
 
+async function entryPortRangeForMember(member: any) {
+  if (member.memberType === "tunnel") {
+    const tunnel = await getTunnelById(Number(member.tunnelId));
+    if (!tunnel) throw new Error("Tunnel does not exist");
+    return {
+      hostId: Number(tunnel.entryHostId || 0),
+      start: (tunnel as any).portRangeStart,
+      end: (tunnel as any).portRangeEnd,
+    };
+  }
+  const host = await getHostById(Number(member.hostId));
+  if (!host) throw new Error("Host does not exist");
+  return {
+    hostId: Number(host.id || 0),
+    start: (host as any).portRangeStart,
+    end: (host as any).portRangeEnd,
+  };
+}
+
+function optionalPort(value: unknown) {
+  if (value == null) return null;
+  const port = Number(value);
+  return Number.isInteger(port) && port >= 1 && port <= 65535 ? port : null;
+}
+
+async function usedPortsOnEntryHost(hostId: number, start: number, end: number, ignoreRuleIds: number[]) {
+  const table = quoteId("forward_rules");
+  const idCol = quoteId("id");
+  const hostCol = quoteId("hostId");
+  const portCol = quoteId("sourcePort");
+  const pendingCol = quoteId("pendingDelete");
+  const ignore = ignoreRuleIds.filter((id) => Number(id) > 0);
+  const ignoreSql = ignore.length > 0 ? ` AND ${idCol} NOT IN (${ignore.map(() => "?").join(",")})` : "";
+  const rows = await queryRaw<{ port: number }>(
+    `SELECT ${portCol} AS port FROM ${table} WHERE ${hostCol} = ? AND ${portCol} BETWEEN ? AND ? AND ${pendingCol} = 0${ignoreSql}`,
+    [hostId, start, end, ...ignore],
+  );
+  return new Set(rows.map((row) => Number(row.port)).filter((port) => Number.isInteger(port)));
+}
+
+export async function findAvailableForwardGroupPort(groupId: number, excludeTemplateRuleId?: number | null) {
+  const group = await getForwardGroupById(groupId);
+  if (!group) throw new Error("Forward group does not exist");
+  const members = [...((group as any).members || [])]
+    .filter((member: any) => !!member.isEnabled)
+    .sort((a, b) => Number(a.priority) - Number(b.priority));
+  if (members.length === 0) throw new Error("Forward group has no enabled members");
+
+  const entries: Array<{ hostId: number; ignoreRuleIds: number[] }> = [];
+  let rangeStart: number | null = null;
+  let rangeEnd: number | null = null;
+  for (const member of members) {
+    const range = await entryPortRangeForMember(member);
+    if (!range.hostId) throw new Error("Forward group member has no valid entry agent");
+    const existing = excludeTemplateRuleId
+      ? await existingChildRule(Number(excludeTemplateRuleId), Number(member.id))
+      : null;
+    entries.push({
+      hostId: range.hostId,
+      ignoreRuleIds: [Number(excludeTemplateRuleId || 0), Number(existing?.id || 0)].filter(Boolean),
+    });
+    const start = optionalPort(range.start);
+    const end = optionalPort(range.end);
+    if (start != null) rangeStart = Math.max(rangeStart ?? 1, start);
+    if (end != null) rangeEnd = Math.min(rangeEnd ?? 65535, end);
+  }
+  const start = rangeStart ?? (rangeEnd != null && rangeEnd < 10000 ? 1 : 10000);
+  const end = rangeEnd ?? 65535;
+  if (start > end) return null;
+
+  const usedPortSets = await Promise.all(
+    entries.map((entry) => usedPortsOnEntryHost(entry.hostId, start, end, entry.ignoreRuleIds)),
+  );
+  const isAvailable = (port: number) => usedPortSets.every((usedPorts) => !usedPorts.has(port));
+
+  const rangeSize = end - start + 1;
+  const randomAttempts = Math.min(120, rangeSize);
+  for (let i = 0; i < randomAttempts; i++) {
+    const port = start + Math.floor(Math.random() * rangeSize);
+    if (isAvailable(port)) {
+      return port;
+    }
+  }
+
+  for (let port = start; port <= end; port++) {
+    if (isAvailable(port)) {
+      return port;
+    }
+  }
+  return null;
+}
+
 export async function validateForwardGroupRuleConfig(groupId: number, config: ForwardGroupRuleConfig) {
   const group = await getForwardGroupById(groupId);
   if (!group) throw new Error("Forward group does not exist");

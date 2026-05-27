@@ -382,6 +382,47 @@ function RulesContent() {
     if (!form.hostId || !hosts) return null;
     return hosts.find((h: any) => h.id === form.hostId) || null;
   }, [form.hostId, form.routeMode, hosts]);
+  const selectedHostPortRangeText = useMemo(() => {
+    if (!selectedHost) return null;
+    const start = (selectedHost as any).portRangeStart;
+    const end = (selectedHost as any).portRangeEnd;
+    return start != null && end != null ? `${start}-${end}` : null;
+  }, [selectedHost]);
+  const portInlineHint = useMemo(() => {
+    if (portStatus === "used") {
+      return {
+        type: "used" as const,
+        text: "端口不可用",
+        title: portRangeError || "端口已被占用",
+        className: "border-destructive/30 bg-destructive/10 text-destructive",
+      };
+    }
+    if (portStatus === "available") {
+      return {
+        type: "available" as const,
+        text: "端口可用",
+        title: selectedHostPortRangeText ? `允许端口范围: ${selectedHostPortRangeText}` : "端口可用",
+        className: "border-emerald-500/30 bg-emerald-500/10 text-emerald-600",
+      };
+    }
+    if (portStatus === "checking") {
+      return {
+        type: "checking" as const,
+        text: "检测中",
+        title: "正在检测端口",
+        className: "border-border/70 bg-muted/40 text-muted-foreground",
+      };
+    }
+    if (selectedHostPortRangeText) {
+      return {
+        type: "range" as const,
+        text: "端口范围",
+        title: `允许端口范围: ${selectedHostPortRangeText}`,
+        className: "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300",
+      };
+    }
+    return null;
+  }, [portRangeError, portStatus, selectedHostPortRangeText]);
   const forwardProtocolSettings = useMemo(
     () => normalizeForwardProtocolSettings(systemSettings?.forwardProtocols),
     [systemSettings?.forwardProtocols]
@@ -553,15 +594,20 @@ function RulesContent() {
   // 随机分配端口
   const handleRandomPort = async () => {
     if (form.routeMode === "group") {
-      toast.error("转发组规则需要指定固定入口端口");
-      return;
-    }
-    if (!form.hostId) {
+      if (!form.forwardGroupId) {
+        toast.error("请先选择转发组");
+        return;
+      }
+    } else if (!form.hostId) {
       toast.error("请先选择主机");
       return;
     }
     try {
-      const result = await utils.rules.randomPort.fetch({ hostId: form.hostId, tunnelId: form.routeMode === "tunnel" ? form.tunnelId : null });
+      const result = await utils.rules.randomPort.fetch(
+        form.routeMode === "group"
+          ? { forwardGroupId: form.forwardGroupId, excludeRuleId: editingId || undefined }
+          : { hostId: form.hostId, tunnelId: form.routeMode === "tunnel" ? form.tunnelId : null, excludeRuleId: editingId || undefined }
+      );
       setForm({ ...form, sourcePort: result.port });
       setPortStatus("available");
       toast.success(`已分配随机端口: ${result.port}`);
@@ -1245,7 +1291,7 @@ function RulesContent() {
           <DialogHeader>
             <DialogTitle>{editingId ? "编辑规则" : "添加转发规则"}</DialogTitle>
             <DialogDescription>
-              {editingId ? "修改转发规则配置" : "创建新的端口转发规则"}
+              {editingId ? "修改规则配置" : "创建转发规则"}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -1283,9 +1329,9 @@ function RulesContent() {
                 </button>
               </div>
               <div className="mt-2 rounded-md bg-background/55 px-3 py-2 text-xs leading-5 text-muted-foreground">
-                {form.routeMode === "local" && "在所选主机监听入口端口，直接转发到目标地址。"}
-                {form.routeMode === "tunnel" && "选择一条隧道，由入口 Agent 经出口 Agent 转发到最终目标。"}
-                {form.routeMode === "group" && "使用转发组成员作为高可用入口，按优先级故障转移。"}
+                {form.routeMode === "local" && "主机直接转发到目标地址。"}
+                {form.routeMode === "tunnel" && "通过隧道出口连接目标地址。"}
+                {form.routeMode === "group" && "使用转发组作为入口。"}
               </div>
             </div>
 
@@ -1320,7 +1366,7 @@ function RulesContent() {
                   </Badge>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  所属主机由隧道入口 Agent 自动决定，流量经隧道送到出口 Agent 后再连接最终目标。
+                  主机由隧道入口自动决定。
                 </p>
                 {availableTunnels.length === 0 && (
                   <p className="text-xs text-amber-600">暂无可用隧道，请先在隧道管理中创建隧道。</p>
@@ -1442,69 +1488,65 @@ function RulesContent() {
                 </Select>
               </div>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_auto] gap-2 sm:items-start">
-              <div className="space-y-2">
-                <Label>{form.routeMode === "local" ? "源端口" : "入口端口"}</Label>
-                <div className="flex items-center gap-2">
-                  <div className="relative flex-1">
-                    <Input
-                      type="number"
-                      min={0}
-                      max={65535}
-                      step={1}
-                      placeholder={form.routeMode === "group" ? "例如 8080" : "0=随机"}
-                      value={form.sourcePort || ""}
-                      onChange={(e) => setForm({ ...form, sourcePort: parseInt(e.target.value) || 0 })}
-                      className={`pr-8 ${
-                        portStatus === "used" ? "border-destructive" :
-                        portStatus === "available" ? "border-emerald-500" : ""
-                      }`}
-                    />
-                    {portStatus === "used" && (
-                      <XCircle className="absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-destructive" />
-                    )}
-                    {portStatus === "available" && (
-                      <CheckCircle2 className="absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-emerald-500" />
-                    )}
-                    {portStatus === "checking" && (
-                      <Loader2 className="absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 animate-spin text-muted-foreground" />
-                    )}
-                  </div>
+            <div className="space-y-2">
+              <Label>{form.routeMode === "local" ? "源端口" : "入口端口"}</Label>
+              <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
+                <div className="relative flex-1">
+                  <Input
+                    type="number"
+                    min={0}
+                    max={65535}
+                    step={1}
+                    placeholder={form.routeMode === "group" ? "例如 8080" : "0=随机"}
+                    value={form.sourcePort || ""}
+                    onChange={(e) => setForm({ ...form, sourcePort: parseInt(e.target.value) || 0 })}
+                    className={`pr-8 ${
+                      portStatus === "used" ? "border-destructive" :
+                      portStatus === "available" ? "border-emerald-500" : ""
+                    }`}
+                  />
+                  {portStatus === "used" && (
+                    <XCircle className="absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-destructive" />
+                  )}
+                  {portStatus === "available" && (
+                    <CheckCircle2 className="absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-emerald-500" />
+                  )}
+                  {portStatus === "checking" && (
+                    <Loader2 className="absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 animate-spin text-muted-foreground" />
+                  )}
                 </div>
-                {(portStatus !== "idle" || (selectedHost && (selectedHost as any).portRangeStart && (selectedHost as any).portRangeEnd)) && (
-                  <p className={`text-[10px] leading-4 ${
-                    portStatus === "used" ? "text-destructive" :
-                    portStatus === "available" ? "text-emerald-600" :
-                    "text-muted-foreground"
-                  }`}>
-                    {portStatus === "used"
-                      ? (portRangeError || "端口已被占用")
-                      : portStatus === "available"
-                        ? "端口可用"
-                        : portStatus === "checking"
-                          ? "检测中..."
-                          : null}
-                    {selectedHost && (selectedHost as any).portRangeStart && (selectedHost as any).portRangeEnd && (
-                      <span className={portStatus === "idle" ? "text-amber-600" : "ml-1 text-amber-600"}>
-                        允许端口范围: {(selectedHost as any).portRangeStart}-{(selectedHost as any).portRangeEnd}
-                      </span>
-                    )}
-                  </p>
+                {portInlineHint && (
+                  <div
+                    className={`hidden h-10 min-w-[5.25rem] shrink-0 items-center justify-center rounded-md border px-2 text-xs font-medium sm:inline-flex ${portInlineHint.className}`}
+                    title={portInlineHint.title}
+                  >
+                    {portInlineHint.type === "checking" && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
+                    {portInlineHint.text}
+                  </div>
                 )}
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-10 shrink-0 gap-2 whitespace-nowrap px-3"
+                  onClick={handleRandomPort}
+                  title="随机分配端口"
+                  disabled={form.routeMode === "group" ? !form.forwardGroupId : !form.hostId}
+                >
+                  <Shuffle className="h-4 w-4" />
+                  随机端口
+                </Button>
               </div>
-              <Button
-                type="button"
-                variant="outline"
-                className="mt-0 gap-2 sm:mt-8"
-                onClick={handleRandomPort}
-                title="随机分配端口"
-                disabled={!form.hostId || form.routeMode === "group"}
-              >
-                <Shuffle className="h-4 w-4" />
-                随机端口
-              </Button>
+              {portInlineHint && (
+                <p className={`text-[10px] leading-4 sm:hidden ${
+                  portInlineHint.type === "used" ? "text-destructive" :
+                  portInlineHint.type === "available" ? "text-emerald-600" :
+                  portInlineHint.type === "range" ? "text-amber-600" :
+                  "text-muted-foreground"
+                }`}>
+                  {portInlineHint.title}
+                </p>
+              )}
             </div>
-
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>{form.routeMode === "local" ? "目标 IP" : "最终目标 IP"}</Label>
@@ -1546,7 +1588,7 @@ function RulesContent() {
         <DialogContent className="sm:max-w-3xl">
           <DialogHeader>
             <DialogTitle>复制转发规则</DialogTitle>
-            <DialogDescription>从一台主机选择已有端口转发规则，复制到一台或多台目标主机。</DialogDescription>
+            <DialogDescription>复制已有端口转发规则。</DialogDescription>
           </DialogHeader>
           <div className="max-h-[70vh] space-y-4 overflow-y-auto pr-1">
             <div className="grid gap-4 sm:grid-cols-2">
@@ -1654,7 +1696,7 @@ function RulesContent() {
             </div>
 
             <p className="text-xs leading-5 text-muted-foreground">
-              只复制普通端口转发规则；运行状态、流量统计、自测记录不会复制。隧道转发规则请在目标隧道上单独创建。
+              仅复制规则配置，不复制状态和统计。
             </p>
           </div>
           <DialogFooter>
@@ -1671,7 +1713,7 @@ function RulesContent() {
           <DialogHeader>
             <DialogTitle>删除转发规则</DialogTitle>
             <DialogDescription>
-              确认删除 "{deleteRule?.name}"？删除后会同步通知 Agent 清理本地监听和规则。
+              确认删除 "{deleteRule?.name}"？
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -1779,7 +1821,7 @@ function SelfTestDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>转发链路自测 - {ruleName}</DialogTitle>
-          <DialogDescription>Agent 会检测目标端口 TCP 可达性和延迟来判定转发链路状态</DialogDescription>
+          <DialogDescription>检测目标端口连通性。</DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
           <div className="flex items-center justify-between rounded-lg border border-border/60 bg-muted/20 px-4 py-3">

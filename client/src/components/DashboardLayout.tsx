@@ -756,7 +756,7 @@ function DashboardLayoutContent({
         </SidebarHeader>
 
         <SidebarContent className="gap-1 mobile-sidebar-content">
-          <SidebarGroup className={cn("pb-5 mobile-sidebar-group", mobileAuth.isNative && "pb-3")}>
+          <SidebarGroup className={cn("pb-2 mobile-sidebar-group", mobileAuth.isNative && "pb-1.5")}>
             <SidebarGroupLabel className="text-xs text-muted-foreground/60 uppercase tracking-wider">
               主菜单
             </SidebarGroupLabel>
@@ -783,7 +783,7 @@ function DashboardLayoutContent({
           </SidebarGroup>
 
           {isAdmin && (
-            <SidebarGroup className={cn("mt-2 pt-4 mobile-sidebar-group mobile-sidebar-admin-group", !mobileAuth.isNative && "border-t border-sidebar-border/50", mobileAuth.isNative && "mt-0 pt-3 border-t border-sidebar-border/50")}>
+            <SidebarGroup className={cn("mt-1 pt-2 mobile-sidebar-group mobile-sidebar-admin-group", !mobileAuth.isNative && "border-t border-sidebar-border/50", mobileAuth.isNative && "mt-0 pt-2 border-t border-sidebar-border/50")}>
               <SidebarGroupLabel className="text-xs text-muted-foreground/60 uppercase tracking-wider">
                 管理
               </SidebarGroupLabel>
@@ -1049,7 +1049,7 @@ function DashboardLayoutContent({
             发现新版本
           </DialogTitle>
           <DialogDescription>
-            升级会在后台执行，过程中面板可能短暂不可用，完成后会自动重启并刷新页面。
+            后台升级，完成后自动重启。
           </DialogDescription>
           {(() => {
             const job = displayUpgradeJob;
@@ -1155,7 +1155,7 @@ function DashboardLayoutContent({
               发现 APP 新版本
             </DialogTitle>
             <DialogDescription className="mt-1 text-xs">
-              前往下载页获取新版 APK，安装时会覆盖当前版本。
+              前往下载新版 APK。
             </DialogDescription>
           </div>
           <div className="space-y-3 px-5 py-4">
@@ -1168,9 +1168,6 @@ function DashboardLayoutContent({
                 <p className="text-xs text-muted-foreground">最新版本</p>
                 <p className="mt-1 font-mono text-primary">v{mobileUpdateInfo?.latestVersion || "-"}</p>
               </div>
-            </div>
-            <div className="rounded-lg border border-border/40 bg-muted/20 p-3 text-xs leading-5 text-muted-foreground">
-              下载完成后请使用同一签名的安装包更新；本次版本号已提升，可正常覆盖安装。
             </div>
           </div>
           <DialogFooter className="gap-2 border-t border-border/40 px-5 py-4">
@@ -1242,9 +1239,7 @@ function DashboardLayoutContent({
             <Shield className="h-5 w-5 text-primary" />
             双重验证
           </DialogTitle>
-          <DialogDescription>
-            使用 Authenticator、Google Authenticator、Microsoft Authenticator 等 2FA 软件生成动态验证码。
-          </DialogDescription>
+          <DialogDescription>使用 2FA 软件生成动态验证码。</DialogDescription>
           {!twoFactorStatus?.globalEnabled ? (
             <div className="rounded-lg border border-border/40 bg-muted/20 p-3 text-sm text-muted-foreground">
               管理员尚未启用双重验证功能。
@@ -1279,7 +1274,7 @@ function DashboardLayoutContent({
           ) : (
             <div className="space-y-4 py-2">
               <div className="rounded-lg border border-border/40 bg-muted/20 p-3 text-sm text-muted-foreground">
-                使用 2FA 软件扫描二维码，填写 6 位动态验证码完成绑定。二维码 {Math.round((twoFactorSetup?.expiresInSeconds || TWO_FACTOR_SETUP_SECONDS) / 60)} 分钟内有效。
+                扫码添加，{Math.round((twoFactorSetup?.expiresInSeconds || TWO_FACTOR_SETUP_SECONDS) / 60)} 分钟内有效。
               </div>
               <div className="flex flex-col items-center gap-3">
                 <div className={`flex h-48 w-48 items-center justify-center rounded-lg border bg-white p-3 ${twoFactorSetupExpired ? "opacity-45" : ""}`}>
@@ -1388,9 +1383,7 @@ function DashboardLayoutContent({
             <Send className="h-5 w-5 text-sky-500" />
             Telegram 绑定
           </DialogTitle>
-          <DialogDescription>
-            绑定后可在 Telegram 查询用量，并管理自己的转发规则。
-          </DialogDescription>
+          <DialogDescription>绑定后可用 Telegram 登录和查询。</DialogDescription>
           <div className="space-y-4 py-2">
             {telegramStatus?.bound ? (
               <div className="rounded-lg border border-border/40 bg-muted/20 p-3">
@@ -1426,7 +1419,7 @@ function DashboardLayoutContent({
                   </div>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  点击下方按钮打开 Telegram 后点 Start 即可绑定。也可以手动发送 <code>/bind {telegramBind.code}</code>。
+                  打开 Telegram 点 Start，或发送 <code>/bind {telegramBind.code}</code>。
                 </p>
                 {telegramBindUrl && (
                   <Button variant="outline" asChild className="w-full gap-2">
@@ -1453,7 +1446,7 @@ function DashboardLayoutContent({
                   </a>
                 )}
                 <div className="rounded-lg border border-border/40 bg-muted/20 p-3 text-sm text-muted-foreground">
-                  {telegramStatus?.configured ? "点击下方按钮生成绑定码，也可以先打开上方机器人。" : "管理员尚未配置 Telegram Bot Token。"}
+                  {telegramStatus?.configured ? "先生成绑定码。" : "Telegram 尚未配置。"}
                 </div>
               </div>
             )}
@@ -1500,7 +1493,7 @@ function DashboardLayoutContent({
             <Megaphone className="h-5 w-5" />
             {popupAnnouncement?.title || "公告"}
           </DialogTitle>
-          <DialogDescription>管理员发布的登录提醒，关闭后可在左侧“公告”中查看。</DialogDescription>
+          <DialogDescription>关闭后可在公告中查看。</DialogDescription>
           <div
             className="max-h-[50svh] overflow-y-auto rounded-lg border bg-background/45 p-4 text-sm leading-6"
             dangerouslySetInnerHTML={{ __html: renderMixedHtml(popupAnnouncement?.content || "") }}

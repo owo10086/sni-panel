@@ -3,6 +3,13 @@ import { z } from "zod";
 import * as db from "../db";
 import { requireHostUseAccess, requireRuleAccess, requireTunnelUseOrTrafficBillingAccess } from "./helpers";
 
+const randomPortInputSchema = z.object({
+  hostId: z.number().optional(),
+  tunnelId: z.number().nullable().optional(),
+  forwardGroupId: z.number().optional(),
+  excludeRuleId: z.number().optional(),
+});
+
 export const portsRulesRouter = router({
   checkPort: protectedProcedure
     .input(z.object({
@@ -38,8 +45,18 @@ export const portsRulesRouter = router({
     }),
   /** 获取随机可用端口 */
   randomPort: protectedProcedure
-    .input(z.object({ hostId: z.number(), tunnelId: z.number().nullable().optional() }))
+    .input(randomPortInputSchema)
     .query(async ({ input, ctx }) => {
+      if (input.excludeRuleId) {
+        await requireRuleAccess(ctx, input.excludeRuleId);
+      }
+      if (input.forwardGroupId) {
+        if (ctx.user.role !== "admin") throw new Error("只有管理员可以使用转发组");
+        const port = await db.findAvailableForwardGroupPort(input.forwardGroupId, input.excludeRuleId);
+        if (!port) throw new Error("转发组成员端口区间内已无共同可用端口");
+        return { port };
+      }
+      if (!input.hostId) throw new Error("请选择主机");
       const { host } = await requireHostUseAccess(ctx, input.hostId);
       let rangeStart = (host as any).portRangeStart;
       let rangeEnd = (host as any).portRangeEnd;

@@ -204,7 +204,7 @@ function TunnelLatencyDialog({
       <DialogContent className="max-w-[95vw] sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle className="text-base sm:text-lg">隧道链路延迟 - {tunnelName}</DialogTitle>
-          <DialogDescription>Agent 默认每 1 分钟从入口到出口执行 TCPing 探测，展示最近 24 小时链路延迟和丢包率。</DialogDescription>
+          <DialogDescription>最近 24 小时延迟和丢包。</DialogDescription>
         </DialogHeader>
         <div className="h-72 w-full">
           {isLoading ? (
@@ -346,7 +346,7 @@ function TunnelSelfTestDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>隧道链路自测 - {tunnelName}</DialogTitle>
-          <DialogDescription>检测入口 Agent 到出口 Agent 监听端口的 TCP 可达性和延迟。</DialogDescription>
+          <DialogDescription>检测入口到出口连通性。</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-3">
@@ -871,7 +871,7 @@ function TunnelsContent() {
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>{editingId ? "编辑隧道" : "添加隧道"}</DialogTitle>
-            <DialogDescription>入口 Agent 负责接入和加密，出口 Agent 解密后连接最终目标。</DialogDescription>
+            <DialogDescription>配置入口、出口和监听端口。</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
@@ -898,7 +898,7 @@ function TunnelsContent() {
                   <Network className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
                   <span className="space-y-1">
                     <span className="block text-sm font-semibold">GOST 隧道</span>
-                    <span className="block text-xs leading-5 text-muted-foreground">使用 TLS、WSS、TCP、MTLS、MWSS、MTCP 等 GOST 协议。</span>
+                    <span className="block text-xs leading-5 text-muted-foreground">使用 GOST 协议。</span>
                   </span>
                 </button>
                 <button
@@ -915,7 +915,7 @@ function TunnelsContent() {
                   <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
                   <span className="space-y-1">
                     <span className="block text-sm font-semibold">ForwardX 自定义加密</span>
-                    <span className="block text-xs leading-5 text-muted-foreground">入口加密，出口解密，支持按规则统计流量和限速。</span>
+                    <span className="block text-xs leading-5 text-muted-foreground">加密传输，支持统计和限速。</span>
                   </span>
                 </button>
               </div>
@@ -939,7 +939,7 @@ function TunnelsContent() {
                   </SelectContent>
                 </Select>
                 <p className="text-xs leading-5 text-muted-foreground">
-                  V2 增加会话 salt、子密钥派生、重放防护和加密长度；V1 用于兼容旧运行时。
+                  推荐使用 V2；V1 仅用于兼容旧版本。
                 </p>
               </div>
             )}
@@ -976,7 +976,7 @@ function TunnelsContent() {
                 {connectHostOptions.map((ip) => <option key={ip} value={ip} />)}
               </datalist>
               <p className="text-xs leading-5 text-muted-foreground">
-                入口 Agent 连接出口 Agent 时优先使用这里填写的 IPv4 / IPv6；不填写则走出口 Agent 的默认公网入口地址。
+                可指定出口连接地址。
               </p>
             </div>
             <div className={`grid grid-cols-1 gap-4 ${form.mode === "forwardx" ? "" : "sm:grid-cols-2"}`}>
@@ -996,14 +996,14 @@ function TunnelsContent() {
               <div className="space-y-2">
                 <Label>出口监听端口</Label>
                 <Input type="number" min={0} max={65535} step={1} value={form.listenPort || ""} onChange={(e) => setForm({ ...form, listenPort: Number(e.target.value) || 0 })} placeholder="自动分配" />
-                <p className="text-xs text-muted-foreground">可留空，面板会按出口 Agent 的端口范围自动选择高位可用端口。</p>
+                <p className="text-xs text-muted-foreground">留空自动分配。</p>
               </div>
             </div>
             <div className="rounded-lg border border-border/70 bg-muted/20 p-3">
               <div>
                 <Label className="text-sm">协议屏蔽</Label>
                 <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                  仅对 ForwardX 隧道和 GOST 隧道转发生效，普通端口转发不受影响。检测到被禁止协议后会关闭当前规则并在规则列表提示用户。
+                  命中屏蔽协议时停用规则。
                 </p>
               </div>
               <div className="mt-3 grid gap-3 sm:grid-cols-3">

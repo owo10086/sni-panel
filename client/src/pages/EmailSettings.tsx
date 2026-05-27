@@ -124,7 +124,7 @@ function EmailSettingsContent() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-xl font-bold tracking-tight sm:text-2xl">邮箱设置</h1>
-          <p className="mt-1 text-sm text-muted-foreground">配置 SMTP 邮件，用于注册验证码、临期提醒和流量提醒。</p>
+          <p className="mt-1 text-sm text-muted-foreground">配置验证码和提醒邮件。</p>
         </div>
         <Badge variant={form.enabled ? "outline" : "secondary"} className="w-fit gap-1.5 px-3 py-1.5 text-xs">
           <Mail className="h-3.5 w-3.5" />
@@ -144,13 +144,13 @@ function EmailSettingsContent() {
             <Mail className="h-4 w-4 text-primary" />
             SMTP 对接
           </CardTitle>
-          <CardDescription>支持常见企业邮箱、云邮件服务和自建 SMTP 服务。</CardDescription>
+          <CardDescription>配置 SMTP 发信。</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between rounded-lg border border-border/40 bg-muted/20 p-3">
             <div>
               <p className="text-sm font-medium">启用邮箱服务</p>
-              <p className="text-xs text-muted-foreground">开启后系统才会发送注册验证码和提醒邮件。</p>
+              <p className="text-xs text-muted-foreground">控制邮件发送总开关。</p>
             </div>
             <Switch checked={form.enabled} onCheckedChange={(enabled) => setForm({ ...form, enabled })} />
           </div>
@@ -199,13 +199,13 @@ function EmailSettingsContent() {
             <BellRing className="h-4 w-4 text-primary" />
             功能开关
           </CardTitle>
-          <CardDescription>这些能力可以独立开启，方便按运营需要逐步使用。</CardDescription>
+          <CardDescription>按需开启邮件能力。</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-3">
           <div className="flex items-center justify-between rounded-lg border border-border/40 bg-muted/20 p-3">
             <div>
               <p className="text-sm font-medium">强制邮箱验证码注册</p>
-              <p className="text-xs text-muted-foreground">开启后，新用户注册必须填写邮箱并通过 5 分钟验证码。</p>
+              <p className="text-xs text-muted-foreground">注册时验证邮箱。</p>
             </div>
             <Switch checked={form.verifyRegistration} onCheckedChange={(verifyRegistration) => setForm({ ...form, verifyRegistration })} />
           </div>
@@ -213,7 +213,7 @@ function EmailSettingsContent() {
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="text-sm font-medium">邮箱后缀白名单</p>
-                <p className="text-xs text-muted-foreground">开启后，仅允许指定后缀的邮箱注册，支持英文逗号或中文逗号分割。</p>
+                <p className="text-xs text-muted-foreground">限制可注册邮箱后缀。</p>
               </div>
               <Switch checked={form.whitelistEnabled} onCheckedChange={(whitelistEnabled) => setForm({ ...form, whitelistEnabled })} />
             </div>
@@ -230,7 +230,7 @@ function EmailSettingsContent() {
           <div className="flex items-center justify-between rounded-lg border border-border/40 bg-muted/20 p-3">
             <div>
               <p className="text-sm font-medium">账户临期提醒</p>
-              <p className="text-xs text-muted-foreground">用户到期前 3 天内每天发送一次提醒邮件。</p>
+              <p className="text-xs text-muted-foreground">到期前 3 天提醒。</p>
             </div>
             <Switch checked={form.expiryReminder} onCheckedChange={(expiryReminder) => setForm({ ...form, expiryReminder })} />
           </div>
@@ -238,7 +238,7 @@ function EmailSettingsContent() {
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="text-sm font-medium">流量不足提醒</p>
-                <p className="text-xs text-muted-foreground">用户流量剩余低于阈值时发送提醒邮件，每天最多一次。</p>
+                <p className="text-xs text-muted-foreground">低于阈值时提醒。</p>
               </div>
               <Switch checked={form.trafficReminder} onCheckedChange={(trafficReminder) => setForm({ ...form, trafficReminder })} />
             </div>
@@ -262,7 +262,7 @@ function EmailSettingsContent() {
             <KeyRound className="h-4 w-4 text-primary" />
             保存与测试
           </CardTitle>
-          <CardDescription>先保存配置，再发送测试邮件确认 SMTP 服务可用。</CardDescription>
+          <CardDescription>保存后可发送测试邮件。</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {form.enabled && (!form.host.trim() || (!form.from.trim() && !form.user.trim())) && (

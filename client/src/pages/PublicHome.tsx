@@ -65,7 +65,7 @@ export default function PublicHome() {
             <div className="space-y-4">
               <h1 className="max-w-3xl text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">ForwardX</h1>
               <p className="max-w-2xl text-base leading-7 text-muted-foreground sm:text-lg">
-                集中管理端口转发、隧道转发、用户权限、套餐订阅、流量统计和在线升级，让多主机转发运维更清晰。
+                统一管理转发、隧道、用户和流量。
               </p>
             </div>
             <div className="flex flex-col gap-3 sm:flex-row">

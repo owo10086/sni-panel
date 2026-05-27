@@ -219,7 +219,7 @@ export default function Plans() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">套餐管理</h1>
-            <p className="text-sm text-muted-foreground">配置可订阅套餐、可用资源、端口数量和后台分配能力。</p>
+            <p className="text-sm text-muted-foreground">配置套餐、资源和端口。</p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" onClick={() => setAssignOpen(true)}>
@@ -240,7 +240,7 @@ export default function Plans() {
                 <Switch checked={!!storeStatus?.enabled} onCheckedChange={(enabled) => setStoreEnabled.mutate({ enabled })} />
               </CardTitle>
             </CardHeader>
-            <CardContent className="text-sm text-muted-foreground">开启后普通用户可在商店自助购买套餐，关闭后仅管理员可手动分配。</CardContent>
+            <CardContent className="text-sm text-muted-foreground">开启后用户可自助购买。</CardContent>
           </Card>
           <Card>
             <CardHeader className="pb-2">
@@ -254,14 +254,14 @@ export default function Plans() {
               <CardDescription>订阅记录</CardDescription>
               <CardTitle>{subscriptions.length}</CardTitle>
             </CardHeader>
-            <CardContent className="text-sm text-muted-foreground">包含管理员分配和用户购买产生的订阅。</CardContent>
+            <CardContent className="text-sm text-muted-foreground">包含购买和分配记录。</CardContent>
           </Card>
         </div>
 
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2"><Package className="h-5 w-5" /> 套餐列表</CardTitle>
-            <CardDescription>端口数会在用户订阅时分配为连续端口段，规则创建会被限制在该端口段内。</CardDescription>
+            <CardDescription>订阅后分配连续端口段。</CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
@@ -319,7 +319,7 @@ export default function Plans() {
         <Card>
           <CardHeader>
             <CardTitle>订阅记录</CardTitle>
-            <CardDescription>后台分配和商店购买都会在这里留下记录。</CardDescription>
+            <CardDescription>订阅记录。</CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
@@ -352,7 +352,7 @@ export default function Plans() {
         <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>{form.id ? "编辑套餐" : "新增套餐"}</DialogTitle>
-            <DialogDescription>套餐绑定的主机和隧道会作为用户订阅后的可用资源。</DialogDescription>
+            <DialogDescription>选择订阅后可用资源。</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
@@ -373,7 +373,7 @@ export default function Plans() {
                   ))}
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground">超过一个月的套餐会从购买日开始按月自动重置套餐流量。</p>
+              <p className="text-xs text-muted-foreground">超过一个月按月重置流量。</p>
             </div>
             <div className="space-y-2">
               <Label>连续端口数</Label>
@@ -394,12 +394,12 @@ export default function Plans() {
             <div className="space-y-2">
               <Label>最大连接数</Label>
               <Input type="number" min={0} value={form.maxConnections} onChange={(e) => setForm({ ...form, maxConnections: e.target.value })} />
-              <p className="text-xs text-muted-foreground">端口转发按主机聚合，隧道转发按隧道聚合。</p>
+              <p className="text-xs text-muted-foreground">按主机或隧道聚合。</p>
             </div>
             <div className="space-y-2">
               <Label>单 IP 接入限制</Label>
               <Input type="number" min={0} value={form.maxIPs} onChange={(e) => setForm({ ...form, maxIPs: e.target.value })} />
-              <p className="text-xs text-muted-foreground">同一聚合范围内的多条规则共享限制。</p>
+              <p className="text-xs text-muted-foreground">同组规则共享限制。</p>
             </div>
             <div className="space-y-2">
               <Label>排序</Label>
@@ -455,7 +455,7 @@ export default function Plans() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>手动分配套餐</DialogTitle>
-            <DialogDescription>商店关闭时也可以由管理员给用户分配套餐权限。</DialogDescription>
+            <DialogDescription>手动给用户分配套餐。</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">

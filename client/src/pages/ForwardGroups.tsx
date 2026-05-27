@@ -488,7 +488,7 @@ function ForwardGroupsContent() {
           <DialogHeader>
             <DialogTitle>{editingId ? "编辑转发组" : "添加转发组"}</DialogTitle>
             <DialogDescription>
-              转发组只定义入口成员、DDNS 与故障转移策略；真实入口端口、协议和目标地址在转发规则中设置。
+              配置入口成员和故障转移。
             </DialogDescription>
           </DialogHeader>
           <div className="max-h-[70vh] space-y-4 overflow-y-auto pr-1">
@@ -531,7 +531,7 @@ function ForwardGroupsContent() {
             </div>
 
             <div className="space-y-2">
-              <p className="text-xs text-muted-foreground">时间单位：秒，允许范围 10-3600。</p>
+              <p className="text-xs text-muted-foreground">单位：秒，范围 10-3600。</p>
               <div className="grid gap-4 sm:grid-cols-3">
                 <div className="space-y-2">
                   <Label>故障转移时间</Label>
@@ -572,7 +572,7 @@ function ForwardGroupsContent() {
               <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                   <Label>成员优先级</Label>
-                  <p className="mt-1 text-xs text-muted-foreground">越靠上优先级越高，可拖动成员快速调整。</p>
+                  <p className="mt-1 text-xs text-muted-foreground">越靠上优先级越高。</p>
                 </div>
                 <Select onValueChange={(v) => addMember(Number(v))}>
                   <SelectTrigger className="w-full sm:w-64"><SelectValue placeholder={form.groupType === "host" ? "添加主机成员" : "添加隧道成员"} /></SelectTrigger>

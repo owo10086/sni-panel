@@ -128,14 +128,14 @@ export default function Store() {
       <div className="space-y-6 p-4 sm:p-6">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">商店</h1>
-          <p className="text-sm text-muted-foreground">购买套餐后会自动获得对应主机和隧道权限，并分配连续端口段。</p>
+          <p className="text-sm text-muted-foreground">购买套餐，开通资源。</p>
         </div>
 
         {!storeStatus?.enabled && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2"><Lock className="h-5 w-5" /> 商店暂未开启</CardTitle>
-              <CardDescription>当前只能由管理员在后台手动分配套餐或权限。</CardDescription>
+              <CardDescription>请联系管理员开通。</CardDescription>
             </CardHeader>
           </Card>
         )}
@@ -144,7 +144,7 @@ export default function Store() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2"><CheckCircle2 className="h-5 w-5 text-emerald-600" /> 我的订阅</CardTitle>
-              <CardDescription>有效订阅会和手动权限叠加生效。</CardDescription>
+              <CardDescription>当前生效的套餐。</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
               {subscriptions.map((sub: any) => (
@@ -167,7 +167,7 @@ export default function Store() {
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <CardTitle className="flex items-center gap-2"><Package className="h-5 w-5" /> {plan.name}</CardTitle>
-                        <CardDescription className="mt-2 line-clamp-2">{plan.description || "订阅后自动分配权限和端口段"}</CardDescription>
+                        <CardDescription className="mt-2 line-clamp-2">{plan.description || "订阅后自动开通"}</CardDescription>
                       </div>
                       <Badge>{durationLabel(plan.durationDays)}</Badge>
                     </div>
@@ -198,7 +198,7 @@ export default function Store() {
                 <Card className="md:col-span-2 xl:col-span-3">
                   <CardHeader>
                     <CardTitle>暂无可购买套餐</CardTitle>
-                    <CardDescription>请等待管理员上架套餐，或联系管理员手动分配。</CardDescription>
+                    <CardDescription>暂无可用套餐。</CardDescription>
                   </CardHeader>
                 </Card>
               )}
@@ -274,7 +274,7 @@ export default function Store() {
                 ))}
                 {paymentMethods.length === 0 && (
                   <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
-                    当前没有可用的在线支付方式，可使用余额支付或联系管理员。
+                    暂无在线支付方式。
                   </div>
                 )}
               </div>

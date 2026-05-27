@@ -855,7 +855,7 @@ function HostsContent() {
               升级 Agent
             </DialogTitle>
             <DialogDescription>
-              面板会通过 Agent 长连接立即推送升级任务；如果 Agent 暂时离线，会在回连后继续执行。
+              通过 Agent 下发升级任务。
             </DialogDescription>
           </DialogHeader>
           {upgradeHost && (
@@ -896,7 +896,7 @@ function HostsContent() {
           <DialogHeader>
             <DialogTitle>{editingId ? "编辑主机" : "添加主机"}</DialogTitle>
             <DialogDescription>
-              {editingId ? "修改主机配置信息" : "添加一台新的 Agent 主机"}
+              {editingId ? "修改主机信息" : "添加 Agent 主机"}
             </DialogDescription>
           </DialogHeader>
           <Tabs defaultValue="basic" className="space-y-4">
@@ -923,7 +923,7 @@ function HostsContent() {
                   onChange={(e) => setForm({ ...form, entryIp: e.target.value })}
                 />
                 <p className="text-xs text-muted-foreground">
-                  用于展示和复制转发入口地址，可以是公网 IPv4、IPv6 或域名。
+                  用于转发入口展示和复制。
                 </p>
               </div>
               <div className="space-y-2">
@@ -937,7 +937,7 @@ function HostsContent() {
                   onChange={(e) => setForm({ ...form, networkInterface: e.target.value })}
                 />
                 <p className="text-xs text-muted-foreground">
-                  用于 realm 绑定网卡，留空则自动检测默认出口网卡
+                  留空自动检测默认出口网卡。
                 </p>
               </div>
             </TabsContent>
@@ -946,7 +946,7 @@ function HostsContent() {
                 <div>
                   <Label className="text-sm font-medium">转发端口区间</Label>
                   <p className="text-xs text-muted-foreground mt-1">
-                    限制该主机上转发规则的源端口范围，留空则不限制
+                    留空表示不限制。
                   </p>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

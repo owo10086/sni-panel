@@ -107,7 +107,7 @@ function TcpingDetailDialog({
       <DialogContent className="max-w-[95vw] sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle className="text-base sm:text-lg">转发链路延迟 (TCPing) - {ruleName}</DialogTitle>
-          <DialogDescription>Agent 默认每 1 分钟对目标地址执行 TCPing 探测，展示最近 24 小时链路延迟和丢包率。</DialogDescription>
+          <DialogDescription>最近 24 小时延迟和丢包。</DialogDescription>
         </DialogHeader>
         <div className="h-72 w-full">
           {isLoading ? (

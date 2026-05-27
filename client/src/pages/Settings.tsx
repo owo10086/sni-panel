@@ -257,7 +257,7 @@ const defaultHomepageHtml = `<!doctype html>
       <div>
         <span class="eyebrow"><span class="dot"></span>ForwardX 面板</span>
         <h1>高速稳定的端口转发服务</h1>
-        <p>集中管理多节点转发、隧道、套餐、流量和用户权限。你可以把这里替换成自己的品牌介绍、套餐说明、客服入口或活动页面。</p>
+        <p>统一管理转发、隧道、套餐、流量和用户权限。</p>
         <div class="actions">
           <a class="btn primary" href="/login">进入面板</a>
           <a class="btn secondary" href="/login?mode=register">创建账号</a>
@@ -459,7 +459,7 @@ function SettingsContent() {
         <div>
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight">系统设置</h1>
           <p className="text-muted-foreground mt-1 text-sm">
-            管理 Agent Token 和一键安装脚本
+            管理 Token、安装脚本和系统配置
           </p>
         </div>
         <Badge variant="outline" className="gap-1.5 px-3 py-1.5 text-xs">
@@ -496,7 +496,7 @@ function SettingsContent() {
         <TabsContent value="tokens" className="space-y-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-muted-foreground">
-              Agent Token 用于被控机注册和通信认证
+              用于 Agent 注册和认证
             </p>
             <Button onClick={() => { setDescription(""); setShowCreate(true); }} className="w-full gap-2 sm:w-auto">
               <Plus className="h-4 w-4" />
@@ -738,7 +738,7 @@ function SettingsContent() {
                 一键安装说明
               </CardTitle>
               <CardDescription>
-                在被控机上执行一键安装脚本，即可自动注册到面板并开始通信
+                在主机上执行命令，完成 Agent 安装。
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-5">
@@ -750,7 +750,7 @@ function SettingsContent() {
                     <code className="ml-1 font-mono text-foreground">{panelUrl}</code>
                   </p>
                   <p className="text-muted-foreground">
-                    该地址从「系统信息」Tab 读取。未配置时默认使用当前浏览器访问的 origin，请确认 Agent 能访问该地址。
+                    Agent 需要能访问此地址。
                   </p>
                 </div>
               </div>
@@ -759,12 +759,12 @@ function SettingsContent() {
                 <p className="text-sm font-medium">安装步骤</p>
                 <div className="space-y-3">
                   {[
-                    "在 \"Agent Token\" 标签页中创建一个新 Token",
-                    "点击 Token 行的终端图标查看安装脚本",
-                    "在被控机上以 root 权限执行安装命令",
-                    "Agent 将自动注册并开始上报状态",
-                    "如需升级，执行升级命令即可覆盖安装并重启 Agent",
-                    "如需卸载，执行卸载命令即可完全清理",
+                    "创建 Agent Token",
+                    "复制安装命令",
+                    "在主机上用 root 执行",
+                    "等待 Agent 上线",
+                    "升级时执行升级命令",
+                    "卸载时执行卸载命令",
                   ].map((step, i) => (
                     <div key={i} className="flex gap-3 items-start">
                       <span className="h-6 w-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">
@@ -780,7 +780,7 @@ function SettingsContent() {
                 <div>
                   <p className="text-xs text-muted-foreground mb-2 font-medium flex items-center gap-1.5">
                     <Download className="h-3 w-3" />
-                    安装命令（替换 YOUR_TOKEN，GitHub 优先，不可达时自动回退面板）：
+                    安装命令
                   </p>
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                     <code className="min-w-0 flex-1 rounded border bg-background/50 p-3 font-mono text-xs break-all">
@@ -799,7 +799,7 @@ function SettingsContent() {
                 <div>
                   <p className="text-xs text-muted-foreground mb-2 font-medium flex items-center gap-1.5">
                     <RefreshCw className="h-3 w-3" />
-                    升级命令（复用已安装 Agent 的 Token 与面板地址）：
+                    升级命令
                   </p>
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                     <code className="min-w-0 flex-1 rounded border bg-background/50 p-3 font-mono text-xs break-all">
@@ -818,7 +818,7 @@ function SettingsContent() {
                 <div>
                   <p className="text-xs text-muted-foreground mb-2 font-medium flex items-center gap-1.5">
                     <Trash2 className="h-3 w-3" />
-                    卸载命令（同样 GitHub 优先，不可达时回退面板）：
+                    卸载命令
                   </p>
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                     <code className="min-w-0 flex-1 rounded border bg-background/50 p-3 font-mono text-xs break-all">
@@ -839,11 +839,10 @@ function SettingsContent() {
               <div className="p-4 rounded-lg bg-amber-500/5 border border-amber-500/20">
                 <p className="text-xs text-amber-400 font-medium mb-1">注意事项</p>
                 <ul className="text-xs text-muted-foreground space-y-1">
-                  <li>- Agent 需要 root 权限运行以管理 iptables 和 realm</li>
-                  <li>- 安装脚本会自动配置 systemd 服务实现开机自启</li>
-                  <li>- 每个 Token 只能被一台主机使用</li>
-                  <li>- 卸载命令会停止服务、删除文件并清理所有转发规则</li>
-                  <li>- 不带参数执行脚本将进入交互模式，可选择安装或卸载</li>
+                  <li>- 需要 root 权限</li>
+                  <li>- 自动配置 systemd</li>
+                  <li>- 一个 Token 绑定一台主机</li>
+                  <li>- 卸载会清理服务和规则</li>
                 </ul>
               </div>
             </CardContent>
@@ -872,7 +871,7 @@ function SettingsContent() {
           <DialogHeader>
             <DialogTitle>创建 Agent Token</DialogTitle>
             <DialogDescription>
-              创建一个新的 Token 用于被控机注册
+              创建 Agent 注册令牌。
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -910,7 +909,7 @@ function SettingsContent() {
               Token 已创建
             </DialogTitle>
             <DialogDescription>
-              下面只展示安装命令，Token 不再单独显示。复制命令到被控机执行即可完成安装。
+              复制命令到主机执行。
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -949,7 +948,7 @@ function SettingsContent() {
           <DialogHeader>
             <DialogTitle>编辑 Token 备注</DialogTitle>
             <DialogDescription>
-              新主机首次使用此 Token 注册时，会默认使用备注作为主机名称；已安装 Agent 不会自动改名。
+              备注会作为新主机默认名称。
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
@@ -987,7 +986,7 @@ function SettingsContent() {
               删除 Agent Token
             </DialogTitle>
             <DialogDescription>
-              删除后，使用该 Token 注册的主机会解除绑定并显示为离线，但主机记录不会被删除。
+              删除后关联主机会离线。
             </DialogDescription>
           </DialogHeader>
           <div className="rounded-lg border border-border/50 bg-muted/30 p-3 text-sm">
@@ -1023,7 +1022,7 @@ function SettingsContent() {
               一键安装脚本
             </DialogTitle>
             <DialogDescription>
-              在被控机上以 root 权限执行以下命令
+              使用 root 执行命令。
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -1138,7 +1137,7 @@ function PanelLogsSection() {
                 <FileText className="h-4 w-4 text-primary" />
                 面板日志
               </CardTitle>
-              <CardDescription>展示最近 24 小时的面板运行日志，可按类别导出用于问题排查。</CardDescription>
+              <CardDescription>最近 24 小时运行日志。</CardDescription>
             </div>
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
               <div className="flex items-center gap-2">
@@ -1279,7 +1278,7 @@ function TelegramBotSettingsCard() {
               Telegram 机器人
             </CardTitle>
             <CardDescription className="mt-1">
-              配置 Bot Token 后，用户可绑定 Telegram、查询用量并管理规则。后台同一时间只使用当前这一只机器人，保存新 Token 会切换绑定机器人。
+              配置 Bot Token，启用绑定、提醒和快捷登录。
             </CardDescription>
           </div>
           <Badge variant={settings?.telegram?.configured ? "default" : "outline"} className="w-fit">
@@ -1313,7 +1312,7 @@ function TelegramBotSettingsCard() {
                   className={telegramTokenLocked ? "select-none font-mono" : "font-mono"}
                 />
                 <p className="text-xs text-muted-foreground">
-                  来源：{tokenSourceLabel}。环境变量优先级最高，数据库 Token 可随时替换为其他机器人；机器人使用长轮询，无需配置 webhook。
+                  来源：{tokenSourceLabel}
                 </p>
               </div>
               <div className="rounded-lg border border-border/40 bg-background/50 p-3">
@@ -1330,10 +1329,9 @@ function TelegramBotSettingsCard() {
             </div>
             <Alert>
               <Globe className="h-4 w-4" />
-              <AlertTitle>Telegram 快捷登录需要配置域名</AlertTitle>
+              <AlertTitle>快捷登录需要域名</AlertTitle>
               <AlertDescription>
-                如需在登录页使用 Telegram 快捷登录，请先在「系统信息」里填写面板公开访问地址，并到 @BotFather 使用 /setdomain
-                为当前机器人绑定同一个域名。未配置域名时，绑定、提醒和机器人命令仍可使用，但快捷登录不会生效。
+                在系统信息填写公开地址，并在 @BotFather 绑定同一域名。
               </AlertDescription>
             </Alert>
             <div className="grid gap-3 lg:grid-cols-2">
@@ -1341,7 +1339,7 @@ function TelegramBotSettingsCard() {
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <p className="text-sm font-medium">到期提醒</p>
-                    <p className="mt-1 text-xs text-muted-foreground">到期前 3 天内，每天最多通过 Telegram 提醒一次。</p>
+                    <p className="mt-1 text-xs text-muted-foreground">到期前 3 天提醒。</p>
                   </div>
                   <Switch checked={telegramExpiryReminder} onCheckedChange={setTelegramExpiryReminder} />
                 </div>
@@ -1350,7 +1348,7 @@ function TelegramBotSettingsCard() {
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <p className="text-sm font-medium">流量提醒</p>
-                    <p className="mt-1 text-xs text-muted-foreground">剩余流量低于阈值时，每天最多提醒一次。</p>
+                    <p className="mt-1 text-xs text-muted-foreground">低于阈值时提醒。</p>
                   </div>
                   <Switch checked={telegramTrafficReminder} onCheckedChange={setTelegramTrafficReminder} />
                 </div>
@@ -1416,7 +1414,7 @@ function TelegramBotSettingsCard() {
             删除 Telegram 机器人
           </DialogTitle>
           <DialogDescription>
-            删除后会清空当前 Bot Token 并关闭已配置的 Telegram 机器人。删除完成后，可以重新输入新的 Bot Token。
+            删除当前 Bot Token。
           </DialogDescription>
         </DialogHeader>
         <div className="rounded-lg border border-border/40 bg-muted/20 p-3 text-sm">
@@ -1437,6 +1435,14 @@ function TelegramBotSettingsCard() {
     </>
   );
 }
+
+type SystemSettingsSaveKey =
+  | "panelUrl"
+  | "registration"
+  | "twoFactor"
+  | "homepage"
+  | "ddns"
+  | "forwardProtocols";
 
 function SystemInfoSection() {
   const utils = trpc.useUtils();
@@ -1463,6 +1469,7 @@ function SystemInfoSection() {
   const [ddnsWebhookMethod, setDdnsWebhookMethod] = useState<"POST" | "PUT" | "GET">("POST");
   const [ddnsWebhookHeaders, setDdnsWebhookHeaders] = useState("");
   const [showForwardProtocolDialog, setShowForwardProtocolDialog] = useState(false);
+  const [savingSetting, setSavingSetting] = useState<SystemSettingsSaveKey | null>(null);
   const [migrationCode, setMigrationCode] = useState<{
     code: string;
     expiresAt: number;
@@ -1530,7 +1537,21 @@ function SystemInfoSection() {
       toast.success("面板设置已保存");
     },
     onError: (err) => toast.error(err.message || "保存失败"),
+    onSettled: () => setSavingSetting(null),
   });
+
+  const saveSystemSettings = (
+    key: SystemSettingsSaveKey,
+    payload: Parameters<typeof updateSettingsMutation.mutate>[0],
+    options?: Parameters<typeof updateSettingsMutation.mutate>[1],
+  ) => {
+    setSavingSetting(key);
+    updateSettingsMutation.mutate(payload, options);
+  };
+
+  const isSavingSetting = (key: SystemSettingsSaveKey) => (
+    savingSetting === key && updateSettingsMutation.isPending
+  );
 
   const handleSavePanelUrl = () => {
     const v = panelUrlInput.trim();
@@ -1538,23 +1559,23 @@ function SystemInfoSection() {
       toast.error("面板公开地址必须以 http:// 或 https:// 开头");
       return;
     }
-    updateSettingsMutation.mutate({ panelPublicUrl: v });
+    saveSystemSettings("panelUrl", { panelPublicUrl: v });
   };
 
   const handleSaveRegistration = () => {
-    updateSettingsMutation.mutate({ registrationEnabled });
+    saveSystemSettings("registration", { registrationEnabled });
   };
 
   const handleSaveTwoFactor = () => {
-    updateSettingsMutation.mutate({ twoFactorEnabled });
+    saveSystemSettings("twoFactor", { twoFactorEnabled });
   };
 
   const handleSaveHomepage = () => {
-    updateSettingsMutation.mutate({ homepageEnabled, homepageCustomEnabled, homepageHtml });
+    saveSystemSettings("homepage", { homepageEnabled, homepageCustomEnabled, homepageHtml });
   };
 
   const handleSaveDdns = () => {
-    updateSettingsMutation.mutate({
+    saveSystemSettings("ddns", {
       ddns: {
         enabled: ddnsEnabled,
         provider: ddnsProvider,
@@ -1584,7 +1605,8 @@ function SystemInfoSection() {
   };
 
   const handleSaveForwardProtocols = () => {
-    updateSettingsMutation.mutate(
+    saveSystemSettings(
+      "forwardProtocols",
       { forwardProtocols },
       { onSuccess: () => setShowForwardProtocolDialog(false) },
     );
@@ -1712,7 +1734,7 @@ function SystemInfoSection() {
             面板公开访问地址
           </CardTitle>
           <CardDescription>
-            设置后，Agent 安装脚本、一键安装命令、心跳回调都会使用此地址。可以是反代域名、域名加端口或货真价实的 IP。
+            Agent 安装和回调使用此地址。
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -1725,13 +1747,13 @@ function SystemInfoSection() {
             />
             <Button
               onClick={handleSavePanelUrl}
-              disabled={updateSettingsMutation.isPending}
+              disabled={isSavingSetting("panelUrl")}
             >
-              {updateSettingsMutation.isPending ? "保存中..." : "保存"}
+              {isSavingSetting("panelUrl") ? "保存中..." : "保存"}
             </Button>
           </div>
           <p className="text-xs text-muted-foreground">
-            留空使用面板访问请求中的 host 作为默认值。必须以 http:// 或 https:// 开头。
+            留空使用当前访问地址。需以 http:// 或 https:// 开头。
           </p>
         </CardContent>
       </Card>
@@ -1743,7 +1765,7 @@ function SystemInfoSection() {
             用户注册
           </CardTitle>
           <CardDescription>
-            控制访客是否可以自行注册账号。关闭后只能由管理员在用户管理中新增用户。
+            控制新用户自助注册。
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -1751,14 +1773,14 @@ function SystemInfoSection() {
             <div>
               <p className="text-sm font-medium">开放注册</p>
               <p className="text-xs text-muted-foreground">
-                关闭后，登录页和首页点击注册会提示“当前注册未开放，请联系管理员”。
+                关闭后仅管理员可添加用户。
               </p>
             </div>
             <Switch checked={registrationEnabled} onCheckedChange={setRegistrationEnabled} />
           </div>
           <div className="flex justify-end">
-            <Button onClick={handleSaveRegistration} disabled={updateSettingsMutation.isPending}>
-              {updateSettingsMutation.isPending ? "保存中..." : "保存注册设置"}
+            <Button onClick={handleSaveRegistration} disabled={isSavingSetting("registration")}>
+              {isSavingSetting("registration") ? "保存中..." : "保存注册设置"}
             </Button>
           </div>
         </CardContent>
@@ -1771,7 +1793,7 @@ function SystemInfoSection() {
             双重验证
           </CardTitle>
           <CardDescription>
-            启用后，用户可在账号菜单绑定 2FA 验证器软件；已绑定的账户登录时需要输入动态验证码。
+            账号可绑定 2FA 动态验证码。
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -1779,14 +1801,14 @@ function SystemInfoSection() {
             <div>
               <p className="text-sm font-medium">启用 2FA 软件支持</p>
               <p className="text-xs text-muted-foreground">
-                关闭后不会要求动态验证码，用户账号菜单中的双重验证入口也会隐藏。
+                关闭后隐藏绑定入口。
               </p>
             </div>
             <Switch checked={twoFactorEnabled} onCheckedChange={setTwoFactorEnabled} />
           </div>
           <div className="flex justify-end">
-            <Button onClick={handleSaveTwoFactor} disabled={updateSettingsMutation.isPending}>
-              {updateSettingsMutation.isPending ? "保存中..." : "保存双重验证设置"}
+            <Button onClick={handleSaveTwoFactor} disabled={isSavingSetting("twoFactor")}>
+              {isSavingSetting("twoFactor") ? "保存中..." : "保存双重验证设置"}
             </Button>
           </div>
         </CardContent>
@@ -1799,7 +1821,7 @@ function SystemInfoSection() {
             DDNS 服务商
           </CardTitle>
           <CardDescription>
-            转发组故障转移会使用这里的配置更新域名记录。Cloudflare 可直接更新 DNS，Webhook 可对接任意自建 DDNS 服务。
+            转发组切换时同步更新域名。
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -1807,7 +1829,7 @@ function SystemInfoSection() {
             <div className="flex items-center justify-between gap-3 rounded-lg border border-border/40 bg-muted/20 p-3">
               <div>
                 <p className="text-sm font-medium">启用 DDNS</p>
-                <p className="text-xs text-muted-foreground">关闭时只检测健康状态，不更新域名。</p>
+                <p className="text-xs text-muted-foreground">关闭后不更新域名。</p>
               </div>
               <Switch checked={ddnsEnabled} onCheckedChange={setDdnsEnabled} />
             </div>
@@ -1874,14 +1896,14 @@ function SystemInfoSection() {
                   placeholder='{"Authorization":"Bearer xxx"}'
                   className="min-h-20 font-mono text-xs"
                 />
-                <p className="text-xs text-muted-foreground">支持 JSON 对象或每行一个 Header。POST/PUT 会发送 domain、recordType、value、groupId。</p>
+                <p className="text-xs text-muted-foreground">支持 JSON 或每行一个 Header。</p>
               </div>
             </div>
           )}
 
           <div className="flex justify-end">
-            <Button onClick={handleSaveDdns} disabled={updateSettingsMutation.isPending}>
-              {updateSettingsMutation.isPending ? "保存中..." : "保存 DDNS 配置"}
+            <Button onClick={handleSaveDdns} disabled={isSavingSetting("ddns")}>
+              {isSavingSetting("ddns") ? "保存中..." : "保存 DDNS 配置"}
             </Button>
           </div>
         </CardContent>
@@ -1895,7 +1917,7 @@ function SystemInfoSection() {
               转发协议总开关
             </CardTitle>
             <CardDescription>
-              关闭后用户无法创建、启用或操作对应协议；已存在的规则会停止转发但保留配置，重新开启后会按原规则自动恢复。
+              控制用户可用的转发协议。
             </CardDescription>
           </div>
           <Button variant="outline" className="w-full gap-2 sm:w-auto" onClick={openForwardProtocolDialog}>
@@ -1938,14 +1960,14 @@ function SystemInfoSection() {
               转发协议总开关
             </DialogTitle>
             <DialogDescription>
-              在这里统一开启或关闭用户可见、可用的转发与隧道协议。
+              开启或关闭可用协议。
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-3 lg:grid-cols-2">
             <div className="space-y-2 rounded-lg border border-border/40 bg-muted/20 p-3">
               <div>
                 <p className="text-sm font-medium">端口转发</p>
-                <p className="text-xs text-muted-foreground">控制规则中的 iptables、nftables、realm、socat、gost 转发工具。</p>
+                <p className="text-xs text-muted-foreground">端口转发工具开关。</p>
               </div>
               <div className="flex flex-col gap-2">
                 {directForwardProtocolKeys.map((key) => (
@@ -1962,7 +1984,7 @@ function SystemInfoSection() {
             <div className="space-y-2 rounded-lg border border-border/40 bg-muted/20 p-3">
               <div>
                 <p className="text-sm font-medium">隧道协议</p>
-                <p className="text-xs text-muted-foreground">控制隧道管理中的 ForwardX 与 GOST 隧道模式。</p>
+                <p className="text-xs text-muted-foreground">隧道模式开关。</p>
               </div>
               <div className="flex flex-col gap-2">
                 {tunnelForwardProtocolKeys.map((key) => (
@@ -1981,8 +2003,8 @@ function SystemInfoSection() {
             <Button variant="outline" onClick={closeForwardProtocolDialog}>
               取消
             </Button>
-            <Button onClick={handleSaveForwardProtocols} disabled={updateSettingsMutation.isPending}>
-              {updateSettingsMutation.isPending ? "保存中..." : "保存协议开关"}
+            <Button onClick={handleSaveForwardProtocols} disabled={isSavingSetting("forwardProtocols")}>
+              {isSavingSetting("forwardProtocols") ? "保存中..." : "保存协议开关"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1996,7 +2018,7 @@ function SystemInfoSection() {
               公开首页
             </CardTitle>
             <CardDescription>
-              开启后未登录访问根路径会展示首页；可使用默认介绍页，也可粘贴自己的 H5/HTML 首页代码。
+              设置未登录时展示的首页。
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -2004,14 +2026,14 @@ function SystemInfoSection() {
               <div className="flex items-center justify-between gap-3 rounded-lg border border-border/40 bg-muted/20 p-3">
                 <div>
                   <p className="text-sm font-medium">启用公开首页</p>
-                  <p className="text-xs text-muted-foreground">关闭后未登录访问根路径会直接进入登录页。</p>
+                  <p className="text-xs text-muted-foreground">关闭后直接进入登录页。</p>
                 </div>
                 <Switch checked={homepageEnabled} onCheckedChange={setHomepageEnabled} />
               </div>
               <div className="flex items-center justify-between gap-3 rounded-lg border border-border/40 bg-muted/20 p-3">
                 <div>
                   <p className="text-sm font-medium">使用自定义 H5</p>
-                  <p className="text-xs text-muted-foreground">开启后优先展示下方导入的 HTML 页面。</p>
+                  <p className="text-xs text-muted-foreground">优先展示自定义页面。</p>
                 </div>
                 <Switch checked={homepageCustomEnabled} onCheckedChange={setHomepageCustomEnabled} />
               </div>
@@ -2022,7 +2044,7 @@ function SystemInfoSection() {
                   <div>
                     <Label className="text-sm font-medium">首页 H5/HTML 代码</Label>
                     <p className="mt-1 text-xs text-muted-foreground">
-                      可以粘贴完整 HTML，也可以只粘贴 body 内容。预览会在独立页面中打开。
+                      支持完整 HTML 或 body 内容。
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-2">
@@ -2047,13 +2069,13 @@ function SystemInfoSection() {
                   className="min-h-72 font-mono text-xs leading-5"
                 />
                 <p className="text-xs text-muted-foreground">
-                  当前 {homepageHtml.length.toLocaleString()} / 60,000 字符。自定义代码会在沙箱 iframe 中渲染。
+                  {homepageHtml.length.toLocaleString()} / 60,000 字符
                 </p>
               </div>
             )}
             <div className="flex justify-end">
-              <Button variant="outline" onClick={handleSaveHomepage} disabled={updateSettingsMutation.isPending}>
-                {updateSettingsMutation.isPending ? "保存中..." : "保存首页设置"}
+              <Button variant="outline" onClick={handleSaveHomepage} disabled={isSavingSetting("homepage")}>
+                {isSavingSetting("homepage") ? "保存中..." : "保存首页设置"}
               </Button>
             </div>
           </CardContent>
@@ -2066,7 +2088,7 @@ function SystemInfoSection() {
               旧面板迁移码
             </CardTitle>
             <CardDescription>
-              在旧面板生成迁移码后，到新面板首次安装向导中填入旧面板地址和迁移码即可导入。新面板确认导入成功后会接管 Agent，旧面板会清空业务数据并仅保留管理员账户。
+              生成迁移码，在新面板导入旧数据。
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -2126,7 +2148,7 @@ function SystemInfoSection() {
               <Alert>
                 <ShieldCheck className="h-4 w-4" />
                 <AlertTitle>一次性迁移码</AlertTitle>
-                <AlertDescription>生成后请尽快在新面板使用，不要公开分享。迁移码 5 分钟有效，使用后失效。</AlertDescription>
+                <AlertDescription>迁移码 5 分钟有效，使用后失效。</AlertDescription>
               </Alert>
             )}
             <Button onClick={() => createMigrationCodeMutation.mutate()} disabled={createMigrationCodeMutation.isPending}>
@@ -2143,7 +2165,7 @@ function SystemInfoSection() {
             版本升级
           </CardTitle>
           <CardDescription>
-            从 GitHub 检查 ForwardX 新版本。Docker 环境需要配置升级命令后才能在后台一键升级并重建容器。
+            检查并升级 ForwardX。
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -2167,8 +2189,7 @@ function SystemInfoSection() {
               <AlertTriangle className="h-4 w-4" />
               <AlertTitle>当前环境尚未启用一键升级</AlertTitle>
               <AlertDescription>
-                请在 Docker 部署中配置 <code>FORWARDX_UPGRADE_COMMAND</code>，并按需挂载 Docker socket 与部署目录。
-                未配置时后台只会检查 GitHub 新版本，不会执行宿主机升级操作。
+                配置 <code>FORWARDX_UPGRADE_COMMAND</code> 后可一键升级。
               </AlertDescription>
             </Alert>
           )}
@@ -2340,7 +2361,7 @@ function SystemInfoSection() {
               确认升级并重启
             </DialogTitle>
             <DialogDescription>
-              即将升级到 {updateInfo?.latestVersion}。升级过程中服务会重新构建并重启，面板可能短暂不可用。
+              即将升级到 {updateInfo?.latestVersion}。
             </DialogDescription>
           </DialogHeader>
           <div className="rounded-lg border border-border/40 bg-muted/30 p-3 text-sm">
@@ -2380,7 +2401,7 @@ function SystemInfoSection() {
             开源与联系
           </CardTitle>
           <CardDescription>
-            ForwardX 是开源项目，欢迎提交 Issue 与 PR，也可通过以下渠道联系作者。
+            项目地址与联系渠道。
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">

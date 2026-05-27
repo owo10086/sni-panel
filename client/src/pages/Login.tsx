@@ -29,13 +29,13 @@ function getTelegramLoginDomainStatus() {
   const isIpAddress = /^(\d{1,3}\.){3}\d{1,3}$/.test(hostname) || hostname.includes(":");
 
   if (isLocalhost) {
-    return { valid: false, message: "Telegram 快捷登录需要使用在 BotFather 里配置过的正式域名，本地地址仅适合调试账号密码登录。" };
+    return { valid: false, message: "请使用已配置的正式域名。" };
   }
   if (protocol !== "https:" && !isLocalhost) {
-    return { valid: false, message: "Telegram 快捷登录需要使用已配置域名的 HTTPS 地址访问面板。" };
+    return { valid: false, message: "请使用 HTTPS 域名访问。" };
   }
   if (isIpAddress) {
-    return { valid: false, message: "Telegram 快捷登录不支持直接使用 IP 访问，请使用在 BotFather 里配置过的域名打开面板。" };
+    return { valid: false, message: "请使用已配置的域名访问。" };
   }
   return { valid: true, message: "" };
 }
@@ -65,6 +65,17 @@ type TwoFactorChallengeState = {
   username: string;
   expiresAt: number;
 };
+
+const LOGIN_WELCOME_TOAST_KEY = "forwardx.loginWelcome";
+
+function getWelcomeName(user: any) {
+  return String(user?.name || user?.username || "用户").trim() || "用户";
+}
+
+function rememberLoginWelcome(user: any) {
+  if (typeof window === "undefined") return;
+  window.sessionStorage.setItem(LOGIN_WELCOME_TOAST_KEY, getWelcomeName(user));
+}
 
 declare global {
   interface Window {
@@ -153,7 +164,7 @@ export default function Login() {
         mobileAuth.setCredentials(username, password);
         mobileAuth.setToken(data.mobileToken);
       }
-      toast.success("登录成功");
+      rememberLoginWelcome(data);
       utils.auth.me.invalidate();
       window.location.href = "/";
     },
@@ -184,7 +195,7 @@ export default function Login() {
       if (mobileAuth.isNative) {
         mobileAuth.setToken(data.mobileToken);
       }
-      toast.success("Telegram 登录成功");
+      rememberLoginWelcome(data);
       utils.auth.me.invalidate();
       window.location.href = "/";
     },
@@ -194,8 +205,8 @@ export default function Login() {
   });
 
   const telegramWidgetLoginMutation = trpc.telegram.loginWithWidget.useMutation({
-    onSuccess: () => {
-      toast.success("Telegram 登录成功");
+    onSuccess: (data) => {
+      rememberLoginWelcome(data);
       utils.auth.me.invalidate();
       window.location.href = "/";
     },
@@ -209,7 +220,7 @@ export default function Login() {
       if (data.status !== "success") return;
       mobileAuth.setToken(data.mobileToken);
       setMobileTelegramLogin(null);
-      toast.success("Telegram 登录成功");
+      rememberLoginWelcome(data);
       utils.auth.me.invalidate();
       window.location.href = "/";
     },
@@ -228,7 +239,7 @@ export default function Login() {
         mobileAuth.setCredentials(username, password);
         mobileAuth.setToken(data.mobileToken);
       }
-      toast.success("登录成功");
+      rememberLoginWelcome(data);
       utils.auth.me.invalidate();
       window.location.href = "/";
     },
@@ -262,7 +273,7 @@ export default function Login() {
           window.open(data.telegramUrl, "_blank", "noopener,noreferrer");
         });
       }
-      toast.success("已打开 Telegram，请点击 Start 后确认登录");
+      toast.success("已打开 Telegram");
     },
     onError: (error) => {
       const msg = error.message || "";
@@ -384,20 +395,22 @@ export default function Login() {
     };
   }, [canRenderTelegramWidget, telegramBotUsername, telegramWidgetLoginMutation]);
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (twoFactorChallenge) {
-      if (!twoFactorCode.trim()) {
-        toast.error("请输入双重验证验证码");
-        return;
-      }
-      verifyTwoFactorLoginMutation.mutate({
-        challengeId: twoFactorChallenge.challengeId,
-        code: twoFactorCode.trim(),
-        mobile: mobileAuth.isNative,
-      });
+  const handleVerifyTwoFactorLogin = (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (!twoFactorChallenge) return;
+    if (!twoFactorCode.trim()) {
+      toast.error("请输入双重验证验证码");
       return;
     }
+    verifyTwoFactorLoginMutation.mutate({
+      challengeId: twoFactorChallenge.challengeId,
+      code: twoFactorCode.trim(),
+      mobile: mobileAuth.isNative,
+    });
+  };
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
     if (mobileAuth.isNative) {
       if (!mobileAuth.hasPanelUrl()) {
         toast.error("请先点击右上角设置按钮添加服务器地址");
@@ -419,14 +432,12 @@ export default function Login() {
         captchaId: captchaQuery.data?.captchaId,
         captchaAnswer: parseInt(captchaAnswer.trim(), 10),
         mobile: mobileAuth.isNative,
-        twoFactorCode: twoFactorCode.trim() || undefined,
       });
     } else {
       loginMutation.mutate({
         username: username.trim(),
         password,
         mobile: mobileAuth.isNative,
-        twoFactorCode: twoFactorCode.trim() || undefined,
       });
     }
   };
@@ -520,7 +531,8 @@ export default function Login() {
     setPassword("");
   };
 
-  const isPending = loginMutation.isPending || registerMutation.isPending || verifyTwoFactorLoginMutation.isPending;
+  const isPending = loginMutation.isPending || registerMutation.isPending;
+  const isTwoFactorPending = verifyTwoFactorLoginMutation.isPending;
   const isTelegramPending = telegramLoginMutation.isPending || telegramWidgetLoginMutation.isPending;
   const isMobileTelegramWaiting = startMobileTelegramLoginMutation.isPending || !!mobileTelegramLogin;
 
@@ -565,7 +577,7 @@ export default function Login() {
           </div>
           <CardTitle className="text-xl sm:text-2xl font-bold tracking-tight">ForwardX</CardTitle>
           <CardDescription className="text-muted-foreground">
-            {isTelegramPending ? "正在通过 Telegram 登录" : twoFactorChallenge ? "双重验证" : mode === "login" ? "多主机转发管理" : "注册账号"}
+            {isTelegramPending ? "正在通过 Telegram 登录" : mode === "login" ? "多主机转发管理" : "注册账号"}
           </CardDescription>
         </CardHeader>
         <CardContent className="pt-4">
@@ -574,47 +586,6 @@ export default function Login() {
               <Loader2 className="h-6 w-6 animate-spin text-primary" />
               <span>正在验证一次性登录码...</span>
             </div>
-          ) : twoFactorChallenge ? (
-            <form onSubmit={handleLogin} className="space-y-4">
-              <div className="rounded-lg border border-border/50 bg-muted/20 p-3 text-sm">
-                <p className="font-medium">{twoFactorChallenge.username}</p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  打开 2FA 验证器软件，输入当前 6 位动态验证码。
-                </p>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="two-factor-code">动态验证码</Label>
-                <Input
-                  id="two-factor-code"
-                  type="text"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  maxLength={6}
-                  placeholder="请输入 6 位验证码"
-                  value={twoFactorCode}
-                  onChange={(e) => setTwoFactorCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                  autoComplete="one-time-code"
-                  autoFocus
-                  disabled={isPending}
-                />
-              </div>
-              <Button type="submit" className="w-full" size="lg" disabled={isPending || twoFactorCode.length < 6}>
-                {verifyTwoFactorLoginMutation.isPending ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    验证中...
-                  </>
-                ) : (
-                  <>
-                    <LogIn className="mr-2 h-4 w-4" />
-                    验证并登录
-                  </>
-                )}
-              </Button>
-              <Button type="button" variant="ghost" className="w-full" onClick={cancelTwoFactorLogin}>
-                返回账号密码登录
-              </Button>
-            </form>
           ) : mode === "login" ? (
             <form onSubmit={handleLogin} className="space-y-4">
               {mobileAuth.isNative && !hasMobilePanelUrl && (
@@ -662,22 +633,6 @@ export default function Login() {
                   </button>
                 </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="login-two-factor-code">双重验证（已绑定时必填）</Label>
-                <Input
-                  id="login-two-factor-code"
-                  type="text"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  maxLength={6}
-                  placeholder="6 位动态验证码"
-                  value={twoFactorCode}
-                  onChange={(e) => setTwoFactorCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                  autoComplete="one-time-code"
-                  disabled={isPending}
-                />
-              </div>
-
               {/* 验证码（登录失败后显示） */}
               {showCaptcha && (
                 <div className="space-y-2">
@@ -734,7 +689,7 @@ export default function Login() {
                   <div className="rounded-lg border border-border/50 bg-muted/20 p-3">
                     <div className="mb-3 flex items-center justify-center gap-2 text-sm font-medium">
                       <Send className="h-4 w-4 text-sky-500" />
-                      使用 Telegram 快捷登录
+                      Telegram 快捷登录
                     </div>
                     {mobileAuth.isNative ? (
                       <div className="space-y-2">
@@ -760,7 +715,7 @@ export default function Login() {
                         {mobileTelegramLogin ? (
                           <div className="space-y-2">
                             <p className="text-center text-xs leading-5 text-muted-foreground">
-                              请在 Telegram 中点击 Start，然后在机器人里确认登录。
+                              请在 Telegram 中确认登录。
                             </p>
                             <Button
                               type="button"
@@ -774,7 +729,7 @@ export default function Login() {
                           </div>
                         ) : (
                           <p className="text-center text-xs leading-5 text-muted-foreground">
-                            会打开 Telegram 机器人，确认后自动完成 APP 登录。
+                            已绑定账户可用。
                           </p>
                         )}
                       </div>
@@ -788,11 +743,8 @@ export default function Login() {
                         {telegramDomainStatus.message}
                       </p>
                     ) : (
-                      <p className="text-center text-xs text-muted-foreground">Telegram 机器人用户名同步后即可使用。</p>
+                      <p className="text-center text-xs text-muted-foreground">配置完成后可用。</p>
                     )}
-                    <p className="mt-2 text-center text-xs text-muted-foreground">
-                      仅已绑定 Telegram 的账户可登录。
-                    </p>
                   </div>
                 </div>
               )}
@@ -986,7 +938,7 @@ export default function Login() {
         <Dialog open={showPanelSettings} onOpenChange={setShowPanelSettings}>
           <DialogContent className="w-[calc(100vw-2rem)] max-w-sm">
             <DialogTitle>面板地址</DialogTitle>
-            <DialogDescription>APP 会通过这个地址连接面板。首次打开不会自动弹出，请在这里手动添加。</DialogDescription>
+            <DialogDescription>APP 将连接这个面板地址。</DialogDescription>
             <div className="space-y-2">
               <Label htmlFor="mobile-panel-url">服务器地址</Label>
               <Input
@@ -1010,6 +962,59 @@ export default function Login() {
           </DialogContent>
         </Dialog>
       )}
+
+      <Dialog
+        open={!!twoFactorChallenge}
+        onOpenChange={(open) => {
+          if (!open && !isTwoFactorPending) cancelTwoFactorLogin();
+        }}
+      >
+        <DialogContent className="w-[calc(100vw-2rem)] max-w-sm">
+          <DialogTitle>双重验证</DialogTitle>
+          <DialogDescription>
+            请输入 2FA 软件中当前显示的动态验证码。
+          </DialogDescription>
+          <form onSubmit={handleVerifyTwoFactorLogin} className="space-y-4">
+            <div className="rounded-lg border border-border/50 bg-muted/20 p-3 text-sm">
+              <p className="font-medium">{twoFactorChallenge?.username}</p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="two-factor-code">动态验证码</Label>
+              <Input
+                id="two-factor-code"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={6}
+                placeholder="请输入 6 位验证码"
+                value={twoFactorCode}
+                onChange={(e) => setTwoFactorCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                autoComplete="one-time-code"
+                autoFocus
+                disabled={isTwoFactorPending}
+              />
+            </div>
+            <DialogFooter className="gap-2">
+              <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={cancelTwoFactorLogin} disabled={isTwoFactorPending}>
+                返回
+              </Button>
+              <Button type="submit" className="w-full sm:w-auto" disabled={isTwoFactorPending || twoFactorCode.length < 6}>
+                {isTwoFactorPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    验证中...
+                  </>
+                ) : (
+                  <>
+                    <LogIn className="mr-2 h-4 w-4" />
+                    验证并登录
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -27,7 +27,8 @@ import {
   WifiOff,
   Zap,
 } from "lucide-react";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
+import { toast } from "sonner";
 import PublicHome, { CustomPublicHome } from "./PublicHome";
 import {
   Area,
@@ -40,6 +41,7 @@ import {
 } from "recharts";
 
 const gostTunnelModes = new Set(["tls", "wss", "tcp", "mtls", "mwss", "mtcp"]);
+const LOGIN_WELCOME_TOAST_KEY = "forwardx.loginWelcome";
 
 function formatBytes(bytes: number | string | null | undefined): string {
   const num = Number(bytes);
@@ -429,7 +431,7 @@ function DashboardContent() {
                   </div>
                   <Progress value={trafficLimit > 0 ? trafficPercent : 0} className="h-2" />
                   <p className="text-[11px] text-muted-foreground/70">
-                    普通套餐流量和流量计费资源分开统计，互不影响。管理员未设置限额时，仅展示套餐已用总量。
+                    套餐流量和计费流量分开统计。
                     {currentUserTraffic?.trafficAutoReset ? ` 每月 ${currentUserTraffic.trafficResetDay || 1} 日自动重置。` : ""}
                   </p>
                 </div>
@@ -460,7 +462,7 @@ function DashboardContent() {
           </div>
           <p className="mt-1 flex items-center gap-1 text-[10px] text-muted-foreground/60">
             <Info className="h-3 w-3" />
-            按 Agent 上报的规则增量流量汇总；每个节点代表 30 分钟内所有可见规则的入站和出站合计。
+            每 30 分钟汇总一次可见规则流量。
           </p>
         </CardHeader>
         <CardContent>
@@ -663,6 +665,14 @@ export default function Home() {
     retry: false,
     refetchOnWindowFocus: false,
   });
+
+  useEffect(() => {
+    if (!user || typeof window === "undefined") return;
+    const welcomeName = window.sessionStorage.getItem(LOGIN_WELCOME_TOAST_KEY);
+    if (!welcomeName) return;
+    window.sessionStorage.removeItem(LOGIN_WELCOME_TOAST_KEY);
+    toast.success(`欢迎回来！${welcomeName} 用户`, { position: "top-right" });
+  }, [user?.id]);
 
   if (loading || settingsLoading) return null;
 

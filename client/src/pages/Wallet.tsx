@@ -89,7 +89,7 @@ export default function Wallet() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">账单中心</h1>
-            <p className="text-sm text-muted-foreground">查看余额、充值、消费、支付订单和套餐记录，并使用管理员发放的兑换码。</p>
+            <p className="text-sm text-muted-foreground">余额、充值和订单记录。</p>
           </div>
           <Button onClick={openRecharge}>
             <CreditCard className="mr-2 h-4 w-4" />
@@ -112,7 +112,7 @@ export default function Wallet() {
                   <Gift className="h-5 w-5" />
                   兑换码
                 </CardTitle>
-                <CardDescription>套餐兑换码和余额兑换码均可在这里使用。</CardDescription>
+                <CardDescription>输入兑换码即可使用。</CardDescription>
               </CardHeader>
               <CardContent className="flex flex-col gap-3 sm:flex-row">
                 <Input
@@ -135,7 +135,7 @@ export default function Wallet() {
               <ReceiptText className="h-5 w-5" />
               账单流水
             </CardTitle>
-            <CardDescription>余额变动、支付订单和套餐记录按时间统一展示。</CardDescription>
+            <CardDescription>按时间查看全部记录。</CardDescription>
           </CardHeader>
           <CardContent className="overflow-x-auto">
             <Table>
@@ -289,7 +289,7 @@ export default function Wallet() {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>自助充值</DialogTitle>
-              <DialogDescription>充值成功后余额会自动入账，可用于购买套餐。</DialogDescription>
+              <DialogDescription>充值成功后自动入账。</DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div className="space-y-2">

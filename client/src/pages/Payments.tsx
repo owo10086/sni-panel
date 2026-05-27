@@ -318,7 +318,7 @@ export default function Payments() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">支付对接</h1>
-            <p className="text-sm text-muted-foreground">配置易支付、支付宝官方、微信官方与 Stripe，查看支付订单和回调状态</p>
+            <p className="text-sm text-muted-foreground">配置支付方式和订单。</p>
           </div>
           <Button onClick={save} disabled={updateConfig.isPending || isLoading}>
             {updateConfig.isPending ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}
@@ -355,9 +355,9 @@ export default function Payments() {
 
         <Alert className="border-blue-200 bg-blue-50/70 text-blue-900">
           <ShieldCheck className="h-4 w-4" />
-          <AlertTitle>回调地址依赖面板公开地址</AlertTitle>
+          <AlertTitle>回调地址</AlertTitle>
           <AlertDescription>
-            当前使用 {panelUrl || "未配置"}。如果面板在反向代理或 Docker 后面，请先在系统设置中填写外部可访问地址。
+            当前使用 {panelUrl || "未配置"}。
           </AlertDescription>
         </Alert>
 
@@ -375,13 +375,13 @@ export default function Payments() {
             <Card>
               <CardHeader>
                 <CardTitle>基础设置</CardTitle>
-                <CardDescription>支付配置用于商店套餐购买；订单支付成功后会按套餐权益自动更新用户权限、到期时间和周期流量。</CardDescription>
+                <CardDescription>用于商店套餐购买。</CardDescription>
               </CardHeader>
               <CardContent className="grid gap-4 md:grid-cols-2">
                 <div className="flex items-center justify-between rounded-lg border bg-background/70 px-4 py-3">
                   <div>
                     <div className="font-medium">启用支付功能</div>
-                    <div className="text-sm text-muted-foreground">关闭后用户无法创建支付订单</div>
+                    <div className="text-sm text-muted-foreground">关闭后无法下单</div>
                   </div>
                   <Switch checked={form.enabled} onCheckedChange={(enabled) => setForm((prev) => ({ ...prev, enabled }))} />
                 </div>
@@ -426,13 +426,13 @@ export default function Payments() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2"><WalletCards className="h-5 w-5" /> 易支付</CardTitle>
-                <CardDescription>兼容常见易支付接口，支持跳转支付和 API 下单</CardDescription>
+                <CardDescription>兼容易支付接口。</CardDescription>
               </CardHeader>
               <CardContent className="grid gap-4 md:grid-cols-2">
                 <div className="flex items-center justify-between rounded-lg border bg-background/70 px-4 py-3 md:col-span-2">
                   <div>
                     <div className="font-medium">启用易支付</div>
-                    <div className="text-sm text-muted-foreground">用于支付宝和微信支付</div>
+                    <div className="text-sm text-muted-foreground">支付宝、微信通道</div>
                   </div>
                   <Switch checked={form.easypay.enabled} onCheckedChange={(enabled) => setForm((prev) => ({ ...prev, easypay: { ...prev.easypay, enabled } }))} />
                 </div>
@@ -472,13 +472,13 @@ export default function Payments() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2"><WalletCards className="h-5 w-5" /> 支付宝官方</CardTitle>
-                <CardDescription>直接对接支付宝开放平台，支持扫码、电脑网页和手机网站支付</CardDescription>
+                <CardDescription>支付宝官方接口。</CardDescription>
               </CardHeader>
               <CardContent className="grid gap-4 md:grid-cols-2">
                 <div className="flex items-center justify-between rounded-lg border bg-background/70 px-4 py-3 md:col-span-2">
                   <div>
                     <div className="font-medium">启用支付宝官方</div>
-                    <div className="text-sm text-muted-foreground">基础设置中将支付宝按钮来源切到支付宝官方后生效</div>
+                    <div className="text-sm text-muted-foreground">需在基础设置中选择</div>
                   </div>
                   <Switch checked={form.alipay.enabled} onCheckedChange={(enabled) => setForm((prev) => ({ ...prev, alipay: { ...prev.alipay, enabled } }))} />
                 </div>
@@ -517,13 +517,13 @@ export default function Payments() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2"><WalletCards className="h-5 w-5" /> 微信官方</CardTitle>
-                <CardDescription>直接对接微信支付 APIv3，支持 Native 扫码和 H5 支付</CardDescription>
+                <CardDescription>微信支付 APIv3。</CardDescription>
               </CardHeader>
               <CardContent className="grid gap-4 md:grid-cols-2">
                 <div className="flex items-center justify-between rounded-lg border bg-background/70 px-4 py-3 md:col-span-2">
                   <div>
                     <div className="font-medium">启用微信官方</div>
-                    <div className="text-sm text-muted-foreground">基础设置中将微信按钮来源切到微信官方后生效</div>
+                    <div className="text-sm text-muted-foreground">需在基础设置中选择</div>
                   </div>
                   <Switch checked={form.wxpay.enabled} onCheckedChange={(enabled) => setForm((prev) => ({ ...prev, wxpay: { ...prev.wxpay, enabled } }))} />
                 </div>
@@ -576,13 +576,13 @@ export default function Payments() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2"><CreditCard className="h-5 w-5" /> Stripe</CardTitle>
-                <CardDescription>使用 Stripe Checkout 创建支付页面，并通过 Webhook 确认支付结果</CardDescription>
+                <CardDescription>Stripe Checkout。</CardDescription>
               </CardHeader>
               <CardContent className="grid gap-4 md:grid-cols-2">
                 <div className="flex items-center justify-between rounded-lg border bg-background/70 px-4 py-3 md:col-span-2">
                   <div>
                     <div className="font-medium">启用 Stripe</div>
-                    <div className="text-sm text-muted-foreground">用于银行卡和 Stripe 支持的钱包支付</div>
+                    <div className="text-sm text-muted-foreground">银行卡和钱包支付</div>
                   </div>
                   <Switch checked={form.stripe.enabled} onCheckedChange={(enabled) => setForm((prev) => ({ ...prev, stripe: { ...prev.stripe, enabled } }))} />
                 </div>
@@ -609,7 +609,7 @@ export default function Payments() {
             <Card>
               <CardHeader>
                 <CardTitle>测试下单</CardTitle>
-                <CardDescription>使用当前管理员账号创建一笔真实支付订单，用于检查接口配置</CardDescription>
+                <CardDescription>创建测试订单。</CardDescription>
               </CardHeader>
               <CardContent className="grid gap-4 md:grid-cols-[1fr_1fr_auto]">
                 <Field label="金额">
@@ -648,7 +648,7 @@ export default function Payments() {
         <Card>
           <CardHeader>
             <CardTitle>订单记录</CardTitle>
-            <CardDescription>展示商店套餐购买与测试订单记录；套餐订单支付成功后会自动发放对应权益。</CardDescription>
+            <CardDescription>套餐订单和测试订单。</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">

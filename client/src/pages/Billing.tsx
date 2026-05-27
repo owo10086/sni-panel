@@ -208,7 +208,7 @@ export default function Billing() {
       <div className="space-y-6 p-4 sm:p-6">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">余额与营销</h1>
-          <p className="text-sm text-muted-foreground">管理余额流水、兑换码和套餐折扣码。用户充值请在用户管理中操作。</p>
+          <p className="text-sm text-muted-foreground">管理余额、兑换码和折扣码。</p>
         </div>
 
         <div className="grid gap-4 md:grid-cols-5">
@@ -248,7 +248,7 @@ export default function Billing() {
               <CardHeader className="gap-3 lg:flex-row lg:items-start lg:justify-between">
                 <div>
                   <CardTitle className="flex items-center gap-2"><ReceiptText className="h-5 w-5" /> 账单流水</CardTitle>
-                  <CardDescription>整合余额变动、支付订单和套餐订阅记录，管理员可按用户筛选。</CardDescription>
+                  <CardDescription>余额、支付和订阅记录。</CardDescription>
                 </div>
                 <Select value={ledgerUserId} onValueChange={setLedgerUserId}>
                   <SelectTrigger className="w-full lg:w-56">
@@ -319,7 +319,7 @@ export default function Billing() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2"><WalletCards className="h-5 w-5" /> 余额流水</CardTitle>
-                <CardDescription>管理员充值、用户购买套餐、兑换余额都会记录在这里。</CardDescription>
+                <CardDescription>余额变动记录。</CardDescription>
               </CardHeader>
               <CardContent className="overflow-x-auto">
                 <Table>
@@ -345,7 +345,7 @@ export default function Billing() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2"><Gift className="h-5 w-5" /> 生成兑换码</CardTitle>
-                <CardDescription>兑换码只可使用一次，可兑换指定套餐期限或余额。</CardDescription>
+                <CardDescription>一次性兑换套餐或余额。</CardDescription>
               </CardHeader>
               <CardContent className="grid gap-4 md:grid-cols-4">
                 <div className="space-y-2 md:col-span-2">
@@ -354,7 +354,7 @@ export default function Billing() {
                     <Input value={redeemCode} onChange={(e) => setRedeemCode(normalizeCodeInput(e.target.value))} placeholder="留空自动生成" />
                     <Button type="button" variant="outline" onClick={() => setRedeemCode(randomBillingCode())}><Shuffle className="mr-2 h-4 w-4" /> 随机</Button>
                   </div>
-                  <p className="text-xs text-muted-foreground">随机码为 6-10 位大写字母和数字；批量生成时仅第一条使用手动填写的兑换码。</p>
+                  <p className="text-xs text-muted-foreground">留空自动生成兑换码。</p>
                 </div>
                 <div className="space-y-2"><Label>类型</Label><Select value={redeemType} onValueChange={(v: "plan" | "balance") => setRedeemType(v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="plan">套餐期限</SelectItem><SelectItem value="balance">余额</SelectItem></SelectContent></Select></div>
                 {redeemType === "plan" ? (
@@ -397,7 +397,7 @@ export default function Billing() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2"><TicketPercent className="h-5 w-5" /> 新增折扣码</CardTitle>
-                <CardDescription>折扣码用于用户购买套餐时抵扣，可限制有效期、使用次数和适用套餐。</CardDescription>
+                <CardDescription>购买套餐时抵扣。</CardDescription>
               </CardHeader>
               <CardContent className="grid gap-4 md:grid-cols-4">
                 <div className="space-y-2 md:col-span-2">
@@ -406,7 +406,7 @@ export default function Billing() {
                     <Input value={discountCode} onChange={(e) => setDiscountCode(normalizeCodeInput(e.target.value))} placeholder="例如 SALE2026" />
                     <Button type="button" variant="outline" onClick={() => setDiscountCode(randomBillingCode())}><Shuffle className="mr-2 h-4 w-4" /> 随机</Button>
                   </div>
-                  <p className="text-xs text-muted-foreground">未填写时不会提交，请填写或点击随机生成。</p>
+                  <p className="text-xs text-muted-foreground">可手动填写或随机生成。</p>
                 </div>
                 <div className="space-y-2"><Label>类型</Label><Select value={discountType} onValueChange={(v: "percent" | "amount") => setDiscountType(v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="percent">百分比</SelectItem><SelectItem value="amount">固定金额</SelectItem></SelectContent></Select></div>
                 <div className="space-y-2"><Label>{discountType === "percent" ? "折扣百分比" : "抵扣金额"}</Label><Input type="number" min={1} max={discountType === "percent" ? 100 : undefined} value={discountValue} onChange={(e) => setDiscountValue(e.target.value)} /></div>

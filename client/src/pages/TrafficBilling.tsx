@@ -81,7 +81,7 @@ export default function TrafficBilling() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">流量计费管理</h1>
-            <p className="text-sm text-muted-foreground">按主机或隧道设置 GB 单价和倍率，用户需被授权后才能使用。</p>
+            <p className="text-sm text-muted-foreground">按资源设置流量单价。</p>
           </div>
           <div className="flex items-center gap-3 rounded-lg border border-border/50 bg-card/60 px-3 py-2">
             <span className="text-sm text-muted-foreground">功能开关</span>
@@ -98,7 +98,7 @@ export default function TrafficBilling() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2"><Plus className="h-5 w-5" /> 新增计费资源</CardTitle>
-            <CardDescription>不足 1GB 先按 1GB 扣费；之后每跨过新的 GB 档位再扣下一 GB。</CardDescription>
+            <CardDescription>按 GB 阶梯扣费。</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-3 md:grid-cols-[140px_1fr_140px_140px_90px_auto] md:items-end">
             <div className="space-y-2">

@@ -148,7 +148,7 @@ export default function Announcements() {
           <DialogContent className="sm:max-w-2xl">
             <DialogHeader>
               <DialogTitle>{form.id ? "编辑公告" : "新增公告"}</DialogTitle>
-              <DialogDescription>登录弹窗公告会在用户登录后弹出，普通公告会在公告页面展示。</DialogDescription>
+              <DialogDescription>选择公告展示方式。</DialogDescription>
             </DialogHeader>
             <div className="grid gap-4">
               <div className="grid gap-4 sm:grid-cols-2">
@@ -160,7 +160,7 @@ export default function Announcements() {
                   <div>
                     <Label>内容</Label>
                     <p className="mt-1 text-xs text-muted-foreground">
-                      直接输入文字会作为普通公告显示，也支持 Markdown；粘贴 H5/HTML 代码则按 HTML 渲染。
+                      支持文字、Markdown 和 HTML。
                     </p>
                   </div>
                   <Button type="button" variant="outline" size="sm" className="gap-2" onClick={() => setPreviewOpen(true)} disabled={!form.content.trim()}>
@@ -170,7 +170,7 @@ export default function Announcements() {
                 </div>
                 <Textarea id="announcement-content" className="min-h-56 font-mono text-xs leading-5" value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} />
                 <p className="text-xs text-muted-foreground">
-                  当前 {form.content.length.toLocaleString()} / 60,000 字符，检测为 {describeContentFormat(form.content)}。
+                  {form.content.length.toLocaleString()} / 60,000 字符，{describeContentFormat(form.content)}
                 </p>
               </div>
             </div>
@@ -185,7 +185,7 @@ export default function Announcements() {
           <DialogContent className="sm:max-w-2xl">
             <DialogHeader>
               <DialogTitle>公告预览</DialogTitle>
-              <DialogDescription>当前内容按 {describeContentFormat(form.content)} 渲染。</DialogDescription>
+              <DialogDescription>{describeContentFormat(form.content)} 预览。</DialogDescription>
             </DialogHeader>
             <div
               className="max-h-[60svh] overflow-y-auto rounded-lg border bg-background/45 p-4 text-sm leading-6"

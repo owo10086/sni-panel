@@ -252,7 +252,7 @@ export default function Setup() {
                     <Database className="h-4 w-4" />
                     连接数据库
                   </CardTitle>
-                  <CardDescription>选择数据库后点击下一步，系统会在后台自动连接、保存配置并初始化数据结构。</CardDescription>
+                  <CardDescription>选择数据库并初始化。</CardDescription>
                 </CardHeader>
                 <CardContent className="grid gap-5">
                   <div className="grid gap-3 sm:grid-cols-2">
@@ -268,7 +268,7 @@ export default function Setup() {
                           {databaseType === type && <CheckCircle2 className="h-4 w-4 text-primary" />}
                         </div>
                         <p className="mt-2 text-sm text-muted-foreground">
-                          {type === "sqlite" ? "无需额外数据库服务，适合单机快速部署。" : "使用独立数据库，便于备份、运维和跨机器迁移。"}
+                          {type === "sqlite" ? "适合单机部署。" : "适合独立运维。"}
                         </p>
                       </button>
                     ))}
@@ -333,7 +333,7 @@ export default function Setup() {
                     <Sparkles className="h-4 w-4" />
                     新面板或旧数据迁移
                   </CardTitle>
-                  <CardDescription>新面板会进入管理员配置；旧数据迁移需要在旧面板后台生成一次性迁移码。</CardDescription>
+                  <CardDescription>新建面板或导入旧数据。</CardDescription>
                 </CardHeader>
                 <CardContent className="grid gap-5">
                   {hasExistingData && hasAdmin && data?.setupDataChoice !== "new-panel" && (
@@ -342,7 +342,7 @@ export default function Setup() {
                         <ShieldCheck className="h-4 w-4" />
                         <AlertTitle>检测到当前数据库已有面板数据</AlertTitle>
                         <AlertDescription>
-                          这个数据库里已经存在管理员和业务数据。你可以直接沿用以前的数据登录，或清空后作为新面板重新初始化。
+                          当前数据库已有面板数据。
                         </AlertDescription>
                       </Alert>
                       <div className="grid gap-3 sm:grid-cols-4">
@@ -396,11 +396,11 @@ export default function Setup() {
                       className={`rounded-lg border p-4 text-left transition disabled:cursor-not-allowed disabled:opacity-50 ${mode === "new" ? "border-emerald-500/50 bg-emerald-50" : "border-border bg-white/70 hover:border-emerald-400/40"}`}
                     >
                       <div className="font-semibold">作为新面板使用</div>
-                      <p className="mt-2 text-sm text-muted-foreground">不导入旧数据，继续配置唯一管理员账户。</p>
+                      <p className="mt-2 text-sm text-muted-foreground">不导入旧数据。</p>
                     </button>
                     <button type="button" onClick={() => setMode("migrate")} className={`rounded-lg border p-4 text-left transition ${mode === "migrate" ? "border-primary/50 bg-primary/10" : "border-border bg-white/70 hover:border-primary/30"}`}>
                       <div className="font-semibold">从旧面板导入数据</div>
-                      <p className="mt-2 text-sm text-muted-foreground">在旧面板生成迁移码，5 分钟内填入这里完成迁移。</p>
+                      <p className="mt-2 text-sm text-muted-foreground">使用旧面板迁移码导入。</p>
                     </button>
                   </div>
 
@@ -409,7 +409,7 @@ export default function Setup() {
                       <Alert>
                         <KeyRound className="h-4 w-4" />
                         <AlertTitle>迁移码规则</AlertTitle>
-                        <AlertDescription>迁移码由旧面板后台生成，有效期五分钟，成功使用后立即失效。新面板导入成功后会接管 Agent，并通知旧面板清空业务数据，仅保留管理员账户。</AlertDescription>
+                        <AlertDescription>迁移码 5 分钟有效，使用后失效。</AlertDescription>
                       </Alert>
                       <div className="grid gap-4 sm:grid-cols-2">
                         <div className="space-y-2">
@@ -435,7 +435,7 @@ export default function Setup() {
                           <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
                             {migrationStatus.data.status === "running" && <RotateCcw className="h-3.5 w-3.5 animate-spin" />}
                             {migrationStatus.data.status === "success" && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />}
-                            {migrationStatus.data.error || "迁移过程中请保持新旧面板可访问，完成后旧面板会进入离线接管状态。"}
+                            {migrationStatus.data.error || "迁移中，请保持新旧面板可访问。"}
                           </div>
                         </div>
                       )}
@@ -465,7 +465,7 @@ export default function Setup() {
                     {hasAdmin ? "确认管理员账户" : "创建管理员账户"}
                   </CardTitle>
                   <CardDescription>
-                    {hasAdmin ? "系统已检测到管理员账户。管理员账户唯一，你可以在这里更改管理员邮箱、显示名称和密码。" : "管理员账户将作为唯一初始管理员创建，后续可在用户管理中调整权限。"}
+                    {hasAdmin ? "确认管理员账户。" : "创建初始管理员。"}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="grid gap-4">

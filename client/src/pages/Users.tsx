@@ -1022,7 +1022,7 @@ function UsersContent() {
       <Dialog open={showCreateUser} onOpenChange={setShowCreateUser}>
         <DialogContent className="sm:max-w-md">
           <DialogTitle>添加用户</DialogTitle>
-          <DialogDescription>创建一个新的系统用户</DialogDescription>
+          <DialogDescription>创建系统用户。</DialogDescription>
           <div className="space-y-4 py-2">
             <div className="space-y-2">
               <Label htmlFor="create-username">用户名</Label>
@@ -1057,7 +1057,7 @@ function UsersContent() {
               <Label>转发总开关</Label>
               <div className="flex items-center justify-between rounded-lg border border-border/40 p-3">
                 <div className="min-w-0 pr-3">
-                  <p className="text-xs text-muted-foreground">关闭后用户无法创建转发规则，且已有规则会保持停用</p>
+                  <p className="text-xs text-muted-foreground">关闭后不能创建或启用规则。</p>
                 </div>
                 <Switch
                   checked={newCanAddRules}
@@ -1081,7 +1081,7 @@ function UsersContent() {
       <Dialog open={showResetPassword} onOpenChange={setShowResetPassword}>
         <DialogContent className="sm:max-w-md">
           <DialogTitle>账户信息</DialogTitle>
-          <DialogDescription>修改用户 "{resetUserName}" 的账号信息；密码留空则不修改。</DialogDescription>
+          <DialogDescription>修改 "{resetUserName}" 的账号信息。</DialogDescription>
           <div className="space-y-4 py-2">
             <div className="space-y-2">
               <Label htmlFor="reset-username">账号</Label>
@@ -1120,7 +1120,7 @@ function UsersContent() {
         <DialogContent className="sm:max-w-md">
           <DialogTitle>重置流量</DialogTitle>
           <DialogDescription>
-            确定要重置用户 "{resetTrafficUserName}" 的已用流量吗？此操作不会修改套餐、余额或权限配置。
+            确认重置 "{resetTrafficUserName}" 的已用流量？
           </DialogDescription>
           <DialogFooter>
             <Button
@@ -1140,7 +1140,7 @@ function UsersContent() {
       <Dialog open={showRecharge} onOpenChange={setShowRecharge}>
         <DialogContent className="sm:max-w-md">
           <DialogTitle>余额充值</DialogTitle>
-          <DialogDescription>为用户 "{rechargeUserName}" 手动增加余额</DialogDescription>
+          <DialogDescription>给 "{rechargeUserName}" 增加余额。</DialogDescription>
           <div className="space-y-4 py-2">
             <div className="space-y-2">
               <Label>充值金额</Label>
@@ -1206,7 +1206,7 @@ function UsersContent() {
       <Dialog open={showTrafficSettings} onOpenChange={setShowTrafficSettings}>
         <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col">
           <DialogTitle>流量与权限设置</DialogTitle>
-          <DialogDescription>管理用户 "{trafficUserName}" 的流量配额和权限</DialogDescription>
+          <DialogDescription>设置 "{trafficUserName}" 的配额和权限。</DialogDescription>
           <Tabs defaultValue="permission" className="flex-1 min-h-0 flex flex-col">
             <TabsList className="grid grid-cols-3 w-full">
               <TabsTrigger value="permission" className="gap-1.5">
@@ -1267,7 +1267,7 @@ function UsersContent() {
                     onChange={(e) => setMaxConnections(parseInt(e.target.value) || 0)}
                     placeholder="0=不限制"
                   />
-                  <p className="text-xs text-muted-foreground">按用户 + 主机/隧道聚合统计；端口转发按主机，隧道转发按隧道。</p>
+                  <p className="text-xs text-muted-foreground">按主机或隧道聚合。</p>
                 </div>
                 <div className="space-y-2">
                   <Label>单 IP 接入限制</Label>
@@ -1284,7 +1284,7 @@ function UsersContent() {
               <Separator />
               <div className="space-y-2">
                 <Label className="text-sm font-medium">允许使用的转发方式</Label>
-                <p className="text-xs text-muted-foreground">全部关闭将禁止创建任何转发方式；留空权限时才表示默认全部允许。</p>
+                <p className="text-xs text-muted-foreground">全部关闭则禁止转发。</p>
                 <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                   <div className="flex items-center justify-between rounded-lg border border-border/40 p-2">
                     <span className="text-xs font-medium">iptables</span>
@@ -1331,7 +1331,7 @@ function UsersContent() {
                   <span className="text-sm text-muted-foreground select-none">GB</span>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  请输入数字，默认单位为 GB。填 0 表示不限制
+                  单位 GB，0 表示不限。
                 </p>
               </div>
 
@@ -1344,7 +1344,7 @@ function UsersContent() {
                     隧道限速
                   </Label>
                   <p className="text-xs text-muted-foreground">
-                    对 GOST 和自定义加密隧道生效；iptables、nftables、realm、socat 不受该限速影响。
+                    对隧道转发生效。
                   </p>
                 </div>
                 <div className="space-y-2">
@@ -1394,7 +1394,7 @@ function UsersContent() {
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  不填写到期日期表示永久有效；到期后将自动禁用该用户的所有转发规则
+                  留空表示永久有效。
                 </p>
               </div>
 
@@ -1407,7 +1407,7 @@ function UsersContent() {
                       <RotateCcw className="h-3.5 w-3.5" />
                       启用月度自动重置
                     </p>
-                    <p className="text-xs text-muted-foreground">每月指定日期自动将已用流量归零</p>
+                    <p className="text-xs text-muted-foreground">每月自动清零已用流量。</p>
                   </div>
                   <Switch
                     checked={trafficAutoReset}
@@ -1451,7 +1451,7 @@ function UsersContent() {
             {/* 授权标签页 */}
             <TabsContent value="hosts" className="flex-1 min-h-0 overflow-y-auto pr-1 mt-3 space-y-4 data-[state=inactive]:hidden">
               <p className="text-xs text-muted-foreground">
-                分别分配普通资源和流量计费资源。未授权的主机或隧道不会出现在普通用户的创建选项中；流量计费资源需要额外授权。
+                分配普通资源和计费资源。
               </p>
 
               <div className="space-y-2">
