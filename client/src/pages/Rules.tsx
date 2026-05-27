@@ -172,6 +172,7 @@ function RulesContent() {
   const [filterHost, setFilterHost] = useState<string>("all");
   const [filterType, setFilterType] = useState<string>("all");
   const [portStatus, setPortStatus] = useState<"idle" | "checking" | "available" | "used">("idle");
+  const [portRangeError, setPortRangeError] = useState<string | null>(null);
   const latestPortCheckRef = useRef(0);
   const [copySourceHostId, setCopySourceHostId] = useState<string>("");
   const [copyTargetHostIds, setCopyTargetHostIds] = useState<number[]>([]);
@@ -510,8 +511,6 @@ function RulesContent() {
     if (!hosts) return [];
     return hosts.filter((host: any) => String(host.id) !== copySourceHostId);
   }, [copySourceHostId, hosts]);
-
-  const [portRangeError, setPortRangeError] = useState<string | null>(null);
 
   const checkPort = useCallback(async () => {
     const checkId = latestPortCheckRef.current + 1;
