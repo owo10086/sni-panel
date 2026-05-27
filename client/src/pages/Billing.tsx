@@ -218,7 +218,11 @@ export default function Billing() {
 
   useEffect(() => {
     const existingIds = new Set(redemptionCodes.map((code: any) => Number(code.id)));
-    setSelectedRedemptionIds((ids) => ids.filter((id) => existingIds.has(id)));
+    setSelectedRedemptionIds((ids) => {
+      if (ids.length === 0) return ids;
+      const next = ids.filter((id) => existingIds.has(id));
+      return next.length === ids.length ? ids : next;
+    });
   }, [redemptionCodes]);
 
   const toggleAllFilteredRedemptionCodes = (checked: boolean) => {
