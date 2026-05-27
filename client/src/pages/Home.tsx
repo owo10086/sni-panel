@@ -516,7 +516,7 @@ function DashboardContent() {
               {recentRules.map((rule: any) => (
                 <div key={rule.id} className="flex flex-col gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-muted/30 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex items-center gap-3">
-                    <div className={`h-2 w-2 rounded-full ${rule.isRunning ? "bg-emerald-500 shadow-sm shadow-emerald-500/50" : "bg-muted-foreground/30"}`} />
+                    <div className={`h-2 w-2 rounded-full ${rule.isEnabled && rule.isRunning ? "bg-emerald-500 shadow-sm shadow-emerald-500/50" : "bg-muted-foreground/30"}`} />
                     <div className="min-w-0">
                       <p className="truncate text-sm font-medium">{rule.name}</p>
                       <p className="break-all font-mono text-xs text-muted-foreground">

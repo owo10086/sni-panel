@@ -17,6 +17,16 @@ export async function getForwardRules(userId?: number, hostId?: number) {
   return db.select().from(forwardRules).where(and(...conds)).orderBy(desc(forwardRules.createdAt));
 }
 
+export async function getForwardRulesForUserSync(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(forwardRules).where(and(
+    eq(forwardRules.userId, userId),
+    eq(forwardRules.pendingDelete, false),
+    eq(forwardRules.isForwardGroupTemplate, false),
+  )).orderBy(desc(forwardRules.createdAt));
+}
+
 export async function getForwardRulesForAgent(hostId?: number) {
   const db = await getDb();
   if (!db) return [];
@@ -130,7 +140,7 @@ export async function toggleForwardRule(id: number, isEnabled: boolean) {
     isEnabled,
     disabledByTunnel: false,
     disabledByUser: false,
-    ...(isEnabled ? { protocolBlockReason: null } : {}),
+    ...(isEnabled ? { isRunning: false, protocolBlockReason: null } : {}),
     updatedAt: nowDate(),
   } as any).where(eq(forwardRules.id, id));
 }

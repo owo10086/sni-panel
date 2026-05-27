@@ -1,5 +1,6 @@
 import { Router, Request, Response } from "express";
 import * as db from "./db";
+import { pushAgentRefresh } from "./agentEvents";
 import {
   isAgentTcpingResult,
   isAgentTrafficStat,
@@ -8,6 +9,26 @@ import {
   type AgentTrafficStat,
   type AgentTunnelTcpingResult,
 } from "../shared/agentDtos";
+
+async function refreshUserRuleAgents(userId: number, reason: string) {
+  const rules = await db.getForwardRulesForUserSync(userId);
+  const hostIds = new Set<number>();
+  const tunnelIds = new Set<number>();
+  for (const rule of rules as any[]) {
+    if (rule.hostId) hostIds.add(Number(rule.hostId));
+    if (rule.tunnelId) tunnelIds.add(Number(rule.tunnelId));
+  }
+  for (const tunnelId of tunnelIds) {
+    const tunnel = await db.getTunnelById(tunnelId);
+    if (!tunnel) continue;
+    await db.updateTunnel(tunnelId, { isRunning: false } as any);
+    hostIds.add(Number(tunnel.entryHostId));
+    hostIds.add(Number(tunnel.exitHostId));
+  }
+  for (const hostId of hostIds) {
+    if (hostId > 0) pushAgentRefresh(hostId, reason);
+  }
+}
 
 export function registerAgentReportRoutes(agentRouter: Router) {
 agentRouter.post("/api/agent/traffic", async (req: Request, res: Response) => {
@@ -80,6 +101,7 @@ agentRouter.post("/api/agent/traffic", async (req: Request, res: Response) => {
           if (billed && billed.balanceAfterCents < 0) {
             console.warn(`[TrafficBilling] user=${rule.userId} balance negative, disabling rules`);
             await db.disableAllUserRules(rule.userId);
+            await refreshUserRuleAgents(rule.userId, "traffic-billing-balance-negative");
           }
         } else {
           quotaTrafficByUser.set(rule.userId, (quotaTrafficByUser.get(rule.userId) || 0) + ruleBytes);
@@ -99,11 +121,13 @@ agentRouter.post("/api/agent/traffic", async (req: Request, res: Response) => {
         if (user.trafficLimit > 0 && user.trafficUsed >= user.trafficLimit) {
           console.log(`[Traffic] User ${user.id} traffic exceeded limit, disabling rules`);
           await db.disableAllUserRules(user.id);
+          await refreshUserRuleAgents(user.id, "traffic-limit-exceeded");
         }
         // 账户到期：自动禁用该用户所有规则
         if (user.expiresAt && new Date(user.expiresAt) <= new Date()) {
           console.log(`[Traffic] User ${user.id} account expired, disabling rules`);
           await db.disableAllUserRules(user.id);
+          await refreshUserRuleAgents(user.id, "user-expired");
         }
       }
     }

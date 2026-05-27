@@ -1,6 +1,27 @@
 import * as db from "./db";
+import { pushAgentRefresh } from "./agentEvents";
 import { getEmailConfig, sendMail } from "./email";
 import { sendTelegramMessage } from "./telegramBot";
+
+async function refreshUserRuleAgents(userId: number, reason: string) {
+  const rules = await db.getForwardRulesForUserSync(userId);
+  const hostIds = new Set<number>();
+  const tunnelIds = new Set<number>();
+  for (const rule of rules as any[]) {
+    if (rule.hostId) hostIds.add(Number(rule.hostId));
+    if (rule.tunnelId) tunnelIds.add(Number(rule.tunnelId));
+  }
+  for (const tunnelId of tunnelIds) {
+    const tunnel = await db.getTunnelById(tunnelId);
+    if (!tunnel) continue;
+    await db.updateTunnel(tunnelId, { isRunning: false } as any);
+    hostIds.add(Number(tunnel.entryHostId));
+    hostIds.add(Number(tunnel.exitHostId));
+  }
+  for (const hostId of hostIds) {
+    if (hostId > 0) pushAgentRefresh(hostId, reason);
+  }
+}
 
 async function runMonthlyTrafficReset() {
   try {
@@ -28,6 +49,7 @@ async function runExpirationCheck() {
     const expiredUsers = await db.getExpiredUsers();
     for (const user of expiredUsers) {
       await db.disableAllUserRules(user.id);
+      await refreshUserRuleAgents(user.id, "user-expired");
       console.log(`[Scheduler] User ${user.id} (${user.username}) expired, disabled all rules`);
     }
     if (expiredUsers.length > 0) {

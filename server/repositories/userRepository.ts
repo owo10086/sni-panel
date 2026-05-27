@@ -368,18 +368,7 @@ export async function setUserForwardAccess(userId: number, enabled: boolean) {
     allowForwardXTunnel: enabled,
     updatedAt: now,
   }).where(eq(users.id, userId));
-  if (enabled) {
-    await db.update(forwardRules).set({
-      isEnabled: true,
-      disabledByUser: false,
-      isRunning: false,
-      updatedAt: now,
-    }).where(and(
-      eq(forwardRules.userId, userId),
-      eq(forwardRules.disabledByUser, true),
-      eq(forwardRules.pendingDelete, false),
-    ));
-  } else {
+  if (!enabled) {
     await db.update(forwardRules).set({
       isEnabled: false,
       disabledByUser: true,
@@ -439,7 +428,11 @@ export async function getExpiredUsers() {
 export async function disableAllUserRules(userId: number) {
   const db = await getDb();
   if (!db) return;
-  await db.update(forwardRules).set({ isEnabled: false, isRunning: false, updatedAt: nowDate() }).where(eq(forwardRules.userId, userId));
+  await db.update(forwardRules).set({
+    isEnabled: false,
+    disabledByUser: true,
+    updatedAt: nowDate(),
+  }).where(eq(forwardRules.userId, userId));
 }
 
 /** 获取用户流量汇总信息（用于仪表盘展示） */

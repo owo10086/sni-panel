@@ -177,6 +177,64 @@
     }
   }
 
+  @keyframes forwardx-page-enter {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+      filter: blur(2px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+      filter: blur(0);
+    }
+  }
+
+  @keyframes forwardx-card-enter {
+    from {
+      opacity: 0;
+      transform: translateY(10px) scale(0.985);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  .route-content-enter {
+    animation: forwardx-page-enter 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .tab-content-enter[data-state="active"] {
+    animation: forwardx-page-enter 200ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .stagger-card {
+    animation: forwardx-card-enter 340ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: var(--card-enter-delay, 0ms);
+  }
+
+  .stagger-card:nth-child(1) { --card-enter-delay: 0ms; }
+  .stagger-card:nth-child(2) { --card-enter-delay: 45ms; }
+  .stagger-card:nth-child(3) { --card-enter-delay: 90ms; }
+  .stagger-card:nth-child(4) { --card-enter-delay: 135ms; }
+  .stagger-card:nth-child(5) { --card-enter-delay: 180ms; }
+  .stagger-card:nth-child(6) { --card-enter-delay: 225ms; }
+  .stagger-card:nth-child(7) { --card-enter-delay: 270ms; }
+  .stagger-card:nth-child(8) { --card-enter-delay: 315ms; }
+  .stagger-card:nth-child(n + 9) { --card-enter-delay: 360ms; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .route-content-enter,
+    .tab-content-enter[data-state="active"],
+    .stagger-card {
+      animation: none;
+      opacity: 1;
+      transform: none;
+      filter: none;
+    }
+  }
+
   * {
     @apply border-border outline-ring/50;
   }

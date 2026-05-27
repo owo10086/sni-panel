@@ -1,3 +1,10 @@
+export const MAX_LATENCY_CHART_MS = 500;
+
+export function clipLatencyForChart(latency: number) {
+  if (!Number.isFinite(latency) || latency <= 0) return 0;
+  return Math.min(MAX_LATENCY_CHART_MS, latency);
+}
+
 export function getLatencyYAxisMax(maxLatency: number, fallback = 120) {
   if (!Number.isFinite(maxLatency) || maxLatency <= 0) return fallback;
 
@@ -9,7 +16,7 @@ export function getLatencyYAxisMax(maxLatency: number, fallback = 120) {
             : maxLatency < 350 ? 1.25
               : 1.15;
   const rounded = Math.ceil((maxLatency * multiplier) / 10) * 10;
-  return Math.min(500, Math.max(fallback, rounded));
+  return Math.min(MAX_LATENCY_CHART_MS, Math.max(fallback, rounded));
 }
 
 export function getLatencyYAxisTicks(yMax: number) {

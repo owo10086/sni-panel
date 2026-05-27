@@ -31,7 +31,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getLatencyYAxisMax, getLatencyYAxisTicks } from "@/lib/latencyChart";
+import { clipLatencyForChart, getLatencyYAxisMax, getLatencyYAxisTicks, MAX_LATENCY_CHART_MS } from "@/lib/latencyChart";
 import { trpc } from "@/lib/trpc";
 import {
   Activity,
@@ -81,6 +81,7 @@ type TunnelLatencyPoint = {
   label: string;
   fullLabel: string;
   latency: number;
+  chartLatency: number;
   isTimeout: boolean;
 };
 
@@ -176,6 +177,7 @@ function TunnelLatencyDialog({
       label: formatTunnelLatencyTime(d.recordedAt),
       fullLabel: formatTunnelLatencyTime(d.recordedAt),
       latency: d.isTimeout ? 0 : (Number(d.latencyMs) || 0),
+      chartLatency: d.isTimeout ? 0 : clipLatencyForChart(Number(d.latencyMs) || 0),
       isTimeout: !!d.isTimeout,
     }));
   }, [data]);
@@ -192,7 +194,7 @@ function TunnelLatencyDialog({
   }, [chartData]);
   const yMax = useMemo(() => {
     if (chartData.length === 0) return 120;
-    const maxVal = Math.max(...chartData.filter((d) => !d.isTimeout).map((d) => d.latency), 0);
+    const maxVal = Math.max(...chartData.filter((d) => !d.isTimeout).map((d) => d.chartLatency), 0);
     return getLatencyYAxisMax(maxVal, 120);
   }, [chartData]);
   const yTicks = useMemo(() => {
@@ -234,13 +236,15 @@ function TunnelLatencyDialog({
                         {item.isTimeout ? (
                           <p className="text-sm font-semibold text-destructive">超时</p>
                         ) : (
-                          <p className="text-sm font-semibold tabular-nums">{item.latency}ms</p>
+                          <p className="text-sm font-semibold tabular-nums">
+                            {item.latency}ms{item.latency > MAX_LATENCY_CHART_MS ? ` (图表按 ${MAX_LATENCY_CHART_MS}ms 显示)` : ""}
+                          </p>
                         )}
                       </div>
                     );
                   }}
                 />
-                <Area type="monotone" dataKey="latency" stroke="var(--color-chart-2)" strokeWidth={2} fill="url(#tunnelLatencyGradient)" dot={false} activeDot={{ r: 4, fill: "var(--color-chart-2)", stroke: "var(--color-background)", strokeWidth: 2 }} />
+                <Area type="monotone" dataKey="chartLatency" stroke="var(--color-chart-2)" strokeWidth={2} fill="url(#tunnelLatencyGradient)" dot={false} activeDot={{ r: 4, fill: "var(--color-chart-2)", stroke: "var(--color-background)", strokeWidth: 2 }} />
               </AreaChart>
             </ResponsiveContainer>
           )}

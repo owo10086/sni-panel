@@ -9,10 +9,17 @@ import { trafficRulesRouter } from "./rules.traffic";
 
 export const rulesRouter = router({
   list: protectedProcedure
-    .input(z.object({ hostId: z.number().optional() }).optional())
+    .input(z.object({
+      hostId: z.number().optional(),
+      userId: z.number().optional(),
+      tunnelId: z.number().nullable().optional(),
+    }).optional())
     .query(async ({ input, ctx }) => {
       const isAdmin = ctx.user.role === "admin";
-      return db.getForwardRules(isAdmin ? undefined : ctx.user.id, input?.hostId);
+      const rules = await db.getForwardRules(isAdmin ? input?.userId : ctx.user.id, input?.hostId);
+      if (input?.tunnelId === undefined) return rules;
+      if (input.tunnelId === null) return rules.filter((rule: any) => !rule.tunnelId);
+      return rules.filter((rule: any) => Number(rule.tunnelId || 0) === Number(input.tunnelId));
     }),
   getById: protectedProcedure
     .input(z.object({ id: z.number() }))

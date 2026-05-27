@@ -1173,7 +1173,12 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
       panelUrl: await resolvePanelUrl(req),
     } : null;
 
-    res.json({ success: true, actions, selfTests, runningRules, tunnelProbes, guardRules, agentUpgrade, nextInterval: isHostMetricsWatching(host.id) ? 2 : 30 });
+    const orderedActions = actions.slice().sort((a: any, b: any) => {
+      if (a.op === b.op) return 0;
+      return a.op === "remove" ? -1 : 1;
+    });
+
+    res.json({ success: true, actions: orderedActions, selfTests, runningRules, tunnelProbes, guardRules, agentUpgrade, nextInterval: isHostMetricsWatching(host.id) ? 2 : 30 });
   } catch (error) {
     console.error("[Agent Heartbeat] Error:", error);
     res.status(500).json({ error: "Internal server error" });

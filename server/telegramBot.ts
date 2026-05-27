@@ -738,7 +738,7 @@ async function refreshRuleEndpoint(rule: any, reason: string) {
 }
 
 async function refreshUserForwardEndpoints(userId: number, reason: string) {
-  const rules = await db.getForwardRules(userId);
+  const rules = await db.getForwardRulesForUserSync(userId);
   const hostIds = new Set<number>();
   const tunnelIds = new Set<number>();
   for (const rule of rules as any[]) {
@@ -753,6 +753,16 @@ async function refreshUserForwardEndpoints(userId: number, reason: string) {
   for (const hostId of hostIds) pushAgentRefresh(hostId, reason);
 }
 
+async function assertRuleCanBeEnabledFromTelegram(user: any, rule: any) {
+  if (user.role !== "admin") {
+    if (!user.canAddRules) throw new Error("你的转发权限已停用，无法启用规则");
+    if (user.expiresAt && new Date(user.expiresAt) <= new Date()) throw new Error("账户已到期，无法启用规则");
+    if (Number(user.trafficLimit) > 0 && Number(user.trafficUsed) >= Number(user.trafficLimit)) throw new Error("流量已用完，无法启用规则");
+  }
+  const used = await db.isPortUsedOnHost(Number(rule.hostId), Number(rule.sourcePort), Number(rule.id));
+  if (used) throw new Error(`端口 ${rule.sourcePort} 已被占用，请更换端口后再启用`);
+}
+
 async function handleRuleToggle(message: TelegramMessage, user: any, ruleIdRaw: string | undefined, enabled: boolean) {
   const ruleId = Number(ruleIdRaw);
   if (!Number.isFinite(ruleId) || ruleId <= 0) {
@@ -764,22 +774,16 @@ async function handleRuleToggle(message: TelegramMessage, user: any, ruleIdRaw: 
     await sendMessage(message.chat.id, "规则不存在或无权操作。");
     return;
   }
-  if (enabled && user.role !== "admin") {
-    if (!user.canAddRules) {
-      await sendMessage(message.chat.id, "你的转发权限已停用，无法启用规则。");
-      return;
-    }
-    if (user.expiresAt && new Date(user.expiresAt) <= new Date()) {
-      await sendMessage(message.chat.id, "账户已到期，无法启用规则。");
-      return;
-    }
-    if (Number(user.trafficLimit) > 0 && Number(user.trafficUsed) >= Number(user.trafficLimit)) {
-      await sendMessage(message.chat.id, "流量已用完，无法启用规则。");
+  if (enabled) {
+    try {
+      await assertRuleCanBeEnabledFromTelegram(user, rule);
+    } catch (error: any) {
+      await sendMessage(message.chat.id, error?.message || "无法启用规则。");
       return;
     }
   }
   if (enabled) {
-    await db.updateForwardRule(rule.id, { isEnabled: true, isRunning: false });
+    await db.updateForwardRule(rule.id, { isEnabled: true, isRunning: false, disabledByUser: false, disabledByTunnel: false, protocolBlockReason: null } as any);
   } else {
     await db.toggleForwardRule(rule.id, false);
   }
@@ -795,13 +799,9 @@ async function toggleRuleForUser(user: any, ruleId: number, enabled: boolean) {
   if (!rule || (user.role !== "admin" && rule.userId !== user.id)) {
     throw new Error("规则不存在或无权操作");
   }
-  if (enabled && user.role !== "admin") {
-    if (!user.canAddRules) throw new Error("你的转发权限已停用，无法启用规则");
-    if (user.expiresAt && new Date(user.expiresAt) <= new Date()) throw new Error("账户已到期，无法启用规则");
-    if (Number(user.trafficLimit) > 0 && Number(user.trafficUsed) >= Number(user.trafficLimit)) throw new Error("流量已用完，无法启用规则");
-  }
+  if (enabled) await assertRuleCanBeEnabledFromTelegram(user, rule);
   if (enabled) {
-    await db.updateForwardRule(rule.id, { isEnabled: true, isRunning: false });
+    await db.updateForwardRule(rule.id, { isEnabled: true, isRunning: false, disabledByUser: false, disabledByTunnel: false, protocolBlockReason: null } as any);
   } else {
     await db.toggleForwardRule(rule.id, false);
   }

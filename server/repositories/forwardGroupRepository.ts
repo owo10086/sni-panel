@@ -194,10 +194,11 @@ async function isPortUsedOnHostForGroupChild(hostId: number, sourcePort: number,
   const hostCol = quoteId("hostId");
   const portCol = quoteId("sourcePort");
   const pendingCol = quoteId("pendingDelete");
+  const enabledCol = quoteId("isEnabled");
   const ignore = ignoreRuleIds.filter((id) => Number(id) > 0);
   const ignoreSql = ignore.length > 0 ? ` AND ${idCol} NOT IN (${ignore.map(() => "?").join(",")})` : "";
   const rows = await queryRaw<{ count: number }>(
-    `SELECT COUNT(*) AS count FROM ${table} WHERE ${hostCol} = ? AND ${portCol} = ? AND ${pendingCol} = 0${ignoreSql}`,
+    `SELECT COUNT(*) AS count FROM ${table} WHERE ${hostCol} = ? AND ${portCol} = ? AND ${pendingCol} = 0 AND ${enabledCol} = 1${ignoreSql}`,
     [hostId, sourcePort, ...ignore],
   );
   return (Number(rows[0]?.count) || 0) > 0;
@@ -254,10 +255,11 @@ async function usedPortsOnEntryHost(hostId: number, start: number, end: number, 
   const hostCol = quoteId("hostId");
   const portCol = quoteId("sourcePort");
   const pendingCol = quoteId("pendingDelete");
+  const enabledCol = quoteId("isEnabled");
   const ignore = ignoreRuleIds.filter((id) => Number(id) > 0);
   const ignoreSql = ignore.length > 0 ? ` AND ${idCol} NOT IN (${ignore.map(() => "?").join(",")})` : "";
   const rows = await queryRaw<{ port: number }>(
-    `SELECT ${portCol} AS port FROM ${table} WHERE ${hostCol} = ? AND ${portCol} BETWEEN ? AND ? AND ${pendingCol} = 0${ignoreSql}`,
+    `SELECT ${portCol} AS port FROM ${table} WHERE ${hostCol} = ? AND ${portCol} BETWEEN ? AND ? AND ${pendingCol} = 0 AND ${enabledCol} = 1${ignoreSql}`,
     [hostId, start, end, ...ignore],
   );
   return new Set(rows.map((row) => Number(row.port)).filter((port) => Number.isInteger(port)));

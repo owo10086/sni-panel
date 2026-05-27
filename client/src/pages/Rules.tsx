@@ -158,6 +158,9 @@ function RulesContent() {
   });
   const { data: hosts } = trpc.hosts.list.useQuery();
   const { data: tunnels } = trpc.tunnels.list.useQuery();
+  const { data: users } = trpc.users.list.useQuery(undefined, {
+    enabled: user?.role === "admin",
+  });
   const { data: forwardGroups } = trpc.forwardGroups.list.useQuery(undefined, {
     enabled: user?.role === "admin",
     refetchInterval: 15000,
@@ -170,7 +173,18 @@ function RulesContent() {
   const [showCopyDialog, setShowCopyDialog] = useState(false);
   const [form, setForm] = useState<RuleFormData>(defaultForm);
   const [filterHost, setFilterHost] = useState<string>("all");
+  const [filterUser, setFilterUser] = useState<string>("all");
+  const [filterTunnel, setFilterTunnel] = useState<string>("all");
   const [filterType, setFilterType] = useState<string>("all");
+  const selectedRulesQuery = useMemo(() => {
+    if (user?.role !== "admin") return undefined;
+    const input: { userId?: number; hostId?: number; tunnelId?: number | null } = {};
+    if (filterUser !== "all") input.userId = Number(filterUser);
+    if (filterHost !== "all" && !String(filterHost).startsWith("group:")) input.hostId = Number(filterHost);
+    if (filterTunnel !== "all") input.tunnelId = filterTunnel === "none" ? null : Number(filterTunnel);
+    return Object.keys(input).length ? input : undefined;
+  }, [filterHost, filterTunnel, filterUser, user?.role]);
+  const effectiveRulesQuery = selectedRulesQuery || undefined;
   const [portStatus, setPortStatus] = useState<"idle" | "checking" | "available" | "used">("idle");
   const [portRangeError, setPortRangeError] = useState<string | null>(null);
   const latestPortCheckRef = useRef(0);
@@ -178,6 +192,10 @@ function RulesContent() {
   const [copyTargetHostIds, setCopyTargetHostIds] = useState<number[]>([]);
   const [copyRuleIds, setCopyRuleIds] = useState<number[]>([]);
   const [copyConflictStrategy, setCopyConflictStrategy] = useState<"skip" | "auto" | "error">("skip");
+  const { data: selectedScopeRules } = trpc.rules.list.useQuery(effectiveRulesQuery as any, {
+    enabled: user?.role === "admin" && !!effectiveRulesQuery,
+    refetchInterval: 15000,
+  });
 
   // 权限检查：管理员或有 canAddRules 权限
   const canAdd = user?.role === "admin" || user?.canAddRules === true;
@@ -389,37 +407,19 @@ function RulesContent() {
     const end = (selectedHost as any).portRangeEnd;
     return start != null && end != null ? `${start}-${end}` : null;
   }, [selectedHost]);
-  const portInlineHint = useMemo(() => {
+  const portStatusHint = useMemo(() => {
     if (portStatus === "used") {
       return {
         type: "used" as const,
-        text: "端口不可用",
+        text: portRangeError ? "超范围" : "不可用",
         title: portRangeError || "端口已被占用",
-        className: "border-destructive/30 bg-destructive/10 text-destructive",
       };
     }
     if (portStatus === "available") {
       return {
         type: "available" as const,
-        text: "端口可用",
+        text: "可用",
         title: selectedHostPortRangeText ? `允许端口范围: ${selectedHostPortRangeText}` : "端口可用",
-        className: "border-emerald-500/30 bg-emerald-500/10 text-emerald-600",
-      };
-    }
-    if (portStatus === "checking") {
-      return {
-        type: "checking" as const,
-        text: "检测中",
-        title: "正在检测端口",
-        className: "border-border/70 bg-muted/40 text-muted-foreground",
-      };
-    }
-    if (selectedHostPortRangeText) {
-      return {
-        type: "range" as const,
-        text: "端口范围",
-        title: `允许端口范围: ${selectedHostPortRangeText}`,
-        className: "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300",
       };
     }
     return null;
@@ -465,6 +465,11 @@ function RulesContent() {
     (tunnels || []).forEach((t: any) => map.set(Number(t.id), getTunnelDisplay(t)));
     return map;
   }, [tunnels]);
+  const userById = useMemo(() => {
+    const map = new Map<number, any>();
+    (users || []).forEach((item: any) => map.set(Number(item.id), item));
+    return map;
+  }, [users]);
   const forwardGroupById = useMemo(() => {
     const map = new Map<number, any>();
     (forwardGroups || []).forEach((group: any) => map.set(Number(group.id), group));
@@ -499,10 +504,6 @@ function RulesContent() {
   const canUseLocalForward = usableForwardTypes.length > 0;
   const canUseGost = allowedForwardTypes.includes("gost") && supportedTunnels.length > 0;
   const canUseForwardGroup = user?.role === "admin" && availableForwardGroups.length > 0;
-  const activeCount = useMemo(
-    () => rules?.filter((r: any) => r.isEnabled && isRuleSupported(r)).length ?? 0,
-    [isRuleSupported, rules]
-  );
   const copyableSourceRules = useMemo(() => {
     if (!rules || !copySourceHostId) return [];
     return rules.filter((rule: any) => Number(rule.hostId) === Number(copySourceHostId) && !(rule.forwardType === "gost" && rule.tunnelId));
@@ -684,6 +685,10 @@ function RulesContent() {
       toast.error("源端口已被占用，请更换端口或使用随机分配");
       return;
     }
+    if (!editingId && form.routeMode !== "group" && form.sourcePort > 0 && portStatus !== "available") {
+      toast.error("请等待端口可用后再保存");
+      return;
+    }
     if (editingId) {
       updateMutation.mutate({
         id: editingId,
@@ -696,6 +701,7 @@ function RulesContent() {
         tunnelId: form.routeMode === "tunnel" ? form.tunnelId : null,
         forwardGroupId: form.routeMode === "group" ? form.forwardGroupId : null,
         sourcePort: form.sourcePort,
+        isEnabled: portStatus === "available" ? true : undefined,
         targetIp: form.targetIp,
         targetPort: form.targetPort,
       });
@@ -720,12 +726,23 @@ function RulesContent() {
   const isPending = createMutation.isPending || updateMutation.isPending;
 
   const filteredRules = useMemo(() => {
-    if (!rules) return [];
-    return rules.filter((r: any) => {
+    const sourceRules = selectedScopeRules || rules;
+    if (!sourceRules) return [];
+    return sourceRules.filter((r: any) => {
+      if (filterUser !== "all" && Number(r.userId) !== Number(filterUser)) {
+        return false;
+      }
       if (filterHost !== "all") {
         if (String(filterHost).startsWith("group:")) {
           if (Number(r.forwardGroupId || 0) !== Number(String(filterHost).slice(6))) return false;
         } else if (r.forwardGroupId || r.hostId !== parseInt(filterHost)) {
+          return false;
+        }
+      }
+      if (filterTunnel !== "all") {
+        if (filterTunnel === "none") {
+          if (r.tunnelId) return false;
+        } else if (Number(r.tunnelId || 0) !== Number(filterTunnel)) {
           return false;
         }
       }
@@ -736,7 +753,11 @@ function RulesContent() {
       }
       return true;
     });
-  }, [rules, filterHost, filterType]);
+  }, [rules, selectedScopeRules, filterUser, filterHost, filterTunnel, filterType]);
+  const activeCount = useMemo(
+    () => filteredRules.filter((r: any) => r.isEnabled && isRuleSupported(r)).length,
+    [filteredRules, isRuleSupported]
+  );
   const rulePagination = usePersistentPagination(filteredRules, {
     storageKey: "forwardx.rules.page",
     pageSize: 12,
@@ -746,6 +767,11 @@ function RulesContent() {
 
   const getHostName = (hostId: number) => {
     return hosts?.find((h: any) => h.id === hostId)?.name || `主机 #${hostId}`;
+  };
+
+  const getRuleOwnerName = (rule: any) => {
+    const owner = userById.get(Number(rule.userId));
+    return owner?.displayRemark || owner?.name || owner?.username || `用户 #${rule.userId}`;
   };
 
   /** 获取主机的入口地址：优先用用户自定义的 entryIp，未填则回退 ip */
@@ -813,7 +839,7 @@ function RulesContent() {
         return <span className="h-2.5 w-2.5 rounded-full bg-destructive/70 shadow-sm shadow-destructive/40" />;
       }
     }
-    if (rule.isRunning) {
+    if (rule.isEnabled && rule.isRunning) {
       return <span className="h-2.5 w-2.5 rounded-full bg-chart-2 shadow-sm shadow-chart-2/50 animate-pulse" />;
     }
     if (rule.isEnabled) {
@@ -978,7 +1004,7 @@ function RulesContent() {
         <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:justify-end">
           <Badge variant="outline" className="justify-center gap-1.5 px-3 py-1.5 text-xs">
             <Zap className="h-3 w-3 text-chart-2" />
-            {activeCount} / {rules?.length ?? 0} 活跃
+            {activeCount} / {filteredRules.length || rules?.length || 0} 活跃
           </Badge>
           <Button
             variant="outline"
@@ -1017,6 +1043,21 @@ function RulesContent() {
             <Filter className="h-4 w-4 text-muted-foreground" />
             <span className="text-sm text-muted-foreground">筛选:</span>
           </div>
+          {user?.role === "admin" && (
+            <Select value={filterUser} onValueChange={setFilterUser}>
+              <SelectTrigger className="h-8 w-full text-xs sm:w-[160px]">
+                <SelectValue placeholder="所有用户" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">所有用户</SelectItem>
+                {(users || []).map((item: any) => (
+                  <SelectItem key={item.id} value={String(item.id)}>
+                    {item.displayRemark || item.name || item.username}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
           <Select value={filterHost} onValueChange={setFilterHost}>
             <SelectTrigger className="h-8 w-full text-xs sm:w-[160px]">
               <SelectValue placeholder="所有主机" />
@@ -1049,6 +1090,20 @@ function RulesContent() {
               <SelectItem value="socat">socat</SelectItem>
               <SelectItem value="gost">gost</SelectItem>
               <SelectItem value="forward-group">转发组</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={filterTunnel} onValueChange={setFilterTunnel}>
+            <SelectTrigger className="h-8 w-full text-xs sm:w-[160px]">
+              <SelectValue placeholder="所有隧道" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">所有隧道</SelectItem>
+              <SelectItem value="none">不使用隧道</SelectItem>
+              {(tunnels || []).map((t: any) => (
+                <SelectItem key={t.id} value={String(t.id)}>
+                  {getTunnelDisplay(t).shortLabel}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -1112,6 +1167,9 @@ function RulesContent() {
                         </div>
                         <div className="min-w-0">
                           <div className="truncate font-medium">{rule.name}</div>
+                          {user?.role === "admin" && (
+                            <div className="mt-1 text-xs text-muted-foreground">用户: {getRuleOwnerName(rule)}</div>
+                          )}
                           <div className="mt-1 text-xs text-muted-foreground">{rule.forwardGroupId ? getForwardGroupName(rule.forwardGroupId) : getHostName(rule.hostId)}</div>
                           {!supported && (
                             <div className="mt-1 text-[11px] text-destructive">
@@ -1160,11 +1218,12 @@ function RulesContent() {
                 })}
               </div>
               <div className="hidden overflow-x-auto lg:block">
-                <Table className="min-w-[980px] table-fixed">
+                <Table className={user?.role === "admin" ? "min-w-[1100px] table-fixed" : "min-w-[980px] table-fixed"}>
                   <TableHeader>
                     <TableRow className="hover:bg-transparent">
                       <TableHead className="w-[48px] text-center">状态</TableHead>
                       <TableHead className="w-[120px]">规则</TableHead>
+                      {user?.role === "admin" && <TableHead className="w-[120px]">用户</TableHead>}
                       <TableHead className="w-[120px]">主机</TableHead>
                       <TableHead>转发配置</TableHead>
                       <TableHead className="w-[150px]">链路</TableHead>
@@ -1198,6 +1257,13 @@ function RulesContent() {
                             </span>
                           )}
                         </TableCell>
+                        {user?.role === "admin" && (
+                          <TableCell>
+                            <span className="block truncate text-sm text-muted-foreground" title={getRuleOwnerName(rule)}>
+                              {getRuleOwnerName(rule)}
+                            </span>
+                          </TableCell>
+                        )}
                         <TableCell>
                           <span className="block truncate text-sm text-muted-foreground" title={rule.forwardGroupId ? getForwardGroupName(rule.forwardGroupId) : getHostName(rule.hostId)}>
                             {rule.forwardGroupId ? getForwardGroupName(rule.forwardGroupId) : getHostName(rule.hostId)}
@@ -1489,40 +1555,38 @@ function RulesContent() {
             </div>
             <div className="space-y-2">
               <Label>{form.routeMode === "local" ? "源端口" : "入口端口"}</Label>
-              <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
+              <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
                 <div className="relative flex-1">
                   <Input
-                    type="number"
-                    min={0}
-                    max={65535}
-                    step={1}
+                    type="text"
+                    pattern="[0-9]*"
                     placeholder={form.routeMode === "group" ? "例如 8080" : "0=随机"}
                     value={form.sourcePort || ""}
-                    onChange={(e) => setForm({ ...form, sourcePort: parseInt(e.target.value) || 0 })}
-                    className={`pr-8 ${
+                    inputMode="numeric"
+                    onChange={(e) => {
+                      latestPortCheckRef.current += 1;
+                      setPortRangeError(null);
+                      setPortStatus("idle");
+                      setForm({ ...form, sourcePort: parseInt(e.target.value) || 0 });
+                    }}
+                    className={`pr-24 ${
                       portStatus === "used" ? "border-destructive" :
                       portStatus === "available" ? "border-emerald-500" : ""
                     }`}
                   />
                   {portStatus === "used" && (
-                    <XCircle className="absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-destructive" />
+                    <div className="absolute right-2.5 top-1/2 inline-flex max-w-[5.5rem] -translate-y-1/2 items-center gap-1 text-[11px] font-medium text-destructive" title={portStatusHint?.title}>
+                      <XCircle className="h-3.5 w-3.5 shrink-0" />
+                      <span className="truncate">{portStatusHint?.text || "不可用"}</span>
+                    </div>
                   )}
                   {portStatus === "available" && (
-                    <CheckCircle2 className="absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-emerald-500" />
-                  )}
-                  {portStatus === "checking" && (
-                    <Loader2 className="absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 animate-spin text-muted-foreground" />
+                    <div className="absolute right-2.5 top-1/2 inline-flex max-w-[5.5rem] -translate-y-1/2 items-center gap-1 text-[11px] font-medium text-emerald-600" title={portStatusHint?.title}>
+                      <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+                      <span className="truncate">{portStatusHint?.text || "可用"}</span>
+                    </div>
                   )}
                 </div>
-                {portInlineHint && (
-                  <div
-                    className={`hidden h-10 min-w-[5.25rem] shrink-0 items-center justify-center rounded-md border px-2 text-xs font-medium sm:inline-flex ${portInlineHint.className}`}
-                    title={portInlineHint.title}
-                  >
-                    {portInlineHint.type === "checking" && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
-                    {portInlineHint.text}
-                  </div>
-                )}
                 <Button
                   type="button"
                   variant="outline"
@@ -1535,16 +1599,6 @@ function RulesContent() {
                   随机端口
                 </Button>
               </div>
-              {portInlineHint && (
-                <p className={`text-[10px] leading-4 sm:hidden ${
-                  portInlineHint.type === "used" ? "text-destructive" :
-                  portInlineHint.type === "available" ? "text-emerald-600" :
-                  portInlineHint.type === "range" ? "text-amber-600" :
-                  "text-muted-foreground"
-                }`}>
-                  {portInlineHint.title}
-                </p>
-              )}
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">

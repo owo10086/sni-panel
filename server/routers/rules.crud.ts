@@ -264,7 +264,15 @@ export const crudRulesRouter = router({
         await requireHostUseAccess(ctx, rule.hostId);
       }
 
-      if (input.sourcePort && input.sourcePort !== rule.sourcePort) {
+      if (input.isEnabled === true && ctx.user.role !== "admin") {
+        const owner = await db.getUserById(ctx.user.id);
+        if (!owner?.canAddRules) throw new Error("转发权限已暂停，请续费后再启用规则");
+        if (owner.expiresAt && new Date(owner.expiresAt) <= new Date()) {
+          throw new Error("套餐已到期，请续费后再启用规则");
+        }
+      }
+
+      if (input.sourcePort) {
         const host = await db.getHostById(rule.hostId);
         if (host) {
           const rangeStart = selectedTunnelForRule ? (selectedTunnelForRule as any).portRangeStart : (host as any).portRangeStart;
@@ -293,6 +301,7 @@ export const crudRulesRouter = router({
         (data as any).gostRelayHost = null;
         (data as any).gostRelayPort = null;
         (data as any).tunnelId = null;
+        (data as any).tunnelExitPort = null;
       } else {
         (data as any).gostMode = "direct";
         (data as any).gostRelayHost = null;
@@ -316,6 +325,14 @@ export const crudRulesRouter = router({
         } else {
           (data as any).tunnelExitPort = null;
         }
+      }
+      if (data.isEnabled === true) {
+        const sourcePort = Number(data.sourcePort ?? rule.sourcePort);
+        const used = await db.isPortUsedOnHost(rule.hostId, sourcePort, rule.id);
+        if (used) throw new Error(`端口 ${sourcePort} 已被占用，请更换端口后再启用`);
+        (data as any).disabledByUser = false;
+        (data as any).disabledByTunnel = false;
+        (data as any).protocolBlockReason = null;
       }
       // 关键字段变更时重置 isRunning
       const watchedFields: (keyof typeof data)[] = [
@@ -387,7 +404,9 @@ export const crudRulesRouter = router({
       if ((rule as any).forwardGroupRuleId) throw new Error("转发组成员规则由系统维护，不能直接开关");
       if ((rule as any).isForwardGroupTemplate) {
         if (input.isEnabled) {
-          await db.updateForwardRule(input.id, { isEnabled: true, isRunning: false, protocolBlockReason: null } as any);
+          const used = await db.isPortUsedOnHost(rule.hostId, input.sourcePort ?? rule.sourcePort, rule.id);
+          if (used) throw new Error(`端口 ${input.sourcePort ?? rule.sourcePort} 已被占用，请更换端口后再启用`);
+          await db.updateForwardRule(input.id, { isEnabled: true, isRunning: false, disabledByUser: false, disabledByTunnel: false, protocolBlockReason: null } as any);
         } else {
           await db.toggleForwardRule(input.id, false);
         }
@@ -402,6 +421,11 @@ export const crudRulesRouter = router({
       }
       if (input.isEnabled) {
         if (ctx.user.role !== "admin") {
+          const owner = await db.getUserById(ctx.user.id);
+          if (!owner?.canAddRules) throw new Error("转发权限已暂停，请续费后再启用规则");
+          if (owner.expiresAt && new Date(owner.expiresAt) <= new Date()) {
+            throw new Error("套餐已到期，请续费后再启用规则");
+          }
           const activeTunnelId = Number((rule as any).tunnelId || 0);
           if (activeTunnelId) {
             await requireTunnelUseOrTrafficBillingAccess(ctx, activeTunnelId);
@@ -409,7 +433,9 @@ export const crudRulesRouter = router({
             await requireHostUseAccess(ctx, rule.hostId);
           }
         }
-        await db.updateForwardRule(input.id, { isEnabled: true, isRunning: false, protocolBlockReason: null } as any);
+        const used = await db.isPortUsedOnHost(rule.hostId, rule.sourcePort, rule.id);
+        if (used) throw new Error(`端口 ${rule.sourcePort} 已被占用，请更换端口后再启用`);
+        await db.updateForwardRule(input.id, { isEnabled: true, isRunning: false, disabledByUser: false, disabledByTunnel: false, protocolBlockReason: null } as any);
       } else {
         await db.toggleForwardRule(input.id, false);
       }

@@ -28,6 +28,7 @@ export type MobileAppUpdateResult = {
   currentVersion: string;
   latestVersion: string;
   releaseUrl: string;
+  hasApk: boolean;
 };
 
 export const defaultMobileNotificationSettings: MobileNotificationSettings = {
@@ -174,10 +175,13 @@ export async function checkMobileAppUpdate(options: { silent?: boolean } = {}): 
     const release = await response.json();
     const latest = String(release?.tag_name || "").replace(/^v/i, "");
     const current = String(appInfo.version || "").replace(/^v/i, "");
-    const hasUpdate = !!latest && !!current && compareVersions(latest, current) > 0;
+    const hasApk = Array.isArray(release?.assets)
+      ? release.assets.some((asset: any) => String(asset?.name || "").toLowerCase().endsWith(".apk"))
+      : false;
+    const hasUpdate = hasApk && !!latest && !!current && compareVersions(latest, current) > 0;
     const releaseUrl = release?.html_url || LATEST_RELEASE_URL;
 
-    return { hasUpdate, currentVersion: current, latestVersion: latest, releaseUrl };
+    return { hasUpdate, currentVersion: current, latestVersion: latest, releaseUrl, hasApk };
   } catch (error) {
     if (!options.silent) throw error;
     return null;

@@ -96,6 +96,7 @@ const adminMenuItems = [
 ];
 
 const PANEL_UPGRADE_SESSION_KEY = "forwardx.panel.upgrade";
+const MOBILE_APP_UPDATE_SESSION_KEY = "forwardx.mobile.updateNotice";
 
 function getLayoutUpgradeProgress(job: any) {
   const status = job?.status || "idle";
@@ -592,9 +593,14 @@ function DashboardLayoutContent({
       const result = await checkMobileAppUpdate({ silent: false });
       setMobileUpdateInfo(result);
       if (result?.hasUpdate) {
+        try {
+          window.sessionStorage.setItem(MOBILE_APP_UPDATE_SESSION_KEY, result.latestVersion);
+        } catch {
+          // Ignore storage failures.
+        }
         setShowMobileUpdateDialog(true);
       } else if (result) {
-        toast.success("当前 APP 已是最新版本");
+        toast.success(result.hasApk ? "当前 APP 已是最新版本" : "当前版本暂无 APK 更新");
       }
     } catch (error: any) {
       toast.error(error?.message || "APP 更新检查失败");
@@ -1009,7 +1015,11 @@ function DashboardLayoutContent({
             </button>
           </div>
         )}
-        <main data-mobile-main="true" className="flex-1 p-3 sm:p-6">{children}</main>
+        <main data-mobile-main="true" className="flex-1 p-3 sm:p-6">
+          <div key={location} className="route-content-enter">
+            {children}
+          </div>
+        </main>
         <footer className="pb-4 text-center text-xs text-muted-foreground">
           <div className="inline-flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
             <a

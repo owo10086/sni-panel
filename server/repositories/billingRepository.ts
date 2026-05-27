@@ -14,10 +14,12 @@ import {
   users,
 } from "../../drizzle/schema";
 import { executeRaw, getDatabaseKind, getDb, getPool, getSqlite, insertAndGetId, nowDate } from "../dbRuntime";
+import { getForwardRulesForUserSync } from "./forwardRuleRepository";
 import { getHostById } from "./hostRepository";
-import { getTunnelById } from "./tunnelRepository";
-import { getUserById, resetUserTraffic, updateUserTrafficSettings } from "./userRepository";
+import { getTunnelById, updateTunnel } from "./tunnelRepository";
+import { disableAllUserRules, getUserById, resetUserTraffic, updateUserTrafficSettings } from "./userRepository";
 import { addMonthsClamped, nextMonthlyTrafficReset } from "./repositoryUtils";
+import { pushAgentRefresh } from "../agentEvents";
 
 // ==================== Payment Orders ====================
 
@@ -221,10 +223,42 @@ export async function expireUserSubscriptions() {
   const db = await getDb();
   if (!db) return 0;
   const nowSec = Math.floor(Date.now() / 1000);
+  const expiredRows = await db.select({
+    userId: userSubscriptions.userId,
+  }).from(userSubscriptions).where(and(
+    eq(userSubscriptions.status, "active"),
+    sql`${userSubscriptions.expiresAt} IS NOT NULL`,
+    sql`${userSubscriptions.expiresAt} <= ${nowSec}`,
+  ));
   const result: any = await executeRaw(
     "UPDATE user_subscriptions SET status='expired', updatedAt=? WHERE status='active' AND expiresAt IS NOT NULL AND expiresAt <= ?",
     [nowSec, nowSec],
   );
+  const userIds = Array.from(new Set(expiredRows.map((row) => Number(row.userId)).filter((id) => id > 0)));
+  for (const userId of userIds) {
+    const active = await getActiveUserSubscriptions(userId);
+    if (active.length === 0) {
+      const rules = await getForwardRulesForUserSync(userId);
+      await disableAllUserRules(userId);
+      const hostIds = new Set<number>();
+      const tunnelIds = new Set<number>();
+      for (const rule of rules as any[]) {
+        if (rule.hostId) hostIds.add(Number(rule.hostId));
+        if (rule.tunnelId) tunnelIds.add(Number(rule.tunnelId));
+      }
+      for (const tunnelId of tunnelIds) {
+        const tunnel = await getTunnelById(tunnelId);
+        if (tunnel) {
+          await updateTunnel(tunnelId, { isRunning: false } as any);
+          hostIds.add(Number(tunnel.entryHostId));
+          hostIds.add(Number(tunnel.exitHostId));
+        }
+      }
+      for (const hostId of hostIds) {
+        if (hostId > 0) pushAgentRefresh(hostId, "subscription-expired");
+      }
+    }
+  }
   return Number(result?.affectedRows ?? result?.changes ?? 0);
 }
 
@@ -295,12 +329,18 @@ export async function findAvailableSubscriptionPortBlock(portCount: number, host
   if (start <= 0 || end < start || end - start + 1 < count) return null;
 
   const used = new Set<number>();
-  const ruleRows = await db.select({ port: forwardRules.sourcePort }).from(forwardRules);
+  const ruleRows = await db.select({ port: forwardRules.sourcePort }).from(forwardRules).where(and(
+    eq(forwardRules.isEnabled, true),
+    eq(forwardRules.pendingDelete, false),
+  ));
   ruleRows.forEach(row => used.add(Number(row.port)));
   const subRows = await db.select({
     portRangeStart: userSubscriptions.portRangeStart,
     portRangeEnd: userSubscriptions.portRangeEnd,
-  }).from(userSubscriptions).where(eq(userSubscriptions.status, "active"));
+  }).from(userSubscriptions).where(and(
+    eq(userSubscriptions.status, "active"),
+    sql`(${userSubscriptions.expiresAt} IS NULL OR ${userSubscriptions.expiresAt} > ${Math.floor(Date.now() / 1000)})`,
+  ));
   subRows.forEach(row => {
     const s = Number(row.portRangeStart || 0);
     const e = Number(row.portRangeEnd || 0);

@@ -59,7 +59,6 @@ export async function disableForwardRulesByTunnel(tunnelId: number) {
   await db.update(forwardRules).set({
     isEnabled: false,
     disabledByTunnel: true,
-    isRunning: false,
     updatedAt: nowDate(),
   }).where(and(
     eq(forwardRules.tunnelId, tunnelId),
@@ -93,9 +92,16 @@ export async function findAvailableTunnelExitPort(
   const start = preferredStart ?? 20000;
   const end = preferredEnd ?? 65535;
   if (start > end) return null;
-  const usedRulePorts = await db.select({ port: forwardRules.sourcePort }).from(forwardRules).where(eq(forwardRules.hostId, exitHostId));
+  const usedRulePorts = await db.select({ port: forwardRules.sourcePort }).from(forwardRules).where(and(
+    eq(forwardRules.hostId, exitHostId),
+    eq(forwardRules.isEnabled, true),
+    eq(forwardRules.pendingDelete, false),
+  ));
   const usedTunnelPorts = await db.select({ port: tunnels.listenPort }).from(tunnels).where(eq(tunnels.exitHostId, exitHostId));
-  const usedExitPorts = await db.select({ port: forwardRules.tunnelExitPort }).from(forwardRules);
+  const usedExitPorts = await db.select({ port: forwardRules.tunnelExitPort }).from(forwardRules).where(and(
+    eq(forwardRules.isEnabled, true),
+    eq(forwardRules.pendingDelete, false),
+  ));
   const used = new Set<number>();
   usedRulePorts.forEach((r) => used.add(Number(r.port)));
   usedTunnelPorts.forEach((r) => used.add(Number(r.port)));
@@ -156,6 +162,8 @@ export async function isPortUsedOnHost(hostId: number, sourcePort: number, exclu
     eq(forwardRules.hostId, hostId),
     eq(forwardRules.sourcePort, sourcePort),
     eq(forwardRules.isForwardGroupTemplate, false),
+    eq(forwardRules.isEnabled, true),
+    eq(forwardRules.pendingDelete, false),
   ];
   if (excludeRuleId) conds.push(sql`${forwardRules.id} != ${excludeRuleId}`);
   const r = await db.select({ count: sql<number>`COUNT(*)` }).from(forwardRules).where(and(...conds));
@@ -172,6 +180,8 @@ export async function findAvailablePort(hostId: number, rangeStart?: number | nu
   const usedRows = await db.select({ port: forwardRules.sourcePort }).from(forwardRules).where(and(
     eq(forwardRules.hostId, hostId),
     eq(forwardRules.isForwardGroupTemplate, false),
+    eq(forwardRules.isEnabled, true),
+    eq(forwardRules.pendingDelete, false),
   ));
   const usedPorts = new Set(usedRows.map(r => r.port));
   // 闅忔満灏濊瘯
