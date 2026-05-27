@@ -61,10 +61,38 @@ export async function changeUserPassword(userId: number, oldPassword: string, ne
   return true;
 }
 
+export async function verifyUserPassword(userId: number, password: string) {
+  const user = await getUserById(userId);
+  if (!user) return false;
+  return verifyPassword(password, user.password);
+}
+
 export async function updateUserProfile(userId: number, data: { name?: string; email?: string; displayRemark?: string | null }) {
   const db = await getDb();
   if (!db) return;
   await db.update(users).set({ ...data, updatedAt: nowDate() }).where(eq(users.id, userId));
+}
+
+export async function enableUserTwoFactor(userId: number, secret: string) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(users).set({
+    twoFactorEnabled: true,
+    twoFactorSecret: secret,
+    twoFactorEnabledAt: nowDate(),
+    updatedAt: nowDate(),
+  }).where(eq(users.id, userId));
+}
+
+export async function disableUserTwoFactor(userId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(users).set({
+    twoFactorEnabled: false,
+    twoFactorSecret: null,
+    twoFactorEnabledAt: null,
+    updatedAt: nowDate(),
+  }).where(eq(users.id, userId));
 }
 
 export async function createTelegramBindCode(userId: number, code: string, expiresAt: Date) {
@@ -288,6 +316,8 @@ export async function getAllUsers() {
       telegramLastName: users.telegramLastName,
       telegramLinkedAt: users.telegramLinkedAt,
       telegramLastSeenAt: users.telegramLastSeenAt,
+      twoFactorEnabled: users.twoFactorEnabled,
+      twoFactorEnabledAt: users.twoFactorEnabledAt,
       createdAt: users.createdAt,
       lastSignedIn: users.lastSignedIn,
     })

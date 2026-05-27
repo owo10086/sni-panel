@@ -3,6 +3,7 @@ import { ENV } from "./env";
 import { pushAgentRefresh } from "./agentEvents";
 import { pushTunnelEndpointRefresh } from "./routers/helpers";
 import { addMonthsClamped } from "./repositories/repositoryUtils";
+import { clearMobileTelegramLoginChallenge, hasMobileTelegramLoginChallenge } from "./telegramMobileLogin";
 
 type TelegramUser = {
   id: number;
@@ -53,6 +54,7 @@ const TELEGRAM_BOT_COMMANDS: TelegramBotCommand[] = [
   { command: "usage", description: "查询流量和额度" },
   { command: "rules", description: "查看和管理转发规则" },
   { command: "bind", description: "使用绑定码绑定后台账号" },
+  { command: "login", description: "生成网页登录链接" },
   { command: "unbind", description: "解除 Telegram 绑定" },
   { command: "users", description: "管理员用户管理" },
   { command: "reset", description: "管理员重置用户流量" },
@@ -64,6 +66,10 @@ function randomCode(length = 32) {
   let out = "";
   while (out.length < length) out += crypto.randomUUID().replace(/-/g, "");
   return out.slice(0, length).toUpperCase();
+}
+
+function isMobileLoginCode(value: string | undefined) {
+  return /^APP[A-Z0-9]{20,64}$/i.test((value || "").trim());
 }
 
 function escapeHtml(value: unknown) {
@@ -246,6 +252,7 @@ function helpText(bound: boolean, isAdmin = false) {
       : "请先在面板个人菜单点击 Telegram 绑定按钮生成绑定码，然后在这里完成绑定。",
     "/usage - 查询我的用量",
     "/rules - 查看我的转发规则",
+    "/login - 生成网页一次性登录链接",
     "/enable 规则ID - 启用规则",
     "/disable 规则ID - 停用规则",
     "/unbind - 解除当前 Telegram 绑定（需要确认）",
@@ -278,6 +285,17 @@ function unbindConfirmKeyboard(): InlineKeyboardMarkup {
       [
         { text: "确认解除绑定", callback_data: "fx:unbind:confirm" },
         { text: "取消", callback_data: "fx:menu" },
+      ],
+    ],
+  };
+}
+
+function mobileLoginConfirmKeyboard(code: string): InlineKeyboardMarkup {
+  return {
+    inline_keyboard: [
+      [
+        { text: "确认登录 APP", callback_data: `fx:app-login:${code}` },
+        { text: "取消", callback_data: `fx:app-login-cancel:${code}` },
       ],
     ],
   };
@@ -668,6 +686,38 @@ async function handleBind(message: TelegramMessage, code: string) {
   if (boundUser) await sendMainMenu(message.chat.id, boundUser);
 }
 
+async function handleMobileLoginStart(message: TelegramMessage, code: string, user: any | null | undefined) {
+  const normalized = code.trim().toUpperCase();
+  if (!hasMobileTelegramLoginChallenge(normalized)) {
+    await sendMessage(message.chat.id, "APP 登录请求已过期，请回到 ForwardX APP 重新发起。");
+    return;
+  }
+  if (!user) {
+    await sendMessage(message.chat.id, "当前 Telegram 未绑定任何 ForwardX 账户，请先使用账号密码登录后绑定 Telegram。", bindPromptKeyboard());
+    return;
+  }
+  await sendMessage(
+    message.chat.id,
+    [
+      "<b>ForwardX APP 登录确认</b>",
+      "",
+      `将登录账户：<b>${escapeHtml(user.name || user.username)}</b>`,
+      "如果这是你本人操作，请点击下方按钮确认。登录请求 5 分钟内有效。",
+    ].join("\n"),
+    mobileLoginConfirmKeyboard(normalized),
+  );
+}
+
+async function confirmMobileLogin(chatId: number | string, messageId: number, code: string, user: any) {
+  const normalized = code.trim().toUpperCase();
+  if (!hasMobileTelegramLoginChallenge(normalized)) {
+    await editMessage(chatId, messageId, "APP 登录请求已过期，请回到 ForwardX APP 重新发起。");
+    return;
+  }
+  await db.createTelegramLoginCode(user.id, normalized, new Date(Date.now() + LOGIN_CODE_TTL_MS));
+  await editMessage(chatId, messageId, "APP 登录已确认，请返回 ForwardX APP。");
+}
+
 async function handleUsage(message: TelegramMessage, user: any) {
   await sendMessage(message.chat.id, await usageText(user));
 }
@@ -802,6 +852,10 @@ async function handleMessage(message: TelegramMessage) {
   const waitingForBindCode = hasValidBindSession(message.chat.id, identity.telegramId);
 
   if (command === "/start" && args[0]) {
+    if (isMobileLoginCode(args[0])) {
+      await handleMobileLoginStart(message, args[0], identity.user);
+      return;
+    }
     await handleBind(message, args[0]);
     return;
   }
@@ -837,6 +891,7 @@ async function handleMessage(message: TelegramMessage) {
   if (command === "/menu") return sendMainMenu(message.chat.id, user);
   if (command === "/usage") return handleUsage(message, user);
   if (command === "/rules") return handleRules(message, user);
+  if (command === "/login") return handleLogin(message, user);
   if (command === "/enable") return handleRuleToggle(message, user, args[0], true);
   if (command === "/disable") return handleRuleToggle(message, user, args[0], false);
   if (command === "/unbind") {
@@ -875,6 +930,16 @@ async function handleCallback(query: TelegramCallbackQuery) {
   }
   if (!user) {
     await editMessage(chatId, messageId, "当前 Telegram 尚未绑定 ForwardX 账户。请先完成绑定。", bindPromptKeyboard());
+    return;
+  }
+
+  if (data.startsWith("fx:app-login:")) {
+    await confirmMobileLogin(chatId, messageId, data.slice("fx:app-login:".length), user);
+    return;
+  }
+  if (data.startsWith("fx:app-login-cancel:")) {
+    clearMobileTelegramLoginChallenge(data.slice("fx:app-login-cancel:".length));
+    await editMessage(chatId, messageId, "已取消本次 APP 登录。");
     return;
   }
 

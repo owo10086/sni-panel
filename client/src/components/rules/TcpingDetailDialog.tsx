@@ -5,6 +5,13 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 
+type TcpingChartPoint = {
+  label: string;
+  fullLabel: string;
+  latency: number;
+  isTimeout: boolean;
+};
+
 /** 格式化时间标签：显示 MM/DD HH:mm */
 function formatTcpingTime(dateStr: string | Date): string {
   const d = new Date(dateStr);
@@ -56,9 +63,9 @@ function TcpingDetailDialog({
     { enabled: open, refetchInterval: open ? 30000 : false }
   );
 
-  const chartData = useMemo(() => {
+  const chartData = useMemo<TcpingChartPoint[]>(() => {
     if (!data || data.length === 0) return [];
-    return data.map((d: any) => ({
+    return data.map((d: any): TcpingChartPoint => ({
       label: formatTcpingTime(d.recordedAt),
       fullLabel: formatTcpingTime(d.recordedAt),
       latency: d.isTimeout ? 0 : (Number(d.latencyMs) || 0),
@@ -85,7 +92,7 @@ function TcpingDetailDialog({
     if (values.length === 0) {
       return { total, timeout, lossRate, valid: 0, max: null as number | null, min: null as number | null, avg: null as number | null };
     }
-    const sum = values.reduce((acc, v) => acc + v, 0);
+    const sum = values.reduce((acc: number, v: number) => acc + v, 0);
     return {
       total,
       timeout,
@@ -161,26 +168,26 @@ function TcpingDetailDialog({
             </ResponsiveContainer>
           )}
         </div>
-        <div className="grid gap-2 sm:grid-cols-5">
-          <div className="rounded-lg border border-border/50 bg-muted/20 px-3 py-2">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-5" data-latency-stats="true">
+          <div className="latency-stat-card rounded-lg border border-border/50 bg-muted/20 px-3 py-2">
             <p className="text-[11px] text-muted-foreground">统计次数</p>
             <p className="mt-1 text-sm font-semibold tabular-nums">
               {tcpingStats.total}
             </p>
           </div>
-          <div className="rounded-lg border border-border/50 bg-muted/20 px-3 py-2">
+          <div className="latency-stat-card rounded-lg border border-border/50 bg-muted/20 px-3 py-2">
             <p className="text-[11px] text-muted-foreground">最大延迟</p>
             <p className="mt-1 text-sm font-semibold tabular-nums">{tcpingStats.max === null ? "--" : `${tcpingStats.max} ms`}</p>
           </div>
-          <div className="rounded-lg border border-border/50 bg-muted/20 px-3 py-2">
+          <div className="latency-stat-card rounded-lg border border-border/50 bg-muted/20 px-3 py-2">
             <p className="text-[11px] text-muted-foreground">丢包率</p>
             <p className="mt-1 text-sm font-semibold tabular-nums">{tcpingStats.total === 0 ? "--" : `${tcpingStats.lossRate}%`}</p>
           </div>
-          <div className="rounded-lg border border-border/50 bg-muted/20 px-3 py-2">
+          <div className="latency-stat-card rounded-lg border border-border/50 bg-muted/20 px-3 py-2">
             <p className="text-[11px] text-muted-foreground">最小延迟</p>
             <p className="mt-1 text-sm font-semibold tabular-nums">{tcpingStats.min === null ? "--" : `${tcpingStats.min} ms`}</p>
           </div>
-          <div className="rounded-lg border border-border/50 bg-muted/20 px-3 py-2">
+          <div className="latency-stat-card col-span-2 rounded-lg border border-border/50 bg-muted/20 px-3 py-2 sm:col-span-1">
             <p className="text-[11px] text-muted-foreground">平均延迟</p>
             <p className="mt-1 text-sm font-semibold tabular-nums">{tcpingStats.avg === null ? "--" : `${tcpingStats.avg} ms`}</p>
           </div>

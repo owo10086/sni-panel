@@ -72,6 +72,7 @@ const tables: TableDef[] = [
       c("telegramId", "text"), c("telegramUsername", "text"), c("telegramFirstName", "text"), c("telegramLastName", "text"),
       c("telegramLinkedAt", "epoch"), c("telegramLastSeenAt", "epoch"), c("telegramBindCode", "text"),
       c("telegramBindCodeExpiresAt", "epoch"), c("telegramLoginCode", "text"), c("telegramLoginCodeExpiresAt", "epoch"),
+      c("twoFactorEnabled", "bool", { notNull: true, default: false }), c("twoFactorSecret", "text"), c("twoFactorEnabledAt", "epoch"),
       c("createdAt", "epoch", { notNull: true, default: "now" }), c("updatedAt", "epoch", { notNull: true, default: "now" }),
       c("lastSignedIn", "epoch", { notNull: true, default: "now" }),
     ],
@@ -194,6 +195,7 @@ const seedSettings = [
   ["redemptionEnabled", "true"],
   ["discountEnabled", "true"],
   ["trafficBillingEnabled", "false"],
+  ["twoFactorEnabled", "false"],
 ] as const;
 
 function quote(kind: "mysql" | "sqlite", id: string) {

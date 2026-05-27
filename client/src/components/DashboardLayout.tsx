@@ -60,6 +60,7 @@ import {
 } from "lucide-react";
 import { App as CapacitorApp } from "@capacitor/app";
 import { useEffect, useMemo, useRef, useState } from "react";
+import QRCode from "qrcode";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from "./DashboardLayoutSkeleton";
 import { Button } from "./ui/button";
@@ -74,6 +75,7 @@ import { checkMobileAppUpdate, openMobileReleasePage, type MobileAppUpdateResult
 import { cn } from "@/lib/utils";
 
 const announcementsMenuItem = { icon: Megaphone, label: "公告", path: "/announcements" };
+const TWO_FACTOR_SETUP_SECONDS = 5 * 60;
 
 const mainMenuItems = [
   { icon: LayoutDashboard, label: "仪表盘", path: "/" },
@@ -170,6 +172,8 @@ function DashboardLayoutContent({
   const [location, setLocation] = useLocation();
   const { state, toggleSidebar, isMobile, openMobile, setOpenMobile } = useSidebar();
   const openMobileRef = useRef(openMobile);
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const accountMenuOpenRef = useRef(accountMenuOpen);
   const isCollapsed = state === "collapsed";
   const isAdmin = user?.role === "admin";
   const utils = trpc.useUtils();
@@ -234,6 +238,12 @@ function DashboardLayoutContent({
     }
   });
   const [telegramBind, setTelegramBind] = useState<any | null>(null);
+  const [showTwoFactorDialog, setShowTwoFactorDialog] = useState(false);
+  const [twoFactorSetup, setTwoFactorSetup] = useState<{ setupId: string; secret: string; otpauthUrl: string; expiresAt: Date; expiresInSeconds: number } | null>(null);
+  const [twoFactorQrCode, setTwoFactorQrCode] = useState("");
+  const [twoFactorSetupTick, setTwoFactorSetupTick] = useState(Date.now());
+  const [twoFactorPassword, setTwoFactorPassword] = useState("");
+  const [twoFactorCode, setTwoFactorCode] = useState("");
   const { data: upgradeStatus, refetch: refetchUpgradeStatus } = trpc.system.upgradeStatus.useQuery(undefined, {
     enabled: isAdmin,
     refetchInterval: (query) => {
@@ -445,6 +455,136 @@ function DashboardLayoutContent({
     createTelegramBindMutation.mutate();
   };
 
+  const { data: twoFactorStatus } = trpc.auth.twoFactorStatus.useQuery(undefined, {
+    enabled: !!user,
+    refetchOnWindowFocus: false,
+    retry: false,
+  });
+
+  const beginTwoFactorSetupMutation = trpc.auth.beginTwoFactorSetup.useMutation({
+    onSuccess: (data) => {
+      setTwoFactorSetup(data);
+      setTwoFactorQrCode("");
+      setTwoFactorSetupTick(Date.now());
+      setTwoFactorCode("");
+      toast.success("双重验证二维码已生成");
+    },
+    onError: (error) => toast.error(error.message || "生成双重验证二维码失败"),
+  });
+
+  const enableTwoFactorMutation = trpc.auth.enableTwoFactor.useMutation({
+    onSuccess: () => {
+      toast.success("双重验证已启用");
+      setTwoFactorSetup(null);
+      setTwoFactorQrCode("");
+      setTwoFactorPassword("");
+      setTwoFactorCode("");
+      utils.auth.twoFactorStatus.invalidate();
+      utils.auth.me.invalidate();
+    },
+    onError: (error) => toast.error(error.message || "启用双重验证失败"),
+  });
+
+  const disableTwoFactorMutation = trpc.auth.disableTwoFactor.useMutation({
+    onSuccess: () => {
+      toast.success("双重验证已关闭");
+      setTwoFactorPassword("");
+      setTwoFactorCode("");
+      utils.auth.twoFactorStatus.invalidate();
+      utils.auth.me.invalidate();
+    },
+    onError: (error) => toast.error(error.message || "关闭双重验证失败"),
+  });
+
+  useEffect(() => {
+    if (!twoFactorSetup?.otpauthUrl) {
+      setTwoFactorQrCode("");
+      return;
+    }
+    let cancelled = false;
+    QRCode.toDataURL(twoFactorSetup.otpauthUrl, {
+      errorCorrectionLevel: "M",
+      margin: 1,
+      scale: 8,
+      color: {
+        dark: "#0f172aff",
+        light: "#ffffffff",
+      },
+    })
+      .then((url) => {
+        if (!cancelled) setTwoFactorQrCode(url);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setTwoFactorQrCode("");
+          toast.error("二维码生成失败，请使用手动密钥添加");
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [twoFactorSetup?.otpauthUrl]);
+
+  useEffect(() => {
+    if (!showTwoFactorDialog || twoFactorStatus?.enabled || !twoFactorSetup) return;
+    const timer = window.setInterval(() => setTwoFactorSetupTick(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [showTwoFactorDialog, twoFactorSetup, twoFactorStatus?.enabled]);
+
+  const twoFactorSetupExpiresAt = twoFactorSetup?.expiresAt ? new Date(twoFactorSetup.expiresAt).getTime() : 0;
+  const twoFactorSetupRemaining = twoFactorSetupExpiresAt ? Math.max(0, Math.ceil((twoFactorSetupExpiresAt - twoFactorSetupTick) / 1000)) : 0;
+  const twoFactorSetupExpired = !!twoFactorSetup && twoFactorSetupRemaining <= 0;
+  const twoFactorSetupRemainingLabel = `${Math.floor(twoFactorSetupRemaining / 60)}:${String(twoFactorSetupRemaining % 60).padStart(2, "0")}`;
+
+  const openTwoFactorDialog = () => {
+    setShowTwoFactorDialog(true);
+    setTwoFactorPassword("");
+    setTwoFactorCode("");
+    setTwoFactorQrCode("");
+    if (!twoFactorStatus?.enabled && twoFactorStatus?.globalEnabled) {
+      beginTwoFactorSetupMutation.mutate();
+    }
+  };
+
+  const handleEnableTwoFactor = () => {
+    if (!twoFactorSetup) {
+      beginTwoFactorSetupMutation.mutate();
+      return;
+    }
+    if (twoFactorSetupExpired) {
+      toast.error("二维码已过期，请重新生成");
+      return;
+    }
+    if (!twoFactorPassword) {
+      toast.error("请输入当前密码");
+      return;
+    }
+    if (twoFactorCode.length < 6) {
+      toast.error("请输入 6 位动态验证码");
+      return;
+    }
+    enableTwoFactorMutation.mutate({
+      setupId: twoFactorSetup.setupId,
+      password: twoFactorPassword,
+      code: twoFactorCode,
+    });
+  };
+
+  const handleDisableTwoFactor = () => {
+    if (!twoFactorPassword) {
+      toast.error("请输入当前密码");
+      return;
+    }
+    if (twoFactorCode.length < 6) {
+      toast.error("请输入 6 位动态验证码");
+      return;
+    }
+    disableTwoFactorMutation.mutate({
+      password: twoFactorPassword,
+      code: twoFactorCode,
+    });
+  };
+
   const handleMobileUpdateCheck = async () => {
     if (!mobileAuth.isNative || checkingMobileUpdate) return;
     try {
@@ -518,7 +658,10 @@ function DashboardLayoutContent({
   );
   const navigateFromSidebar = (path: string) => {
     setLocation(path);
-    if (isMobile) setOpenMobile(false);
+    if (isMobile) {
+      setAccountMenuOpen(false);
+      setOpenMobile(false);
+    }
   };
 
   useEffect(() => {
@@ -526,11 +669,20 @@ function DashboardLayoutContent({
   }, [openMobile]);
 
   useEffect(() => {
+    accountMenuOpenRef.current = accountMenuOpen;
+  }, [accountMenuOpen]);
+
+  useEffect(() => {
+    if (isMobile && !openMobile) setAccountMenuOpen(false);
+  }, [isMobile, openMobile]);
+
+  useEffect(() => {
     if (!mobileAuth.isNative || !isMobile) return;
     let disposed = false;
     let removeListener: (() => void) | undefined;
     CapacitorApp.addListener("backButton", (event) => {
-      if (openMobileRef.current) {
+      if (accountMenuOpenRef.current || openMobileRef.current) {
+        setAccountMenuOpen(false);
         setOpenMobile(false);
         return;
       }
@@ -752,7 +904,7 @@ function DashboardLayoutContent({
               </div>
             </button>
           )}
-          <DropdownMenu>
+          <DropdownMenu open={accountMenuOpen} onOpenChange={setAccountMenuOpen}>
             <DropdownMenuTrigger asChild>
               <button
                 className="flex items-center gap-2 rounded-lg border border-border/40 bg-background/35 px-2 py-2 text-left transition-colors hover:bg-accent/50 w-full group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:border-0 group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:px-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -795,6 +947,15 @@ function DashboardLayoutContent({
                 <Send className="mr-2 h-4 w-4" />
                 <span>{telegramStatus?.bound ? "Telegram 已绑定" : "绑定 Telegram"}</span>
               </DropdownMenuItem>
+              {twoFactorStatus?.globalEnabled && (
+                <DropdownMenuItem
+                  onClick={openTwoFactorDialog}
+                  className="cursor-pointer"
+                >
+                  <Shield className="mr-2 h-4 w-4" />
+                  <span>{twoFactorStatus?.enabled ? "双重验证已启用" : "绑定双重验证"}</span>
+                </DropdownMenuItem>
+              )}
               {mobileAuth.isNative && (
                 <DropdownMenuItem
                   onClick={handleMobileUpdateCheck}
@@ -1071,6 +1232,152 @@ function DashboardLayoutContent({
             >
               {changePasswordMutation.isPending ? "修改中..." : "确认修改"}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showTwoFactorDialog} onOpenChange={setShowTwoFactorDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogTitle className="flex items-center gap-2">
+            <Shield className="h-5 w-5 text-primary" />
+            双重验证
+          </DialogTitle>
+          <DialogDescription>
+            使用 Authenticator、Google Authenticator、Microsoft Authenticator 等 2FA 软件生成动态验证码。
+          </DialogDescription>
+          {!twoFactorStatus?.globalEnabled ? (
+            <div className="rounded-lg border border-border/40 bg-muted/20 p-3 text-sm text-muted-foreground">
+              管理员尚未启用双重验证功能。
+            </div>
+          ) : twoFactorStatus?.enabled ? (
+            <div className="space-y-4 py-2">
+              <div className="rounded-lg border border-emerald-500/25 bg-emerald-500/10 p-3 text-sm text-emerald-700 dark:text-emerald-300">
+                当前账户已启用双重验证。
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="two-factor-disable-password">当前密码</Label>
+                <Input
+                  id="two-factor-disable-password"
+                  type="password"
+                  value={twoFactorPassword}
+                  onChange={(e) => setTwoFactorPassword(e.target.value)}
+                  placeholder="请输入当前密码"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="two-factor-disable-code">动态验证码</Label>
+                <Input
+                  id="two-factor-disable-code"
+                  inputMode="numeric"
+                  maxLength={6}
+                  value={twoFactorCode}
+                  onChange={(e) => setTwoFactorCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                  placeholder="请输入 6 位验证码"
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4 py-2">
+              <div className="rounded-lg border border-border/40 bg-muted/20 p-3 text-sm text-muted-foreground">
+                使用 2FA 软件扫描二维码，填写 6 位动态验证码完成绑定。二维码 {Math.round((twoFactorSetup?.expiresInSeconds || TWO_FACTOR_SETUP_SECONDS) / 60)} 分钟内有效。
+              </div>
+              <div className="flex flex-col items-center gap-3">
+                <div className={`flex h-48 w-48 items-center justify-center rounded-lg border bg-white p-3 ${twoFactorSetupExpired ? "opacity-45" : ""}`}>
+                  {beginTwoFactorSetupMutation.isPending ? (
+                    <Loader2 className="h-6 w-6 animate-spin text-slate-500" />
+                  ) : twoFactorQrCode ? (
+                    <img src={twoFactorQrCode} alt="2FA 绑定二维码" className="h-full w-full" />
+                  ) : (
+                    <span className="text-xs text-slate-500">二维码生成中</span>
+                  )}
+                </div>
+                <div className={`text-xs ${twoFactorSetupExpired ? "text-destructive" : "text-muted-foreground"}`}>
+                  {twoFactorSetup
+                    ? twoFactorSetupExpired
+                      ? "二维码已过期，请重新生成"
+                      : `剩余 ${twoFactorSetupRemainingLabel}`
+                    : "正在生成二维码"}
+                </div>
+              </div>
+              {twoFactorSetup?.otpauthUrl && (
+                <Button variant="outline" asChild className="w-full gap-2">
+                  <a href={twoFactorSetup.otpauthUrl}>
+                    <ExternalLink className="h-4 w-4" />
+                    打开 2FA 软件添加
+                  </a>
+                </Button>
+              )}
+              <div className="space-y-2">
+                <Label>备用密钥</Label>
+                <div className="flex items-center gap-2">
+                  <code className="min-w-0 flex-1 break-all rounded-md border bg-background px-3 py-2 font-mono text-sm">
+                    {twoFactorSetup?.secret || "正在生成..."}
+                  </code>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => twoFactorSetup?.secret && copyText(twoFactorSetup.secret)}
+                    disabled={!twoFactorSetup?.secret || twoFactorSetupExpired}
+                    title="复制备用密钥"
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="two-factor-enable-password">当前密码</Label>
+                <Input
+                  id="two-factor-enable-password"
+                  type="password"
+                  value={twoFactorPassword}
+                  onChange={(e) => setTwoFactorPassword(e.target.value)}
+                  placeholder="请输入当前密码"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="two-factor-enable-code">动态验证码</Label>
+                <Input
+                  id="two-factor-enable-code"
+                  inputMode="numeric"
+                  maxLength={6}
+                  value={twoFactorCode}
+                  onChange={(e) => setTwoFactorCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                  placeholder="请输入 6 位验证码"
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setShowTwoFactorDialog(false)}>
+              关闭
+            </Button>
+            {twoFactorStatus?.globalEnabled && twoFactorStatus?.enabled ? (
+              <Button
+                variant="destructive"
+                onClick={handleDisableTwoFactor}
+                disabled={disableTwoFactorMutation.isPending}
+              >
+                {disableTwoFactorMutation.isPending ? "关闭中..." : "关闭双重验证"}
+              </Button>
+            ) : twoFactorStatus?.globalEnabled ? (
+              <>
+                {twoFactorSetupExpired && (
+                  <Button
+                    variant="outline"
+                    onClick={() => beginTwoFactorSetupMutation.mutate()}
+                    disabled={beginTwoFactorSetupMutation.isPending}
+                  >
+                    {beginTwoFactorSetupMutation.isPending ? "生成中..." : "重新生成二维码"}
+                  </Button>
+                )}
+                <Button
+                  onClick={handleEnableTwoFactor}
+                  disabled={beginTwoFactorSetupMutation.isPending || enableTwoFactorMutation.isPending || twoFactorSetupExpired}
+                >
+                  {enableTwoFactorMutation.isPending ? "启用中..." : "启用双重验证"}
+                </Button>
+              </>
+            ) : null}
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -49,6 +49,7 @@ import {
   Send,
   Globe,
   ShieldCheck,
+  Shield,
   ExternalLink,
   RefreshCw,
   Rocket,
@@ -1449,6 +1450,7 @@ function SystemInfoSection() {
   });
   const [panelUrlInput, setPanelUrlInput] = useState("");
   const [registrationEnabled, setRegistrationEnabled] = useState(true);
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
   const [homepageEnabled, setHomepageEnabled] = useState(true);
   const [homepageCustomEnabled, setHomepageCustomEnabled] = useState(false);
   const [homepageHtml, setHomepageHtml] = useState("");
@@ -1485,6 +1487,7 @@ function SystemInfoSection() {
     if (settings) {
       setPanelUrlInput(settings.panelPublicUrl || "");
       setRegistrationEnabled(settings.registrationEnabled ?? true);
+      setTwoFactorEnabled(!!settings.twoFactorEnabled);
       setHomepageEnabled(settings.homepageEnabled ?? true);
       setHomepageCustomEnabled(!!settings.homepageCustomEnabled);
       setHomepageHtml(settings.homepageHtml || "");
@@ -1540,6 +1543,10 @@ function SystemInfoSection() {
 
   const handleSaveRegistration = () => {
     updateSettingsMutation.mutate({ registrationEnabled });
+  };
+
+  const handleSaveTwoFactor = () => {
+    updateSettingsMutation.mutate({ twoFactorEnabled });
   };
 
   const handleSaveHomepage = () => {
@@ -1752,6 +1759,34 @@ function SystemInfoSection() {
           <div className="flex justify-end">
             <Button onClick={handleSaveRegistration} disabled={updateSettingsMutation.isPending}>
               {updateSettingsMutation.isPending ? "保存中..." : "保存注册设置"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="border-border/40 bg-card/60 backdrop-blur-md">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Shield className="h-4 w-4 text-primary" />
+            双重验证
+          </CardTitle>
+          <CardDescription>
+            启用后，用户可在账号菜单绑定 2FA 验证器软件；已绑定的账户登录时需要输入动态验证码。
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between gap-3 rounded-lg border border-border/40 bg-muted/20 p-3">
+            <div>
+              <p className="text-sm font-medium">启用 2FA 软件支持</p>
+              <p className="text-xs text-muted-foreground">
+                关闭后不会要求动态验证码，用户账号菜单中的双重验证入口也会隐藏。
+              </p>
+            </div>
+            <Switch checked={twoFactorEnabled} onCheckedChange={setTwoFactorEnabled} />
+          </div>
+          <div className="flex justify-end">
+            <Button onClick={handleSaveTwoFactor} disabled={updateSettingsMutation.isPending}>
+              {updateSettingsMutation.isPending ? "保存中..." : "保存双重验证设置"}
             </Button>
           </div>
         </CardContent>

@@ -76,6 +76,13 @@ type TunnelForm = {
   blockTls: boolean;
 };
 
+type TunnelLatencyPoint = {
+  label: string;
+  fullLabel: string;
+  latency: number;
+  isTimeout: boolean;
+};
+
 const defaultForm: TunnelForm = {
   name: "",
   entryHostId: null,
@@ -162,9 +169,9 @@ function TunnelLatencyDialog({
     { tunnelId, hours: 24 },
     { enabled: open, refetchInterval: open ? 30000 : false }
   );
-  const chartData = useMemo(() => {
+  const chartData = useMemo<TunnelLatencyPoint[]>(() => {
     if (!data || data.length === 0) return [];
-    return data.map((d: any) => ({
+    return data.map((d: any): TunnelLatencyPoint => ({
       label: formatTunnelLatencyTime(d.recordedAt),
       fullLabel: formatTunnelLatencyTime(d.recordedAt),
       latency: d.isTimeout ? 0 : (Number(d.latencyMs) || 0),
@@ -179,7 +186,7 @@ function TunnelLatencyDialog({
       .filter((d) => !d.isTimeout && d.latency > 0)
       .map((d) => d.latency);
     if (values.length === 0) return { total, timeout, lossRate, max: null as number | null, min: null as number | null, avg: null as number | null };
-    const sum = values.reduce((acc, v) => acc + v, 0);
+    const sum = values.reduce((acc: number, v: number) => acc + v, 0);
     return { total, timeout, lossRate, max: Math.max(...values), min: Math.min(...values), avg: Math.round(sum / values.length) };
   }, [chartData]);
   const yMax = useMemo(() => {
@@ -238,24 +245,24 @@ function TunnelLatencyDialog({
             </ResponsiveContainer>
           )}
         </div>
-        <div className="grid gap-2 sm:grid-cols-5">
-          <div className="rounded-lg border border-border/50 bg-muted/20 px-3 py-2">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-5" data-latency-stats="true">
+          <div className="latency-stat-card rounded-lg border border-border/50 bg-muted/20 px-3 py-2">
             <p className="text-[11px] text-muted-foreground">统计次数</p>
             <p className="mt-1 text-sm font-semibold tabular-nums">{stats.total}</p>
           </div>
-          <div className="rounded-lg border border-border/50 bg-muted/20 px-3 py-2">
+          <div className="latency-stat-card rounded-lg border border-border/50 bg-muted/20 px-3 py-2">
             <p className="text-[11px] text-muted-foreground">最大延迟</p>
             <p className="mt-1 text-sm font-semibold tabular-nums">{stats.max === null ? "--" : `${stats.max} ms`}</p>
           </div>
-          <div className="rounded-lg border border-border/50 bg-muted/20 px-3 py-2">
+          <div className="latency-stat-card rounded-lg border border-border/50 bg-muted/20 px-3 py-2">
             <p className="text-[11px] text-muted-foreground">丢包率</p>
             <p className="mt-1 text-sm font-semibold tabular-nums">{stats.total === 0 ? "--" : `${stats.lossRate}%`}</p>
           </div>
-          <div className="rounded-lg border border-border/50 bg-muted/20 px-3 py-2">
+          <div className="latency-stat-card rounded-lg border border-border/50 bg-muted/20 px-3 py-2">
             <p className="text-[11px] text-muted-foreground">最小延迟</p>
             <p className="mt-1 text-sm font-semibold tabular-nums">{stats.min === null ? "--" : `${stats.min} ms`}</p>
           </div>
-          <div className="rounded-lg border border-border/50 bg-muted/20 px-3 py-2">
+          <div className="latency-stat-card col-span-2 rounded-lg border border-border/50 bg-muted/20 px-3 py-2 sm:col-span-1">
             <p className="text-[11px] text-muted-foreground">平均延迟</p>
             <p className="mt-1 text-sm font-semibold tabular-nums">{stats.avg === null ? "--" : `${stats.avg} ms`}</p>
           </div>
@@ -514,7 +521,7 @@ function TunnelsContent() {
       mode: form.mode,
       fxpVersion: form.mode === "forwardx" ? form.fxpVersion : 1,
       listenPort: form.listenPort,
-      networkType: connectHost ? "private" : "public",
+      networkType: connectHost ? "private" as const : "public" as const,
       connectHost: connectHost || null,
       blockHttp: form.blockHttp,
       blockSocks: form.blockSocks,

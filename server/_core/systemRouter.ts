@@ -280,6 +280,7 @@ export const systemRouter = router({
       version: APP_VERSION,
       agentVersion: AGENT_VERSION,
       registrationEnabled: all.registrationEnabled !== "false",
+      twoFactorEnabled: all.twoFactorEnabled === "true",
     }));
   }),
 
@@ -293,6 +294,7 @@ export const systemRouter = router({
       agentVersion: AGENT_VERSION,
       panelPublicUrl: all.panelPublicUrl ?? "",
       registrationEnabled: all.registrationEnabled !== "false",
+      twoFactorEnabled: all.twoFactorEnabled === "true",
       homepageEnabled: all.homepageEnabled !== "false",
       homepageCustomEnabled: all.homepageCustomEnabled === "true",
       homepageHtml: all.homepageHtml ?? "",
@@ -366,6 +368,7 @@ export const systemRouter = router({
       z.object({
         panelPublicUrl: z.string().max(256).optional(),
         registrationEnabled: z.boolean().optional(),
+        twoFactorEnabled: z.boolean().optional(),
         homepageEnabled: z.boolean().optional(),
         homepageCustomEnabled: z.boolean().optional(),
         homepageHtml: z.string().max(60000).optional(),
@@ -419,6 +422,10 @@ export const systemRouter = router({
       if (input.registrationEnabled !== undefined) {
         await db.setSetting("registrationEnabled", input.registrationEnabled ? "true" : "false");
         console.info(`[Settings] public registration ${input.registrationEnabled ? "enabled" : "disabled"}`);
+      }
+      if (input.twoFactorEnabled !== undefined) {
+        await db.setSetting("twoFactorEnabled", input.twoFactorEnabled ? "true" : "false");
+        console.info(`[Settings] 2FA ${input.twoFactorEnabled ? "enabled" : "disabled"}`);
       }
       if (input.homepageEnabled !== undefined) {
         await db.setSetting("homepageEnabled", input.homepageEnabled ? "true" : "false");

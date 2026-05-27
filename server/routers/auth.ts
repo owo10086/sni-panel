@@ -7,6 +7,9 @@ import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
 import { ENV } from "../env";
 import * as db from "../db";
 import { getEmailConfig, sendVerificationCode } from "../email";
+import { createTotpSecret, createTotpUri, verifyTotpToken } from "../totp";
+import { clearTwoFactorChallenge, createTwoFactorChallenge, getTwoFactorChallenge, recordTwoFactorChallengeFailure } from "../twoFactorChallenges";
+import { clearTwoFactorSetupChallenge, clearTwoFactorSetupChallengesForUser, createTwoFactorSetupChallenge, getTwoFactorSetupChallenge } from "../twoFactorSetupChallenges";
 
 interface CaptchaEntry {
   question: string;
@@ -22,6 +25,7 @@ const LOGIN_FAIL_WINDOW_MS = 30 * 60 * 1000;
 const EMAIL_CODE_TTL_MS = 5 * 60 * 1000;
 const EMAIL_CODE_COOLDOWN_MS = 60 * 1000;
 const EMAIL_CODE_MAX_ATTEMPTS = 5;
+const TWO_FACTOR_ISSUER = "ForwardX";
 
 function generateCaptcha(): { captchaId: string; question: string } {
   const a = Math.floor(Math.random() * 20) + 1;
@@ -100,6 +104,18 @@ function getRequestIp(ctx: { req: { ip?: string; socket: { remoteAddress?: strin
   return ctx.req.ip || ctx.req.socket.remoteAddress || "unknown";
 }
 
+function createLoginSession(ctx: any, user: any, mobile?: boolean) {
+  const token = jwt.sign({ userId: user.id }, ENV.cookieSecret, { expiresIn: "10d" });
+  ctx.res.cookie(COOKIE_NAME, token, getSessionCookieOptions(ctx.req));
+  const { password, twoFactorSecret: _twoFactorSecret, ...safeUser } = user;
+  return { ...safeUser, mobileToken: mobile ? token : null };
+}
+
+function sanitizeUser(user: any) {
+  const { password, twoFactorSecret: _twoFactorSecret, ...safeUser } = user;
+  return safeUser;
+}
+
 function parseEmailWhitelist(value?: string | null) {
   const items = String(value || "")
     .split(/[,，]/)
@@ -148,8 +164,7 @@ function verifyEmailCode(email: string, code?: string) {
 export const authRouter = router({
   me: publicProcedure.query(({ ctx }) => {
     if (!ctx.user) return null;
-    const { password, ...safeUser } = ctx.user;
-    return safeUser;
+    return sanitizeUser(ctx.user);
   }),
 
   getCaptcha: publicProcedure.query(() => {
@@ -201,6 +216,7 @@ export const authRouter = router({
       captchaId: z.string().optional(),
       captchaAnswer: z.number().optional(),
       mobile: z.boolean().optional(),
+      twoFactorCode: z.string().optional(),
     }))
     .mutation(async ({ input, ctx }) => {
       const ip = ctx.req.ip || ctx.req.socket.remoteAddress || "unknown";
@@ -226,12 +242,46 @@ export const authRouter = router({
         throw new Error("用户名或密码错误");
       }
 
+      const twoFactorEnabled = (await db.getSetting("twoFactorEnabled")) === "true";
+      if (twoFactorEnabled && user.twoFactorEnabled && user.twoFactorSecret) {
+        if (!input.twoFactorCode?.trim()) {
+          const challenge = createTwoFactorChallenge({ userId: user.id, username: user.username, mobile: input.mobile });
+          return { twoFactorRequired: true as const, username: user.username, ...challenge };
+        }
+        if (!verifyTotpToken(user.twoFactorSecret, input.twoFactorCode)) {
+          recordLoginFail(ip, input.username);
+          console.warn(`[Auth] Login 2FA failed userId=${user.id} username=${maskIdentifier(user.username)} ip=${ip}`);
+          throw new Error("双重验证验证码错误或已过期");
+        }
+      }
+
       clearLoginFail(ip, input.username);
-      const token = jwt.sign({ userId: user.id }, ENV.cookieSecret, { expiresIn: "10d" });
-      ctx.res.cookie(COOKIE_NAME, token, getSessionCookieOptions(ctx.req));
       console.info(`[Auth] Login success userId=${user.id} username=${maskIdentifier(user.username)} ip=${ip}`);
-      const { password, ...safeUser } = user;
-      return { ...safeUser, mobileToken: input.mobile ? token : null };
+      return createLoginSession(ctx, user, input.mobile);
+    }),
+
+  verifyTwoFactorLogin: publicProcedure
+    .input(z.object({
+      challengeId: z.string().min(16),
+      code: z.string().min(6).max(12),
+      mobile: z.boolean().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const challenge = getTwoFactorChallenge(input.challengeId);
+      if (!challenge) throw new Error("双重验证已过期，请重新登录");
+      const user = await db.getUserById(challenge.userId);
+      if (!user?.twoFactorEnabled || !user.twoFactorSecret) {
+        throw new Error("当前账户未启用双重验证");
+      }
+      if (!verifyTotpToken(user.twoFactorSecret, input.code)) {
+        console.warn(`[Auth] 2FA challenge failed userId=${user.id} ip=${getRequestIp(ctx)}`);
+        recordTwoFactorChallengeFailure(input.challengeId);
+        throw new Error("双重验证验证码错误或已过期");
+      }
+      clearTwoFactorChallenge(input.challengeId);
+      clearLoginFail(getRequestIp(ctx), challenge.username);
+      console.info(`[Auth] 2FA login success userId=${user.id} username=${maskIdentifier(user.username)} ip=${getRequestIp(ctx)}`);
+      return createLoginSession(ctx, user, input.mobile ?? challenge.mobile);
     }),
 
   register: publicProcedure
@@ -304,6 +354,76 @@ export const authRouter = router({
         throw new Error("当前密码错误");
       }
       console.info(`[Auth] Password changed userId=${ctx.user.id}`);
+      return { success: true };
+    }),
+
+  twoFactorStatus: protectedProcedure.query(async ({ ctx }) => {
+    const globalEnabled = (await db.getSetting("twoFactorEnabled")) === "true";
+    return {
+      globalEnabled,
+      enabled: !!ctx.user.twoFactorEnabled,
+      enabledAt: ctx.user.twoFactorEnabledAt,
+    };
+  }),
+
+  beginTwoFactorSetup: protectedProcedure.mutation(async ({ ctx }) => {
+    const globalEnabled = (await db.getSetting("twoFactorEnabled")) === "true";
+    if (!globalEnabled) throw new Error("管理员尚未启用双重验证功能");
+    const secret = createTotpSecret();
+    clearTwoFactorSetupChallengesForUser(ctx.user.id);
+    const challenge = createTwoFactorSetupChallenge({ userId: ctx.user.id, secret });
+    return {
+      secret,
+      ...challenge,
+      otpauthUrl: createTotpUri({
+        issuer: TWO_FACTOR_ISSUER,
+        account: ctx.user.username,
+        secret,
+      }),
+    };
+  }),
+
+  enableTwoFactor: protectedProcedure
+    .input(z.object({
+      setupId: z.string().min(16),
+      code: z.string().min(6).max(12),
+      password: z.string().min(1, "请输入当前密码"),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const globalEnabled = (await db.getSetting("twoFactorEnabled")) === "true";
+      if (!globalEnabled) throw new Error("管理员尚未启用双重验证功能");
+      if (!(await db.verifyUserPassword(ctx.user.id, input.password))) {
+        throw new Error("当前密码错误");
+      }
+      const setup = getTwoFactorSetupChallenge(input.setupId, ctx.user.id);
+      if (!setup) {
+        throw new Error("双重验证二维码已过期，请重新生成后再绑定");
+      }
+      if (!verifyTotpToken(setup.secret, input.code)) {
+        throw new Error("双重验证验证码错误或已过期");
+      }
+      const secret = setup.secret.trim().replace(/[\s=-]/g, "").toUpperCase();
+      await db.enableUserTwoFactor(ctx.user.id, secret);
+      clearTwoFactorSetupChallenge(input.setupId);
+      clearTwoFactorSetupChallengesForUser(ctx.user.id);
+      console.info(`[Auth] 2FA enabled userId=${ctx.user.id}`);
+      return { success: true };
+    }),
+
+  disableTwoFactor: protectedProcedure
+    .input(z.object({
+      password: z.string().min(1, "请输入当前密码"),
+      code: z.string().min(6).max(12).optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      if (!(await db.verifyUserPassword(ctx.user.id, input.password))) {
+        throw new Error("当前密码错误");
+      }
+      if (ctx.user.twoFactorSecret && !verifyTotpToken(ctx.user.twoFactorSecret, input.code || "")) {
+        throw new Error("双重验证验证码错误或已过期");
+      }
+      await db.disableUserTwoFactor(ctx.user.id);
+      console.info(`[Auth] 2FA disabled userId=${ctx.user.id}`);
       return { success: true };
     }),
 

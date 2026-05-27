@@ -7,13 +7,19 @@ import { adminProcedure, protectedProcedure, publicProcedure, router } from "../
 import { ENV } from "../env";
 import * as db from "../db";
 import { sendTelegramMessage } from "../telegramBot";
+import { createMobileTelegramLoginChallenge, takeMobileTelegramLoginChallenge } from "../telegramMobileLogin";
 
 const BIND_CODE_TTL_MS = 10 * 60 * 1000;
+const MOBILE_LOGIN_TTL_MS = 5 * 60 * 1000;
 
 function randomCode(length = 24) {
   let out = "";
   while (out.length < length) out += crypto.randomUUID().replace(/-/g, "");
   return out.slice(0, length).toUpperCase();
+}
+
+function isMobileLoginCode(code: string) {
+  return /^APP[A-Z0-9]{20,64}$/.test(code.trim().toUpperCase());
 }
 
 function maskToken(token: string) {
@@ -71,11 +77,11 @@ function verifyTelegramWidgetLogin(payload: z.infer<typeof telegramWidgetLoginSc
   return expected.length === actual.length && timingSafeEqual(expected, actual);
 }
 
-function setLoginCookie(ctx: any, user: any) {
+function setLoginCookie(ctx: any, user: any, options: { mobile?: boolean } = {}) {
   const token = jwt.sign({ userId: user.id }, ENV.cookieSecret, { expiresIn: "10d" });
   ctx.res.cookie(COOKIE_NAME, token, getSessionCookieOptions(ctx.req));
   const { password, ...safeUser } = user;
-  return safeUser;
+  return { ...safeUser, mobileToken: options.mobile ? token : null };
 }
 
 export const telegramRouter = router({
@@ -161,12 +167,39 @@ export const telegramRouter = router({
     return { success: true };
   }),
 
-  login: publicProcedure
+  startMobileLogin: publicProcedure.mutation(async () => {
+    const settings = await getTelegramSettings();
+    if (!settings.enabled || !settings.configured || !settings.botUsername) {
+      throw new Error("Telegram 登录尚未启用");
+    }
+    const code = `APP${randomCode(28)}`;
+    createMobileTelegramLoginChallenge(code, MOBILE_LOGIN_TTL_MS);
+    const botUsername = settings.botUsername.trim().replace(/^@/, "");
+    return {
+      code,
+      expiresInSeconds: Math.floor(MOBILE_LOGIN_TTL_MS / 1000),
+      botUsername,
+      telegramUrl: `https://t.me/${botUsername}?start=${encodeURIComponent(code)}`,
+    };
+  }),
+
+  mobileLoginStatus: publicProcedure
     .input(z.object({ code: z.string().min(8).max(64) }))
+    .mutation(async ({ input, ctx }) => {
+      const code = input.code.trim().toUpperCase();
+      if (!isMobileLoginCode(code)) return { status: "pending" as const };
+      const user = await db.consumeTelegramLoginCode(code);
+      if (!user) return { status: "pending" as const };
+      takeMobileTelegramLoginChallenge(code);
+      return { status: "success" as const, ...setLoginCookie(ctx, user, { mobile: true }) };
+    }),
+
+  login: publicProcedure
+    .input(z.object({ code: z.string().min(8).max(64), mobile: z.boolean().optional() }))
     .mutation(async ({ input, ctx }) => {
       const user = await db.consumeTelegramLoginCode(input.code.trim().toUpperCase());
       if (!user) throw new Error("Telegram 登录码无效或已过期");
-      return setLoginCookie(ctx, user);
+      return setLoginCookie(ctx, user, { mobile: input.mobile });
     }),
 
   loginWithWidget: publicProcedure
