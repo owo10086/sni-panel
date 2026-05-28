@@ -22,7 +22,7 @@ export const dashboardRouter = router({
           userId: ctx.user.id,
         });
       }),
-    /** 当前用户各规则、主机、隧道的流量消耗分布 */
+    /** 当前用户按转发类型划分的规则流量消耗分布 */
     trafficBreakdown: protectedProcedure
       .input(z.object({
         hours: z.number().min(1).max(24 * 30).default(168),

@@ -14,6 +14,7 @@ const findTsConst = (name) => {
 };
 
 const appVersion = findTsConst("APP_VERSION");
+const androidAppVersion = findTsConst("ANDROID_APP_VERSION");
 const agentVersion = findTsConst("AGENT_VERSION");
 const agentMainVersion = agentMain.match(/var Version\s*=\s*"([^"]+)"/)?.[1];
 
@@ -27,10 +28,13 @@ if (agentMainVersion !== agentVersion) {
 if (appVersion === agentVersion) {
   errors.push(`APP_VERSION and AGENT_VERSION are both ${appVersion}; keep panel and Agent version lines separate`);
 }
+if (!/^\d+\.\d+\.\d+$/.test(androidAppVersion)) {
+  errors.push(`ANDROID_APP_VERSION ${androidAppVersion} must use x.y.z format`);
+}
 
 if (errors.length) {
   console.error(errors.map((line) => `- ${line}`).join("\n"));
   process.exit(1);
 }
 
-console.log(`versions ok: panel=${appVersion} agent=${agentVersion}`);
+console.log(`versions ok: panel=${appVersion} android=${androidAppVersion} agent=${agentVersion}`);

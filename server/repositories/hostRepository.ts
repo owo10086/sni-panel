@@ -82,6 +82,17 @@ export async function clearHostAgentUpgradeRequest(hostId: number) {
   }).where(eq(hosts.id, hostId));
 }
 
+export async function clearStaleHostAgentUpgradeRequests(timeoutMs = 10 * 60 * 1000) {
+  const db = await getDb();
+  if (!db) return;
+  const cutoff = new Date(Date.now() - timeoutMs);
+  await db.update(hosts).set({
+    agentUpgradeRequested: false,
+    agentUpgradeTargetVersion: null,
+    updatedAt: nowDate(),
+  } as any).where(sql`${hosts.agentUpgradeRequested} = ${true} AND ${hosts.agentUpgradeRequestedAt} IS NOT NULL AND ${hosts.agentUpgradeRequestedAt} < ${cutoff}`);
+}
+
 export async function getHostByAgentToken(token: string) {
   const db = await getDb();
   if (!db) return undefined;

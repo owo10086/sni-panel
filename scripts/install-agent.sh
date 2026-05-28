@@ -69,6 +69,28 @@ require_root() {
   fi
 }
 
+run_full_install_from_panel() {
+  local timeout="${1:-60}"
+  local tmp_script
+  tmp_script=$(mktemp /tmp/forwardx-full-install.XXXXXX)
+  if ! curl -fsSL --max-time "$timeout" "$PANEL_URL/api/agent/full-install.sh?token=$AGENT_TOKEN" -o "$tmp_script"; then
+    rm -f "$tmp_script"
+    return 1
+  fi
+  if [ ! -s "$tmp_script" ]; then
+    rm -f "$tmp_script"
+    return 1
+  fi
+  chmod 700 "$tmp_script"
+  if bash "$tmp_script" </dev/null; then
+    rm -f "$tmp_script"
+    return 0
+  fi
+  local rc=$?
+  rm -f "$tmp_script"
+  return "$rc"
+}
+
 do_install() {
   require_root
   AGENT_TOKEN="$1"
@@ -98,7 +120,7 @@ do_install() {
   # 安装阶段必须向面板请求完整安装包：因为完整脚本包含 token 注入后的 systemd 单元、
   # 密钥派生逻辑、注册时携带的元数据等，必须由面板按当前会话生成。
   echo "[信息] 正在向面板请求与版本配套的完整安装脚本..."
-  if ! curl -fsSL --max-time 60 "$PANEL_URL/api/agent/full-install.sh?token=$AGENT_TOKEN" | bash; then
+  if ! run_full_install_from_panel 60; then
     echo ""
     echo "[错误] 面板暂时不可达，无法获取完整安装包"
     echo "       请检查面板地址是否正确、网络是否通畅，然后重试"
@@ -145,7 +167,7 @@ do_upgrade() {
   echo ""
 
   echo "[信息] 正在拉取最新完整安装包并覆盖升级..."
-  if ! curl -fsSL --max-time 60 "$PANEL_URL/api/agent/full-install.sh?token=$AGENT_TOKEN" | bash; then
+  if ! run_full_install_from_panel 60; then
     echo ""
     echo "[错误] 升级失败：无法从面板获取完整安装包"
     echo "       请检查面板地址、Token 和网络连接"
@@ -269,3 +291,5 @@ case "$ACTION" in
     exit 1
     ;;
 esac
+
+exit 0

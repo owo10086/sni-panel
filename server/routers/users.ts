@@ -141,8 +141,12 @@ export const usersRouter = router({
       }))
       .mutation(async ({ input, ctx }) => {
         await db.setUserTrafficBillingPermissions(input.userId, input.hostIds, input.tunnelIds);
+        const recovery = await db.recoverUserForwardAccessIfEligible(input.userId);
+        if (recovery.restored) {
+          await refreshUserForwardEndpoints(input.userId, "traffic-billing-permission-forward-restored");
+        }
         console.info(`[Users] Updated traffic billing permissions userId=${input.userId} hosts=${input.hostIds.length} tunnels=${input.tunnelIds.length} ${actorLabel(ctx)}`);
-        return { success: true };
+        return { success: true, forwardAccessRestored: recovery.restored };
       }),
     getTunnelPermissions: adminProcedure
       .input(z.object({ userId: z.number() }))
@@ -226,6 +230,10 @@ export const usersRouter = router({
         if (input.displayRemark !== undefined) {
           data.displayRemark = input.displayRemark?.trim() || null;
         }
+        if (input.canAddRules !== undefined) {
+          data.forwardAccessPauseReason = input.canAddRules ? null : "manual";
+          data.allowForwardXTunnel = input.canAddRules ? (data.allowForwardXTunnel ?? true) : false;
+        }
         await db.updateUserTrafficSettings(userId, data);
         console.info(`[Users] Updated traffic settings userId=${userId} keys=${Object.keys(data).join(",") || "none"} ${actorLabel(ctx)}`);
         return { success: true };
@@ -246,7 +254,11 @@ export const usersRouter = router({
       .input(z.object({ userId: z.number() }))
       .mutation(async ({ input, ctx }) => {
         await db.resetUserTraffic(input.userId);
+        const recovery = await db.recoverUserForwardAccessIfEligible(input.userId);
+        if (recovery.restored) {
+          await refreshUserForwardEndpoints(input.userId, "user-traffic-reset-forward-restored");
+        }
         console.info(`[Users] Reset traffic userId=${input.userId} ${actorLabel(ctx)}`);
-        return { success: true };
+        return { success: true, forwardAccessRestored: recovery.restored };
       }),
   });

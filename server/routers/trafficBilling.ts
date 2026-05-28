@@ -7,8 +7,17 @@ const resourceTypeSchema = z.enum(["host", "tunnel"]);
 
 export const trafficBillingRouter = router({
   status: protectedProcedure.query(async ({ ctx }) => {
-    const summary = await db.getTrafficBillingSummary(ctx.user.id);
-    return summary;
+    const [summary, usableResourceIds] = await Promise.all([
+      db.getTrafficBillingSummary(ctx.user.id),
+      ctx.user.role === "admin"
+        ? Promise.resolve({ hostIds: [], tunnelIds: [] })
+        : db.getUserUsableTrafficBillingResourceIds(ctx.user.id),
+    ]);
+    return {
+      ...summary,
+      usableResourceIds,
+      hasUsableResources: usableResourceIds.hostIds.length > 0 || usableResourceIds.tunnelIds.length > 0,
+    };
   }),
 
   configs: adminProcedure.query(async () => {

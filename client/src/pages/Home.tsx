@@ -358,17 +358,17 @@ function DashboardContent() {
 
   const onlineRate = stats?.totalHosts ? Math.round((stats.onlineHosts / stats.totalHosts) * 100) : 0;
   const activeRate = stats?.totalRules ? Math.round((stats.activeRules / stats.totalRules) * 100) : 0;
-  const ruleTrafficData = useMemo(
-    () => (trafficBreakdown?.rules || []).map((item: any) => ({ id: Number(item.id), name: item.name, value: Number(item.totalBytes) || 0 })),
-    [trafficBreakdown?.rules],
+  const tunnelRuleTrafficData = useMemo(
+    () => (trafficBreakdown?.tunnelRules || []).map((item: any) => ({ id: Number(item.id), name: item.name, value: Number(item.totalBytes) || 0 })),
+    [trafficBreakdown?.tunnelRules],
   );
-  const hostTrafficData = useMemo(
-    () => (trafficBreakdown?.hosts || []).map((item: any) => ({ id: Number(item.id), name: item.name, value: Number(item.totalBytes) || 0 })),
-    [trafficBreakdown?.hosts],
+  const portRuleTrafficData = useMemo(
+    () => (trafficBreakdown?.portRules || []).map((item: any) => ({ id: Number(item.id), name: item.name, value: Number(item.totalBytes) || 0 })),
+    [trafficBreakdown?.portRules],
   );
-  const tunnelTrafficData = useMemo(
-    () => (trafficBreakdown?.tunnels || []).map((item: any) => ({ id: Number(item.id), name: item.name, value: Number(item.totalBytes) || 0 })),
-    [trafficBreakdown?.tunnels],
+  const forwardGroupRuleTrafficData = useMemo(
+    () => (trafficBreakdown?.forwardGroupRules || []).map((item: any) => ({ id: Number(item.id), name: item.name, value: Number(item.totalBytes) || 0 })),
+    [trafficBreakdown?.forwardGroupRules],
   );
 
   return (
@@ -644,9 +644,9 @@ function DashboardContent() {
       </Card>
 
       <div className="grid gap-4 lg:grid-cols-3">
-        <TrafficPieCard title="规则流量消耗" data={ruleTrafficData} loading={breakdownLoading} />
-        <TrafficPieCard title="主机流量消耗" data={hostTrafficData} loading={breakdownLoading} />
-        <TrafficPieCard title="隧道流量消耗" data={tunnelTrafficData} loading={breakdownLoading} />
+        <TrafficPieCard title="隧道流量" data={tunnelRuleTrafficData} loading={breakdownLoading} />
+        <TrafficPieCard title="端口转发流量" data={portRuleTrafficData} loading={breakdownLoading} />
+        <TrafficPieCard title="转发组流量" data={forwardGroupRuleTrafficData} loading={breakdownLoading} />
       </div>
 
       <div className={`grid grid-cols-1 gap-4 ${isAdmin ? "lg:grid-cols-3" : "lg:grid-cols-2"}`}>

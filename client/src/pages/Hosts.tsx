@@ -61,6 +61,8 @@ import {
   LEGACY_PANEL_VERSIONED_AGENT_MIN,
 } from "@shared/versions";
 
+const AGENT_UPGRADE_TIMEOUT_MS = 10 * 60 * 1000;
+
 function usePageVisible() {
   const [visible, setVisible] = useState(() => typeof document === "undefined" || document.visibilityState === "visible");
   useEffect(() => {
@@ -123,6 +125,12 @@ function isAgentVersionBehind(version: string | null | undefined, target: string
   if (!version || !target) return false;
   if (isLegacyPanelVersionedAgent(version)) return true;
   return compareVersions(version, target) < 0;
+}
+
+function isAgentUpgradeTimedOut(host: any) {
+  if (!host?.agentUpgradeRequested || !host.agentUpgradeRequestedAt) return false;
+  const requestedAt = new Date(host.agentUpgradeRequestedAt).getTime();
+  return Number.isFinite(requestedAt) && Date.now() - requestedAt > AGENT_UPGRADE_TIMEOUT_MS;
 }
 
 function hostAddressLines(host: any) {
@@ -222,7 +230,8 @@ function HostCard({
     return { in: inDelta / seconds, out: outDelta / seconds };
   }, [latestMetric, previousMetric]);
   const agentNeedsUpdate = isAgentVersionBehind(host.agentVersion, latestAgentVersion);
-  const agentUpgrading = !!host.agentUpgradeRequested;
+  const agentUpgradeTimedOut = isAgentUpgradeTimedOut(host);
+  const agentUpgrading = !!host.agentUpgradeRequested && !agentUpgradeTimedOut;
 
   return (
     <Card className="border-border/40 bg-card/60 backdrop-blur-md hover:border-border/60 transition-colors">
@@ -240,9 +249,9 @@ function HostCard({
                   新版
                 </Badge>
               )}
-              {agentUpgrading && (
-                <Badge variant="outline" className="shrink-0 border-blue-500/30 px-1.5 py-0 text-[10px] text-blue-500">
-                  升级中
+              {host.agentUpgradeRequested && (
+                <Badge variant="outline" className={`shrink-0 px-1.5 py-0 text-[10px] ${agentUpgradeTimedOut ? "border-destructive/30 text-destructive" : "border-blue-500/30 text-blue-500"}`}>
+                  {agentUpgradeTimedOut ? "升级失败" : "升级中"}
                 </Badge>
               )}
             </span>
@@ -253,7 +262,7 @@ function HostCard({
               size="icon"
               className="h-7 w-7"
               disabled={!canUpgrade}
-              title="升级 Agent"
+              title={agentUpgradeTimedOut ? "升级超时，可重新下发" : "升级 Agent"}
               onClick={() => onUpgrade(host)}
             >
               {agentUpgrading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
@@ -711,7 +720,10 @@ function HostsContent() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {pagedHosts.map((host) => (
+                    {pagedHosts.map((host) => {
+                      const agentUpgradeTimedOut = isAgentUpgradeTimedOut(host);
+                      const agentUpgrading = !!host.agentUpgradeRequested && !agentUpgradeTimedOut;
+                      return (
                       <TableRow key={host.id}>
                         <TableCell>
                           <div className="flex items-center justify-center">
@@ -773,8 +785,8 @@ function HostsContent() {
                               </Badge>
                             )}
                             {host.agentUpgradeRequested && (
-                              <Badge variant="outline" className="text-[10px] border-blue-500/30 text-blue-500">
-                                升级中
+                              <Badge variant="outline" className={`text-[10px] ${agentUpgradeTimedOut ? "border-destructive/30 text-destructive" : "border-blue-500/30 text-blue-500"}`}>
+                                {agentUpgradeTimedOut ? "升级失败" : "升级中"}
                               </Badge>
                             )}
                           </div>
@@ -793,10 +805,10 @@ function HostsContent() {
                               size="icon"
                               className="h-8 w-8"
                               disabled={user?.role !== "admin"}
-                              title="升级 Agent"
+                              title={agentUpgradeTimedOut ? "升级超时，可重新下发" : "升级 Agent"}
                               onClick={() => requestAgentUpgrade(host)}
                             >
-                              {host.agentUpgradeRequested ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+                              {agentUpgrading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
                             </Button>
                             <Button
                               variant="ghost"
@@ -820,7 +832,8 @@ function HostsContent() {
                           </div>
                         </TableCell>
                       </TableRow>
-                    ))}
+                    );
+                    })}
                   </TableBody>
                 </Table>
                 </div>

@@ -434,18 +434,23 @@ function SettingsContent() {
    * 生成一条「GitHub 优先 + 面板回退」的安装命令。
    * 该命令在 shell 内联决定从哪里拉取脚本，GitHub 不可达时自动转发面板。
    */
+  const getAgentScriptCommand = (args: string, withPanel = false) => {
+    const panelEnv = withPanel ? `PANEL_URL="${panelUrl}" ` : "";
+    return `bash -c 'T=$(mktemp /tmp/forwardx-agent.XXXXXX); (curl -fsSL --max-time 10 ${githubScriptUrl} -o "$T" 2>/dev/null || curl -fsSL --max-time 30 "${panelUrl}/api/agent/install.sh" -o "$T") && chmod 700 "$T" && ${panelEnv}bash "$T" ${args} </dev/null; R=$?; rm -f "$T"; exit $R'`;
+  };
+
   const getInstallCommand = (token: string) => {
-    return `bash -c 'S=$(curl -fsSL --max-time 10 ${githubScriptUrl} 2>/dev/null) || S=$(curl -fsSL --max-time 30 "${panelUrl}/api/agent/install.sh"); PANEL_URL="${panelUrl}" bash -c "$S" _ install ${token}'`;
+    return getAgentScriptCommand(`install ${token}`, true);
   };
 
   /** 卸载命令也采用同样的「GitHub 优先 + 面板回退」策略 */
   const getUninstallCommand = () => {
-    return `bash -c 'S=$(curl -fsSL --max-time 10 ${githubScriptUrl} 2>/dev/null) || S=$(curl -fsSL --max-time 30 "${panelUrl}/api/agent/install.sh"); bash -c "$S" _ uninstall'`;
+    return getAgentScriptCommand("uninstall");
   };
 
   /** 升级命令复用已安装 Agent 中的面板地址和 Token，必要时可由 PANEL_URL 覆盖 */
   const getUpgradeCommand = () => {
-    return `bash -c 'S=$(curl -fsSL --max-time 10 ${githubScriptUrl} 2>/dev/null) || S=$(curl -fsSL --max-time 30 "${panelUrl}/api/agent/install.sh"); PANEL_URL="${panelUrl}" bash -c "$S" _ upgrade'`;
+    return getAgentScriptCommand("upgrade", true);
   };
 
   const tokenHostAddress = (host: any) => {
@@ -460,9 +465,6 @@ function SettingsContent() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight">系统设置</h1>
-          <p className="text-muted-foreground mt-1 text-sm">
-            创建Token
-          </p>
         </div>
         <Badge variant="outline" className="gap-1.5 px-3 py-1.5 text-xs">
           <Key className="h-3 w-3 text-primary" />
@@ -471,25 +473,25 @@ function SettingsContent() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <div className="-mx-1 overflow-x-auto px-1 pb-1">
-          <TabsList className="grid h-auto min-w-max w-full grid-cols-2 gap-2 rounded-lg border border-border/50 bg-muted/20 p-1.5 sm:inline-grid sm:w-auto sm:grid-cols-5">
-          <TabsTrigger value="tokens" className="min-h-10 min-w-[132px] justify-center gap-1.5 rounded-md border border-border/60 bg-background/70 px-3 text-xs shadow-sm data-[state=active]:border-primary/40 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-md sm:text-sm">
+        <div className="-mx-1 overflow-x-auto px-1 pb-1 sm:mx-0 sm:overflow-visible sm:px-0 sm:pb-0">
+          <TabsList className="grid h-auto w-full grid-cols-2 gap-2 rounded-lg border border-border/50 bg-muted/20 p-1.5 sm:inline-flex sm:w-auto sm:grid-cols-none sm:gap-1 sm:border-border/30 sm:bg-muted/30 sm:p-1">
+          <TabsTrigger value="tokens" className="min-h-10 min-w-0 justify-center gap-1.5 rounded-md border border-border/60 bg-background/70 px-3 text-xs shadow-sm data-[state=active]:border-primary/40 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-md sm:min-h-0 sm:border-0 sm:bg-transparent sm:shadow-none sm:data-[state=active]:border-transparent sm:data-[state=active]:shadow-sm sm:text-sm">
             <Key className="h-3.5 w-3.5" />
-            Agent Token
+            Token管理
           </TabsTrigger>
-          <TabsTrigger value="install" className="min-h-10 min-w-[132px] justify-center gap-1.5 rounded-md border border-border/60 bg-background/70 px-3 text-xs shadow-sm data-[state=active]:border-primary/40 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-md sm:text-sm">
+          <TabsTrigger value="install" className="min-h-10 min-w-0 justify-center gap-1.5 rounded-md border border-border/60 bg-background/70 px-3 text-xs shadow-sm data-[state=active]:border-primary/40 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-md sm:min-h-0 sm:border-0 sm:bg-transparent sm:shadow-none sm:data-[state=active]:border-transparent sm:data-[state=active]:shadow-sm sm:text-sm">
             <Terminal className="h-3.5 w-3.5" />
             一键安装
           </TabsTrigger>
-          <TabsTrigger value="system" className="min-h-10 min-w-[132px] justify-center gap-1.5 rounded-md border border-border/60 bg-background/70 px-3 text-xs shadow-sm data-[state=active]:border-primary/40 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-md sm:text-sm">
+          <TabsTrigger value="system" className="min-h-10 min-w-0 justify-center gap-1.5 rounded-md border border-border/60 bg-background/70 px-3 text-xs shadow-sm data-[state=active]:border-primary/40 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-md sm:min-h-0 sm:border-0 sm:bg-transparent sm:shadow-none sm:data-[state=active]:border-transparent sm:data-[state=active]:shadow-sm sm:text-sm">
             <Settings2 className="h-3.5 w-3.5" />
             系统信息
           </TabsTrigger>
-          <TabsTrigger value="telegram" className="min-h-10 min-w-[132px] justify-center gap-1.5 rounded-md border border-border/60 bg-background/70 px-3 text-xs shadow-sm data-[state=active]:border-primary/40 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-md sm:text-sm">
+          <TabsTrigger value="telegram" className="min-h-10 min-w-0 justify-center gap-1.5 rounded-md border border-border/60 bg-background/70 px-3 text-xs shadow-sm data-[state=active]:border-primary/40 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-md sm:min-h-0 sm:border-0 sm:bg-transparent sm:shadow-none sm:data-[state=active]:border-transparent sm:data-[state=active]:shadow-sm sm:text-sm">
             <Send className="h-3.5 w-3.5" />
             Telegram
           </TabsTrigger>
-          <TabsTrigger value="logs" className="min-h-10 min-w-[132px] justify-center gap-1.5 rounded-md border border-border/60 bg-background/70 px-3 text-xs shadow-sm data-[state=active]:border-primary/40 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-md sm:text-sm">
+          <TabsTrigger value="logs" className="min-h-10 min-w-0 justify-center gap-1.5 rounded-md border border-border/60 bg-background/70 px-3 text-xs shadow-sm data-[state=active]:border-primary/40 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-md sm:min-h-0 sm:border-0 sm:bg-transparent sm:shadow-none sm:data-[state=active]:border-transparent sm:data-[state=active]:shadow-sm sm:text-sm">
             <FileText className="h-3.5 w-3.5" />
             面板日志
           </TabsTrigger>

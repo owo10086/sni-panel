@@ -6,6 +6,14 @@ import { forwardTypeSchema } from "./schemas";
 import { pushTunnelEndpointRefresh, requireHostUseAccess, requireTunnelUseOrTrafficBillingAccess } from "./helpers";
 import { requireRuleProtocolEnabled } from "../forwardProtocolSettings";
 
+async function requireForwardAccessReady(userId: number, options?: { allowTrafficBillingRecovery?: boolean }) {
+  const check = await db.ensureUserForwardAccessReady(userId, options);
+  if (!check.allowed) {
+    throw new Error(check.message || "转发权限已暂停，请续费后再启用规则");
+  }
+  return check.user || await db.getUserById(userId);
+}
+
 export const crudRulesRouter = router({
   create: protectedProcedure
     .input(z.object({
@@ -24,9 +32,7 @@ export const crudRulesRouter = router({
     }))
     .mutation(async ({ input, ctx }) => {
       // 权限检查：管理员或有 canAddRules 权限的用户
-      if (ctx.user.role !== "admin" && !ctx.user.canAddRules) {
-        throw new Error("您没有添加转发规则的权限，请联系管理员开通");
-      }
+      let currentUser = await db.getUserById(ctx.user.id);
       // 转发方式权限检查：非管理员需在 allowedForwardTypes 列表中
       if (ctx.user.role !== "admin") {
         const allowedRaw = (ctx.user as any).allowedForwardTypes as string | null | undefined;
@@ -35,30 +41,27 @@ export const crudRulesRouter = router({
           if (!allowed.has(input.forwardType)) throw new Error(`您没有使用 ${input.forwardType} 转发方式的权限，请联系管理员`);
         }
       }
-      // 检查用户是否已到期
-      if (ctx.user.expiresAt && new Date(ctx.user.expiresAt) <= new Date()) {
-        throw new Error("您的账户已到期，无法添加规则");
-      }
-
-      // 检查用户规则数量限制
-      const currentUser = await db.getUserById(ctx.user.id);
-      if (currentUser && currentUser.maxRules > 0) {
-        const ruleCount = await db.getUserRuleCount(ctx.user.id);
-        if (ruleCount >= currentUser.maxRules) {
-          throw new Error(`您已达到最大规则数量限制（${currentUser.maxRules} 条）`);
-        }
-      }
-      // 检查用户端口数量限制
-      if (currentUser && currentUser.maxPorts > 0) {
-        const portCount = await db.getUserPortCount(ctx.user.id);
-        if (portCount >= currentUser.maxPorts) {
-          throw new Error(`您已达到最大端口数量限制（${currentUser.maxPorts} 个）`);
-        }
-      }
-
       if (input.forwardGroupId) {
         if (input.sourcePort === 0) throw new Error("转发组规则需要指定固定入口端口");
         const sourcePort = input.sourcePort;
+        if (ctx.user.role !== "admin") {
+          currentUser = await requireForwardAccessReady(ctx.user.id);
+          if (currentUser?.expiresAt && new Date(currentUser.expiresAt) <= new Date()) {
+            throw new Error("您的账户已到期，无法添加规则");
+          }
+          if (currentUser && currentUser.maxRules > 0) {
+            const ruleCount = await db.getUserRuleCount(ctx.user.id);
+            if (ruleCount >= currentUser.maxRules) {
+              throw new Error(`您已达到最大规则数量限制（${currentUser.maxRules} 条）`);
+            }
+          }
+          if (currentUser && currentUser.maxPorts > 0) {
+            const portCount = await db.getUserPortCount(ctx.user.id);
+            if (portCount >= currentUser.maxPorts) {
+              throw new Error(`您已达到最大端口数量限制（${currentUser.maxPorts} 个）`);
+            }
+          }
+        }
         if (ctx.user.role !== "admin") {
           const hasPermission = await db.checkUserForwardGroupPermission(ctx.user.id, input.forwardGroupId);
           if (!hasPermission) throw new Error("无权使用该转发组");
@@ -114,15 +117,37 @@ export const crudRulesRouter = router({
         if (selectedTunnelForRule.entryHostId !== input.hostId) {
           throw new Error("Tunnel entry host must match the rule host");
         }
-        if (ctx.user.role !== "admin" && String(selectedTunnelForRule.mode).toLowerCase() === "forwardx" && !(currentUser as any)?.canAddRules) {
-          throw new Error("No permission to use custom encrypted tunnels");
-        }
       } else {
         const access = await requireHostUseAccess(ctx, input.hostId);
         isTrafficBillingRule = access.isTrafficBillingResource;
       }
+      if (ctx.user.role !== "admin") {
+        currentUser = await requireForwardAccessReady(ctx.user.id, { allowTrafficBillingRecovery: isTrafficBillingRule });
+        if (String(selectedTunnelForRule?.mode || "").toLowerCase() === "forwardx" && !(currentUser as any)?.canAddRules) {
+          throw new Error("No permission to use custom encrypted tunnels");
+        }
+      }
+      // 检查用户是否已到期
+      if (ctx.user.role !== "admin" && currentUser?.expiresAt && new Date(currentUser.expiresAt) <= new Date()) {
+        throw new Error("您的账户已到期，无法添加规则");
+      }
+
+      // 检查用户规则数量限制
+      if (currentUser && currentUser.maxRules > 0) {
+        const ruleCount = await db.getUserRuleCount(ctx.user.id);
+        if (ruleCount >= currentUser.maxRules) {
+          throw new Error(`您已达到最大规则数量限制（${currentUser.maxRules} 条）`);
+        }
+      }
+      // 检查用户端口数量限制
+      if (currentUser && currentUser.maxPorts > 0) {
+        const portCount = await db.getUserPortCount(ctx.user.id);
+        if (portCount >= currentUser.maxPorts) {
+          throw new Error(`您已达到最大端口数量限制（${currentUser.maxPorts} 个）`);
+        }
+      }
       await requireRuleProtocolEnabled({ forwardType: input.forwardType, tunnelId }, selectedTunnelForRule);
-      if (!isTrafficBillingRule && ctx.user.trafficLimit > 0 && ctx.user.trafficUsed >= ctx.user.trafficLimit) {
+      if (!isTrafficBillingRule && Number((currentUser as any)?.trafficLimit || 0) > 0 && Number((currentUser as any)?.trafficUsed || 0) >= Number((currentUser as any)?.trafficLimit || 0)) {
         throw new Error("您的流量已用完，无法添加规则");
       }
       const host = await db.getHostById(input.hostId);
@@ -267,8 +292,8 @@ export const crudRulesRouter = router({
             throw new Error("Tunnel entry host must match the rule host");
           }
           if (ctx.user.role !== "admin" && String(selectedTunnelForRule.mode).toLowerCase() === "forwardx") {
-            const currentUser = await db.getUserById(ctx.user.id);
-            if (!(currentUser as any)?.canAddRules) {
+            const owner = await requireForwardAccessReady(ctx.user.id, { allowTrafficBillingRecovery: !!access.isTrafficBillingResource });
+            if (!(owner as any)?.canAddRules) {
               throw new Error("No permission to use custom encrypted tunnels");
             }
           }
@@ -280,8 +305,11 @@ export const crudRulesRouter = router({
       }
 
       if (input.isEnabled === true && ctx.user.role !== "admin") {
-        const owner = await db.getUserById(ctx.user.id);
-        if (!owner?.canAddRules) throw new Error("转发权限已暂停，请续费后再启用规则");
+        const activeTunnelId = Number(nextTunnelIdForRule || 0);
+        const resourceAccess = activeTunnelId
+          ? await requireTunnelUseOrTrafficBillingAccess(ctx, activeTunnelId)
+          : await requireHostUseAccess(ctx, rule.hostId);
+        const owner = await requireForwardAccessReady(ctx.user.id, { allowTrafficBillingRecovery: !!resourceAccess.isTrafficBillingResource });
         if (owner.expiresAt && new Date(owner.expiresAt) <= new Date()) {
           throw new Error("套餐已到期，请续费后再启用规则");
         }
@@ -423,8 +451,7 @@ export const crudRulesRouter = router({
           const hasPermission = groupId ? await db.checkUserForwardGroupPermission(ctx.user.id, groupId) : false;
           if (!hasPermission) throw new Error("无权操作该转发组规则");
           if (input.isEnabled) {
-            const owner = await db.getUserById(ctx.user.id);
-            if (!owner?.canAddRules) throw new Error("转发权限已暂停，请续费后再启用规则");
+            const owner = await requireForwardAccessReady(ctx.user.id);
             if (owner.expiresAt && new Date(owner.expiresAt) <= new Date()) {
               throw new Error("套餐已到期，请续费后再启用规则");
             }
@@ -451,16 +478,13 @@ export const crudRulesRouter = router({
       }
       if (input.isEnabled) {
         if (ctx.user.role !== "admin") {
-          const owner = await db.getUserById(ctx.user.id);
-          if (!owner?.canAddRules) throw new Error("转发权限已暂停，请续费后再启用规则");
+          const activeTunnelId = Number((rule as any).tunnelId || 0);
+          const resourceAccess = activeTunnelId
+            ? await requireTunnelUseOrTrafficBillingAccess(ctx, activeTunnelId)
+            : await requireHostUseAccess(ctx, rule.hostId);
+          const owner = await requireForwardAccessReady(ctx.user.id, { allowTrafficBillingRecovery: !!resourceAccess.isTrafficBillingResource });
           if (owner.expiresAt && new Date(owner.expiresAt) <= new Date()) {
             throw new Error("套餐已到期，请续费后再启用规则");
-          }
-          const activeTunnelId = Number((rule as any).tunnelId || 0);
-          if (activeTunnelId) {
-            await requireTunnelUseOrTrafficBillingAccess(ctx, activeTunnelId);
-          } else {
-            await requireHostUseAccess(ctx, rule.hostId);
           }
         }
         const used = await db.isPortUsedOnHost(rule.hostId, rule.sourcePort, rule.id);

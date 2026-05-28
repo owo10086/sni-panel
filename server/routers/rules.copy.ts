@@ -8,6 +8,14 @@ import { FORWARD_TYPES } from "../../shared/forwardTypes";
 
 const conflictStrategySchema = z.enum(["skip", "auto", "error"]);
 
+async function requireForwardAccessReady(userId: number) {
+  const check = await db.ensureUserForwardAccessReady(userId);
+  if (!check.allowed) {
+    throw new Error(check.message || "您没有添加转发规则的权限，请联系管理员开通");
+  }
+  return check.user || await db.getUserById(userId);
+}
+
 export const copyRulesRouter = router({
   copyToHosts: protectedProcedure
     .input(z.object({
@@ -16,14 +24,10 @@ export const copyRulesRouter = router({
       conflictStrategy: conflictStrategySchema.default("skip"),
     }))
     .mutation(async ({ input, ctx }) => {
-      if (ctx.user.role !== "admin" && !ctx.user.canAddRules) {
-        throw new Error("您没有添加转发规则的权限，请联系管理员开通");
+      let currentUser = await db.getUserById(ctx.user.id);
+      if (ctx.user.role !== "admin") {
+        currentUser = await requireForwardAccessReady(ctx.user.id);
       }
-      if (ctx.user.expiresAt && new Date(ctx.user.expiresAt) <= new Date()) {
-        throw new Error("您的账户已到期，无法复制规则");
-      }
-
-      const currentUser = await db.getUserById(ctx.user.id);
       if (!currentUser) throw new Error("用户不存在");
       const allowedForwardTypes = (() => {
         if (ctx.user.role === "admin") return null;
@@ -81,7 +85,7 @@ export const copyRulesRouter = router({
                 continue;
               }
             }
-            if (!isTrafficBillingResource && ctx.user.trafficLimit > 0 && ctx.user.trafficUsed >= ctx.user.trafficLimit) {
+            if (!isTrafficBillingResource && Number((currentUser as any).trafficLimit || 0) > 0 && Number((currentUser as any).trafficUsed || 0) >= Number((currentUser as any).trafficLimit || 0)) {
               throw new Error("您的流量已用完，无法复制规则");
             }
           }

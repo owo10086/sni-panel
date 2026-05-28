@@ -202,6 +202,16 @@ function RulesContent() {
     staleTime: 60000,
     refetchOnWindowFocus: false,
   });
+  const { data: wallet } = trpc.billing.me.useQuery(undefined, {
+    enabled: user?.role !== "admin" && secondaryQueriesReady,
+    staleTime: 30000,
+    refetchOnWindowFocus: false,
+  });
+  const { data: trafficBilling } = trpc.trafficBilling.status.useQuery(undefined, {
+    enabled: user?.role !== "admin" && secondaryQueriesReady,
+    staleTime: 30000,
+    refetchOnWindowFocus: false,
+  });
 
   const [showDialog, setShowDialog] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -241,8 +251,11 @@ function RulesContent() {
     refetchOnWindowFocus: false,
   });
 
-  // 权限检查：管理员或有 canAddRules 权限
-  const canAdd = user?.role === "admin" || user?.canAddRules === true;
+  const walletBalanceKnown = wallet?.balanceCents !== undefined && wallet?.balanceCents !== null;
+  const manuallyPaused = (user as any)?.forwardAccessPauseReason === "manual";
+  const hasTrafficBillingBalance = !manuallyPaused && !!trafficBilling?.enabled && !!trafficBilling?.hasUsableResources && walletBalanceKnown && Number(wallet?.balanceCents || 0) > 0;
+  // 权限检查：管理员、有 canAddRules 权限，或本地已确认流量计费余额可用
+  const canAdd = user?.role === "admin" || user?.canAddRules === true || hasTrafficBillingBalance;
 
   const createMutation = trpc.rules.create.useMutation({
     onSuccess: (data) => {
@@ -365,9 +378,35 @@ function RulesContent() {
   const toggleMutation = trpc.rules.toggle.useMutation({
     onSuccess: () => {
       utils.rules.list.invalidate();
+      utils.auth.me.invalidate();
+      utils.billing.me.invalidate();
     },
     onError: (err) => toast.error(err.message || "操作失败"),
   });
+
+  const isTrafficBillingRule = (rule: any) => {
+    if (!trafficBilling?.enabled) return false;
+    const resourceIds = trafficBilling.usableResourceIds || { hostIds: [], tunnelIds: [] };
+    if (rule.tunnelId) {
+      return (resourceIds.tunnelIds || []).map(Number).includes(Number(rule.tunnelId));
+    }
+    return (resourceIds.hostIds || []).map(Number).includes(Number(rule.hostId));
+  };
+
+  const handleToggleRule = (rule: any, checked: boolean) => {
+    if (
+      checked &&
+      user?.role !== "admin" &&
+      trafficBilling?.enabled &&
+      isTrafficBillingRule(rule) &&
+      walletBalanceKnown &&
+      Number(wallet?.balanceCents || 0) <= 0
+    ) {
+      toast.error("流量计费余额不足，请充值后再启用规则");
+      return;
+    }
+    toggleMutation.mutate({ id: rule.id, isEnabled: checked });
+  };
 
   const resetForm = () => {
     setForm(defaultForm);
@@ -1283,7 +1322,7 @@ function RulesContent() {
                       {supported ? (
                         <Switch
                           checked={rule.isEnabled}
-                          onCheckedChange={(checked) => toggleMutation.mutate({ id: rule.id, isEnabled: checked })}
+                          onCheckedChange={(checked) => handleToggleRule(rule, checked)}
                           className="scale-75"
                         />
                       ) : (
@@ -1393,7 +1432,7 @@ function RulesContent() {
                           {supported ? (
                             <Switch
                               checked={rule.isEnabled}
-                              onCheckedChange={(checked) => toggleMutation.mutate({ id: rule.id, isEnabled: checked })}
+                              onCheckedChange={(checked) => handleToggleRule(rule, checked)}
                               className="scale-75"
                             />
                           ) : (

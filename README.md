@@ -270,7 +270,7 @@ ForwardX Android 客户端基于 Capacitor 复用当前 React 面板，并通过
 - APK 登录页需要同时填写面板地址、账号和密码，配置会保存在本机；退出登录后会清除登录态，重新打开时保留配置供用户修改。
 - Android 端未登录时不会展示网页主页，会直接进入登录页；登录成功后直接进入后台仪表盘。
 - Android 端支持流量到期通知、套餐到期通知和 APK 更新检查；通知开关默认关闭。
-- 本地没有 Android SDK 时，可通过 GitHub Actions 的 `Android APK` workflow 构建。推送 `v*.*.*` 标签时，APK 会自动上传到 GitHub Release；也可以手动触发 workflow 后从 artifact 下载。
+- Android APK 使用 `shared/versions.ts` 中的 `ANDROID_APP_VERSION` 独立版本号，不随面板 `APP_VERSION` 自动变化。本地没有 Android SDK 时，可通过 GitHub Actions 的 `Android APK` workflow 构建；推送面板 `v*.*.*` 标签时，只有当前 Android 版本尚未发布过对应 APK，才会构建并上传到该 Release，也可以手动触发 workflow 后从 artifact 下载。
 
 正式发布 APK 必须使用稳定的 release 签名，否则 Android 会因为签名不同而拒绝覆盖安装。GitHub Actions 在未配置私有签名 Secrets 时，会使用仓库内置的 community fallback keystore 构建 release APK；这能保证本项目默认发布的后续 APK 之间可以覆盖更新。若你要发布自己的私有构建，建议先在本地生成专用 keystore：
 

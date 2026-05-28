@@ -4,10 +4,59 @@ import { nanoid } from "nanoid";
 import * as db from "../db";
 import { markHostMetricsWatching, pushAgentRefresh, pushAgentUpgrade } from "../agentEvents";
 import { requireHostAccess } from "./helpers";
+import { AGENT_VERSION, APP_VERSION, REPO_URL } from "../_core/systemRouter";
+
+const AGENT_UPGRADE_ASSET_NAMES = [
+  "forwardx-agent-linux-amd64",
+  "forwardx-agent-linux-arm64",
+  "forwardx-fxp-linux-amd64",
+  "forwardx-fxp-linux-arm64",
+];
+
+function normalizeVersion(version: string | null | undefined) {
+  return String(version || "").trim().replace(/^v/i, "");
+}
+
+function githubRepoParts(repoUrl: string) {
+  const match = repoUrl.match(/github\.com\/([^/]+)\/([^/#?]+)/i);
+  if (!match) throw new Error("GitHub 仓库地址格式不正确");
+  return { owner: match[1], repo: match[2].replace(/\.git$/i, "") };
+}
+
+async function assertAgentReleaseAssetsReady(version: string) {
+  const tag = `v${normalizeVersion(version)}`;
+  const { owner, repo } = githubRepoParts(REPO_URL);
+  const url = `https://api.github.com/repos/${owner}/${repo}/releases/tags/${encodeURIComponent(tag)}`;
+  const res = await fetch(`${url}?_=${Date.now()}`, {
+    cache: "no-store",
+    headers: {
+      Accept: "application/vnd.github+json",
+      "Cache-Control": "no-cache",
+      Pragma: "no-cache",
+      "User-Agent": `ForwardX/${APP_VERSION}`,
+    },
+  });
+  if (res.status === 404) {
+    throw new Error(`Agent ${tag} Release 尚未生成，可能仍在构建中，请稍后再试`);
+  }
+  if (!res.ok) {
+    throw new Error(`无法验证 Agent ${tag} Release 资产：${res.status} ${res.statusText}`);
+  }
+  const release = await res.json() as { assets?: Array<{ name?: string; state?: string; size?: number }> };
+  const assets = new Map((release.assets || []).map((asset) => [asset.name || "", asset]));
+  const missing = AGENT_UPGRADE_ASSET_NAMES.filter((name) => {
+    const asset = assets.get(name);
+    return !asset || asset.state !== "uploaded" || Number(asset.size || 0) <= 0;
+  });
+  if (missing.length > 0) {
+    throw new Error(`Agent ${tag} 资产还未构建完成，请稍后再试：${missing.join(", ")}`);
+  }
+}
 
 export const hostsRouter = router({
     list: protectedProcedure.query(async ({ ctx }) => {
       const isAdmin = ctx.user.role === "admin";
+      if (isAdmin) await db.clearStaleHostAgentUpgradeRequests();
       if (isAdmin) return db.getHosts();
       // 普通用户：返回自己创建的主机 + 普通授权主机 + 已授权的流量计费主机
       const [allowedHostIds, billingResourceIds] = await Promise.all([
@@ -126,10 +175,12 @@ export const hostsRouter = router({
       .mutation(async ({ input }) => {
         const host = await db.getHostById(input.hostId);
         if (!host) throw new Error("主机不存在");
-        await db.requestHostAgentUpgrade(input.hostId, input.targetVersion ?? null);
+        const targetVersion = normalizeVersion(input.targetVersion || AGENT_VERSION);
+        await assertAgentReleaseAssetsReady(targetVersion);
+        await db.requestHostAgentUpgrade(input.hostId, targetVersion);
         const configuredPanelUrl = (await db.getSetting("panelPublicUrl")) || "";
         const panelUrl = /^https?:\/\//.test(configuredPanelUrl) ? configuredPanelUrl.replace(/\/+$/, "") : "";
-        const pushed = pushAgentUpgrade(input.hostId, input.targetVersion ?? null, panelUrl);
+        const pushed = pushAgentUpgrade(input.hostId, targetVersion, panelUrl);
         return { success: true, pushed };
       }),
   });

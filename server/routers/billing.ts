@@ -71,8 +71,12 @@ export const billingRouter = router({
         description: input.description || "管理员手动充值",
         operatorUserId: ctx.user.id,
       } as any);
+      const recovery = await db.recoverUserForwardAccessIfEligible(input.userId);
+      if (recovery.restored) {
+        await refreshUserForwardEndpoints(input.userId, "balance-recharged-forward-restored");
+      }
       appendPanelLog("info", `[Balance] admin recharge user=${input.userId} amount=${input.amountCents} operator=${ctx.user.id}`);
-      return result;
+      return { ...result, forwardAccessRestored: recovery.restored };
     }),
 
   purchasePlanWithBalance: protectedProcedure
@@ -143,9 +147,10 @@ export const billingRouter = router({
     .mutation(async ({ input, ctx }) => {
       if ((await db.getSetting("redemptionEnabled")) === "false") throw new Error("兑换码功能已关闭");
       const result = await db.redeemCode(ctx.user.id, input.code);
+      const recovery = await db.recoverUserForwardAccessIfEligible(ctx.user.id);
       await refreshUserForwardEndpoints(ctx.user.id, "code-redeemed");
       appendPanelLog("info", `[Redeem] user=${ctx.user.id} type=${result.type}`);
-      return result;
+      return { ...result, forwardAccessRestored: recovery.restored };
     }),
 
   listRedemptionCodes: adminProcedure.query(async () => db.listRedemptionCodes()),

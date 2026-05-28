@@ -100,6 +100,7 @@ export const users = table("users", {
   role: varchar("role", { length: 32 }).notNull().default("user"), // 'user' | 'admin'
   // ===== 权限控制 =====
   canAddRules: boolean("canAddRules").notNull().default(false), // 是否允许添加转发规则
+  forwardAccessPauseReason: varchar("forwardAccessPauseReason", { length: 64 }),
   maxRules: int("maxRules").notNull().default(0),       // 最大规则条数，0 = 不限制
   maxPorts: int("maxPorts").notNull().default(0),       // 最大端口数，0 = 不限制（与 maxRules 相同概念，但可独立控制）
   // 允许使用的转发方式，逗号分隔，如 "iptables,realm,socat"；null 或空串 = 全部允许

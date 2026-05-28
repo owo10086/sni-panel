@@ -6,7 +6,7 @@ import { mobileAuth } from "@/lib/mobileAuth";
 const SETTINGS_KEY = "forwardx.mobile.notificationSettings";
 const RELEASES_URL = "https://github.com/poouo/Forwardx/releases";
 const LATEST_RELEASE_URL = "https://github.com/poouo/Forwardx/releases/latest";
-const LATEST_RELEASE_API_URL = "https://api.github.com/repos/poouo/Forwardx/releases/latest";
+const RELEASES_API_URL = "https://api.github.com/repos/poouo/Forwardx/releases?per_page=20";
 
 export type MobileNotificationSettings = {
   trafficEnabled: boolean;
@@ -154,6 +154,11 @@ function compareVersions(a: string, b: string) {
   return 0;
 }
 
+function extractAndroidApkVersion(assetName: string) {
+  const match = assetName.match(/^forwardx-android-v?(\d+\.\d+\.\d+)(?:-[\w.-]+)?\.apk$/i);
+  return match?.[1] || null;
+}
+
 export async function openMobileReleasePage(url = RELEASES_URL) {
   const targetUrl = url || RELEASES_URL;
   if (mobileAuth.isNative) await Browser.open({ url: targetUrl });
@@ -166,20 +171,31 @@ export async function checkMobileAppUpdate(options: { silent?: boolean } = {}): 
   try {
     const [appInfo, response] = await Promise.all([
       App.getInfo(),
-      fetch(LATEST_RELEASE_API_URL, {
+      fetch(RELEASES_API_URL, {
         headers: { Accept: "application/vnd.github+json" },
       }),
     ]);
     if (!response.ok) throw new Error(`GitHub ${response.status}`);
 
-    const release = await response.json();
-    const latest = String(release?.tag_name || "").replace(/^v/i, "");
+    const releases = await response.json();
     const current = String(appInfo.version || "").replace(/^v/i, "");
-    const hasApk = Array.isArray(release?.assets)
-      ? release.assets.some((asset: any) => String(asset?.name || "").toLowerCase().endsWith(".apk"))
-      : false;
+    const apkCandidates = (Array.isArray(releases) ? releases : [])
+      .flatMap((release: any) => (Array.isArray(release?.assets) ? release.assets : []).map((asset: any) => {
+        const name = String(asset?.name || "");
+        const version = extractAndroidApkVersion(name);
+        if (!version) return null;
+        return {
+          version,
+          releaseUrl: release?.html_url || `${RELEASES_URL}/tag/${release?.tag_name || ""}`,
+        };
+      }))
+      .filter(Boolean)
+      .sort((a: any, b: any) => compareVersions(b.version, a.version));
+    const latestApk = apkCandidates[0] as { version: string; releaseUrl: string } | undefined;
+    const latest = latestApk?.version || current;
+    const hasApk = apkCandidates.length > 0;
     const hasUpdate = hasApk && !!latest && !!current && compareVersions(latest, current) > 0;
-    const releaseUrl = release?.html_url || LATEST_RELEASE_URL;
+    const releaseUrl = latestApk?.releaseUrl || LATEST_RELEASE_URL;
 
     return { hasUpdate, currentVersion: current, latestVersion: latest, releaseUrl, hasApk };
   } catch (error) {

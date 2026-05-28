@@ -3,6 +3,8 @@ import { InsertUser, users, forwardRules } from "../../drizzle/schema";
 import { getDb, insertAndGetId, nowDate } from "../dbRuntime";
 import { hashPassword, verifyPassword } from "../password";
 
+export type ForwardAccessPauseReason = "manual" | "traffic_billing_balance" | "traffic_limit" | "expired" | null;
+
 // ==================== User Queries ====================
 
 export async function getUserByUsername(username: string) {
@@ -295,6 +297,7 @@ export async function getAllUsers() {
       displayRemark: users.displayRemark,
       role: users.role,
       canAddRules: users.canAddRules,
+      forwardAccessPauseReason: users.forwardAccessPauseReason,
       maxRules: users.maxRules,
       maxPorts: users.maxPorts,
       maxConnections: users.maxConnections,
@@ -346,6 +349,7 @@ export async function updateUserTrafficSettings(userId: number, data: {
   trafficAutoReset?: boolean;
   trafficResetDay?: number;
   canAddRules?: boolean;
+  forwardAccessPauseReason?: ForwardAccessPauseReason;
   maxRules?: number;
   maxPorts?: number;
   maxConnections?: number;
@@ -359,13 +363,14 @@ export async function updateUserTrafficSettings(userId: number, data: {
   await db.update(users).set({ ...data, updatedAt: nowDate() } as any).where(eq(users.id, userId));
 }
 
-export async function setUserForwardAccess(userId: number, enabled: boolean) {
+export async function setUserForwardAccess(userId: number, enabled: boolean, reason?: ForwardAccessPauseReason) {
   const db = await getDb();
   if (!db) return;
   const now = nowDate();
   await db.update(users).set({
     canAddRules: enabled,
     allowForwardXTunnel: enabled,
+    forwardAccessPauseReason: enabled ? null : (reason ?? "manual"),
     updatedAt: now,
   }).where(eq(users.id, userId));
   if (!enabled) {
@@ -458,6 +463,7 @@ export async function getUserTrafficSummaries() {
     trafficLimit: users.trafficLimit,
     trafficUsed: users.trafficUsed,
     canAddRules: users.canAddRules,
+    forwardAccessPauseReason: users.forwardAccessPauseReason,
     gostRateLimitIn: users.gostRateLimitIn,
     gostRateLimitOut: users.gostRateLimitOut,
     allowForwardXTunnel: users.allowForwardXTunnel,

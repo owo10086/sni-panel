@@ -21,9 +21,17 @@ import { getForwardRulesForUserSync } from "./forwardRuleRepository";
 import { getForwardGroupEntryPortRange } from "./forwardGroupRepository";
 import { getHostById } from "./hostRepository";
 import { getTunnelById, updateTunnel } from "./tunnelRepository";
-import { disableAllUserRules, getUserById, resetUserTraffic, updateUserTrafficSettings } from "./userRepository";
+import {
+  disableAllUserRules,
+  getUserById,
+  resetUserTraffic,
+  setUserForwardAccess,
+  updateUserTrafficSettings,
+  type ForwardAccessPauseReason,
+} from "./userRepository";
 import { addMonthsClamped, nextMonthlyTrafficReset } from "./repositoryUtils";
 import { pushAgentRefresh } from "../agentEvents";
+import { getUserUsableTrafficBillingResourceIds } from "./trafficBillingRepository";
 
 // ==================== Payment Orders ====================
 
@@ -522,14 +530,192 @@ export async function getEffectiveUserPlanLimits(userId: number) {
   };
 }
 
+function normalizeForwardAccessPauseReason(value: unknown): ForwardAccessPauseReason {
+  const reason = String(value || "").trim();
+  if (reason === "manual" || reason === "traffic_billing_balance" || reason === "traffic_limit" || reason === "expired") {
+    return reason;
+  }
+  return null;
+}
+
+function isExpiredAt(value: unknown) {
+  return !!value && new Date(value as any).getTime() <= Date.now();
+}
+
+function isTrafficLimitExceeded(trafficUsed: unknown, trafficLimit: unknown) {
+  const limit = Number(trafficLimit || 0);
+  return limit > 0 && Number(trafficUsed || 0) >= limit;
+}
+
+export type ForwardAccessCheckResult = {
+  allowed: boolean;
+  restored: boolean;
+  user: any | null;
+  reason?: ForwardAccessPauseReason | "not_found" | "no_access";
+  message?: string;
+};
+
+export async function recoverUserForwardAccessIfEligible(
+  userId: number,
+  options: { allowTrafficBillingRecovery?: boolean } = {},
+): Promise<ForwardAccessCheckResult> {
+  await expireDueTrafficAddons(userId);
+  const user = await getUserById(userId);
+  if (!user) {
+    return { allowed: false, restored: false, user: null, reason: "not_found", message: "用户不存在" };
+  }
+  if ((user as any).role === "admin") {
+    return { allowed: true, restored: false, user };
+  }
+
+  const pauseReason = normalizeForwardAccessPauseReason((user as any).forwardAccessPauseReason);
+  if (pauseReason === "manual") {
+    return {
+      allowed: false,
+      restored: false,
+      user,
+      reason: "manual",
+      message: "转发权限已由管理员暂停，请联系管理员开启",
+    };
+  }
+
+  const limits = await getEffectiveUserPlanLimits(userId);
+  const billingResources = await getUserUsableTrafficBillingResourceIds(userId);
+  const hasTrafficBillingResource = billingResources.hostIds.length > 0 || billingResources.tunnelIds.length > 0;
+  const hasTrafficBillingBalance = Number((user as any).balanceCents || 0) > 0;
+  if (pauseReason === "traffic_billing_balance" && hasTrafficBillingResource && !hasTrafficBillingBalance) {
+    return {
+      allowed: false,
+      restored: false,
+      user,
+      reason: "traffic_billing_balance",
+      message: "流量计费余额不足，请充值后再启用规则",
+    };
+  }
+
+  if (limits.canAddRules) {
+    if (isTrafficLimitExceeded((user as any).trafficUsed, limits.trafficLimit)) {
+      if (options.allowTrafficBillingRecovery && hasTrafficBillingResource && hasTrafficBillingBalance) {
+        const restored = !(user as any).canAddRules || !!pauseReason;
+        await updateUserTrafficSettings(userId, {
+          ...limits,
+          canAddRules: true,
+          allowForwardXTunnel: true,
+          forwardAccessPauseReason: null,
+        });
+        return {
+          allowed: true,
+          restored,
+          user: await getUserById(userId) ?? user,
+        };
+      }
+      if ((user as any).canAddRules || pauseReason !== "traffic_limit") {
+        await setUserForwardAccess(userId, false, "traffic_limit");
+      }
+      return {
+        allowed: false,
+        restored: false,
+        user: await getUserById(userId) ?? user,
+        reason: "traffic_limit",
+        message: "套餐流量已用完，请购买附加流量包或等待下个周期重置后再启用规则",
+      };
+    }
+
+    const restored = !(user as any).canAddRules || !!pauseReason;
+    await updateUserTrafficSettings(userId, {
+      ...limits,
+      canAddRules: true,
+      allowForwardXTunnel: true,
+      forwardAccessPauseReason: null,
+    });
+    return {
+      allowed: true,
+      restored,
+      user: await getUserById(userId) ?? user,
+    };
+  }
+
+  if (isExpiredAt((user as any).expiresAt) && !hasTrafficBillingResource) {
+    if ((user as any).canAddRules || pauseReason !== "expired") {
+      await setUserForwardAccess(userId, false, "expired");
+    }
+    return {
+      allowed: false,
+      restored: false,
+      user: await getUserById(userId) ?? user,
+      reason: "expired",
+      message: "账户已到期，请续费后再启用规则",
+    };
+  }
+
+  if (hasTrafficBillingResource) {
+    if (hasTrafficBillingBalance) {
+      const restored = !(user as any).canAddRules || !!pauseReason;
+      await updateUserTrafficSettings(userId, {
+        canAddRules: true,
+        allowForwardXTunnel: true,
+        expiresAt: null,
+        trafficLimit: 0,
+        forwardAccessPauseReason: null,
+      });
+      return {
+        allowed: true,
+        restored,
+        user: await getUserById(userId) ?? user,
+      };
+    }
+    if ((user as any).canAddRules || pauseReason !== "traffic_billing_balance") {
+      await setUserForwardAccess(userId, false, "traffic_billing_balance");
+    }
+    return {
+      allowed: false,
+      restored: false,
+      user: await getUserById(userId) ?? user,
+      reason: "traffic_billing_balance",
+      message: "流量计费余额不足，请充值后再启用规则",
+    };
+  }
+
+  if ((user as any).canAddRules && !pauseReason) {
+    return { allowed: true, restored: false, user };
+  }
+  return {
+    allowed: false,
+    restored: false,
+    user,
+    reason: "no_access",
+    message: "转发权限已暂停，请续费后再启用规则",
+  };
+}
+
+export async function ensureUserForwardAccessReady(userId: number, options?: { allowTrafficBillingRecovery?: boolean }) {
+  return recoverUserForwardAccessIfEligible(userId, options);
+}
+
 export async function syncUserSubscriptionEntitlements(userId: number) {
   await expireDueTrafficAddons(userId);
   const limits = await getEffectiveUserPlanLimits(userId);
-  await updateUserTrafficSettings(userId, limits);
-  if (!limits.canAddRules) {
+  const user = await getUserById(userId);
+  const pauseReason = normalizeForwardAccessPauseReason((user as any)?.forwardAccessPauseReason);
+  const trafficExceeded = limits.canAddRules && isTrafficLimitExceeded((user as any)?.trafficUsed, limits.trafficLimit);
+  const manualPaused = pauseReason === "manual";
+  const nextLimits = {
+    ...limits,
+    canAddRules: limits.canAddRules && !manualPaused && !trafficExceeded,
+    allowForwardXTunnel: limits.allowForwardXTunnel && !manualPaused && !trafficExceeded,
+    forwardAccessPauseReason: limits.canAddRules && !manualPaused && !trafficExceeded
+      ? null
+      : manualPaused
+      ? "manual"
+      : trafficExceeded
+      ? "traffic_limit"
+      : pauseReason,
+  };
+  await updateUserTrafficSettings(userId, nextLimits);
+  if (!nextLimits.canAddRules) {
     await disableAllUserRules(userId);
   }
-  return limits;
+  return nextLimits;
 }
 
 export async function rechargeSubscriptionTrafficCycles() {
@@ -680,6 +866,7 @@ export async function applySubscriptionToUser(userId: number, planId: number, so
   await syncUserSubscriptionEntitlements(userId);
   if (!hadActiveSubscription && Number(user?.trafficUsed || 0) >= Number(user?.trafficLimit || 0) && Number(user?.trafficLimit || 0) > 0) {
     await resetUserTraffic(userId);
+    await syncUserSubscriptionEntitlements(userId);
   }
   return { subscriptionId, portRangeStart: block.start, portRangeEnd: block.end, expiresAt };
 }
@@ -1155,19 +1342,36 @@ export async function redeemCode(userId: number, code: string) {
   if (item.expiresAt && new Date(item.expiresAt).getTime() <= now.getTime()) throw new Error("鍏戞崲鐮佸凡杩囨湡");
   if (item.type === "balance") {
     if (Number(item.amountCents) <= 0) throw new Error("兑换码金额无效");
-    await addUserBalance(userId, Number(item.amountCents), {
+    const balance = await addUserBalance(userId, Number(item.amountCents), {
       type: "redeem",
       description: `兑换余额：${normalized}`,
       redemptionCodeId: item.id,
     } as any);
+    await db.update(redemptionCodes).set({ usedByUserId: userId, usedAt: nowDate(), updatedAt: nowDate() } as any).where(eq(redemptionCodes.id, item.id));
+    return {
+      success: true,
+      type: item.type,
+      amountCents: Number(item.amountCents),
+      balanceCents: Number((balance as any)?.balanceCents || 0),
+    };
   } else if (item.type === "plan") {
     if (!item.planId) throw new Error("兑换码套餐无效");
-    await applySubscriptionToUser(userId, Number(item.planId), "redeem", null, now, item.durationDays || null);
+    const subscription = await applySubscriptionToUser(userId, Number(item.planId), "redeem", null, now, item.durationDays || null);
+    const plan = await getSubscriptionPlanById(Number(item.planId));
+    await db.update(redemptionCodes).set({ usedByUserId: userId, usedAt: nowDate(), updatedAt: nowDate() } as any).where(eq(redemptionCodes.id, item.id));
+    return {
+      success: true,
+      type: item.type,
+      planId: Number(item.planId),
+      planName: (plan as any)?.name || null,
+      durationDays: Number(item.durationDays || 0),
+      expiresAt: subscription.expiresAt,
+      portRangeStart: subscription.portRangeStart,
+      portRangeEnd: subscription.portRangeEnd,
+    };
   } else {
     throw new Error("兑换码类型无效");
   }
-  await db.update(redemptionCodes).set({ usedByUserId: userId, usedAt: nowDate(), updatedAt: nowDate() } as any).where(eq(redemptionCodes.id, item.id));
-  return { success: true, type: item.type };
 }
 
 // ==================== Discount Codes ====================

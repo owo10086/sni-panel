@@ -43,9 +43,11 @@ let pollingAbort = false;
 let updateOffset = 0;
 let activeTokenKey = "";
 const pendingBindChats = new Map<string, number>();
+const pendingRedeemChats = new Map<string, number>();
 
 const LOGIN_CODE_TTL_MS = 5 * 60 * 1000;
 const BIND_SESSION_TTL_MS = 10 * 60 * 1000;
+const REDEEM_SESSION_TTL_MS = 10 * 60 * 1000;
 const USER_PAGE_SIZE = 10;
 const RULE_PAGE_SIZE = 10;
 const TELEGRAM_BOT_COMMANDS: TelegramBotCommand[] = [
@@ -53,6 +55,7 @@ const TELEGRAM_BOT_COMMANDS: TelegramBotCommand[] = [
   { command: "menu", description: "打开功能菜单" },
   { command: "usage", description: "查询流量和额度" },
   { command: "rules", description: "查看和管理转发规则" },
+  { command: "redeem", description: "兑换余额或套餐兑换码" },
   { command: "bind", description: "使用绑定码绑定后台账号" },
   { command: "login", description: "生成网页登录链接" },
   { command: "unbind", description: "解除 Telegram 绑定" },
@@ -85,6 +88,10 @@ function formatBytes(bytes: number | string | null | undefined) {
   const units = ["B", "KB", "MB", "GB", "TB", "PB"];
   const index = Math.min(units.length - 1, Math.floor(Math.log(num) / Math.log(1024)));
   return `${parseFloat((num / 1024 ** index).toFixed(index === 0 ? 0 : 2))} ${units[index]}`;
+}
+
+function formatMoneyCny(cents: number | string | null | undefined) {
+  return `¥${((Number(cents) || 0) / 100).toFixed(2)}`;
 }
 
 function formatDate(value: unknown) {
@@ -143,6 +150,28 @@ function hasValidBindSession(chatId: number | string, telegramId: string | numbe
 
 function clearBindSession(chatId: number | string, telegramId: string | number) {
   pendingBindChats.delete(getBindSessionKey(chatId, telegramId));
+}
+
+function getRedeemSessionKey(chatId: number | string, telegramId: string | number) {
+  return `${chatId}:${telegramId}`;
+}
+
+function startRedeemSession(chatId: number | string, telegramId: string | number) {
+  pendingRedeemChats.set(getRedeemSessionKey(chatId, telegramId), Date.now() + REDEEM_SESSION_TTL_MS);
+}
+
+function hasValidRedeemSession(chatId: number | string, telegramId: string | number) {
+  const key = getRedeemSessionKey(chatId, telegramId);
+  const expiresAt = pendingRedeemChats.get(key) || 0;
+  if (!expiresAt || expiresAt <= Date.now()) {
+    pendingRedeemChats.delete(key);
+    return false;
+  }
+  return true;
+}
+
+function clearRedeemSession(chatId: number | string, telegramId: string | number) {
+  pendingRedeemChats.delete(getRedeemSessionKey(chatId, telegramId));
 }
 
 function getTokenKey(token: string) {
@@ -252,6 +281,7 @@ function helpText(bound: boolean, isAdmin = false) {
       : "请先在面板个人菜单点击 Telegram 绑定按钮生成绑定码，然后在这里完成绑定。",
     "/usage - 查询我的用量",
     "/rules - 查看我的转发规则",
+    "/redeem 兑换码 - 兑换余额或套餐",
     "/login - 生成网页一次性登录链接",
     "/enable 规则ID - 启用规则",
     "/disable 规则ID - 停用规则",
@@ -275,6 +305,15 @@ function bindCancelKeyboard(): InlineKeyboardMarkup {
   return {
     inline_keyboard: [
       [{ text: "取消绑定", callback_data: "fx:bind:cancel" }],
+    ],
+  };
+}
+
+function redeemCancelKeyboard(): InlineKeyboardMarkup {
+  return {
+    inline_keyboard: [
+      [{ text: "取消兑换", callback_data: "fx:redeem:cancel" }],
+      [{ text: "返回菜单", callback_data: "fx:menu" }],
     ],
   };
 }
@@ -343,6 +382,35 @@ async function editBindCodePrompt(chatId: number | string, messageId: number, te
   );
 }
 
+async function sendRedeemCodePrompt(chatId: number | string, telegramId: string | number) {
+  startRedeemSession(chatId, telegramId);
+  await sendMessage(
+    chatId,
+    [
+      "<b>兑换码</b>",
+      "",
+      `请在 ${Math.round(REDEEM_SESSION_TTL_MS / 60000)} 分钟内直接发送余额或套餐兑换码。`,
+      "也可以使用命令：/redeem 兑换码",
+    ].join("\n"),
+    redeemCancelKeyboard(),
+  );
+}
+
+async function editRedeemCodePrompt(chatId: number | string, messageId: number, telegramId: string | number) {
+  startRedeemSession(chatId, telegramId);
+  await editMessage(
+    chatId,
+    messageId,
+    [
+      "<b>兑换码</b>",
+      "",
+      `请在 ${Math.round(REDEEM_SESSION_TTL_MS / 60000)} 分钟内直接发送余额或套餐兑换码。`,
+      "也可以使用命令：/redeem 兑换码",
+    ].join("\n"),
+    redeemCancelKeyboard(),
+  );
+}
+
 function parseCommand(text: string) {
   const parts = text.trim().split(/\s+/).filter(Boolean);
   const command = (parts.shift() || "").split("@")[0].toLowerCase();
@@ -357,6 +425,7 @@ function mainMenuKeyboard(user: any): InlineKeyboardMarkup {
     ],
     [
       { text: "转发规则", callback_data: "fx:rules" },
+      ...(user?.role === "admin" ? [] : [{ text: "兑换码", callback_data: "fx:redeem" }]),
     ],
   ];
   if (user?.role === "admin") {
@@ -423,7 +492,7 @@ function userInfoText(user: any) {
     `账户：<b>${escapeHtml(user.name || user.username)}</b>`,
     `用户名：${escapeHtml(user.username)}`,
     `角色：${user.role === "admin" ? "管理员" : "用户"}`,
-    `余额：¥${((Number(user.balanceCents) || 0) / 100).toFixed(2)}`,
+    `余额：${formatMoneyCny(user.balanceCents)}`,
     `到期时间：${escapeHtml(formatDate(user.expiresAt))}`,
     `转发权限：${user.role === "admin" || user.canAddRules ? "已启用" : "已停用"}`,
     `绑定时间：${escapeHtml(formatDate(user.telegramLinkedAt))}`,
@@ -727,6 +796,55 @@ async function handleRules(message: TelegramMessage, user: any) {
   await sendMessage(message.chat.id, view.text, view.keyboard);
 }
 
+function redeemSuccessText(result: any) {
+  if (result.type === "balance") {
+    return [
+      "<b>兑换成功</b>",
+      "",
+      `类型：余额`,
+      `入账金额：${formatMoneyCny(result.amountCents)}`,
+      `当前余额：${formatMoneyCny(result.balanceCents)}`,
+    ].join("\n");
+  }
+  if (result.type === "plan") {
+    return [
+      "<b>兑换成功</b>",
+      "",
+      `类型：套餐`,
+      `套餐：${escapeHtml(result.planName || `套餐 #${result.planId}`)}`,
+      result.durationDays ? `有效期：${result.durationDays} 天` : "",
+      `到期时间：${escapeHtml(formatDateTime(result.expiresAt))}`,
+      result.portRangeStart && result.portRangeEnd ? `端口段：${result.portRangeStart}-${result.portRangeEnd}` : "",
+    ].filter(Boolean).join("\n");
+  }
+  return "<b>兑换成功</b>";
+}
+
+async function redeemForTelegramUser(user: any, code: string) {
+  const normalized = code.trim();
+  if (!normalized) throw new Error("请输入兑换码");
+  if (user.role === "admin") throw new Error("管理员账户无需兑换码");
+  const result = await db.redeemCode(user.id, normalized);
+  const recovery = await db.recoverUserForwardAccessIfEligible(user.id);
+  if (recovery.restored) {
+    await refreshUserForwardEndpoints(user.id, "telegram-code-redeemed-forward-restored");
+  }
+  return result;
+}
+
+async function handleRedeem(message: TelegramMessage, user: any, code?: string) {
+  if (!code?.trim()) {
+    if (message.from?.id) await sendRedeemCodePrompt(message.chat.id, message.from.id);
+    return;
+  }
+  try {
+    const result = await redeemForTelegramUser(user, code);
+    await sendMessage(message.chat.id, redeemSuccessText(result), backMenuKeyboard());
+  } catch (error: any) {
+    await sendMessage(message.chat.id, `兑换失败：${escapeHtml(error?.message || "兑换码无效")}`, redeemCancelKeyboard());
+  }
+}
+
 async function refreshRuleEndpoint(rule: any, reason: string) {
   if (rule.tunnelId) {
     const tunnel = await db.getTunnelById(Number(rule.tunnelId));
@@ -755,9 +873,11 @@ async function refreshUserForwardEndpoints(userId: number, reason: string) {
 
 async function assertRuleCanBeEnabledFromTelegram(user: any, rule: any) {
   if (user.role !== "admin") {
-    if (!user.canAddRules) throw new Error("你的转发权限已停用，无法启用规则");
-    if (user.expiresAt && new Date(user.expiresAt) <= new Date()) throw new Error("账户已到期，无法启用规则");
-    if (Number(user.trafficLimit) > 0 && Number(user.trafficUsed) >= Number(user.trafficLimit)) throw new Error("流量已用完，无法启用规则");
+    const check = await db.ensureUserForwardAccessReady(Number(user.id));
+    if (!check.allowed) throw new Error(check.message || "你的转发权限已停用，无法启用规则");
+    const owner = check.user || await db.getUserById(Number(user.id));
+    if (owner?.expiresAt && new Date(owner.expiresAt) <= new Date()) throw new Error("账户已到期，无法启用规则");
+    if (Number(owner?.trafficLimit) > 0 && Number(owner?.trafficUsed) >= Number(owner?.trafficLimit)) throw new Error("流量已用完，无法启用规则");
   }
   const used = await db.isPortUsedOnHost(Number(rule.hostId), Number(rule.sourcePort), Number(rule.id));
   if (used) throw new Error(`端口 ${rule.sourcePort} 已被占用，请更换端口后再启用`);
@@ -850,6 +970,7 @@ async function handleMessage(message: TelegramMessage) {
   const identity = await ensureTelegramIdentity(message);
   if (!identity) return;
   const waitingForBindCode = hasValidBindSession(message.chat.id, identity.telegramId);
+  const waitingForRedeemCode = hasValidRedeemSession(message.chat.id, identity.telegramId);
 
   if (command === "/start" && args[0]) {
     if (isMobileLoginCode(args[0])) {
@@ -888,9 +1009,16 @@ async function handleMessage(message: TelegramMessage) {
     return;
   }
 
+  if (waitingForRedeemCode && !text.startsWith("/")) {
+    clearRedeemSession(message.chat.id, identity.telegramId);
+    await handleRedeem(message, user, text);
+    return;
+  }
+
   if (command === "/menu") return sendMainMenu(message.chat.id, user);
   if (command === "/usage") return handleUsage(message, user);
   if (command === "/rules") return handleRules(message, user);
+  if (command === "/redeem") return handleRedeem(message, user, args.join(" "));
   if (command === "/login") return handleLogin(message, user);
   if (command === "/enable") return handleRuleToggle(message, user, args[0], true);
   if (command === "/disable") return handleRuleToggle(message, user, args[0], false);
@@ -940,6 +1068,20 @@ async function handleCallback(query: TelegramCallbackQuery) {
   if (data.startsWith("fx:app-login-cancel:")) {
     clearMobileTelegramLoginChallenge(data.slice("fx:app-login-cancel:".length));
     await editMessage(chatId, messageId, "已取消本次 APP 登录。");
+    return;
+  }
+
+  if (data === "fx:redeem") {
+    if (user.role === "admin") {
+      await editMessage(chatId, messageId, "管理员账户无需兑换码。", backMenuKeyboard());
+      return;
+    }
+    await editRedeemCodePrompt(chatId, messageId, identity.telegramId);
+    return;
+  }
+  if (data === "fx:redeem:cancel") {
+    clearRedeemSession(chatId, identity.telegramId);
+    await editMessage(chatId, messageId, "已取消本次兑换。", backMenuKeyboard());
     return;
   }
 
@@ -1080,6 +1222,13 @@ async function handleCallback(query: TelegramCallbackQuery) {
         const view = await rulesView(user, 0);
         await editMessage(chatId, messageId, view.text, view.keyboard);
       }
+      return;
+    case "fx:redeem":
+      if (user.role === "admin") {
+        await editMessage(chatId, messageId, "管理员账户无需兑换码。", backMenuKeyboard());
+        return;
+      }
+      await editRedeemCodePrompt(chatId, messageId, identity.telegramId);
       return;
     case "fx:users":
       if (user.role !== "admin") {

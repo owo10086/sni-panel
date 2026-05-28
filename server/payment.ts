@@ -738,6 +738,7 @@ async function finalizePaidOrder(outTradeNo: string) {
       return;
     }
     const result = await db.applySubscriptionToUser(order.userId, order.planId, "payment", outTradeNo);
+    await db.recoverUserForwardAccessIfEligible(order.userId);
     if ((order as any).discountCodeId) await db.consumeDiscountCode(Number((order as any).discountCodeId));
     await db.updatePaymentOrder(outTradeNo, { subscriptionId: result.subscriptionId, status: "completed" } as any);
     appendPanelLog("info", `[Plan] subscription granted user=${order.userId} plan=${order.planId} order=${outTradeNo} ports=${result.portRangeStart}-${result.portRangeEnd}`);
@@ -754,6 +755,7 @@ async function finalizePaidOrder(outTradeNo: string) {
       description: `在线充值：${outTradeNo}`,
       paymentOrderNo: outTradeNo,
     } as any);
+    await db.recoverUserForwardAccessIfEligible(order.userId);
     await db.updatePaymentOrder(outTradeNo, { status: "completed" } as any);
     appendPanelLog("info", `[Balance] payment recharge user=${order.userId} amount=${order.amountCents} order=${outTradeNo}`);
     return;

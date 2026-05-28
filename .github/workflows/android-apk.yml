@@ -54,11 +54,13 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           MANUAL_BUILD_TYPE: ${{ github.event.inputs.build_type || 'release' }}
         run: |
+          ANDROID_VERSION="v$(node -e "const fs=require('fs');const text=fs.readFileSync('shared/versions.ts','utf8');const match=text.match(/ANDROID_APP_VERSION\\s*=\\s*['\\\"]v?([^'\\\"]+)['\\\"]/);if(!match)throw new Error('ANDROID_APP_VERSION not found');process.stdout.write(match[1]);")"
+
           if [[ "$GITHUB_REF" == refs/tags/* ]]; then
             VERSION="$GITHUB_REF_NAME"
             PUBLISH_RELEASE=true
           else
-            VERSION="v$(node -p "require('./package.json').version")"
+            VERSION="$ANDROID_VERSION"
             PUBLISH_RELEASE=false
           fi
 
@@ -69,6 +71,7 @@ jobs:
           fi
 
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "android_version=$ANDROID_VERSION" >> "$GITHUB_OUTPUT"
           echo "publish_release=$PUBLISH_RELEASE" >> "$GITHUB_OUTPUT"
           echo "build_type=$BUILD_TYPE" >> "$GITHUB_OUTPUT"
 
@@ -78,17 +81,40 @@ jobs:
       - name: Check version split
         run: pnpm check:versions
 
+      - name: Check existing Android APK
+        id: existing_apk
+        if: steps.release.outputs.publish_release == 'true' && steps.release.outputs.build_type == 'release'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const androidVersion = '${{ steps.release.outputs.android_version }}';
+            const expectedName = `forwardx-android-${androidVersion}.apk`;
+            const releases = await github.paginate(github.rest.repos.listReleases, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              per_page: 20,
+            });
+            const existing = releases.flatMap((release) => release.assets || []).some((asset) => asset.name === expectedName);
+            core.setOutput('exists', existing ? 'true' : 'false');
+            if (existing) {
+              core.notice(`Android APK ${expectedName} already exists; skipping APK rebuild for this panel release.`);
+            }
+
       - name: Build web assets
+        if: steps.existing_apk.outputs.exists != 'true'
         run: pnpm build:client
 
       - name: Sync Capacitor Android project
+        if: steps.existing_apk.outputs.exists != 'true'
         run: pnpm exec cap sync android
 
       - name: Prepare Gradle wrapper
+        if: steps.existing_apk.outputs.exists != 'true'
         run: chmod +x android/gradlew
 
       - name: Prepare release signing
         id: signing
+        if: steps.existing_apk.outputs.exists != 'true'
         shell: bash
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
@@ -123,7 +149,7 @@ jobs:
           fi
 
       - name: Require release signing
-        if: steps.release.outputs.build_type == 'release' && steps.signing.outputs.signed != 'true'
+        if: steps.existing_apk.outputs.exists != 'true' && steps.release.outputs.build_type == 'release' && steps.signing.outputs.signed != 'true'
         run: |
           echo "Release APK signing secrets are not configured."
           echo "Add ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD."
@@ -131,7 +157,7 @@ jobs:
           exit 1
 
       - name: Build release APK with repository fallback signing
-        if: steps.release.outputs.build_type == 'release' && steps.signing.outputs.source == 'fallback'
+        if: steps.existing_apk.outputs.exists != 'true' && steps.release.outputs.build_type == 'release' && steps.signing.outputs.source == 'fallback'
         working-directory: android
         env:
           ANDROID_KEYSTORE_FILE: ${{ steps.signing.outputs.keystore_file }}
@@ -142,7 +168,7 @@ jobs:
         run: ./gradlew assembleRelease
 
       - name: Build release APK with secret signing
-        if: steps.release.outputs.build_type == 'release' && steps.signing.outputs.source == 'secrets'
+        if: steps.existing_apk.outputs.exists != 'true' && steps.release.outputs.build_type == 'release' && steps.signing.outputs.source == 'secrets'
         working-directory: android
         env:
           ANDROID_KEYSTORE_FILE: ${{ steps.signing.outputs.keystore_file }}
@@ -153,19 +179,21 @@ jobs:
         run: ./gradlew assembleRelease
 
       - name: Build debug APK
-        if: steps.release.outputs.build_type == 'debug'
+        if: steps.existing_apk.outputs.exists != 'true' && steps.release.outputs.build_type == 'debug'
         working-directory: android
         run: ./gradlew assembleDebug
 
       - name: Rename APK
+        if: steps.existing_apk.outputs.exists != 'true'
         shell: bash
         run: |
           VERSION="${{ steps.release.outputs.version }}"
+          ANDROID_VERSION="${{ steps.release.outputs.android_version }}"
           mkdir -p dist/android
           if [[ -f android/app/build/outputs/apk/release/app-release.apk ]]; then
-            cp android/app/build/outputs/apk/release/app-release.apk "dist/android/forwardx-android-${VERSION}.apk"
+            cp android/app/build/outputs/apk/release/app-release.apk "dist/android/forwardx-android-${ANDROID_VERSION}.apk"
           else
-            cp android/app/build/outputs/apk/debug/app-debug.apk "dist/android/forwardx-android-${VERSION}-debug.apk"
+            cp android/app/build/outputs/apk/debug/app-debug.apk "dist/android/forwardx-android-${ANDROID_VERSION}-debug.apk"
             cat > dist/android/README-APK-SIGNING.txt <<'EOF'
           This APK is debug-signed because release signing secrets are not configured.
           Debug APKs are for local testing only and are not uploaded to GitHub Releases.
@@ -175,6 +203,7 @@ jobs:
           fi
 
       - name: Upload APK artifact
+        if: steps.existing_apk.outputs.exists != 'true'
         uses: actions/upload-artifact@v4
         with:
           name: forwardx-android-apk
@@ -183,7 +212,7 @@ jobs:
             dist/android/*.txt
 
       - name: Upload APK to GitHub Release
-        if: steps.release.outputs.publish_release == 'true' && steps.release.outputs.build_type == 'release'
+        if: steps.existing_apk.outputs.exists != 'true' && steps.release.outputs.publish_release == 'true' && steps.release.outputs.build_type == 'release'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.release.outputs.version }}

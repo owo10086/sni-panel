@@ -1,5 +1,5 @@
 import { and, eq, sql } from "drizzle-orm";
-import { forwardRules, hosts, tunnels } from "../../drizzle/schema";
+import { forwardRules, hosts } from "../../drizzle/schema";
 import { getDb } from "../dbRuntime";
 import { getTotalTraffic, getTrafficSummaryByRule } from "./metricsRepository";
 import { clampPositiveInt } from "./repositoryUtils";
@@ -20,11 +20,23 @@ type TrafficSummaryItem = {
   connections: number;
 };
 
+type RuleTrafficBucket = "tunnelRules" | "portRules" | "forwardGroupRules";
+
+type RuleTrafficMeta = {
+  name: string;
+  forwardType: string;
+  tunnelId: number | null;
+  forwardGroupId: number | null;
+  forwardGroupRuleId: number | null;
+  forwardGroupMemberId: number | null;
+  isForwardGroupTemplate: boolean;
+};
+
 function emptyTrafficBreakdown() {
   return {
-    rules: [] as DashboardTrafficBreakdownItem[],
-    hosts: [] as DashboardTrafficBreakdownItem[],
-    tunnels: [] as DashboardTrafficBreakdownItem[],
+    tunnelRules: [] as DashboardTrafficBreakdownItem[],
+    portRules: [] as DashboardTrafficBreakdownItem[],
+    forwardGroupRules: [] as DashboardTrafficBreakdownItem[],
   };
 }
 
@@ -52,6 +64,19 @@ function sortTrafficItems(map: Map<number, DashboardTrafficBreakdownItem>, limit
   return Array.from(map.values())
     .sort((a, b) => b.totalBytes - a.totalBytes)
     .slice(0, limit);
+}
+
+function getRuleTrafficBucket(rule: RuleTrafficMeta | undefined): RuleTrafficBucket {
+  if (
+    rule?.isForwardGroupTemplate ||
+    rule?.forwardGroupId ||
+    rule?.forwardGroupRuleId ||
+    rule?.forwardGroupMemberId
+  ) {
+    return "forwardGroupRules";
+  }
+  if (rule?.tunnelId) return "tunnelRules";
+  return "portRules";
 }
 
 // ==================== Dashboard Stats ====================
@@ -119,79 +144,56 @@ export async function getDashboardTrafficBreakdown(opts: {
   if (summaries.length === 0) return emptyTrafficBreakdown();
 
   const ruleIds = Array.from(new Set(summaries.map((item) => Number(item.ruleId)).filter(Boolean)));
-  const hostIds = Array.from(new Set(summaries.map((item) => Number(item.hostId)).filter(Boolean)));
-
   const ruleRows = ruleIds.length
     ? await db
       .select({
         id: forwardRules.id,
         name: forwardRules.name,
+        forwardType: forwardRules.forwardType,
         tunnelId: forwardRules.tunnelId,
+        forwardGroupId: forwardRules.forwardGroupId,
+        forwardGroupRuleId: forwardRules.forwardGroupRuleId,
+        forwardGroupMemberId: forwardRules.forwardGroupMemberId,
+        isForwardGroupTemplate: forwardRules.isForwardGroupTemplate,
       })
       .from(forwardRules)
       .where(sql`${forwardRules.id} IN (${sql.join(ruleIds.map((id) => sql`${id}`), sql`, `)})`)
     : [];
-  const hostRows = hostIds.length
-    ? await db
-      .select({
-        id: hosts.id,
-        name: hosts.name,
-      })
-      .from(hosts)
-      .where(sql`${hosts.id} IN (${sql.join(hostIds.map((id) => sql`${id}`), sql`, `)})`)
-    : [];
 
-  const ruleMeta = new Map<number, { name: string; tunnelId: number | null }>();
+  const ruleMeta = new Map<number, RuleTrafficMeta>();
   for (const row of ruleRows as any[]) {
     ruleMeta.set(Number(row.id), {
       name: row.name || `规则 #${row.id}`,
+      forwardType: String(row.forwardType || ""),
       tunnelId: row.tunnelId ? Number(row.tunnelId) : null,
+      forwardGroupId: row.forwardGroupId ? Number(row.forwardGroupId) : null,
+      forwardGroupRuleId: row.forwardGroupRuleId ? Number(row.forwardGroupRuleId) : null,
+      forwardGroupMemberId: row.forwardGroupMemberId ? Number(row.forwardGroupMemberId) : null,
+      isForwardGroupTemplate: !!row.isForwardGroupTemplate,
     });
   }
 
-  const hostNameById = new Map<number, string>();
-  for (const row of hostRows as any[]) {
-    hostNameById.set(Number(row.id), row.name || `主机 #${row.id}`);
-  }
-
-  const tunnelIds = Array.from(new Set(Array.from(ruleMeta.values()).map((item) => item.tunnelId).filter(Boolean))) as number[];
-  const tunnelRows = tunnelIds.length
-    ? await db
-      .select({
-        id: tunnels.id,
-        name: tunnels.name,
-      })
-      .from(tunnels)
-      .where(sql`${tunnels.id} IN (${sql.join(tunnelIds.map((id) => sql`${id}`), sql`, `)})`)
-    : [];
-
-  const tunnelNameById = new Map<number, string>();
-  for (const row of tunnelRows as any[]) {
-    tunnelNameById.set(Number(row.id), row.name || `隧道 #${row.id}`);
-  }
-
-  const ruleTotals = new Map<number, DashboardTrafficBreakdownItem>();
-  const hostTotals = new Map<number, DashboardTrafficBreakdownItem>();
-  const tunnelTotals = new Map<number, DashboardTrafficBreakdownItem>();
+  const tunnelRuleTotals = new Map<number, DashboardTrafficBreakdownItem>();
+  const portRuleTotals = new Map<number, DashboardTrafficBreakdownItem>();
+  const forwardGroupRuleTotals = new Map<number, DashboardTrafficBreakdownItem>();
+  const totalsByBucket: Record<RuleTrafficBucket, Map<number, DashboardTrafficBreakdownItem>> = {
+    tunnelRules: tunnelRuleTotals,
+    portRules: portRuleTotals,
+    forwardGroupRules: forwardGroupRuleTotals,
+  };
 
   for (const item of summaries) {
     const ruleId = Number(item.ruleId);
-    const hostId = Number(item.hostId);
     const bytesIn = Number(item.bytesIn) || 0;
     const bytesOut = Number(item.bytesOut) || 0;
     const rule = ruleMeta.get(ruleId);
-
-    addTraffic(ruleTotals, ruleId, rule?.name || `规则 #${ruleId}`, bytesIn, bytesOut);
-    addTraffic(hostTotals, hostId, hostNameById.get(hostId) || `主机 #${hostId}`, bytesIn, bytesOut);
-
-    if (rule?.tunnelId) {
-      addTraffic(tunnelTotals, rule.tunnelId, tunnelNameById.get(rule.tunnelId) || `隧道 #${rule.tunnelId}`, bytesIn, bytesOut);
-    }
+    const bucket = getRuleTrafficBucket(rule);
+    addTraffic(totalsByBucket[bucket], ruleId, rule?.name || `规则 #${ruleId}`, bytesIn, bytesOut);
   }
 
   return {
-    rules: sortTrafficItems(ruleTotals, limit),
-    hosts: sortTrafficItems(hostTotals, limit),
-    tunnels: sortTrafficItems(tunnelTotals, limit),
+    tunnelRules: sortTrafficItems(tunnelRuleTotals, limit),
+    portRules: sortTrafficItems(portRuleTotals, limit),
+    forwardGroupRules: sortTrafficItems(forwardGroupRuleTotals, limit),
   };
 }

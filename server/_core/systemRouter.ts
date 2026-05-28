@@ -16,9 +16,9 @@ import {
   TUNNEL_PROTOCOLS,
   normalizeForwardProtocolSettings,
 } from "../../shared/forwardTypes";
-import { AGENT_VERSION, APP_VERSION } from "../../shared/versions";
+import { AGENT_VERSION, ANDROID_APP_VERSION, APP_VERSION } from "../../shared/versions";
 
-export { AGENT_VERSION, APP_VERSION } from "../../shared/versions";
+export { AGENT_VERSION, ANDROID_APP_VERSION, APP_VERSION } from "../../shared/versions";
 
 /**
  * 系统级别 router：
@@ -332,6 +332,7 @@ export const systemRouter = router({
       repoUrl: REPO_URL,
       telegramBotUrl: TELEGRAM_BOT_URL,
       version: APP_VERSION,
+      androidAppVersion: ANDROID_APP_VERSION,
       agentVersion: AGENT_VERSION,
       registrationEnabled: all.registrationEnabled !== "false",
       twoFactorEnabled: all.twoFactorEnabled === "true",
@@ -345,6 +346,7 @@ export const systemRouter = router({
       repoUrl: REPO_URL,
       telegramBotUrl: TELEGRAM_BOT_URL,
       version: APP_VERSION,
+      androidAppVersion: ANDROID_APP_VERSION,
       agentVersion: AGENT_VERSION,
       panelPublicUrl: all.panelPublicUrl ?? "",
       webPort: ENV.port,
@@ -673,6 +675,7 @@ export const systemRouter = router({
       const level = input?.level || "all";
       const exported = formatPanelLogsForExport(level, {
         "App Version": APP_VERSION,
+        "Android App Version": ANDROID_APP_VERSION,
         "Agent Version": AGENT_VERSION,
         "Repository": REPO_URL,
       });

@@ -181,6 +181,30 @@ function statusBadge(status: string) {
   return <Badge variant="outline" className={tone}>{text[status] || status}</Badge>;
 }
 
+function PaymentStatCard({
+  label,
+  value,
+  icon: Icon,
+  tone = "text-primary",
+}: {
+  label: string;
+  value: string | number;
+  icon: React.ElementType;
+  tone?: string;
+}) {
+  return (
+    <Card className="border-border/40 bg-card/60 backdrop-blur-md">
+      <CardContent className="flex min-h-[82px] items-center justify-between gap-4 p-4 sm:p-5">
+        <div className="min-w-0">
+          <p className="text-xs font-medium text-muted-foreground">{label}</p>
+          <p className="mt-1.5 truncate text-2xl font-bold leading-none tracking-tight tabular-nums">{value}</p>
+        </div>
+        <Icon className={`h-5 w-5 shrink-0 ${tone}`} />
+      </CardContent>
+    </Card>
+  );
+}
+
 function Field({ label, children, hint }: { label: string; children: React.ReactNode; hint?: string }) {
   return (
     <div className="space-y-2">
@@ -327,30 +351,30 @@ export default function Payments() {
         </div>
 
         <div className="grid gap-4 md:grid-cols-4">
-          <Card>
-            <CardHeader className="relative min-h-[82px] py-4">
-              <CardDescription>支付状态</CardDescription>
-              <CardTitle className="absolute left-6 top-1/2 -translate-y-[35%] leading-none">{form.enabled ? "已启用" : "未启用"}</CardTitle>
-            </CardHeader>
-          </Card>
-          <Card>
-            <CardHeader className="relative min-h-[82px] py-4">
-              <CardDescription>已支付金额</CardDescription>
-              <CardTitle className="absolute left-6 top-1/2 -translate-y-[35%] leading-none">{formatMoney(stats?.paidAmountCents)}</CardTitle>
-            </CardHeader>
-          </Card>
-          <Card>
-            <CardHeader className="relative min-h-[82px] py-4">
-              <CardDescription>已支付订单</CardDescription>
-              <CardTitle className="absolute left-6 top-1/2 -translate-y-[35%] leading-none">{stats?.paidOrders || 0}</CardTitle>
-            </CardHeader>
-          </Card>
-          <Card>
-            <CardHeader className="relative min-h-[82px] py-4">
-              <CardDescription>待支付订单</CardDescription>
-              <CardTitle className="absolute left-6 top-1/2 -translate-y-[35%] leading-none">{stats?.pendingOrders || 0}</CardTitle>
-            </CardHeader>
-          </Card>
+          <PaymentStatCard
+            label="支付状态"
+            value={form.enabled ? "已启用" : "未启用"}
+            icon={ShieldCheck}
+            tone={form.enabled ? "text-emerald-600" : "text-muted-foreground"}
+          />
+          <PaymentStatCard
+            label="已支付金额"
+            value={formatMoney(stats?.paidAmountCents)}
+            icon={WalletCards}
+            tone="text-primary"
+          />
+          <PaymentStatCard
+            label="已支付订单"
+            value={stats?.paidOrders || 0}
+            icon={CheckCircle2}
+            tone="text-emerald-600"
+          />
+          <PaymentStatCard
+            label="待支付订单"
+            value={stats?.pendingOrders || 0}
+            icon={RefreshCw}
+            tone="text-amber-600"
+          />
         </div>
 
         <Alert className="border-blue-200 bg-blue-50/70 text-blue-900">

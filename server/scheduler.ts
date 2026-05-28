@@ -29,6 +29,10 @@ async function runMonthlyTrafficReset() {
     const usersToReset = await db.getUsersForAutoReset(today);
     for (const user of usersToReset) {
       await db.resetUserTraffic(user.id);
+      const recovery = await db.recoverUserForwardAccessIfEligible(user.id);
+      if (recovery.restored) {
+        await refreshUserRuleAgents(user.id, "traffic-reset-forward-restored");
+      }
       console.log(`[Scheduler] Auto-reset traffic for user ${user.id} (${user.username})`);
     }
     if (usersToReset.length > 0) {
@@ -59,7 +63,7 @@ async function runExpirationCheck() {
   try {
     const expiredUsers = await db.getExpiredUsers();
     for (const user of expiredUsers) {
-      await db.setUserForwardAccess(user.id, false);
+      await db.setUserForwardAccess(user.id, false, "expired");
       await refreshUserRuleAgents(user.id, "user-expired");
       console.log(`[Scheduler] User ${user.id} (${user.username}) expired, disabled all rules`);
     }

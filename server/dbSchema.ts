@@ -64,7 +64,7 @@ const tables: TableDef[] = [
     columns: [
       c("id", "id"), c("username", "text", { notNull: true }), c("password", "text", { notNull: true }),
       c("name", "text"), c("email", "text"), c("emailVerified", "bool", { notNull: true, default: false }), c("emailVerifiedAt", "epoch"), c("displayRemark", "text"), c("role", "varchar", { length: 32, notNull: true, default: "user" }),
-      c("canAddRules", "bool", { notNull: true, default: false }), c("maxRules", "int", { notNull: true, default: 0 }),
+      c("canAddRules", "bool", { notNull: true, default: false }), c("forwardAccessPauseReason", "varchar", { length: 64 }), c("maxRules", "int", { notNull: true, default: 0 }),
       c("maxPorts", "int", { notNull: true, default: 0 }), c("allowedForwardTypes", "text"),
       c("allowForwardXTunnel", "bool", { notNull: true, default: false }), c("gostRateLimitIn", "int", { notNull: true, default: 0 }),
       c("gostRateLimitOut", "int", { notNull: true, default: 0 }), c("maxConnections", "int", { notNull: true, default: 0 }),
