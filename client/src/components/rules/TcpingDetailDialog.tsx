@@ -146,7 +146,6 @@ function TcpingDetailDialog({
                   content={<TcpingTooltipContent />}
                   cursor={{ stroke: "var(--color-muted-foreground)", strokeDasharray: "3 3" }}
                   offset={12}
-                  allowEscapeViewBox={{ x: true, y: true }}
                   wrapperStyle={{ pointerEvents: "none" }}
                 />
                 <Area

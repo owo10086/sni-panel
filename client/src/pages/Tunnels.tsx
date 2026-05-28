@@ -235,7 +235,6 @@ function TunnelLatencyDialog({
                 <RTooltip
                   cursor={{ stroke: "var(--color-muted-foreground)", strokeDasharray: "3 3" }}
                   offset={12}
-                  allowEscapeViewBox={{ x: true, y: true }}
                   wrapperStyle={{ pointerEvents: "none" }}
                   content={({ active, payload }: any) => {
                     if (!active || !payload?.length) return null;

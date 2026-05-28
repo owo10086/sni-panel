@@ -7,7 +7,7 @@ const resourceTypeSchema = z.enum(["host", "tunnel"]);
 
 export const trafficBillingRouter = router({
   status: protectedProcedure.query(async ({ ctx }) => {
-    const summary = await db.getTrafficBillingSummary(ctx.user.role === "admin" ? undefined : ctx.user.id);
+    const summary = await db.getTrafficBillingSummary(ctx.user.id);
     return summary;
   }),
 

@@ -461,7 +461,7 @@ function SettingsContent() {
         <div>
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight">系统设置</h1>
           <p className="text-muted-foreground mt-1 text-sm">
-            管理 Token、安装脚本和系统配置
+            创建Token
           </p>
         </div>
         <Badge variant="outline" className="gap-1.5 px-3 py-1.5 text-xs">
@@ -471,28 +471,30 @@ function SettingsContent() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid h-auto w-full grid-cols-2 gap-1 border border-border/30 bg-muted/30 p-1 sm:inline-flex sm:w-auto sm:grid-cols-none">
-          <TabsTrigger value="tokens" className="min-w-0 justify-center gap-1.5 text-xs sm:text-sm">
+        <div className="-mx-1 overflow-x-auto px-1 pb-1">
+          <TabsList className="grid h-auto min-w-max w-full grid-cols-2 gap-2 rounded-lg border border-border/50 bg-muted/20 p-1.5 sm:inline-grid sm:w-auto sm:grid-cols-5">
+          <TabsTrigger value="tokens" className="min-h-10 min-w-[132px] justify-center gap-1.5 rounded-md border border-border/60 bg-background/70 px-3 text-xs shadow-sm data-[state=active]:border-primary/40 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-md sm:text-sm">
             <Key className="h-3.5 w-3.5" />
             Agent Token
           </TabsTrigger>
-          <TabsTrigger value="install" className="min-w-0 justify-center gap-1.5 text-xs sm:text-sm">
+          <TabsTrigger value="install" className="min-h-10 min-w-[132px] justify-center gap-1.5 rounded-md border border-border/60 bg-background/70 px-3 text-xs shadow-sm data-[state=active]:border-primary/40 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-md sm:text-sm">
             <Terminal className="h-3.5 w-3.5" />
             一键安装
           </TabsTrigger>
-          <TabsTrigger value="system" className="min-w-0 justify-center gap-1.5 text-xs sm:text-sm">
+          <TabsTrigger value="system" className="min-h-10 min-w-[132px] justify-center gap-1.5 rounded-md border border-border/60 bg-background/70 px-3 text-xs shadow-sm data-[state=active]:border-primary/40 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-md sm:text-sm">
             <Settings2 className="h-3.5 w-3.5" />
             系统信息
           </TabsTrigger>
-          <TabsTrigger value="telegram" className="min-w-0 justify-center gap-1.5 text-xs sm:text-sm">
+          <TabsTrigger value="telegram" className="min-h-10 min-w-[132px] justify-center gap-1.5 rounded-md border border-border/60 bg-background/70 px-3 text-xs shadow-sm data-[state=active]:border-primary/40 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-md sm:text-sm">
             <Send className="h-3.5 w-3.5" />
             Telegram
           </TabsTrigger>
-          <TabsTrigger value="logs" className="min-w-0 justify-center gap-1.5 text-xs sm:text-sm">
+          <TabsTrigger value="logs" className="min-h-10 min-w-[132px] justify-center gap-1.5 rounded-md border border-border/60 bg-background/70 px-3 text-xs shadow-sm data-[state=active]:border-primary/40 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-md sm:text-sm">
             <FileText className="h-3.5 w-3.5" />
             面板日志
           </TabsTrigger>
-        </TabsList>
+          </TabsList>
+        </div>
 
         {/* Token Management Tab */}
         <TabsContent value="tokens" className="space-y-4">
@@ -1853,9 +1855,9 @@ function SystemInfoSection() {
           {!settings?.webPortManagement?.enabled && (
             <Alert>
               <AlertTriangle className="h-4 w-4" />
-              <AlertTitle>当前部署方式不支持后台修改端口</AlertTitle>
+              <AlertTitle>Docker 部署不支持后台修改端口</AlertTitle>
               <AlertDescription>
-                Docker 用户请自行配置端口映射；非本地安装脚本部署时请修改运行环境中的 PORT。
+                Docker 用户请自行配置端口映射；非 Docker 部署可在此修改监听端口。
               </AlertDescription>
             </Alert>
           )}

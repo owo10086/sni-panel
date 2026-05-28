@@ -35,7 +35,11 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { trpc } from "@/lib/trpc";
 import {
+  ArrowDownToLine,
+  ArrowRightLeft,
+  ArrowUpFromLine,
   KeyRound,
+  Package,
   Plus,
   Shield,
   ShieldCheck,
@@ -52,7 +56,7 @@ import {
   Send,
   Mail,
 } from "lucide-react";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, type ElementType } from "react";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
 import { FORWARD_TYPES } from "@shared/forwardTypes";
@@ -91,6 +95,94 @@ function userLabel(user: any) {
 
 function formatCurrencyCny(cents: number | string | null | undefined): string {
   return new Intl.NumberFormat("zh-CN", { style: "currency", currency: "CNY" }).format((Number(cents) || 0) / 100);
+}
+
+function readStoredUserManageType(): "accounts" | "subscriptions" {
+  if (typeof window === "undefined") return "accounts";
+  try {
+    const value = window.localStorage.getItem("forwardx.users.type");
+    return value === "subscriptions" ? "subscriptions" : "accounts";
+  } catch {
+    return "accounts";
+  }
+}
+
+function writeStoredUserManageType(value: "accounts" | "subscriptions") {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem("forwardx.users.type", value);
+  } catch {
+    // Page still works when localStorage is unavailable.
+  }
+}
+
+function dateText(value?: string | Date | null) {
+  if (!value) return "永久";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "-" : date.toLocaleDateString("zh-CN");
+}
+
+function dateTimeText(value?: string | Date | null) {
+  if (!value) return "-";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "-" : date.toLocaleString("zh-CN");
+}
+
+function subscriptionStatusLabel(status?: string) {
+  if (status === "active") return "生效中";
+  if (status === "expired") return "已过期";
+  if (status === "cancelled") return "已取消";
+  return status || "-";
+}
+
+function subscriptionSourceLabel(source?: string) {
+  if (source === "admin") return "管理员分配";
+  if (source === "balance") return "余额购买";
+  if (source === "payment") return "在线支付";
+  if (source === "redeem") return "兑换套餐";
+  return source || "套餐记录";
+}
+
+function isSubscriptionActive(sub: any) {
+  return sub?.status === "active" && (!sub.expiresAt || new Date(sub.expiresAt).getTime() > Date.now());
+}
+
+function UserStatCard({
+  title,
+  value,
+  subtitle,
+  icon: Icon,
+  tone,
+  loading,
+}: {
+  title: string;
+  value: string | number;
+  subtitle?: string;
+  icon: ElementType;
+  tone: string;
+  loading?: boolean;
+}) {
+  return (
+    <Card className="group relative overflow-hidden border-border/40 bg-card/60 backdrop-blur-md transition-all duration-300 hover:border-border/70">
+      <div className={`absolute inset-0 opacity-[0.04] transition-opacity group-hover:opacity-[0.08] ${tone}`} />
+      <CardContent className="relative p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 space-y-1">
+            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{title}</p>
+            {loading ? (
+              <Skeleton className="h-7 w-20 rounded-md" />
+            ) : (
+              <p className="truncate text-2xl font-bold tracking-tight tabular-nums">{value}</p>
+            )}
+            {subtitle && <p className="truncate text-xs text-muted-foreground/80">{subtitle}</p>}
+          </div>
+          <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${tone} shadow-sm`}>
+            <Icon className="h-5 w-5 text-white" />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
 }
 
 function UsersContent() {
@@ -137,8 +229,19 @@ function UsersContent() {
   const [expiresAtInput, setExpiresAtInput] = useState("");
   const [trafficAutoReset, setTrafficAutoReset] = useState(false);
   const [trafficResetDay, setTrafficResetDay] = useState(1);
+
+  // Subscription management dialogs
+  const [manageType, setManageType] = useState<"accounts" | "subscriptions">(() => readStoredUserManageType());
+  const [showAddonDialog, setShowAddonDialog] = useState(false);
+  const [addonUserId, setAddonUserId] = useState<number | null>(null);
+  const [addonUserName, setAddonUserName] = useState("");
   const [addonSubscriptionId, setAddonSubscriptionId] = useState("");
+  const [addonSubscriptionLabel, setAddonSubscriptionLabel] = useState("");
   const [addonTrafficGB, setAddonTrafficGB] = useState("");
+  const [showExtendDialog, setShowExtendDialog] = useState(false);
+  const [extendSubscriptionId, setExtendSubscriptionId] = useState<number | null>(null);
+  const [extendSubscriptionLabel, setExtendSubscriptionLabel] = useState("");
+  const [extendDays, setExtendDays] = useState("30");
   const [maxRules, setMaxRules] = useState(0);
   const [maxPorts, setMaxPorts] = useState(0);
   const [maxConnections, setMaxConnections] = useState(0);
@@ -170,9 +273,13 @@ function UsersContent() {
     { userId: trafficUserId! },
     { enabled: showTrafficSettings && !!trafficUserId }
   );
-  const { data: trafficUserSubscriptions = [] } = trpc.plans.subscriptions.useQuery(
-    { userId: trafficUserId || undefined },
-    { enabled: showTrafficSettings && !!trafficUserId }
+  const { data: userSummary, isLoading: summaryLoading } = trpc.users.summary.useQuery(undefined, {
+    enabled: currentUser?.role === "admin",
+    refetchInterval: 30000,
+  });
+  const { data: allSubscriptions = [], isLoading: subscriptionsLoading } = trpc.plans.subscriptions.useQuery(
+    {},
+    { enabled: currentUser?.role === "admin" }
   );
   const updateHostPermsMutation = trpc.users.setHostPermissions.useMutation({
     onSuccess: () => {
@@ -316,20 +423,56 @@ function UsersContent() {
   const adminAddTrafficAddonMutation = trpc.billing.adminAddTrafficAddon.useMutation({
     onSuccess: () => {
       utils.users.list.invalidate();
+      utils.users.summary.invalidate();
       utils.plans.subscriptions.invalidate();
       toast.success("本周期附加流量已生效");
+      setShowAddonDialog(false);
+      setAddonUserId(null);
+      setAddonSubscriptionId("");
+      setAddonSubscriptionLabel("");
       setAddonTrafficGB("");
     },
     onError: (err) => toast.error(err.message || "附加流量失败"),
   });
 
+  const extendSubscriptionMutation = trpc.plans.extendSubscription.useMutation({
+    onSuccess: () => {
+      utils.users.list.invalidate();
+      utils.users.summary.invalidate();
+      utils.plans.subscriptions.invalidate();
+      toast.success("订阅时间已延长");
+      setShowExtendDialog(false);
+      setExtendSubscriptionId(null);
+      setExtendSubscriptionLabel("");
+      setExtendDays("30");
+    },
+    onError: (err) => toast.error(err.message || "延长订阅失败"),
+  });
+
+  const cancelSubscriptionMutation = trpc.plans.cancelSubscription.useMutation({
+    onSuccess: () => {
+      utils.users.list.invalidate();
+      utils.users.summary.invalidate();
+      utils.plans.subscriptions.invalidate();
+      toast.success("订阅已取消");
+    },
+    onError: (err) => toast.error(err.message || "取消订阅失败"),
+  });
+
   const adminCount = useMemo(() => users?.filter((u) => u.role === "admin").length ?? 0, [users]);
+  const activeSubscriptionCount = useMemo(() => (allSubscriptions as any[]).filter(isSubscriptionActive).length, [allSubscriptions]);
   const userPagination = usePersistentPagination(users || [], {
     storageKey: "forwardx.users.page",
     pageSize: 12,
     isReady: !isLoading && !!users,
   });
   const pagedUsers = userPagination.items;
+  const subscriptionPagination = usePersistentPagination(allSubscriptions || [], {
+    storageKey: "forwardx.users.subscriptions.page",
+    pageSize: 12,
+    isReady: !subscriptionsLoading,
+  });
+  const pagedSubscriptions = subscriptionPagination.items;
 
   if (currentUser?.role !== "admin") return null;
 
@@ -444,8 +587,6 @@ function UsersContent() {
     setAllowedTunnelIds([]);
     setTrafficBillingHostIds([]);
     setTrafficBillingTunnelIds([]);
-    setAddonSubscriptionId("");
-    setAddonTrafficGB("");
     setShowTrafficSettings(true);
   };
 
@@ -506,17 +647,57 @@ function UsersContent() {
     adminRechargeMutation.mutate({ userId: rechargeUserId, amountCents, description: "用户管理手动充值" });
   };
 
+  const handleManageTypeChange = (value: string) => {
+    const next = value === "subscriptions" ? "subscriptions" : "accounts";
+    setManageType(next);
+    writeStoredUserManageType(next);
+  };
+
+  const openAddonDialog = (sub: any) => {
+    if (!isSubscriptionActive(sub) || Number(sub.trafficLimit || 0) <= 0) {
+      toast.error("只有生效中的流量套餐可以附加流量");
+      return;
+    }
+    setAddonUserId(Number(sub.userId));
+    setAddonUserName(userLabel({ username: sub.username, name: sub.name, id: sub.userId }));
+    setAddonSubscriptionId(String(sub.id));
+    setAddonSubscriptionLabel(`${sub.planName || `套餐 #${sub.planId}`} · ${formatBytes(sub.trafficLimit)}`);
+    setAddonTrafficGB("");
+    setShowAddonDialog(true);
+  };
+
+  const openExtendDialog = (sub: any) => {
+    if (sub.status === "cancelled") {
+      toast.error("已取消的订阅不能延长时间");
+      return;
+    }
+    if (!sub.expiresAt) {
+      toast.info("永久订阅无需延长");
+      return;
+    }
+    setExtendSubscriptionId(Number(sub.id));
+    setExtendSubscriptionLabel(`${userLabel({ username: sub.username, name: sub.name, id: sub.userId })} · ${sub.planName || `套餐 #${sub.planId}`}`);
+    setExtendDays("30");
+    setShowExtendDialog(true);
+  };
+
   const handleAdminAddTrafficAddon = () => {
-    if (!trafficUserId) return;
+    if (!addonUserId) return;
     const trafficBytes = parseTrafficInputGB(addonTrafficGB);
     if (trafficBytes <= 0) return toast.error("请输入大于 0 的附加流量");
-    const selectedSubscriptionId = addonSubscriptionId || (activeTrafficSubscriptions[0]?.id ? String(activeTrafficSubscriptions[0].id) : "");
     adminAddTrafficAddonMutation.mutate({
-      userId: trafficUserId,
+      userId: addonUserId,
       trafficBytes,
-      subscriptionId: selectedSubscriptionId ? Number(selectedSubscriptionId) : undefined,
+      subscriptionId: addonSubscriptionId ? Number(addonSubscriptionId) : undefined,
       description: "管理员手动附加本周期流量",
     });
+  };
+
+  const handleExtendSubscription = () => {
+    if (!extendSubscriptionId) return;
+    const days = Math.floor(Number(extendDays || 0));
+    if (!Number.isFinite(days) || days <= 0) return toast.error("请输入有效延长天数");
+    extendSubscriptionMutation.mutate({ id: extendSubscriptionId, days });
   };
 
   const toggleTunnelPermission = (tunnelId: number) => {
@@ -540,9 +721,6 @@ function UsersContent() {
   const hostNameById = (hostId: number) => allHosts?.find((h: any) => h.id === hostId)?.name || `#${hostId}`;
   const billableHostIds = new Set((trafficBillingConfigs?.configs || []).filter((item: any) => item.resourceType === "host" && item.enabled).map((item: any) => Number(item.resourceId)));
   const billableTunnelIds = new Set((trafficBillingConfigs?.configs || []).filter((item: any) => item.resourceType === "tunnel" && item.enabled).map((item: any) => Number(item.resourceId)));
-  const activeTrafficSubscriptions = (trafficUserSubscriptions as any[]).filter((sub: any) => sub.status === "active" && Number(sub.trafficLimit || 0) > 0);
-  const selectedAddonSubscriptionId = addonSubscriptionId || (activeTrafficSubscriptions[0]?.id ? String(activeTrafficSubscriptions[0].id) : "");
-
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -567,6 +745,58 @@ function UsersContent() {
           </Button>
         </div>
       </div>
+
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+        <UserStatCard
+          title="用户总数"
+          value={userSummary?.totalUsers ?? users?.length ?? 0}
+          subtitle={`${adminCount} 个管理员`}
+          icon={UsersIcon}
+          tone="bg-gradient-to-br from-blue-500 to-blue-600"
+          loading={summaryLoading || isLoading}
+        />
+        <UserStatCard
+          title="转发规则"
+          value={userSummary?.totalRules ?? 0}
+          subtitle={`${userSummary?.activeRules ?? 0} 条活跃`}
+          icon={ArrowRightLeft}
+          tone="bg-gradient-to-br from-emerald-500 to-emerald-600"
+          loading={summaryLoading}
+        />
+        <UserStatCard
+          title="入站流量"
+          value={formatBytes(userSummary?.totalTrafficIn ?? 0)}
+          subtitle="所有用户累计入站"
+          icon={ArrowDownToLine}
+          tone="bg-gradient-to-br from-violet-500 to-violet-600"
+          loading={summaryLoading}
+        />
+        <UserStatCard
+          title="出站流量"
+          value={formatBytes(userSummary?.totalTrafficOut ?? 0)}
+          subtitle="所有用户累计出站"
+          icon={ArrowUpFromLine}
+          tone="bg-gradient-to-br from-amber-500 to-amber-600"
+          loading={summaryLoading}
+        />
+      </div>
+
+      <Tabs value={manageType} onValueChange={handleManageTypeChange} className="space-y-4">
+        <TabsList className="grid h-auto w-full grid-cols-2 gap-1 border border-border/30 bg-muted/30 p-1 sm:w-auto sm:min-w-[360px]">
+          <TabsTrigger value="accounts" className="min-w-0 justify-center gap-1.5 text-xs sm:text-sm">
+            <UsersIcon className="h-3.5 w-3.5" />
+            账户管理
+          </TabsTrigger>
+          <TabsTrigger value="subscriptions" className="min-w-0 justify-center gap-1.5 text-xs sm:text-sm">
+            <Package className="h-3.5 w-3.5" />
+            用户订阅管理
+            {activeSubscriptionCount > 0 && (
+              <span className="ml-0.5 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] text-primary">{activeSubscriptionCount}</span>
+            )}
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="accounts" className="space-y-4 data-[state=inactive]:hidden">
 
       {isLoading && (
         <div className="space-y-3 sm:hidden">
@@ -1050,6 +1280,120 @@ function UsersContent() {
       {!isLoading && users && users.length > 0 && (
         <PersistentPagination pagination={userPagination} itemName="个用户" />
       )}
+        </TabsContent>
+
+        <TabsContent value="subscriptions" className="space-y-4 data-[state=inactive]:hidden">
+          {subscriptionsLoading ? (
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+              {[1, 2, 3, 4, 5, 6].map((item) => (
+                <Skeleton key={item} className="h-56 w-full rounded-lg" />
+              ))}
+            </div>
+          ) : allSubscriptions.length === 0 ? (
+            <div className="flex flex-col items-center justify-center rounded-lg border border-border/50 bg-card/60 py-16 text-muted-foreground">
+              <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-muted/30">
+                <Package className="h-7 w-7 opacity-40" />
+              </div>
+              <p className="text-base font-medium">暂无用户订阅</p>
+              <p className="mt-1 text-sm text-muted-foreground/60">分配或购买套餐后会显示在这里。</p>
+            </div>
+          ) : (
+            <>
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                {pagedSubscriptions.map((sub: any) => {
+                  const active = isSubscriptionActive(sub);
+                  const trafficLimit = Number(sub.trafficLimit || 0);
+                  const activeAddonBytes = Number(sub.activeTrafficAddonBytes || 0);
+                  const canAddAddon = active && trafficLimit > 0;
+                  const canExtend = sub.status !== "cancelled" && !!sub.expiresAt;
+                  return (
+                    <Card key={sub.id} className="border-border/40 bg-card/60">
+                      <CardContent className="space-y-3 p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-semibold">{userLabel({ username: sub.username, name: sub.name, id: sub.userId })}</p>
+                            <p className="mt-1 truncate text-xs text-muted-foreground">{sub.planName || `套餐 #${sub.planId}`}</p>
+                          </div>
+                          <Badge variant={active ? "default" : "secondary"} className="shrink-0 text-[10px]">
+                            {subscriptionStatusLabel(sub.status)}
+                          </Badge>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div className="min-w-0 rounded-md bg-muted/25 p-2">
+                            <p className="text-muted-foreground">来源</p>
+                            <p className="mt-1 truncate font-medium">{subscriptionSourceLabel(sub.source)}</p>
+                          </div>
+                          <div className="min-w-0 rounded-md bg-muted/25 p-2">
+                            <p className="text-muted-foreground">端口段</p>
+                            <p className="mt-1 truncate font-medium tabular-nums">
+                              {sub.portRangeStart && sub.portRangeEnd ? `${sub.portRangeStart}-${sub.portRangeEnd}` : "-"}
+                            </p>
+                          </div>
+                          <div className="min-w-0 rounded-md bg-muted/25 p-2">
+                            <p className="text-muted-foreground">套餐流量</p>
+                            <p className="mt-1 truncate font-medium">{trafficLimit > 0 ? formatBytes(trafficLimit) : "不限"}</p>
+                          </div>
+                          <div className="min-w-0 rounded-md bg-muted/25 p-2">
+                            <p className="text-muted-foreground">附加流量</p>
+                            <p className="mt-1 truncate font-medium">{activeAddonBytes > 0 ? formatBytes(activeAddonBytes) : "-"}</p>
+                          </div>
+                          <div className="min-w-0 rounded-md bg-muted/25 p-2">
+                            <p className="text-muted-foreground">到期</p>
+                            <p className={`mt-1 truncate font-medium ${sub.expiresAt && !active ? "text-destructive" : ""}`}>{dateText(sub.expiresAt)}</p>
+                          </div>
+                          <div className="min-w-0 rounded-md bg-muted/25 p-2">
+                            <p className="text-muted-foreground">流量周期</p>
+                            <p className="mt-1 truncate font-medium">{dateTimeText(sub.nextTrafficResetAt)}</p>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-wrap gap-2 pt-1">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="h-8 flex-1 px-2 text-xs sm:flex-none"
+                            onClick={() => openAddonDialog(sub)}
+                            disabled={!canAddAddon || adminAddTrafficAddonMutation.isPending}
+                          >
+                            加赠流量
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="h-8 flex-1 px-2 text-xs sm:flex-none"
+                            onClick={() => openExtendDialog(sub)}
+                            disabled={!canExtend || extendSubscriptionMutation.isPending}
+                          >
+                            延长
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="h-8 flex-1 px-2 text-xs text-destructive hover:text-destructive sm:flex-none"
+                            disabled={!active || cancelSubscriptionMutation.isPending}
+                            onClick={() => {
+                              if (confirm(`确定取消 ${userLabel({ username: sub.username, name: sub.name, id: sub.userId })} 的订阅吗？`)) {
+                                cancelSubscriptionMutation.mutate({ id: Number(sub.id) });
+                              }
+                            }}
+                          >
+                            取消
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+              <PersistentPagination pagination={subscriptionPagination} itemName="条订阅" />
+            </>
+          )}
+        </TabsContent>
+      </Tabs>
 
       {/* Create User Dialog */}
       <Dialog open={showCreateUser} onOpenChange={setShowCreateUser}>
@@ -1235,6 +1579,71 @@ function UsersContent() {
         </DialogContent>
       </Dialog>
 
+      <Dialog open={showAddonDialog} onOpenChange={setShowAddonDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogTitle>加赠本周期流量</DialogTitle>
+          <DialogDescription>
+            给 "{addonUserName}" 的 {addonSubscriptionLabel || "当前套餐"} 增加仅本周期有效的流量。
+          </DialogDescription>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>加赠流量</Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="number"
+                  inputMode="decimal"
+                  min={0}
+                  step="0.01"
+                  value={addonTrafficGB}
+                  onChange={(e) => setAddonTrafficGB(e.target.value)}
+                  placeholder="例如：50"
+                />
+                <span className="shrink-0 text-sm text-muted-foreground">GB</span>
+              </div>
+              <p className="text-xs text-muted-foreground">附加流量会在当前套餐流量周期结束或订阅到期时自动失效。</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAddonDialog(false)}>
+              取消
+            </Button>
+            <Button onClick={handleAdminAddTrafficAddon} disabled={adminAddTrafficAddonMutation.isPending}>
+              {adminAddTrafficAddonMutation.isPending ? "加赠中..." : "确认加赠"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showExtendDialog} onOpenChange={setShowExtendDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogTitle>延长订阅时间</DialogTitle>
+          <DialogDescription>给 "{extendSubscriptionLabel}" 延长订阅有效期。</DialogDescription>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>延长天数</Label>
+              <Input
+                type="number"
+                inputMode="numeric"
+                min={1}
+                max={3650}
+                step={1}
+                value={extendDays}
+                onChange={(e) => setExtendDays(e.target.value)}
+                placeholder="例如：30"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowExtendDialog(false)}>
+              取消
+            </Button>
+            <Button onClick={handleExtendSubscription} disabled={extendSubscriptionMutation.isPending}>
+              {extendSubscriptionMutation.isPending ? "延长中..." : "确认延长"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Traffic & Permission Settings Dialog */}
       <Dialog open={showTrafficSettings} onOpenChange={setShowTrafficSettings}>
         <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col">
@@ -1399,53 +1808,6 @@ function UsersContent() {
                   </div>
                 </div>
                 <p className="text-xs text-muted-foreground">填 0 表示不限速。保存后 Agent 刷新隧道配置时生效。</p>
-              </div>
-
-              <Separator />
-
-              <div className="space-y-3 rounded-lg border border-border/50 bg-muted/20 p-3">
-                <div className="space-y-1">
-                  <Label className="flex items-center gap-1.5 text-sm">
-                    <WalletCards className="h-3.5 w-3.5" />
-                    本周期附加流量
-                  </Label>
-                  <p className="text-xs text-muted-foreground">附加流量只在当前套餐流量周期内有效，下次周期重置后自动失效。</p>
-                </div>
-                <div className="grid gap-2 sm:grid-cols-[1fr_120px]">
-                  <Select value={selectedAddonSubscriptionId} onValueChange={setAddonSubscriptionId}>
-                    <SelectTrigger>
-                      <SelectValue placeholder={activeTrafficSubscriptions.length ? "选择套餐" : "无生效流量套餐"} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {activeTrafficSubscriptions.map((sub: any) => (
-                        <SelectItem key={sub.id} value={String(sub.id)}>
-                          {sub.planName || `套餐 #${sub.planId}`} · {formatBytes(sub.trafficLimit)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <div className="flex items-center gap-2">
-                    <Input
-                      type="number"
-                      inputMode="decimal"
-                      min={0}
-                      step="0.01"
-                      value={addonTrafficGB}
-                      onChange={(e) => setAddonTrafficGB(e.target.value)}
-                      placeholder="50"
-                    />
-                    <span className="text-xs text-muted-foreground">GB</span>
-                  </div>
-                </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full"
-                  onClick={handleAdminAddTrafficAddon}
-                  disabled={!trafficUserId || activeTrafficSubscriptions.length === 0 || adminAddTrafficAddonMutation.isPending}
-                >
-                  {adminAddTrafficAddonMutation.isPending ? "附加中..." : "手动附加流量"}
-                </Button>
               </div>
 
               <Separator />

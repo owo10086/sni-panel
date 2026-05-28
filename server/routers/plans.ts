@@ -119,4 +119,15 @@ export const plansRouter = router({
       }
       return { success: true };
     }),
+  extendSubscription: adminProcedure
+    .input(z.object({
+      id: z.number().int().positive(),
+      days: z.number().int().min(1).max(3650),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const result = await db.extendUserSubscription(input.id, input.days);
+      await refreshUserForwardEndpoints(result.userId, "subscription-extended");
+      appendPanelLog("info", `[Plan] extended subscription=${input.id} user=${result.userId} days=${input.days} operator=${ctx.user.id}`);
+      return result;
+    }),
 });

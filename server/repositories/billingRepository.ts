@@ -384,6 +384,47 @@ export async function cancelUserSubscription(id: number) {
   await expireTrafficAddonsForSubscriptionIds([id]);
 }
 
+export async function extendUserSubscription(id: number, days: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const extraDays = Math.floor(Number(days || 0));
+  if (!Number.isFinite(extraDays) || extraDays <= 0) throw new Error("延长天数必须大于 0");
+  const rows = await db.select().from(userSubscriptions).where(eq(userSubscriptions.id, id)).limit(1);
+  const subscription = rows[0] as any;
+  if (!subscription) throw new Error("订阅不存在");
+  if (subscription.status === "cancelled") throw new Error("已取消的订阅不能延长");
+  if (!subscription.expiresAt) throw new Error("永久订阅无需延长");
+  const now = nowDate();
+  const currentExpiresAt = new Date(subscription.expiresAt);
+  const base = Number.isFinite(currentExpiresAt.getTime()) && currentExpiresAt.getTime() > now.getTime()
+    ? currentExpiresAt
+    : now;
+  const expiresAt = new Date(base.getTime() + extraDays * 24 * 3600 * 1000);
+  let nextTrafficResetAt = subscription.nextTrafficResetAt ? new Date(subscription.nextTrafficResetAt) : null;
+  const plan = await getSubscriptionPlanById(Number(subscription.planId));
+  if (Number(plan?.trafficLimit || 0) > 0) {
+    if (!nextTrafficResetAt || !Number.isFinite(nextTrafficResetAt.getTime()) || nextTrafficResetAt.getTime() <= now.getTime()) {
+      nextTrafficResetAt = nextMonthlyTrafficReset(now, expiresAt);
+    }
+    if (nextTrafficResetAt && nextTrafficResetAt.getTime() >= expiresAt.getTime()) nextTrafficResetAt = null;
+  } else {
+    nextTrafficResetAt = null;
+  }
+  await updateUserSubscription(id, {
+    status: "active",
+    expiresAt,
+    nextTrafficResetAt,
+  } as any);
+  const limits = await syncUserSubscriptionEntitlements(Number(subscription.userId));
+  return {
+    id,
+    userId: Number(subscription.userId),
+    expiresAt,
+    nextTrafficResetAt,
+    trafficLimit: limits.trafficLimit,
+  };
+}
+
 export async function expireUserSubscriptions() {
   const db = await getDb();
   if (!db) return 0;

@@ -299,44 +299,61 @@ function DashboardContent() {
     return userTraffic.find((item: any) => Number(item.id) === Number(user?.id)) || userTraffic[0];
   }, [userTraffic, user?.id]);
 
-  const trafficLimit = Number(currentUserTraffic?.trafficLimit) || 0;
+  const accountTrafficLimit = Number(currentUserTraffic?.trafficLimit) || 0;
   const trafficUsed = Number(currentUserTraffic?.trafficUsed) || 0;
-  const trafficRemaining = trafficLimit > 0 ? Math.max(0, trafficLimit - trafficUsed) : null;
-  const trafficPercent = trafficLimit > 0 ? Math.min(100, Math.round((trafficUsed / trafficLimit) * 100)) : 0;
   const trafficBillingEnabled = !!trafficBilling?.enabled;
   const trafficBillingBytes = Number(trafficBilling?.totalBytes || 0);
   const trafficBillingAmount = Number(trafficBilling?.totalAmountCents || 0);
   const trafficBillingBilledGb = Number(trafficBilling?.totalBilledGb || 0);
 
-  const activeSubscription = useMemo(() => {
+  const activeSubscriptions = useMemo(() => {
     const now = Date.now();
-    return (subscriptions || []).find((subscription: any) => {
+    return (subscriptions || []).filter((subscription: any) => {
       const expiresAt = subscription.expiresAt ? new Date(subscription.expiresAt).getTime() : Number.POSITIVE_INFINITY;
       return subscription.status === "active" && expiresAt > now;
     });
   }, [subscriptions]);
+  const activeSubscription = activeSubscriptions[0];
   const hasActiveSubscription = !!activeSubscription;
+  const hasUnlimitedPlanTraffic = activeSubscriptions.some((subscription: any) => Number(subscription.trafficLimit || 0) === 0);
+  const activeAddonTrafficBytes = hasActiveSubscription && !hasUnlimitedPlanTraffic
+    ? activeSubscriptions.reduce((total: number, subscription: any) => total + (Number(subscription.activeTrafficAddonBytes) || 0), 0)
+    : 0;
+  const basePlanTrafficLimit = hasActiveSubscription && !hasUnlimitedPlanTraffic
+    ? Math.max(0, ...activeSubscriptions.map((subscription: any) => Number(subscription.trafficLimit || 0)))
+    : 0;
+  const planTrafficLimit = hasActiveSubscription
+    ? hasUnlimitedPlanTraffic
+      ? 0
+      : Math.max(accountTrafficLimit, basePlanTrafficLimit + activeAddonTrafficBytes)
+    : 0;
+  const trafficPercent = planTrafficLimit > 0 ? Math.min(100, Math.round((trafficUsed / planTrafficLimit) * 100)) : 0;
   const accountStatusLoading = userTrafficLoading || subscriptionsLoading;
   const planExpiresAt = currentUserTraffic ? currentUserTraffic.expiresAt ?? null : activeSubscription?.expiresAt ?? null;
   const expiry = hasActiveSubscription ? getExpiryStatus(planExpiresAt) : { label: "---", tone: "normal" as const };
   const canForward = isAdmin || !!currentUserTraffic?.canAddRules;
-  const planUsedText = hasActiveSubscription ? formatBytes(trafficUsed) : "---";
-  const planRemainingText = hasActiveSubscription ? (trafficRemaining === null ? "不限" : formatBytes(trafficRemaining)) : "---";
   const planExpiryText = hasActiveSubscription ? formatDate(planExpiresAt) : "---";
   const planProgressText = hasActiveSubscription
-    ? trafficLimit > 0
-      ? `${formatBytes(trafficUsed)} / ${formatBytes(trafficLimit)} (${trafficPercent}%)`
+    ? planTrafficLimit > 0
+      ? `${formatBytes(trafficUsed)} / ${formatBytes(planTrafficLimit)} (${trafficPercent}%)`
       : `${formatBytes(trafficUsed)} / 不限`
     : "---";
-  const planProgressValue = hasActiveSubscription && trafficLimit > 0 ? trafficPercent : 0;
+  const planTrafficBreakdownText = hasActiveSubscription
+    ? planTrafficLimit > 0
+      ? activeAddonTrafficBytes > 0
+        ? `基础 ${formatBytes(Math.max(0, planTrafficLimit - activeAddonTrafficBytes))} + 附加 ${formatBytes(activeAddonTrafficBytes)}`
+        : `套餐总量 ${formatBytes(planTrafficLimit)}`
+      : "不限流量"
+    : "暂无生效套餐";
+  const planProgressValue = hasActiveSubscription && planTrafficLimit > 0 ? trafficPercent : 0;
 
   const mobileReminderSnapshot = useMemo(
     () => ({
-      trafficLimit: hasActiveSubscription ? trafficLimit : 0,
+      trafficLimit: hasActiveSubscription ? planTrafficLimit : 0,
       trafficUsed: hasActiveSubscription ? trafficUsed : 0,
       expiresAt: hasActiveSubscription ? planExpiresAt : null,
     }),
-    [hasActiveSubscription, trafficLimit, trafficUsed, planExpiresAt],
+    [hasActiveSubscription, planTrafficLimit, trafficUsed, planExpiresAt],
   );
 
   const onlineRate = stats?.totalHosts ? Math.round((stats.onlineHosts / stats.totalHosts) * 100) : 0;
@@ -404,30 +421,77 @@ function DashboardContent() {
         />
       </div>
 
-      {isAdmin && trafficBillingEnabled && (
-        <div className="grid gap-3 sm:grid-cols-2">
-          <StatCard
-            title="计费流量"
-            value={formatBytes(trafficBillingBytes)}
-            subtitle={`已计费 ${trafficBillingBilledGb}GB`}
-            icon={Coins}
-            tone="bg-gradient-to-br from-cyan-500 to-cyan-600"
-            loading={isLoading}
-          />
-          <StatCard
-            title="计费消费"
-            value={money(trafficBillingAmount)}
-            subtitle="全局流量计费扣费"
-            icon={WalletCards}
-            tone="bg-gradient-to-br from-rose-500 to-rose-600"
-            loading={isLoading}
-          />
-        </div>
-      )}
-
       <MobileAppSettings snapshot={mobileReminderSnapshot} />
 
-      {!isAdmin && (
+      {isAdmin ? (
+        <Card className="relative overflow-hidden border-border/40 bg-card/60 backdrop-blur-md">
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
+          <CardHeader className="pb-3">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                <Shield className="h-4 w-4" />
+                我的消耗
+              </CardTitle>
+              {accountStatusLoading ? (
+                <Skeleton className="h-6 w-28 rounded-full" />
+              ) : (
+                <Badge variant="outline" className="border-emerald-500/30 text-emerald-600">
+                  管理员权限
+                </Badge>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {accountStatusLoading ? (
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                {[1, 2, 3, 4].map((item) => (
+                  <Skeleton key={item} className="h-20 w-full" />
+                ))}
+              </div>
+            ) : (
+              <>
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                  <div className="rounded-lg border border-border/50 bg-background/35 p-3">
+                    <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <Activity className="h-3 w-3" />
+                      我的已用流量
+                    </p>
+                    <p className="mt-1 text-xl font-semibold tabular-nums">{formatBytes(trafficUsed)}</p>
+                    <p className="mt-1 text-[11px] text-muted-foreground">按当前登录账号统计</p>
+                  </div>
+                  <div className="rounded-lg border border-border/50 bg-background/35 p-3">
+                    <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <Coins className="h-3 w-3" />
+                      计费流量
+                    </p>
+                    <p className="mt-1 text-xl font-semibold tabular-nums">{trafficBillingEnabled ? formatBytes(trafficBillingBytes) : "未开启"}</p>
+                    <p className="mt-1 text-[11px] text-muted-foreground">{trafficBillingEnabled ? `已计费 ${trafficBillingBilledGb}GB` : "流量计费功能未开启"}</p>
+                  </div>
+                  <div className="rounded-lg border border-border/50 bg-background/35 p-3">
+                    <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <WalletCards className="h-3 w-3" />
+                      计费消费
+                    </p>
+                    <p className="mt-1 text-xl font-semibold tabular-nums">{trafficBillingEnabled ? money(trafficBillingAmount) : "-"}</p>
+                    <p className="mt-1 text-[11px] text-muted-foreground">仅统计当前账号</p>
+                  </div>
+                  <div className="rounded-lg border border-border/50 bg-background/35 p-3">
+                    <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <Shield className="h-3 w-3" />
+                      权限状态
+                    </p>
+                    <p className="mt-1 text-xl font-semibold">管理员</p>
+                    <p className="mt-1 text-[11px] text-muted-foreground">不受套餐订阅限制</p>
+                  </div>
+                </div>
+                <p className="text-[11px] text-muted-foreground/70">
+                  首页流量、规则、趋势和计费消耗均按当前管理员账号独立统计，不展示套餐、到期时间等订阅信息。
+                </p>
+              </>
+            )}
+          </CardContent>
+        </Card>
+      ) : (
         <Card className="relative overflow-hidden border-border/40 bg-card/60 backdrop-blur-md">
           <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
           <CardHeader className="pb-3">
@@ -459,14 +523,11 @@ function DashboardContent() {
               </div>
             ) : (
               <>
-                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
-                  <div className="rounded-lg border border-border/50 bg-background/35 p-3">
-                    <p className="text-xs text-muted-foreground">套餐已用流量</p>
-                    <p className="mt-1 text-xl font-semibold tabular-nums">{planUsedText}</p>
-                  </div>
-                  <div className="rounded-lg border border-border/50 bg-background/35 p-3">
-                    <p className="text-xs text-muted-foreground">套餐剩余流量</p>
-                    <p className="mt-1 text-xl font-semibold tabular-nums">{planRemainingText}</p>
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-7">
+                  <div className="rounded-lg border border-border/50 bg-background/35 p-3 xl:col-span-2">
+                    <p className="text-xs text-muted-foreground">套餐用量</p>
+                    <p className="mt-1 text-xl font-semibold tabular-nums">{planProgressText}</p>
+                    <p className="mt-1 text-[11px] text-muted-foreground">{planTrafficBreakdownText}</p>
                   </div>
                   <div className="rounded-lg border border-border/50 bg-background/35 p-3">
                     <p className="text-xs text-muted-foreground">到期时间</p>
@@ -525,7 +586,7 @@ function DashboardContent() {
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
               <BarChart3 className="h-4 w-4" />
-              主页流量走势
+              近期流量走势
               <span className="text-[10px] font-normal text-muted-foreground/60">最近 7 天 / 每 30 分钟</span>
             </CardTitle>
             <div className="flex items-center gap-3 text-[10px]">

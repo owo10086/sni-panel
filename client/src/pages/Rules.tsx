@@ -209,17 +209,23 @@ function RulesContent() {
   const [showCopyDialog, setShowCopyDialog] = useState(false);
   const [form, setForm] = useState<RuleFormData>(defaultForm);
   const [filterHost, setFilterHost] = useState<string>("all");
-  const [filterUser, setFilterUser] = useState<string>("all");
+  const [filterUser, setFilterUser] = useState<string>("self");
   const [filterTunnel, setFilterTunnel] = useState<string>("all");
   const [filterType, setFilterType] = useState<string>("all");
   const selectedRulesQuery = useMemo(() => {
     if (user?.role !== "admin") return undefined;
-    const input: { userId?: number; hostId?: number; tunnelId?: number | null } = {};
-    if (filterUser !== "all") input.userId = Number(filterUser);
+    const input: { userId?: number; scope?: "self" | "all"; hostId?: number; tunnelId?: number | null } = {};
+    if (filterUser === "all") {
+      input.scope = "all";
+    } else if (filterUser === "self") {
+      input.userId = Number(user.id);
+    } else {
+      input.userId = Number(filterUser);
+    }
     if (filterHost !== "all" && !String(filterHost).startsWith("group:")) input.hostId = Number(filterHost);
     if (filterTunnel !== "all") input.tunnelId = filterTunnel === "none" ? null : Number(filterTunnel);
     return Object.keys(input).length ? input : undefined;
-  }, [filterHost, filterTunnel, filterUser, user?.role]);
+  }, [filterHost, filterTunnel, filterUser, user?.id, user?.role]);
   const effectiveRulesQuery = selectedRulesQuery || undefined;
   const [portStatus, setPortStatus] = useState<"idle" | "checking" | "available" | "used">("idle");
   const [portRangeError, setPortRangeError] = useState<string | null>(null);
@@ -779,7 +785,10 @@ function RulesContent() {
     const sourceRules = selectedScopeRules || rules;
     if (!sourceRules) return [];
     return sourceRules.filter((r: any) => {
-      if (filterUser !== "all" && Number(r.userId) !== Number(filterUser)) {
+      if (user?.role === "admin" && filterUser === "self" && Number(r.userId) !== Number(user.id)) {
+        return false;
+      }
+      if (filterUser !== "all" && filterUser !== "self" && Number(r.userId) !== Number(filterUser)) {
         return false;
       }
       if (filterHost !== "all") {
@@ -803,8 +812,9 @@ function RulesContent() {
       }
       return true;
     });
-  }, [rules, selectedScopeRules, filterUser, filterHost, filterTunnel, filterType]);
-  const hasActiveRuleFilter = filterUser !== "all" || filterHost !== "all" || filterTunnel !== "all" || filterType !== "all";
+  }, [rules, selectedScopeRules, filterUser, filterHost, filterTunnel, filterType, user?.id, user?.role]);
+  const hasActiveUserFilter = user?.role === "admin" && filterUser !== "self";
+  const hasActiveRuleFilter = hasActiveUserFilter || filterHost !== "all" || filterTunnel !== "all" || filterType !== "all";
   const activeCount = useMemo(
     () => filteredRules.filter((r: any) => r.isEnabled && isRuleSupported(r)).length,
     [filteredRules, isRuleSupported]
@@ -1132,9 +1142,10 @@ function RulesContent() {
           {user?.role === "admin" && (
             <Select value={filterUser} onValueChange={setFilterUser}>
               <SelectTrigger className="h-8 w-full text-xs sm:w-[160px]">
-                <SelectValue placeholder="所有用户" />
+                <SelectValue placeholder="我的规则" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="self">我的规则</SelectItem>
                 <SelectItem value="all">所有用户</SelectItem>
                 {(users || []).map((item: any) => (
                   <SelectItem key={item.id} value={String(item.id)}>

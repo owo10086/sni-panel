@@ -20,11 +20,17 @@ export const rulesRouter = router({
     .input(z.object({
       hostId: z.number().optional(),
       userId: z.number().optional(),
+      scope: z.enum(["self", "all"]).optional(),
       tunnelId: z.number().nullable().optional(),
     }).optional())
     .query(async ({ input, ctx }) => {
       const isAdmin = ctx.user.role === "admin";
-      const rules = await db.getForwardRules(isAdmin ? input?.userId : ctx.user.id, input?.hostId);
+      const requestedUserId = isAdmin
+        ? input?.scope === "all"
+          ? undefined
+          : input?.userId ?? ctx.user.id
+        : ctx.user.id;
+      const rules = await db.getForwardRules(requestedUserId, input?.hostId);
       const allowedForwardGroupIds = isAdmin ? new Set<number>() : new Set(await db.getUserAllowedForwardGroupIds(ctx.user.id));
       const visibleRules = isAdmin
         ? rules

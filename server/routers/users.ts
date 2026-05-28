@@ -25,6 +25,19 @@ export const usersRouter = router({
     list: adminProcedure.query(async () => {
       return db.getAllUsers();
     }),
+    summary: adminProcedure.query(async () => {
+      const [users, stats] = await Promise.all([
+        db.getAllUsers(),
+        db.getDashboardStats(),
+      ]);
+      return {
+        totalUsers: users.length,
+        totalRules: stats.totalRules,
+        activeRules: stats.activeRules,
+        totalTrafficIn: stats.totalTrafficIn,
+        totalTrafficOut: stats.totalTrafficOut,
+      };
+    }),
     create: adminProcedure
       .input(z.object({
         username: z.string().min(1).max(64),

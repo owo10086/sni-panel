@@ -12,17 +12,19 @@ on:
           - release
           - debug
   push:
-    branches:
-      - main
     tags:
       - "v*.*.*"
 
 permissions:
   contents: write
 
+concurrency:
+  group: release-${{ github.ref_name }}
+  cancel-in-progress: false
+
 jobs:
   build-android-apk:
-    if: github.event_name != 'push' || startsWith(github.ref, 'refs/tags/') || startsWith(github.event.head_commit.message, 'Release v')
+    if: github.event_name != 'push' || startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -50,14 +52,10 @@ jobs:
         shell: bash
         env:
           EVENT_NAME: ${{ github.event_name }}
-          HEAD_MESSAGE: ${{ github.event.head_commit.message }}
           MANUAL_BUILD_TYPE: ${{ github.event.inputs.build_type || 'release' }}
         run: |
           if [[ "$GITHUB_REF" == refs/tags/* ]]; then
             VERSION="$GITHUB_REF_NAME"
-            PUBLISH_RELEASE=true
-          elif [[ "$EVENT_NAME" == "push" && "$HEAD_MESSAGE" == Release\ v* ]]; then
-            VERSION="v$(node -p "require('./package.json').version")"
             PUBLISH_RELEASE=true
           else
             VERSION="v$(node -p "require('./package.json').version")"

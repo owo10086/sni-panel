@@ -282,8 +282,12 @@ function isDockerRuntime() {
   return fs.existsSync("/.dockerenv");
 }
 
+function webPortConfigPath() {
+  return ENV.portConfigPath.trim() || path.resolve(process.cwd(), ".env");
+}
+
 function canManageWebPort() {
-  return process.platform !== "win32" && !isDockerRuntime() && ENV.portManagement === "local" && !!ENV.portConfigPath.trim();
+  return process.platform !== "win32" && !isDockerRuntime();
 }
 
 function isTcpPortAvailable(port: number): Promise<boolean> {
@@ -573,7 +577,7 @@ export const systemRouter = router({
     .input(z.object({ port: z.number().int().min(1).max(65535), confirmed: z.literal(true) }))
     .mutation(async ({ input }) => {
       if (!canManageWebPort()) {
-        throw new Error("当前部署方式不支持在后台修改 Web 端口，Docker 用户请自行配置端口映射");
+        throw new Error("Docker 部署不支持在后台修改 Web 端口，请自行配置端口映射");
       }
       const port = normalizePort(input.port);
       const currentPort = normalizePort(ENV.port || 3000);
@@ -581,7 +585,7 @@ export const systemRouter = router({
       if (!(await isTcpPortAvailable(port))) {
         throw new Error(`端口 ${port} 已被占用，请更换端口`);
       }
-      await updateEnvFileValue(ENV.portConfigPath, "PORT", String(port));
+      await updateEnvFileValue(webPortConfigPath(), "PORT", String(port));
       await db.setSetting("webPort", String(port));
       console.info(`[Settings] web port updated ${currentPort} -> ${port}; scheduling service restart`);
       schedulePanelRestart();

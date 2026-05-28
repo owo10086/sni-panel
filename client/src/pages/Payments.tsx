@@ -328,27 +328,27 @@ export default function Payments() {
 
         <div className="grid gap-4 md:grid-cols-4">
           <Card>
-            <CardHeader className="pb-2">
+            <CardHeader className="relative min-h-[82px] py-4">
               <CardDescription>支付状态</CardDescription>
-              <CardTitle>{form.enabled ? "已启用" : "未启用"}</CardTitle>
+              <CardTitle className="absolute left-6 top-1/2 -translate-y-[35%] leading-none">{form.enabled ? "已启用" : "未启用"}</CardTitle>
             </CardHeader>
           </Card>
           <Card>
-            <CardHeader className="pb-2">
+            <CardHeader className="relative min-h-[82px] py-4">
               <CardDescription>已支付金额</CardDescription>
-              <CardTitle>{formatMoney(stats?.paidAmountCents)}</CardTitle>
+              <CardTitle className="absolute left-6 top-1/2 -translate-y-[35%] leading-none">{formatMoney(stats?.paidAmountCents)}</CardTitle>
             </CardHeader>
           </Card>
           <Card>
-            <CardHeader className="pb-2">
+            <CardHeader className="relative min-h-[82px] py-4">
               <CardDescription>已支付订单</CardDescription>
-              <CardTitle>{stats?.paidOrders || 0}</CardTitle>
+              <CardTitle className="absolute left-6 top-1/2 -translate-y-[35%] leading-none">{stats?.paidOrders || 0}</CardTitle>
             </CardHeader>
           </Card>
           <Card>
-            <CardHeader className="pb-2">
+            <CardHeader className="relative min-h-[82px] py-4">
               <CardDescription>待支付订单</CardDescription>
-              <CardTitle>{stats?.pendingOrders || 0}</CardTitle>
+              <CardTitle className="absolute left-6 top-1/2 -translate-y-[35%] leading-none">{stats?.pendingOrders || 0}</CardTitle>
             </CardHeader>
           </Card>
         </div>

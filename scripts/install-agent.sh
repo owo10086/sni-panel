@@ -189,6 +189,8 @@ do_uninstall() {
   echo "[步骤 4/6] 清理转发进程和服务..."
   pkill -f "realm -l" 2>/dev/null && echo "[信息] 已停止所有 realm 转发进程" || echo "[信息] 无 realm 进程需要停止"
   pkill -f "socat.*LISTEN" 2>/dev/null && echo "[信息] 已停止所有 socat 转发进程" || echo "[信息] 无 socat 进程需要停止"
+  pkill -f "/usr/local/bin/forwardx-fxp" 2>/dev/null || true
+  pkill -f "/opt/forwardx-agent/forwardx-fxp" 2>/dev/null || true
   for SVC in /etc/systemd/system/forwardx-socat-*.service /etc/systemd/system/forwardx-realm-*.service; do
     if [ -f "$SVC" ]; then
       SVCNAME=$(basename "$SVC" .service)
