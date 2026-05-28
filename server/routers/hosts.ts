@@ -12,6 +12,10 @@ const AGENT_UPGRADE_ASSET_NAMES = [
   "forwardx-fxp-linux-amd64",
   "forwardx-fxp-linux-arm64",
 ];
+const HOST_UPGRADE_CLEANUP_INTERVAL_MS = 60 * 1000;
+
+let lastHostUpgradeCleanupAt = 0;
+let hostUpgradeCleanupRunning = false;
 
 function normalizeVersion(version: string | null | undefined) {
   return String(version || "").trim().replace(/^v/i, "");
@@ -53,10 +57,24 @@ async function assertAgentReleaseAssetsReady(version: string) {
   }
 }
 
+function scheduleStaleHostUpgradeCleanup() {
+  const now = Date.now();
+  if (hostUpgradeCleanupRunning || now - lastHostUpgradeCleanupAt < HOST_UPGRADE_CLEANUP_INTERVAL_MS) return;
+  hostUpgradeCleanupRunning = true;
+  lastHostUpgradeCleanupAt = now;
+  void db.clearStaleHostAgentUpgradeRequests()
+    .catch((error) => {
+      console.warn("[Hosts] Failed to clear stale Agent upgrade requests:", error);
+    })
+    .finally(() => {
+      hostUpgradeCleanupRunning = false;
+    });
+}
+
 export const hostsRouter = router({
     list: protectedProcedure.query(async ({ ctx }) => {
       const isAdmin = ctx.user.role === "admin";
-      if (isAdmin) await db.clearStaleHostAgentUpgradeRequests();
+      if (isAdmin) scheduleStaleHostUpgradeCleanup();
       if (isAdmin) return db.getHosts();
       // 普通用户：返回自己创建的主机 + 普通授权主机 + 已授权的流量计费主机
       const [allowedHostIds, billingResourceIds] = await Promise.all([

@@ -1,6 +1,6 @@
 ﻿import { desc, eq, sql } from "drizzle-orm";
 import { hosts, InsertHost, forwardRules, hostMetrics, trafficStats } from "../../drizzle/schema";
-import { getDb, insertAndGetId, nowDate } from "../dbRuntime";
+import { executeRaw, getDatabaseKind, getDb, insertAndGetId, nowDate } from "../dbRuntime";
 
 // ==================== Host Queries ====================
 
@@ -85,12 +85,19 @@ export async function clearHostAgentUpgradeRequest(hostId: number) {
 export async function clearStaleHostAgentUpgradeRequests(timeoutMs = 10 * 60 * 1000) {
   const db = await getDb();
   if (!db) return;
-  const cutoff = new Date(Date.now() - timeoutMs);
-  await db.update(hosts).set({
-    agentUpgradeRequested: false,
-    agentUpgradeTargetVersion: null,
-    updatedAt: nowDate(),
-  } as any).where(sql`${hosts.agentUpgradeRequested} = ${true} AND ${hosts.agentUpgradeRequestedAt} IS NOT NULL AND ${hosts.agentUpgradeRequestedAt} < ${cutoff}`);
+  const cutoffSec = Math.floor((Date.now() - timeoutMs) / 1000);
+  const nowSec = Math.floor(Date.now() / 1000);
+  const q = getDatabaseKind() === "mysql" ? "`" : "\"";
+  await executeRaw(
+    `UPDATE ${q}hosts${q}
+     SET ${q}agentUpgradeRequested${q} = 0,
+         ${q}agentUpgradeTargetVersion${q} = NULL,
+         ${q}updatedAt${q} = ?
+     WHERE ${q}agentUpgradeRequested${q} = 1
+       AND ${q}agentUpgradeRequestedAt${q} IS NOT NULL
+       AND ${q}agentUpgradeRequestedAt${q} < ?`,
+    [nowSec, cutoffSec],
+  );
 }
 
 export async function getHostByAgentToken(token: string) {

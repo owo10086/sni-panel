@@ -30,6 +30,15 @@ async function refreshUserRuleAgents(userId: number, reason: string) {
   }
 }
 
+function isForwardXTunnel(tunnel: any) {
+  return String(tunnel?.mode || "").toLowerCase() === "forwardx";
+}
+
+function trafficAccountingHostId(rule: any, tunnel: any | null) {
+  if (!tunnel) return Number(rule.hostId);
+  return isForwardXTunnel(tunnel) ? Number(tunnel.entryHostId) : Number(tunnel.exitHostId);
+}
+
 export function registerAgentReportRoutes(agentRouter: Router) {
 agentRouter.post("/api/agent/traffic", async (req: Request, res: Response) => {
   try {
@@ -66,12 +75,10 @@ agentRouter.post("/api/agent/traffic", async (req: Request, res: Response) => {
       if ((rule as any).pendingDelete || !(rule as any).isRunning) {
         continue;
       }
-      let allowedHost = rule.hostId === host.id;
-      if (!allowedHost && (rule as any).tunnelId) {
-        const tunnel = await db.getTunnelById((rule as any).tunnelId);
-        allowedHost = !!tunnel && tunnel.exitHostId === host.id;
-      }
-      if (!allowedHost) {
+      const tunnelId = Number((rule as any).tunnelId || 0);
+      const tunnel = tunnelId > 0 ? await db.getTunnelById(tunnelId) : null;
+      const accountingHostId = trafficAccountingHostId(rule, tunnel);
+      if (accountingHostId !== Number(host.id)) {
         continue;
       }
       await db.insertTrafficStat({
@@ -84,7 +91,6 @@ agentRouter.post("/api/agent/traffic", async (req: Request, res: Response) => {
       const ruleBytes = bytesIn + bytesOut;
       if (ruleBytes > 0) {
         console.log(`[Traffic] host=${host.id} rule=${rule.id} in=${bytesIn} out=${bytesOut} connections=${stat.connections || 0}`);
-        const tunnelId = Number((rule as any).tunnelId || 0);
         const billingResource = tunnelId > 0
           ? { resourceType: "tunnel" as const, resourceId: tunnelId }
           : { resourceType: "host" as const, resourceId: Number(rule.hostId) };

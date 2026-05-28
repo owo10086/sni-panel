@@ -402,7 +402,7 @@ function HostsContent() {
   const utils = trpc.useUtils();
   const pageVisible = usePageVisible();
   const hostRefreshInterval = pageVisible ? 2000 : false;
-  const { data: hosts, isLoading } = trpc.hosts.list.useQuery(undefined, {
+  const { data: hosts, isLoading, isError, error, refetch } = trpc.hosts.list.useQuery(undefined, {
     refetchInterval: hostRefreshInterval,
     refetchOnWindowFocus: true,
   });
@@ -667,6 +667,24 @@ function HostsContent() {
             <Skeleton key={i} className="h-64 w-full rounded-xl" />
           ))}
         </div>
+      ) : isError ? (
+        <Card className="border-border/40 bg-card/60 backdrop-blur-md">
+          <CardContent className="p-0">
+            <div className="flex flex-col items-center justify-center px-4 py-20 text-center text-muted-foreground">
+              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-destructive/10 text-destructive">
+                <AlertTriangle className="h-8 w-8" />
+              </div>
+              <p className="text-lg font-medium text-foreground">主机加载失败</p>
+              <p className="mt-2 max-w-xl break-words text-sm text-muted-foreground">
+                {error?.message || "无法获取主机列表，请稍后重试"}
+              </p>
+              <Button variant="outline" className="mt-5 gap-2" onClick={() => refetch()}>
+                <RefreshCw className="h-4 w-4" />
+                重新加载
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       ) : hosts && hosts.length > 0 ? (
         <>
         {viewMode === "card" ? (
