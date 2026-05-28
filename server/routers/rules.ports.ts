@@ -30,7 +30,7 @@ export const portsRulesRouter = router({
         await requireHostUseAccess(ctx, input.hostId);
       }
       if (rangeStart != null && rangeEnd != null && (input.sourcePort < rangeStart || input.sourcePort > rangeEnd)) {
-        return { used: true, reason: `端口必须在隧道允许范围 ${rangeStart}-${rangeEnd} 内` };
+        return { used: true, reason: `端口必须在允许范围 ${rangeStart}-${rangeEnd} 内` };
       }
       if (ctx.user.role !== "admin") {
         const planRange = await db.getUserPlanPortRange(ctx.user.id, input.hostId, input.tunnelId ?? undefined);
@@ -44,7 +44,6 @@ export const portsRulesRouter = router({
       const used = await db.isPortUsedOnHost(input.hostId, input.sourcePort, input.excludeRuleId);
       return { used };
     }),
-  /** 获取随机可用端口 */
   randomPort: protectedProcedure
     .input(randomPortInputSchema)
     .query(async ({ input, ctx }) => {
@@ -52,8 +51,13 @@ export const portsRulesRouter = router({
         await requireRuleAccess(ctx, input.excludeRuleId);
       }
       if (input.forwardGroupId) {
-        if (ctx.user.role !== "admin") throw new Error("只有管理员可以使用转发组");
-        const port = await db.findAvailableForwardGroupPort(input.forwardGroupId, input.excludeRuleId);
+        let planRange: { start: number; end: number } | null = null;
+        if (ctx.user.role !== "admin") {
+          const hasPermission = await db.checkUserForwardGroupPermission(ctx.user.id, input.forwardGroupId);
+          if (!hasPermission) throw new Error("无权使用该转发组");
+          planRange = await db.getUserForwardGroupPlanPortRange(ctx.user.id, input.forwardGroupId);
+        }
+        const port = await db.findAvailableForwardGroupPort(input.forwardGroupId, input.excludeRuleId, planRange);
         if (!port) throw new Error("转发组成员端口区间内已无共同可用端口");
         return { port };
       }
@@ -80,5 +84,5 @@ export const portsRulesRouter = router({
       const port = await db.findAvailablePort(input.hostId, rangeStart, rangeEnd);
       if (!port) throw new Error("该主机端口区间内已无可用端口");
       return { port };
-    })
+    }),
 });

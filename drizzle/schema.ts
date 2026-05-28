@@ -446,6 +446,15 @@ export const subscriptionPlanTunnels = table("subscription_plan_tunnels", {
 export type SubscriptionPlanTunnel = typeof subscriptionPlanTunnels.$inferSelect;
 export type InsertSubscriptionPlanTunnel = typeof subscriptionPlanTunnels.$inferInsert;
 
+export const subscriptionPlanForwardGroups = table("subscription_plan_forward_groups", {
+  id: serial("id"),
+  planId: int("planId").notNull(),
+  forwardGroupId: int("forwardGroupId").notNull(),
+  createdAt: epoch("createdAt").notNull().default(nowDefault()),
+});
+export type SubscriptionPlanForwardGroup = typeof subscriptionPlanForwardGroups.$inferSelect;
+export type InsertSubscriptionPlanForwardGroup = typeof subscriptionPlanForwardGroups.$inferInsert;
+
 export const userSubscriptions = table("user_subscriptions", {
   id: serial("id"),
   userId: int("userId").notNull(),

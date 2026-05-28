@@ -25,10 +25,49 @@ const getTunnelDialHost = (tunnel: any, exit: any) => {
   return String((exit as any).entryIp || (exit as any).ipv4 || (exit as any).ipv6 || exit?.ip || "").trim();
 };
 
+async function attachTunnelEndpointHosts(tunnels: any[]) {
+  const hostIds = Array.from(new Set(
+    tunnels
+      .flatMap((tunnel) => [Number(tunnel.entryHostId || 0), Number(tunnel.exitHostId || 0)])
+      .filter(Boolean),
+  ));
+  const hostMap = new Map<number, any>();
+  await Promise.all(hostIds.map(async (hostId) => {
+    const host = await db.getHostById(hostId);
+    if (host) hostMap.set(hostId, host);
+  }));
+  return tunnels.map((tunnel) => ({
+    ...tunnel,
+    entryHost: (() => {
+      const host = hostMap.get(Number(tunnel.entryHostId || 0));
+      if (!host) return null;
+      return {
+        id: host.id,
+        name: host.name,
+        ip: host.ip,
+        ipv4: (host as any).ipv4,
+        ipv6: (host as any).ipv6,
+        entryIp: (host as any).entryIp,
+        portRangeStart: (host as any).portRangeStart,
+        portRangeEnd: (host as any).portRangeEnd,
+      };
+    })(),
+    exitHost: (() => {
+      const host = hostMap.get(Number(tunnel.exitHostId || 0));
+      if (!host) return null;
+      return {
+        id: host.id,
+        name: host.name,
+      };
+    })(),
+  }));
+}
+
 export const tunnelsRouter = router({
     list: protectedProcedure.query(async ({ ctx }) => {
       const isAdmin = ctx.user.role === "admin";
-      return isAdmin ? db.getTunnels() : db.getTunnelsForUser(ctx.user.id);
+      const tunnels = isAdmin ? await db.getTunnels() : await db.getTunnelsForUser(ctx.user.id);
+      return attachTunnelEndpointHosts(tunnels as any[]);
     }),
     listAll: protectedProcedure.query(async ({ ctx }) => {
       if (ctx.user.role !== "admin") throw new Error("无权访问");

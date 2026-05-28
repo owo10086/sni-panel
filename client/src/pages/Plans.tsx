@@ -32,6 +32,7 @@ type PlanForm = {
   sortOrder: string;
   hostIds: number[];
   tunnelIds: number[];
+  forwardGroupIds: number[];
 };
 
 type PlanDurationDays = 30 | 90 | 180 | 365 | 730;
@@ -53,6 +54,7 @@ const emptyForm: PlanForm = {
   sortOrder: "0",
   hostIds: [],
   tunnelIds: [],
+  forwardGroupIds: [],
 };
 
 function money(cents?: number, currency = "CNY") {
@@ -107,6 +109,7 @@ function toForm(plan: any): PlanForm {
     sortOrder: String(plan.sortOrder ?? 0),
     hostIds: plan.hostIds || [],
     tunnelIds: plan.tunnelIds || [],
+    forwardGroupIds: plan.forwardGroupIds || [],
   };
 }
 
@@ -129,6 +132,7 @@ function payload(form: PlanForm) {
     sortOrder: Math.max(0, Math.floor(Number(form.sortOrder || 0))),
     hostIds: form.hostIds,
     tunnelIds: form.tunnelIds,
+    forwardGroupIds: form.forwardGroupIds,
   };
 }
 
@@ -138,6 +142,7 @@ export default function Plans() {
   const { data: storeStatus } = trpc.plans.storeStatus.useQuery();
   const { data: hosts = [] } = trpc.hosts.listAll.useQuery();
   const { data: tunnels = [] } = trpc.tunnels.list.useQuery();
+  const { data: forwardGroups = [] } = trpc.forwardGroups.list.useQuery();
   const { data: users = [] } = trpc.users.list.useQuery();
   const { data: subscriptions = [] } = trpc.plans.subscriptions.useQuery({});
 
@@ -205,7 +210,7 @@ export default function Plans() {
 
   const save = () => {
     if (!form.name.trim()) return toast.error("请填写套餐名称");
-    if (form.hostIds.length === 0 && form.tunnelIds.length === 0) return toast.error("至少选择一个主机或隧道");
+    if (form.hostIds.length === 0 && form.tunnelIds.length === 0 && form.forwardGroupIds.length === 0) return toast.error("至少选择一个主机、隧道或转发组");
     const data = payload(form);
     if (form.id) updatePlan.mutate({ id: form.id, ...data });
     else createPlan.mutate(data);
@@ -287,6 +292,7 @@ export default function Plans() {
                       <div className="flex flex-wrap gap-1">
                         <Badge variant="outline">主机 {plan.hostIds?.length || 0}</Badge>
                         <Badge variant="outline">隧道 {plan.tunnelIds?.length || 0}</Badge>
+                        <Badge variant="outline">转发组 {plan.forwardGroupIds?.length || 0}</Badge>
                       </div>
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
@@ -354,7 +360,7 @@ export default function Plans() {
             <DialogTitle>{form.id ? "编辑套餐" : "新增套餐"}</DialogTitle>
             <DialogDescription>选择订阅后可用资源。</DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4 md:grid-cols-3">
             <div className="space-y-2">
               <Label>套餐名称</Label>
               <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="例如：基础套餐" />
@@ -432,6 +438,20 @@ export default function Plans() {
                     <Switch checked={form.tunnelIds.includes(tunnel.id)} onCheckedChange={() => setForm({ ...form, tunnelIds: toggleId(form.tunnelIds, tunnel.id) })} />
                   </label>
                 ))}
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-3"><CardTitle className="text-base">转发组</CardTitle></CardHeader>
+              <CardContent className="grid max-h-56 gap-2 overflow-y-auto">
+                {forwardGroups.map((group: any) => (
+                  <label key={group.id} className="flex cursor-pointer items-center justify-between rounded-md border p-2 text-sm">
+                    <span>{group.name} <span className="text-muted-foreground">/{group.groupType === "tunnel" ? "隧道组" : "主机组"}</span></span>
+                    <Switch checked={form.forwardGroupIds.includes(group.id)} onCheckedChange={() => setForm({ ...form, forwardGroupIds: toggleId(form.forwardGroupIds, group.id) })} />
+                  </label>
+                ))}
+                {forwardGroups.length === 0 && (
+                  <div className="rounded-md border border-dashed p-3 text-xs text-muted-foreground">暂无转发组</div>
+                )}
               </CardContent>
             </Card>
           </div>

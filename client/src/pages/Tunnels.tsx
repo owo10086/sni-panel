@@ -130,6 +130,13 @@ function tunnelHostCandidates(host: any | null | undefined) {
   return Array.from(new Set(values));
 }
 
+function tunnelEndpointName(tunnel: any | null | undefined, role: "entry" | "exit", hosts: any[] | undefined) {
+  const hostId = Number(role === "entry" ? tunnel?.entryHostId : tunnel?.exitHostId);
+  const fromList = hosts?.find((host: any) => Number(host.id) === hostId);
+  const fromTunnel = role === "entry" ? tunnel?.entryHost : tunnel?.exitHost;
+  return fromList?.name || fromTunnel?.name || `主机 #${hostId}`;
+}
+
 const tunnelModeLabels: Record<TunnelForm["mode"], string> = {
   forwardx: "ForwardX",
   tls: "TLS",
@@ -430,7 +437,10 @@ function TunnelsContent() {
     [hosts, form.exitHostId]
   );
   const connectHostOptions = useMemo(() => tunnelHostCandidates(selectedExitHost), [selectedExitHost]);
-  const getHostName = (id: number) => hosts?.find((h: any) => h.id === id)?.name || `主机 #${id}`;
+  const getHostName = (id: number, tunnel?: any, role?: "entry" | "exit") => {
+    if (tunnel && role) return tunnelEndpointName(tunnel, role, hosts);
+    return hosts?.find((h: any) => h.id === id)?.name || `主机 #${id}`;
+  };
 
   const resetForm = () => {
     const fallbackMode = forwardProtocolSettings.forwardx !== false
@@ -626,9 +636,9 @@ function TunnelsContent() {
 
                     <div className="space-y-2 rounded-md bg-muted/25 p-2.5 text-xs">
                       <div className="flex min-w-0 items-center gap-2">
-                        <span className="min-w-0 truncate">{getHostName(tunnel.entryHostId)}</span>
+                        <span className="min-w-0 truncate">{getHostName(tunnel.entryHostId, tunnel, "entry")}</span>
                         <ArrowRight className="h-3 w-3 shrink-0 text-muted-foreground" />
-                        <span className="min-w-0 truncate">{getHostName(tunnel.exitHostId)}</span>
+                        <span className="min-w-0 truncate">{getHostName(tunnel.exitHostId, tunnel, "exit")}</span>
                       </div>
                       <div className="flex flex-wrap gap-1.5">
                         <Badge variant="outline" className="text-[10px]">
@@ -742,9 +752,9 @@ function TunnelsContent() {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2 text-xs">
-                          <span>{getHostName(tunnel.entryHostId)}</span>
+                          <span>{getHostName(tunnel.entryHostId, tunnel, "entry")}</span>
                           <ArrowRight className="h-3 w-3 text-muted-foreground" />
-                          <span>{getHostName(tunnel.exitHostId)}</span>
+                          <span>{getHostName(tunnel.exitHostId, tunnel, "exit")}</span>
                           {String(tunnel.connectHost || "").trim() && (
                             <span className="max-w-[150px] truncate rounded bg-muted/40 px-1.5 py-0.5 text-muted-foreground" title={tunnel.connectHost || ""}>
                               指定 {tunnel.connectHost || "-"}

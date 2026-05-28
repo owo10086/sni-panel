@@ -7,8 +7,12 @@ import { portsRulesRouter } from "./rules.ports";
 import { selfTestRulesRouter } from "./rules.selfTest";
 import { trafficRulesRouter } from "./rules.traffic";
 
-function isForwardGroupRule(rule: any) {
-  return !!(rule?.forwardGroupId || rule?.isForwardGroupTemplate || rule?.forwardGroupRuleId || rule?.forwardGroupMemberId);
+function isVisibleForwardGroupRuleForUser(rule: any, allowedForwardGroupIds: Set<number>) {
+  return !!rule?.isForwardGroupTemplate
+    && !!rule?.forwardGroupId
+    && !rule?.forwardGroupRuleId
+    && !rule?.forwardGroupMemberId
+    && allowedForwardGroupIds.has(Number(rule.forwardGroupId));
 }
 
 export const rulesRouter = router({
@@ -21,9 +25,13 @@ export const rulesRouter = router({
     .query(async ({ input, ctx }) => {
       const isAdmin = ctx.user.role === "admin";
       const rules = await db.getForwardRules(isAdmin ? input?.userId : ctx.user.id, input?.hostId);
+      const allowedForwardGroupIds = isAdmin ? new Set<number>() : new Set(await db.getUserAllowedForwardGroupIds(ctx.user.id));
       const visibleRules = isAdmin
         ? rules
-        : rules.filter((rule: any) => !isForwardGroupRule(rule));
+        : rules.filter((rule: any) => {
+          const isForwardGroupRule = !!(rule?.forwardGroupId || rule?.isForwardGroupTemplate || rule?.forwardGroupRuleId || rule?.forwardGroupMemberId);
+          return !isForwardGroupRule || isVisibleForwardGroupRuleForUser(rule, allowedForwardGroupIds);
+        });
       if (input?.tunnelId === undefined) return visibleRules;
       if (input.tunnelId === null) return visibleRules.filter((rule: any) => !rule.tunnelId);
       return visibleRules.filter((rule: any) => Number(rule.tunnelId || 0) === Number(input.tunnelId));
@@ -34,7 +42,13 @@ export const rulesRouter = router({
       const rule = await db.getForwardRuleById(input.id);
       if (!rule) return null;
       if (ctx.user.role !== "admin" && rule.userId !== ctx.user.id) return null;
-      if (ctx.user.role !== "admin" && isForwardGroupRule(rule)) return null;
+      if (ctx.user.role !== "admin") {
+        const isForwardGroupRule = !!(rule?.forwardGroupId || rule?.isForwardGroupTemplate || rule?.forwardGroupRuleId || rule?.forwardGroupMemberId);
+        if (isForwardGroupRule) {
+          const allowedForwardGroupIds = new Set(await db.getUserAllowedForwardGroupIds(ctx.user.id));
+          if (!isVisibleForwardGroupRuleForUser(rule, allowedForwardGroupIds)) return null;
+        }
+      }
       return rule;
     }),
   ...portsRulesRouter._def.procedures,

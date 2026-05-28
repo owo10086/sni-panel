@@ -149,6 +149,10 @@ function getTunnelDisplay(tunnel: any | null | undefined) {
   };
 }
 
+function getHostEntryAddress(host: any | null | undefined): string {
+  return String(host?.entryIp || host?.ipv4 || host?.ipv6 || host?.ip || "").trim();
+}
+
 function routeModeOptionClass(active: boolean, disabled = false) {
   return [
     "flex min-h-11 items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors",
@@ -188,7 +192,7 @@ function RulesContent() {
     refetchOnWindowFocus: false,
   });
   const { data: forwardGroups } = trpc.forwardGroups.list.useQuery(undefined, {
-    enabled: user?.role === "admin" && secondaryQueriesReady,
+    enabled: secondaryQueriesReady,
     refetchInterval: 15000,
     staleTime: 10000,
     refetchOnWindowFocus: false,
@@ -498,6 +502,11 @@ function RulesContent() {
     if (!form.tunnelId || !tunnels) return null;
     return tunnels.find((t: any) => t.id === form.tunnelId) || null;
   }, [form.tunnelId, tunnels]);
+  const tunnelById = useMemo(() => {
+    const map = new Map<number, any>();
+    (tunnels || []).forEach((tunnel: any) => map.set(Number(tunnel.id), tunnel));
+    return map;
+  }, [tunnels]);
   const selectedTunnelDisplay = useMemo(() => getTunnelDisplay(selectedTunnel), [selectedTunnel]);
   const tunnelDisplayById = useMemo(() => {
     const map = new Map<number, ReturnType<typeof getTunnelDisplay>>();
@@ -543,7 +552,7 @@ function RulesContent() {
   const hasHostChoices = (hosts?.length || 0) > 0;
   const canUseLocalForward = hasHostChoices && usableForwardTypes.length > 0;
   const canUseGost = allowedForwardTypes.includes("gost") && supportedTunnels.length > 0;
-  const canUseForwardGroup = user?.role === "admin" && availableForwardGroups.length > 0;
+  const canUseForwardGroup = availableForwardGroups.length > 0;
   const canCreateRule = canUseLocalForward || canUseGost || canUseForwardGroup;
   const copyableSourceRules = useMemo(() => {
     if (!rules || !copySourceHostId) return [];
@@ -823,6 +832,21 @@ function RulesContent() {
     return hosts?.find((h: any) => h.id === hostId)?.name || `主机 #${hostId}`;
   };
 
+  const getRuleEntryHost = (rule: any) => {
+    const directHost = hosts?.find((h: any) => Number(h.id) === Number(rule.hostId));
+    if (directHost) return directHost;
+    const tunnel = rule.tunnelId ? tunnelById.get(Number(rule.tunnelId)) : null;
+    if (tunnel && Number(tunnel.entryHostId) === Number(rule.hostId)) {
+      return tunnel.entryHost || null;
+    }
+    return null;
+  };
+
+  const getRuleEntryHostName = (rule: any) => {
+    const entryHost = getRuleEntryHost(rule);
+    return entryHost?.name || getHostName(Number(rule.hostId));
+  };
+
   const getRuleOwnerName = (rule: any) => {
     const owner = userById.get(Number(rule.userId));
     return owner?.displayRemark || owner?.name || owner?.username || `用户 #${rule.userId}`;
@@ -835,8 +859,11 @@ function RulesContent() {
 
   const getHostEntry = (hostId: number): string => {
     const h: any = hosts?.find((x: any) => x.id === hostId);
-    if (!h) return "";
-    return (h.entryIp && String(h.entryIp).trim()) || h.ip || "";
+    return getHostEntryAddress(h);
+  };
+
+  const getRuleEntry = (rule: any): string => {
+    return getHostEntryAddress(getRuleEntryHost(rule));
   };
 
   /** 复制入口 IP:端口 到剪贴板 */
@@ -857,7 +884,7 @@ function RulesContent() {
       }
       return;
     }
-    const entry = getHostEntry(rule.hostId);
+    const entry = getRuleEntry(rule);
     if (!entry) {
       toast.error("未获取到主机入口地址");
       return;
@@ -910,12 +937,12 @@ function RulesContent() {
         className={`group inline-flex min-w-0 items-center gap-1 rounded bg-muted/40 px-1.5 py-0.5 transition-colors hover:bg-muted/70 ${
           compact ? "max-w-full" : "max-w-[240px]"
         }`}
-        title={rule.forwardGroupId ? `复制转发组入口: ${(forwardGroupById.get(Number(rule.forwardGroupId))?.domain || getForwardGroupName(rule.forwardGroupId))}:${rule.sourcePort}` : `复制入口地址: ${getHostEntry(rule.hostId)}:${rule.sourcePort}`}
+        title={rule.forwardGroupId ? `复制转发组入口: ${(forwardGroupById.get(Number(rule.forwardGroupId))?.domain || getForwardGroupName(rule.forwardGroupId))}:${rule.sourcePort}` : `复制入口地址: ${getRuleEntry(rule)}:${rule.sourcePort}`}
       >
         <code className="truncate">
           {rule.forwardGroupId
             ? (forwardGroupById.get(Number(rule.forwardGroupId))?.domain || getForwardGroupName(rule.forwardGroupId))
-            : (getHostEntry(rule.hostId) || getHostName(rule.hostId))}:{rule.sourcePort}
+            : (getRuleEntry(rule) || getRuleEntryHostName(rule))}:{rule.sourcePort}
         </code>
         <Copy className="h-3 w-3 flex-shrink-0 text-muted-foreground opacity-60 group-hover:opacity-100" />
       </button>
@@ -1126,7 +1153,7 @@ function RulesContent() {
               {hosts?.map((h: any) => (
                 <SelectItem key={h.id} value={String(h.id)}>{h.name}</SelectItem>
               ))}
-              {user?.role === "admin" && forwardGroups && forwardGroups.length > 0 && (
+              {canUseForwardGroup && forwardGroups && forwardGroups.length > 0 && (
                 <>
                   {(forwardGroups || []).map((group: any) => (
                     <SelectItem key={`group-${group.id}`} value={`group:${group.id}`}>
@@ -1148,7 +1175,7 @@ function RulesContent() {
               <SelectItem value="realm">realm</SelectItem>
               <SelectItem value="socat">socat</SelectItem>
               <SelectItem value="gost">gost</SelectItem>
-              {user?.role === "admin" && <SelectItem value="forward-group">转发组</SelectItem>}
+              {canUseForwardGroup && <SelectItem value="forward-group">转发组</SelectItem>}
             </SelectContent>
           </Select>
           <Select value={filterTunnel} onValueChange={setFilterTunnel}>
@@ -1229,7 +1256,7 @@ function RulesContent() {
                           {user?.role === "admin" && (
                             <div className="mt-1 text-xs text-muted-foreground">用户: {getRuleOwnerName(rule)}</div>
                           )}
-                          <div className="mt-1 text-xs text-muted-foreground">{rule.forwardGroupId ? getForwardGroupName(rule.forwardGroupId) : getHostName(rule.hostId)}</div>
+                          <div className="mt-1 text-xs text-muted-foreground">{rule.forwardGroupId ? getForwardGroupName(rule.forwardGroupId) : getRuleEntryHostName(rule)}</div>
                           {!supported && (
                             <div className="mt-1 text-[11px] text-destructive">
                               {protocolKey ? FORWARD_PROTOCOL_LABELS[protocolKey] : "该协议"} 当前不支持
@@ -1341,8 +1368,8 @@ function RulesContent() {
                           </TableCell>
                         )}
                         <TableCell>
-                          <span className="block truncate text-sm text-muted-foreground" title={rule.forwardGroupId ? getForwardGroupName(rule.forwardGroupId) : getHostName(rule.hostId)}>
-                            {rule.forwardGroupId ? getForwardGroupName(rule.forwardGroupId) : getHostName(rule.hostId)}
+                          <span className="block truncate text-sm text-muted-foreground" title={rule.forwardGroupId ? getForwardGroupName(rule.forwardGroupId) : getRuleEntryHostName(rule)}>
+                            {rule.forwardGroupId ? getForwardGroupName(rule.forwardGroupId) : getRuleEntryHostName(rule)}
                           </span>
                         </TableCell>
                         <TableCell>{renderTransfer(rule)}</TableCell>
@@ -1439,7 +1466,7 @@ function RulesContent() {
           </DialogHeader>
           <div className="space-y-4">
             <div className="rounded-lg border border-border/60 bg-muted/25 p-1">
-              <div className={`grid gap-1 ${user?.role === "admin" ? "grid-cols-3" : "grid-cols-2"}`}>
+              <div className={`grid gap-1 ${canUseForwardGroup ? "grid-cols-3" : "grid-cols-2"}`}>
                 <button
                   type="button"
                   className={routeModeOptionClass(form.routeMode === "local", !canUseLocalForward)}
@@ -1460,7 +1487,7 @@ function RulesContent() {
                   <Network className="h-4 w-4 shrink-0" />
                   <span className="truncate">隧道转发</span>
                 </button>
-                {user?.role === "admin" && (
+                {canUseForwardGroup && (
                   <button
                     type="button"
                     className={routeModeOptionClass(form.routeMode === "group", !canUseForwardGroup)}
@@ -1567,7 +1594,9 @@ function RulesContent() {
                   <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                     {(selectedForwardGroup.members || []).slice(0, 4).map((member: any, index: number) => (
                       <span key={member.id} className="rounded bg-background/60 px-1.5 py-0.5">
-                        {index + 1}. {member.memberType === "host" ? getHostName(member.hostId) : tunnelDisplayById.get(Number(member.tunnelId))?.shortLabel || `隧道 #${member.tunnelId}`}
+                        {index + 1}. {member.memberType === "host"
+                          ? (member.hostId ? getHostName(member.hostId) : "主机成员")
+                          : (member.tunnelId ? tunnelDisplayById.get(Number(member.tunnelId))?.shortLabel || `隧道 #${member.tunnelId}` : "隧道成员")}
                       </span>
                     ))}
                     {(selectedForwardGroup.members || []).length > 4 && <span>+{(selectedForwardGroup.members || []).length - 4}</span>}

@@ -272,7 +272,7 @@ function DashboardContent() {
   const { data: stats, isLoading } = trpc.dashboard.stats.useQuery(undefined, { refetchInterval: 15000 });
   const { data: wallet } = trpc.billing.me.useQuery(undefined, { enabled: !isAdmin });
   const { data: trafficBilling } = trpc.trafficBilling.status.useQuery();
-  const { data: subscriptions = [] } = trpc.plans.mySubscriptions.useQuery(undefined, { enabled: !isAdmin });
+  const { data: subscriptions = [], isLoading: subscriptionsLoading } = trpc.plans.mySubscriptions.useQuery(undefined, { enabled: !isAdmin });
   const { data: userTraffic = [], isLoading: userTrafficLoading } = trpc.dashboard.userTraffic.useQuery(undefined, { refetchInterval: 30000 });
   const { data: trafficBreakdown, isLoading: breakdownLoading } = trpc.dashboard.trafficBreakdown.useQuery(
     { hours: 168, limit: 30 },
@@ -307,8 +307,6 @@ function DashboardContent() {
   const trafficBillingBytes = Number(trafficBilling?.totalBytes || 0);
   const trafficBillingAmount = Number(trafficBilling?.totalAmountCents || 0);
   const trafficBillingBilledGb = Number(trafficBilling?.totalBilledGb || 0);
-  const expiry = getExpiryStatus(currentUserTraffic?.expiresAt);
-  const canForward = isAdmin || !!currentUserTraffic?.canAddRules;
 
   const activeSubscription = useMemo(() => {
     const now = Date.now();
@@ -317,14 +315,28 @@ function DashboardContent() {
       return subscription.status === "active" && expiresAt > now;
     });
   }, [subscriptions]);
+  const hasActiveSubscription = !!activeSubscription;
+  const accountStatusLoading = userTrafficLoading || subscriptionsLoading;
+  const planExpiresAt = currentUserTraffic ? currentUserTraffic.expiresAt ?? null : activeSubscription?.expiresAt ?? null;
+  const expiry = hasActiveSubscription ? getExpiryStatus(planExpiresAt) : { label: "---", tone: "normal" as const };
+  const canForward = isAdmin || !!currentUserTraffic?.canAddRules;
+  const planUsedText = hasActiveSubscription ? formatBytes(trafficUsed) : "---";
+  const planRemainingText = hasActiveSubscription ? (trafficRemaining === null ? "不限" : formatBytes(trafficRemaining)) : "---";
+  const planExpiryText = hasActiveSubscription ? formatDate(planExpiresAt) : "---";
+  const planProgressText = hasActiveSubscription
+    ? trafficLimit > 0
+      ? `${formatBytes(trafficUsed)} / ${formatBytes(trafficLimit)} (${trafficPercent}%)`
+      : `${formatBytes(trafficUsed)} / 不限`
+    : "---";
+  const planProgressValue = hasActiveSubscription && trafficLimit > 0 ? trafficPercent : 0;
 
   const mobileReminderSnapshot = useMemo(
     () => ({
-      trafficLimit,
-      trafficUsed,
-      expiresAt: activeSubscription?.expiresAt || currentUserTraffic?.expiresAt || null,
+      trafficLimit: hasActiveSubscription ? trafficLimit : 0,
+      trafficUsed: hasActiveSubscription ? trafficUsed : 0,
+      expiresAt: hasActiveSubscription ? planExpiresAt : null,
     }),
-    [trafficLimit, trafficUsed, activeSubscription?.expiresAt, currentUserTraffic?.expiresAt],
+    [hasActiveSubscription, trafficLimit, trafficUsed, planExpiresAt],
   );
 
   const onlineRate = stats?.totalHosts ? Math.round((stats.onlineHosts / stats.totalHosts) * 100) : 0;
@@ -424,7 +436,7 @@ function DashboardContent() {
                 <Shield className="h-4 w-4" />
                 我的账户状态
               </CardTitle>
-              {userTrafficLoading ? (
+              {accountStatusLoading ? (
                 <Skeleton className="h-6 w-36 rounded-full" />
               ) : (
                 <div className="flex flex-wrap gap-2">
@@ -439,7 +451,7 @@ function DashboardContent() {
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            {userTrafficLoading ? (
+            {accountStatusLoading ? (
               <div className="grid gap-3 sm:grid-cols-3">
                 {[1, 2, 3].map((item) => (
                   <Skeleton key={item} className="h-20 w-full" />
@@ -450,15 +462,15 @@ function DashboardContent() {
                 <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
                   <div className="rounded-lg border border-border/50 bg-background/35 p-3">
                     <p className="text-xs text-muted-foreground">套餐已用流量</p>
-                    <p className="mt-1 text-xl font-semibold tabular-nums">{formatBytes(trafficUsed)}</p>
+                    <p className="mt-1 text-xl font-semibold tabular-nums">{planUsedText}</p>
                   </div>
                   <div className="rounded-lg border border-border/50 bg-background/35 p-3">
                     <p className="text-xs text-muted-foreground">套餐剩余流量</p>
-                    <p className="mt-1 text-xl font-semibold tabular-nums">{trafficRemaining === null ? "不限" : formatBytes(trafficRemaining)}</p>
+                    <p className="mt-1 text-xl font-semibold tabular-nums">{planRemainingText}</p>
                   </div>
                   <div className="rounded-lg border border-border/50 bg-background/35 p-3">
                     <p className="text-xs text-muted-foreground">到期时间</p>
-                    <p className="mt-1 text-xl font-semibold tabular-nums">{formatDate(currentUserTraffic?.expiresAt)}</p>
+                    <p className="mt-1 text-xl font-semibold tabular-nums">{planExpiryText}</p>
                   </div>
                   <div className="rounded-lg border border-border/50 bg-background/35 p-3">
                     <p className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -488,20 +500,18 @@ function DashboardContent() {
                       <Package className="h-3 w-3" />
                       当前套餐
                     </p>
-                    <p className="mt-1 truncate text-xl font-semibold">{activeSubscription?.planName || "未订阅"}</p>
+                    <p className="mt-1 truncate text-xl font-semibold">{activeSubscription?.planName || "---"}</p>
                   </div>
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
                     <span>套餐流量使用进度</span>
-                    <span className="tabular-nums">
-                      {trafficLimit > 0 ? `${formatBytes(trafficUsed)} / ${formatBytes(trafficLimit)} (${trafficPercent}%)` : `${formatBytes(trafficUsed)} / 不限`}
-                    </span>
+                    <span className="tabular-nums">{planProgressText}</span>
                   </div>
-                  <Progress value={trafficLimit > 0 ? trafficPercent : 0} className="h-2" />
+                  <Progress value={planProgressValue} className="h-2" />
                   <p className="text-[11px] text-muted-foreground/70">
-                    套餐流量和计费流量分开统计。
-                    {currentUserTraffic?.trafficAutoReset ? ` 每月 ${currentUserTraffic.trafficResetDay || 1} 日自动重置。` : ""}
+                    {hasActiveSubscription ? "套餐流量和计费流量分开统计。" : "暂无生效套餐，套餐流量信息暂不展示。"}
+                    {hasActiveSubscription && currentUserTraffic?.trafficAutoReset ? ` 每月 ${currentUserTraffic.trafficResetDay || 1} 日自动重置。` : ""}
                   </p>
                 </div>
               </>

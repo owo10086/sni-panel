@@ -1,4 +1,4 @@
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { forwardRules, hosts, tunnels } from "../../drizzle/schema";
 import { getDb } from "../dbRuntime";
 import { getTotalTraffic, getTrafficSummaryByRule } from "./metricsRepository";
@@ -61,7 +61,11 @@ export async function getDashboardStats(userId?: number) {
   if (!db) return { totalHosts: 0, onlineHosts: 0, totalRules: 0, activeRules: 0, totalTrafficIn: 0, totalTrafficOut: 0 };
 
   const hostConditions = userId ? eq(hosts.userId, userId) : undefined;
-  const ruleConditions = userId ? eq(forwardRules.userId, userId) : undefined;
+  const ruleConditions = [
+    eq(forwardRules.pendingDelete, false),
+    sql`${forwardRules.forwardGroupRuleId} IS NULL`,
+    ...(userId ? [eq(forwardRules.userId, userId)] : []),
+  ];
 
   const hostStatsRows = await db
     .select({
@@ -74,10 +78,10 @@ export async function getDashboardStats(userId?: number) {
   const ruleStatsRows = await db
     .select({
       totalRules: sql<number>`COUNT(*)`,
-      activeRules: sql<number>`SUM(CASE WHEN isEnabled = 1 AND isRunning = 1 THEN 1 ELSE 0 END)`,
+      activeRules: sql<number>`SUM(CASE WHEN ${forwardRules.isEnabled} = 1 AND (${forwardRules.isRunning} = 1 OR (${forwardRules.isForwardGroupTemplate} = 1 AND EXISTS (SELECT 1 FROM forward_rules child WHERE child.forwardGroupRuleId = ${forwardRules.id} AND child.pendingDelete = 0 AND child.isEnabled = 1 AND child.isRunning = 1))) THEN 1 ELSE 0 END)`,
     })
     .from(forwardRules)
-    .where(ruleConditions as any);
+    .where(and(...ruleConditions));
 
   const hostStats = hostStatsRows[0];
   const ruleStats = ruleStatsRows[0];

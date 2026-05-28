@@ -27,6 +27,7 @@ const planInput = z.object({
   sortOrder: z.number().int().min(0).max(9999).default(0),
   hostIds: z.array(z.number().int().positive()).default([]),
   tunnelIds: z.array(z.number().int().positive()).default([]),
+  forwardGroupIds: z.array(z.number().int().positive()).default([]),
 });
 
 export const plansRouter = router({
@@ -50,24 +51,28 @@ export const plansRouter = router({
   create: adminProcedure
     .input(planInput)
     .mutation(async ({ input }) => {
-      const { hostIds, tunnelIds, ...data } = input;
-      if (hostIds.length === 0 && tunnelIds.length === 0) throw new Error("套餐至少需要绑定一个主机或隧道");
+      const { hostIds, tunnelIds, forwardGroupIds, ...data } = input;
+      if (hostIds.length === 0 && tunnelIds.length === 0 && forwardGroupIds.length === 0) {
+        throw new Error("套餐至少需要绑定一个主机、隧道或转发组");
+      }
       return db.createSubscriptionPlan({
         ...data,
         description: data.description || null,
         currency: data.currency.toUpperCase(),
-      } as any, hostIds, tunnelIds);
+      } as any, hostIds, tunnelIds, forwardGroupIds);
     }),
   update: adminProcedure
     .input(planInput.extend({ id: z.number().int().positive() }))
     .mutation(async ({ input }) => {
-      const { id, hostIds, tunnelIds, ...data } = input;
-      if (hostIds.length === 0 && tunnelIds.length === 0) throw new Error("套餐至少需要绑定一个主机或隧道");
+      const { id, hostIds, tunnelIds, forwardGroupIds, ...data } = input;
+      if (hostIds.length === 0 && tunnelIds.length === 0 && forwardGroupIds.length === 0) {
+        throw new Error("套餐至少需要绑定一个主机、隧道或转发组");
+      }
       return db.updateSubscriptionPlan(id, {
         ...data,
         description: data.description || null,
         currency: data.currency.toUpperCase(),
-      } as any, hostIds, tunnelIds);
+      } as any, hostIds, tunnelIds, forwardGroupIds);
     }),
   delete: adminProcedure
     .input(z.object({ id: z.number().int().positive() }))

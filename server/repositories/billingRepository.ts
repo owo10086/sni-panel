@@ -8,6 +8,7 @@ import {
   paymentOrders, InsertPaymentOrder,
   redemptionCodes, InsertRedemptionCode,
   subscriptionPlans, InsertSubscriptionPlan,
+  subscriptionPlanForwardGroups,
   subscriptionPlanHosts,
   subscriptionPlanTunnels,
   userSubscriptions, InsertUserSubscription,
@@ -15,6 +16,7 @@ import {
 } from "../../drizzle/schema";
 import { executeRaw, getDatabaseKind, getDb, getPool, getSqlite, insertAndGetId, nowDate } from "../dbRuntime";
 import { getForwardRulesForUserSync } from "./forwardRuleRepository";
+import { getForwardGroupEntryPortRange } from "./forwardGroupRepository";
 import { getHostById } from "./hostRepository";
 import { getTunnelById, updateTunnel } from "./tunnelRepository";
 import { disableAllUserRules, getUserById, resetUserTraffic, updateUserTrafficSettings } from "./userRepository";
@@ -68,11 +70,22 @@ async function getPlanTunnelIds(planId: number): Promise<number[]> {
   return rows.map(r => r.tunnelId);
 }
 
+async function getPlanForwardGroupIds(planId: number): Promise<number[]> {
+  const db = await getDb();
+  if (!db) return [];
+  const rows = await db
+    .select({ forwardGroupId: subscriptionPlanForwardGroups.forwardGroupId })
+    .from(subscriptionPlanForwardGroups)
+    .where(eq(subscriptionPlanForwardGroups.planId, planId));
+  return rows.map(r => Number(r.forwardGroupId)).filter(Boolean);
+}
+
 async function attachPlanResources<T extends { id: number }>(plans: T[]) {
   return Promise.all(plans.map(async (plan) => ({
     ...plan,
     hostIds: await getPlanHostIds(plan.id),
     tunnelIds: await getPlanTunnelIds(plan.id),
+    forwardGroupIds: await getPlanForwardGroupIds(plan.id),
   })));
 }
 
@@ -93,20 +106,25 @@ export async function getSubscriptionPlanById(id: number) {
   return (await attachPlanResources([rows[0]]))[0];
 }
 
-export async function createSubscriptionPlan(data: InsertSubscriptionPlan, hostIds: number[], tunnelIds: number[]) {
+export async function createSubscriptionPlan(data: InsertSubscriptionPlan, hostIds: number[], tunnelIds: number[], forwardGroupIds: number[] = []) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   const id = await insertAndGetId("subscription_plans", data as any);
-  await setSubscriptionPlanResources(id, hostIds, tunnelIds);
+  await setSubscriptionPlanResources(id, hostIds, tunnelIds, forwardGroupIds);
   return getSubscriptionPlanById(id);
 }
 
-export async function updateSubscriptionPlan(id: number, data: Partial<InsertSubscriptionPlan>, hostIds?: number[], tunnelIds?: number[]) {
+export async function updateSubscriptionPlan(id: number, data: Partial<InsertSubscriptionPlan>, hostIds?: number[], tunnelIds?: number[], forwardGroupIds?: number[]) {
   const db = await getDb();
   if (!db) return undefined;
   await db.update(subscriptionPlans).set({ ...data, updatedAt: nowDate() } as any).where(eq(subscriptionPlans.id, id));
-  if (hostIds || tunnelIds) {
-    await setSubscriptionPlanResources(id, hostIds ?? await getPlanHostIds(id), tunnelIds ?? await getPlanTunnelIds(id));
+  if (hostIds || tunnelIds || forwardGroupIds) {
+    await setSubscriptionPlanResources(
+      id,
+      hostIds ?? await getPlanHostIds(id),
+      tunnelIds ?? await getPlanTunnelIds(id),
+      forwardGroupIds ?? await getPlanForwardGroupIds(id),
+    );
   }
   return getSubscriptionPlanById(id);
 }
@@ -116,18 +134,22 @@ export async function deleteSubscriptionPlan(id: number) {
   if (!db) return;
   await db.delete(subscriptionPlanHosts).where(eq(subscriptionPlanHosts.planId, id));
   await db.delete(subscriptionPlanTunnels).where(eq(subscriptionPlanTunnels.planId, id));
+  await db.delete(subscriptionPlanForwardGroups).where(eq(subscriptionPlanForwardGroups.planId, id));
   await db.delete(subscriptionPlans).where(eq(subscriptionPlans.id, id));
 }
 
-export async function setSubscriptionPlanResources(planId: number, hostIds: number[], tunnelIds: number[]) {
+export async function setSubscriptionPlanResources(planId: number, hostIds: number[], tunnelIds: number[], forwardGroupIds: number[] = []) {
   const db = await getDb();
   if (!db) return;
   await db.delete(subscriptionPlanHosts).where(eq(subscriptionPlanHosts.planId, planId));
   await db.delete(subscriptionPlanTunnels).where(eq(subscriptionPlanTunnels.planId, planId));
+  await db.delete(subscriptionPlanForwardGroups).where(eq(subscriptionPlanForwardGroups.planId, planId));
   const uniqueHostIds = Array.from(new Set(hostIds.filter(id => id > 0)));
   const uniqueTunnelIds = Array.from(new Set(tunnelIds.filter(id => id > 0)));
+  const uniqueForwardGroupIds = Array.from(new Set(forwardGroupIds.filter(id => id > 0)));
   if (uniqueHostIds.length > 0) await db.insert(subscriptionPlanHosts).values(uniqueHostIds.map(hostId => ({ planId, hostId })));
   if (uniqueTunnelIds.length > 0) await db.insert(subscriptionPlanTunnels).values(uniqueTunnelIds.map(tunnelId => ({ planId, tunnelId })));
+  if (uniqueForwardGroupIds.length > 0) await db.insert(subscriptionPlanForwardGroups).values(uniqueForwardGroupIds.map(forwardGroupId => ({ planId, forwardGroupId })));
 }
 
 export async function listUserSubscriptions(userId?: number) {
@@ -200,6 +222,7 @@ export async function getActiveUserSubscriptions(userId?: number) {
     ...row,
     hostIds: await getPlanHostIds(row.planId),
     tunnelIds: await getPlanTunnelIds(row.planId),
+    forwardGroupIds: await getPlanForwardGroupIds(row.planId),
   })));
 }
 
@@ -356,7 +379,18 @@ export async function getUserPlanPortRange(userId: number, hostId?: number, tunn
   return null;
 }
 
-export async function findAvailableSubscriptionPortBlock(portCount: number, hostIds: number[], tunnelIds: number[]) {
+export async function getUserForwardGroupPlanPortRange(userId: number, forwardGroupId: number): Promise<{ start: number; end: number } | null> {
+  const active = await getActiveUserSubscriptions(userId);
+  for (const sub of active as any[]) {
+    if (!sub.portRangeStart || !sub.portRangeEnd) continue;
+    if (Array.isArray(sub.forwardGroupIds) && sub.forwardGroupIds.includes(forwardGroupId)) {
+      return { start: sub.portRangeStart, end: sub.portRangeEnd };
+    }
+  }
+  return null;
+}
+
+export async function findAvailableSubscriptionPortBlock(portCount: number, hostIds: number[], tunnelIds: number[], forwardGroupIds: number[] = []) {
   const db = await getDb();
   if (!db) return null;
   const count = Math.max(1, portCount);
@@ -374,6 +408,11 @@ export async function findAvailableSubscriptionPortBlock(portCount: number, host
     const start = Number((tunnel as any).portRangeStart || 10000);
     const end = Number((tunnel as any).portRangeEnd || 65535);
     ranges.push({ start, end });
+  }
+  for (const forwardGroupId of forwardGroupIds) {
+    const range = await getForwardGroupEntryPortRange(forwardGroupId);
+    if (!range) continue;
+    ranges.push(range);
   }
   const start = ranges.length ? Math.max(...ranges.map((r) => r.start)) : 10000;
   const end = ranges.length ? Math.min(...ranges.map((r) => r.end)) : 65535;
@@ -418,8 +457,9 @@ export async function applySubscriptionToUser(userId: number, planId: number, so
   if (!plan.isActive) throw new Error("套餐已停用");
   const hostIds = (plan as any).hostIds || [];
   const tunnelIds = (plan as any).tunnelIds || [];
-  if (hostIds.length === 0 && tunnelIds.length === 0) throw new Error("套餐未绑定任何主机或隧道");
-  const block = await findAvailableSubscriptionPortBlock(Number(plan.portCount) || 1, hostIds, tunnelIds);
+  const forwardGroupIds = (plan as any).forwardGroupIds || [];
+  if (hostIds.length === 0 && tunnelIds.length === 0 && forwardGroupIds.length === 0) throw new Error("套餐未绑定任何主机、隧道或转发组");
+  const block = await findAvailableSubscriptionPortBlock(Number(plan.portCount) || 1, hostIds, tunnelIds, forwardGroupIds);
   if (!block) throw new Error("套餐可用端口不足，无法分配连续端口段");
   const now = startsAt || new Date();
   const durationDays = Number(overrideDurationDays || plan.durationDays);

@@ -265,7 +265,34 @@ async function usedPortsOnEntryHost(hostId: number, start: number, end: number, 
   return new Set(rows.map((row) => Number(row.port)).filter((port) => Number.isInteger(port)));
 }
 
-export async function findAvailableForwardGroupPort(groupId: number, excludeTemplateRuleId?: number | null) {
+export async function getForwardGroupEntryPortRange(groupId: number): Promise<{ start: number; end: number } | null> {
+  const group = await getForwardGroupById(groupId);
+  if (!group) throw new Error("Forward group does not exist");
+  const members = [...((group as any).members || [])]
+    .filter((member: any) => !!member.isEnabled)
+    .sort((a, b) => Number(a.priority) - Number(b.priority));
+  if (members.length === 0) throw new Error("Forward group has no enabled members");
+
+  let rangeStart: number | null = null;
+  let rangeEnd: number | null = null;
+  for (const member of members) {
+    const range = await entryPortRangeForMember(member);
+    if (!range.hostId) throw new Error("Forward group member has no valid entry agent");
+    const start = optionalPort(range.start);
+    const end = optionalPort(range.end);
+    if (start != null) rangeStart = Math.max(rangeStart ?? 1, start);
+    if (end != null) rangeEnd = Math.min(rangeEnd ?? 65535, end);
+  }
+  const start = rangeStart ?? (rangeEnd != null && rangeEnd < 10000 ? 1 : 10000);
+  const end = rangeEnd ?? 65535;
+  return start <= end ? { start, end } : null;
+}
+
+export async function findAvailableForwardGroupPort(
+  groupId: number,
+  excludeTemplateRuleId?: number | null,
+  allowedRange?: { start: number; end: number } | null,
+) {
   const group = await getForwardGroupById(groupId);
   if (!group) throw new Error("Forward group does not exist");
   const members = [...((group as any).members || [])]
@@ -274,8 +301,12 @@ export async function findAvailableForwardGroupPort(groupId: number, excludeTemp
   if (members.length === 0) throw new Error("Forward group has no enabled members");
 
   const entries: Array<{ hostId: number; ignoreRuleIds: number[] }> = [];
-  let rangeStart: number | null = null;
-  let rangeEnd: number | null = null;
+  const baseRange = await getForwardGroupEntryPortRange(groupId);
+  if (!baseRange) return null;
+  const start = Math.max(baseRange.start, Number(allowedRange?.start || baseRange.start));
+  const end = Math.min(baseRange.end, Number(allowedRange?.end || baseRange.end));
+  if (start > end) return null;
+
   for (const member of members) {
     const range = await entryPortRangeForMember(member);
     if (!range.hostId) throw new Error("Forward group member has no valid entry agent");
@@ -286,14 +317,7 @@ export async function findAvailableForwardGroupPort(groupId: number, excludeTemp
       hostId: range.hostId,
       ignoreRuleIds: [Number(excludeTemplateRuleId || 0), Number(existing?.id || 0)].filter(Boolean),
     });
-    const start = optionalPort(range.start);
-    const end = optionalPort(range.end);
-    if (start != null) rangeStart = Math.max(rangeStart ?? 1, start);
-    if (end != null) rangeEnd = Math.min(rangeEnd ?? 65535, end);
   }
-  const start = rangeStart ?? (rangeEnd != null && rangeEnd < 10000 ? 1 : 10000);
-  const end = rangeEnd ?? 65535;
-  if (start > end) return null;
 
   const usedPortSets = await Promise.all(
     entries.map((entry) => usedPortsOnEntryHost(entry.hostId, start, end, entry.ignoreRuleIds)),
@@ -343,6 +367,33 @@ export async function validateForwardGroupRuleConfig(groupId: number, config: Fo
     if (used) throw new Error(`Entry agent port ${sourcePort} is already used`);
   }
   return group;
+}
+
+export function filterForwardGroupFieldsForUse(groups: any[]) {
+  return groups.map((group: any) => ({
+    id: group.id,
+    name: group.name,
+    groupType: group.groupType,
+    forwardType: group.forwardType,
+    domain: group.domain,
+    recordType: group.recordType,
+    failoverSeconds: group.failoverSeconds,
+    recoverSeconds: group.recoverSeconds,
+    autoFailback: group.autoFailback,
+    isEnabled: group.isEnabled,
+    lastStatus: group.lastStatus,
+    lastDdnsValue: group.lastDdnsValue,
+    lastFailoverAt: group.lastFailoverAt,
+    lastRecoverAt: group.lastRecoverAt,
+    templateRuleCount: group.templateRuleCount,
+    members: (group.members || []).map((member: any) => ({
+      id: member.id,
+      groupId: member.groupId,
+      memberType: member.memberType,
+      priority: member.priority,
+      isEnabled: member.isEnabled,
+    })),
+  }));
 }
 
 async function refreshRuleEndpoints(rule: any, reason: string) {

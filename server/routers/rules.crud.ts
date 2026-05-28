@@ -57,9 +57,16 @@ export const crudRulesRouter = router({
       }
 
       if (input.forwardGroupId) {
-        if (ctx.user.role !== "admin") throw new Error("只有管理员可以使用转发组");
         if (input.sourcePort === 0) throw new Error("转发组规则需要指定固定入口端口");
         const sourcePort = input.sourcePort;
+        if (ctx.user.role !== "admin") {
+          const hasPermission = await db.checkUserForwardGroupPermission(ctx.user.id, input.forwardGroupId);
+          if (!hasPermission) throw new Error("无权使用该转发组");
+          const planRange = await db.getUserForwardGroupPlanPortRange(ctx.user.id, input.forwardGroupId);
+          if (planRange && (sourcePort < planRange.start || sourcePort > planRange.end)) {
+            throw new Error(`套餐端口必须在 ${planRange.start}-${planRange.end} 内`);
+          }
+        }
         const group = await db.validateForwardGroupRuleConfig(input.forwardGroupId, { sourcePort });
         const hostId = await db.getForwardGroupDefaultHostId(input.forwardGroupId);
         const forwardType = (group as any).groupType === "tunnel" ? "gost" : input.forwardType;
@@ -201,9 +208,17 @@ export const crudRulesRouter = router({
       if ((rule as any).forwardGroupRuleId) throw new Error("转发组成员规则由系统维护，不能直接修改");
 
       if ((rule as any).isForwardGroupTemplate) {
-        if (ctx.user.role !== "admin") throw new Error("只有管理员可以修改转发组规则");
         const groupId = Number((rule as any).forwardGroupId || 0);
         if (!groupId) throw new Error("转发组不存在");
+        if (ctx.user.role !== "admin") {
+          const hasPermission = await db.checkUserForwardGroupPermission(ctx.user.id, groupId);
+          if (!hasPermission) throw new Error("无权修改该转发组规则");
+          const nextSourcePort = input.sourcePort ?? rule.sourcePort;
+          const planRange = await db.getUserForwardGroupPlanPortRange(ctx.user.id, groupId);
+          if (planRange && (nextSourcePort < planRange.start || nextSourcePort > planRange.end)) {
+            throw new Error(`套餐端口必须在 ${planRange.start}-${planRange.end} 内`);
+          }
+        }
         const group = await db.validateForwardGroupRuleConfig(groupId, {
           sourcePort: input.sourcePort ?? rule.sourcePort,
           excludeTemplateRuleId: rule.id,
@@ -403,9 +418,24 @@ export const crudRulesRouter = router({
       if (ctx.user.role !== "admin" && rule.userId !== ctx.user.id) throw new Error("无权操作此规则");
       if ((rule as any).forwardGroupRuleId) throw new Error("转发组成员规则由系统维护，不能直接开关");
       if ((rule as any).isForwardGroupTemplate) {
+        if (ctx.user.role !== "admin") {
+          const groupId = Number((rule as any).forwardGroupId || 0);
+          const hasPermission = groupId ? await db.checkUserForwardGroupPermission(ctx.user.id, groupId) : false;
+          if (!hasPermission) throw new Error("无权操作该转发组规则");
+          if (input.isEnabled) {
+            const owner = await db.getUserById(ctx.user.id);
+            if (!owner?.canAddRules) throw new Error("转发权限已暂停，请续费后再启用规则");
+            if (owner.expiresAt && new Date(owner.expiresAt) <= new Date()) {
+              throw new Error("套餐已到期，请续费后再启用规则");
+            }
+          }
+        }
         if (input.isEnabled) {
-          const used = await db.isPortUsedOnHost(rule.hostId, input.sourcePort ?? rule.sourcePort, rule.id);
-          if (used) throw new Error(`端口 ${input.sourcePort ?? rule.sourcePort} 已被占用，请更换端口后再启用`);
+          const groupId = Number((rule as any).forwardGroupId || 0);
+          await db.validateForwardGroupRuleConfig(groupId, {
+            sourcePort: rule.sourcePort,
+            excludeTemplateRuleId: rule.id,
+          });
           await db.updateForwardRule(input.id, { isEnabled: true, isRunning: false, disabledByUser: false, disabledByTunnel: false, protocolBlockReason: null } as any);
         } else {
           await db.toggleForwardRule(input.id, false);

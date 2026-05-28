@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { adminProcedure, router } from "../_core/trpc";
+import { adminProcedure, protectedProcedure, router } from "../_core/trpc";
 import * as db from "../db";
 
 const memberSchema = z.object({
@@ -42,8 +42,13 @@ function normalizeMembers(groupType: "host" | "tunnel", members: z.infer<typeof 
 }
 
 export const forwardGroupsRouter = router({
-  list: adminProcedure.query(async () => {
-    return db.getForwardGroups();
+  list: protectedProcedure.query(async ({ ctx }) => {
+    if (ctx.user.role === "admin") return db.getForwardGroups();
+    const groupIds = await db.getUserAllowedForwardGroupIds(ctx.user.id);
+    if (groupIds.length === 0) return [];
+    const groups = await db.getForwardGroups();
+    const allowed = new Set(groupIds);
+    return db.filterForwardGroupFieldsForUse((groups as any[]).filter((group: any) => allowed.has(Number(group.id))));
   }),
 
   events: adminProcedure

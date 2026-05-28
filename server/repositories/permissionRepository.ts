@@ -40,6 +40,15 @@ async function _getActiveSubscriptionTunnelIds(userId: number): Promise<number[]
   return Array.from(ids);
 }
 
+async function _getActiveSubscriptionForwardGroupIds(userId: number): Promise<number[]> {
+  const active = await getActiveUserSubscriptions(userId);
+  const ids = new Set<number>();
+  for (const sub of active as any[]) {
+    for (const forwardGroupId of sub.forwardGroupIds || []) ids.add(Number(forwardGroupId));
+  }
+  return Array.from(ids);
+}
+
 /** 获取某用户被授权的主机列表（含主机信息） */
 export async function getUserAllowedHosts(userId: number) {
   const db = await getDb();
@@ -104,7 +113,11 @@ export async function deleteUserPermissions(userId: number) {
 export async function getUserRuleCount(userId: number): Promise<number> {
   const db = await getDb();
   if (!db) return 0;
-  const r = await db.select({ count: sql<number>`COUNT(*)` }).from(forwardRules).where(eq(forwardRules.userId, userId));
+  const r = await db.select({ count: sql<number>`COUNT(*)` }).from(forwardRules).where(and(
+    eq(forwardRules.userId, userId),
+    eq(forwardRules.pendingDelete, false),
+    sql`${forwardRules.forwardGroupRuleId} IS NULL`,
+  ));
   return Number(r[0]?.count) || 0;
 }
 
@@ -112,7 +125,11 @@ export async function getUserRuleCount(userId: number): Promise<number> {
 export async function getUserPortCount(userId: number): Promise<number> {
   const db = await getDb();
   if (!db) return 0;
-  const r = await db.select({ count: sql<number>`COUNT(DISTINCT sourcePort)` }).from(forwardRules).where(eq(forwardRules.userId, userId));
+  const r = await db.select({ count: sql<number>`COUNT(DISTINCT sourcePort)` }).from(forwardRules).where(and(
+    eq(forwardRules.userId, userId),
+    eq(forwardRules.pendingDelete, false),
+    sql`${forwardRules.forwardGroupRuleId} IS NULL`,
+  ));
   return Number(r[0]?.count) || 0;
 }
 
@@ -141,6 +158,15 @@ export async function getUserAllowedTunnelIds(userId: number): Promise<number[]>
   const rows = await db.select({ tunnelId: userTunnelPermissions.tunnelId }).from(userTunnelPermissions).where(eq(userTunnelPermissions.userId, userId));
   const planRows = await _getActiveSubscriptionTunnelIds(userId);
   return Array.from(new Set([...rows.map(r => r.tunnelId), ...planRows]));
+}
+
+export async function getUserAllowedForwardGroupIds(userId: number): Promise<number[]> {
+  return _getActiveSubscriptionForwardGroupIds(userId);
+}
+
+export async function checkUserForwardGroupPermission(userId: number, forwardGroupId: number): Promise<boolean> {
+  const planForwardGroupIds = await _getActiveSubscriptionForwardGroupIds(userId);
+  return planForwardGroupIds.includes(forwardGroupId);
 }
 
 export async function getTunnelsForUser(userId: number) {

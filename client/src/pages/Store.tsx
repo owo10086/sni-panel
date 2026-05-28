@@ -180,7 +180,7 @@ export default function Store() {
                       <div>规则：最多 {plan.maxRules || "不限"} 条</div>
                       <div>连接：最多 {plan.maxConnections || "不限"}，单 IP {plan.maxIPs || "不限"}</div>
                       <div>限制口径：端口转发按主机，隧道转发按隧道</div>
-                      <div>资源：{plan.hostIds?.length || 0} 台主机 / {plan.tunnelIds?.length || 0} 条隧道</div>
+                      <div>资源：{plan.hostIds?.length || 0} 台主机 / {plan.tunnelIds?.length || 0} 条隧道 / {plan.forwardGroupIds?.length || 0} 个转发组</div>
                     </div>
                   </CardContent>
                   <CardFooter>
