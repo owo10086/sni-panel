@@ -55,6 +55,8 @@ import {
   Network,
   ClipboardCopy,
   Layers3,
+  LayoutGrid,
+  List,
 } from "lucide-react";
 import {
   FORWARD_TYPES,
@@ -119,6 +121,29 @@ const desktopRuleTypeLabels = {
   tunnel: "隧道转发",
   group: "转发组",
 } as const;
+
+type RuleViewMode = "card" | "table";
+
+const RULE_VIEW_MODE_STORAGE_KEY = "forwardx.rules.viewMode";
+
+function getStoredRuleViewMode(): RuleViewMode {
+  if (typeof window === "undefined") return "card";
+  try {
+    const value = window.localStorage.getItem(RULE_VIEW_MODE_STORAGE_KEY);
+    return value === "table" ? "table" : "card";
+  } catch {
+    return "card";
+  }
+}
+
+function storeRuleViewMode(viewMode: RuleViewMode) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(RULE_VIEW_MODE_STORAGE_KEY, viewMode);
+  } catch {
+    // Ignore storage failures so the page still works in restricted browsers.
+  }
+}
 
 function getRuleDisplayType(rule: any): keyof typeof desktopRuleTypeLabels {
   if (rule.forwardGroupId) return "group";
@@ -222,6 +247,7 @@ function RulesContent() {
   const [filterUser, setFilterUser] = useState<string>("self");
   const [filterTunnel, setFilterTunnel] = useState<string>("all");
   const [filterType, setFilterType] = useState<string>("all");
+  const [viewMode, setViewMode] = useState<RuleViewMode>(() => getStoredRuleViewMode());
   const selectedRulesQuery = useMemo(() => {
     if (user?.role !== "admin") return undefined;
     const input: { userId?: number; scope?: "self" | "all"; hostId?: number; tunnelId?: number | null } = {};
@@ -1122,6 +1148,82 @@ function RulesContent() {
     );
   };
 
+  const handleViewModeChange = (nextViewMode: RuleViewMode) => {
+    setViewMode(nextViewMode);
+    storeRuleViewMode(nextViewMode);
+  };
+
+  const renderRuleCard = (rule: any) => {
+    const supported = isRuleSupported(rule);
+    const protocolKey = getRuleProtocolKey(rule);
+    return (
+      <Card
+        key={rule.id}
+        className={`border-border/40 bg-card/60 backdrop-blur-md ${!supported ? "opacity-70" : ""}`}
+        title={!supported ? unsupportedProtocolTitle : undefined}
+      >
+        <CardContent className="space-y-3 p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex min-w-0 items-start gap-2">
+              <div className="mt-2 flex h-4 w-4 flex-shrink-0 items-center justify-center">
+                {supported ? renderStatusDot(rule) : <span className="h-2.5 w-2.5 rounded-full bg-destructive/60" />}
+              </div>
+              <div className="min-w-0">
+                <div className="truncate font-medium">{rule.name}</div>
+                {user?.role === "admin" && (
+                  <div className="mt-1 text-xs text-muted-foreground">用户: {getRuleOwnerName(rule)}</div>
+                )}
+                <div className="mt-1 text-xs text-muted-foreground">
+                  {rule.forwardGroupId ? getForwardGroupName(rule.forwardGroupId) : getRuleEntryHostName(rule)}
+                </div>
+                {!supported && (
+                  <div className="mt-1 text-[11px] text-destructive">
+                    {protocolKey ? FORWARD_PROTOCOL_LABELS[protocolKey] : "该协议"} 当前不支持
+                  </div>
+                )}
+                {rule.protocolBlockReason && (
+                  <div className="mt-1 text-[11px] leading-4 text-destructive">
+                    {rule.protocolBlockReason}
+                  </div>
+                )}
+              </div>
+            </div>
+            {supported ? (
+              <Switch
+                checked={rule.isEnabled}
+                onCheckedChange={(checked) => handleToggleRule(rule, checked)}
+                className="scale-75"
+              />
+            ) : (
+              renderUnsupportedHint(<span className="inline-flex"><Switch checked={false} disabled className="scale-75" /></span>)
+            )}
+          </div>
+
+          <div className="rounded-md bg-muted/25 p-2">
+            {renderTransfer(rule, true)}
+          </div>
+          <div className="grid grid-cols-1 gap-3 text-xs sm:grid-cols-2">
+            <div>
+              <div className="mb-1 text-muted-foreground">链路</div>
+              {renderRouteBadge(rule)}
+            </div>
+            <div>
+              <div className="mb-1 text-muted-foreground">协议</div>
+              <Badge variant="secondary" className="text-[10px] uppercase">{rule.protocol}</Badge>
+            </div>
+            <div className="sm:col-span-2">
+              <div className="mb-1 text-muted-foreground">近 24h 流量</div>
+              {renderRuleTraffic(rule)}
+            </div>
+          </div>
+          <div className="flex justify-end border-t border-border/40 pt-2">
+            {renderRuleActions(rule)}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
@@ -1136,6 +1238,24 @@ function RulesContent() {
             <Zap className="h-3 w-3 text-chart-2" />
             {activeCount} / {filteredRules.length || rules?.length || 0} 活跃
           </Badge>
+          <div className="hidden items-center overflow-hidden rounded-md border border-border/40 sm:flex">
+            <Button
+              variant={viewMode === "card" ? "secondary" : "ghost"}
+              size="icon"
+              className="h-8 w-8 rounded-none"
+              onClick={() => handleViewModeChange("card")}
+            >
+              <LayoutGrid className="h-4 w-4" />
+            </Button>
+            <Button
+              variant={viewMode === "table" ? "secondary" : "ghost"}
+              size="icon"
+              className="h-8 w-8 rounded-none"
+              onClick={() => handleViewModeChange("table")}
+            >
+              <List className="h-4 w-4" />
+            </Button>
+          </div>
           <Button
             variant="outline"
             onClick={openCopyDialog}
@@ -1276,209 +1396,161 @@ function RulesContent() {
         </Card>
       </div>
 
-      <Card className="border-border/40 bg-card/60 backdrop-blur-md">
-        <CardContent className="p-0">
-          {isLoading ? (
-            <div className="p-6 space-y-3">
+      {isLoading ? (
+        <Card className="border-border/40 bg-card/60 backdrop-blur-md">
+          <CardContent className="p-0">
+            <div className="space-y-3 p-6">
               {[1, 2, 3, 4].map((i) => (
                 <Skeleton key={i} className="h-14 w-full" />
               ))}
             </div>
-          ) : filteredRules.length > 0 ? (
-            <>
-              <div className="grid gap-3 p-3 lg:hidden">
-                {pagedRules.map((rule: any) => {
-                  const supported = isRuleSupported(rule);
-                  const protocolKey = getRuleProtocolKey(rule);
-                  return (
-                  <div
-                    key={rule.id}
-                    className={`rounded-lg border border-border/50 bg-background/65 p-3 shadow-sm ${!supported ? "opacity-70" : ""}`}
-                    title={!supported ? unsupportedProtocolTitle : undefined}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex min-w-0 items-start gap-2">
-                        <div className="mt-2 flex h-4 w-4 flex-shrink-0 items-center justify-center">
-                          {supported ? renderStatusDot(rule) : <span className="h-2.5 w-2.5 rounded-full bg-destructive/60" />}
-                        </div>
-                        <div className="min-w-0">
-                          <div className="truncate font-medium">{rule.name}</div>
-                          {user?.role === "admin" && (
-                            <div className="mt-1 text-xs text-muted-foreground">用户: {getRuleOwnerName(rule)}</div>
-                          )}
-                          <div className="mt-1 text-xs text-muted-foreground">{rule.forwardGroupId ? getForwardGroupName(rule.forwardGroupId) : getRuleEntryHostName(rule)}</div>
-                          {!supported && (
-                            <div className="mt-1 text-[11px] text-destructive">
-                              {protocolKey ? FORWARD_PROTOCOL_LABELS[protocolKey] : "该协议"} 当前不支持
-                            </div>
-                          )}
-                          {rule.protocolBlockReason && (
-                            <div className="mt-1 text-[11px] leading-4 text-destructive">
-                              {rule.protocolBlockReason}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      {supported ? (
-                        <Switch
-                          checked={rule.isEnabled}
-                          onCheckedChange={(checked) => handleToggleRule(rule, checked)}
-                          className="scale-75"
-                        />
-                      ) : (
-                        renderUnsupportedHint(<span className="inline-flex"><Switch checked={false} disabled className="scale-75" /></span>)
-                      )}
-                    </div>
-                    <div className="mt-3 rounded-md bg-muted/25 p-2">
-                      {renderTransfer(rule, true)}
-                    </div>
-                    <div className="mt-3 grid grid-cols-1 gap-3 text-xs sm:grid-cols-2">
-                      <div>
-                        <div className="mb-1 text-muted-foreground">链路</div>
-                        {renderRouteBadge(rule)}
-                      </div>
-                      <div>
-                        <div className="mb-1 text-muted-foreground">协议</div>
-                        <Badge variant="secondary" className="text-[10px] uppercase">{rule.protocol}</Badge>
-                      </div>
-                      <div className="sm:col-span-2">
-                        <div className="mb-1 text-muted-foreground">近 24h 流量</div>
-                        {renderRuleTraffic(rule)}
-                      </div>
-                    </div>
-                    <div className="mt-3 flex justify-end border-t border-border/40 pt-2">
-                      {renderRuleActions(rule)}
-                    </div>
-                  </div>
-                  );
-                })}
-              </div>
-              <div className="hidden overflow-x-auto lg:block">
-                <Table className={user?.role === "admin" ? "min-w-[1100px] table-fixed" : "min-w-[980px] table-fixed"}>
-                  <TableHeader>
-                    <TableRow className="hover:bg-transparent">
-                      <TableHead className="w-[48px] text-center">状态</TableHead>
-                      <TableHead className="w-[120px]">规则</TableHead>
-                      {user?.role === "admin" && <TableHead className="w-[120px]">用户</TableHead>}
-                      <TableHead className="w-[120px]">主机</TableHead>
-                      <TableHead>转发配置</TableHead>
-                      <TableHead className="w-[150px]">链路</TableHead>
-                      <TableHead className="w-[86px]">协议</TableHead>
-                      <TableHead className="w-[120px]">24h 流量</TableHead>
-                      <TableHead className="w-[76px] text-center">开关</TableHead>
-                      <TableHead className="w-[164px] text-right">操作</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {desktopRuleGroups.map((group) => (
-                      <Fragment key={group.type}>
-                        <TableRow className="border-border/40 bg-muted/35 hover:bg-muted/35">
-                          <TableCell colSpan={user?.role === "admin" ? 10 : 9} className="py-2">
-                            <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-                              {group.type === "group" ? (
-                                <Layers3 className="h-3.5 w-3.5" />
-                              ) : group.type === "tunnel" ? (
-                                <Network className="h-3.5 w-3.5" />
-                              ) : (
-                                <ArrowRightLeft className="h-3.5 w-3.5" />
-                              )}
-                              <span>{group.label}</span>
-                              <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">{group.rules.length}</Badge>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                        {group.rules.map((rule: any) => {
-                      const supported = isRuleSupported(rule);
-                      const protocolKey = getRuleProtocolKey(rule);
-                      return (
-                      <TableRow key={rule.id} className={!supported ? "opacity-70" : ""} title={!supported ? unsupportedProtocolTitle : undefined}>
-                        <TableCell>
-                          <div className="flex items-center justify-center">
-                            {supported ? renderStatusDot(rule) : <span className="h-2.5 w-2.5 rounded-full bg-destructive/60" />}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <span className="block truncate font-medium" title={rule.name}>{rule.name}</span>
-                          {!supported && (
-                            <span className="mt-1 block text-[11px] text-destructive">
-                              {protocolKey ? FORWARD_PROTOCOL_LABELS[protocolKey] : "该协议"} 当前不支持
-                            </span>
-                          )}
-                          {rule.protocolBlockReason && (
-                            <span className="mt-1 block text-[11px] leading-4 text-destructive">
-                              {rule.protocolBlockReason}
-                            </span>
-                          )}
-                        </TableCell>
-                        {user?.role === "admin" && (
-                          <TableCell>
-                            <span className="block truncate text-sm text-muted-foreground" title={getRuleOwnerName(rule)}>
-                              {getRuleOwnerName(rule)}
-                            </span>
-                          </TableCell>
-                        )}
-                        <TableCell>
-                          <span className="block truncate text-sm text-muted-foreground" title={rule.forwardGroupId ? getForwardGroupName(rule.forwardGroupId) : getRuleEntryHostName(rule)}>
-                            {rule.forwardGroupId ? getForwardGroupName(rule.forwardGroupId) : getRuleEntryHostName(rule)}
-                          </span>
-                        </TableCell>
-                        <TableCell>{renderTransfer(rule)}</TableCell>
-                        <TableCell>{renderRouteBadge(rule)}</TableCell>
-                        <TableCell>
-                          <Badge variant="secondary" className="text-[10px] uppercase">{rule.protocol}</Badge>
-                        </TableCell>
-                        <TableCell>{renderRuleTraffic(rule)}</TableCell>
-                        <TableCell className="text-center">
-                          {supported ? (
-                            <Switch
-                              checked={rule.isEnabled}
-                              onCheckedChange={(checked) => handleToggleRule(rule, checked)}
-                              className="scale-75"
-                            />
-                          ) : (
-                            renderUnsupportedHint(<span className="inline-flex"><Switch checked={false} disabled className="scale-75" /></span>)
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right">{renderRuleActions(rule)}</TableCell>
-                      </TableRow>
-                      );
-                        })}
-                      </Fragment>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-              <div className="p-3 pt-0">
-                <PersistentPagination pagination={rulePagination} itemName="条规则" />
-              </div>
-            </>
-          ) : (rules && rules.length > 0) || hasActiveRuleFilter ? (
-            <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
-              <Filter className="h-10 w-10 mb-3 opacity-30" />
-              <p className="text-base font-medium">没有匹配的规则</p>
-              <p className="text-sm mt-1 text-muted-foreground/60">尝试调整筛选条件</p>
+          </CardContent>
+        </Card>
+      ) : filteredRules.length > 0 ? (
+        <>
+          {viewMode === "card" ? (
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {pagedRules.map((rule: any) => renderRuleCard(rule))}
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
-              <div className="h-16 w-16 rounded-2xl bg-muted/30 flex items-center justify-center mb-4">
-                <ArrowRightLeft className="h-8 w-8 opacity-40" />
+            <>
+              <div className="grid gap-3 sm:hidden">
+                {pagedRules.map((rule: any) => renderRuleCard(rule))}
               </div>
-              <p className="text-lg font-medium">暂无转发规则</p>
-              <p className="text-sm mt-1 text-muted-foreground/60">
-                {canCreateRule
-                  ? "创建转发规则开始端口转发"
-                  : "请先获得可用主机或隧道授权，然后创建转发规则"}
-              </p>
-              {canAdd && canCreateRule && (
-                <Button onClick={openCreate} variant="outline" className="mt-4 gap-2">
-                  <Plus className="h-4 w-4" />
-                  创建第一条规则
-                </Button>
-              )}
-            </div>
+              <Card className="hidden border-border/40 bg-card/60 backdrop-blur-md sm:block">
+                <CardContent className="p-0">
+                  <div className="overflow-x-auto">
+                    <Table className={user?.role === "admin" ? "min-w-[1100px] table-fixed" : "min-w-[980px] table-fixed"}>
+                      <TableHeader>
+                        <TableRow className="hover:bg-transparent">
+                          <TableHead className="w-[48px] text-center">状态</TableHead>
+                          <TableHead className="w-[120px]">规则</TableHead>
+                          {user?.role === "admin" && <TableHead className="w-[120px]">用户</TableHead>}
+                          <TableHead className="w-[120px]">主机</TableHead>
+                          <TableHead>转发配置</TableHead>
+                          <TableHead className="w-[150px]">链路</TableHead>
+                          <TableHead className="w-[86px]">协议</TableHead>
+                          <TableHead className="w-[120px]">24h 流量</TableHead>
+                          <TableHead className="w-[76px] text-center">开关</TableHead>
+                          <TableHead className="w-[164px] text-right">操作</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {desktopRuleGroups.map((group) => (
+                          <Fragment key={group.type}>
+                            <TableRow className="border-border/40 bg-muted/35 hover:bg-muted/35">
+                              <TableCell colSpan={user?.role === "admin" ? 10 : 9} className="py-2">
+                                <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                                  {group.type === "group" ? (
+                                    <Layers3 className="h-3.5 w-3.5" />
+                                  ) : group.type === "tunnel" ? (
+                                    <Network className="h-3.5 w-3.5" />
+                                  ) : (
+                                    <ArrowRightLeft className="h-3.5 w-3.5" />
+                                  )}
+                                  <span>{group.label}</span>
+                                  <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">{group.rules.length}</Badge>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                            {group.rules.map((rule: any) => {
+                              const supported = isRuleSupported(rule);
+                              const protocolKey = getRuleProtocolKey(rule);
+                              return (
+                                <TableRow key={rule.id} className={!supported ? "opacity-70" : ""} title={!supported ? unsupportedProtocolTitle : undefined}>
+                                  <TableCell>
+                                    <div className="flex items-center justify-center">
+                                      {supported ? renderStatusDot(rule) : <span className="h-2.5 w-2.5 rounded-full bg-destructive/60" />}
+                                    </div>
+                                  </TableCell>
+                                  <TableCell>
+                                    <span className="block truncate font-medium" title={rule.name}>{rule.name}</span>
+                                    {!supported && (
+                                      <span className="mt-1 block text-[11px] text-destructive">
+                                        {protocolKey ? FORWARD_PROTOCOL_LABELS[protocolKey] : "该协议"} 当前不支持
+                                      </span>
+                                    )}
+                                    {rule.protocolBlockReason && (
+                                      <span className="mt-1 block text-[11px] leading-4 text-destructive">
+                                        {rule.protocolBlockReason}
+                                      </span>
+                                    )}
+                                  </TableCell>
+                                  {user?.role === "admin" && (
+                                    <TableCell>
+                                      <span className="block truncate text-sm text-muted-foreground" title={getRuleOwnerName(rule)}>
+                                        {getRuleOwnerName(rule)}
+                                      </span>
+                                    </TableCell>
+                                  )}
+                                  <TableCell>
+                                    <span className="block truncate text-sm text-muted-foreground" title={rule.forwardGroupId ? getForwardGroupName(rule.forwardGroupId) : getRuleEntryHostName(rule)}>
+                                      {rule.forwardGroupId ? getForwardGroupName(rule.forwardGroupId) : getRuleEntryHostName(rule)}
+                                    </span>
+                                  </TableCell>
+                                  <TableCell>{renderTransfer(rule)}</TableCell>
+                                  <TableCell>{renderRouteBadge(rule)}</TableCell>
+                                  <TableCell>
+                                    <Badge variant="secondary" className="text-[10px] uppercase">{rule.protocol}</Badge>
+                                  </TableCell>
+                                  <TableCell>{renderRuleTraffic(rule)}</TableCell>
+                                  <TableCell className="text-center">
+                                    {supported ? (
+                                      <Switch
+                                        checked={rule.isEnabled}
+                                        onCheckedChange={(checked) => handleToggleRule(rule, checked)}
+                                        className="scale-75"
+                                      />
+                                    ) : (
+                                      renderUnsupportedHint(<span className="inline-flex"><Switch checked={false} disabled className="scale-75" /></span>)
+                                    )}
+                                  </TableCell>
+                                  <TableCell className="text-right">{renderRuleActions(rule)}</TableCell>
+                                </TableRow>
+                              );
+                            })}
+                          </Fragment>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </Card>
+            </>
           )}
-        </CardContent>
-      </Card>
+          <PersistentPagination pagination={rulePagination} itemName="条规则" />
+        </>
+      ) : (
+        <Card className="border-border/40 bg-card/60 backdrop-blur-md">
+          <CardContent className="p-0">
+            {(rules && rules.length > 0) || hasActiveRuleFilter ? (
+              <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+                <Filter className="h-10 w-10 mb-3 opacity-30" />
+                <p className="text-base font-medium">没有匹配的规则</p>
+                <p className="text-sm mt-1 text-muted-foreground/60">尝试调整筛选条件</p>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
+                <div className="h-16 w-16 rounded-2xl bg-muted/30 flex items-center justify-center mb-4">
+                  <ArrowRightLeft className="h-8 w-8 opacity-40" />
+                </div>
+                <p className="text-lg font-medium">暂无转发规则</p>
+                <p className="text-sm mt-1 text-muted-foreground/60">
+                  {canCreateRule
+                    ? "创建转发规则开始端口转发"
+                    : "请先获得可用主机或隧道授权，然后创建转发规则"}
+                </p>
+                {canAdd && canCreateRule && (
+                  <Button onClick={openCreate} variant="outline" className="mt-4 gap-2">
+                    <Plus className="h-4 w-4" />
+                    创建第一条规则
+                  </Button>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {trafficDetailRule && (
         <TcpingDetailDialog

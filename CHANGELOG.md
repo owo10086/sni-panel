@@ -1,5 +1,23 @@
 # Changelog
 
+## [2.3.29] - 2026-05-28
+
+### Added
+
+- Added card/table view switching for tunnel management, forwarding rules, and forwarding groups.
+
+### Fixed
+
+- Fixed settings save buttons flashing through a temporary saving label by keeping button text stable and showing saved status via toast messages.
+- Fixed the first-load and refresh loading spinner animation so it completes smooth rotations.
+- Improved billing and traffic-billing stat card alignment to match the user management layout.
+- Fixed Agent upgrade asset checks to verify Agent binaries from the panel release tag where they are actually published.
+- Clarified the system settings tab boundary with a stronger framed tab strip.
+
+### Changed
+
+- Bumped panel version to 2.3.29 and Agent target version to 2.2.51.
+
 ## [2.3.22] - 2026-05-28
 
 ### Fixed

@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { trpc } from "@/lib/trpc";
 import { CreditCard, Download, Gift, Package, ReceiptText, Shuffle, TicketPercent, Trash2, WalletCards } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ElementType } from "react";
 import { toast } from "sonner";
 
 const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -39,6 +39,73 @@ function discountStatus(code: any) {
   if (code.expiresAt && new Date(code.expiresAt).getTime() <= now) return "已过期";
   if (Number(code.maxUses || 0) > 0 && Number(code.usedCount || 0) >= Number(code.maxUses)) return "已用完";
   return "生效中";
+}
+
+function BillingStatCard({
+  title,
+  value,
+  subtitle,
+  icon: Icon,
+  tone,
+}: {
+  title: string;
+  value: string | number;
+  subtitle?: string;
+  icon: ElementType;
+  tone: string;
+}) {
+  return (
+    <Card className="group relative overflow-hidden border-border/40 bg-card/60 backdrop-blur-md transition-all duration-300 hover:border-border/70">
+      <div className={`absolute inset-0 opacity-[0.04] transition-opacity group-hover:opacity-[0.08] ${tone}`} />
+      <CardContent className="relative p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 space-y-1">
+            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{title}</p>
+            <p className="truncate text-2xl font-bold tracking-tight tabular-nums">{value}</p>
+            {subtitle && <p className="truncate text-xs text-muted-foreground/80">{subtitle}</p>}
+          </div>
+          <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${tone} shadow-sm`}>
+            <Icon className="h-5 w-5 text-white" />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function BillingToggleCard({
+  title,
+  enabled,
+  onCheckedChange,
+  icon: Icon,
+  tone,
+}: {
+  title: string;
+  enabled: boolean;
+  onCheckedChange: (checked: boolean) => void;
+  icon: ElementType;
+  tone: string;
+}) {
+  return (
+    <Card className="group relative overflow-hidden border-border/40 bg-card/60 backdrop-blur-md transition-all duration-300 hover:border-border/70">
+      <div className={`absolute inset-0 opacity-[0.04] transition-opacity group-hover:opacity-[0.08] ${tone}`} />
+      <CardContent className="relative p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 space-y-1">
+            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{title}</p>
+            <p className="text-2xl font-bold tracking-tight">{enabled ? "已开启" : "已关闭"}</p>
+            <p className="truncate text-xs text-muted-foreground/80">入口状态</p>
+          </div>
+          <div className="flex shrink-0 items-center gap-3">
+            <Switch checked={enabled} onCheckedChange={onCheckedChange} />
+            <div className={`hidden h-10 w-10 shrink-0 items-center justify-center rounded-xl shadow-sm sm:flex ${tone}`}>
+              <Icon className="h-5 w-5 text-white" />
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
 }
 
 function normalizeCodeInput(value: string) {
@@ -311,28 +378,42 @@ export default function Billing() {
           <p className="text-sm text-muted-foreground">管理余额、兑换码和折扣码。</p>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-5">
-          <Card><CardHeader className="pb-2"><CardDescription>用户余额总额</CardDescription><CardTitle>{money(totalBalance)}</CardTitle></CardHeader></Card>
-          <Card><CardHeader className="pb-2"><CardDescription>可用兑换码</CardDescription><CardTitle>{activeRedemptionCodes}</CardTitle></CardHeader></Card>
-          <Card><CardHeader className="pb-2"><CardDescription>生效折扣码</CardDescription><CardTitle>{activeDiscountCodes}</CardTitle></CardHeader></Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>用户兑换入口</CardDescription>
-              <CardTitle className="flex items-center justify-between text-base">
-                {featureStatus?.redemptionEnabled ? "已开启" : "已关闭"}
-                <Switch checked={featureStatus?.redemptionEnabled ?? true} onCheckedChange={(redemptionEnabled) => setFeatureStatus.mutate({ redemptionEnabled })} />
-              </CardTitle>
-            </CardHeader>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>购买折扣入口</CardDescription>
-              <CardTitle className="flex items-center justify-between text-base">
-                {featureStatus?.discountEnabled ? "已开启" : "已关闭"}
-                <Switch checked={featureStatus?.discountEnabled ?? true} onCheckedChange={(discountEnabled) => setFeatureStatus.mutate({ discountEnabled })} />
-              </CardTitle>
-            </CardHeader>
-          </Card>
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+          <BillingStatCard
+            title="用户余额总额"
+            value={money(totalBalance)}
+            subtitle={`${users.length} 个用户`}
+            icon={WalletCards}
+            tone="bg-gradient-to-br from-blue-500 to-blue-600"
+          />
+          <BillingStatCard
+            title="可用兑换码"
+            value={activeRedemptionCodes}
+            subtitle="未使用且已启用"
+            icon={Gift}
+            tone="bg-gradient-to-br from-emerald-500 to-emerald-600"
+          />
+          <BillingStatCard
+            title="生效折扣码"
+            value={activeDiscountCodes}
+            subtitle="当前可抵扣"
+            icon={TicketPercent}
+            tone="bg-gradient-to-br from-violet-500 to-violet-600"
+          />
+          <BillingToggleCard
+            title="用户兑换入口"
+            enabled={featureStatus?.redemptionEnabled ?? true}
+            onCheckedChange={(redemptionEnabled) => setFeatureStatus.mutate({ redemptionEnabled })}
+            icon={Gift}
+            tone="bg-gradient-to-br from-amber-500 to-amber-600"
+          />
+          <BillingToggleCard
+            title="购买折扣入口"
+            enabled={featureStatus?.discountEnabled ?? true}
+            onCheckedChange={(discountEnabled) => setFeatureStatus.mutate({ discountEnabled })}
+            icon={TicketPercent}
+            tone="bg-gradient-to-br from-rose-500 to-rose-600"
+          />
         </div>
 
         <Tabs defaultValue="balance">

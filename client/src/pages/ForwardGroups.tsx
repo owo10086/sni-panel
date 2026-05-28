@@ -36,6 +36,8 @@ import {
   CheckCircle2,
   GripVertical,
   Layers3,
+  LayoutGrid,
+  List,
   Loader2,
   Pencil,
   Plus,
@@ -86,6 +88,29 @@ function memberKey(memberType: GroupType, id: number) {
   return `${memberType}-${id}`;
 }
 
+type ForwardGroupViewMode = "card" | "table";
+
+const FORWARD_GROUP_VIEW_MODE_STORAGE_KEY = "forwardx.forwardGroups.viewMode";
+
+function getStoredForwardGroupViewMode(): ForwardGroupViewMode {
+  if (typeof window === "undefined") return "card";
+  try {
+    const value = window.localStorage.getItem(FORWARD_GROUP_VIEW_MODE_STORAGE_KEY);
+    return value === "table" ? "table" : "card";
+  } catch {
+    return "card";
+  }
+}
+
+function storeForwardGroupViewMode(viewMode: ForwardGroupViewMode) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(FORWARD_GROUP_VIEW_MODE_STORAGE_KEY, viewMode);
+  } catch {
+    // Ignore storage failures so the page still works in restricted browsers.
+  }
+}
+
 function ForwardGroupsContent() {
   const utils = trpc.useUtils();
   const { data: groups, isLoading } = trpc.forwardGroups.list.useQuery(undefined, { refetchInterval: 15000 });
@@ -95,6 +120,7 @@ function ForwardGroupsContent() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState<GroupForm>(makeDefaultForm());
   const [dragMemberKey, setDragMemberKey] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<ForwardGroupViewMode>(() => getStoredForwardGroupViewMode());
 
   const hostById = useMemo(() => new Map<number, any>((hosts || []).map((h: any) => [Number(h.id), h])), [hosts]);
   const tunnelById = useMemo(() => new Map<number, any>((tunnels || []).map((t: any) => [Number(t.id), t])), [tunnels]);
@@ -275,6 +301,10 @@ function ForwardGroupsContent() {
   };
 
   const isPending = createMutation.isPending || updateMutation.isPending;
+  const handleViewModeChange = (nextViewMode: ForwardGroupViewMode) => {
+    setViewMode(nextViewMode);
+    storeForwardGroupViewMode(nextViewMode);
+  };
 
   return (
     <div className="space-y-6">
@@ -294,6 +324,24 @@ function ForwardGroupsContent() {
             {runFailoverMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
             检查
           </Button>
+          <div className="hidden items-center overflow-hidden rounded-md border border-border/40 sm:flex">
+            <Button
+              variant={viewMode === "card" ? "secondary" : "ghost"}
+              size="icon"
+              className="h-8 w-8 rounded-none"
+              onClick={() => handleViewModeChange("card")}
+            >
+              <LayoutGrid className="h-4 w-4" />
+            </Button>
+            <Button
+              variant={viewMode === "table" ? "secondary" : "ghost"}
+              size="icon"
+              className="h-8 w-8 rounded-none"
+              onClick={() => handleViewModeChange("table")}
+            >
+              <List className="h-4 w-4" />
+            </Button>
+          </div>
           <Button onClick={openCreate} className="col-span-2 gap-2 sm:col-span-1">
             <Plus className="h-4 w-4" />
             添加转发组
@@ -309,6 +357,83 @@ function ForwardGroupsContent() {
         </Card>
       ) : groups && groups.length > 0 ? (
         <>
+        {viewMode === "card" ? (
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {pagedGroups.map((group: any) => (
+              <Card key={group.id} className="border-border/40 bg-card/60">
+                <CardContent className="space-y-3 p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="flex min-w-0 flex-wrap items-center gap-2">
+                        <p className="min-w-0 truncate font-medium">{group.name}</p>
+                        <Badge variant="outline">{group.groupType === "tunnel" ? "隧道组" : "主机组"}</Badge>
+                      </div>
+                      <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{group.lastMessage || "等待检查"}</p>
+                    </div>
+                    <div className="shrink-0">{groupStatusBadge(group)}</div>
+                  </div>
+
+                  <div className="space-y-2 rounded-md bg-muted/25 p-2.5">
+                    <div className="text-xs text-muted-foreground">成员优先级</div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {(group.members || []).length > 0 ? (group.members || []).map((member: any, index: number) => (
+                        <span
+                          key={member.id}
+                          className={`inline-flex max-w-full items-center gap-1 rounded border px-1.5 py-0.5 text-[11px] ${
+                            Number(group.activeMemberId) === Number(member.id)
+                              ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-600"
+                              : "border-border bg-muted/20 text-muted-foreground"
+                          }`}
+                          title={`${member.healthStatus || "unknown"}${member.lastLatencyMs ? ` / ${member.lastLatencyMs}ms` : ""}`}
+                        >
+                          {member.healthStatus === "healthy" ? (
+                            <CheckCircle2 className="h-3 w-3 shrink-0" />
+                          ) : member.healthStatus === "unhealthy" ? (
+                            <XCircle className="h-3 w-3 shrink-0" />
+                          ) : null}
+                          <span className="truncate">{index + 1}. {memberLabel(member)}</span>
+                        </span>
+                      )) : (
+                        <span className="text-xs text-muted-foreground">暂无成员</span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="min-w-0 rounded-md border border-border/40 bg-background/35 p-2">
+                      <p className="text-muted-foreground">DDNS</p>
+                      <p className="mt-1 truncate">{group.domain || "未配置"}</p>
+                    </div>
+                    <div className="min-w-0 rounded-md border border-border/40 bg-background/35 p-2">
+                      <p className="text-muted-foreground">引用规则</p>
+                      <p className="mt-1">{Number(group.templateRuleCount || 0)}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end gap-1 border-t border-border/40 pt-2">
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => syncMutation.mutate({ id: group.id })}>
+                      <RefreshCw className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(group)}>
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-destructive hover:text-destructive"
+                      onClick={() => {
+                        if (confirm("确定删除此转发组吗？引用它的转发规则会同步清理。")) deleteMutation.mutate({ id: group.id });
+                      }}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <>
           <div className="grid gap-3 sm:hidden">
             {pagedGroups.map((group: any) => (
               <Card key={group.id} className="border-border/40 bg-card/60">
@@ -463,6 +588,8 @@ function ForwardGroupsContent() {
             </div>
           </CardContent>
         </Card>
+          </>
+        )}
           <PersistentPagination pagination={groupPagination} itemName="个转发组" />
         </>
       ) : (

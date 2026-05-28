@@ -8,8 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { trpc } from "@/lib/trpc";
-import { Coins, Plus, Server, Trash2, Route } from "lucide-react";
-import { useMemo, useState } from "react";
+import { Coins, Gauge, Plus, ReceiptText, Server, Trash2, Route } from "lucide-react";
+import { useMemo, useState, type ElementType } from "react";
 import { toast } from "sonner";
 
 function money(cents?: number | null) {
@@ -22,6 +22,38 @@ function formatBytes(bytes: number | string | null | undefined) {
   const units = ["B", "KB", "MB", "GB", "TB", "PB"];
   const index = Math.min(units.length - 1, Math.floor(Math.log(num) / Math.log(1024)));
   return `${parseFloat((num / 1024 ** index).toFixed(index === 0 ? 0 : 2))} ${units[index]}`;
+}
+
+function TrafficBillingStatCard({
+  title,
+  value,
+  subtitle,
+  icon: Icon,
+  tone,
+}: {
+  title: string;
+  value: string | number;
+  subtitle?: string;
+  icon: ElementType;
+  tone: string;
+}) {
+  return (
+    <Card className="group relative overflow-hidden border-border/40 bg-card/60 backdrop-blur-md transition-all duration-300 hover:border-border/70">
+      <div className={`absolute inset-0 opacity-[0.04] transition-opacity group-hover:opacity-[0.08] ${tone}`} />
+      <CardContent className="relative p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 space-y-1">
+            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{title}</p>
+            <p className="truncate text-2xl font-bold tracking-tight tabular-nums">{value}</p>
+            {subtitle && <p className="truncate text-xs text-muted-foreground/80">{subtitle}</p>}
+          </div>
+          <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${tone} shadow-sm`}>
+            <Icon className="h-5 w-5 text-white" />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
 }
 
 export default function TrafficBilling() {
@@ -90,9 +122,27 @@ export default function TrafficBilling() {
         </div>
 
         <div className="grid gap-4 md:grid-cols-3">
-          <Card><CardHeader className="pb-2"><CardDescription>累计扣费</CardDescription><CardTitle>{money(totalCharged)}</CardTitle></CardHeader></Card>
-          <Card><CardHeader className="pb-2"><CardDescription>已计费流量</CardDescription><CardTitle>{totalGb} GB</CardTitle></CardHeader></Card>
-          <Card><CardHeader className="pb-2"><CardDescription>计费资源</CardDescription><CardTitle>{data?.configs?.length || 0}</CardTitle></CardHeader></Card>
+          <TrafficBillingStatCard
+            title="累计扣费"
+            value={money(totalCharged)}
+            subtitle="历史扣费合计"
+            icon={Coins}
+            tone="bg-gradient-to-br from-blue-500 to-blue-600"
+          />
+          <TrafficBillingStatCard
+            title="已计费流量"
+            value={`${totalGb} GB`}
+            subtitle="扣费记录累计"
+            icon={Gauge}
+            tone="bg-gradient-to-br from-emerald-500 to-emerald-600"
+          />
+          <TrafficBillingStatCard
+            title="计费资源"
+            value={data?.configs?.length || 0}
+            subtitle="已配置资源"
+            icon={ReceiptText}
+            tone="bg-gradient-to-br from-violet-500 to-violet-600"
+          />
         </div>
 
         <Card>

@@ -27,8 +27,9 @@ function githubRepoParts(repoUrl: string) {
   return { owner: match[1], repo: match[2].replace(/\.git$/i, "") };
 }
 
-async function assertAgentReleaseAssetsReady(version: string) {
-  const tag = `v${normalizeVersion(version)}`;
+async function assertAgentReleaseAssetsReady(agentVersion: string, releaseVersion = APP_VERSION) {
+  const normalizedAgentVersion = normalizeVersion(agentVersion);
+  const tag = `v${normalizeVersion(releaseVersion)}`;
   const { owner, repo } = githubRepoParts(REPO_URL);
   const url = `https://api.github.com/repos/${owner}/${repo}/releases/tags/${encodeURIComponent(tag)}`;
   const res = await fetch(`${url}?_=${Date.now()}`, {
@@ -41,10 +42,10 @@ async function assertAgentReleaseAssetsReady(version: string) {
     },
   });
   if (res.status === 404) {
-    throw new Error(`Agent ${tag} Release 尚未生成，可能仍在构建中，请稍后再试`);
+    throw new Error(`Agent v${normalizedAgentVersion} 所需的 Release ${tag} 尚未生成，可能仍在构建中，请稍后再试`);
   }
   if (!res.ok) {
-    throw new Error(`无法验证 Agent ${tag} Release 资产：${res.status} ${res.statusText}`);
+    throw new Error(`无法验证 Release ${tag} 的 Agent 资产：${res.status} ${res.statusText}`);
   }
   const release = await res.json() as { assets?: Array<{ name?: string; state?: string; size?: number }> };
   const assets = new Map((release.assets || []).map((asset) => [asset.name || "", asset]));
@@ -53,7 +54,7 @@ async function assertAgentReleaseAssetsReady(version: string) {
     return !asset || asset.state !== "uploaded" || Number(asset.size || 0) <= 0;
   });
   if (missing.length > 0) {
-    throw new Error(`Agent ${tag} 资产还未构建完成，请稍后再试：${missing.join(", ")}`);
+    throw new Error(`Agent v${normalizedAgentVersion} 所需的 Release ${tag} 资产还未构建完成，请稍后再试：${missing.join(", ")}`);
   }
 }
 

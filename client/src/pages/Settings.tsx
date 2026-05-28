@@ -473,8 +473,9 @@ function SettingsContent() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <div className="-mx-1 overflow-x-auto px-1 pb-1 sm:mx-0 sm:overflow-visible sm:px-0 sm:pb-0">
-          <TabsList className="grid h-auto w-full grid-cols-2 gap-2 rounded-lg border border-border/50 bg-muted/20 p-1.5 sm:inline-flex sm:w-auto sm:grid-cols-none sm:gap-1 sm:border-border/30 sm:bg-muted/30 sm:p-1">
+        <div className="-mx-1 rounded-xl border border-border/60 bg-card/70 p-2 shadow-sm backdrop-blur-md sm:mx-0 sm:inline-block">
+          <div className="overflow-x-auto pb-1 sm:overflow-visible sm:pb-0">
+          <TabsList className="grid h-auto w-full grid-cols-2 gap-2 rounded-lg border border-border/50 bg-muted/35 p-1.5 sm:inline-flex sm:w-auto sm:grid-cols-none sm:gap-1 sm:p-1">
           <TabsTrigger value="tokens" className="min-h-10 min-w-0 justify-center gap-1.5 rounded-md border border-border/60 bg-background/70 px-3 text-xs shadow-sm data-[state=active]:border-primary/40 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-md sm:min-h-0 sm:border-0 sm:bg-transparent sm:shadow-none sm:data-[state=active]:border-transparent sm:data-[state=active]:shadow-sm sm:text-sm">
             <Key className="h-3.5 w-3.5" />
             Token管理
@@ -496,6 +497,7 @@ function SettingsContent() {
             面板日志
           </TabsTrigger>
           </TabsList>
+          </div>
         </div>
 
         {/* Token Management Tab */}
@@ -900,7 +902,7 @@ function SettingsContent() {
               }
               disabled={createTokenMutation.isPending}
             >
-              {createTokenMutation.isPending ? "创建中..." : "创建"}
+              创建
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -977,7 +979,7 @@ function SettingsContent() {
                 description: editDescription.trim() || null,
               })}
             >
-              {updateTokenMutation.isPending ? "保存中..." : "保存"}
+              保存
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1013,7 +1015,7 @@ function SettingsContent() {
                 deleteTokenMutation.mutate({ id });
               }}
             >
-              {deleteTokenMutation.isPending ? "删除中..." : "确认删除"}
+              确认删除
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1374,7 +1376,7 @@ function TelegramBotSettingsCard() {
             </div>
             <div className="flex flex-wrap gap-2">
               <Button onClick={handleSaveTelegram} disabled={updateSettingsMutation.isPending}>
-                {updateSettingsMutation.isPending ? "保存中..." : "保存 Telegram 配置"}
+                保存 Telegram 配置
               </Button>
               <Button
                 variant="outline"
@@ -1385,7 +1387,7 @@ function TelegramBotSettingsCard() {
                   !settings?.telegram?.enabled
                 }
               >
-                {testTelegramMutation.isPending ? "发送中..." : "测试发送"}
+                测试发送
               </Button>
               {settings?.telegram?.tokenSource === "database" && (
                 <Button
@@ -1433,7 +1435,7 @@ function TelegramBotSettingsCard() {
             取消
           </Button>
           <Button variant="destructive" onClick={handleClearTelegramToken} disabled={updateSettingsMutation.isPending}>
-            {updateSettingsMutation.isPending ? "删除中..." : "确认删除"}
+            确认删除
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -1849,7 +1851,7 @@ function SystemInfoSection() {
               onClick={handleSavePanelUrl}
               disabled={isSavingSetting("panelUrl")}
             >
-              {isSavingSetting("panelUrl") ? "保存中..." : "保存"}
+              保存
             </Button>
           </div>
           <p className="text-xs text-muted-foreground">
@@ -1884,7 +1886,7 @@ function SystemInfoSection() {
               onClick={openWebPortConfirm}
               disabled={!settings?.webPortManagement?.enabled || updateWebPortMutation.isPending}
             >
-              {updateWebPortMutation.isPending ? "重启中..." : "修改端口"}
+              修改端口
             </Button>
           </div>
           <p className="text-xs text-muted-foreground">
@@ -1924,7 +1926,7 @@ function SystemInfoSection() {
           </div>
           <div className="flex justify-end">
             <Button onClick={handleSaveRegistration} disabled={isSavingSetting("registration")}>
-              {isSavingSetting("registration") ? "保存中..." : "保存注册设置"}
+              保存注册设置
             </Button>
           </div>
         </CardContent>
@@ -1981,7 +1983,7 @@ function SystemInfoSection() {
           </div>
           <div className="flex justify-end">
             <Button onClick={handleSaveTwoFactor} disabled={isSavingSetting("twoFactor")}>
-              {isSavingSetting("twoFactor") ? "保存中..." : "保存双重验证设置"}
+              保存双重验证设置
             </Button>
           </div>
         </CardContent>
@@ -2076,7 +2078,7 @@ function SystemInfoSection() {
 
           <div className="flex justify-end">
             <Button onClick={handleSaveDdns} disabled={isSavingSetting("ddns")}>
-              {isSavingSetting("ddns") ? "保存中..." : "保存 DDNS 配置"}
+              保存 DDNS 配置
             </Button>
           </div>
         </CardContent>
@@ -2177,7 +2179,7 @@ function SystemInfoSection() {
               取消
             </Button>
             <Button onClick={handleSaveForwardProtocols} disabled={isSavingSetting("forwardProtocols")}>
-              {isSavingSetting("forwardProtocols") ? "保存中..." : "保存协议开关"}
+              保存协议开关
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -2248,7 +2250,7 @@ function SystemInfoSection() {
             )}
             <div className="flex justify-end">
               <Button variant="outline" onClick={handleSaveHomepage} disabled={isSavingSetting("homepage")}>
-                {isSavingSetting("homepage") ? "保存中..." : "保存首页设置"}
+                保存首页设置
               </Button>
             </div>
           </CardContent>
@@ -2325,7 +2327,7 @@ function SystemInfoSection() {
               </Alert>
             )}
             <Button onClick={() => createMigrationCodeMutation.mutate()} disabled={createMigrationCodeMutation.isPending}>
-              {createMigrationCodeMutation.isPending ? "生成中..." : "生成迁移码"}
+              生成迁移码
             </Button>
           </CardContent>
         </Card>
@@ -2403,7 +2405,7 @@ function SystemInfoSection() {
               className="gap-2"
             >
               <RefreshCw className={`h-4 w-4 ${checkingUpdate ? "forwardx-icon-spin" : ""}`} />
-              {checkingUpdate ? "检查中..." : "检查更新"}
+              检查更新
             </Button>
             <Button
               onClick={() => {
@@ -2425,7 +2427,7 @@ function SystemInfoSection() {
               className="gap-2"
             >
               <Rocket className="h-4 w-4" />
-              {isUpgradeRunning ? "升级中..." : isDockerDeployment ? "查看升级脚本" : "升级并重启"}
+              {isDockerDeployment ? "查看升级脚本" : "升级并重启"}
             </Button>
             {updateInfo?.releaseUrl && (
               <Button variant="ghost" asChild className="gap-2">

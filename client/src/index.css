@@ -157,10 +157,8 @@
   .boot-spinner {
     width: 32px;
     height: 32px;
-    border: 2px solid rgba(37, 99, 235, 0.18);
-    border-top-color: #2563eb;
-    border-radius: 999px;
-    animation: forwardx-boot-spin 0.85s linear infinite;
+    display: block;
+    overflow: visible;
   }
 
   .forwardx-spinner {
@@ -183,6 +181,9 @@
   }
 
   @keyframes forwardx-boot-spin {
+    from {
+      transform: rotate(0deg);
+    }
     to {
       transform: rotate(360deg);
     }
