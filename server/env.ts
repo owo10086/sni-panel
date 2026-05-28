@@ -11,6 +11,9 @@ export const ENV = {
   databaseType: process.env.DATABASE_TYPE ?? process.env.DB_TYPE ?? "",
   databaseConfigPath: process.env.DATABASE_CONFIG_PATH ?? process.env.DB_CONFIG_PATH ?? "/data/database.json",
   sqlitePath: process.env.SQLITE_PATH ?? "/data/forwardx.db",
+  port: Number.parseInt(process.env.PORT || "3000", 10),
+  portConfigPath: process.env.FORWARDX_PORT_CONFIG_PATH ?? "",
+  portManagement: process.env.FORWARDX_PORT_MANAGEMENT ?? "",
   // 管理后台一键升级命令。为空时只允许检查更新，不执行升级。
   // 执行时会注入 FORWARDX_TARGET_VERSION / FORWARDX_CURRENT_VERSION / FORWARDX_REPO_URL。
   upgradeCommand: process.env.FORWARDX_UPGRADE_COMMAND ?? "",

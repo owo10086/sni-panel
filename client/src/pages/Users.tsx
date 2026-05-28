@@ -137,6 +137,8 @@ function UsersContent() {
   const [expiresAtInput, setExpiresAtInput] = useState("");
   const [trafficAutoReset, setTrafficAutoReset] = useState(false);
   const [trafficResetDay, setTrafficResetDay] = useState(1);
+  const [addonSubscriptionId, setAddonSubscriptionId] = useState("");
+  const [addonTrafficGB, setAddonTrafficGB] = useState("");
   const [maxRules, setMaxRules] = useState(0);
   const [maxPorts, setMaxPorts] = useState(0);
   const [maxConnections, setMaxConnections] = useState(0);
@@ -166,6 +168,10 @@ function UsersContent() {
   );
   const { data: userTrafficBillingPerms } = trpc.users.getTrafficBillingPermissions.useQuery(
     { userId: trafficUserId! },
+    { enabled: showTrafficSettings && !!trafficUserId }
+  );
+  const { data: trafficUserSubscriptions = [] } = trpc.plans.subscriptions.useQuery(
+    { userId: trafficUserId || undefined },
     { enabled: showTrafficSettings && !!trafficUserId }
   );
   const updateHostPermsMutation = trpc.users.setHostPermissions.useMutation({
@@ -307,6 +313,16 @@ function UsersContent() {
     onError: (err) => toast.error(err.message || "充值失败"),
   });
 
+  const adminAddTrafficAddonMutation = trpc.billing.adminAddTrafficAddon.useMutation({
+    onSuccess: () => {
+      utils.users.list.invalidate();
+      utils.plans.subscriptions.invalidate();
+      toast.success("本周期附加流量已生效");
+      setAddonTrafficGB("");
+    },
+    onError: (err) => toast.error(err.message || "附加流量失败"),
+  });
+
   const adminCount = useMemo(() => users?.filter((u) => u.role === "admin").length ?? 0, [users]);
   const userPagination = usePersistentPagination(users || [], {
     storageKey: "forwardx.users.page",
@@ -428,6 +444,8 @@ function UsersContent() {
     setAllowedTunnelIds([]);
     setTrafficBillingHostIds([]);
     setTrafficBillingTunnelIds([]);
+    setAddonSubscriptionId("");
+    setAddonTrafficGB("");
     setShowTrafficSettings(true);
   };
 
@@ -488,6 +506,19 @@ function UsersContent() {
     adminRechargeMutation.mutate({ userId: rechargeUserId, amountCents, description: "用户管理手动充值" });
   };
 
+  const handleAdminAddTrafficAddon = () => {
+    if (!trafficUserId) return;
+    const trafficBytes = parseTrafficInputGB(addonTrafficGB);
+    if (trafficBytes <= 0) return toast.error("请输入大于 0 的附加流量");
+    const selectedSubscriptionId = addonSubscriptionId || (activeTrafficSubscriptions[0]?.id ? String(activeTrafficSubscriptions[0].id) : "");
+    adminAddTrafficAddonMutation.mutate({
+      userId: trafficUserId,
+      trafficBytes,
+      subscriptionId: selectedSubscriptionId ? Number(selectedSubscriptionId) : undefined,
+      description: "管理员手动附加本周期流量",
+    });
+  };
+
   const toggleTunnelPermission = (tunnelId: number) => {
     setAllowedTunnelIds(prev =>
       prev.includes(tunnelId) ? prev.filter(id => id !== tunnelId) : [...prev, tunnelId]
@@ -509,6 +540,8 @@ function UsersContent() {
   const hostNameById = (hostId: number) => allHosts?.find((h: any) => h.id === hostId)?.name || `#${hostId}`;
   const billableHostIds = new Set((trafficBillingConfigs?.configs || []).filter((item: any) => item.resourceType === "host" && item.enabled).map((item: any) => Number(item.resourceId)));
   const billableTunnelIds = new Set((trafficBillingConfigs?.configs || []).filter((item: any) => item.resourceType === "tunnel" && item.enabled).map((item: any) => Number(item.resourceId)));
+  const activeTrafficSubscriptions = (trafficUserSubscriptions as any[]).filter((sub: any) => sub.status === "active" && Number(sub.trafficLimit || 0) > 0);
+  const selectedAddonSubscriptionId = addonSubscriptionId || (activeTrafficSubscriptions[0]?.id ? String(activeTrafficSubscriptions[0].id) : "");
 
   return (
     <div className="space-y-6">
@@ -1366,6 +1399,53 @@ function UsersContent() {
                   </div>
                 </div>
                 <p className="text-xs text-muted-foreground">填 0 表示不限速。保存后 Agent 刷新隧道配置时生效。</p>
+              </div>
+
+              <Separator />
+
+              <div className="space-y-3 rounded-lg border border-border/50 bg-muted/20 p-3">
+                <div className="space-y-1">
+                  <Label className="flex items-center gap-1.5 text-sm">
+                    <WalletCards className="h-3.5 w-3.5" />
+                    本周期附加流量
+                  </Label>
+                  <p className="text-xs text-muted-foreground">附加流量只在当前套餐流量周期内有效，下次周期重置后自动失效。</p>
+                </div>
+                <div className="grid gap-2 sm:grid-cols-[1fr_120px]">
+                  <Select value={selectedAddonSubscriptionId} onValueChange={setAddonSubscriptionId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder={activeTrafficSubscriptions.length ? "选择套餐" : "无生效流量套餐"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {activeTrafficSubscriptions.map((sub: any) => (
+                        <SelectItem key={sub.id} value={String(sub.id)}>
+                          {sub.planName || `套餐 #${sub.planId}`} · {formatBytes(sub.trafficLimit)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      inputMode="decimal"
+                      min={0}
+                      step="0.01"
+                      value={addonTrafficGB}
+                      onChange={(e) => setAddonTrafficGB(e.target.value)}
+                      placeholder="50"
+                    />
+                    <span className="text-xs text-muted-foreground">GB</span>
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={handleAdminAddTrafficAddon}
+                  disabled={!trafficUserId || activeTrafficSubscriptions.length === 0 || adminAddTrafficAddonMutation.isPending}
+                >
+                  {adminAddTrafficAddonMutation.isPending ? "附加中..." : "手动附加流量"}
+                </Button>
               </div>
 
               <Separator />

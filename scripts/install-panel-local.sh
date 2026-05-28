@@ -7,6 +7,66 @@ SERVICE_NAME="${FORWARDX_SERVICE_NAME:-forwardx-panel}"
 REPO_URL="${FORWARDX_REPO_URL:-https://github.com/poouo/Forwardx.git}"
 PORT="${PORT:-3000}"
 
+valid_port() {
+  local port="$1"
+  [[ "$port" =~ ^[0-9]+$ ]] && [ "$port" -ge 1 ] && [ "$port" -le 65535 ]
+}
+
+get_env_value() {
+  local key="$1"
+  local file="$APP_DIR/.env"
+  if [ ! -f "$file" ]; then
+    return 0
+  fi
+  grep -E "^${key}=" "$file" | tail -1 | sed -E "s/^${key}=//; s/^\"//; s/\"$//"
+}
+
+read_install_port() {
+  local default_port="${PORT:-3000}"
+  local input=""
+
+  if ! valid_port "$default_port"; then
+    default_port="3000"
+  fi
+
+  if [ ! -r /dev/tty ] || [ ! -w /dev/tty ]; then
+    PORT="$default_port"
+    echo "[信息] 非交互环境，使用默认 Web 端口：$PORT"
+    return
+  fi
+
+  while true; do
+    printf "请输入 Web 服务监听端口 [默认 %s]: " "$default_port" > /dev/tty
+    IFS= read -r input < /dev/tty || input=""
+    input="${input//[[:space:]]/}"
+    if [ -z "$input" ]; then
+      PORT="$default_port"
+      return
+    fi
+    if valid_port "$input"; then
+      PORT="$input"
+      return
+    fi
+    echo "[错误] 端口必须是 1-65535 的数字，请重新输入。" > /dev/tty
+  done
+}
+
+resolve_runtime_env() {
+  local existing_port existing_jwt
+  existing_port="$(get_env_value PORT || true)"
+  existing_jwt="$(get_env_value JWT_SECRET || true)"
+
+  if [ -n "$existing_port" ] && valid_port "$existing_port"; then
+    PORT="$existing_port"
+  elif ! valid_port "$PORT"; then
+    PORT="3000"
+  fi
+
+  if [ -z "${JWT_SECRET:-}" ] && [ -n "$existing_jwt" ]; then
+    JWT_SECRET="$existing_jwt"
+  fi
+}
+
 require_root() {
   if [ "$(id -u)" != "0" ]; then
     echo "[错误] 请使用 root 权限运行"
@@ -103,6 +163,8 @@ DATABASE_CONFIG_PATH=$APP_DIR/data/database.json
 SQLITE_PATH=$APP_DIR/data/forwardx.db
 MYSQL_CONFIG_PATH=$APP_DIR/data/mysql.json
 JWT_SECRET=$jwt_secret
+FORWARDX_PORT_CONFIG_PATH=$APP_DIR/.env
+FORWARDX_PORT_MANAGEMENT=local
 FORWARDX_UPGRADE_COMMAND="/bin/bash $APP_DIR/scripts/install-panel-local.sh upgrade"
 EOF
 }
@@ -131,6 +193,7 @@ EOF
 
 install_panel() {
   require_root
+  read_install_port
   install_deps
   sync_source
   build_panel
@@ -143,6 +206,7 @@ install_panel() {
 
 upgrade_panel() {
   require_root
+  resolve_runtime_env
   install_deps
   sync_source
   build_panel

@@ -61,6 +61,7 @@ import {
   Cloud,
   UserPlus,
   Server,
+  Wifi,
 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useRef, useState, useEffect } from "react";
@@ -1445,6 +1446,11 @@ type SystemSettingsSaveKey =
   | "ddns"
   | "forwardProtocols";
 
+function isValidWebPort(value: string | number) {
+  const port = Math.floor(Number(value));
+  return Number.isFinite(port) && port >= 1 && port <= 65535;
+}
+
 function SystemInfoSection() {
   const utils = trpc.useUtils();
   const { data: settings, isLoading } = trpc.system.getSettings.useQuery();
@@ -1456,6 +1462,9 @@ function SystemInfoSection() {
     refetchInterval: 1000,
   });
   const [panelUrlInput, setPanelUrlInput] = useState("");
+  const [webPortInput, setWebPortInput] = useState("");
+  const [showWebPortConfirm, setShowWebPortConfirm] = useState(false);
+  const [webPortCountdown, setWebPortCountdown] = useState(5);
   const [registrationEnabled, setRegistrationEnabled] = useState(true);
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
   const [homepageEnabled, setHomepageEnabled] = useState(true);
@@ -1494,6 +1503,7 @@ function SystemInfoSection() {
   useEffect(() => {
     if (settings) {
       setPanelUrlInput(settings.panelPublicUrl || "");
+      setWebPortInput(String(settings.webPort || 3000));
       setRegistrationEnabled(settings.registrationEnabled ?? true);
       setTwoFactorEnabled(!!settings.twoFactorEnabled);
       setHomepageEnabled(settings.homepageEnabled ?? true);
@@ -1508,6 +1518,21 @@ function SystemInfoSection() {
       setDdnsWebhookHeaders(settings.ddns?.webhookHeaders || "");
     }
   }, [settings]);
+
+  useEffect(() => {
+    if (!showWebPortConfirm) return;
+    setWebPortCountdown(5);
+    const timer = window.setInterval(() => {
+      setWebPortCountdown((value) => {
+        if (value <= 1) {
+          window.clearInterval(timer);
+          return 0;
+        }
+        return value - 1;
+      });
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [showWebPortConfirm]);
 
   useEffect(() => {
     setMigrationCode(currentMigrationCode || null);
@@ -1541,6 +1566,19 @@ function SystemInfoSection() {
     onSettled: () => setSavingSetting(null),
   });
 
+  const updateWebPortMutation = trpc.system.updateWebPort.useMutation({
+    onSuccess: (result) => {
+      utils.system.getSettings.invalidate();
+      if (result.restartScheduled) {
+        toast.success(`Web 端口已修改为 ${result.port}，服务正在重启`);
+      } else {
+        toast.info("Web 端口未变化");
+      }
+      setShowWebPortConfirm(false);
+    },
+    onError: (err) => toast.error(err.message || "修改 Web 端口失败"),
+  });
+
   const saveSystemSettings = (
     key: SystemSettingsSaveKey,
     payload: Parameters<typeof updateSettingsMutation.mutate>[0],
@@ -1561,6 +1599,27 @@ function SystemInfoSection() {
       return;
     }
     saveSystemSettings("panelUrl", { panelPublicUrl: v });
+  };
+
+  const openWebPortConfirm = () => {
+    const port = Math.floor(Number(webPortInput));
+    if (!isValidWebPort(webPortInput)) {
+      toast.error("端口必须是 1-65535 的数字");
+      return;
+    }
+    if (port === Number(settings?.webPort || 3000)) {
+      toast.info("端口未变化");
+      return;
+    }
+    setShowWebPortConfirm(true);
+  };
+
+  const confirmWebPortChange = () => {
+    if (!isValidWebPort(webPortInput)) {
+      toast.error("端口必须是 1-65535 的数字");
+      return;
+    }
+    updateWebPortMutation.mutate({ port: Math.floor(Number(webPortInput)), confirmed: true });
   };
 
   const handleSaveRegistration = () => {
@@ -1762,6 +1821,50 @@ function SystemInfoSection() {
       <Card className="border-border/40 bg-card/60 backdrop-blur-md">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
+            <Wifi className="h-4 w-4 text-primary" />
+            Web 服务监听端口
+          </CardTitle>
+          <CardDescription>
+            修改本地部署面板的 Web 访问端口。
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Input
+              type="number"
+              inputMode="numeric"
+              min={1}
+              max={65535}
+              value={webPortInput}
+              onChange={(e) => setWebPortInput(e.target.value.replace(/\D/g, "").slice(0, 5))}
+              disabled={!settings?.webPortManagement?.enabled}
+              className="flex-1"
+            />
+            <Button
+              onClick={openWebPortConfirm}
+              disabled={!settings?.webPortManagement?.enabled || updateWebPortMutation.isPending}
+            >
+              {updateWebPortMutation.isPending ? "重启中..." : "修改端口"}
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            当前监听端口：{settings?.webPort || 3000}。修改后服务会重启，请使用新端口访问后台。
+          </p>
+          {!settings?.webPortManagement?.enabled && (
+            <Alert>
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>当前部署方式不支持后台修改端口</AlertTitle>
+              <AlertDescription>
+                Docker 用户请自行配置端口映射；非本地安装脚本部署时请修改运行环境中的 PORT。
+              </AlertDescription>
+            </Alert>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card className="border-border/40 bg-card/60 backdrop-blur-md">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
             <UserPlus className="h-4 w-4 text-primary" />
             用户注册
           </CardTitle>
@@ -1786,6 +1889,35 @@ function SystemInfoSection() {
           </div>
         </CardContent>
       </Card>
+
+      <Dialog open={showWebPortConfirm} onOpenChange={setShowWebPortConfirm}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-500" />
+              确认修改 Web 端口
+            </DialogTitle>
+            <DialogDescription>
+              即将把 Web 服务监听端口修改为 {webPortInput || "-"}，确认后服务会重启。
+            </DialogDescription>
+          </DialogHeader>
+          <Alert>
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>请先确认安全组和防火墙已放行新端口</AlertTitle>
+            <AlertDescription>
+              如果新端口未放行，服务重启后可能无法通过浏览器访问后台。
+            </AlertDescription>
+          </Alert>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowWebPortConfirm(false)} disabled={updateWebPortMutation.isPending}>
+              取消
+            </Button>
+            <Button onClick={confirmWebPortChange} disabled={webPortCountdown > 0 || updateWebPortMutation.isPending}>
+              {webPortCountdown > 0 ? `确认修改（${webPortCountdown}s）` : "确认并重启"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Card className="border-border/40 bg-card/60 backdrop-blur-md">
         <CardHeader>

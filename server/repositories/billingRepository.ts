@@ -1,5 +1,5 @@
 ﻿import crypto from "crypto";
-import { and, asc, desc, eq, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import {
   balanceTransactions, InsertBalanceTransaction,
   discountCodePlans,
@@ -10,7 +10,9 @@ import {
   subscriptionPlans, InsertSubscriptionPlan,
   subscriptionPlanForwardGroups,
   subscriptionPlanHosts,
+  subscriptionPlanTrafficAddons,
   subscriptionPlanTunnels,
+  userTrafficAddons,
   userSubscriptions, InsertUserSubscription,
   users,
 } from "../../drizzle/schema";
@@ -80,12 +82,37 @@ async function getPlanForwardGroupIds(planId: number): Promise<number[]> {
   return rows.map(r => Number(r.forwardGroupId)).filter(Boolean);
 }
 
+async function getPlanTrafficAddons(planId: number, includeInactive = true) {
+  const db = await getDb();
+  if (!db) return [];
+  const conds: any[] = [eq(subscriptionPlanTrafficAddons.planId, planId)];
+  if (!includeInactive) conds.push(eq(subscriptionPlanTrafficAddons.isActive, true));
+  return db
+    .select()
+    .from(subscriptionPlanTrafficAddons)
+    .where(and(...conds))
+    .orderBy(asc(subscriptionPlanTrafficAddons.sortOrder), asc(subscriptionPlanTrafficAddons.priceCents));
+}
+
+function normalizeTrafficAddons(addons: any[] = []) {
+  return addons
+    .map((addon, index) => ({
+      trafficBytes: Math.max(0, Math.floor(Number(addon?.trafficBytes || 0))),
+      priceCents: Math.max(0, Math.floor(Number(addon?.priceCents || 0))),
+      isActive: addon?.isActive !== false,
+      sortOrder: Math.max(0, Math.floor(Number(addon?.sortOrder ?? index))),
+    }))
+    .filter((addon) => addon.trafficBytes > 0)
+    .slice(0, 20);
+}
+
 async function attachPlanResources<T extends { id: number }>(plans: T[]) {
   return Promise.all(plans.map(async (plan) => ({
     ...plan,
     hostIds: await getPlanHostIds(plan.id),
     tunnelIds: await getPlanTunnelIds(plan.id),
     forwardGroupIds: await getPlanForwardGroupIds(plan.id),
+    trafficAddons: await getPlanTrafficAddons(plan.id),
   })));
 }
 
@@ -106,15 +133,16 @@ export async function getSubscriptionPlanById(id: number) {
   return (await attachPlanResources([rows[0]]))[0];
 }
 
-export async function createSubscriptionPlan(data: InsertSubscriptionPlan, hostIds: number[], tunnelIds: number[], forwardGroupIds: number[] = []) {
+export async function createSubscriptionPlan(data: InsertSubscriptionPlan, hostIds: number[], tunnelIds: number[], forwardGroupIds: number[] = [], trafficAddons: any[] = []) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   const id = await insertAndGetId("subscription_plans", data as any);
   await setSubscriptionPlanResources(id, hostIds, tunnelIds, forwardGroupIds);
+  await setSubscriptionPlanTrafficAddons(id, trafficAddons);
   return getSubscriptionPlanById(id);
 }
 
-export async function updateSubscriptionPlan(id: number, data: Partial<InsertSubscriptionPlan>, hostIds?: number[], tunnelIds?: number[], forwardGroupIds?: number[]) {
+export async function updateSubscriptionPlan(id: number, data: Partial<InsertSubscriptionPlan>, hostIds?: number[], tunnelIds?: number[], forwardGroupIds?: number[], trafficAddons?: any[]) {
   const db = await getDb();
   if (!db) return undefined;
   await db.update(subscriptionPlans).set({ ...data, updatedAt: nowDate() } as any).where(eq(subscriptionPlans.id, id));
@@ -126,6 +154,7 @@ export async function updateSubscriptionPlan(id: number, data: Partial<InsertSub
       forwardGroupIds ?? await getPlanForwardGroupIds(id),
     );
   }
+  if (trafficAddons) await setSubscriptionPlanTrafficAddons(id, trafficAddons);
   return getSubscriptionPlanById(id);
 }
 
@@ -135,6 +164,7 @@ export async function deleteSubscriptionPlan(id: number) {
   await db.delete(subscriptionPlanHosts).where(eq(subscriptionPlanHosts.planId, id));
   await db.delete(subscriptionPlanTunnels).where(eq(subscriptionPlanTunnels.planId, id));
   await db.delete(subscriptionPlanForwardGroups).where(eq(subscriptionPlanForwardGroups.planId, id));
+  await db.delete(subscriptionPlanTrafficAddons).where(eq(subscriptionPlanTrafficAddons.planId, id));
   await db.delete(subscriptionPlans).where(eq(subscriptionPlans.id, id));
 }
 
@@ -152,6 +182,21 @@ export async function setSubscriptionPlanResources(planId: number, hostIds: numb
   if (uniqueForwardGroupIds.length > 0) await db.insert(subscriptionPlanForwardGroups).values(uniqueForwardGroupIds.map(forwardGroupId => ({ planId, forwardGroupId })));
 }
 
+export async function setSubscriptionPlanTrafficAddons(planId: number, addons: any[] = []) {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(subscriptionPlanTrafficAddons).where(eq(subscriptionPlanTrafficAddons.planId, planId));
+  const rows = normalizeTrafficAddons(addons);
+  if (rows.length === 0) return;
+  await db.insert(subscriptionPlanTrafficAddons).values(rows.map((addon) => ({
+    planId,
+    trafficBytes: addon.trafficBytes,
+    priceCents: addon.priceCents,
+    isActive: addon.isActive,
+    sortOrder: addon.sortOrder,
+  })));
+}
+
 export async function listUserSubscriptions(userId?: number) {
   const db = await getDb();
   if (!db) return [];
@@ -166,6 +211,11 @@ export async function listUserSubscriptions(userId?: number) {
       priceCents: subscriptionPlans.priceCents,
       durationDays: subscriptionPlans.durationDays,
       portCount: subscriptionPlans.portCount,
+      trafficLimit: subscriptionPlans.trafficLimit,
+      rateLimitMbps: subscriptionPlans.rateLimitMbps,
+      maxRules: subscriptionPlans.maxRules,
+      maxConnections: subscriptionPlans.maxConnections,
+      maxIPs: subscriptionPlans.maxIPs,
       status: userSubscriptions.status,
       source: userSubscriptions.source,
       paymentOrderNo: userSubscriptions.paymentOrderNo,
@@ -180,8 +230,51 @@ export async function listUserSubscriptions(userId?: number) {
     .from(userSubscriptions)
     .leftJoin(users, eq(userSubscriptions.userId, users.id))
     .leftJoin(subscriptionPlans, eq(userSubscriptions.planId, subscriptionPlans.id));
-  if (userId !== undefined) return base.where(eq(userSubscriptions.userId, userId)).orderBy(desc(userSubscriptions.createdAt));
-  return base.orderBy(desc(userSubscriptions.createdAt));
+  const rows = userId !== undefined
+    ? await base.where(eq(userSubscriptions.userId, userId)).orderBy(desc(userSubscriptions.createdAt))
+    : await base.orderBy(desc(userSubscriptions.createdAt));
+  return attachUserSubscriptionDetails(rows);
+}
+
+async function attachUserSubscriptionDetails<T extends { id: number; planId: number }>(subscriptions: T[]) {
+  return Promise.all(subscriptions.map(async (subscription: any) => ({
+    ...subscription,
+    hostIds: await getPlanHostIds(Number(subscription.planId)),
+    tunnelIds: await getPlanTunnelIds(Number(subscription.planId)),
+    forwardGroupIds: await getPlanForwardGroupIds(Number(subscription.planId)),
+    trafficAddons: await getPlanTrafficAddons(Number(subscription.planId), false),
+    activeTrafficAddonBytes: await getActiveTrafficAddonBytesForSubscription(Number(subscription.id)),
+  })));
+}
+
+async function getActiveTrafficAddonBytesForSubscription(subscriptionId: number) {
+  const db = await getDb();
+  if (!db || !subscriptionId) return 0;
+  const nowSec = Math.floor(Date.now() / 1000);
+  const rows = await db
+    .select({ total: sql<number>`COALESCE(SUM(${userTrafficAddons.trafficBytes}), 0)` })
+    .from(userTrafficAddons)
+    .where(and(
+      eq(userTrafficAddons.subscriptionId, subscriptionId),
+      eq(userTrafficAddons.status, "active"),
+      sql`(${userTrafficAddons.expiresAt} IS NULL OR ${userTrafficAddons.expiresAt} > ${nowSec})`,
+    ));
+  return Number(rows?.[0]?.total || 0);
+}
+
+export async function getActiveUserTrafficAddonBytes(userId: number) {
+  const db = await getDb();
+  if (!db || !userId) return 0;
+  const nowSec = Math.floor(Date.now() / 1000);
+  const rows = await db
+    .select({ total: sql<number>`COALESCE(SUM(${userTrafficAddons.trafficBytes}), 0)` })
+    .from(userTrafficAddons)
+    .where(and(
+      eq(userTrafficAddons.userId, userId),
+      eq(userTrafficAddons.status, "active"),
+      sql`(${userTrafficAddons.expiresAt} IS NULL OR ${userTrafficAddons.expiresAt} > ${nowSec})`,
+    ));
+  return Number(rows?.[0]?.total || 0);
 }
 
 export async function getActiveUserSubscriptions(userId?: number) {
@@ -223,6 +316,8 @@ export async function getActiveUserSubscriptions(userId?: number) {
     hostIds: await getPlanHostIds(row.planId),
     tunnelIds: await getPlanTunnelIds(row.planId),
     forwardGroupIds: await getPlanForwardGroupIds(row.planId),
+    trafficAddons: await getPlanTrafficAddons(row.planId, false),
+    activeTrafficAddonBytes: await getActiveTrafficAddonBytesForSubscription(row.id),
   })));
 }
 
@@ -238,15 +333,64 @@ export async function updateUserSubscription(id: number, data: Partial<InsertUse
   await db.update(userSubscriptions).set({ ...data, updatedAt: nowDate() } as any).where(eq(userSubscriptions.id, id));
 }
 
+async function expireTrafficAddonsForSubscriptionIds(subscriptionIds: number[]) {
+  const db = await getDb();
+  const ids = Array.from(new Set(subscriptionIds.map(Number).filter((id) => id > 0)));
+  if (!db || ids.length === 0) return [];
+  const now = nowDate();
+  const rows = await db
+    .select({ userId: userTrafficAddons.userId })
+    .from(userTrafficAddons)
+    .where(and(
+      eq(userTrafficAddons.status, "active"),
+      inArray(userTrafficAddons.subscriptionId, ids),
+    ));
+  await db.update(userTrafficAddons).set({
+    status: "expired",
+    expiredAt: now,
+    updatedAt: now,
+  } as any).where(and(
+    eq(userTrafficAddons.status, "active"),
+    inArray(userTrafficAddons.subscriptionId, ids),
+  ));
+  return Array.from(new Set((rows as any[]).map((row: any) => Number(row.userId)).filter((id: number) => id > 0)));
+}
+
+export async function expireDueTrafficAddons(userId?: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const now = nowDate();
+  const nowSec = Math.floor(now.getTime() / 1000);
+  const conds: any[] = [
+    eq(userTrafficAddons.status, "active"),
+    sql`${userTrafficAddons.expiresAt} IS NOT NULL`,
+    sql`${userTrafficAddons.expiresAt} <= ${nowSec}`,
+  ];
+  if (userId !== undefined) conds.push(eq(userTrafficAddons.userId, userId));
+  const rows = await db
+    .select({ userId: userTrafficAddons.userId })
+    .from(userTrafficAddons)
+    .where(and(...conds));
+  await db.update(userTrafficAddons).set({
+    status: "expired",
+    expiredAt: now,
+    updatedAt: now,
+  } as any).where(and(...conds));
+  return Array.from(new Set((rows as any[]).map((row: any) => Number(row.userId)).filter((id: number) => id > 0)));
+}
+
 export async function cancelUserSubscription(id: number) {
-  return updateUserSubscription(id, { status: "cancelled" } as any);
+  await updateUserSubscription(id, { status: "cancelled" } as any);
+  await expireTrafficAddonsForSubscriptionIds([id]);
 }
 
 export async function expireUserSubscriptions() {
   const db = await getDb();
   if (!db) return 0;
   const nowSec = Math.floor(Date.now() / 1000);
+  const dueAddonUserIds = await expireDueTrafficAddons();
   const expiredRows = await db.select({
+    id: userSubscriptions.id,
     userId: userSubscriptions.userId,
   }).from(userSubscriptions).where(and(
     eq(userSubscriptions.status, "active"),
@@ -257,7 +401,13 @@ export async function expireUserSubscriptions() {
     "UPDATE user_subscriptions SET status='expired', updatedAt=? WHERE status='active' AND expiresAt IS NOT NULL AND expiresAt <= ?",
     [nowSec, nowSec],
   );
-  const userIds = Array.from(new Set((expiredRows as any[]).map((row: any) => Number(row.userId)).filter((id: number) => id > 0)));
+  const expiredSubscriptionIds = (expiredRows as any[]).map((row: any) => Number(row.id)).filter((id: number) => id > 0);
+  const addonUserIds = await expireTrafficAddonsForSubscriptionIds(expiredSubscriptionIds);
+  const userIds = Array.from(new Set([
+    ...(expiredRows as any[]).map((row: any) => Number(row.userId)).filter((id: number) => id > 0),
+    ...dueAddonUserIds,
+    ...addonUserIds,
+  ]));
   for (const userId of userIds) {
     const rules = await getForwardRulesForUserSync(userId);
     const active = await getActiveUserSubscriptions(userId);
@@ -313,6 +463,10 @@ export async function getEffectiveUserPlanLimits(userId: number) {
     if (!expiresAt || subExpiresAt.getTime() > expiresAt.getTime()) expiresAt = subExpiresAt;
   }
 
+  const hasUnlimitedTraffic = (active as any[]).some((sub: any) => Number(sub.trafficLimit || 0) === 0);
+  const baseTrafficLimit = hasUnlimitedTraffic ? 0 : maxOf("trafficLimit");
+  const addonTrafficLimit = baseTrafficLimit > 0 ? await getActiveUserTrafficAddonBytes(userId) : 0;
+
   return {
     canAddRules: true,
     allowForwardXTunnel: true,
@@ -320,7 +474,7 @@ export async function getEffectiveUserPlanLimits(userId: number) {
     maxRules: maxOf("maxRules"),
     maxConnections: maxOf("maxConnections"),
     maxIPs: maxOf("maxIPs"),
-    trafficLimit: maxOf("trafficLimit"),
+    trafficLimit: baseTrafficLimit > 0 ? baseTrafficLimit + addonTrafficLimit : baseTrafficLimit,
     gostRateLimitIn: maxOf("rateLimitMbps"),
     gostRateLimitOut: maxOf("rateLimitMbps"),
     expiresAt,
@@ -328,6 +482,7 @@ export async function getEffectiveUserPlanLimits(userId: number) {
 }
 
 export async function syncUserSubscriptionEntitlements(userId: number) {
+  await expireDueTrafficAddons(userId);
   const limits = await getEffectiveUserPlanLimits(userId);
   await updateUserTrafficSettings(userId, limits);
   if (!limits.canAddRules) {
@@ -362,8 +517,10 @@ export async function rechargeSubscriptionTrafficCycles() {
     } as any);
     resetUserIds.add(Number(sub.userId));
   }
+  await expireTrafficAddonsForSubscriptionIds((due as any[]).map((sub: any) => Number(sub.id)).filter((id: number) => id > 0));
   for (const userId of resetUserIds) {
     await resetUserTraffic(userId);
+    await syncUserSubscriptionEntitlements(userId);
   }
   return resetUserIds.size;
 }
@@ -484,6 +641,147 @@ export async function applySubscriptionToUser(userId: number, planId: number, so
     await resetUserTraffic(userId);
   }
   return { subscriptionId, portRangeStart: block.start, portRangeEnd: block.end, expiresAt };
+}
+
+function getTrafficAddonCycleEnd(subscription: any) {
+  const now = new Date();
+  const nextTrafficResetAt = subscription?.nextTrafficResetAt ? new Date(subscription.nextTrafficResetAt) : null;
+  if (nextTrafficResetAt && nextTrafficResetAt.getTime() > now.getTime()) return nextTrafficResetAt;
+  const expiresAt = subscription?.expiresAt ? new Date(subscription.expiresAt) : null;
+  if (expiresAt && expiresAt.getTime() > now.getTime()) return expiresAt;
+  return addMonthsClamped(now, 1);
+}
+
+function formatAddonTraffic(bytes: number) {
+  const gb = bytes / 1024 / 1024 / 1024;
+  return `${Number.isInteger(gb) ? gb.toFixed(0) : gb.toFixed(2)}GB`;
+}
+
+async function getTrafficAddonById(addonId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const rows = await db
+    .select({
+      id: subscriptionPlanTrafficAddons.id,
+      planId: subscriptionPlanTrafficAddons.planId,
+      planName: subscriptionPlans.name,
+      planTrafficLimit: subscriptionPlans.trafficLimit,
+      trafficBytes: subscriptionPlanTrafficAddons.trafficBytes,
+      priceCents: subscriptionPlanTrafficAddons.priceCents,
+      isActive: subscriptionPlanTrafficAddons.isActive,
+      sortOrder: subscriptionPlanTrafficAddons.sortOrder,
+    })
+    .from(subscriptionPlanTrafficAddons)
+    .leftJoin(subscriptionPlans, eq(subscriptionPlanTrafficAddons.planId, subscriptionPlans.id))
+    .where(eq(subscriptionPlanTrafficAddons.id, addonId))
+    .limit(1);
+  return rows[0] as any;
+}
+
+function pickActiveFiniteTrafficSubscription(activeSubscriptions: any[], planId?: number, subscriptionId?: number) {
+  const matched = activeSubscriptions.filter((sub: any) => {
+    if (planId && Number(sub.planId) !== Number(planId)) return false;
+    if (subscriptionId && Number(sub.id) !== Number(subscriptionId)) return false;
+    return Number(sub.trafficLimit || 0) > 0;
+  });
+  return matched
+    .sort((a: any, b: any) => {
+      const aEnd = getTrafficAddonCycleEnd(a).getTime();
+      const bEnd = getTrafficAddonCycleEnd(b).getTime();
+      return aEnd - bEnd;
+    })[0];
+}
+
+export async function purchaseTrafficAddonWithBalance(userId: number, addonId: number, subscriptionId?: number | null) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await expireDueTrafficAddons(userId);
+  const addon = await getTrafficAddonById(addonId);
+  if (!addon || !addon.isActive || Number(addon.trafficBytes || 0) <= 0) throw new Error("流量包不可购买");
+  if (Number(addon.planTrafficLimit || 0) <= 0) throw new Error("不限流量套餐无需购买流量包");
+  const activeSubscriptions = await getActiveUserSubscriptions(userId);
+  const subscription = pickActiveFiniteTrafficSubscription(activeSubscriptions as any[], Number(addon.planId), subscriptionId || undefined);
+  if (!subscription) throw new Error("当前没有可购买流量包的生效套餐");
+  const amountCents = Number(addon.priceCents || 0);
+  const balance = await getUserBalance(userId);
+  if (balance < amountCents) throw new Error("余额不足");
+  const expiresAt = getTrafficAddonCycleEnd(subscription);
+  const description = `购买附加流量：${addon.planName || `套餐 #${addon.planId}`} ${formatAddonTraffic(Number(addon.trafficBytes || 0))}`;
+  if (amountCents > 0) {
+    await addUserBalance(userId, -amountCents, {
+      type: "traffic_addon_purchase",
+      description,
+    } as any);
+  }
+  const now = nowDate();
+  const id = await insertAndGetId("user_traffic_addons", {
+    userId,
+    subscriptionId: subscription.id,
+    planId: addon.planId,
+    addonId: addon.id,
+    trafficBytes: Number(addon.trafficBytes || 0),
+    priceCents: amountCents,
+    source: "user",
+    status: "active",
+    description,
+    cycleResetAt: expiresAt,
+    expiresAt,
+    createdAt: now,
+    updatedAt: now,
+  });
+  const limits = await syncUserSubscriptionEntitlements(userId);
+  return {
+    id,
+    subscriptionId: subscription.id,
+    trafficBytes: Number(addon.trafficBytes || 0),
+    priceCents: amountCents,
+    expiresAt,
+    trafficLimit: limits.trafficLimit,
+  };
+}
+
+export async function adminAddUserTrafficAddon(input: {
+  userId: number;
+  trafficBytes: number;
+  subscriptionId?: number | null;
+  operatorUserId?: number | null;
+  description?: string | null;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const trafficBytes = Math.floor(Number(input.trafficBytes || 0));
+  if (!Number.isFinite(trafficBytes) || trafficBytes <= 0) throw new Error("附加流量必须大于 0");
+  await expireDueTrafficAddons(input.userId);
+  const activeSubscriptions = await getActiveUserSubscriptions(input.userId);
+  const subscription = pickActiveFiniteTrafficSubscription(activeSubscriptions as any[], undefined, input.subscriptionId || undefined);
+  if (!subscription) throw new Error("该用户没有可附加流量的生效流量套餐");
+  const expiresAt = getTrafficAddonCycleEnd(subscription);
+  const description = input.description?.trim() || `管理员附加本周期流量：${formatAddonTraffic(trafficBytes)}`;
+  const now = nowDate();
+  const id = await insertAndGetId("user_traffic_addons", {
+    userId: input.userId,
+    subscriptionId: subscription.id,
+    planId: subscription.planId,
+    addonId: null,
+    trafficBytes,
+    priceCents: 0,
+    source: "admin",
+    status: "active",
+    operatorUserId: input.operatorUserId || null,
+    description,
+    cycleResetAt: expiresAt,
+    expiresAt,
+    createdAt: now,
+    updatedAt: now,
+  });
+  const limits = await syncUserSubscriptionEntitlements(input.userId);
+  return {
+    id,
+    subscriptionId: subscription.id,
+    trafficBytes,
+    expiresAt,
+    trafficLimit: limits.trafficLimit,
+  };
 }
 
 // ==================== Balance ====================
@@ -617,6 +915,7 @@ function balanceTypeLabel(type: string) {
   if (type === "purchase") return "余额消费";
   if (type === "redeem") return "兑换入账";
   if (type === "traffic_billing") return "流量计费";
+  if (type === "traffic_addon_purchase") return "购买附加流量";
   return type || "余额变动";
 }
 

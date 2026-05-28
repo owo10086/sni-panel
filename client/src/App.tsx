@@ -20,6 +20,7 @@ import Settings from "./pages/Settings";
 import Payments from "./pages/Payments";
 import Plans from "./pages/Plans";
 import Store from "./pages/Store";
+import Subscriptions from "./pages/Subscriptions";
 import Billing from "./pages/Billing";
 import Wallet from "./pages/Wallet";
 import Announcements from "./pages/Announcements";
@@ -54,6 +55,7 @@ function Router() {
       <Route path="/traffic-billing">{() => <AdminRoute component={TrafficBilling} />}</Route>
       <Route path="/plans">{() => <AdminRoute component={Plans} />}</Route>
       <Route path="/store" component={Store} />
+      <Route path="/subscriptions" component={Subscriptions} />
       <Route path="/wallet" component={Wallet} />
       <Route path="/announcements" component={Announcements} />
       <Route path="/settings">{() => <AdminRoute component={Settings} />}</Route>

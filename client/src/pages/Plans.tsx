@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
+import { planResourceParts } from "@/lib/planDisplay";
 import { trpc } from "@/lib/trpc";
 import { CheckCircle2, Package, Plus, RefreshCw, Settings2, ShoppingBag, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -33,6 +34,14 @@ type PlanForm = {
   hostIds: number[];
   tunnelIds: number[];
   forwardGroupIds: number[];
+  trafficAddons: TrafficAddonForm[];
+};
+
+type TrafficAddonForm = {
+  trafficGB: string;
+  price: string;
+  isActive: boolean;
+  sortOrder: string;
 };
 
 type PlanDurationDays = 30 | 90 | 180 | 365 | 730;
@@ -55,6 +64,7 @@ const emptyForm: PlanForm = {
   hostIds: [],
   tunnelIds: [],
   forwardGroupIds: [],
+  trafficAddons: [],
 };
 
 function money(cents?: number, currency = "CNY") {
@@ -110,6 +120,12 @@ function toForm(plan: any): PlanForm {
     hostIds: plan.hostIds || [],
     tunnelIds: plan.tunnelIds || [],
     forwardGroupIds: plan.forwardGroupIds || [],
+    trafficAddons: (plan.trafficAddons || []).map((addon: any, index: number) => ({
+      trafficGB: String(Number(addon.trafficBytes || 0) / 1024 / 1024 / 1024 || 0),
+      price: String((Number(addon.priceCents || 0) / 100).toFixed(2)),
+      isActive: addon.isActive !== false,
+      sortOrder: String(addon.sortOrder ?? index),
+    })),
   };
 }
 
@@ -133,6 +149,14 @@ function payload(form: PlanForm) {
     hostIds: form.hostIds,
     tunnelIds: form.tunnelIds,
     forwardGroupIds: form.forwardGroupIds,
+    trafficAddons: form.trafficAddons
+      .map((addon, index) => ({
+        trafficBytes: Math.max(0, Math.floor(Number(addon.trafficGB || 0) * 1024 * 1024 * 1024)),
+        priceCents: Math.max(0, Math.round(Number(addon.price || 0) * 100)),
+        isActive: addon.isActive,
+        sortOrder: Math.max(0, Math.floor(Number(addon.sortOrder || index))),
+      }))
+      .filter((addon) => addon.trafficBytes > 0),
   };
 }
 
@@ -217,6 +241,27 @@ export default function Plans() {
   };
 
   const toggleId = (list: number[], id: number) => list.includes(id) ? list.filter((item) => item !== id) : [...list, id];
+  const updateTrafficAddon = (index: number, patch: Partial<TrafficAddonForm>) => {
+    setForm((current) => ({
+      ...current,
+      trafficAddons: current.trafficAddons.map((addon, addonIndex) => addonIndex === index ? { ...addon, ...patch } : addon),
+    }));
+  };
+  const addTrafficAddon = () => {
+    setForm((current) => ({
+      ...current,
+      trafficAddons: [
+        ...current.trafficAddons,
+        { trafficGB: "50", price: "10", isActive: true, sortOrder: String(current.trafficAddons.length) },
+      ],
+    }));
+  };
+  const removeTrafficAddon = (index: number) => {
+    setForm((current) => ({
+      ...current,
+      trafficAddons: current.trafficAddons.filter((_, addonIndex) => addonIndex !== index),
+    }));
+  };
 
   return (
     <DashboardLayout>
@@ -290,14 +335,15 @@ export default function Plans() {
                     <TableCell>{money(plan.priceCents, plan.currency)} / {durationLabel(plan.durationDays)}</TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1">
-                        <Badge variant="outline">主机 {plan.hostIds?.length || 0}</Badge>
-                        <Badge variant="outline">隧道 {plan.tunnelIds?.length || 0}</Badge>
-                        <Badge variant="outline">转发组 {plan.forwardGroupIds?.length || 0}</Badge>
+                        {planResourceParts(plan).map((item) => (
+                          <Badge key={item.label} variant="outline">{item.label} {item.count}</Badge>
+                        ))}
                       </div>
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       <div>{plan.portCount} 个端口</div>
                       <div>规则 {plan.maxRules || "不限"} · 流量 {bytes(plan.trafficLimit)}</div>
+                      <div>附加流量 {plan.trafficAddons?.length || 0} 档</div>
                       <div>连接 {plan.maxConnections || "不限"} · 单 IP {plan.maxIPs || "不限"} · 限速 {speed(plan.rateLimitMbps)}</div>
                     </TableCell>
                     <TableCell>
@@ -454,6 +500,42 @@ export default function Plans() {
                 )}
               </CardContent>
             </Card>
+          </div>
+
+          <div className="space-y-3 rounded-lg border border-border/60 p-4">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <Label className="text-sm font-medium">附加流量包</Label>
+                <p className="mt-1 text-xs text-muted-foreground">用户在“我的订阅”内余额购买，仅当前流量周期有效。</p>
+              </div>
+              <Button type="button" variant="outline" size="sm" onClick={addTrafficAddon}>
+                <Plus className="mr-2 h-4 w-4" /> 添加档位
+              </Button>
+            </div>
+            <div className="space-y-2">
+              {form.trafficAddons.map((addon, index) => (
+                <div key={index} className="grid gap-2 rounded-md border border-border/50 p-3 sm:grid-cols-[1fr_1fr_110px_auto] sm:items-end">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">流量（GB）</Label>
+                    <Input type="number" min={0} step="0.01" value={addon.trafficGB} onChange={(e) => updateTrafficAddon(index, { trafficGB: e.target.value })} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">价格（元）</Label>
+                    <Input type="number" min={0} step="0.01" value={addon.price} onChange={(e) => updateTrafficAddon(index, { price: e.target.value })} />
+                  </div>
+                  <label className="flex h-10 items-center justify-between gap-2 rounded-md border px-3 text-sm">
+                    启用
+                    <Switch checked={addon.isActive} onCheckedChange={(isActive) => updateTrafficAddon(index, { isActive })} />
+                  </label>
+                  <Button type="button" variant="ghost" size="icon" className="text-destructive" onClick={() => removeTrafficAddon(index)}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+              {form.trafficAddons.length === 0 && (
+                <div className="rounded-md border border-dashed p-3 text-xs text-muted-foreground">未配置时用户不能自助购买附加流量。</div>
+              )}
+            </div>
           </div>
 
           <div className="flex flex-wrap gap-4">

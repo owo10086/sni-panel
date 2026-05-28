@@ -455,6 +455,19 @@ export const subscriptionPlanForwardGroups = table("subscription_plan_forward_gr
 export type SubscriptionPlanForwardGroup = typeof subscriptionPlanForwardGroups.$inferSelect;
 export type InsertSubscriptionPlanForwardGroup = typeof subscriptionPlanForwardGroups.$inferInsert;
 
+export const subscriptionPlanTrafficAddons = table("subscription_plan_traffic_addons", {
+  id: serial("id"),
+  planId: int("planId").notNull(),
+  trafficBytes: bigint("trafficBytes", { mode: "number" }).notNull().default(0),
+  priceCents: bigint("priceCents", { mode: "number" }).notNull().default(0),
+  isActive: boolean("isActive").notNull().default(true),
+  sortOrder: int("sortOrder").notNull().default(0),
+  createdAt: epoch("createdAt").notNull().default(nowDefault()),
+  updatedAt: epoch("updatedAt").notNull().default(nowDefault()),
+});
+export type SubscriptionPlanTrafficAddon = typeof subscriptionPlanTrafficAddons.$inferSelect;
+export type InsertSubscriptionPlanTrafficAddon = typeof subscriptionPlanTrafficAddons.$inferInsert;
+
 export const userSubscriptions = table("user_subscriptions", {
   id: serial("id"),
   userId: int("userId").notNull(),
@@ -474,10 +487,31 @@ export const userSubscriptions = table("user_subscriptions", {
 export type UserSubscription = typeof userSubscriptions.$inferSelect;
 export type InsertUserSubscription = typeof userSubscriptions.$inferInsert;
 
+export const userTrafficAddons = table("user_traffic_addons", {
+  id: serial("id"),
+  userId: int("userId").notNull(),
+  subscriptionId: int("subscriptionId").notNull(),
+  planId: int("planId").notNull(),
+  addonId: int("addonId"),
+  trafficBytes: bigint("trafficBytes", { mode: "number" }).notNull().default(0),
+  priceCents: bigint("priceCents", { mode: "number" }).notNull().default(0),
+  source: varchar("source", { length: 32 }).notNull().default("user"), // user | admin
+  status: varchar("status", { length: 32 }).notNull().default("active"), // active | expired
+  operatorUserId: int("operatorUserId"),
+  description: text("description"),
+  cycleResetAt: epoch("cycleResetAt"),
+  expiresAt: epoch("expiresAt"),
+  expiredAt: epoch("expiredAt"),
+  createdAt: epoch("createdAt").notNull().default(nowDefault()),
+  updatedAt: epoch("updatedAt").notNull().default(nowDefault()),
+});
+export type UserTrafficAddon = typeof userTrafficAddons.$inferSelect;
+export type InsertUserTrafficAddon = typeof userTrafficAddons.$inferInsert;
+
 export const balanceTransactions = table("balance_transactions", {
   id: serial("id"),
   userId: int("userId").notNull(),
-  type: varchar("type", { length: 32 }).notNull(), // admin_recharge | payment | purchase | redeem
+  type: varchar("type", { length: 32 }).notNull(), // admin_recharge | payment | purchase | redeem | traffic_addon_purchase
   amountCents: bigint("amountCents", { mode: "number" }).notNull(),
   balanceAfterCents: bigint("balanceAfterCents", { mode: "number" }).notNull(),
   description: text("description"),

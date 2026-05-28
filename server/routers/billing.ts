@@ -95,6 +95,38 @@ export const billingRouter = router({
       return result;
     }),
 
+  purchaseTrafficAddonWithBalance: protectedProcedure
+    .input(z.object({
+      addonId: z.number().int().positive(),
+      subscriptionId: z.number().int().positive().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const result = await db.purchaseTrafficAddonWithBalance(ctx.user.id, input.addonId, input.subscriptionId);
+      await refreshUserForwardEndpoints(ctx.user.id, "traffic-addon-purchased");
+      appendPanelLog("info", `[TrafficAddon] balance purchase user=${ctx.user.id} addon=${input.addonId} bytes=${result.trafficBytes}`);
+      return result;
+    }),
+
+  adminAddTrafficAddon: adminProcedure
+    .input(z.object({
+      userId: z.number().int().positive(),
+      trafficBytes: z.number().int().positive(),
+      subscriptionId: z.number().int().positive().optional().nullable(),
+      description: z.string().trim().max(200).optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const result = await db.adminAddUserTrafficAddon({
+        userId: input.userId,
+        trafficBytes: input.trafficBytes,
+        subscriptionId: input.subscriptionId ?? null,
+        operatorUserId: ctx.user.id,
+        description: input.description || null,
+      });
+      await refreshUserForwardEndpoints(input.userId, "traffic-addon-admin");
+      appendPanelLog("info", `[TrafficAddon] admin add user=${input.userId} operator=${ctx.user.id} bytes=${input.trafficBytes}`);
+      return result;
+    }),
+
   previewDiscount: protectedProcedure
     .input(z.object({
       code: z.string().trim().min(1).max(64),

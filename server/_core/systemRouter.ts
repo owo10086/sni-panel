@@ -4,6 +4,7 @@ import * as db from "../db";
 import { ENV } from "../env";
 import { spawn } from "child_process";
 import fs from "fs";
+import net from "net";
 import { clearPanelLogs, formatPanelLogsForExport, getFilteredPanelLogs, getPanelLogSummary } from "./panelLogger";
 import { approveMigrationRequest, createMigrationCode, getCurrentMigrationCode, rejectMigrationRequest } from "../migrationCodes";
 import { sendMail } from "../email";
@@ -268,6 +269,55 @@ function parseForwardProtocolSettings(value: string | null | undefined) {
     return null;
   }
 }
+
+function normalizePort(value: unknown) {
+  const port = Math.floor(Number(value));
+  if (!Number.isFinite(port) || port < 1 || port > 65535) {
+    throw new Error("端口必须是 1-65535 的数字");
+  }
+  return port;
+}
+
+function isDockerRuntime() {
+  return fs.existsSync("/.dockerenv");
+}
+
+function canManageWebPort() {
+  return process.platform !== "win32" && !isDockerRuntime() && ENV.portManagement === "local" && !!ENV.portConfigPath.trim();
+}
+
+function isTcpPortAvailable(port: number): Promise<boolean> {
+  return new Promise((resolve) => {
+    const server = net.createServer();
+    server.once("error", () => resolve(false));
+    server.listen(port, "0.0.0.0", () => {
+      server.close(() => resolve(true));
+    });
+  });
+}
+
+async function updateEnvFileValue(filePath: string, key: string, value: string) {
+  const text = await fs.promises.readFile(filePath, "utf8").catch(() => "");
+  const lines = text ? text.split(/\r?\n/) : [];
+  let replaced = false;
+  const nextLines = lines.map((line) => {
+    if (line.startsWith(`${key}=`)) {
+      replaced = true;
+      return `${key}=${value}`;
+    }
+    return line;
+  });
+  if (!replaced) nextLines.push(`${key}=${value}`);
+  await fs.promises.writeFile(filePath, `${nextLines.filter((line, index) => line || index < nextLines.length - 1).join("\n")}\n`, "utf8");
+}
+
+function schedulePanelRestart() {
+  setTimeout(() => {
+    console.info("[Settings] exiting process for systemd restart after web port change");
+    process.exit(0);
+  }, 800);
+}
+
 export const systemRouter = router({
   health: publicProcedure.query(() => {
     return { status: "ok", timestamp: new Date().toISOString() };
@@ -293,6 +343,11 @@ export const systemRouter = router({
       version: APP_VERSION,
       agentVersion: AGENT_VERSION,
       panelPublicUrl: all.panelPublicUrl ?? "",
+      webPort: ENV.port,
+      webPortManagement: {
+        enabled: canManageWebPort(),
+        docker: isDockerRuntime(),
+      },
       registrationEnabled: all.registrationEnabled !== "false",
       twoFactorEnabled: all.twoFactorEnabled === "true",
       homepageEnabled: all.homepageEnabled !== "false",
@@ -512,6 +567,25 @@ export const systemRouter = router({
         console.info("[Settings] ddns settings updated");
       }
       return { success: true };
+    }),
+
+  updateWebPort: adminProcedure
+    .input(z.object({ port: z.number().int().min(1).max(65535), confirmed: z.literal(true) }))
+    .mutation(async ({ input }) => {
+      if (!canManageWebPort()) {
+        throw new Error("当前部署方式不支持在后台修改 Web 端口，Docker 用户请自行配置端口映射");
+      }
+      const port = normalizePort(input.port);
+      const currentPort = normalizePort(ENV.port || 3000);
+      if (port === currentPort) return { success: true, port, restartScheduled: false };
+      if (!(await isTcpPortAvailable(port))) {
+        throw new Error(`端口 ${port} 已被占用，请更换端口`);
+      }
+      await updateEnvFileValue(ENV.portConfigPath, "PORT", String(port));
+      await db.setSetting("webPort", String(port));
+      console.info(`[Settings] web port updated ${currentPort} -> ${port}; scheduling service restart`);
+      schedulePanelRestart();
+      return { success: true, port, restartScheduled: true };
     }),
 
   createMigrationCode: adminProcedure.mutation(() => {

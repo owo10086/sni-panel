@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { planResourceText } from "@/lib/planDisplay";
 import { trpc } from "@/lib/trpc";
 import { CheckCircle2, CreditCard, Lock, Package, RefreshCw, ShoppingBag, TicketPercent, WalletCards } from "lucide-react";
 import { useState } from "react";
@@ -46,7 +47,6 @@ export default function Store() {
   const utils = trpc.useUtils();
   const { data: storeStatus } = trpc.plans.storeStatus.useQuery();
   const { data: plans = [], isLoading } = trpc.plans.storeList.useQuery();
-  const { data: subscriptions = [] } = trpc.plans.mySubscriptions.useQuery();
   const { data: wallet } = trpc.billing.me.useQuery();
   const { data: billingFeatures } = trpc.billing.featureStatus.useQuery();
   const { data: paymentMethods = [] } = trpc.payment.availableMethods.useQuery(undefined, {
@@ -136,24 +136,6 @@ export default function Store() {
           </Card>
         )}
 
-        {subscriptions.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2"><CheckCircle2 className="h-5 w-5 text-emerald-600" /> 我的订阅</CardTitle>
-              <CardDescription>当前生效的套餐。</CardDescription>
-            </CardHeader>
-            <CardContent className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-              {subscriptions.map((sub: any) => (
-                <div key={sub.id} className="rounded-lg border bg-background/60 p-4">
-                  <div className="font-medium">{sub.planName || `套餐 #${sub.planId}`}</div>
-                  <div className="mt-2 text-sm text-muted-foreground">端口段 {sub.portRangeStart}-{sub.portRangeEnd}</div>
-                  <div className="text-sm text-muted-foreground">到期 {sub.expiresAt ? new Date(sub.expiresAt).toLocaleString() : "永久"}</div>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        )}
-
         {storeStatus?.enabled && (
           <>
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -180,7 +162,7 @@ export default function Store() {
                       <div>规则：最多 {plan.maxRules || "不限"} 条</div>
                       <div>连接：最多 {plan.maxConnections || "不限"}，单 IP {plan.maxIPs || "不限"}</div>
                       <div>限制口径：端口转发按主机，隧道转发按隧道</div>
-                      <div>资源：{plan.hostIds?.length || 0} 台主机 / {plan.tunnelIds?.length || 0} 条隧道 / {plan.forwardGroupIds?.length || 0} 个转发组</div>
+                      <div>资源：{planResourceText(plan)}</div>
                     </div>
                   </CardContent>
                   <CardFooter>

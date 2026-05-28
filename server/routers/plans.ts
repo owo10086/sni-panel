@@ -28,6 +28,12 @@ const planInput = z.object({
   hostIds: z.array(z.number().int().positive()).default([]),
   tunnelIds: z.array(z.number().int().positive()).default([]),
   forwardGroupIds: z.array(z.number().int().positive()).default([]),
+  trafficAddons: z.array(z.object({
+    trafficBytes: z.number().int().positive(),
+    priceCents: z.number().int().min(0).max(100_000_000),
+    isActive: z.boolean().default(true),
+    sortOrder: z.number().int().min(0).max(9999).default(0),
+  })).max(20).default([]),
 });
 
 export const plansRouter = router({
@@ -51,7 +57,7 @@ export const plansRouter = router({
   create: adminProcedure
     .input(planInput)
     .mutation(async ({ input }) => {
-      const { hostIds, tunnelIds, forwardGroupIds, ...data } = input;
+      const { hostIds, tunnelIds, forwardGroupIds, trafficAddons, ...data } = input;
       if (hostIds.length === 0 && tunnelIds.length === 0 && forwardGroupIds.length === 0) {
         throw new Error("套餐至少需要绑定一个主机、隧道或转发组");
       }
@@ -59,12 +65,12 @@ export const plansRouter = router({
         ...data,
         description: data.description || null,
         currency: data.currency.toUpperCase(),
-      } as any, hostIds, tunnelIds, forwardGroupIds);
+      } as any, hostIds, tunnelIds, forwardGroupIds, trafficAddons);
     }),
   update: adminProcedure
     .input(planInput.extend({ id: z.number().int().positive() }))
     .mutation(async ({ input }) => {
-      const { id, hostIds, tunnelIds, forwardGroupIds, ...data } = input;
+      const { id, hostIds, tunnelIds, forwardGroupIds, trafficAddons, ...data } = input;
       if (hostIds.length === 0 && tunnelIds.length === 0 && forwardGroupIds.length === 0) {
         throw new Error("套餐至少需要绑定一个主机、隧道或转发组");
       }
@@ -72,7 +78,7 @@ export const plansRouter = router({
         ...data,
         description: data.description || null,
         currency: data.currency.toUpperCase(),
-      } as any, hostIds, tunnelIds, forwardGroupIds);
+      } as any, hostIds, tunnelIds, forwardGroupIds, trafficAddons);
     }),
   delete: adminProcedure
     .input(z.object({ id: z.number().int().positive() }))
