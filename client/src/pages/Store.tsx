@@ -121,7 +121,7 @@ export default function Store() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6 p-4 sm:p-6">
+      <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">商店</h1>
           <p className="text-sm text-muted-foreground">购买套餐，开通资源。</p>

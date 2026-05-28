@@ -13,6 +13,17 @@ import { registerAgentReportRoutes } from "./agentReportRoutes";
 import { registerAgentHeartbeatRoute } from "./agentHeartbeatRoute";
 
 const agentRouter = Router();
+const AGENT_RUNTIME_RECOVERY_COOLDOWN_MS = 60 * 1000;
+const lastRuntimeRecoveryByHost = new Map<number, number>();
+
+async function resetAgentRuntimeStateAfterReconnect(hostId: number, reason: string) {
+  const now = Date.now();
+  const last = lastRuntimeRecoveryByHost.get(hostId) || 0;
+  if (now - last < AGENT_RUNTIME_RECOVERY_COOLDOWN_MS) return;
+  lastRuntimeRecoveryByHost.set(hostId, now);
+  await db.resetAgentRuntimeStateForHost(hostId);
+  appendPanelLog("info", `[AgentRecovery] host=${hostId} reason=${reason} runtime state marked for reapply`);
+}
 
 // 为所有 /api/agent/* POST 接口启用加密中间件（GET install.sh 等不需要）
 agentRouter.use("/api/agent", (req, res, next) => {
@@ -111,6 +122,7 @@ agentRouter.post("/api/agent/register", async (req: Request, res: Response) => {
         isOnline: true,
         lastHeartbeat: new Date(),
       });
+      await resetAgentRuntimeStateAfterReconnect(existingHost.id, "agent-registered");
       res.json({ success: true, hostId: existingHost.id, message: "Host updated" });
       return;
     }
@@ -135,6 +147,7 @@ agentRouter.post("/api/agent/register", async (req: Request, res: Response) => {
     });
 
     await db.markAgentTokenUsed(token, hostId);
+    await resetAgentRuntimeStateAfterReconnect(hostId, "agent-registered");
     res.json({ success: true, hostId, message: "Host registered" });
   } catch (error) {
     console.error("[Agent Register] Error:", error);

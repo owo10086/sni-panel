@@ -1,7 +1,7 @@
 ﻿import crypto from "crypto";
 import { and, desc, eq, sql } from "drizzle-orm";
 import { tunnels, InsertTunnel, forwardRules, userTunnelPermissions } from "../../drizzle/schema";
-import { getDb, insertAndGetId, nowDate } from "../dbRuntime";
+import { executeRaw, getDatabaseKind, getDb, insertAndGetId, nowDate } from "../dbRuntime";
 
 // ==================== Tunnel Queries ====================
 
@@ -51,6 +51,38 @@ export async function resetForwardRulesByTunnel(tunnelId: number) {
   const db = await getDb();
   if (!db) return;
   await db.update(forwardRules).set({ isRunning: false, updatedAt: nowDate() }).where(eq(forwardRules.tunnelId, tunnelId));
+}
+
+export async function resetAgentRuntimeStateForHost(hostId: number) {
+  const id = Number(hostId);
+  if (!Number.isFinite(id) || id <= 0) return;
+  const db = await getDb();
+  if (!db) return;
+  const now = Math.floor(Date.now() / 1000);
+  const q = getDatabaseKind() === "mysql" ? "`" : "\"";
+
+  await executeRaw(
+    `UPDATE ${q}tunnels${q}
+     SET ${q}isRunning${q} = ?, ${q}updatedAt${q} = ?
+     WHERE ${q}isRunning${q} = ?
+       AND (${q}entryHostId${q} = ? OR ${q}exitHostId${q} = ?)`,
+    [0, now, 1, id, id],
+  );
+
+  await executeRaw(
+    `UPDATE ${q}forward_rules${q}
+     SET ${q}isRunning${q} = ?, ${q}updatedAt${q} = ?
+     WHERE ${q}isRunning${q} = ?
+       AND (
+         ${q}hostId${q} = ?
+         OR ${q}tunnelId${q} IN (
+           SELECT ${q}id${q}
+           FROM ${q}tunnels${q}
+           WHERE ${q}entryHostId${q} = ? OR ${q}exitHostId${q} = ?
+         )
+       )`,
+    [0, now, 1, id, id, id],
+  );
 }
 
 export async function disableForwardRulesByTunnel(tunnelId: number) {

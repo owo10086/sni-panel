@@ -372,7 +372,7 @@ export default function Billing() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6 p-4 sm:p-6">
+      <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">余额与营销</h1>
           <p className="text-sm text-muted-foreground">管理余额、兑换码和折扣码。</p>

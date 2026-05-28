@@ -782,7 +782,7 @@ function UsersContent() {
       </div>
 
       <Tabs value={manageType} onValueChange={handleManageTypeChange} className="space-y-4">
-        <TabsList className="grid h-auto w-full grid-cols-2 gap-1 border border-border/30 bg-muted/30 p-1 sm:w-auto sm:min-w-[360px]">
+        <TabsList className="grid h-auto w-full grid-cols-2 border border-border/30 bg-muted/30 sm:w-auto sm:min-w-[360px]">
           <TabsTrigger value="accounts" className="min-w-0 justify-center gap-1.5 text-xs sm:text-sm">
             <UsersIcon className="h-3.5 w-3.5" />
             账户管理

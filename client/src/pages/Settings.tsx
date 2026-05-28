@@ -359,7 +359,7 @@ function SettingsContent() {
   const [description, setDescription] = useState("");
   const [editingToken, setEditingToken] = useState<any>(null);
   const [editDescription, setEditDescription] = useState("");
-  // 面板地址统一使用「系统信息」Tab 中配置的 panelPublicUrl；未配置时回退 window.location.origin
+  // 面板地址统一使用「系统配置」Tab 中配置的 panelPublicUrl；未配置时回退 window.location.origin
   const { data: systemSettings } = trpc.system.getSettings.useQuery();
   const panelUrl = (systemSettings?.panelPublicUrl && systemSettings.panelPublicUrl.trim())
     || (typeof window !== "undefined" ? window.location.origin : "");
@@ -475,24 +475,24 @@ function SettingsContent() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <div className="-mx-1 rounded-xl border border-border/60 bg-card/70 p-2 shadow-sm backdrop-blur-md sm:mx-0 sm:inline-block">
           <div className="overflow-x-auto pb-1 sm:overflow-visible sm:pb-0">
-          <TabsList className="grid h-auto w-full grid-cols-2 gap-2 rounded-lg border border-border/50 bg-muted/35 p-1.5 sm:inline-flex sm:w-auto sm:grid-cols-none sm:gap-1 sm:p-1">
-          <TabsTrigger value="tokens" className="min-h-10 min-w-0 justify-center gap-1.5 rounded-md border border-border/60 bg-background/70 px-3 text-xs shadow-sm data-[state=active]:border-primary/40 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-md sm:min-h-0 sm:border-0 sm:bg-transparent sm:shadow-none sm:data-[state=active]:border-transparent sm:data-[state=active]:shadow-sm sm:text-sm">
+          <TabsList className="grid h-auto w-full grid-cols-2 rounded-lg border border-border/50 bg-muted/35 sm:inline-flex sm:w-auto sm:grid-cols-none">
+          <TabsTrigger value="tokens" className="min-h-10 min-w-0 justify-center gap-1.5 rounded-md px-3 text-xs sm:min-h-0 sm:text-sm">
             <Key className="h-3.5 w-3.5" />
             Token管理
           </TabsTrigger>
-          <TabsTrigger value="install" className="min-h-10 min-w-0 justify-center gap-1.5 rounded-md border border-border/60 bg-background/70 px-3 text-xs shadow-sm data-[state=active]:border-primary/40 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-md sm:min-h-0 sm:border-0 sm:bg-transparent sm:shadow-none sm:data-[state=active]:border-transparent sm:data-[state=active]:shadow-sm sm:text-sm">
+          <TabsTrigger value="install" className="min-h-10 min-w-0 justify-center gap-1.5 rounded-md px-3 text-xs sm:min-h-0 sm:text-sm">
             <Terminal className="h-3.5 w-3.5" />
-            一键安装
+            安装说明
           </TabsTrigger>
-          <TabsTrigger value="system" className="min-h-10 min-w-0 justify-center gap-1.5 rounded-md border border-border/60 bg-background/70 px-3 text-xs shadow-sm data-[state=active]:border-primary/40 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-md sm:min-h-0 sm:border-0 sm:bg-transparent sm:shadow-none sm:data-[state=active]:border-transparent sm:data-[state=active]:shadow-sm sm:text-sm">
+          <TabsTrigger value="system" className="min-h-10 min-w-0 justify-center gap-1.5 rounded-md px-3 text-xs sm:min-h-0 sm:text-sm">
             <Settings2 className="h-3.5 w-3.5" />
-            系统信息
+            系统配置
           </TabsTrigger>
-          <TabsTrigger value="telegram" className="min-h-10 min-w-0 justify-center gap-1.5 rounded-md border border-border/60 bg-background/70 px-3 text-xs shadow-sm data-[state=active]:border-primary/40 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-md sm:min-h-0 sm:border-0 sm:bg-transparent sm:shadow-none sm:data-[state=active]:border-transparent sm:data-[state=active]:shadow-sm sm:text-sm">
+          <TabsTrigger value="telegram" className="min-h-10 min-w-0 justify-center gap-1.5 rounded-md px-3 text-xs sm:min-h-0 sm:text-sm">
             <Send className="h-3.5 w-3.5" />
             Telegram
           </TabsTrigger>
-          <TabsTrigger value="logs" className="min-h-10 min-w-0 justify-center gap-1.5 rounded-md border border-border/60 bg-background/70 px-3 text-xs shadow-sm data-[state=active]:border-primary/40 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-md sm:min-h-0 sm:border-0 sm:bg-transparent sm:shadow-none sm:data-[state=active]:border-transparent sm:data-[state=active]:shadow-sm sm:text-sm">
+          <TabsTrigger value="logs" className="min-h-10 min-w-0 justify-center gap-1.5 rounded-md px-3 text-xs sm:min-h-0 sm:text-sm">
             <FileText className="h-3.5 w-3.5" />
             面板日志
           </TabsTrigger>
@@ -743,7 +743,7 @@ function SettingsContent() {
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
                 <FileCode className="h-4 w-4" />
-                一键安装说明
+                安装说明
               </CardTitle>
               <CardDescription>
                 在主机上执行命令，完成 Agent 安装。
@@ -1027,7 +1027,7 @@ function SettingsContent() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Terminal className="h-5 w-5" />
-              一键安装脚本
+              安装脚本
             </DialogTitle>
             <DialogDescription>
               使用 root 执行命令。
@@ -1176,7 +1176,7 @@ function PanelLogsSection() {
         </CardHeader>
         <CardContent>
           <Tabs value={logLevel} onValueChange={(v) => setLogLevel(v as typeof logLevel)} className="space-y-3">
-            <TabsList className="grid h-auto w-full grid-cols-2 gap-1 bg-muted/50 p-1 sm:grid-cols-5">
+            <TabsList className="grid h-auto w-full grid-cols-2 bg-muted/50 sm:grid-cols-5">
               {levelTabs.map((tab) => (
                 <TabsTrigger key={tab.value} value={tab.value} className="min-w-0 gap-1.5 text-xs">
                   {tab.label}
@@ -1339,7 +1339,7 @@ function TelegramBotSettingsCard() {
               <Globe className="h-4 w-4" />
               <AlertTitle>快捷登录需要域名</AlertTitle>
               <AlertDescription>
-                在系统信息填写公开地址，并在 @BotFather 绑定同一域名。
+                在系统配置填写公开地址，并在 @BotFather 绑定同一域名。
               </AlertDescription>
             </Alert>
             <div className="grid gap-3 lg:grid-cols-2">

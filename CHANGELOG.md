@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.3.30] - 2026-05-28
+
+### Fixed
+
+- Fixed Agent reconnect handling after upgrades so tunnel and forwarding runtime state can recover without manually toggling entries.
+- Fixed latency chart scaling so low-latency data no longer gets forced into an oversized 120ms range.
+- Unified dashboard page spacing and tab/type control spacing across management pages.
+
+### Changed
+
+- Renamed system setting labels from system information to system configuration and changed one-click install wording to installation instructions.
+- Bumped panel version to 2.3.30. Agent version remains 2.2.51.
+
 ## [2.3.29] - 2026-05-28
 
 ### Added
