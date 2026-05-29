@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.3.31] - 2026-05-29
+
+### Fixed
+
+- Fixed inbound and outbound traffic accounting across iptables, nftables, realm, socat, gost, and tunnel forwarding paths.
+- Fixed ForwardX encrypted tunnel traffic reporting to count real forwarded payload bytes instead of relying on outer tunnel socket counters.
+
+### Changed
+
+- Bumped panel version to 2.3.31 and Agent target version to 2.2.52.
+
 ## [2.3.30] - 2026-05-28
 
 ### Fixed

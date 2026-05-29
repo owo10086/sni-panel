@@ -75,6 +75,11 @@ type envelope struct {
 	TS  int64  `json:"ts"`
 }
 
+type trafficCounter struct {
+	in  atomic.Uint64
+	out atomic.Uint64
+}
+
 type v2Handshake struct {
 	V        int   `json:"v"`
 	TS       int64 `json:"ts"`
@@ -386,9 +391,13 @@ func handleEntryTCP(client net.Conn, cfg config, aead cipher.AEAD) error {
 			return err
 		}
 	}
+	counter := &trafficCounter{}
+	counter.in.Add(uint64(len(first)))
+	stopReporting := startTrafficReporter(cfg, counter)
+	defer stopReporting()
 	errCh := make(chan error, 2)
-	go func() { errCh <- copyPlainToSecure(sec, client, cfg.LimitIn) }()
-	go func() { errCh <- copySecureToPlain(client, sec, cfg.LimitOut) }()
+	go func() { errCh <- copyPlainToSecure(sec, client, cfg.LimitIn, &counter.in) }()
+	go func() { errCh <- copySecureToPlain(client, sec, cfg.LimitOut, &counter.out) }()
 	err = <-errCh
 	return err
 }
@@ -438,7 +447,11 @@ func udpRoundTripToExit(cfg config, aead cipher.AEAD, payload []byte) ([]byte, e
 		return nil, err
 	}
 	_ = exit.SetReadDeadline(time.Now().Add(8 * time.Second))
-	return sec.readFrame()
+	resp, err := sec.readFrame()
+	if err == nil {
+		reportTraffic(cfg, uint64(len(payload)), uint64(len(resp)))
+	}
+	return resp, err
 }
 
 func runExit(done <-chan struct{}, cfg config, aead cipher.AEAD) error {
@@ -505,8 +518,8 @@ func handleExitTCP(sec *secureConn, hello helloFrame) error {
 	}
 	defer target.Close()
 	errCh := make(chan error, 2)
-	go func() { errCh <- copySecureToPlain(target, sec, 0) }()
-	go func() { errCh <- copyPlainToSecure(sec, target, 0) }()
+	go func() { errCh <- copySecureToPlain(target, sec, 0, nil) }()
+	go func() { errCh <- copyPlainToSecure(sec, target, 0, nil) }()
 	err = <-errCh
 	return err
 }
@@ -537,7 +550,7 @@ func handleExitUDP(sec *secureConn, hello helloFrame) error {
 	return sec.writeFrame(buf[:n])
 }
 
-func copyPlainToSecure(dst *secureConn, src net.Conn, bytesPerSecond int64) error {
+func copyPlainToSecure(dst *secureConn, src net.Conn, bytesPerSecond int64, counter *atomic.Uint64) error {
 	buf := make([]byte, 32*1024)
 	limiter := newLimiter(bytesPerSecond)
 	for {
@@ -546,6 +559,9 @@ func copyPlainToSecure(dst *secureConn, src net.Conn, bytesPerSecond int64) erro
 			limiter.wait(n)
 			if wErr := dst.writeFrame(buf[:n]); wErr != nil {
 				return wErr
+			}
+			if counter != nil {
+				counter.Add(uint64(n))
 			}
 		}
 		if err != nil {
@@ -557,7 +573,7 @@ func copyPlainToSecure(dst *secureConn, src net.Conn, bytesPerSecond int64) erro
 	}
 }
 
-func copySecureToPlain(dst net.Conn, src *secureConn, bytesPerSecond int64) error {
+func copySecureToPlain(dst net.Conn, src *secureConn, bytesPerSecond int64, counter *atomic.Uint64) error {
 	limiter := newLimiter(bytesPerSecond)
 	for {
 		frame, err := src.readFrame()
@@ -573,6 +589,9 @@ func copySecureToPlain(dst net.Conn, src *secureConn, bytesPerSecond int64) erro
 		limiter.wait(len(frame))
 		if _, err := dst.Write(frame); err != nil {
 			return err
+		}
+		if counter != nil {
+			counter.Add(uint64(len(frame)))
 		}
 	}
 }
@@ -998,6 +1017,79 @@ func reportProtocolBlock(cfg config, proto string) {
 	}
 	_ = resp.Body.Close()
 	log.Printf("protocol block reported rule=%d tunnel=%d protocol=%s status=%s", cfg.RuleID, cfg.TunnelID, proto, resp.Status)
+}
+
+func reportTraffic(cfg config, bytesIn, bytesOut uint64) {
+	if cfg.PanelURL == "" || cfg.Token == "" || cfg.RuleID <= 0 || (bytesIn == 0 && bytesOut == 0) {
+		return
+	}
+	payload := map[string]any{
+		"stats": []map[string]any{{
+			"ruleId":      cfg.RuleID,
+			"bytesIn":     bytesIn,
+			"bytesOut":    bytesOut,
+			"connections": 0,
+		}},
+	}
+	env, err := encryptEnvelope(payload, cfg.Token)
+	if err != nil {
+		log.Printf("traffic encrypt failed rule=%d: %v", cfg.RuleID, err)
+		return
+	}
+	body, _ := json.Marshal(env)
+	req, err := http.NewRequest("POST", strings.TrimRight(cfg.PanelURL, "/")+"/api/agent/traffic", bytes.NewReader(body))
+	if err != nil {
+		log.Printf("traffic request failed rule=%d: %v", cfg.RuleID, err)
+		return
+	}
+	req.Header.Set("Authorization", "Bearer "+cfg.Token)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Agent-Encrypted", "1")
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Printf("traffic report failed rule=%d in=%d out=%d: %v", cfg.RuleID, bytesIn, bytesOut, err)
+		return
+	}
+	_ = resp.Body.Close()
+	if resp.StatusCode >= 300 {
+		log.Printf("traffic report status rule=%d in=%d out=%d status=%s", cfg.RuleID, bytesIn, bytesOut, resp.Status)
+	}
+}
+
+func startTrafficReporter(cfg config, counter *trafficCounter) func() {
+	done := make(chan struct{})
+	var lastIn, lastOut uint64
+	reportDelta := func() {
+		curIn := counter.in.Load()
+		curOut := counter.out.Load()
+		deltaIn := curIn - lastIn
+		deltaOut := curOut - lastOut
+		if deltaIn > 0 || deltaOut > 0 {
+			reportTraffic(cfg, deltaIn, deltaOut)
+			lastIn = curIn
+			lastOut = curOut
+		}
+	}
+	go func() {
+		ticker := time.NewTicker(10 * time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				reportDelta()
+			case <-done:
+				return
+			}
+		}
+	}()
+	var once sync.Once
+	return func() {
+		once.Do(func() {
+			close(done)
+			reportDelta()
+		})
+	}
 }
 
 func encryptEnvelope(payload any, token string) (envelope, error) {

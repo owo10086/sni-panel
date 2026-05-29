@@ -27,7 +27,7 @@ import (
 	"time"
 )
 
-var Version = "2.2.51"
+var Version = "2.2.52"
 var upgradeStarted int32
 var fxpMu sync.Mutex
 var fxpServers = map[string]*fxpProcess{}
@@ -273,7 +273,7 @@ func heartbeat(cfg Config) (int, error) {
 	for _, r := range resp.RunningRules {
 		writeRunningRuleState(r)
 		if r.ForwardType != "nftables" {
-			ensureCountingChains(r.SourcePort)
+			ensureCountingChains(r.SourcePort, r.TargetIP, r.TargetPort, r.Protocol)
 		}
 	}
 	syncProtocolGuards(cfg, resp.GuardRules)
@@ -537,12 +537,11 @@ func reconcileRemovePort(port string) {
 }
 
 func managedPortCleanupCmds(port string) []string {
-	return []string{
+	cmds := []string{
 		"systemctl stop forwardx-socat-" + port + ".service forwardx-socat-tcp-" + port + ".service forwardx-socat-udp-" + port + ".service forwardx-realm-" + port + ".service 2>/dev/null || true",
 		"systemctl disable forwardx-socat-" + port + ".service forwardx-socat-tcp-" + port + ".service forwardx-socat-udp-" + port + ".service forwardx-realm-" + port + ".service 2>/dev/null || true",
 		"rm -f /etc/systemd/system/forwardx-socat-" + port + ".service /etc/systemd/system/forwardx-socat-tcp-" + port + ".service /etc/systemd/system/forwardx-socat-udp-" + port + ".service /etc/systemd/system/forwardx-realm-" + port + ".service",
 		"systemctl daemon-reload",
-		"rm -f /var/lib/forwardx-agent/traffic_" + port + ".prev /var/lib/forwardx-agent/port_" + port + ".rule /var/lib/forwardx-agent/port_" + port + ".fwtype /var/lib/forwardx-agent/target_" + port + ".info 2>/dev/null || true",
 		"iptables -t mangle -D PREROUTING -p tcp --dport " + port + " -j FWX_IN_" + port + " 2>/dev/null || true",
 		"iptables -t mangle -D PREROUTING -p udp --dport " + port + " -j FWX_IN_" + port + " 2>/dev/null || true",
 		"iptables -t mangle -D POSTROUTING -p tcp --sport " + port + " -j FWX_OUT_" + port + " 2>/dev/null || true",
@@ -551,11 +550,27 @@ func managedPortCleanupCmds(port string) []string {
 		"iptables -t mangle -D INPUT -p udp --dport " + port + " -j FWX_IN_" + port + " 2>/dev/null || true",
 		"iptables -t mangle -D OUTPUT -p tcp --sport " + port + " -j FWX_OUT_" + port + " 2>/dev/null || true",
 		"iptables -t mangle -D OUTPUT -p udp --sport " + port + " -j FWX_OUT_" + port + " 2>/dev/null || true",
+		"iptables -t mangle -D FORWARD -p tcp -j FWX_IN_" + port + " 2>/dev/null || true",
+		"iptables -t mangle -D FORWARD -p udp -j FWX_IN_" + port + " 2>/dev/null || true",
+		"iptables -t mangle -D FORWARD -p tcp -j FWX_OUT_" + port + " 2>/dev/null || true",
+		"iptables -t mangle -D FORWARD -p udp -j FWX_OUT_" + port + " 2>/dev/null || true",
 		"iptables -t mangle -F FWX_IN_" + port + " 2>/dev/null || true",
 		"iptables -t mangle -X FWX_IN_" + port + " 2>/dev/null || true",
 		"iptables -t mangle -F FWX_OUT_" + port + " 2>/dev/null || true",
 		"iptables -t mangle -X FWX_OUT_" + port + " 2>/dev/null || true",
+		"rm -f /var/lib/forwardx-agent/traffic_" + port + ".prev /var/lib/forwardx-agent/port_" + port + ".rule /var/lib/forwardx-agent/port_" + port + ".fwtype /var/lib/forwardx-agent/target_" + port + ".info 2>/dev/null || true",
 	}
+	if targetIP, targetPort, ok := readTargetInfo(port); ok {
+		tp := strconv.Itoa(targetPort)
+		targetCmds := []string{
+			"iptables -t mangle -D FORWARD -p tcp -d " + targetIP + " --dport " + tp + " -j FWX_IN_" + port + " 2>/dev/null || true",
+			"iptables -t mangle -D FORWARD -p udp -d " + targetIP + " --dport " + tp + " -j FWX_IN_" + port + " 2>/dev/null || true",
+			"iptables -t mangle -D FORWARD -p tcp -s " + targetIP + " --sport " + tp + " -j FWX_OUT_" + port + " 2>/dev/null || true",
+			"iptables -t mangle -D FORWARD -p udp -s " + targetIP + " --sport " + tp + " -j FWX_OUT_" + port + " 2>/dev/null || true",
+		}
+		cmds = append(targetCmds, cmds...)
+	}
+	return cmds
 }
 
 func removeStateByPort(port string) {
@@ -570,22 +585,37 @@ func atoi(s string) int {
 	return v
 }
 
-func ensureCountingChains(port int) {
+func ensureCountingChains(port int, targetIP string, targetPort int, protocol string) {
 	if port <= 0 {
 		return
 	}
 	p := strconv.Itoa(port)
+	protos := []string{"tcp", "udp"}
+	if protocol == "tcp" || protocol == "udp" {
+		protos = []string{protocol}
+	}
 	commands := []string{
 		"iptables -t mangle -N FWX_IN_" + p + " 2>/dev/null || true",
 		"iptables -t mangle -N FWX_OUT_" + p + " 2>/dev/null || true",
-		"iptables -t mangle -C PREROUTING -p tcp --dport " + p + " -j FWX_IN_" + p + " 2>/dev/null || iptables -t mangle -A PREROUTING -p tcp --dport " + p + " -j FWX_IN_" + p,
-		"iptables -t mangle -C PREROUTING -p udp --dport " + p + " -j FWX_IN_" + p + " 2>/dev/null || iptables -t mangle -A PREROUTING -p udp --dport " + p + " -j FWX_IN_" + p,
-		"iptables -t mangle -C POSTROUTING -p tcp --sport " + p + " -j FWX_OUT_" + p + " 2>/dev/null || iptables -t mangle -A POSTROUTING -p tcp --sport " + p + " -j FWX_OUT_" + p,
-		"iptables -t mangle -C POSTROUTING -p udp --sport " + p + " -j FWX_OUT_" + p + " 2>/dev/null || iptables -t mangle -A POSTROUTING -p udp --sport " + p + " -j FWX_OUT_" + p,
-		"iptables -t mangle -C INPUT -p tcp --dport " + p + " -j FWX_IN_" + p + " 2>/dev/null || iptables -t mangle -A INPUT -p tcp --dport " + p + " -j FWX_IN_" + p,
-		"iptables -t mangle -C INPUT -p udp --dport " + p + " -j FWX_IN_" + p + " 2>/dev/null || iptables -t mangle -A INPUT -p udp --dport " + p + " -j FWX_IN_" + p,
-		"iptables -t mangle -C OUTPUT -p tcp --sport " + p + " -j FWX_OUT_" + p + " 2>/dev/null || iptables -t mangle -A OUTPUT -p tcp --sport " + p + " -j FWX_OUT_" + p,
-		"iptables -t mangle -C OUTPUT -p udp --sport " + p + " -j FWX_OUT_" + p + " 2>/dev/null || iptables -t mangle -A OUTPUT -p udp --sport " + p + " -j FWX_OUT_" + p,
+	}
+	for _, proto := range protos {
+		commands = append(commands,
+			"iptables -t mangle -C PREROUTING -p "+proto+" --dport "+p+" -j FWX_IN_"+p+" 2>/dev/null || iptables -t mangle -A PREROUTING -p "+proto+" --dport "+p+" -j FWX_IN_"+p,
+			"iptables -t mangle -C INPUT -p "+proto+" --dport "+p+" -j FWX_IN_"+p+" 2>/dev/null || iptables -t mangle -A INPUT -p "+proto+" --dport "+p+" -j FWX_IN_"+p,
+			"iptables -t mangle -C POSTROUTING -p "+proto+" --sport "+p+" -j FWX_OUT_"+p+" 2>/dev/null || iptables -t mangle -A POSTROUTING -p "+proto+" --sport "+p+" -j FWX_OUT_"+p,
+			"iptables -t mangle -C OUTPUT -p "+proto+" --sport "+p+" -j FWX_OUT_"+p+" 2>/dev/null || iptables -t mangle -A OUTPUT -p "+proto+" --sport "+p+" -j FWX_OUT_"+p,
+		)
+		if targetIP != "" && targetPort > 0 {
+			tp := strconv.Itoa(targetPort)
+			commands = append(commands,
+				"iptables -t mangle -C OUTPUT -p "+proto+" -d "+targetIP+" --dport "+tp+" -j FWX_IN_"+p+" 2>/dev/null || iptables -t mangle -A OUTPUT -p "+proto+" -d "+targetIP+" --dport "+tp+" -j FWX_IN_"+p,
+				"iptables -t mangle -C POSTROUTING -p "+proto+" -d "+targetIP+" --dport "+tp+" -j FWX_IN_"+p+" 2>/dev/null || iptables -t mangle -A POSTROUTING -p "+proto+" -d "+targetIP+" --dport "+tp+" -j FWX_IN_"+p,
+				"iptables -t mangle -C PREROUTING -p "+proto+" -s "+targetIP+" --sport "+tp+" -j FWX_OUT_"+p+" 2>/dev/null || iptables -t mangle -A PREROUTING -p "+proto+" -s "+targetIP+" --sport "+tp+" -j FWX_OUT_"+p,
+				"iptables -t mangle -C INPUT -p "+proto+" -s "+targetIP+" --sport "+tp+" -j FWX_OUT_"+p+" 2>/dev/null || iptables -t mangle -A INPUT -p "+proto+" -s "+targetIP+" --sport "+tp+" -j FWX_OUT_"+p,
+				"iptables -t mangle -C FORWARD -p "+proto+" -d "+targetIP+" --dport "+tp+" -j FWX_IN_"+p+" 2>/dev/null || iptables -t mangle -A FORWARD -p "+proto+" -d "+targetIP+" --dport "+tp+" -j FWX_IN_"+p,
+				"iptables -t mangle -C FORWARD -p "+proto+" -s "+targetIP+" --sport "+tp+" -j FWX_OUT_"+p+" 2>/dev/null || iptables -t mangle -A FORWARD -p "+proto+" -s "+targetIP+" --sport "+tp+" -j FWX_OUT_"+p,
+			)
+		}
 	}
 	for _, cmd := range commands {
 		_ = runShell(cmd)
@@ -620,6 +650,9 @@ func collectTraffic(cfg Config) {
 			continue
 		}
 		forwardType := readForwardTypeByPort(port)
+		if forwardType == "forwardx" {
+			continue
+		}
 		in, out := iptablesBytes("FWX_IN_"+port), iptablesBytes("FWX_OUT_"+port)
 		if forwardType == "nftables" {
 			in, out = nftablesBytes(ruleID, port)
@@ -733,11 +766,8 @@ func conntrackConnections(port string) uint64 {
 }
 
 func iptablesBytes(chain string) uint64 {
-	parentChains := "PREROUTING INPUT"
-	if strings.HasPrefix(chain, "FWX_OUT_") {
-		parentChains = "POSTROUTING OUTPUT"
-	}
-	cmd := fmt.Sprintf(`for c in %s; do iptables -t mangle -nvxL "$c" 2>/dev/null; done | awk -v ch=%s '$0 ~ ch {s+=$2} END{print s+0}'`, parentChains, shellQuote(chain))
+	parentChains := "PREROUTING INPUT FORWARD OUTPUT POSTROUTING"
+	cmd := fmt.Sprintf(`for c in %s; do iptables -t mangle -nvxL "$c" 2>/dev/null | awk -v ch=%s '$0 ~ ch {s+=$2} END{print s+0}'; done | sort -nr | head -n1`, parentChains, shellQuote(chain))
 	out, err := exec.Command("sh", "-lc", cmd).Output()
 	if err != nil {
 		return 0
