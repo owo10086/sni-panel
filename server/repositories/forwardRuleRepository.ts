@@ -743,6 +743,44 @@ function emptyForwardRuleCategoryCounts() {
   return { all: 0, local: 0, tunnel: 0, chain: 0, group: 0 };
 }
 
+type ForwardRuleDisplayRow = {
+  id: number;
+  forwardGroupId: number | null;
+  sourcePort: number;
+  sni: string | null;
+};
+
+type ForwardRuleDisplayUnit = {
+  key: string;
+  ruleIds: number[];
+};
+
+function buildForwardRuleDisplayUnits(rows: ForwardRuleDisplayRow[]) {
+  const units: ForwardRuleDisplayUnit[] = [];
+  const sniGroups = new Map<string, ForwardRuleDisplayUnit>();
+  for (const row of rows) {
+    const ruleId = Number(row.id || 0);
+    if (ruleId <= 0) continue;
+    const forwardGroupId = Number(row.forwardGroupId || 0);
+    const sourcePort = Number(row.sourcePort || 0);
+    const sni = normalizeSniValue(row.sni);
+    if (!sni || forwardGroupId <= 0 || sourcePort <= 0) {
+      units.push({ key: `rule:${ruleId}`, ruleIds: [ruleId] });
+      continue;
+    }
+    const key = `sni:${forwardGroupId}:${sourcePort}`;
+    const existing = sniGroups.get(key);
+    if (existing) {
+      existing.ruleIds.push(ruleId);
+      continue;
+    }
+    const unit = { key, ruleIds: [ruleId] };
+    sniGroups.set(key, unit);
+    units.push(unit);
+  }
+  return units;
+}
+
 export async function getForwardRulesPage(input: ForwardRuleListQuery) {
   const db = await getDb();
   if (!db) {
@@ -750,6 +788,8 @@ export async function getForwardRulesPage(input: ForwardRuleListQuery) {
       ...pageResult([], 0, input),
       scopeTotalItems: 0,
       activeItems: 0,
+      ruleTotalItems: 0,
+      ruleStartIndex: 0,
       categoryCounts: emptyForwardRuleCategoryCounts(),
     };
   }
@@ -760,7 +800,8 @@ export async function getForwardRulesPage(input: ForwardRuleListQuery) {
   });
   const categoryFilter = buildForwardRuleSqlFilter(input, { includeCategory: false });
   const filtered = buildForwardRuleSqlFilter(input);
-  const [scopeRows, totalRows, categoryRows] = await Promise.all([
+  const categoryOrder = input.category === "all" ? filtered.categorySql + " ASC, " : "";
+  const [scopeRows, totalRows, categoryRows, orderedRows] = await Promise.all([
     queryRaw<{ totalItems: number }>(
       "SELECT COUNT(*) AS " + quoteIdentifier("totalItems") + "\n"
         + scopeFilter.fromSql + "\nWHERE " + scopeFilter.whereSql,
@@ -780,22 +821,28 @@ export async function getForwardRulesPage(input: ForwardRuleListQuery) {
         + "\nGROUP BY " + categoryFilter.categorySql,
       categoryFilter.params,
     ),
-  ]);
-  const totalItems = Number(totalRows[0]?.totalItems || 0);
-  const activeItems = Number(totalRows[0]?.activeItems || 0);
-  const window = pageWindowForTotal(input, totalItems);
-  const categoryOrder = input.category === "all" ? filtered.categorySql + " ASC, " : "";
-  const idRows = totalItems > 0
-    ? await queryRaw<{ id: number }>(
-      "SELECT " + ruleColumn("r", "id") + " AS " + quoteIdentifier("id") + "\n"
+    queryRaw<ForwardRuleDisplayRow>(
+      "SELECT " + ruleColumn("r", "id") + " AS " + quoteIdentifier("id")
+        + ", " + ruleColumn("r", "forwardGroupId") + " AS " + quoteIdentifier("forwardGroupId")
+        + ", " + ruleColumn("r", "sourcePort") + " AS " + quoteIdentifier("sourcePort")
+        + ", " + ruleColumn("r", "sni") + " AS " + quoteIdentifier("sni") + "\n"
         + filtered.fromSql + "\nWHERE " + filtered.whereSql
         + "\nORDER BY " + categoryOrder + ruleColumn("r", "sortOrder") + " ASC, "
-        + ruleColumn("r", "createdAt") + " DESC, " + ruleColumn("r", "id") + " DESC"
-        + "\nLIMIT ? OFFSET ?",
-      [...filtered.params, window.pageSize, window.offset],
-    )
-    : [];
-  const ids = idRows.map((row) => Number(row.id)).filter((id) => id > 0);
+        + ruleColumn("r", "createdAt") + " DESC, " + ruleColumn("r", "id") + " DESC",
+      filtered.params,
+    ),
+  ]);
+  const ruleTotalItems = Number(totalRows[0]?.totalItems || 0);
+  const activeItems = Number(totalRows[0]?.activeItems || 0);
+  const displayUnits = buildForwardRuleDisplayUnits(orderedRows);
+  const totalItems = displayUnits.length;
+  const window = pageWindowForTotal(input, totalItems);
+  const ruleStartIndex = displayUnits
+    .slice(0, window.offset)
+    .reduce((total, unit) => total + unit.ruleIds.length, 0);
+  const ids = displayUnits
+    .slice(window.offset, window.offset + window.pageSize)
+    .flatMap((unit) => unit.ruleIds);
   const items = await hydrateForwardRuleListIds(ids);
   const categoryCounts = emptyForwardRuleCategoryCounts();
   for (const row of categoryRows) {
@@ -808,6 +855,8 @@ export async function getForwardRulesPage(input: ForwardRuleListQuery) {
     ...pageResult(items, totalItems, window),
     scopeTotalItems: Number(scopeRows[0]?.totalItems || 0),
     activeItems,
+    ruleTotalItems,
+    ruleStartIndex,
     categoryCounts,
   };
 }

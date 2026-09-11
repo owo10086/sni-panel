@@ -304,7 +304,6 @@ async function applyAgentRuleStatus(host: any, payload: any): Promise<AgentStatu
       recordSniRuntimeApplyResult({
         hostId: Number(host.id),
         splitterPort: sniSplitterPort,
-        attemptedVersion: payload?.sniRouteVersion,
         success: !!isRunning,
         message,
       });

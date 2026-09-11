@@ -396,6 +396,31 @@ type SniRuleDisplayGroup = { key: string; rules: any[] };
 type RuleDisplayItem =
   | { kind: "rule"; key: string; rule: any }
   | { kind: "sni-group"; key: string; group: SniRuleDisplayGroup };
+type SniRuleGroupStatus = "running" | "error" | "pending" | "disabled";
+
+const SNI_RULE_GROUP_STATUS_CONFIG: Record<SniRuleGroupStatus, {
+  dotClass: string;
+  text: (context: { activeRuleCount: number; appliedCount: number; exitOffline: boolean }) => string;
+}> = {
+  running: {
+    dotClass: "bg-emerald-500 shadow-[0_0_0_3px_rgba(16,185,129,0.16)]",
+    text: () => "全部生效",
+  },
+  error: {
+    dotClass: "bg-rose-500 shadow-[0_0_0_3px_rgba(244,63,94,0.14)]",
+    text: ({ exitOffline }) => exitOffline ? "出口离线" : "配置应用失败",
+  },
+  pending: {
+    dotClass: "bg-amber-400 shadow-[0_0_0_3px_rgba(251,191,36,0.14)]",
+    text: ({ activeRuleCount, appliedCount }) => appliedCount > 0
+      ? `${appliedCount} / ${activeRuleCount} 已生效`
+      : "等待生效",
+  },
+  disabled: {
+    dotClass: "bg-muted-foreground/30",
+    text: () => "已停用",
+  },
+};
 
 const RULE_CATEGORIES = ["all", "local", "tunnel", "chain", "group"] as const;
 const ruleTransferScopeLabels: Record<RuleTransferScopeType, string> = {
@@ -4432,11 +4457,15 @@ function RulesContent() {
   const sortedFilteredRules = useMemo(() => {
     return [...filteredRules].sort(compareRulesBySavedOrder);
   }, [compareRulesBySavedOrder, filteredRules]);
+  const sortedRuleDisplayItems = useMemo(
+    () => groupSniRulesForDisplay(sortedFilteredRules),
+    [sortedFilteredRules],
+  );
   const ruleOrder = useOptimisticSortableOrder({
-    items: sortedFilteredRules,
-    getId: (rule: any) => Number(rule.id),
+    items: sortedRuleDisplayItems,
+    getId: (item: RuleDisplayItem) => item.key,
   });
-  const orderedFilteredRules = ruleOrder.items;
+  const orderedRuleDisplayItems = ruleOrder.items;
   const trafficTotalsCacheScope = useMemo(
     () => [
       ruleFilterCacheScope,
@@ -4454,51 +4483,67 @@ function RulesContent() {
   const rulesHeaderLoading = isLoading || !rules || !scopedRulesReady || !filteredRulesPrimed;
   const totalTrafficTotalsLoading = rulesHeaderLoading || !secondaryQueriesReady || ruleListSummaryLoading;
   const dailyTrafficTotalsLoading = rulesHeaderLoading || !secondaryQueriesReady || ruleListSummaryLoading;
-  const [stableRulePageMeta, setStableRulePageMeta] = useState({ activeItems: 0, totalItems: 0, scopeTotalItems: 0 });
+  const [stableRulePageMeta, setStableRulePageMeta] = useState({
+    activeItems: 0,
+    totalItems: 0,
+    ruleTotalItems: 0,
+    ruleStartIndex: 0,
+    scopeTotalItems: 0,
+  });
   useEffect(() => {
     if (!rulePageQuery.data || rulePageQuery.isPlaceholderData) return;
     setStableRulePageMeta({
       activeItems: Math.max(0, Number(rulePageQuery.data.activeItems) || 0),
       totalItems: Math.max(0, Number(rulePageQuery.data.totalItems) || 0),
+      ruleTotalItems: Math.max(0, Number(rulePageQuery.data.ruleTotalItems) || 0),
+      ruleStartIndex: Math.max(0, Number(rulePageQuery.data.ruleStartIndex) || 0),
       scopeTotalItems: Math.max(0, Number(rulePageQuery.data.scopeTotalItems) || 0),
     });
   }, [rulePageQuery.data, rulePageQuery.isPlaceholderData]);
   const rulePageMeta = rulePageQuery.data ?? stableRulePageMeta;
   const ruleScopeTotal = Math.max(0, Number(rulePageMeta.scopeTotalItems) || 0);
   const activeCount = Math.max(0, Number(rulePageMeta.activeItems) || 0);
-  const filteredRuleTotal = Math.max(0, Number(rulePageMeta.totalItems) || 0);
-  const rulePagination = useServerPagination(isRuleGlobeView ? [] : orderedFilteredRules, filteredRuleTotal, rulePageRequest, {
+  const filteredRuleTotal = Math.max(0, Number(rulePageMeta.ruleTotalItems) || 0);
+  const filteredDisplayTotal = Math.max(0, Number(rulePageMeta.totalItems) || 0);
+  const ruleStartIndex = Math.max(0, Number(rulePageMeta.ruleStartIndex) || 0);
+  const rulePagination = useServerPagination(isRuleGlobeView ? [] : orderedRuleDisplayItems, filteredDisplayTotal, rulePageRequest, {
     pageSize: rulePageSize,
     isReady: !isLoading && !!rulePageQuery.data,
   });
-  const pagedRules = rulePagination.items;
-  const hasPagedSniRules = pagedRules.some((rule: any) => !!String(rule?.sni || "").trim());
+  const pagedRuleItems = rulePagination.items;
+  const pagedRules = useMemo(
+    () => pagedRuleItems.flatMap((item) => item.kind === "rule" ? [item.rule] : item.group.rules),
+    [pagedRuleItems],
+  );
   const ruleSortingEnabled = ruleCategory !== "all"
     && effectiveViewMode !== "globe"
     && filterResource === "all"
     && ruleSearchQuery.trim().length === 0
-    && (user?.role !== "admin" || filterUser !== "all")
-    && !hasPagedSniRules;
+    && (user?.role !== "admin" || filterUser !== "all");
   const ruleSortingReady = ruleSortingEnabled && !rulePageQuery.isPlaceholderData;
   const ruleSortableItems = useMemo(() => {
-    if (!ruleSortingEnabled) return [];
-    return pagedRules.filter((rule: any) => !rule.forwardGroupRuleId && !rule.forwardGroupMemberId);
-  }, [pagedRules, ruleSortingEnabled]);
-  const ruleSortableIdSet = useMemo(
-    () => new Set(ruleSortableItems.map((rule: any) => Number(rule.id))),
+    return ruleSortingEnabled ? pagedRuleItems : [];
+  }, [pagedRuleItems, ruleSortingEnabled]);
+  const ruleSortableKeySet = useMemo(
+    () => new Set(ruleSortableItems.map((item) => item.key)),
     [ruleSortableItems],
   );
   const ruleSortable = useSortableReorder({
     items: ruleSortableItems,
-    getId: (rule: any) => Number(rule.id),
+    getId: (item: RuleDisplayItem) => item.key,
     disabled: !ruleSortingReady || ruleReorderPending || ruleSortableItems.length < 2,
-    onReorder: (nextRules) => {
+    onReorder: (nextItems) => {
       if (ruleCategory === "all") return;
-      const requestId = ruleOrder.begin(nextRules);
+      const requestId = ruleOrder.begin(nextItems);
+      const nextRuleIds = nextItems.flatMap((item) => (
+        item.kind === "rule"
+          ? [Number(item.rule.id)]
+          : item.group.rules.map((rule: any) => Number(rule.id))
+      ));
       reorderRulesMutation.mutate({
         category: ruleCategory,
-        ids: nextRules.map((rule: any) => Number(rule.id)),
-        startIndex: (rulePagination.currentPage - 1) * rulePagination.pageSize,
+        ids: nextRuleIds,
+        startIndex: ruleStartIndex,
       }, {
         onError: () => ruleOrder.release(requestId),
         onSettled: () => ruleOrder.resync(requestId, () => Promise.all([
@@ -4510,7 +4555,6 @@ function RulesContent() {
       });
     },
   });
-  const pagedRuleItems = useMemo(() => groupSniRulesForDisplay(pagedRules), [pagedRules]);
   const desktopRuleGroups = useMemo(() => {
     const groups = [
       { type: "local" as const, label: desktopRuleTypeLabels.local, rules: [] as any[], items: [] as RuleDisplayItem[] },
@@ -6544,22 +6588,18 @@ function RulesContent() {
       .find((hostId: number) => hostId > 0) || 0;
     const exitHost = hostById.get(exitHostId);
     const exitOffline = !!exitHost && !exitHost.isOnline;
-    const status = exitOffline || lastConfigError
+    const status: SniRuleGroupStatus = exitOffline || lastConfigError
       ? "error"
       : activeRules.length === 0
         ? "disabled"
         : appliedCount === activeRules.length
           ? "running"
           : "pending";
-    const statusText = status === "error"
-      ? exitOffline ? "出口离线" : "配置应用失败"
-      : status === "disabled"
-        ? "已停用"
-        : status === "running"
-          ? "全部生效"
-          : appliedCount > 0
-            ? `${appliedCount} / ${activeRules.length} 已生效`
-            : "等待生效";
+    const statusText = SNI_RULE_GROUP_STATUS_CONFIG[status].text({
+      activeRuleCount: activeRules.length,
+      appliedCount,
+      exitOffline,
+    });
     return {
       representative,
       activeRuleCount: activeRules.length,
@@ -6574,16 +6614,14 @@ function RulesContent() {
     };
   };
 
-  const renderSniRuleGroupHeader = (group: SniRuleDisplayGroup, compact = false) => {
+  const renderSniRuleGroupHeader = (
+    group: SniRuleDisplayGroup,
+    compact = false,
+    sortable?: RuleSortableRenderState,
+  ) => {
     const open = isSniRuleGroupOpen(group);
     const meta = getSniRuleGroupMeta(group);
-    const statusDotClass = meta.status === "running"
-      ? "bg-emerald-500 shadow-[0_0_0_3px_rgba(16,185,129,0.16)]"
-      : meta.status === "error"
-        ? "bg-rose-500 shadow-[0_0_0_3px_rgba(244,63,94,0.14)]"
-        : meta.status === "pending"
-          ? "bg-amber-400 shadow-[0_0_0_3px_rgba(251,191,36,0.14)]"
-          : "bg-muted-foreground/30";
+    const statusDotClass = SNI_RULE_GROUP_STATUS_CONFIG[meta.status].dotClass;
     const normalizedError = meta.lastConfigError.replace(/[。.!！]+$/, "");
     const configErrorText = meta.lastConfigError
       ? meta.currentVersion > 0
@@ -6594,25 +6632,35 @@ function RulesContent() {
       ? `${getHostOptionName(meta.exitHost)}离线，整组落地机不可达。`
       : "";
     return (
-      <div className={cn("border-y border-border/50 bg-muted/20", compact ? "px-1" : "px-2")}>
-        <button
-          type="button"
-          aria-expanded={open}
-          className="flex w-full min-w-0 flex-wrap items-center gap-x-2 gap-y-1 px-1 py-2 text-left transition-colors hover:bg-muted/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
-          onClick={() => toggleSniRuleGroup(group)}
-        >
-          <ChevronRight className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 ${open ? "rotate-90" : ""}`} />
-          <Globe className="h-4 w-4 shrink-0 text-primary" />
-          <span className="min-w-0 max-w-full truncate text-sm font-semibold" title={getRuleResourceName(meta.representative)}>
-            {getRuleResourceName(meta.representative)} · SNI 分流
-          </span>
-          <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${statusDotClass}`} aria-hidden="true" />
-          <span className="shrink-0 text-xs font-medium">{meta.statusText}</span>
-          <Badge variant="secondary" className="h-5 shrink-0 px-1.5 text-[10px]">{group.rules.length} 条规则</Badge>
-          <span className="shrink-0 text-xs text-muted-foreground">入口端口 {meta.representative?.sourcePort || "-"}</span>
-          <span className="shrink-0 text-xs text-muted-foreground">当前生效版本 {meta.currentVersion || "-"}</span>
-          <span className="shrink-0 text-xs text-muted-foreground">未匹配连接 {meta.unmatchedConnections.toLocaleString()}</span>
-        </button>
+      <div className={cn("group/sortable border-y border-border/50 bg-muted/20", compact ? "px-1" : "px-2")}>
+        <div className="flex min-w-0 items-center">
+          {sortable && (
+            <SortableDragHandle
+              dragHandleProps={sortable.handleProps}
+              visible={sortable.isDragging}
+              busy={ruleReorderPending}
+              className="mx-1"
+            />
+          )}
+          <button
+            type="button"
+            aria-expanded={open}
+            className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1 px-1 py-2 text-left transition-colors hover:bg-muted/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+            onClick={() => toggleSniRuleGroup(group)}
+          >
+            <ChevronRight className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 ${open ? "rotate-90" : ""}`} />
+            <Globe className="h-4 w-4 shrink-0 text-primary" />
+            <span className="min-w-0 max-w-full truncate text-sm font-semibold" title={getRuleResourceName(meta.representative)}>
+              {getRuleResourceName(meta.representative)} · SNI 分流
+            </span>
+            <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${statusDotClass}`} aria-hidden="true" />
+            <span className="shrink-0 text-xs font-medium">{meta.statusText}</span>
+            <Badge variant="secondary" className="h-5 shrink-0 px-1.5 text-[10px]">{group.rules.length} 条规则</Badge>
+            <span className="shrink-0 text-xs text-muted-foreground">入口端口 {meta.representative?.sourcePort || "-"}</span>
+            <span className="shrink-0 text-xs text-muted-foreground">当前生效版本 {meta.currentVersion || "-"}</span>
+            <span className="shrink-0 text-xs text-muted-foreground">未匹配连接 {meta.unmatchedConnections.toLocaleString()}</span>
+          </button>
+        </div>
         {(exitOfflineText || configErrorText) && (
           <div className="space-y-1 border-t border-border/40 px-7 py-2 text-xs leading-5 text-destructive">
             {exitOfflineText && <p>{exitOfflineText}</p>}
@@ -6892,9 +6940,16 @@ function RulesContent() {
     );
   };
 
-  const renderSniRuleCardGroup = (group: SniRuleDisplayGroup) => (
-    <section key={group.key} className="col-span-full min-w-0 space-y-2">
-      {renderSniRuleGroupHeader(group)}
+  const renderSniRuleCardGroup = (group: SniRuleDisplayGroup, sortable?: RuleSortableRenderState) => (
+    <section
+      key={group.key}
+      {...(sortable?.itemProps || {})}
+      className={cn(
+        "col-span-full min-w-0 space-y-2 transition-opacity",
+        sortable?.isDragging && "opacity-55",
+      )}
+    >
+      {renderSniRuleGroupHeader(group, false, sortable)}
       <RuleGroupItems open={isSniRuleGroupOpen(group)} layout={false} className={sortableRuleCardGridClass}>
         {group.rules.map((rule: any) => renderRuleCard(rule))}
       </RuleGroupItems>
@@ -6902,36 +6957,51 @@ function RulesContent() {
   );
 
   const renderRuleCardItem = (item: RuleDisplayItem, sortable = false) => {
-    if (item.kind === "sni-group") return renderSniRuleCardGroup(item.group);
-    if (!sortable || !ruleSortableIdSet.has(Number(item.rule.id))) return renderRuleCard(item.rule);
+    if (!sortable || !ruleSortableKeySet.has(item.key)) {
+      return item.kind === "sni-group" ? renderSniRuleCardGroup(item.group) : renderRuleCard(item.rule);
+    }
     return (
-      <SortableItem key={item.key} id={Number(item.rule.id)} disabled={ruleSortable.disabled}>
-        {(sortableState) => renderRuleCard(item.rule, sortableState)}
+      <SortableItem key={item.key} id={item.key} disabled={ruleSortable.disabled}>
+        {(sortableState) => item.kind === "sni-group"
+          ? renderSniRuleCardGroup(item.group, sortableState)
+          : renderRuleCard(item.rule, sortableState)}
       </SortableItem>
     );
   };
 
   const ruleTableColumnCount = (user?.role === "admin" ? 14 : 13) + (ruleSortingEnabled ? 1 : 0);
+  const renderSniRuleTableGroup = (group: SniRuleDisplayGroup, sortable?: RuleSortableRenderState) => {
+    const open = isSniRuleGroupOpen(group);
+    return (
+      <Fragment key={group.key}>
+        <TableRow
+          {...(sortable?.itemProps || {})}
+          className={cn(
+            "border-border/40 bg-muted/20 hover:bg-muted/35",
+            sortable?.isDragging && "opacity-55",
+            sortable?.isDropTarget && "bg-primary/5",
+          )}
+        >
+          <TableCell colSpan={ruleTableColumnCount} className="p-1">
+            {renderSniRuleGroupHeader(group, true, sortable)}
+          </TableCell>
+        </TableRow>
+        {open && group.rules.map((rule: any) => renderRuleTableRow(rule, undefined, ruleSortingEnabled))}
+      </Fragment>
+    );
+  };
+
   const renderRuleTableItem = (item: RuleDisplayItem, sortable = false) => {
-    if (item.kind === "sni-group") {
-      const open = isSniRuleGroupOpen(item.group);
-      return (
-        <Fragment key={item.key}>
-          <TableRow className="border-border/40 bg-muted/20 hover:bg-muted/35">
-            <TableCell colSpan={ruleTableColumnCount} className="p-1">
-              {renderSniRuleGroupHeader(item.group, true)}
-            </TableCell>
-          </TableRow>
-          {open && item.group.rules.map((rule: any) => renderRuleTableRow(rule, undefined, ruleSortingEnabled))}
-        </Fragment>
-      );
-    }
-    if (!sortable || !ruleSortableIdSet.has(Number(item.rule.id))) {
-      return renderRuleTableRow(item.rule, undefined, ruleSortingEnabled);
+    if (!sortable || !ruleSortableKeySet.has(item.key)) {
+      return item.kind === "sni-group"
+        ? renderSniRuleTableGroup(item.group)
+        : renderRuleTableRow(item.rule, undefined, ruleSortingEnabled);
     }
     return (
-      <SortableItem key={item.key} id={Number(item.rule.id)} disabled={ruleSortable.disabled} itemKind="row">
-        {(sortableState) => renderRuleTableRow(item.rule, sortableState)}
+      <SortableItem key={item.key} id={item.key} disabled={ruleSortable.disabled} itemKind="row">
+        {(sortableState) => item.kind === "sni-group"
+          ? renderSniRuleTableGroup(item.group, sortableState)
+          : renderRuleTableRow(item.rule, sortableState)}
       </SortableItem>
     );
   };
@@ -7175,7 +7245,7 @@ function RulesContent() {
               <SelectContent>
                 {RULE_PAGE_SIZE_OPTIONS.map((pageSize) => (
                   <SelectItem key={pageSize} value={String(pageSize)}>
-                    每页 {pageSize} 条
+                    每页 {pageSize} 项
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -7350,7 +7420,7 @@ function RulesContent() {
                   })}
                 </AutoAnimateContainer>
               ) : (
-                <SortableReorderContext sortable={ruleSortable} ids={ruleSortableItems.map((rule: any) => Number(rule.id))} strategy="rect">
+                <SortableReorderContext sortable={ruleSortable} ids={ruleSortableItems.map((item) => item.key)} strategy="rect">
                   <div className={sortableRuleCardGridClass}>
                     {pagedRuleItems.map((item) => renderRuleCardItem(item, ruleSortingEnabled))}
                   </div>
@@ -7375,7 +7445,7 @@ function RulesContent() {
                     })}
                   </AutoAnimateContainer>
                 ) : (
-                  <SortableReorderContext sortable={ruleSortable} ids={ruleSortableItems.map((rule: any) => Number(rule.id))} strategy="vertical" restrictToList>
+                  <SortableReorderContext sortable={ruleSortable} ids={ruleSortableItems.map((item) => item.key)} strategy="vertical" restrictToList>
                     <div className={sortableRuleMobileGridClass}>
                       {pagedRuleItems.map((item) => renderRuleCardItem(item, ruleSortingEnabled))}
                     </div>
@@ -7439,7 +7509,7 @@ function RulesContent() {
                           })}
                         </TableBody>
                       ) : (
-                        <SortableReorderContext sortable={ruleSortable} ids={ruleSortableItems.map((rule: any) => Number(rule.id))} strategy="vertical" restrictToList>
+                        <SortableReorderContext sortable={ruleSortable} ids={ruleSortableItems.map((item) => item.key)} strategy="vertical" restrictToList>
                           <TableBody>
                             {pagedRuleItems.map((item) => renderRuleTableItem(item, ruleSortingEnabled))}
                           </TableBody>
@@ -7451,7 +7521,7 @@ function RulesContent() {
               </Card>
             </>
           )}
-          <PersistentPagination pagination={rulePagination} itemName="条规则" />
+          <PersistentPagination pagination={rulePagination} itemName="项" />
         </>
       ) : (
         <Card className="border-border/40 bg-card/60 backdrop-blur-md">

@@ -9,41 +9,88 @@ import { canUseForwardRuleResource, getLinkAccessScope } from "../linkAccessView
 import { isManagedForwardGroupChildRule } from "../forwardRuleVisibility";
 import { getSniRuntimeGroupStatus } from "../sniRuntimeObservability";
 import { normalizeSniValue } from "@shared/sni";
+import type { ForwardRule } from "../../drizzle/schema";
+
+type SniRuntimeRuleStatus = {
+  observed: boolean;
+  applied: boolean;
+  currentVersion: number;
+  unmatchedConnections: number;
+  lastConfigError: string;
+  observedAt: number;
+  exitHostId: number;
+};
+
+type ForwardRuleView = ForwardRule & {
+  sniRuntime?: SniRuntimeRuleStatus;
+  resourceAccessAllowed?: boolean;
+};
+
+type ForwardRulePageInput = { items: ForwardRule[] };
+type ForwardRulePageView = { items: ForwardRuleView[] };
+type ForwardRuleViewInput = ForwardRule | ForwardRule[] | ForwardRulePageInput | null | undefined;
+type ForwardRuleViewOutput = ForwardRuleView | ForwardRuleView[] | ForwardRulePageView | null | undefined;
+
+type SniRuntimeForwardGroup = {
+  id: unknown;
+  members?: Array<{
+    hostId?: unknown;
+    isEnabled?: unknown;
+    memberType?: unknown;
+    priority?: unknown;
+  }>;
+};
 
 function runtimeBool(value: unknown, fallback = false) {
   if (value === undefined || value === null || value === "") return fallback;
   return value === true || value === 1 || value === "1" || String(value).trim().toLowerCase() === "true";
 }
 
-async function attachSniRuntimeStatus<T extends any>(value: T): Promise<T> {
+function isForwardRulePage(value: ForwardRuleViewInput): value is ForwardRulePageInput {
+  return !!value && !Array.isArray(value) && "items" in value && Array.isArray(value.items);
+}
+
+function mapForwardRuleView(
+  value: ForwardRuleViewInput,
+  decorate: (rule: ForwardRule) => ForwardRuleView,
+): ForwardRuleViewOutput {
+  if (Array.isArray(value)) return value.map(decorate);
+  if (isForwardRulePage(value)) return { ...value, items: value.items.map(decorate) };
+  return value ? decorate(value) : value;
+}
+
+async function attachSniRuntimeStatus(value: ForwardRuleViewInput): Promise<ForwardRuleViewOutput> {
   const rules = Array.isArray(value)
     ? value
-    : value && Array.isArray((value as any).items)
-      ? (value as any).items
+    : isForwardRulePage(value)
+      ? value.items
       : value
         ? [value]
         : [];
-  const sniRules = rules.filter((rule: any) => (
-    !!normalizeSniValue(rule?.sni)
-    && Number(rule?.forwardGroupId || 0) > 0
-    && Number(rule?.sniSplitterPort || 0) > 0
+  const sniRules = rules.filter((rule) => (
+    !!normalizeSniValue(rule.sni)
+    && Number(rule.forwardGroupId || 0) > 0
+    && Number(rule.sniSplitterPort || 0) > 0
   ));
   if (sniRules.length === 0) return value;
-  const groupIds = Array.from(new Set(sniRules.map((rule: any) => Number(rule.forwardGroupId))));
-  const groups = await db.getForwardGroups(undefined, { includeRuntime: false, ids: groupIds }) as any[];
-  const groupById = new Map(groups.map((group: any) => [Number(group.id), group]));
-  const decorate = (rule: any) => {
-    const sni = normalizeSniValue(rule?.sni);
-    const splitterPort = Number(rule?.sniSplitterPort || 0);
-    const group = groupById.get(Number(rule?.forwardGroupId || 0)) as any;
+  const groupIds = Array.from(new Set(sniRules.map((rule) => Number(rule.forwardGroupId))));
+  const groups: SniRuntimeForwardGroup[] = await db.getForwardGroups(undefined, {
+    includeRuntime: false,
+    ids: groupIds,
+  });
+  const groupById = new Map(groups.map((group) => [Number(group.id), group]));
+  const decorate = (rule: ForwardRule): ForwardRuleView => {
+    const sni = normalizeSniValue(rule.sni);
+    const splitterPort = Number(rule.sniSplitterPort || 0);
+    const group = groupById.get(Number(rule.forwardGroupId || 0));
     if (!sni || splitterPort <= 0 || !group) return rule;
     const exitMember = [...(group.members || [])]
-      .filter((member: any) => (
-        runtimeBool(member?.isEnabled, true)
-        && String(member?.memberType || "") === "host"
-        && Number(member?.hostId || 0) > 0
+      .filter((member) => (
+        runtimeBool(member.isEnabled, true)
+        && String(member.memberType || "") === "host"
+        && Number(member.hostId || 0) > 0
       ))
-      .sort((left: any, right: any) => Number(left.priority) - Number(right.priority))
+      .sort((left, right) => Number(left.priority) - Number(right.priority))
       .at(-1);
     const exitHostId = Number(exitMember?.hostId || 0);
     const runtime = getSniRuntimeGroupStatus(exitHostId, splitterPort);
@@ -60,25 +107,29 @@ async function attachSniRuntimeStatus<T extends any>(value: T): Promise<T> {
       },
     };
   };
-  if (Array.isArray(value)) return value.map(decorate) as T;
-  if (value && Array.isArray((value as any).items)) {
-    return { ...value, items: (value as any).items.map(decorate) } as T;
-  }
-  return decorate(value) as T;
+  return mapForwardRuleView(value, decorate);
 }
 
-async function withRuleResourceAccess<T extends any>(value: T, user: { id: number; role: string }): Promise<T> {
+async function withRuleResourceAccess(value: ForwardRule[], user: { id: number; role: string }): Promise<ForwardRuleView[]>;
+async function withRuleResourceAccess<T extends ForwardRulePageInput>(
+  value: T,
+  user: { id: number; role: string },
+): Promise<Omit<T, "items"> & { items: ForwardRuleView[] }>;
+async function withRuleResourceAccess(
+  value: ForwardRule | null | undefined,
+  user: { id: number; role: string },
+): Promise<ForwardRuleView | null | undefined>;
+async function withRuleResourceAccess(
+  value: ForwardRuleViewInput,
+  user: { id: number; role: string },
+): Promise<ForwardRuleViewOutput> {
   if (user.role === "admin") return attachSniRuntimeStatus(value);
   const scope = await getLinkAccessScope(user);
-  const decorate = (rule: any) => ({
+  const decorate = (rule: ForwardRule): ForwardRuleView => ({
     ...rule,
     resourceAccessAllowed: canUseForwardRuleResource(rule, scope),
   });
-  if (Array.isArray(value)) return value.map(decorate) as T;
-  if (value && Array.isArray((value as any).items)) {
-    return { ...value, items: (value as any).items.map(decorate) } as T;
-  }
-  return (value ? decorate(value) : value) as T;
+  return mapForwardRuleView(value, decorate);
 }
 
 

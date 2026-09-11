@@ -105,7 +105,6 @@ export function recordSniRuntimeSnapshot(
 export function recordSniRuntimeApplyResult(input: {
   hostId: unknown;
   splitterPort: unknown;
-  attemptedVersion?: unknown;
   success: boolean;
   message?: unknown;
   observedAt?: number;
