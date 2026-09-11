@@ -107,7 +107,7 @@ export const portsRulesRouter = router({
             ...((await db.getForwardGroupChildRulesForTemplate(input.excludeRuleId)) as any[]).map((rule: any) => Number(rule.id)),
           ]
         : [];
-      const used = await db.isPortUsedOnHost(hostId, input.sourcePort, excludeRuleIds, input.protocol, undefined, false);
+      const used = await db.isHostPortUnavailableForExplicitUse(hostId, input.sourcePort, excludeRuleIds, input.protocol, undefined, false);
       return { used };
     }),
   randomPort: protectedProcedure

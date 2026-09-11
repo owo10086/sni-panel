@@ -160,7 +160,7 @@ async function validateMimicUdpPort(input: {
   if (!isPortAllowedByPolicy(port, policy)) {
     throw new Error(portPolicyErrorMessage(policy, "mimic UDP 端口"));
   }
-  const used = await db.isPortUsedOnHost(input.exitHostId, port, undefined, "udp", input.tunnelId);
+  const used = await db.isHostPortUnavailableForExplicitUse(input.exitHostId, port, undefined, "udp", input.tunnelId);
   if (used) throw new Error(`mimic UDP 端口 ${port} 已被占用`);
   const tunnelUsed = await hopRepo.isTunnelListenPortUsed(input.exitHostId, port, input.tunnelId);
   if (tunnelUsed) throw new Error(`mimic UDP 端口 ${port} 已被其他隧道占用`);
@@ -886,7 +886,7 @@ export const tunnelsRouter = router({
               hostId: exitHostId,
               port: listenPort,
               protocol: "both",
-              isUsed: (port) => db.isPortUsedOnHost(exitHostId, port, undefined, "both"),
+              isUsed: (port) => db.isHostPortUnavailableForExplicitUse(exitHostId, port, undefined, "both"),
             });
             if (!reservation) throw new Error(`出口 Agent 端口 ${listenPort} 已被占用或正在分配`);
             heldReservations.push(reservation);
@@ -1259,7 +1259,7 @@ export const tunnelsRouter = router({
               hostId: exitHostId,
               port: requestedListenPort,
               protocol: "both",
-              isUsed: (port) => db.isPortUsedOnHost(
+              isUsed: (port) => db.isHostPortUnavailableForExplicitUse(
                 exitHostId,
                 port,
                 listenerRuleExclusions,
@@ -2043,4 +2043,3 @@ export const tunnelsRouter = router({
         return { success: false, latencyMs: null, message, pending: true };
       })),
   });
-

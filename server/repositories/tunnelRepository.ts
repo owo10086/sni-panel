@@ -994,7 +994,7 @@ export async function reserveTunnelExitPort(options: {
   const explicitlyReserved = new Set(reservedPorts
     .map((port) => Number(port))
     .filter((port) => Number.isInteger(port) && port >= 1 && port <= 65535));
-  const isUsed = (port: number) => isPortUsedOnHost(
+  const isUsed = (port: number) => isHostPortUnavailableForAllocation(
     hostId,
     port,
     excludeRuleIds,
@@ -1465,7 +1465,7 @@ async function allocateTunnelMimicPort(
     ),
     isUsed: async (port) => (
       port === listenPort
-      || await isPortUsedOnHost(hostId, port, undefined, "both", tunnelId > 0 ? tunnelId : undefined)
+      || await isHostPortUnavailableForAllocation(hostId, port, undefined, "both", tunnelId > 0 ? tunnelId : undefined)
     ),
   });
 }
@@ -1883,6 +1883,52 @@ export async function isPortUsedOnHost(
     if (listenerExemptions !== undefined) return !sameListener;
     return !sameTunnel;
   });
+}
+
+/**
+ * Explicit-use checks answer whether a user-entered port must be rejected.
+ * Allocation checks answer whether an automatic candidate is unavailable.
+ * Both keep the current conservative behavior; SNI sharing will loosen only
+ * the explicit-use path.
+ */
+export async function isHostPortUnavailableForExplicitUse(
+  hostId: number,
+  sourcePort: number,
+  excludeRuleId?: number | number[],
+  protocol?: unknown,
+  excludeTunnelId?: number,
+  excludeRuleExitPorts = true,
+  allowTunnelListener?: TunnelListenerExemptionInput,
+): Promise<boolean> {
+  return isPortUsedOnHost(
+    hostId,
+    sourcePort,
+    excludeRuleId,
+    protocol,
+    excludeTunnelId,
+    excludeRuleExitPorts,
+    allowTunnelListener,
+  );
+}
+
+export async function isHostPortUnavailableForAllocation(
+  hostId: number,
+  sourcePort: number,
+  excludeRuleId?: number | number[],
+  protocol?: unknown,
+  excludeTunnelId?: number,
+  excludeRuleExitPorts = true,
+  allowTunnelListener?: TunnelListenerExemptionInput,
+): Promise<boolean> {
+  return isPortUsedOnHost(
+    hostId,
+    sourcePort,
+    excludeRuleId,
+    protocol,
+    excludeTunnelId,
+    excludeRuleExitPorts,
+    allowTunnelListener,
+  );
 }
 
 /** 在主机端口区间内找一个未被占用的随机端口 */
@@ -2534,4 +2580,3 @@ export async function getTunnelsByHopHost(hostId: number) {
   if (ids.length === 0) return [];
   return db.select().from(tunnels).where(sql`${tunnels.id} IN (${sql.join(ids.map(id => sql`${id}`), sql`, `)})`);
 }
-

@@ -516,6 +516,70 @@ test("automatic tunnel updates keep the existing listener instead of reallocatin
   assert.equal(result.status, 0, result.stderr || result.stdout);
 });
 
+test("allocation probe treats every occupied host port as unavailable", () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "forwardx-port-allocation-probe-"));
+  const databasePath = path.join(directory, "port-allocation-probe.db");
+  const script = String.raw`
+    import assert from "node:assert/strict";
+    import path from "node:path";
+    import { pathToFileURL } from "node:url";
+
+    const moduleUrl = (file) => pathToFileURL(path.join(process.cwd(), file)).href;
+    const runtime = await import(moduleUrl("server/dbRuntime.ts"));
+    const schema = await import(moduleUrl("server/dbSchema.ts"));
+    const tunnelRepo = await import(moduleUrl("server/repositories/tunnelRepository.ts"));
+    const q = (name) => '"' + name + '"';
+    const insert = async (table, columns, values) => {
+      await runtime.executeRaw(
+        "INSERT INTO " + q(table) + " (" + columns.map(q).join(", ") + ") VALUES (" + values.map(() => "?").join(", ") + ")",
+        values,
+      );
+    };
+
+    try {
+      await runtime.connectDatabase({ type: "sqlite", sqlite: { path: process.env.FORWARDX_TEST_DB } });
+      await schema.ensureDatabaseSchema();
+      await insert("hosts", ["id", "name", "ip", "hostType", "userId", "portRangeStart", "portRangeEnd", "isOnline"],
+        [1, "entry", "198.51.100.90", "slave", 1, 20000, 20010, 1]);
+      await insert("hosts", ["id", "name", "ip", "hostType", "userId", "portRangeStart", "portRangeEnd", "isOnline"],
+        [2, "exit", "198.51.100.91", "slave", 1, 22600, 22610, 1]);
+      await insert("tunnels", ["id", "name", "entryHostId", "exitHostId", "mode", "listenPort", "mimicPort", "userId", "isEnabled"],
+        [10, "listener", 1, 2, "tls", 22600, 22604, 1, 1]);
+      await insert("tunnel_exit_nodes", ["id", "tunnelId", "seq", "hostId", "listenPort", "mimicPort", "isEnabled"],
+        [100, 10, 1, 2, 22603, 22605, 1]);
+      await insert("tunnel_hops", ["id", "tunnelId", "seq", "hostId", "listenPort", "mimicPort"],
+        [101, 10, 1, 2, 22606, 22607]);
+      await insert("forward_rules", ["id", "hostId", "name", "forwardType", "protocol", "sourcePort", "targetIp", "targetPort", "userId", "isEnabled", "pendingDelete", "isForwardGroupTemplate"],
+        [20, 1, "entry-rule", "iptables", "tcp", 20001, "203.0.113.90", 443, 1, 1, 0, 0]);
+      await insert("forward_rules", ["id", "hostId", "name", "forwardType", "protocol", "tunnelId", "tunnelExitPort", "sourcePort", "targetIp", "targetPort", "userId", "isEnabled", "pendingDelete", "isForwardGroupTemplate"],
+        [21, 1, "exit-rule", "gost", "tcp", 10, 22601, 20002, "203.0.113.91", 443, 1, 1, 0, 0]);
+      await insert("forward_rule_tunnel_exits", ["id", "ruleId", "tunnelId", "exitNodeId", "exitSeq", "exitHostId", "tunnelExitPort"],
+        [200, 21, 10, 100, 1, 2, 22602]);
+
+      assert.equal(await tunnelRepo.isHostPortUnavailableForAllocation(1, 20001, undefined, "tcp"), true);
+      assert.equal(await tunnelRepo.isHostPortUnavailableForAllocation(2, 22600, undefined, "both"), true);
+      assert.equal(await tunnelRepo.isHostPortUnavailableForAllocation(2, 22601, undefined, "tcp"), true);
+      assert.equal(await tunnelRepo.isHostPortUnavailableForAllocation(2, 22602, undefined, "tcp"), true);
+      assert.equal(await tunnelRepo.isHostPortUnavailableForAllocation(2, 22603, undefined, "both"), true);
+      assert.equal(await tunnelRepo.isHostPortUnavailableForAllocation(2, 22604, undefined, "udp"), true);
+      assert.equal(await tunnelRepo.isHostPortUnavailableForAllocation(2, 22605, undefined, "udp"), true);
+      assert.equal(await tunnelRepo.isHostPortUnavailableForAllocation(2, 22606, undefined, "both"), true);
+      assert.equal(await tunnelRepo.isHostPortUnavailableForAllocation(2, 22607, undefined, "udp"), true);
+      assert.equal(await tunnelRepo.isHostPortUnavailableForAllocation(2, 22608, undefined, "tcp"), false);
+    } finally {
+      await runtime.closeDatabase();
+    }
+  `;
+  const result = spawnSync(process.execPath, ["--import", "tsx", "--input-type=module", "-e", script], {
+    cwd: process.cwd(),
+    env: { ...process.env, DATABASE_TYPE: "sqlite", FORWARDX_TEST_DB: databasePath },
+    encoding: "utf8",
+    timeout: 60_000,
+  });
+  fs.rmSync(directory, { recursive: true, force: true });
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+});
+
 test("same-tunnel listener exemption never hides an extra or hop listener", () => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), "forwardx-tunnel-resource-exemption-"));
   const databasePath = path.join(directory, "tunnel-resource-exemption.db");

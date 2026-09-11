@@ -39,7 +39,8 @@ import {
   getTunnelExitNodes,
   getTunnelHops,
   getTunnels,
-  isPortUsedOnHost,
+  isHostPortUnavailableForAllocation,
+  isHostPortUnavailableForExplicitUse,
   reconcileForwardRuleTunnelExits,
   reserveTunnelExitPort,
   resetForwardRulesByTunnel,
@@ -1991,8 +1992,8 @@ async function existingChildRule(templateRuleId: number, memberId: number, hostI
   return rows[0];
 }
 
-async function isPortUsedOnHostForGroupChild(hostId: number, sourcePort: number, ignoreRuleIds: number[], protocol?: unknown) {
-  return isPortUsedOnHost(hostId, sourcePort, ignoreRuleIds, protocol, undefined, false);
+async function isHostPortUnavailableForGroupChildExplicitUse(hostId: number, sourcePort: number, ignoreRuleIds: number[], protocol?: unknown) {
+  return isHostPortUnavailableForExplicitUse(hostId, sourcePort, ignoreRuleIds, protocol, undefined, false);
 }
 
 async function entryPortPolicyForMember(member: any): Promise<{ hostId: number; policy: PortPolicy }> {
@@ -2277,7 +2278,7 @@ export async function validateForwardGroupRuleConfig(groupId: number, config: Fo
     const existing = config.excludeTemplateRuleId
       ? await existingChildRule(Number(config.excludeTemplateRuleId), childMemberId, hostId)
       : null;
-    const used = await isPortUsedOnHostForGroupChild(
+    const used = await isHostPortUnavailableForGroupChildExplicitUse(
       hostId,
       sourcePort,
       [
@@ -2676,7 +2677,7 @@ async function ensureMemberRuleForTemplate(group: any, templateRule: any, member
   const hostId = await memberEntryHostId(member);
   if (!hostId) throw new Error("Forward group member has no valid entry agent");
   await assertEntryPortAllowed(member, Number(templateRule.sourcePort));
-  const used = await isPortUsedOnHostForGroupChild(
+  const used = await isHostPortUnavailableForGroupChildExplicitUse(
     hostId,
     Number(templateRule.sourcePort),
     [Number(templateRule.id), Number(existing?.id || 0)].filter(Boolean),
@@ -2896,7 +2897,7 @@ async function reserveChainMemberListenerPort(
       hostId,
       port: preferredPort,
       protocol,
-      isUsed: (port) => isPortUsedOnHost(hostId, port, ignoreRuleIds, protocol, undefined, false),
+      isUsed: (port) => isHostPortUnavailableForAllocation(hostId, port, ignoreRuleIds, protocol, undefined, false),
     });
     if (preserved) return preserved;
   }
@@ -2905,7 +2906,7 @@ async function reserveChainMemberListenerPort(
     hostId,
     protocol,
     findPort: (reservedPorts) => findAvailablePort(hostId, null, null, protocol, reservedPorts),
-    isUsed: (port) => isPortUsedOnHost(hostId, port, ignoreRuleIds, protocol, undefined, false),
+    isUsed: (port) => isHostPortUnavailableForAllocation(hostId, port, ignoreRuleIds, protocol, undefined, false),
   });
   if (!reservation) {
     throw new Error(`转发链成员主机 ${hostId} 的端口区间内已无可用监听端口`);
@@ -2953,7 +2954,7 @@ async function ensureChainRuleForTemplate(
   const sourcePort = Number(overrides.sourcePort || templateRule.sourcePort);
   if (options.validatePorts !== false) {
     await assertEntryPortAllowed(sourceMember, sourcePort);
-    const used = await isPortUsedOnHostForGroupChild(
+    const used = await isHostPortUnavailableForGroupChildExplicitUse(
       hostId,
       sourcePort,
       [Number(templateRule.id), Number(existing?.id || 0)].filter(Boolean),

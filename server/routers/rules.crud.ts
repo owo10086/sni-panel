@@ -842,7 +842,7 @@ export async function toggleForwardRuleForActor(
           hostId: Number(rule.hostId),
           port: Number(rule.sourcePort),
           protocol: (rule as any).protocol,
-          isUsed: (port) => db.isPortUsedOnHost(Number(rule.hostId), port, Number(rule.id), (rule as any).protocol, undefined, false),
+          isUsed: (port) => db.isHostPortUnavailableForExplicitUse(Number(rule.hostId), port, Number(rule.id), (rule as any).protocol, undefined, false),
         });
         if (!sourcePortReservation) throw new Error(`端口 ${rule.sourcePort} 已被占用，请更换端口后再启用`);
         await db.updateForwardRule(ruleId, { isEnabled: true, isRunning: false, disabledByUser: false, disabledByTunnel: false, disabledByGroup: false, protocolBlockReason: null } as any);
@@ -920,7 +920,7 @@ export async function createDirectForwardRuleForActor(
           [],
           planRange?.ranges || [],
         ),
-        isUsed: (port) => db.isPortUsedOnHost(hostId, port, undefined, input.protocol),
+        isUsed: (port) => db.isHostPortUnavailableForAllocation(hostId, port, undefined, input.protocol),
       });
       if (!sourcePortReservation) throw new Error("该主机端口区间内已无可用端口");
       sourcePort = sourcePortReservation.port;
@@ -928,7 +928,7 @@ export async function createDirectForwardRuleForActor(
       if (!isPortAllowedByPolicy(sourcePort, effectivePolicy)) throw new Error(portPolicyErrorMessage(effectivePolicy, "源端口"));
       sourcePortReservation = tryReserveHostPort(hostId, sourcePort, input.protocol);
       if (!sourcePortReservation) throw new Error(`端口 ${sourcePort} 正在被其他请求分配，请稍后重试`);
-      const used = await db.isPortUsedOnHost(hostId, sourcePort, undefined, input.protocol);
+      const used = await db.isHostPortUnavailableForExplicitUse(hostId, sourcePort, undefined, input.protocol);
       if (used) {
         sourcePortReservation.release();
         sourcePortReservation = null;
@@ -1087,7 +1087,10 @@ export const crudRulesRouter = router({
           }
         }
         const entryHostIds = await db.getForwardGroupRuleEntryHostIds(forwardGroupId);
-        const reserveEntryPort = async (port: number) => {
+        const reserveEntryPortFor = async (
+          port: number,
+          isUnavailable: (hostId: number, candidate: number) => Promise<boolean>,
+        ) => {
           const reservations: HostPortReservation[] = [];
           try {
             for (const entryHostId of entryHostIds) {
@@ -1095,7 +1098,7 @@ export const crudRulesRouter = router({
                 hostId: entryHostId,
                 port,
                 protocol: input.protocol,
-                isUsed: (candidate) => db.isPortUsedOnHost(entryHostId, candidate, undefined, input.protocol),
+                isUsed: (candidate) => isUnavailable(entryHostId, candidate),
               });
               if (!reservation) {
                 releaseHostPortReservations(reservations);
@@ -1109,6 +1112,14 @@ export const crudRulesRouter = router({
             throw error;
           }
         };
+        const reserveEntryPortForAllocation = (port: number) => reserveEntryPortFor(
+          port,
+          (entryHostId, candidate) => db.isHostPortUnavailableForAllocation(entryHostId, candidate, undefined, input.protocol),
+        );
+        const reserveEntryPortForExplicitUse = (port: number) => reserveEntryPortFor(
+          port,
+          (entryHostId, candidate) => db.isHostPortUnavailableForExplicitUse(entryHostId, candidate, undefined, input.protocol),
+        );
         if (randomSourcePort) {
           const unavailablePorts = new Set(entryHostIds.flatMap((hostId) => reservedHostPorts(hostId, input.protocol)));
           for (let attempt = 0; attempt < 256; attempt += 1) {
@@ -1121,7 +1132,7 @@ export const crudRulesRouter = router({
             );
             if (!availablePort) break;
             unavailablePorts.add(availablePort);
-            const reservations = await reserveEntryPort(availablePort);
+            const reservations = await reserveEntryPortForAllocation(availablePort);
             if (!reservations) continue;
             sourcePort = availablePort;
             groupReservations.push(...reservations);
@@ -1129,7 +1140,7 @@ export const crudRulesRouter = router({
           }
           if (sourcePort === 0) throw new Error("转发组入口端口区间内已无可用端口");
         } else {
-          const reservations = await reserveEntryPort(sourcePort);
+          const reservations = await reserveEntryPortForExplicitUse(sourcePort);
           if (!reservations) throw new Error(`入口 Agent 端口 ${sourcePort} 已被占用或正在分配`);
           groupReservations.push(...reservations);
         }
@@ -1286,7 +1297,7 @@ export const crudRulesRouter = router({
           hostId,
           port,
           protocol,
-          isUsed: (candidate) => db.isPortUsedOnHost(hostId, candidate, excludeRuleIds, protocol, undefined, false),
+          isUsed: (candidate) => db.isHostPortUnavailableForExplicitUse(hostId, candidate, excludeRuleIds, protocol, undefined, false),
         });
         if (reservation) heldReservations.push(reservation);
         return reservation;
@@ -1356,7 +1367,7 @@ export const crudRulesRouter = router({
                   hostId,
                   port: candidate,
                   protocol: nextProtocol,
-                  isUsed: (port) => db.isPortUsedOnHost(hostId, port, excludeRuleIds, nextProtocol, undefined, false),
+                  isUsed: (port) => db.isHostPortUnavailableForAllocation(hostId, port, excludeRuleIds, nextProtocol, undefined, false),
                 });
                 if (!reservation) {
                   reservedEveryEntry = false;
@@ -1410,7 +1421,7 @@ export const crudRulesRouter = router({
               excludeRuleIds,
               planRange?.ranges || [],
             ),
-            isUsed: (port) => db.isPortUsedOnHost(nextHostId, port, excludeRuleIds, nextProtocol, undefined, false),
+            isUsed: (port) => db.isHostPortUnavailableForAllocation(nextHostId, port, excludeRuleIds, nextProtocol, undefined, false),
             maxAttempts: 256,
           });
           if (!reservation) throw new Error("入口 Agent 端口区间内已无可用端口");
