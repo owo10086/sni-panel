@@ -185,6 +185,11 @@ test("SNI forward-chain desired state sends entry traffic to the splitter and ro
         assert.equal(splitterApply.targetPort, scenario.splitterPort);
         assert.equal(splitterApply.fxp.listenPort, scenario.splitterPort);
         assert.equal(splitterApply.fxp.sniRouteVersion, 1);
+        assert.deepEqual(splitterApply.fxp.sourceAllowIps, [entryHostIp]);
+        const splitterCommands = (splitterApply.commands || []).join("\n");
+        assert.match(splitterCommands, new RegExp("fwx-sni-splitter-" + scenario.splitterPort));
+        assert.match(splitterCommands, new RegExp("ip saddr " + entryHostIp.replace(/\./g, "\\.") + " tcp dport " + scenario.splitterPort + " accept"));
+        assert.match(splitterCommands, new RegExp("tcp dport " + scenario.splitterPort + " drop"));
         assert.deepEqual(splitterApply.fxp.sniRoutes, [{
           sni: scenario.sni,
           ruleId: scenario.exitRuleId,
@@ -223,6 +228,7 @@ test("SNI forward-chain desired state sends entry traffic to the splitter and ro
               accessScope: "u1_h2",
               protocol: "tcp",
               sniRouteVersion: 1,
+              sourceAllowIps: [entryHostIp],
               ready: true,
             };
           }),
@@ -252,6 +258,7 @@ test("SNI forward-chain desired state sends entry traffic to the splitter and ro
             accessScope: "u1_h2",
             protocol: "tcp",
             sniRouteVersion: 1,
+            sourceAllowIps: [entryHostIp],
             ready: true,
           }],
           tunnels: [],
@@ -266,6 +273,7 @@ test("SNI forward-chain desired state sends entry traffic to the splitter and ro
       assert.ok(removeSplitter, "missing stale sni splitter remove action");
       assert.equal(removeSplitter.fxp?.role, "sni-splitter");
       assert.equal(removeSplitter.fxp?.listenPort, scenarios[0].splitterPort);
+      assert.match((removeSplitter.commands || []).join("\n"), new RegExp("fwx-sni-splitter-" + scenarios[0].splitterPort));
     } finally {
       if (server) await new Promise((resolve) => server.close(resolve));
       await runtime.closeDatabase();
@@ -311,7 +319,9 @@ test("SNI forward-chain desired state shares one entry listener for multiple dom
       forceReconcile: true,
     };
     const entryHostIp = "198.51.100.10";
+    const refreshedEntryHostIp = "198.51.100.11";
     const exitHostIp = "198.51.100.20";
+    const entryGroupHostIps = ["198.51.100.30", "198.51.100.40"];
     const routes = [
       { templateId: 100, entryRuleId: 101, exitRuleId: 102, name: "api", sni: "api.example.com", targetIp: "203.0.113.20", targetPort: 443 },
       { templateId: 110, entryRuleId: 111, exitRuleId: 112, name: "web", sni: "web.example.com", targetIp: "203.0.113.21", targetPort: 8443 },
@@ -404,12 +414,23 @@ test("SNI forward-chain desired state shares one entry listener for multiple dom
       await insert("system_settings", ["key", "value"], ["forwardProtocols", JSON.stringify({ nginx: true })]);
       await insert("hosts", ["id", "name", "ip", "ipv4", "agentToken", "userId", "blockHttp", "isOnline", "lastHeartbeat", "agentVersion", "portRangeStart", "portRangeEnd"], [1, "entry", entryHostIp, entryHostIp, "entry-token", 1, 1, 1, now, "2.2.195", 18000, 19000]);
       await insert("hosts", ["id", "name", "ip", "ipv4", "agentToken", "userId", "isOnline", "lastHeartbeat", "agentVersion", "portRangeStart", "portRangeEnd"], [2, "exit", exitHostIp, exitHostIp, "exit-token", 1, 1, now, "2.2.195", 24000, 24010]);
+      await insert("hosts", ["id", "name", "ip", "ipv4", "agentToken", "userId", "isOnline", "lastHeartbeat", "agentVersion", "portRangeStart", "portRangeEnd"], [3, "entry-a", entryGroupHostIps[0], entryGroupHostIps[0], "entry-a-token", 1, 1, now, "2.2.195", 18000, 19000]);
+      await insert("hosts", ["id", "name", "ip", "ipv4", "agentToken", "userId", "isOnline", "lastHeartbeat", "agentVersion", "portRangeStart", "portRangeEnd"], [4, "entry-b", entryGroupHostIps[1], entryGroupHostIps[1], "entry-b-token", 1, 1, now, "2.2.195", 18000, 19000]);
       await insert("forward_groups", ["id", "name", "groupType", "groupMode", "forwardType", "domain", "targetIp", "targetPort", "userId", "isEnabled"], [10, "shared-chain", "host", "chain", "nftables", "", "0.0.0.0", 1, 1, 1]);
       await insert("forward_group_members", ["id", "groupId", "memberType", "hostId", "priority", "isEnabled"], [1001, 10, "host", 1, 10, 1]);
       await insert("forward_group_members", ["id", "groupId", "memberType", "hostId", "priority", "isEnabled"], [1002, 10, "host", 2, 20, 1]);
       for (const route of routes) {
         await insertSniRule(route);
       }
+      await insert("forward_groups", ["id", "name", "groupType", "groupMode", "forwardType", "domain", "targetIp", "targetPort", "userId", "isEnabled"], [40, "sni-entry-group", "host", "entry", "nftables", "", "0.0.0.0", 1, 1, 1]);
+      await insert("forward_group_members", ["id", "groupId", "memberType", "hostId", "priority", "isEnabled"], [4001, 40, "host", 3, 10, 1]);
+      await insert("forward_group_members", ["id", "groupId", "memberType", "hostId", "priority", "isEnabled"], [4002, 40, "host", 4, 20, 1]);
+      await insert("forward_groups", ["id", "name", "groupType", "groupMode", "entryGroupId", "forwardType", "domain", "targetIp", "targetPort", "userId", "isEnabled"], [50, "entry-group-chain", "host", "chain", 40, "nftables", "", "0.0.0.0", 1, 1, 1]);
+      await insert("forward_group_members", ["id", "groupId", "memberType", "hostId", "priority", "isEnabled"], [5002, 50, "host", 2, 10, 1]);
+      await insert("forward_rules", [
+        "id", "hostId", "name", "forwardType", "protocol", "forwardGroupId", "forwardGroupMemberId", "isForwardGroupTemplate",
+        "sourcePort", "sni", "sniSplitterPort", "targetIp", "targetPort", "userId", "isEnabled", "isRunning"
+      ], [502, 2, "entry-group-exit-child", "nftables", "tcp", 50, 5002, 0, 24003, "group.example.com", 24003, "203.0.113.50", 443, 1, 1, 0]);
       for (const group of runtimeGroups) {
         await insert("forward_groups", ["id", "name", "groupType", "groupMode", "forwardType", "domain", "targetIp", "targetPort", "userId", "isEnabled"], [group.groupId, group.forwardType + "-shared-chain", "host", "chain", group.forwardType, "", "0.0.0.0", 1, 1, 1]);
         await insert("forward_group_members", ["id", "groupId", "memberType", "hostId", "priority", "isEnabled"], [group.entryMemberId, group.groupId, "host", 1, 10, 1]);
@@ -470,6 +491,11 @@ test("SNI forward-chain desired state shares one entry listener for multiple dom
       assert.equal(splitterApplies.length, 1);
       assert.equal(splitterApplies[0].sourcePort, 24000);
       assert.equal(splitterApplies[0].fxp.sniRouteVersion, 1);
+      assert.deepEqual(splitterApplies[0].fxp.sourceAllowIps, [entryHostIp]);
+      const splitterCommandText = (splitterApplies[0].commands || []).join("\n");
+      assert.match(splitterCommandText, /fwx-sni-splitter-24000/);
+      assert.match(splitterCommandText, /ip saddr 198\.51\.100\.10 tcp dport 24000 accept/);
+      assert.match(splitterCommandText, /tcp dport 24000 drop/);
       assert.deepEqual(splitterApplies[0].fxp.sniRoutes, [
         {
           sni: "api.example.com",
@@ -494,6 +520,16 @@ test("SNI forward-chain desired state shares one entry listener for multiple dom
           accessScope: "u1_h2",
         },
       ]);
+      const entryGroupSplitterApply = exit.payload.desiredState.actions.find(
+        (action) => action.op === "apply" && action.fxp?.role === "sni-splitter" && Number(action.sourcePort) === 24003,
+      );
+      assert.ok(entryGroupSplitterApply, "missing entry-group sni splitter apply");
+      assert.deepEqual(entryGroupSplitterApply.fxp.sourceAllowIps, entryGroupHostIps);
+      const entryGroupCommandText = (entryGroupSplitterApply.commands || []).join("\n");
+      for (const sourceIp of entryGroupHostIps) {
+        assert.match(entryGroupCommandText, new RegExp("ip saddr " + sourceIp.replace(/\./g, "\\.") + " tcp dport 24003 accept"));
+      }
+      assert.match(entryGroupCommandText, /tcp dport 24003 drop/);
 
       for (const route of routes) {
         await runtime.executeRaw('UPDATE "forward_rules" SET "isRunning" = 1 WHERE "id" = ?', [route.exitRuleId]);
@@ -513,6 +549,7 @@ test("SNI forward-chain desired state shares one entry listener for multiple dom
               accessScope: "u1_h2",
               protocol: "tcp",
               sniRouteVersion: 1,
+              sourceAllowIps: [entryHostIp],
               ready: true,
             },
             {
@@ -525,6 +562,7 @@ test("SNI forward-chain desired state shares one entry listener for multiple dom
               accessScope: "u1_h2",
               protocol: "tcp",
               sniRouteVersion: 1,
+              sourceAllowIps: [entryHostIp],
               ready: true,
             },
           ],
@@ -537,6 +575,56 @@ test("SNI forward-chain desired state shares one entry listener for multiple dom
       const repeatedSplitterApplies = exitWithoutDrift.payload.desiredState.actions
         .filter((action) => action.op === "apply" && action.fxp?.role === "sni-splitter" && Number(action.sourcePort) === 24000);
       assert.equal(repeatedSplitterApplies.length, 0);
+
+      await runtime.executeRaw('UPDATE "hosts" SET "ip" = ?, "ipv4" = ? WHERE "id" = 1', [refreshedEntryHostIp, refreshedEntryHostIp]);
+      const exitAfterEntryAddressChange = await postHeartbeat(baseUrl, "exit-token", {
+        agentBootId: "boot-exit-shared",
+        agentProcessId: 2002,
+        forceReconcile: true,
+        localState: {
+          rules: [
+            {
+              port: 24000,
+              ruleId: 102,
+              forwardType: "forwardx",
+              sni: "api.example.com",
+              targetIp: "203.0.113.20",
+              targetPort: 443,
+              accessScope: "u1_h2",
+              protocol: "tcp",
+              sniRouteVersion: 1,
+              sourceAllowIps: [entryHostIp],
+              ready: true,
+            },
+            {
+              port: 24000,
+              ruleId: 112,
+              forwardType: "forwardx",
+              sni: "web.example.com",
+              targetIp: "203.0.113.21",
+              targetPort: 8443,
+              accessScope: "u1_h2",
+              protocol: "tcp",
+              sniRouteVersion: 1,
+              sourceAllowIps: [entryHostIp],
+              ready: true,
+            },
+          ],
+          tunnels: [],
+          services: [],
+        },
+      });
+      assert.equal(exitAfterEntryAddressChange.status, 200);
+      assert.equal(exitAfterEntryAddressChange.payload.success, true);
+      const refreshedSourceRestrictionApplies = exitAfterEntryAddressChange.payload.desiredState.actions
+        .filter((action) => action.op === "apply" && action.fxp?.role === "sni-splitter" && Number(action.sourcePort) === 24000);
+      assert.equal(refreshedSourceRestrictionApplies.length, 1);
+      assert.deepEqual(refreshedSourceRestrictionApplies[0].fxp.sourceAllowIps, [refreshedEntryHostIp]);
+      const refreshedCommandText = (refreshedSourceRestrictionApplies[0].commands || []).join("\n");
+      assert.match(refreshedCommandText, /fwx-sni-splitter-24000/);
+      assert.match(refreshedCommandText, /ip saddr 198\.51\.100\.11 tcp dport 24000 accept/);
+      assert.doesNotMatch(refreshedCommandText, /ip saddr 198\.51\.100\.10 tcp dport 24000 accept/);
+      await runtime.executeRaw('UPDATE "hosts" SET "ip" = ?, "ipv4" = ? WHERE "id" = 1', [entryHostIp, entryHostIp]);
 
       const gostGroup = runtimeGroups[0];
       const initialGostSplitterApply = exit.payload.desiredState.actions.find(
@@ -564,6 +652,7 @@ test("SNI forward-chain desired state shares one entry listener for multiple dom
               accessScope: "u1_h2",
               protocol: "tcp",
               sniRouteVersion: 9,
+              sourceAllowIps: [entryHostIp],
               ready: true,
             },
             {
@@ -576,6 +665,7 @@ test("SNI forward-chain desired state shares one entry listener for multiple dom
               accessScope: "u1_h2",
               protocol: "tcp",
               sniRouteVersion: 9,
+              sourceAllowIps: [entryHostIp],
               ready: true,
             },
           ],
@@ -622,6 +712,7 @@ test("SNI forward-chain desired state shares one entry listener for multiple dom
               accessScope: "u1_h2",
               protocol: "tcp",
               sniRouteVersion: 1,
+              sourceAllowIps: [entryHostIp],
               ready: true,
             },
             {
@@ -634,6 +725,7 @@ test("SNI forward-chain desired state shares one entry listener for multiple dom
               accessScope: "u1_h2",
               protocol: "tcp",
               sniRouteVersion: 1,
+              sourceAllowIps: [entryHostIp],
               ready: true,
             },
           ],

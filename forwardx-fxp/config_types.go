@@ -47,6 +47,7 @@ type config struct {
 	UDPTargets               []udpTarget    `json:"udpTargets,omitempty"`
 	SNIRoutes                []sniRoute     `json:"sniRoutes,omitempty"`
 	SNIRouteVersion          int64          `json:"sniRouteVersion,omitempty"`
+	SourceAllowIPs           []string       `json:"sourceAllowIps,omitempty"`
 	ControlSocketPath        string         `json:"controlSocketPath,omitempty"`
 	Key                      string         `json:"key"`
 	LimitIn                  int64          `json:"limitIn"`

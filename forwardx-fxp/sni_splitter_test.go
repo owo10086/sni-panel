@@ -267,6 +267,7 @@ func TestSniSplitterConfigValidation(t *testing.T) {
 		ListenPort:      18443,
 		Protocol:        " TCP ",
 		SNIRouteVersion: 1,
+		SourceAllowIPs:  []string{" 198.51.100.10 ", "[2001:db8::10]", "bad", "198.51.100.10"},
 		SNIRoutes: []sniRoute{{
 			SNI:        " API.EXAMPLE.COM. ",
 			RuleID:     42,
@@ -279,6 +280,15 @@ func TestSniSplitterConfigValidation(t *testing.T) {
 	}
 	if route := cfg.SNIRoutes[0]; route.SNI != "api.example.com" || route.TargetIP != "127.0.0.1" {
 		t.Fatalf("sni route was not normalized: %+v", route)
+	}
+	wantSourceAllowIPs := []string{"198.51.100.10", "2001:db8::10"}
+	if len(cfg.SourceAllowIPs) != len(wantSourceAllowIPs) {
+		t.Fatalf("source allow IPs = %+v, want %+v", cfg.SourceAllowIPs, wantSourceAllowIPs)
+	}
+	for i := range wantSourceAllowIPs {
+		if cfg.SourceAllowIPs[i] != wantSourceAllowIPs[i] {
+			t.Fatalf("source allow IPs = %+v, want %+v", cfg.SourceAllowIPs, wantSourceAllowIPs)
+		}
 	}
 	if err := validateConfig(cfg); err != nil {
 		t.Fatal(err)

@@ -896,22 +896,23 @@ type localRuntimeStatePayload struct {
 }
 
 type localRuntimeRuleState struct {
-	Port             int    `json:"port"`
-	RuleID           int    `json:"ruleId"`
-	TunnelID         int    `json:"tunnelId,omitempty"`
-	ForwardType      string `json:"forwardType"`
-	SNI              string `json:"sni,omitempty"`
-	TargetIP         string `json:"targetIp,omitempty"`
-	TargetPort       int    `json:"targetPort,omitempty"`
-	LimitIn          int64  `json:"limitIn,omitempty"`
-	LimitOut         int64  `json:"limitOut,omitempty"`
-	MaxConnections   int    `json:"maxConnections,omitempty"`
-	MaxIPs           int    `json:"maxIPs,omitempty"`
-	AccessScope      string `json:"accessScope,omitempty"`
-	Protocol         string `json:"protocol,omitempty"`
-	TransportVersion string `json:"transportVersion,omitempty"`
-	SNIRouteVersion  int64  `json:"sniRouteVersion,omitempty"`
-	Ready            bool   `json:"ready"`
+	Port             int      `json:"port"`
+	RuleID           int      `json:"ruleId"`
+	TunnelID         int      `json:"tunnelId,omitempty"`
+	ForwardType      string   `json:"forwardType"`
+	SNI              string   `json:"sni,omitempty"`
+	TargetIP         string   `json:"targetIp,omitempty"`
+	TargetPort       int      `json:"targetPort,omitempty"`
+	LimitIn          int64    `json:"limitIn,omitempty"`
+	LimitOut         int64    `json:"limitOut,omitempty"`
+	MaxConnections   int      `json:"maxConnections,omitempty"`
+	MaxIPs           int      `json:"maxIPs,omitempty"`
+	AccessScope      string   `json:"accessScope,omitempty"`
+	Protocol         string   `json:"protocol,omitempty"`
+	TransportVersion string   `json:"transportVersion,omitempty"`
+	SNIRouteVersion  int64    `json:"sniRouteVersion,omitempty"`
+	SourceAllowIPs   []string `json:"sourceAllowIps,omitempty"`
+	Ready            bool     `json:"ready"`
 }
 
 type localRuntimeTunnelState struct {
@@ -2171,6 +2172,7 @@ func readLocalRuntimeStatePayload() localRuntimeStatePayload {
 					Protocol:         "tcp",
 					TransportVersion: spec.TransportVersion,
 					SNIRouteVersion:  spec.SNIRouteVersion,
+					SourceAllowIPs:   append([]string(nil), spec.SourceAllowIPs...),
 					Ready:            ready,
 				})
 			}
@@ -2679,6 +2681,7 @@ type fxpSpec struct {
 	UDPTargets               []fxpUDPTarget    `json:"udpTargets,omitempty"`
 	SNIRoutes                []fxpSNIRoute     `json:"sniRoutes,omitempty"`
 	SNIRouteVersion          int64             `json:"sniRouteVersion,omitempty"`
+	SourceAllowIPs           []string          `json:"sourceAllowIps,omitempty"`
 	ControlSocketPath        string            `json:"controlSocketPath,omitempty"`
 	Key                      string            `json:"key"`
 	LimitIn                  int64             `json:"limitIn"`
@@ -5109,7 +5112,17 @@ func handleActionJobWithRuntimeSnapshot(cfg Config, a action, releaseRuntimeGate
 		if !cleanup.ok {
 			ok = false
 		} else if cleanup.preserveRunningFXP {
-			logf("action preserves already-running fxp rule=%d tunnel=%d port=%d; skipping disruptive apply commands", a.RuleID, a.TunnelID, a.SourcePort)
+			if actionUsesSNISplitter(a) && len(a.Commands) == 0 {
+				ok = false
+				cleanup.ok = false
+				actionMessage.set("sni splitter source restriction commands missing port=%d", a.SourcePort)
+			} else if actionUsesSNISplitter(a) {
+				ok = runShellBatch(a.Commands) && ok
+				if !ok {
+					cleanup.ok = false
+				}
+			}
+			logf("action preserves already-running fxp rule=%d tunnel=%d port=%d; skipping disruptive apply setup", a.RuleID, a.TunnelID, a.SourcePort)
 		} else {
 			cleanupKernelForwardPortBeforeApply(a)
 			ok = runShellBatch(a.PreCommands) && ok
@@ -5119,10 +5132,19 @@ func handleActionJobWithRuntimeSnapshot(cfg Config, a action, releaseRuntimeGate
 			if a.UnitExtra != "" && a.ServiceNameExtra != "" {
 				ok = writeUnitAndRestart(a.ServiceNameExtra, a.UnitExtra, managedServiceActionSignature(a, a.ServiceNameExtra, a.UnitExtra)) && ok
 			}
-			ok = runShellBatch(a.Commands) && ok
+			commandsOK := runShellBatch(a.Commands)
+			ok = commandsOK && ok
+			if !commandsOK && actionUsesSNISplitter(a) {
+				cleanup.ok = false
+			}
+			if actionUsesSNISplitter(a) && len(a.Commands) == 0 {
+				ok = false
+				cleanup.ok = false
+				actionMessage.set("sni splitter source restriction commands missing port=%d", a.SourcePort)
+			}
 		}
 		if cleanup.ok && a.Fxp != nil {
-			if strings.EqualFold(strings.TrimSpace(a.Fxp.Role), "sni-splitter") && a.Fxp.SNIRouteVersion <= 0 {
+			if actionUsesSNISplitter(a) && a.Fxp.SNIRouteVersion <= 0 {
 				a.Fxp.SNIRouteVersion = a.ConfigRevision + 1
 				if a.Fxp.SNIRouteVersion <= 0 {
 					a.Fxp.SNIRouteVersion = 1
@@ -7385,6 +7407,10 @@ func fxpSNISplitterReadyForRouteTableUpdate(cfg Config, spec *fxpSpec) bool {
 	return matches
 }
 
+func actionUsesSNISplitter(a action) bool {
+	return a.Fxp != nil && strings.EqualFold(strings.TrimSpace(a.Fxp.Role), "sni-splitter")
+}
+
 func actionCanReuseSNISplitterRuntimeForRouteTableUpdate(cfg Config, a action, localRuleID int, localForwardType string, localRuleTunnelID int, localProtocol string, hasLocalProtocol bool) bool {
 	if a.Fxp == nil || localRuleID <= 0 {
 		return false
@@ -8279,6 +8305,21 @@ func iptablesAgentTargetCleanupCmds(port string, targetIP string, targetPort int
 	return commands
 }
 
+func sniSplitterSourceRestrictionCleanupCmds(port string) []string {
+	port = strings.TrimSpace(port)
+	if atoi(port) <= 0 {
+		return nil
+	}
+	marker := "fwx-sni-splitter-" + port + ":"
+	cmds := []string{
+		fmt.Sprintf(`if command -v nft >/dev/null 2>&1 && nft list table inet forwardx >/dev/null 2>&1 && nft list chain inet forwardx sni_input >/dev/null 2>&1; then for h in $(nft -a list chain inet forwardx sni_input 2>/dev/null | awk -v marker=%s 'index($0, marker) {print $NF}'); do nft delete rule inet forwardx sni_input handle "$h" 2>/dev/null || true; done; fi; true`, shellQuote(marker)),
+	}
+	for _, binary := range iptablesAgentBinaries() {
+		cmds = append(cmds, iptablesAgentDeleteByComment(binary, "", marker))
+	}
+	return cmds
+}
+
 func managedPortCleanupCmds(port string) []string {
 	return managedPortCleanupCmdsWithNginx(port, true)
 }
@@ -8300,6 +8341,7 @@ func managedPortCleanupCmdsWithNginx(port string, cleanupNginx bool) []string {
 		cmds = append(cmds, managedNginxCleanupShell(port))
 	}
 	cmds = append(cmds, nftPortCleanupCmd(port, "both"), nftProcessCountingCleanupCmd(port))
+	cmds = append(cmds, sniSplitterSourceRestrictionCleanupCmds(port)...)
 	for _, binary := range iptablesAgentBinaries() {
 		cmds = append(cmds,
 			iptablesAgentDeleteByComment(binary, "mangle", inMarker),
@@ -9350,6 +9392,7 @@ func normalizeFXPSpec(spec fxpSpec) fxpSpec {
 	sort.Slice(targets, func(i, j int) bool { return targets[i].RuleID < targets[j].RuleID })
 	spec.UDPTargets = targets
 	spec.SNIRoutes = normalizeFXPSNIRoutes(spec.SNIRoutes)
+	spec.SourceAllowIPs = normalizeFXPSourceAllowIPs(spec.SourceAllowIPs)
 	if spec.Role == "sni-splitter" {
 		spec.Protocol = "tcp"
 		spec.Key = ""
@@ -9396,6 +9439,27 @@ func normalizeFXPSNIRoutes(routes []fxpSNIRoute) []fxpSNIRoute {
 
 func normalizeFXPSNIName(value string) string {
 	return strings.TrimRight(strings.ToLower(strings.TrimSpace(value)), ".")
+}
+
+func normalizeFXPSourceAllowIPs(values []string) []string {
+	seen := map[string]bool{}
+	normalized := make([]string, 0, len(values))
+	for _, value := range values {
+		address := strings.TrimSpace(value)
+		address = strings.TrimPrefix(strings.TrimSuffix(address, "]"), "[")
+		parsed := net.ParseIP(address)
+		if parsed == nil {
+			continue
+		}
+		address = strings.ToLower(parsed.String())
+		if seen[address] {
+			continue
+		}
+		seen[address] = true
+		normalized = append(normalized, address)
+	}
+	sort.Strings(normalized)
+	return normalized
 }
 
 func fxpServerSignature(spec fxpSpec) string {
@@ -10370,6 +10434,18 @@ func startFXPProcessLocked(cfg Config, spec fxpSpec, actionMessage *actionMessag
 	return startFXPProcessLockedWithPersistence(cfg, spec, actionMessage, true)
 }
 
+func refreshTrackedFXPSpec(id string, spec fxpSpec, signature string, configPath string, runtimeExecutable os.FileInfo, credentialDigest string) {
+	fxpMu.Lock()
+	if process := fxpServers[id]; process != nil {
+		process.spec = spec
+		process.signature = signature
+		process.configPath = configPath
+		process.runtimeExecutable = runtimeExecutable
+		process.panelCredentialDigest = credentialDigest
+	}
+	fxpMu.Unlock()
+}
+
 func fxpSpecHasStartIdentity(spec fxpSpec) bool {
 	spec = normalizeFXPSpec(spec)
 	if isFXPEntryGroup(spec) {
@@ -10427,6 +10503,9 @@ func startFXPProcessLockedWithPersistence(cfg Config, spec fxpSpec, actionMessag
 		if spec.Role == "sni-splitter" && !fxpSNIRouteTableMatches(existing.spec, spec) {
 			return hotSwapFXPSNIRouteTableLocked(cfg, spec, configPath, actionMessage, persistenceEnabled)
 		}
+		if spec.Role == "sni-splitter" {
+			refreshTrackedFXPSpec(id, spec, signature, configPath, runtimeExecutable, expectedCredentialDigest)
+		}
 		logf("fxp %s already running tunnel=%d rule=%d listen=:%d protocol=%s", spec.Role, spec.TunnelID, spec.RuleID, spec.ListenPort, spec.Protocol)
 		// A tracked process can outlive its persistent snapshot (for example
 		// after a handoff or a partial state-directory cleanup). Refresh the
@@ -10453,6 +10532,9 @@ func startFXPProcessLockedWithPersistence(cfg Config, spec fxpSpec, actionMessag
 			fxpMu.Unlock()
 			if !routeTableMatches && !hotSwapFXPSNIRouteTableLocked(cfg, spec, configPath, actionMessage, persistenceEnabled) {
 				return false
+			}
+			if routeTableMatches {
+				refreshTrackedFXPSpec(id, spec, signature, configPath, runtimeExecutable, expectedCredentialDigest)
 			}
 		}
 		if persistenceEnabled {

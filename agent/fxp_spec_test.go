@@ -46,6 +46,27 @@ func TestNormalizeFXPSpecSNISplitterRoutes(t *testing.T) {
 	}
 }
 
+func TestNormalizeFXPSpecSNISplitterSourceAllowIPs(t *testing.T) {
+	spec := normalizeFXPSpec(fxpSpec{
+		Role: "sni-splitter",
+		SourceAllowIPs: []string{
+			"198.51.100.10",
+			" 198.51.100.10 ",
+			"[2001:db8::10]",
+			"host.example.test",
+		},
+	})
+	want := []string{"198.51.100.10", "2001:db8::10"}
+	if len(spec.SourceAllowIPs) != len(want) {
+		t.Fatalf("source allow IPs = %+v, want %+v", spec.SourceAllowIPs, want)
+	}
+	for i := range want {
+		if spec.SourceAllowIPs[i] != want[i] {
+			t.Fatalf("source allow IPs = %+v, want %+v", spec.SourceAllowIPs, want)
+		}
+	}
+}
+
 func TestFXPServerSignatureIgnoresSNIRouteTable(t *testing.T) {
 	base := fxpSpec{
 		Role:            "sni-splitter",
@@ -162,6 +183,104 @@ func TestFXPSNISplitterReadyForRouteTableUpdateAllowsRepresentativeChange(t *tes
 	}
 }
 
+func TestStartFXPRefreshesSNISplitterSourceAllowIPsWithoutRestart(t *testing.T) {
+	usePersistentRuntimeTestDirs(t)
+	executablePath := filepath.Join(t.TempDir(), "forwardx-fxp")
+	if err := os.WriteFile(executablePath, []byte("runtime"), 0700); err != nil {
+		t.Fatal(err)
+	}
+	executableInfo, err := os.Stat(executablePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	withFXPRuntimeExecutableHooks(
+		t,
+		func() (string, error) { return executablePath, nil },
+		func(string) []int { return nil },
+		func(int, string) bool { return true },
+	)
+	cfg := Config{PanelURL: "https://panel.example.test", Token: "agent-token"}
+	previousPanelURL, _ := runtimePanelURL.Load().(string)
+	previousToken, _ := runtimeAgentToken.Load().(string)
+	setRuntimePanelURL(cfg.PanelURL)
+	runtimeAgentToken.Store(cfg.Token)
+	t.Cleanup(func() {
+		runtimePanelURL.Store(previousPanelURL)
+		runtimeAgentToken.Store(previousToken)
+	})
+	base := normalizeFXPSpec(fxpSpec{
+		Role:              "sni-splitter",
+		RuleID:            102,
+		ListenPort:        24000,
+		Protocol:          "tcp",
+		SNIRouteVersion:   7,
+		ControlSocketPath: "/tmp/forwardx-sni-test.sock",
+		PanelURL:          cfg.PanelURL,
+		Token:             cfg.Token,
+		SourceAllowIPs:    []string{"198.51.100.10"},
+		SNIRoutes: []fxpSNIRoute{
+			{SNI: "api.example.com", RuleID: 102, TargetIP: "203.0.113.20", TargetPort: 443},
+		},
+	})
+	changed := base
+	changed.SourceAllowIPs = []string{"198.51.100.11", "2001:db8::10"}
+	withTestFXPServers(t, map[string]*fxpProcess{
+		fxpServerID(base): {
+			signature:             fxpServerSignature(base),
+			cmd:                   &exec.Cmd{Process: &os.Process{Pid: os.Getpid()}},
+			spec:                  base,
+			runtimeExecutable:     executableInfo,
+			panelCredentialDigest: fxpPanelCredentialDigest(cfg.PanelURL, cfg.Token),
+		},
+	})
+	withTestRuntimeListenReadiness(t, base.ListenPort)
+
+	if !startFXP(cfg, changed, nil, &actionMessage{}) {
+		t.Fatal("sni splitter source restriction metadata refresh failed")
+	}
+	payload := readLocalRuntimeStatePayload()
+	for _, rule := range payload.Rules {
+		if rule.RuleID != changed.RuleID || rule.Port != changed.ListenPort {
+			continue
+		}
+		want := normalizeFXPSourceAllowIPs(changed.SourceAllowIPs)
+		if len(rule.SourceAllowIPs) != len(want) {
+			t.Fatalf("source allow IPs = %+v, want %+v", rule.SourceAllowIPs, want)
+		}
+		for i := range want {
+			if rule.SourceAllowIPs[i] != want[i] {
+				t.Fatalf("source allow IPs = %+v, want %+v", rule.SourceAllowIPs, want)
+			}
+		}
+		return
+	}
+	t.Fatalf("sni splitter route was not reported after metadata refresh: %+v", payload.Rules)
+}
+
+func TestSNISplitterApplyRequiresCommandsBeforeAdoption(t *testing.T) {
+	a := action{
+		Op:          "apply",
+		ForwardType: "forwardx",
+		SourcePort:  24000,
+		RuleID:      42,
+		Protocol:    "tcp",
+		Fxp: &fxpSpec{
+			Role:           "sni-splitter",
+			RuleID:         42,
+			ListenPort:     24000,
+			Protocol:       "tcp",
+			SourceAllowIPs: []string{"198.51.100.10"},
+			SNIRoutes: []fxpSNIRoute{
+				{SNI: "api.example.com", RuleID: 42, TargetIP: "203.0.113.42", TargetPort: 443},
+			},
+		},
+		Commands: []string{"iptables -I INPUT 1 -p tcp --dport 24000 -j DROP"},
+	}
+	if canAdoptDesiredActionWithoutCommands(a) {
+		t.Fatal("sni splitter apply adopted local runtime without running source restriction commands")
+	}
+}
+
 func TestFXPMatchesRunningRequiresCurrentSNIRouteTable(t *testing.T) {
 	executablePath := filepath.Join(t.TempDir(), "forwardx-fxp")
 	if err := os.WriteFile(executablePath, []byte("runtime"), 0700); err != nil {
@@ -227,6 +346,7 @@ func TestLocalRuntimeStateReportsSNISplitterRoutes(t *testing.T) {
 		Protocol:         "tcp",
 		SNIRouteVersion:  3,
 		TransportVersion: forwardXWireGuardVersion,
+		SourceAllowIPs:   []string{"198.51.100.10", "2001:db8::10"},
 		SNIRoutes: []fxpSNIRoute{
 			{SNI: "api.example.com", RuleID: 101, TargetIP: "203.0.113.10", TargetPort: 443},
 			{SNI: "web.example.com", RuleID: 202, TargetIP: "203.0.113.11", TargetPort: 8443},
@@ -252,6 +372,14 @@ func TestLocalRuntimeStateReportsSNISplitterRoutes(t *testing.T) {
 		}
 		if rule.SNI == "" || rule.TargetIP == "" || rule.TargetPort <= 0 || rule.SNIRouteVersion != spec.SNIRouteVersion {
 			t.Fatalf("sni splitter route %d missed route table fields: %+v", ruleID, rule)
+		}
+		if len(rule.SourceAllowIPs) != len(spec.SourceAllowIPs) {
+			t.Fatalf("sni splitter route %d source allow IPs = %+v, want %+v", ruleID, rule.SourceAllowIPs, spec.SourceAllowIPs)
+		}
+		for i := range spec.SourceAllowIPs {
+			if rule.SourceAllowIPs[i] != spec.SourceAllowIPs[i] {
+				t.Fatalf("sni splitter route %d source allow IPs = %+v, want %+v", ruleID, rule.SourceAllowIPs, spec.SourceAllowIPs)
+			}
 		}
 	}
 }

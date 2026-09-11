@@ -7,6 +7,8 @@ import {
   buildNftCleanupCmds,
   buildNftForwardCmds,
   buildNftTransitionCleanupCmds,
+  buildSNISplitterSourceRestrictionCleanupCmds,
+  buildSNISplitterSourceRestrictionCmds,
   restartMimicServiceIfConfigChangedCmd,
 } from "./agentActionCommands";
 
@@ -132,6 +134,58 @@ test("nft cleanup without a rule id avoids synthetic chains", () => {
 
   assert.doesNotMatch(commands, /forwardx in_0|forwardx out_0/);
   assert.match(commands, /port='22022'/);
+});
+
+test("SNI splitter source restrictions install current version before pruning old markers", () => {
+  const commandList = buildSNISplitterSourceRestrictionCmds(24000, [
+    "198.51.100.10",
+    "198.51.100.10",
+    "[2001:db8::10]",
+    "host.example.test",
+  ]);
+  const commands = commandList.join("\n");
+  const installIndex = commands.indexOf("nft add table inet forwardx");
+  const cleanupIndex = commands.indexOf("!index($0, keep)");
+
+  assert.match(commands, /fwx-sni-splitter-24000/);
+  assert.match(commands, /fwx-sni-splitter-24000:v[0-9a-f]{12}:/);
+  assert.match(commands, /sni_input/);
+  assert.match(commands, /ip saddr 198\.51\.100\.10 tcp dport 24000 accept comment '"fwx-sni-splitter-24000:v[0-9a-f]{12}:allow:198\.51\.100\.10"'/);
+  assert.match(commands, /ip6 saddr 2001:db8::10 tcp dport 24000 accept comment '"fwx-sni-splitter-24000:v[0-9a-f]{12}:allow:2001:db8::10"'/);
+  assert.match(commands, /tcp dport 24000 drop comment '"fwx-sni-splitter-24000:v[0-9a-f]{12}:drop"'/);
+  assert.equal(commandList.length, 1);
+  assert.ok(installIndex >= 0, "missing source restriction install command");
+  assert.ok(cleanupIndex > installIndex, "old source restriction cleanup must run after current install");
+  assert.match(commands, /-v keep='fwx-sni-splitter-24000:v[0-9a-f]{12}:'/);
+  assert.match(commands, /index\(\$0, marker\) && !index\(\$0, keep\)/);
+  assert.match(commands, /command -v nft >\/dev\/null 2>&1 \|\| \{ command -v iptables >\/dev\/null 2>&1 && command -v ip6tables >\/dev\/null 2>&1; \}/);
+  assert.match(commands, /command -v ip6tables >\/dev\/null 2>&1/);
+  assert.match(commands, /iptables -C INPUT -p tcp --dport 24000 .* -j DROP/);
+  assert.match(commands, /iptables -I INPUT 1 -p tcp --dport 24000 .* -j DROP/);
+  assert.match(commands, /iptables -C INPUT -p tcp -s 198\.51\.100\.10 --dport 24000 .* -j ACCEPT/);
+  assert.match(commands, /iptables -I INPUT 1 -p tcp -s 198\.51\.100\.10 --dport 24000 .* -j ACCEPT/);
+  assert.match(commands, /ip6tables -C INPUT -p tcp --dport 24000 .* -j DROP/);
+  assert.match(commands, /ip6tables -I INPUT 1 -p tcp --dport 24000 .* -j DROP/);
+  assert.match(commands, /ip6tables -C INPUT -p tcp -s 2001:db8::10 --dport 24000 .* -j ACCEPT/);
+  assert.match(commands, /ip6tables -I INPUT 1 -p tcp -s 2001:db8::10 --dport 24000 .* -j ACCEPT/);
+  assert.doesNotMatch(commands, /host\.example\.test/);
+});
+
+test("SNI splitter source restriction cleanup removes nft and iptables markers", () => {
+  const commands = buildSNISplitterSourceRestrictionCleanupCmds(24000).join("\n");
+
+  assert.match(commands, /nft -a list chain inet forwardx sni_input/);
+  assert.match(commands, /fwx-sni-splitter-24000/);
+  assert.match(commands, /marker='fwx-sni-splitter-24000:'/);
+  assert.match(commands, /iptables -S/);
+  assert.match(commands, /ip6tables -S/);
+});
+
+test("SNI splitter source restrictions fail without allowed addresses", () => {
+  assert.deepEqual(
+    buildSNISplitterSourceRestrictionCmds(24000, ["host.example.test"]),
+    ['echo "[sni-source] missing allowed source for port 24000"; exit 1'],
+  );
 });
 
 test("process counters do not attribute shared target traffic to every listener", () => {

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net"
 	"os"
 	"sort"
 	"strconv"
@@ -64,6 +65,7 @@ func normalizeConfig(cfg config) config {
 	sort.Slice(udpTargets, func(i, j int) bool { return udpTargets[i].RuleID < udpTargets[j].RuleID })
 	cfg.UDPTargets = udpTargets
 	cfg.SNIRoutes = normalizeSNIRoutes(cfg.SNIRoutes)
+	cfg.SourceAllowIPs = normalizeSourceAllowIPs(cfg.SourceAllowIPs)
 	for i := range cfg.Entries {
 		cfg.Entries[i] = normalizeConfig(cfg.Entries[i])
 	}
@@ -153,6 +155,27 @@ func normalizeSNIRoutes(routes []sniRoute) []sniRoute {
 
 func normalizeSNIName(value string) string {
 	return strings.TrimRight(strings.ToLower(strings.TrimSpace(value)), ".")
+}
+
+func normalizeSourceAllowIPs(values []string) []string {
+	seen := map[string]bool{}
+	normalized := make([]string, 0, len(values))
+	for _, value := range values {
+		address := strings.TrimSpace(value)
+		address = strings.TrimPrefix(strings.TrimSuffix(address, "]"), "[")
+		parsed := net.ParseIP(address)
+		if parsed == nil {
+			continue
+		}
+		address = strings.ToLower(parsed.String())
+		if seen[address] {
+			continue
+		}
+		seen[address] = true
+		normalized = append(normalized, address)
+	}
+	sort.Strings(normalized)
+	return normalized
 }
 
 func validateSNISplitterConfig(cfg config) error {

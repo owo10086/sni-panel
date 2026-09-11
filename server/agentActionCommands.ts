@@ -1,4 +1,5 @@
 import { forwardRuleProtocols, normalizeForwardRuleProtocol } from "@shared/forwardTypes";
+import { createHash } from "node:crypto";
 import { isIP } from "net";
 
 type IptablesBinary = "iptables" | "ip6tables";
@@ -60,6 +61,15 @@ function iptablesEnsure(binary: IptablesBinary, table: string | null, rule: stri
 function iptablesDelete(binary: IptablesBinary, table: string | null, rule: string) {
   const tableArg = table ? `-t ${table} ` : "";
   const command = `while ${binary} ${tableArg}-C ${rule} 2>/dev/null; do if ${binary} ${tableArg}-D ${rule} 2>/dev/null; then :; else break; fi; done`;
+  if (binary === "ip6tables") {
+    return `if command -v ip6tables >/dev/null 2>&1; then ${command}; fi; true`;
+  }
+  return ignoreShellFailure(command);
+}
+
+function iptablesDeleteByComment(binary: IptablesBinary, table: string | null, marker: string, keepMarker = "") {
+  const tableArg = table ? `-t ${table} ` : "";
+  const command = `${binary} ${tableArg}-S 2>/dev/null | awk -v marker=${shellQuote(marker)} -v keep=${shellQuote(keepMarker)} '/^-A / {chain=$2; position[chain]++; if (index($0, marker) && (keep == "" || !index($0, keep))) {count++; chains[count]=chain; numbers[count]=position[chain]}} END {for (i=count; i>=1; i--) print chains[i], numbers[i]}' | while read -r chain number; do [ -n "$chain" ] && [ -n "$number" ] && ${binary} ${tableArg}-D "$chain" "$number" 2>/dev/null || true; done`;
   if (binary === "ip6tables") {
     return `if command -v ip6tables >/dev/null 2>&1; then ${command}; fi; true`;
   }
@@ -195,10 +205,96 @@ const nftDirectionComment = (comment: string, direction: "in" | "out") => `${com
 const nftDnatMasqueradeComment = "fwx-dnat-masquerade";
 const nftIpv6RoutefixChain = "ipv6_routefix";
 const nftIpv6RoutefixComment = "fwx-ipv6-dnat-routefix";
+const nftSniSourceRestrictionChain = "sni_input";
+
+export function normalizeSourceAllowIps(values: Iterable<unknown> | null | undefined) {
+  const addresses = new Set<string>();
+  for (const value of values || []) {
+    const address = cleanAddress(value);
+    if (isIP(address) !== 0) addresses.add(address.toLowerCase());
+  }
+  return Array.from(addresses).sort();
+}
+
+function sniSourceRestrictionVersion(allowIps: string[]) {
+  return `v${createHash("sha256").update(allowIps.join(","), "utf8").digest("hex").slice(0, 12)}`;
+}
 
 function nftProcessCountingCleanupCmd(port: number) {
   const marker = `fwx-stat-${port}:`;
   return `if command -v nft >/dev/null 2>&1 && nft list table inet ${nftProcessTrafficTable} >/dev/null 2>&1; then for c in ${nftProcessTrafficChains.join(" ")}; do for h in $(nft -a list chain inet ${nftProcessTrafficTable} "$c" 2>/dev/null | awk -v marker=${shellQuote(marker)} 'index($0, marker) {print $NF}'); do nft delete rule inet ${nftProcessTrafficTable} "$c" handle "$h" 2>/dev/null || true; done; done; fi; true`;
+}
+
+export function buildSNISplitterSourceRestrictionCleanupCmds(port: number): string[] {
+  const normalizedPort = Number(port || 0);
+  if (!Number.isInteger(normalizedPort) || normalizedPort <= 0 || normalizedPort > 65535) return [];
+  const marker = `fwx-sni-splitter-${normalizedPort}:`;
+  return buildSNISplitterSourceRestrictionCleanupCmdsByMarker(marker);
+}
+
+function buildSNISplitterSourceRestrictionCleanupCmdsByMarker(marker: string, keepMarker = ""): string[] {
+  const keepArg = keepMarker ? ` -v keep=${shellQuote(keepMarker)}` : "";
+  const keepFilter = keepMarker ? " && !index($0, keep)" : "";
+  return [
+    `if command -v nft >/dev/null 2>&1 && nft list table inet ${nftTable} >/dev/null 2>&1 && nft list chain inet ${nftTable} ${nftSniSourceRestrictionChain} >/dev/null 2>&1; then for h in $(nft -a list chain inet ${nftTable} ${nftSniSourceRestrictionChain} 2>/dev/null | awk -v marker=${shellQuote(marker)}${keepArg} 'index($0, marker)${keepFilter} {print $NF}'); do nft delete rule inet ${nftTable} ${nftSniSourceRestrictionChain} handle "$h" 2>/dev/null || true; done; fi; true`,
+    ...iptablesBinaries.map((binary) => iptablesDeleteByComment(binary, null, marker, keepMarker)),
+  ];
+}
+
+export function buildSNISplitterSourceRestrictionCmds(port: number, sourceAllowIps: Iterable<unknown>): string[] {
+  const normalizedPort = Number(port || 0);
+  if (!Number.isInteger(normalizedPort) || normalizedPort <= 0 || normalizedPort > 65535) return [];
+  const allowIps = normalizeSourceAllowIps(sourceAllowIps);
+  if (allowIps.length === 0) {
+    return [`echo "[sni-source] missing allowed source for port ${normalizedPort}"; exit 1`];
+  }
+  const portMarker = `fwx-sni-splitter-${normalizedPort}:`;
+  const version = sniSourceRestrictionVersion(allowIps);
+  const marker = `fwx-sni-splitter-${normalizedPort}:${version}:`;
+  const nftRuleExists = (comment: string) =>
+    `nft -a list chain inet ${nftTable} ${nftSniSourceRestrictionChain} 2>/dev/null | awk -v marker=${shellQuote(comment)} 'index($0, marker) {found=1} END {exit found ? 0 : 1}'`;
+  const nftEnsureRule = (rule: string, comment: string) => `if ${nftRuleExists(comment)}; then :; else ${rule}; fi`;
+  const nftAllowRules = allowIps.map((address) => {
+    const family = isIP(address) === 6 ? "ip6" : "ip";
+    const comment = `${marker}allow:${address}`;
+    return nftEnsureRule(
+      `nft add rule inet ${nftTable} ${nftSniSourceRestrictionChain} ${family} saddr ${address} tcp dport ${normalizedPort} accept comment ${nftCommentLiteral(comment)}`,
+      comment,
+    );
+  });
+  const nftDropComment = `${marker}drop`;
+  const nftDropRule = nftEnsureRule(
+    `nft add rule inet ${nftTable} ${nftSniSourceRestrictionChain} tcp dport ${normalizedPort} drop comment ${nftCommentLiteral(nftDropComment)}`,
+    nftDropComment,
+  );
+  const iptablesEnsureInputRule = (binary: IptablesBinary, rule: string) =>
+    `if ${binary} -C INPUT ${rule} 2>/dev/null; then :; else ${binary} -I INPUT 1 ${rule}; fi`;
+  const iptablesInstallRules = (binary: IptablesBinary) => {
+    const family = binary === "ip6tables" ? 6 : 4;
+    const scopedIps = allowIps.filter((address) => isIP(address) === family);
+    return [
+      iptablesEnsureInputRule(binary, `-p tcp --dport ${normalizedPort} -m comment --comment "${marker}drop" -j DROP`),
+      ...scopedIps.map((address) => iptablesEnsureInputRule(binary, `-p tcp -s ${address} --dport ${normalizedPort} -m comment --comment "${marker}allow:${address}" -j ACCEPT`)),
+    ];
+  };
+  return [
+    [
+      `set -e`,
+      `command -v nft >/dev/null 2>&1 || { command -v iptables >/dev/null 2>&1 && command -v ip6tables >/dev/null 2>&1; }`,
+      `if command -v nft >/dev/null 2>&1; then`,
+      `  nft add table inet ${nftTable} 2>/dev/null || true`,
+      `  nft add chain inet ${nftTable} ${nftSniSourceRestrictionChain} '{ type filter hook input priority -10; policy accept; }' 2>/dev/null || true`,
+      `  ${nftAllowRules.join("; ")}`,
+      `  ${nftDropRule}`,
+      `else`,
+      `  command -v iptables >/dev/null 2>&1`,
+      `  command -v ip6tables >/dev/null 2>&1`,
+      `  ${iptablesInstallRules("iptables").join("; ")}`,
+      `  ${iptablesInstallRules("ip6tables").join("; ")}`,
+      `fi`,
+      ...buildSNISplitterSourceRestrictionCleanupCmdsByMarker(portMarker, marker),
+    ].join("\n"),
+  ];
 }
 
 function nftOptional(command: string) {
@@ -434,6 +530,7 @@ export function buildManagedPortCleanupCmds(port: number, targetIp?: string, tar
   return [
     ...buildIptablesForwardPortCleanupCmds(port, protocol),
     ...buildNftPortCleanupCmds(port, protocol),
+    ...buildSNISplitterSourceRestrictionCleanupCmds(port),
     ...legacyServiceCleanup,
     ...protocols.map((proto) => removeManagedServiceCmd(`forwardx-socat-${proto}-${port}`)),
     removeManagedServiceCmd(`forwardx-realm-${normalizedProtocol}-${port}`),

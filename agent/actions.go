@@ -313,7 +313,7 @@ func syncDesiredState(cfg Config, state *desiredState) []<-chan struct{} {
 				continue
 			}
 		}
-		if !forceSchemaApply && !forceWireGuardReapply && canAdoptDesiredAction(a) {
+		if !forceSchemaApply && !forceWireGuardReapply && canAdoptDesiredActionWithoutCommands(a) {
 			records[key] = newDesiredActionRecord(signature, true)
 			rememberDesiredActionApplied(a)
 			if shouldReportDesiredAdoptionStatus(a) {
@@ -558,6 +558,13 @@ func canAdoptDesiredAction(a action) bool {
 	localForwardType := readForwardTypeByPort(port)
 	localTunnelID := readRuleTunnelIDByPort(port)
 	return localRuleID == a.RuleID && (localTunnelID <= 0 || localTunnelID == a.TunnelID) && desiredForwardTypeCompatible(localForwardType, a.ForwardType) && desiredActionLocalRuntimeReady(a)
+}
+
+func canAdoptDesiredActionWithoutCommands(a action) bool {
+	if actionUsesSNISplitter(a) {
+		return false
+	}
+	return canAdoptDesiredAction(a)
 }
 
 func desiredActionLocalRuntimeReady(a action) bool {
