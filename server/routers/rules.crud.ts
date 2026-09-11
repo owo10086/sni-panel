@@ -45,6 +45,7 @@ const failoverStrategySchema = z.enum(["fallback", "round_robin", "random", "ip_
 const MAX_FAILOVER_TARGETS = 10;
 const mainBackupGostTunnelModes = new Set(["tls", "wss", "tcp", "mtls", "mwss", "mtcp"]);
 const SNI_SPLITTER_MIN_AGENT_VERSION = "2.2.195";
+const SNI_BULK_IMPORT_MAX_COUNT = 500;
 const sniInputSchema = z.string().max(1024).nullable().optional();
 
 type SniEntryPortState = Awaited<ReturnType<typeof db.getForwardGroupSniEntryPortState>>;
@@ -217,6 +218,11 @@ async function validateSniEntryPortUse(options: {
     ? normalizePositiveIds(await db.getForwardGroupSniSplitterPortRuleIds(options.groupId, Number(state.splitterPort)))
     : [];
   return { state, portUsageIgnoreRuleIds, splitterPortUsageIgnoreRuleIds };
+}
+
+function sniImportLinePrefix(lineNumber: unknown) {
+  const value = Number(lineNumber || 0);
+  return Number.isInteger(value) && value > 0 ? `第 ${value} 行：` : "";
 }
 
 async function prepareForwardGroupRuntimePorts(options: {
@@ -1312,6 +1318,64 @@ export async function createDirectForwardRuleForActor(
 }
 
 export const crudRulesRouter = router({
+  checkSniImport: protectedProcedure
+    .input(z.object({
+      forwardGroupId: z.number().int().positive(),
+      sourcePort: z.number().int().min(1).max(65535),
+      rules: z.array(z.object({
+        lineNumber: z.number().int().positive(),
+        sni: z.string().min(1).max(1024),
+      })).min(1).max(SNI_BULK_IMPORT_MAX_COUNT),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      if (ctx.user.role !== "admin") {
+        throw new Error("SNI 分流仅管理员可创建");
+      }
+      const group = await db.getForwardGroupById(input.forwardGroupId);
+      if (!group) throw new Error("转发链不存在");
+      await inferForwardGroupSniExitHost(group);
+      const entryHostIds = await db.getForwardGroupRuleEntryHostIds(input.forwardGroupId);
+      if (entryHostIds.length === 0) throw new Error("转发链没有可用入口 Agent");
+
+      const seen = new Map<string, number>();
+      const normalizedRules: Array<{ lineNumber: number; sni: string }> = [];
+      for (const item of input.rules) {
+        const prefix = sniImportLinePrefix(item.lineNumber);
+        let sni: string | null = null;
+        try {
+          sni = normalizeSniInput(item.sni);
+        } catch (error) {
+          throw new Error(`${prefix}${error instanceof Error ? error.message : "SNI 域名格式不正确"}`);
+        }
+        if (!sni) throw new Error(`${prefix}SNI 域名不能为空`);
+        const previousLine = seen.get(sni);
+        if (previousLine !== undefined) {
+          throw new Error(`${prefix}SNI 域名 ${sni} 与第 ${previousLine} 行重复`);
+        }
+        seen.set(sni, Number(item.lineNumber || normalizedRules.length + 1));
+        normalizedRules.push({ lineNumber: item.lineNumber, sni });
+      }
+
+      for (const item of normalizedRules) {
+        const prefix = sniImportLinePrefix(item.lineNumber);
+        try {
+          const sniEntryPortValidation = await validateSniEntryPortUse({
+            groupId: input.forwardGroupId,
+            sourcePort: input.sourcePort,
+            entryHostIds,
+            sni: item.sni,
+          });
+          await db.validateForwardGroupRuleConfig(input.forwardGroupId, {
+            sourcePort: input.sourcePort,
+            protocol: "tcp",
+            portUsageIgnoreRuleIds: sniEntryPortValidation.portUsageIgnoreRuleIds,
+          });
+        } catch (error) {
+          throw new Error(`${prefix}${error instanceof Error ? error.message : "SNI 分流规则校验失败"}`);
+        }
+      }
+      return { ok: true };
+    }),
   create: protectedProcedure
     .input(z.object({
       hostId: z.number().optional(),

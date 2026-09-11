@@ -68,7 +68,13 @@ import {
   RULE_TRANSFER_FILE_VERSION,
   RULE_TRANSFER_MAX_FILE_SIZE,
   RULE_TRANSFER_MAX_IMPORT_COUNT,
+  SNI_BULK_IMPORT_LINE_FORMAT,
+  formatSniBulkImportRuleLine,
+  isSniBulkImportRule,
+  normalizeSniImportDomain,
+  parseSniBulkImportText,
   parseRuleTransferFile,
+  type RuleBulkImportRule,
   type RuleTransferFile,
   type RuleTransferFileRule,
 } from "@/lib/ruleTransfer";
@@ -385,6 +391,7 @@ type RuleTransferScopeType = Exclude<RuleCategory, "all">;
 type RuleResourceFilter = "all" | `${RuleTransferScopeType}` | `${RuleTransferScopeType}:${number}`;
 type RuleBatchManageMode = "copy" | "edit" | "export" | "import";
 type BatchEditFormData = Pick<RuleFormData, "routeMode" | "forwardType" | "tunnelId" | "forwardGroupId" | "targetIp" | "targetPort">;
+type RuleImportSourceMode = "file" | "manual" | "sni";
 
 const RULE_CATEGORIES = ["all", "local", "tunnel", "chain", "group"] as const;
 const ruleTransferScopeLabels: Record<RuleTransferScopeType, string> = {
@@ -401,6 +408,7 @@ const ruleTransferScopeOptions: Array<{ value: RuleTransferScopeType; label: str
   { value: "group", label: "转发组" },
 ];
 const importRuleTransferScopeOptions = ruleTransferScopeOptions;
+const sniImportRuleTransferScopeOptions = ruleTransferScopeOptions.filter((option) => option.value === "chain");
 
 function parseRuleResourceFilter(value: unknown): { type: RuleTransferScopeType | null; id: number | null } {
   const raw = String(value || "").trim();
@@ -2368,12 +2376,13 @@ function RulesContent() {
   const [importScopeType, setImportScopeType] = useState<RuleTransferScopeType>("tunnel");
   const [importResourceId, setImportResourceId] = useState("");
   const [importResourceSearch, setImportResourceSearch] = useState("");
-  const [importSourceMode, setImportSourceMode] = useState<"file" | "manual">("file");
+  const [importSourceMode, setImportSourceMode] = useState<RuleImportSourceMode>("file");
   const [importFile, setImportFile] = useState<RuleTransferFile | null>(null);
   const [importFileName, setImportFileName] = useState("");
   const [importFileError, setImportFileError] = useState("");
   const [importFileInputKey, setImportFileInputKey] = useState(0);
   const [importManualText, setImportManualText] = useState("");
+  const [importSniSourcePort, setImportSniSourcePort] = useState(0);
   const [importingRules, setImportingRules] = useState(false);
   const importingRulesRef = useRef(false);
   const rulePageRequest = usePersistentPageRequest("forwardx.rules.page");
@@ -2539,6 +2548,7 @@ function RulesContent() {
   const batchDeleteMutation = trpc.rules.deleteBatch.useMutation();
 
   const importCreateMutation = trpc.rules.create.useMutation();
+  const checkSniImportMutation = trpc.rules.checkSniImport.useMutation();
 
   const [trafficDetailRule, setTrafficDetailRule] = useState<{ id: number; name: string; isForwardChain?: boolean; probeMethod?: "tcping" | "ping" } | null>(null);
   const [selfTestRule, setSelfTestRule] = useState<{ id: number; name: string } | null>(null);
@@ -3024,6 +3034,15 @@ function RulesContent() {
   }, [availableFailoverForwardGroups, availableForwardChainGroups, availablePortForwardGroups, supportedTunnels]);
   const exportResources = useMemo(() => getTransferResources(exportScopeType), [exportScopeType, getTransferResources]);
   const importResources = useMemo(() => getImportResources(importScopeType), [getImportResources, importScopeType]);
+  const activeImportRuleTransferScopeOptions = importSourceMode === "sni"
+    ? sniImportRuleTransferScopeOptions
+    : importRuleTransferScopeOptions;
+  useEffect(() => {
+    if (importSourceMode !== "sni" || importScopeType === "chain") return;
+    setImportScopeType("chain");
+    setImportResourceId("");
+    setImportResourceSearch("");
+  }, [importScopeType, importSourceMode]);
   useEffect(() => {
     const firstId = exportResources[0]?.id;
     if (!firstId) {
@@ -5285,7 +5304,7 @@ function RulesContent() {
     [exportScopeType, exportResourceId, getRulesForTransferScope]
   );
 
-  const manualImportValidation = useMemo<{ ok: boolean; message: string; rules: RuleTransferFileRule[] }>(() => {
+  const manualImportValidation = useMemo<{ ok: boolean; message: string; rules: RuleBulkImportRule[] }>(() => {
     const lines = String(importManualText || "").split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
     if (lines.length === 0) {
       return { ok: false, message: "请输入目标地址，每行一个 地址:端口", rules: [] };
@@ -5337,8 +5356,23 @@ function RulesContent() {
     return { ok: true, message: `已识别 ${rules.length} 条手动输入规则`, rules };
   }, [defaultForm.forwardType, defaultForm.protocol, importManualText]);
 
-  const importValidation = useMemo<{ ok: boolean; message: string; rules: RuleTransferFileRule[] }>(() => {
+  const sniImportValidation = useMemo<{ ok: boolean; message: string; rules: RuleBulkImportRule[] }>(() => {
+    if (user?.role !== "admin") {
+      return { ok: false, message: "SNI 分流仅管理员可导入", rules: [] };
+    }
+    if (importScopeType !== "chain") {
+      return { ok: false, message: "SNI 分流规则只能导入到转发链", rules: [] };
+    }
+    return parseSniBulkImportText(importManualText, importSniSourcePort);
+  }, [importManualText, importScopeType, importSniSourcePort, user?.role]);
+
+  const importValidation = useMemo<{ ok: boolean; message: string; rules: RuleBulkImportRule[] }>(() => {
     if (!importResourceId) return { ok: false, message: `请选择${ruleTransferScopeLabels[importScopeType]}`, rules: [] };
+    if (importSourceMode === "sni") {
+      if (importScopeType !== "chain") return { ok: false, message: "请选择转发链", rules: [] };
+      if (!selectedImportResource) return { ok: false, message: "请选择转发链", rules: [] };
+      return sniImportValidation;
+    }
     if (importSourceMode === "manual") {
       if (!manualImportValidation.ok) return manualImportValidation;
       return manualImportValidation;
@@ -5346,7 +5380,7 @@ function RulesContent() {
     if (importFileError) return { ok: false, message: importFileError, rules: [] };
     if (!importFile) return { ok: false, message: "请选择导入文件", rules: [] };
     return { ok: true, message: `已识别 ${importFile.rules.length} 条${ruleTransferScopeLabels[importScopeType]}规则`, rules: importFile.rules };
-  }, [importFile, importFileError, importResourceId, importScopeType, importSourceMode, manualImportValidation]);
+  }, [importFile, importFileError, importResourceId, importScopeType, importSourceMode, manualImportValidation, selectedImportResource, sniImportValidation]);
 
   const resetImportDialog = () => {
     setImportFile(null);
@@ -5354,6 +5388,7 @@ function RulesContent() {
     setImportFileError("");
     setImportFileInputKey((key) => key + 1);
     setImportManualText("");
+    setImportSniSourcePort(0);
   };
 
   const openExportDialog = () => {
@@ -5421,10 +5456,11 @@ function RulesContent() {
     }
   };
 
-  const buildImportRulePayload = (rule: RuleTransferFileRule) => {
+  const buildImportRulePayload = (rule: RuleBulkImportRule) => {
     const resourceId = Number(importResourceId);
     const selectedTunnel = importScopeType === "tunnel" ? tunnelById.get(resourceId) : null;
     const selectedGroup = importScopeType === "tunnel" ? null : forwardGroupById.get(resourceId);
+    const sni = normalizeSniImportDomain(rule.sni);
     const payloadForwardType: ForwardType = importScopeType === "tunnel"
       ? "gost"
       : getForwardGroupRuleForwardType(selectedGroup, rule.forwardType);
@@ -5432,13 +5468,14 @@ function RulesContent() {
       hostId: importScopeType === "tunnel" ? Number(selectedTunnel?.entryHostId || 0) : undefined,
       name: rule.name,
       forwardType: payloadForwardType,
-      protocol: rule.protocol,
+      protocol: sni ? "tcp" : rule.protocol,
       gostMode: "direct" as const,
       gostRelayHost: null,
       gostRelayPort: null,
       tunnelId: importScopeType === "tunnel" ? resourceId : null,
       forwardGroupId: importScopeType === "tunnel" ? null : resourceId,
       sourcePort: rule.sourcePort,
+      sni: sni || null,
       targetIp: rule.targetIp,
       targetPort: rule.targetPort,
       isEnabled: rule.isEnabled,
@@ -5452,9 +5489,9 @@ function RulesContent() {
       zeroCopy: rule.zeroCopy,
       udpOverTcp: rule.udpOverTcp,
       udpOverTcpPort: rule.udpOverTcpPort || null,
-      failoverEnabled: importScopeType === "chain" ? false : rule.failoverEnabled,
+      failoverEnabled: !!sni || importScopeType === "chain" ? false : rule.failoverEnabled,
       failoverStrategy: rule.failoverStrategy,
-      failoverTargets: importScopeType === "chain" || !rule.failoverEnabled ? [] : rule.failoverTargets,
+      failoverTargets: !!sni || importScopeType === "chain" || !rule.failoverEnabled ? [] : rule.failoverTargets,
       failoverSeconds: rule.failoverSeconds,
       recoverSeconds: rule.recoverSeconds,
       autoFailback: rule.autoFailback,
@@ -5470,12 +5507,22 @@ function RulesContent() {
     importingRulesRef.current = true;
     setImportingRules(true);
     try {
+      if (importSourceMode === "sni") {
+        await checkSniImportMutation.mutateAsync({
+          forwardGroupId: Number(importResourceId),
+          sourcePort: Number(importSniSourcePort),
+          rules: importValidation.rules.map((rule) => ({
+            lineNumber: Number(rule.sourceLineNumber),
+            sni: normalizeSniImportDomain(rule.sni),
+          })),
+        });
+      }
       const results = await runBatchOperations(importValidation.rules, 6, async (rule) => {
         const payload = buildImportRulePayload(rule);
         try {
           return await importCreateMutation.mutateAsync(payload);
         } catch (error) {
-          if (rule.sourcePort <= 0 || !isBatchPortConflictError(error)) throw error;
+          if (isSniBulkImportRule(rule) || rule.sourcePort <= 0 || !isBatchPortConflictError(error)) throw error;
           return importCreateMutation.mutateAsync({ ...payload, sourcePort: 0 });
         }
       });
@@ -5493,12 +5540,21 @@ function RulesContent() {
         const failedRules = failures.map((result) => result.item);
         if (importSourceMode === "file") {
           setImportFile((current) => current ? { ...current, rules: failedRules } : current);
+        } else if (importSourceMode === "sni") {
+          setImportManualText(failedRules
+            .map((rule) => formatSniBulkImportRuleLine(rule))
+            .join("\n"));
         } else {
           setImportManualText(failedRules
             .map((rule) => formatAddressWithPort(rule.targetIp, rule.targetPort))
             .join("\n"));
         }
-        toast.error(`批量导入完成：成功 ${importedCount} 条，失败 ${failures.length} 条，已仅保留失败项供重试。${batchOperationErrorMessage(failures[0].reason)}`);
+        const firstFailure = failures[0];
+        const firstMessage = batchOperationErrorMessage(firstFailure.reason);
+        const firstPrefix = isSniBulkImportRule(firstFailure.item) && firstFailure.item.sourceLineNumber
+          ? `第 ${firstFailure.item.sourceLineNumber} 行：`
+          : "";
+        toast.error(`批量导入完成：成功 ${importedCount} 条，失败 ${failures.length} 条，已仅保留失败项供重试。${firstMessage.startsWith(firstPrefix) ? firstMessage : `${firstPrefix}${firstMessage}`}`);
       } else {
         toast.success(`已导入 ${importedCount} 条规则`);
         setShowImportDialog(false);
@@ -7901,8 +7957,12 @@ function RulesContent() {
                 <div className="space-y-3 rounded-md border border-border/60 bg-background/55 p-3">
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div className="space-y-1">
-                      <Label>导入文件</Label>
-                      <div className="text-xs text-muted-foreground">支持从文件导入，或手动输入目标地址与端口后批量导入。</div>
+                      <Label>导入内容</Label>
+                      <div className="text-xs text-muted-foreground">
+                        {importSourceMode === "sni"
+                          ? "填写一次入口端口，按行粘贴 SNI 分流规则。"
+                          : "支持从文件导入，或手动输入目标地址与端口后批量导入。"}
+                      </div>
                     </div>
                     <div className="inline-flex shrink-0 items-center gap-2 self-start whitespace-nowrap rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
                       <span>待导入</span>
@@ -7910,7 +7970,7 @@ function RulesContent() {
                     </div>
                   </div>
                   <div className={segmentedControlClassName}>
-                    <div className="grid grid-cols-2 gap-1">
+                    <div className={`grid gap-1 ${user?.role === "admin" ? "grid-cols-3" : "grid-cols-2"}`}>
                       <button
                         type="button"
                         className={routeModeOptionClass(importSourceMode === "file", importingRules)}
@@ -7918,6 +7978,7 @@ function RulesContent() {
                         onClick={() => {
                           setImportSourceMode("file");
                           setImportManualText("");
+                          setImportSniSourcePort(0);
                         }}
                         disabled={importingRules}
                       >
@@ -7934,24 +7995,66 @@ function RulesContent() {
                           setImportFileName("");
                           setImportFileError("");
                           setImportFileInputKey((key) => key + 1);
+                          setImportSniSourcePort(0);
                         }}
                         disabled={importingRules}
                       >
                         <Pencil className="h-4 w-4 shrink-0" />
                         <span className="truncate">手动输入</span>
                       </button>
+                      {user?.role === "admin" && (
+                        <button
+                          type="button"
+                          className={routeModeOptionClass(importSourceMode === "sni", importingRules)}
+                          aria-pressed={importSourceMode === "sni"}
+                          onClick={() => {
+                            setImportSourceMode("sni");
+                            setImportScopeType("chain");
+                            setImportResourceId("");
+                            setImportResourceSearch("");
+                            setImportFile(null);
+                            setImportFileName("");
+                            setImportFileError("");
+                            setImportFileInputKey((key) => key + 1);
+                          }}
+                          disabled={importingRules}
+                        >
+                          <GitBranch className="h-4 w-4 shrink-0" />
+                          <span className="truncate">SNI 分流</span>
+                        </button>
+                      )}
                     </div>
                   </div>
+                  {importSourceMode === "sni" && (
+                    <div className="grid gap-3 sm:grid-cols-[12rem_minmax(0,1fr)]">
+                      <div className="space-y-2">
+                        <Label>入口端口</Label>
+                        <Input
+                          type="number"
+                          min={1}
+                          max={65535}
+                          value={importSniSourcePort || ""}
+                          onChange={(event) => setImportSniSourcePort(Number.parseInt(event.target.value, 10) || 0)}
+                          placeholder="443"
+                        />
+                      </div>
+                      <div className="rounded-md border border-border/60 bg-muted/20 px-3 py-2 text-xs leading-5 text-muted-foreground">
+                        同一批 SNI 分流规则共用该入口端口，端口占用时会返回错误供修正。
+                      </div>
+                    </div>
+                  )}
                   <div className="space-y-2">
-                    <Label>{importSourceMode === "file" ? "规则文件" : "目标地址列表"}</Label>
+                    <Label>{importSourceMode === "file" ? "规则文件" : importSourceMode === "sni" ? "SNI 规则列表" : "目标地址列表"}</Label>
                     {importSourceMode === "file" ? (
                       <Input key={importFileInputKey} type="file" accept=".json,application/json" onChange={handleImportFileChange} />
                     ) : (
                       <Textarea
                         value={importManualText}
                         onChange={(event) => setImportManualText(event.target.value)}
-                        placeholder={"每行一个目标地址，格式如：\nexample.com:443\n10.0.0.8:8080\n[2408:xxxx::1]:8443"}
-                        className="min-h-[7.5rem] resize-y"
+                        placeholder={importSourceMode === "sni"
+                          ? `${SNI_BULK_IMPORT_LINE_FORMAT}\n官网#www.example.com#203.0.113.10#443\nIPv6站点#ipv6.example.com#[2408:xxxx::1]#8443`
+                          : "每行一个目标地址，格式如：\nexample.com:443\n10.0.0.8:8080\n[2408:xxxx::1]:8443"}
+                        className={importSourceMode === "sni" ? "min-h-[11rem] resize-y font-mono text-sm" : "min-h-[7.5rem] resize-y"}
                       />
                     )}
                   </div>
@@ -7970,18 +8073,24 @@ function RulesContent() {
                   )}
                   {importValidation.rules.length > 0 && (
                     <div className="max-h-[24rem] space-y-2 overflow-y-auto rounded-md border border-border/60 p-2">
-                      {importValidation.rules.map((rule, index) => (
-                        <div key={`${rule.name}-${rule.sourcePort}-${index}`} className="rounded-md border border-border/40 bg-background/70 px-3 py-2">
-                          <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-                            <ArrowRightLeft className="h-3.5 w-3.5 text-primary" />
-                            <span className="min-w-0 truncate text-sm font-medium">{rule.name}</span>
-                            <Badge variant="secondary" className="h-5 shrink-0 px-1.5 text-[10px]">{formatForwardRuleProtocol(rule.protocol)}</Badge>
+                      {importValidation.rules.map((rule, index) => {
+                        const sni = normalizeSniImportDomain(rule.sni);
+                        return (
+                          <div key={`${rule.name}-${rule.sourcePort}-${sni || rule.targetIp}-${index}`} className="rounded-md border border-border/40 bg-background/70 px-3 py-2">
+                            <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+                              <ArrowRightLeft className="h-3.5 w-3.5 text-primary" />
+                              <span className="min-w-0 truncate text-sm font-medium">{rule.name}</span>
+                              <Badge variant="secondary" className="h-5 shrink-0 px-1.5 text-[10px]">{formatForwardRuleProtocol(rule.protocol)}</Badge>
+                              {sni && <Badge variant="outline" className="h-5 shrink-0 px-1.5 text-[10px]">SNI</Badge>}
+                            </div>
+                            <div className="mt-1 truncate text-xs text-muted-foreground">
+                              {sni
+                                ? `:${rule.sourcePort} / ${sni} -> ${formatAddressWithPort(rule.targetIp, rule.targetPort)} / ${forwardTypeDisplayLabel(rule.forwardType)}`
+                                : `${rule.sourcePort > 0 ? `:${rule.sourcePort}` : "随机端口"} -> ${formatAddressWithPort(rule.targetIp, rule.targetPort)} / ${forwardTypeDisplayLabel(rule.forwardType)}`}
+                            </div>
                           </div>
-                          <div className="mt-1 truncate text-xs text-muted-foreground">
-                            {rule.sourcePort > 0 ? `:${rule.sourcePort}` : "随机端口"} -&gt; {rule.targetIp}:{rule.targetPort} / {forwardTypeDisplayLabel(rule.forwardType)}
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -8001,7 +8110,9 @@ function RulesContent() {
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div className="space-y-1">
                       <Label>导入目标</Label>
-                      <div className="text-xs text-muted-foreground">选择要导入到哪个端口转发、隧道、转发链或转发组。</div>
+                      <div className="text-xs text-muted-foreground">
+                        {importSourceMode === "sni" ? "选择承载这批 SNI 分流规则的转发链。" : "选择要导入到哪个端口转发、隧道、转发链或转发组。"}
+                      </div>
                     </div>
                     <div className="inline-flex shrink-0 items-center gap-2 self-start whitespace-nowrap rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-700 dark:text-emerald-300">
                       <span>已选择</span>
@@ -8020,7 +8131,7 @@ function RulesContent() {
                     >
                       <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        {importRuleTransferScopeOptions.map((option) => (
+                        {activeImportRuleTransferScopeOptions.map((option) => (
                           <SelectItem key={option.value} value={option.value}>
                             {option.label}
                           </SelectItem>
