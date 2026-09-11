@@ -20,6 +20,9 @@ export type RuleTransferFileRule = {
   forwardType: ForwardType;
   protocol: ForwardRuleProtocol;
   sourcePort: number;
+  sni?: string;
+  rateLimitMbps?: number;
+  maxConnections?: number;
   targetIp: string;
   targetPort: number;
   isEnabled: boolean;
@@ -42,7 +45,6 @@ export type RuleTransferFileRule = {
 };
 
 export type RuleBulkImportRule = RuleTransferFileRule & {
-  sni?: string;
   sourceLine?: string;
   sourceLineNumber?: number;
 };
@@ -93,6 +95,12 @@ const ruleTransferRuleSchema = z.object({
   forwardType: z.enum(FORWARD_TYPES).optional().default("iptables"),
   protocol: z.enum(["tcp", "udp", "both"]).optional().default("both"),
   sourcePort: z.number().int().min(0).max(65535),
+  sni: z.string().trim().max(1024).refine(
+    (value) => !value || isValidSniValue(normalizeSniValue(value)),
+    "SNI 域名格式不正确",
+  ).optional(),
+  rateLimitMbps: z.number().int().min(0).max(1_000_000).optional().default(0),
+  maxConnections: z.number().int().min(0).max(1_000_000).optional().default(0),
   targetIp: targetHostSchema,
   targetPort: z.number().int().min(1).max(65535),
   isEnabled: z.boolean().optional().default(true),

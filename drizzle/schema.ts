@@ -345,6 +345,8 @@ export const forwardRules = table("forward_rules", {
   sourcePort: int("sourcePort").notNull(),
   sni: text("sni"),
   sniSplitterPort: int("sniSplitterPort"),
+  rateLimitMbps: int("rateLimitMbps").notNull().default(0),
+  maxConnections: int("maxConnections").notNull().default(0),
   targetIp: text("targetIp").notNull(),
   targetPort: int("targetPort").notNull(),
   telegramErrorNotifyEnabled: boolean("telegramErrorNotifyEnabled").notNull().default(false),

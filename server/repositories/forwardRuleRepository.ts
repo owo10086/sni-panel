@@ -746,6 +746,7 @@ function emptyForwardRuleCategoryCounts() {
 
 type ForwardRuleDisplayRow = {
   id: number;
+  tunnelId: number | null;
   forwardGroupId: number | null;
   sourcePort: number;
   sni: string | null;
@@ -832,6 +833,7 @@ export async function getForwardRulesPage(input: ForwardRuleListQuery) {
     ),
     queryRaw<ForwardRuleDisplayRow>(
       "SELECT " + ruleColumn("r", "id") + " AS " + quoteIdentifier("id")
+        + ", " + ruleColumn("r", "tunnelId") + " AS " + quoteIdentifier("tunnelId")
         + ", " + ruleColumn("r", "forwardGroupId") + " AS " + quoteIdentifier("forwardGroupId")
         + ", " + ruleColumn("r", "sourcePort") + " AS " + quoteIdentifier("sourcePort")
         + ", " + ruleColumn("r", "sni") + " AS " + quoteIdentifier("sni") + "\n"
@@ -1001,11 +1003,10 @@ export async function repairConflictingProtocolPortRules() {
   }
   const repaired: Array<{ keptRuleId: number; disabledRuleId: number; hostId: number; sourcePort: number }> = [];
   const sniShareKey = (row: any) => {
-    const sni = normalizeSniValue(row.sni);
-    const groupId = Number(row.forwardGroupId || 0);
+    const groupKey = getSniRuleGroupKey(row);
     const splitterPort = Number(row.sniSplitterPort || 0);
-    if (!sni || !groupId || !splitterPort) return null;
-    return `${groupId}:${splitterPort}`;
+    if (!groupKey || !splitterPort) return null;
+    return `${groupKey}:${splitterPort}`;
   };
   const disableRule = async (kept: any, duplicate: any) => {
     await db.update(forwardRules).set({

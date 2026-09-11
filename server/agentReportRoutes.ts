@@ -100,6 +100,9 @@ export function trafficAccountingHostIds(
   extraExitHostIds: Set<number> | undefined,
 ) {
   if (!tunnel) return new Set([Number(rule.hostId || 0)]);
+  if (String(rule?.sni || "").trim() && Number(rule?.sniSplitterPort || 0) > 0) {
+    return new Set([Number(tunnel.exitHostId || 0)]);
+  }
   if (isForwardXTunnel(tunnel)) {
     return entryHostIds && entryHostIds.size > 0
       ? new Set(entryHostIds)

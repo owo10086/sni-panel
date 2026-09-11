@@ -69,30 +69,40 @@ async function attachSniRuntimeStatus(value: ForwardRuleViewInput): Promise<Forw
         : [];
   const sniRules = rules.filter((rule) => (
     !!normalizeSniValue(rule.sni)
-    && Number(rule.forwardGroupId || 0) > 0
+    && (Number(rule.forwardGroupId || 0) > 0 || Number(rule.tunnelId || 0) > 0)
     && Number(rule.sniSplitterPort || 0) > 0
   ));
   if (sniRules.length === 0) return value;
-  const groupIds = Array.from(new Set(sniRules.map((rule) => Number(rule.forwardGroupId))));
-  const groups: SniRuntimeForwardGroup[] = await db.getForwardGroups(undefined, {
-    includeRuntime: false,
-    ids: groupIds,
-  });
+  const groupIds = Array.from(new Set(sniRules
+    .map((rule) => Number(rule.forwardGroupId || 0))
+    .filter((id) => id > 0)));
+  const tunnelIds = Array.from(new Set(sniRules
+    .map((rule) => Number(rule.tunnelId || 0))
+    .filter((id) => id > 0)));
+  const [groups, tunnels] = await Promise.all([
+    groupIds.length > 0
+      ? db.getForwardGroups(undefined, { includeRuntime: false, ids: groupIds }) as Promise<SniRuntimeForwardGroup[]>
+      : Promise.resolve([] as SniRuntimeForwardGroup[]),
+    Promise.all(tunnelIds.map((id) => db.getTunnelById(id))),
+  ]);
   const groupById = new Map(groups.map((group) => [Number(group.id), group]));
+  const tunnelById = new Map(tunnels.filter(Boolean).map((tunnel: any) => [Number(tunnel.id), tunnel]));
   const decorate = (rule: ForwardRule): ForwardRuleView => {
     const sni = normalizeSniValue(rule.sni);
     const splitterPort = Number(rule.sniSplitterPort || 0);
     const group = groupById.get(Number(rule.forwardGroupId || 0));
-    if (!sni || splitterPort <= 0 || !group) return rule;
-    const exitMember = [...(group.members || [])]
-      .filter((member) => (
-        runtimeBool(member.isEnabled, true)
-        && String(member.memberType || "") === "host"
-        && Number(member.hostId || 0) > 0
-      ))
-      .sort((left, right) => Number(left.priority) - Number(right.priority))
-      .at(-1);
-    const exitHostId = Number(exitMember?.hostId || 0);
+    const tunnel = tunnelById.get(Number(rule.tunnelId || 0));
+    if (!sni || splitterPort <= 0 || (!group && !tunnel)) return rule;
+    const exitHostId = tunnel
+      ? Number((tunnel as any).exitHostId || 0)
+      : Number([...(group?.members || [])]
+        .filter((member) => (
+          runtimeBool(member.isEnabled, true)
+          && String(member.memberType || "") === "host"
+          && Number(member.hostId || 0) > 0
+        ))
+        .sort((left, right) => Number(left.priority) - Number(right.priority))
+        .at(-1)?.hostId || 0);
     const runtime = getSniRuntimeGroupStatus(exitHostId, splitterPort);
     return {
       ...rule,

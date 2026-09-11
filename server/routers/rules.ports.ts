@@ -8,6 +8,7 @@ import {
   requireTunnelUseOrTrafficBillingAccess,
 } from "./helpers";
 import { combineHostPortPolicyWithRange, combinePortPolicies, isPortAllowedByPolicy, portPolicyErrorMessage, portPolicyFrom } from "../portPolicy";
+import { isValidSniValue, normalizeSniValue } from "@shared/sni";
 
 const randomPortInputSchema = z.object({
   hostId: z.number().optional(),
@@ -16,6 +17,32 @@ const randomPortInputSchema = z.object({
   excludeRuleId: z.number().optional(),
   protocol: z.enum(["tcp", "udp", "both"]).optional().default("both"),
 });
+
+function databaseBool(value: unknown, fallback = false) {
+  if (value === undefined || value === null || value === "") return fallback;
+  if (value === true || value === 1) return true;
+  if (typeof value !== "string") return false;
+  const normalized = value.trim().toLowerCase();
+  return normalized === "1" || normalized === "true";
+}
+
+async function tunnelEntryHostIds(tunnel: any) {
+  const hostIds = new Set<number>();
+  const primaryEntryHostId = Number(tunnel?.entryHostId || 0);
+  if (primaryEntryHostId > 0) hostIds.add(primaryEntryHostId);
+  const entryGroupId = Number(tunnel?.entryGroupId || 0);
+  if (entryGroupId <= 0) return Array.from(hostIds);
+  const entryGroup = await db.getForwardGroupById(entryGroupId) as any;
+  if (!entryGroup || !databaseBool(entryGroup.isEnabled) || String(entryGroup.groupMode || "") !== "entry") {
+    return Array.from(hostIds);
+  }
+  for (const member of entryGroup.members || []) {
+    if (!member || !databaseBool(member.isEnabled, true) || String(member.memberType || "") !== "host") continue;
+    const hostId = Number(member.hostId || 0);
+    if (hostId > 0) hostIds.add(hostId);
+  }
+  return Array.from(hostIds);
+}
 
 async function requireForwardGroupPortAccess(ctx: { user: { id: number; role: string } }, forwardGroupId: number) {
   if (ctx.user.role === "admin") return;
@@ -38,6 +65,7 @@ export const portsRulesRouter = router({
       sourcePort: z.number().min(1).max(65535),
       excludeRuleId: z.number().optional(),
       protocol: z.enum(["tcp", "udp", "both"]).optional().default("both"),
+      sni: z.string().max(1024).nullable().optional(),
     }).refine(
       (input) => !!input.hostId !== !!input.forwardGroupId,
       { message: "请选择一个主机、隧道或转发组" },
@@ -46,6 +74,16 @@ export const portsRulesRouter = router({
       if (input.excludeRuleId) {
         await requireRuleAccess(ctx, input.excludeRuleId);
       }
+      const normalizedSni = normalizeSniValue(input.sni);
+      if (normalizedSni && (!isValidSniValue(normalizedSni) || ctx.user.role !== "admin")) {
+        return { used: true, reason: "SNI 域名格式不正确或当前账号无权配置" };
+      }
+      const excludeRuleIds = input.excludeRuleId
+        ? [
+            input.excludeRuleId,
+            ...((await db.getForwardGroupChildRulesForTemplate(input.excludeRuleId)) as any[]).map((rule: any) => Number(rule.id)),
+          ]
+        : [];
       if (input.forwardGroupId) {
         if (ctx.user.role !== "admin") {
           await requireForwardGroupPortAccess(ctx, input.forwardGroupId);
@@ -56,10 +94,32 @@ export const portsRulesRouter = router({
           }
         }
         try {
+          let portUsageIgnoreRuleIds = excludeRuleIds;
+          if (normalizedSni) {
+            const entryHostIds = await db.getForwardGroupRuleEntryHostIds(input.forwardGroupId);
+            const state = await db.getForwardGroupSniEntryPortState({
+              groupId: input.forwardGroupId,
+              sourcePort: input.sourcePort,
+              entryHostIds,
+              sni: normalizedSni,
+              excludeRuleIds,
+            });
+            if (state.duplicateRule) {
+              return { used: true, reason: `SNI 域名 ${normalizedSni} 已存在` };
+            }
+            if (state.plainRule || state.otherGroupSniRule) {
+              return { used: true, reason: "入口端口已被其它规则占用" };
+            }
+            portUsageIgnoreRuleIds = [
+              ...excludeRuleIds,
+              ...state.shareableRuleIds,
+            ];
+          }
           await db.validateForwardGroupRuleConfig(input.forwardGroupId, {
             sourcePort: input.sourcePort,
             protocol: input.protocol,
             excludeTemplateRuleId: input.excludeRuleId,
+            portUsageIgnoreRuleIds,
           });
           return { used: false };
         } catch (error) {
@@ -74,8 +134,10 @@ export const portsRulesRouter = router({
 
       const hostId = Number(input.hostId);
       let policy = portPolicyFrom(null);
+      let selectedTunnel: any = null;
       if (input.tunnelId) {
         const { tunnel } = await requireTunnelUseOrTrafficBillingAccess(ctx, input.tunnelId);
+        selectedTunnel = tunnel;
         if (tunnel.entryHostId !== hostId) throw new Error("隧道入口主机与规则主机不一致");
         const host = await db.getHostById(hostId);
         policy = combineHostPortPolicyWithRange(
@@ -101,13 +163,47 @@ export const portsRulesRouter = router({
           return { used: true, reason: portPolicyErrorMessage(policy, "套餐端口") };
         }
       }
-      const excludeRuleIds = input.excludeRuleId
-        ? [
-            input.excludeRuleId,
-            ...((await db.getForwardGroupChildRulesForTemplate(input.excludeRuleId)) as any[]).map((rule: any) => Number(rule.id)),
-          ]
-        : [];
-      const used = await db.isHostPortUnavailableForExplicitUse(hostId, input.sourcePort, excludeRuleIds, input.protocol, undefined, false);
+      let portUsageIgnoreRuleIds = excludeRuleIds;
+      if (normalizedSni && input.tunnelId) {
+        const excluded = new Set(excludeRuleIds.map(Number));
+        const ruleById = new Map<number, any>();
+        const entryHostIds = await tunnelEntryHostIds(selectedTunnel);
+        const rulesByEntryHost = await Promise.all(
+          entryHostIds.map((entryHostId) => db.getForwardRulesForAgent(entryHostId)),
+        );
+        for (const entryHostRules of rulesByEntryHost) {
+          for (const rule of entryHostRules as any[]) {
+            const ruleId = Number(rule?.id || 0);
+            if (ruleId > 0 && !ruleById.has(ruleId)) ruleById.set(ruleId, rule);
+          }
+        }
+        const rows = Array.from(ruleById.values()).filter((rule) => (
+          rule
+          && !excluded.has(Number(rule.id || 0))
+          && !databaseBool(rule.pendingDelete)
+          && !databaseBool(rule.isForwardGroupTemplate)
+        ));
+        const duplicate = rows.find((rule) => (
+          normalizeSniValue(rule.sni) === normalizedSni
+        ));
+        if (duplicate) return { used: true, reason: `SNI 域名 ${normalizedSni} 已存在` };
+        const activeRows = rows.filter((rule) => (
+          databaseBool(rule.isEnabled)
+          && Number(rule.sourcePort || 0) === Number(input.sourcePort)
+        ));
+        const shareableRows = activeRows.filter((rule) => (
+          Number(rule.tunnelId || 0) === Number(input.tunnelId)
+          && !!normalizeSniValue(rule.sni)
+        ));
+        if (activeRows.length !== shareableRows.length) {
+          return { used: true, reason: "入口端口已被其它规则占用" };
+        }
+        portUsageIgnoreRuleIds = [
+          ...excludeRuleIds,
+          ...shareableRows.map((rule) => Number(rule.id || 0)).filter((id) => id > 0),
+        ];
+      }
+      const used = await db.isHostPortUnavailableForExplicitUse(hostId, input.sourcePort, portUsageIgnoreRuleIds, input.protocol, undefined, false);
       return { used };
     }),
   randomPort: protectedProcedure

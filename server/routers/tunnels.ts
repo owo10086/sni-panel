@@ -48,6 +48,7 @@ import {
   publicLinkAvailabilitySummary,
   type LinkAvailabilitySummaryIndex,
 } from "../linkAvailabilitySummary";
+import { SNI_SPLITTER_MIN_AGENT_VERSION } from "@shared/sni";
 
 const tunnelNetworkTypeSchema = z.enum(["public", "private"]);
 const tunnelModeSchema = z.enum(["forwardx", "tls", "wss", "tcp", "mtls", "mwss", "mtcp", "nginx_stream"]);
@@ -114,6 +115,11 @@ async function requireForwardXRelayFailoverAgentVersions(hostIds: number[]) {
   if (unsupported.length === 0) return;
   const labels = unsupported.map(({ id, host }) => host?.name || host?.ip || `主机 ${id}`).slice(0, 5);
   throw new Error(`ForwardX 中转故障转移需要入口 Agent 升级到 v${AGENT_FORWARDX_RELAY_FAILOVER_VERSION} 或更高版本：${labels.join("、")}`);
+}
+
+function requireSniSplitterAgentVersion(host: any) {
+  if (host && isAgentVersionAtLeast(String(host.agentVersion || ""), SNI_SPLITTER_MIN_AGENT_VERSION)) return;
+  throw new Error(`出口 Agent 版本不足，SNI 分流需要 ${SNI_SPLITTER_MIN_AGENT_VERSION} 或更高版本`);
 }
 
 function isTunnelProxyProtocolSupported(mode: unknown) {
@@ -1102,16 +1108,16 @@ export const tunnelsRouter = router({
           : "v1";
         const referencedRules = await db.getForwardRulesByTunnel(input.id);
         const activeReferencedRuleCount = (referencedRules as any[]).filter((rule) => !dbBool(rule?.pendingDelete)).length;
-        const primaryManagedTunnelRuleId = (referencedRules as any[])
-          .filter((rule: any) => (
-            rule
-            && !dbBool(rule.pendingDelete)
-            && dbBool(rule.isEnabled)
-            && String(rule.forwardType || "").trim().toLowerCase() === "gost"
-          ))
-          .map((rule: any) => Number(rule.id || 0))
-          .filter((ruleId: number) => ruleId > 0)
-          .sort((a: number, b: number) => a - b)[0] || 0;
+        const restorableSniRules = (referencedRules as any[]).filter((rule: any) => (
+          rule
+          && !dbBool(rule.pendingDelete)
+          && !dbBool(rule.isForwardGroupTemplate)
+          && (dbBool(rule.isEnabled) || dbBool(rule.disabledByTunnel))
+          && String(rule.sni || "").trim()
+        ));
+        const primaryManagedTunnelRuleIds = hopRepo.primaryManagedTunnelRuleIds(referencedRules as any[], {
+          includeTunnelDisabled: dbBool(input.isEnabled ?? (tunnel as any).isEnabled),
+        });
         await requireTunnelProtocolEnabled({ ...tunnel, mode: nextModeForRuntime });
         if ((input as any).entryGroupId !== undefined) await requireEntryGroupAccess(ctx, (input as any).entryGroupId);
         if ((input as any).exitGroupId !== undefined) await requireExitGroupAccess(ctx, (input as any).exitGroupId);
@@ -1225,6 +1231,13 @@ export const tunnelsRouter = router({
           throw new Error("隧道可用端口范围起始值不能大于结束值");
         }
         const exitHostChanged = Number(exitHostId) !== Number((tunnel as any).exitHostId || 0);
+        const nextTunnelEnabled = (data as any).isEnabled !== undefined
+          ? dbBool((data as any).isEnabled)
+          : dbBool((tunnel as any).isEnabled);
+        const tunnelEnabling = nextTunnelEnabled && !dbBool((tunnel as any).isEnabled);
+        if (restorableSniRules.length > 0 && (exitHostChanged || tunnelEnabling)) {
+          requireSniSplitterAgentVersion(exit);
+        }
         let listenerPortChanged = false;
         const listenPortInputProvided = (data as any).listenPort !== undefined;
         const currentTunnelListenPort = Number((tunnel as any).listenPort || 0);
@@ -1241,9 +1254,7 @@ export const tunnelsRouter = router({
           _listenPortExplicit,
         );
         const automaticListenPortRequested = listenPortInputProvided && requestedListenPort <= 0;
-        const listenerRuleExclusions = primaryManagedTunnelRuleId > 0
-          ? [primaryManagedTunnelRuleId]
-          : [];
+        const listenerRuleExclusions = primaryManagedTunnelRuleIds;
         if (explicitListenPortChanged) {
           // A port explicitly entered by the operator remains strict: do not
           // silently move it to another port.  Automatic/legacy repair is
@@ -1347,6 +1358,12 @@ export const tunnelsRouter = router({
             hostId: Number(node.hostId),
             connectHost: String(node.connectHost || "").trim() || null,
           }));
+        const nextExitGroupId = (data as any).exitGroupId !== undefined
+          ? (data as any).exitGroupId
+          : (tunnel as any).exitGroupId;
+        if (restorableSniRules.length > 0 && (Number(nextExitGroupId || 0) > 0 || nextLoadBalanceEnabled)) {
+          throw new Error("SNI 分流隧道仅支持单出口，请先移除出口组、负载均衡和额外出口节点");
+        }
         const extraExitNodes = await buildExtraExitNodes(ctx, {
           tunnelId: id,
           primaryHostId: exitHostId,
@@ -1355,16 +1372,12 @@ export const tunnelsRouter = router({
           mode: nextModeForRuntime,
           exits: requestedExtraExits,
           existingNodes: existingExtraExitNodes,
-          excludeRuleIds: primaryManagedTunnelRuleId > 0 ? [primaryManagedTunnelRuleId] : [],
+          excludeRuleIds: primaryManagedTunnelRuleIds,
           reservations: heldReservations,
         });
         (data as any).loadBalanceEnabled = nextLoadBalanceEnabled && extraExitNodes.length > 0;
         (data as any).loadBalanceStrategy = (data as any).loadBalanceEnabled ? nextLoadBalanceStrategy : "round_robin";
-        const nextTunnelEnabled = (data as any).isEnabled !== undefined
-          ? dbBool((data as any).isEnabled)
-          : dbBool((tunnel as any).isEnabled);
         const nextEntryGroupId = (data as any).entryGroupId !== undefined ? (data as any).entryGroupId : (tunnel as any).entryGroupId;
-        const nextExitGroupId = (data as any).exitGroupId !== undefined ? (data as any).exitGroupId : (tunnel as any).exitGroupId;
         const nextExitGroup = await requireExitGroupAccess(ctx, nextExitGroupId, nextTunnelEnabled);
         if (nextTunnelEnabled) {
           await requireEntryGroupAccess(ctx, nextEntryGroupId, true);
@@ -1522,14 +1535,14 @@ export const tunnelsRouter = router({
           await hopRepo.clearTunnelExitNodes(id);
           await hopRepo.clearForwardRuleTunnelExitsByTunnel(id);
         }
-        // `forwardRules.tunnelExitPort` belongs to the tunnel's exit Agent,
-        // so changing the exit host/listener (or switching into a non-
-        // ForwardX transport) invalidates every active GOST rule's previous
-        // value.  Reconcile after endpoint rows are written: the helper can
-        // then see the new listener/extra rows and, for nginx-stream, reuse
-        // the listener reservation already held by this transaction.
-        const shouldReconcileTunnelRulePorts = nextModeForRuntime !== "forwardx"
-          && (exitHostChanged || listenerPortChanged || modeChanged || loadBalanceChanged);
+        // `forwardRules.tunnelExitPort` and SNI splitter ports belong to the
+        // tunnel's exit Agent. Reconcile after endpoint rows are written so
+        // the allocator sees the new listener and endpoint rows.
+        const shouldReconcileTunnelRulePorts = exitHostChanged
+          || listenerPortChanged
+          || modeChanged
+          || loadBalanceChanged
+          || (enabledChanged && nextTunnelEnabled);
         if (shouldReconcileTunnelRulePorts) {
           const reconciled = await hopRepo.reconcileTunnelRulePrimaryExitPorts(
             {
@@ -1544,6 +1557,8 @@ export const tunnelsRouter = router({
             {
               hostId: exitHostId,
               listenPort: Number((data as any).listenPort || (tunnel as any).listenPort || 0),
+              includeTunnelDisabledRules: exitHostChanged || nextTunnelEnabled,
+              reconcileSniSplitterPorts: exitHostChanged || tunnelEnabling,
               reservations: heldReservations,
             },
           );

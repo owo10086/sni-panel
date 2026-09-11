@@ -354,6 +354,8 @@ function canPreserveChildRuleRuntime(existing: any, payload: any, options: SyncF
     "forwardGroupMemberId",
     "proxyProtocolVersion",
     "sniSplitterPort",
+    "rateLimitMbps",
+    "maxConnections",
     "failoverSeconds",
     "recoverSeconds",
   ];
@@ -2843,10 +2845,25 @@ async function ensureMemberRuleForTemplate(group: any, templateRule: any, member
   const hostId = await memberEntryHostId(member);
   if (!hostId) throw new Error("Forward group member has no valid entry agent");
   await assertEntryPortAllowed(member, Number(templateRule.sourcePort));
+  const groupMode = groupModeOf(group);
+  const templateSni = normalizeSniValue((templateRule as any).sni);
+  const shareablePortRuleIds = groupMode === "port" && templateSni
+    ? (await getForwardGroupSniEntryPortState({
+      groupId: Number(group.id),
+      sourcePort: Number(templateRule.sourcePort),
+      entryHostIds: [hostId],
+      sni: templateSni,
+      excludeRuleIds: normalizePositiveIds([Number(templateRule.id), Number(existing?.id || 0)]),
+    })).shareableRuleIds
+    : [];
   const used = await isHostPortUnavailableForGroupChildExplicitUse(
     hostId,
     Number(templateRule.sourcePort),
-    [Number(templateRule.id), Number(existing?.id || 0)].filter(Boolean),
+    normalizePositiveIds([
+      Number(templateRule.id),
+      Number(existing?.id || 0),
+      ...shareablePortRuleIds,
+    ]),
     templateRule.protocol,
   );
   if (used) throw new Error(`Entry agent port ${templateRule.sourcePort} is already used`);
@@ -2908,7 +2925,6 @@ async function ensureMemberRuleForTemplate(group: any, templateRule: any, member
   const protocol = String(templateRule.protocol || "both");
   const protocolTcpSupported = protocol === "tcp" || protocol === "both";
   const protocolUdpSupported = protocol === "udp" || protocol === "both";
-  const groupMode = groupModeOf(group);
   const isPortGroup = groupMode === "port";
   // Failover groups expose the direct runtime tool and PROXY options in the
   // group editor.  Only use those overrides when an explicit runtime that
@@ -2956,6 +2972,8 @@ async function ensureMemberRuleForTemplate(group: any, templateRule: any, member
     sourcePort: Number(templateRule.sourcePort),
     sni: (templateRule as any).sni || null,
     sniSplitterPort: Number((templateRule as any).sniSplitterPort || 0) || null,
+    rateLimitMbps: Number((templateRule as any).rateLimitMbps || 0),
+    maxConnections: Number((templateRule as any).maxConnections || 0),
     targetIp: templateRule.targetIp,
     targetPort: Number(templateRule.targetPort),
     telegramErrorNotifyEnabled: dbBool((templateRule as any).telegramErrorNotifyEnabled),
@@ -3184,6 +3202,8 @@ async function ensureChainRuleForTemplate(
     sourcePort,
     sni: (templateRule as any).sni || null,
     sniSplitterPort: Number((templateRule as any).sniSplitterPort || 0) || null,
+    rateLimitMbps: Number((templateRule as any).rateLimitMbps || 0),
+    maxConnections: Number((templateRule as any).maxConnections || 0),
     targetIp,
     targetPort,
     telegramErrorNotifyEnabled: dbBool((templateRule as any).telegramErrorNotifyEnabled),

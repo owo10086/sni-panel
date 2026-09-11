@@ -21,12 +21,17 @@ import {
   tryReserveHostPort,
   type HostPortReservation,
 } from "../portReservations";
-import { ensureTunnelListenerPortPolicy, reserveTunnelExitPort, usesSharedTunnelPrimaryListener } from "../repositories/tunnelRepository";
+import {
+  ensureTunnelListenerPortPolicy,
+  reconcileTunnelRulePrimaryExitPorts,
+  reserveTunnelExitPort,
+  usesSharedTunnelPrimaryListener,
+} from "../repositories/tunnelRepository";
 import { trafficBillingUserLockKey, withKeyedTaskLock } from "../keyedTaskLock";
 import { mapWithConcurrency } from "../asyncPool";
 import { reserveRuleCreateQuota, type RuleQuotaReservation } from "../ruleQuotaReservations";
 import { isAgentVersionAtLeast } from "../agentRouteUtils";
-import { isValidSniValue, normalizeSniValue } from "@shared/sni";
+import { isValidSniValue, normalizeSniValue, SNI_SPLITTER_MIN_AGENT_VERSION } from "@shared/sni";
 import { normalizePositiveIds } from "../repositories/repositoryUtils";
 
 const targetHostSchema = z.string().min(1).max(253).refine(
@@ -45,9 +50,12 @@ const strictFailoverTargetSchema = z.object({
 const failoverStrategySchema = z.enum(["fallback", "round_robin", "random", "ip_hash"]);
 const MAX_FAILOVER_TARGETS = 10;
 const mainBackupGostTunnelModes = new Set(["tls", "wss", "tcp", "mtls", "mwss", "mtcp"]);
-const SNI_SPLITTER_MIN_AGENT_VERSION = "2.2.195";
 const SNI_BULK_IMPORT_MAX_COUNT = 500;
 const sniInputSchema = z.string().max(1024).nullable().optional();
+const sniRuleLimitInputShape = {
+  rateLimitMbps: z.number().int().min(0).max(1_000_000).optional(),
+  maxConnections: z.number().int().min(0).max(1_000_000).optional(),
+} as const;
 
 type SniEntryPortState = Awaited<ReturnType<typeof db.getForwardGroupSniEntryPortState>>;
 type ForwardRuleConflictTarget = {
@@ -95,6 +103,23 @@ function assertSniRuleAdmin(actor: { role: string }, sni: string | null) {
   }
 }
 
+function resolveSniRuleLimits(
+  sni: string | null,
+  input: { rateLimitMbps?: unknown; maxConnections?: unknown },
+  current?: { rateLimitMbps?: unknown; maxConnections?: unknown },
+) {
+  if (!sni) return { rateLimitMbps: 0, maxConnections: 0 };
+  const normalizeLimit = (value: unknown) => {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) return 0;
+    return Math.min(1_000_000, Math.max(0, Math.floor(numeric)));
+  };
+  return {
+    rateLimitMbps: normalizeLimit(input.rateLimitMbps ?? current?.rateLimitMbps),
+    maxConnections: normalizeLimit(input.maxConnections ?? current?.maxConnections),
+  };
+}
+
 async function inferForwardGroupSniExitHost(group: ForwardGroupRuntimeConfig) {
   const members = Array.isArray(group?.members) ? group.members : [];
   const enabledMembers = members.filter((member) => dbBool(member?.isEnabled, true));
@@ -103,17 +128,17 @@ async function inferForwardGroupSniExitHost(group: ForwardGroupRuntimeConfig) {
     && Number(member?.hostId || 0) > 0
   ));
   const groupMode = String(group?.groupMode || "").trim().toLowerCase();
-  if (groupMode !== "chain") {
-    if (enabledHostMembers.length > 1) {
-      throw new Error("SNI 分流当前只支持单出口转发链");
-    }
-    throw new Error("SNI 分流当前仅支持转发链");
+  if (groupMode !== "chain" && groupMode !== "port") {
+    throw new Error("SNI 分流仅支持端口转发、隧道或转发链");
   }
   if (String(group?.groupType || "host") !== "host") {
-    throw new Error("SNI 分流当前仅支持主机转发链");
+    throw new Error("SNI 分流仅支持主机型链路资源");
   }
   if (enabledMembers.some((member: any) => String(member?.memberType || "") !== "host")) {
-    throw new Error("SNI 分流当前仅支持主机转发链");
+    throw new Error("SNI 分流仅支持主机型链路资源");
+  }
+  if (groupMode === "port" && enabledHostMembers.length !== 1) {
+    throw new Error("SNI 分流端口转发必须且只能包含一台主机");
   }
   const exitMember = enabledMembers[enabledMembers.length - 1];
   const exitHostId = Number(exitMember?.hostId || 0);
@@ -185,6 +210,204 @@ type ForwardGroupRuntimePortPreparation = {
   entryPortReservationExcludeRuleIds: number[];
 };
 
+type DirectTunnelSniEntryPortState = {
+  shareableRuleIds: number[];
+  splitterPort: number | null;
+  tunnelExitPort: number | null;
+  duplicateRule: ForwardRuleConflictTarget | null;
+  plainRule: ForwardRuleConflictTarget | null;
+  otherResourceSniRule: ForwardRuleConflictTarget | null;
+  anySniRule: ForwardRuleConflictTarget | null;
+};
+
+async function inferDirectTunnelSniExitHost(tunnel: any) {
+  const tunnelId = Number(tunnel?.id || 0);
+  if (tunnelId <= 0) throw new Error("SNI 分流隧道不存在");
+  const extraExitNodes = await db.getTunnelExitNodes(tunnelId);
+  if (
+    dbBool(tunnel?.loadBalanceEnabled)
+    || Number(tunnel?.exitGroupId || 0) > 0
+    || (extraExitNodes as any[]).some((node) => dbBool(node?.isEnabled, true))
+  ) {
+    throw new Error("SNI 分流隧道仅支持单出口");
+  }
+  const exitHostId = Number(tunnel?.exitHostId || 0);
+  if (exitHostId <= 0) throw new Error("SNI 分流无法推导隧道出口主机");
+  const exitHost = await db.getHostById(exitHostId);
+  if (!exitHost) throw new Error("SNI 分流隧道出口主机不存在");
+  if (!isAgentVersionAtLeast(String((exitHost as any).agentVersion || ""), SNI_SPLITTER_MIN_AGENT_VERSION)) {
+    throw new Error(`出口 Agent 版本不足，SNI 分流需要 ${SNI_SPLITTER_MIN_AGENT_VERSION} 或更高版本`);
+  }
+  return exitHost as any;
+}
+
+async function directTunnelSniEntryHostIds(tunnel: any) {
+  const hostIds = new Set<number>();
+  const primaryEntryHostId = Number(tunnel?.entryHostId || 0);
+  if (primaryEntryHostId > 0) hostIds.add(primaryEntryHostId);
+  const entryGroupId = Number(tunnel?.entryGroupId || 0);
+  if (entryGroupId <= 0) return Array.from(hostIds);
+  const entryGroup = await db.getForwardGroupById(entryGroupId) as any;
+  if (!entryGroup || !dbBool(entryGroup.isEnabled) || String(entryGroup.groupMode || "") !== "entry") {
+    return Array.from(hostIds);
+  }
+  for (const member of entryGroup.members || []) {
+    if (!member || !dbBool(member.isEnabled, true) || String(member.memberType || "") !== "host") continue;
+    const hostId = Number(member.hostId || 0);
+    if (hostId > 0) hostIds.add(hostId);
+  }
+  return Array.from(hostIds);
+}
+
+async function getDirectTunnelSniEntryPortState(options: {
+  tunnel: any;
+  sourcePort: number;
+  sni: string | null;
+  excludeRuleIds?: number[];
+}): Promise<DirectTunnelSniEntryPortState> {
+  const tunnelId = Number(options.tunnel?.id || 0);
+  const sourcePort = Number(options.sourcePort || 0);
+  const excludedIds = new Set(normalizePositiveIds(options.excludeRuleIds));
+  const empty: DirectTunnelSniEntryPortState = {
+    shareableRuleIds: [],
+    splitterPort: null,
+    tunnelExitPort: null,
+    duplicateRule: null,
+    plainRule: null,
+    otherResourceSniRule: null,
+    anySniRule: null,
+  };
+  const entryHostIds = await directTunnelSniEntryHostIds(options.tunnel);
+  if (tunnelId <= 0 || entryHostIds.length === 0 || sourcePort <= 0) return empty;
+  const ruleById = new Map<number, any>();
+  const rulesByEntryHost = await Promise.all(
+    entryHostIds.map((entryHostId) => db.getForwardRulesForAgent(entryHostId)),
+  );
+  for (const entryHostRules of rulesByEntryHost) {
+    for (const rule of entryHostRules as any[]) {
+      const ruleId = Number(rule?.id || 0);
+      if (ruleId > 0 && !ruleById.has(ruleId)) ruleById.set(ruleId, rule);
+    }
+  }
+  const rows = Array.from(ruleById.values()).filter((rule) => (
+    rule
+    && !excludedIds.has(Number(rule.id || 0))
+    && !dbBool(rule.pendingDelete)
+    && !dbBool(rule.isForwardGroupTemplate)
+  ));
+  const portRows = rows.filter((rule) => Number(rule.sourcePort || 0) === sourcePort);
+  const activeRows = portRows.filter((rule) => dbBool(rule.isEnabled));
+  const sniRows = activeRows.filter((rule) => !!normalizeSniValue(rule.sni));
+  const sameTunnelRows = sniRows.filter((rule) => Number(rule.tunnelId || 0) === tunnelId);
+  const normalizedSni = normalizeSniValue(options.sni);
+  const duplicateRule = normalizedSni
+    ? rows.find((rule) => (
+      normalizeSniValue(rule.sni) === normalizedSni
+    )) || null
+    : null;
+  const splitterPort = sameTunnelRows
+    .map((rule) => Number(rule.sniSplitterPort || 0))
+    .find((port) => Number.isInteger(port) && port > 0 && port <= 65535) || null;
+  const tunnelExitPort = sameTunnelRows
+    .map((rule) => Number(rule.tunnelExitPort || 0))
+    .find((port) => Number.isInteger(port) && port > 0 && port <= 65535) || null;
+  return {
+    shareableRuleIds: normalizePositiveIds(sameTunnelRows.map((rule) => Number(rule.id))),
+    splitterPort,
+    tunnelExitPort,
+    duplicateRule,
+    plainRule: activeRows.find((rule) => !normalizeSniValue(rule.sni)) || null,
+    otherResourceSniRule: sniRows.find((rule) => Number(rule.tunnelId || 0) !== tunnelId) || null,
+    anySniRule: sniRows[0] || null,
+  };
+}
+
+function assertDirectTunnelSniEntryPortUse(
+  state: DirectTunnelSniEntryPortState,
+  sourcePort: number,
+  normalizedSni: string | null,
+) {
+  if (normalizedSni) {
+    if (state.duplicateRule) {
+      throw new Error(`SNI 域名 ${normalizedSni} 与规则 ${forwardRuleConflictLabel(state.duplicateRule)} 冲突`);
+    }
+    if (state.plainRule) {
+      throw new Error(`入口端口 ${sourcePort} 已被普通转发规则 ${forwardRuleConflictLabel(state.plainRule)} 占用，无法创建 SNI 分流规则`);
+    }
+    if (state.otherResourceSniRule) {
+      throw new Error(`入口端口 ${sourcePort} 已被其它链路资源的 SNI 分流规则 ${forwardRuleConflictLabel(state.otherResourceSniRule)} 占用`);
+    }
+    return;
+  }
+  if (state.anySniRule) {
+    throw new Error(`入口端口 ${sourcePort} 已被 SNI 分流规则 ${forwardRuleConflictLabel(state.anySniRule)} 占用，无法创建普通转发规则`);
+  }
+}
+
+async function reserveDirectTunnelSniRuntimePorts(options: {
+  tunnel: any;
+  state: DirectTunnelSniEntryPortState;
+  currentSplitterPort?: unknown;
+  currentTunnelExitPort?: unknown;
+  ownerRuleIds?: number[];
+  enabled?: boolean;
+  reservations: HostPortReservation[];
+}) {
+  const tunnel = options.tunnel;
+  const exitHost = await inferDirectTunnelSniExitHost(tunnel);
+  const excludeRuleIds = normalizePositiveIds([
+    ...(options.ownerRuleIds || []),
+    ...options.state.shareableRuleIds,
+  ]);
+  const existingTunnelExitPort = Number(options.state.tunnelExitPort || 0)
+    || Number(options.currentTunnelExitPort || 0);
+  let sharedListenPort: number | null = null;
+  let listenerRepair: Awaited<ReturnType<typeof ensureTunnelListenerPortPolicy>> | null = null;
+  if (!existingTunnelExitPort && usesSharedTunnelPrimaryListener(tunnel)) {
+    listenerRepair = await ensureTunnelListenerPortPolicy(tunnel, {
+      hostId: Number(tunnel.exitHostId),
+      syncSharedPrimaryRule: true,
+    });
+    if (!listenerRepair) throw new Error("出口 Agent 已无可用隧道监听端口");
+    sharedListenPort = await preferredSharedTunnelListenPort(tunnel, 0, options.enabled !== false);
+  }
+  let tunnelExitReservation: HostPortReservation | null = null;
+  if (listenerRepair?.reservation && Number(sharedListenPort || 0) === listenerRepair.port) {
+    tunnelExitReservation = listenerRepair.reservation;
+  } else {
+    listenerRepair?.reservation.release();
+  }
+  if (!tunnelExitReservation) {
+    tunnelExitReservation = await reserveTunnelExitPort({
+      hostId: Number(exitHost.id),
+      preferredStart: exitHost.portRangeStart,
+      preferredEnd: exitHost.portRangeEnd,
+      currentPort: existingTunnelExitPort || sharedListenPort,
+      excludeRuleIds,
+      allowSameTunnelListener: Number(existingTunnelExitPort || sharedListenPort || 0) === Number(tunnel.listenPort || 0),
+      excludeTunnelId: Number(tunnel.id),
+      protocol: "both",
+    });
+  }
+  if (!tunnelExitReservation) throw new Error("出口 Agent 已无可用隧道端口");
+  options.reservations.push(tunnelExitReservation);
+  const splitterReservation = await reserveTunnelExitPort({
+    hostId: Number(exitHost.id),
+    preferredStart: exitHost.portRangeStart,
+    preferredEnd: exitHost.portRangeEnd,
+    currentPort: Number(options.state.splitterPort || 0) || Number(options.currentSplitterPort || 0),
+    excludeRuleIds,
+    protocol: "both",
+  });
+  if (!splitterReservation) throw new Error("出口 Agent 已无可用 SNI 分流器端口");
+  options.reservations.push(splitterReservation);
+  return {
+    tunnelExitPort: tunnelExitReservation.port,
+    sniSplitterPort: splitterReservation.port,
+    entryPortReservationExcludeRuleIds: excludeRuleIds,
+  };
+}
+
 async function validateSniEntryPortUse(options: {
   groupId: number;
   sourcePort: number;
@@ -240,18 +463,25 @@ async function prepareForwardGroupRuntimePorts(options: {
   const isPortGroup = group.groupMode === "port";
   let sniSplitterPort: number | null = null;
   if (options.sni) {
-    if (!isForwardChain) throw new Error("SNI 分流当前仅支持转发链");
-    const splitterReservation = await reserveSniSplitterPortForForwardGroup(group, {
-      currentPort: Number(options.sniEntryPortValidation.state.splitterPort || 0)
-        || Number(options.currentSplitterPort || 0)
-        || undefined,
-      excludeRuleIds: normalizePositiveIds([
-        ...ownerRuleIds,
-        ...options.sniEntryPortValidation.splitterPortUsageIgnoreRuleIds,
-      ]),
-    });
-    options.reservations.push(splitterReservation);
-    sniSplitterPort = splitterReservation.port;
+    if (!isForwardChain && !isPortGroup) {
+      throw new Error("SNI 分流仅支持端口转发、隧道或转发链");
+    }
+    if (isPortGroup) {
+      await inferForwardGroupSniExitHost(group);
+      sniSplitterPort = options.sourcePort;
+    } else {
+      const splitterReservation = await reserveSniSplitterPortForForwardGroup(group, {
+        currentPort: Number(options.sniEntryPortValidation.state.splitterPort || 0)
+          || Number(options.currentSplitterPort || 0)
+          || undefined,
+        excludeRuleIds: normalizePositiveIds([
+          ...ownerRuleIds,
+          ...options.sniEntryPortValidation.splitterPortUsageIgnoreRuleIds,
+        ]),
+      });
+      options.reservations.push(splitterReservation);
+      sniSplitterPort = splitterReservation.port;
+    }
   }
   return {
     group,
@@ -464,10 +694,10 @@ function normalizeRuleTargetIp(input: string, _options: { tunnelId?: number | nu
 }
 
 /**
- * Managed GOST/Nginx tunnels share the tunnel listener for the first active
- * rule. Additional rules need their own exit listener. Keep this decision in
- * one place when allocating the rule's bookkeeping port; the Agent uses the
- * same lowest-id primary convention.
+ * Managed GOST/Nginx tunnels share the tunnel listener with the first active
+ * runtime unit. Additional runtime units need independent exit listeners.
+ * An existing SNI group supplies its shared port before this helper is called,
+ * so this allocation only has to compare the candidate with earlier units.
  */
 async function preferredSharedTunnelListenPort(tunnel: any, ruleId = 0, enabled = true) {
   if (!usesSharedTunnelPrimaryListener(tunnel)) return null;
@@ -492,6 +722,11 @@ async function preferredSharedTunnelListenPort(tunnel: any, ruleId = 0, enabled 
   // tunnel. Existing rules are primary when they are the lowest active id.
   if (ruleId > 0 ? primaryId !== ruleId : activeIds.length > 0) return null;
   return listenPort;
+}
+
+async function reconcileSharedTunnelRulePorts(tunnel: any) {
+  if (!tunnel || !usesSharedTunnelPrimaryListener(tunnel)) return;
+  await reconcileTunnelRulePrimaryExitPorts(tunnel);
 }
 
 function normalizeAddressToken(value: unknown) {
@@ -884,6 +1119,15 @@ async function refreshPendingTemplateChildren(childRules: any[], reason: string)
   for (const hostId of hostIds) pushAgentRefresh(hostId, reason);
 }
 
+async function reconcileSharedTunnelPortsForRules(rules: any[]) {
+  const tunnelIds = normalizePositiveIds(
+    rules.map((rule: any) => Number(rule?.tunnelId || 0)),
+  );
+  for (const tunnelId of tunnelIds) {
+    await reconcileSharedTunnelRulePorts(await db.getTunnelById(tunnelId));
+  }
+}
+
 async function refreshRemainingSniSplitterRulesAfterTemplateDelete(templateRule: any, deletedChildRules: any[], reason: string) {
   const groupId = Number(templateRule?.forwardGroupId || 0);
   const splitterPort = Number(templateRule?.sniSplitterPort || 0);
@@ -924,6 +1168,7 @@ async function markTemplateChildrenPendingDelete(
       await db.updateTunnel(tunnelId, { isRunning: false } as any);
     }
   }
+  await reconcileSharedTunnelPortsForRules(childRules as any[]);
   if (!options.deferRefresh) await refreshPendingTemplateChildren(childRules as any[], reason);
   return childRules;
 }
@@ -959,6 +1204,7 @@ export async function deleteForwardRuleForActor(
         }
         pushAgentRefresh(Number(child.hostId), `${reasonPrefix}-group-deleted`);
       }
+      await reconcileSharedTunnelPortsForRules(childRules as any[]);
       collectBilling(await settleTrafficBillingForDeletedRule(rule));
       await db.runForwardGroupFailover(Number((rule as any).forwardGroupId || 0));
       // Templates never run on an Agent, so they cannot receive a runtime stop ACK.
@@ -971,6 +1217,7 @@ export async function deleteForwardRuleForActor(
     collectBilling(await settleTrafficBillingForDeletedRule(rule));
     if ((rule as any).tunnelId) {
       const tunnel = await db.getTunnelById((rule as any).tunnelId);
+      await reconcileSharedTunnelRulePorts(tunnel);
       await db.updateTunnel((rule as any).tunnelId, { isRunning: false } as any);
       if (tunnel) await pushTunnelEndpointRefresh(tunnel, `${reasonPrefix}-deleted`);
     }
@@ -988,6 +1235,7 @@ export async function toggleForwardRuleForActor(
   return withKeyedTaskLock(`rule:${ruleId}`, async () => {
     let sourcePortReservation: HostPortReservation | null = null;
     let sniSplitterPortReservation: HostPortReservation | null = null;
+    const directTunnelSniReservations: HostPortReservation[] = [];
     try {
       const rule = await db.getForwardRuleById(ruleId);
       if (!rule) throw new Error("规则不存在");
@@ -1046,14 +1294,21 @@ export async function toggleForwardRuleForActor(
             protocolBlockReason: null,
           };
           if (ruleSni) {
-            if (!isForwardChain) throw new Error("SNI 分流当前仅支持转发链");
-            sniSplitterPortReservation = await reserveSniSplitterPortForForwardGroup(group, {
-              currentPort: Number(sniEntryPortValidation.state.splitterPort || 0) || (rule as any).sniSplitterPort,
-              excludeRuleIds: normalizePositiveIds([...ownRuleIds, ...sniEntryPortValidation.splitterPortUsageIgnoreRuleIds]),
-            });
+            if (!isForwardChain && !isPortGroup) {
+              throw new Error("SNI 分流仅支持端口转发、隧道或转发链");
+            }
             enableData.protocol = "tcp";
             enableData.sni = ruleSni;
-            enableData.sniSplitterPort = sniSplitterPortReservation.port;
+            if (isPortGroup) {
+              await inferForwardGroupSniExitHost(group);
+              enableData.sniSplitterPort = Number(rule.sourcePort);
+            } else {
+              sniSplitterPortReservation = await reserveSniSplitterPortForForwardGroup(group, {
+                currentPort: Number(sniEntryPortValidation.state.splitterPort || 0) || (rule as any).sniSplitterPort,
+                excludeRuleIds: normalizePositiveIds([...ownRuleIds, ...sniEntryPortValidation.splitterPortUsageIgnoreRuleIds]),
+              });
+              enableData.sniSplitterPort = sniSplitterPortReservation.port;
+            }
           }
           const groupIsTunnel = !isForwardChain && group.groupType === "tunnel";
           const groupTunnelSupportsFailover = groupIsTunnel ? await forwardGroupTunnelMembersSupportMainBackup(group) : true;
@@ -1074,18 +1329,40 @@ export async function toggleForwardRuleForActor(
         return { success: true, rule };
       }
 
-      await requireRuleProtocolEnabled(rule);
+      const directRuleSni = normalizeSniInput((rule as any).sni);
+      const directRuleProtocol = directRuleSni ? "tcp" : (rule as any).protocol;
+      await requireRuleProtocolEnabled({ ...rule, protocol: directRuleProtocol });
       let toggleTunnelForRule: any = null;
       const reasonPrefix = String(options.reasonPrefix || "forward-rule").trim() || "forward-rule";
       if ((rule as any).tunnelId) {
         toggleTunnelForRule = await db.getTunnelById((rule as any).tunnelId);
         await db.updateTunnel((rule as any).tunnelId, { isRunning: false } as any);
-        if (toggleTunnelForRule) await pushTunnelEndpointRefresh(toggleTunnelForRule, `${reasonPrefix}-toggled`);
       }
       if (isEnabled) {
+        let directTunnelSniState: DirectTunnelSniEntryPortState | null = null;
+        let directTunnelSniPorts: Awaited<ReturnType<typeof reserveDirectTunnelSniRuntimePorts>> | null = null;
+        if (directRuleSni) {
+          assertSniRuleAdmin(actor, directRuleSni);
+          if (!toggleTunnelForRule) throw new Error("SNI 分流仅支持端口转发、隧道或转发链");
+          directTunnelSniState = await getDirectTunnelSniEntryPortState({
+            tunnel: toggleTunnelForRule,
+            sourcePort: Number(rule.sourcePort),
+            sni: directRuleSni,
+            excludeRuleIds: [Number(rule.id)],
+          });
+          assertDirectTunnelSniEntryPortUse(directTunnelSniState, Number(rule.sourcePort), directRuleSni);
+          directTunnelSniPorts = await reserveDirectTunnelSniRuntimePorts({
+            tunnel: toggleTunnelForRule,
+            state: directTunnelSniState,
+            currentSplitterPort: (rule as any).sniSplitterPort,
+            currentTunnelExitPort: (rule as any).tunnelExitPort,
+            ownerRuleIds: [Number(rule.id)],
+            reservations: directTunnelSniReservations,
+          });
+        }
         requireMainBackupAllowed({
-          enabled: (rule as any).failoverEnabled,
-          protocol: (rule as any).protocol,
+          enabled: directRuleSni ? false : (rule as any).failoverEnabled,
+          protocol: directRuleProtocol,
           forwardType: (rule as any).forwardType,
           tunnelId: (rule as any).tunnelId,
           tunnelMode: toggleTunnelForRule?.mode,
@@ -1117,19 +1394,45 @@ export async function toggleForwardRuleForActor(
         sourcePortReservation = await reserveSpecificHostPort({
           hostId: Number(rule.hostId),
           port: Number(rule.sourcePort),
-          protocol: (rule as any).protocol,
-          isUsed: (port) => db.isHostPortUnavailableForExplicitUse(Number(rule.hostId), port, Number(rule.id), (rule as any).protocol, undefined, false),
+          protocol: directRuleProtocol,
+          isUsed: (port) => db.isHostPortUnavailableForExplicitUse(
+            Number(rule.hostId),
+            port,
+            normalizePositiveIds([Number(rule.id), ...(directTunnelSniState?.shareableRuleIds || [])]),
+            directRuleProtocol,
+            undefined,
+            false,
+          ),
         });
         if (!sourcePortReservation) throw new Error(`端口 ${rule.sourcePort} 已被占用，请更换端口后再启用`);
-        await db.updateForwardRule(ruleId, { isEnabled: true, isRunning: false, disabledByUser: false, disabledByTunnel: false, disabledByGroup: false, protocolBlockReason: null } as any);
+        await db.updateForwardRule(ruleId, {
+          isEnabled: true,
+          isRunning: false,
+          disabledByUser: false,
+          disabledByTunnel: false,
+          disabledByGroup: false,
+          protocolBlockReason: null,
+          ...(directRuleSni ? {
+            protocol: "tcp",
+            sni: directRuleSni,
+            sniSplitterPort: directTunnelSniPorts?.sniSplitterPort,
+            tunnelExitPort: directTunnelSniPorts?.tunnelExitPort,
+            failoverEnabled: false,
+            failoverTargets: "[]",
+          } : {}),
+        } as any);
       } else {
         await db.toggleForwardRule(ruleId, false);
       }
+      releaseHostPortReservations(directTunnelSniReservations);
+      await reconcileSharedTunnelRulePorts(toggleTunnelForRule);
+      if (toggleTunnelForRule) await pushTunnelEndpointRefresh(toggleTunnelForRule, `${reasonPrefix}-toggled`);
       pushAgentRefresh(Number(rule.hostId), `${reasonPrefix}-${isEnabled ? "enabled" : "disabled"}`);
       return { success: true, rule };
     } finally {
       sourcePortReservation?.release();
       sniSplitterPortReservation?.release();
+      releaseHostPortReservations(directTunnelSniReservations);
     }
   });
 }
@@ -1140,22 +1443,35 @@ export async function createDirectForwardRuleForActor(
   options: { reasonPrefix?: string } = {},
 ) {
   await requireRuleTelegramNotifyReady(!!input.telegramErrorNotifyEnabled);
+  const normalizedSni = normalizeSniInput(input.sni);
+  assertSniRuleAdmin(actor, normalizedSni);
+  const ruleProtocol = normalizedSni ? "tcp" : input.protocol;
+  const ruleInput = {
+    ...input,
+    ...resolveSniRuleLimits(normalizedSni, input),
+    ...(normalizedSni
+      ? { protocol: "tcp", sni: normalizedSni, failoverEnabled: false, failoverTargets: [] }
+      : {}),
+  };
   const {
     currentUser,
     hostId,
     tunnelId,
     selectedTunnelForRule,
     isTrafficBillingRule,
-  } = await prepareDirectRuleRouteForActor(actor, input);
+  } = await prepareDirectRuleRouteForActor(actor, ruleInput);
+  if (normalizedSni && !tunnelId) {
+    throw new Error("SNI 分流仅支持端口转发、隧道或转发链");
+  }
   requireMainBackupAllowed({
-    enabled: input.failoverEnabled,
-    protocol: input.protocol,
-    forwardType: input.forwardType,
+    enabled: ruleInput.failoverEnabled,
+    protocol: ruleProtocol,
+    forwardType: ruleInput.forwardType,
     tunnelId,
     tunnelMode: selectedTunnelForRule?.mode,
     isAdmin: actor.role === "admin",
   });
-  await requireRuleProtocolEnabled({ forwardType: input.forwardType, tunnelId }, selectedTunnelForRule);
+  await requireRuleProtocolEnabled({ forwardType: ruleInput.forwardType, tunnelId }, selectedTunnelForRule);
   if (!isTrafficBillingRule && Number((currentUser as any)?.trafficLimit || 0) > 0 && Number((currentUser as any)?.trafficUsed || 0) >= Number((currentUser as any)?.trafficLimit || 0)) {
     throw new Error("您的流量已用完，无法添加规则");
   }
@@ -1180,32 +1496,47 @@ export async function createDirectForwardRuleForActor(
   let sourcePort = Number(input.sourcePort || 0);
   let sourcePortReservation: HostPortReservation | null = null;
   let tunnelExitPortReservation: HostPortReservation | null = null;
+  const sniRuntimePortReservations: HostPortReservation[] = [];
   let quotaReservation: RuleQuotaReservation | null = null;
+  let directTunnelSniState: DirectTunnelSniEntryPortState | null = null;
   try {
     if (sourcePort === 0) {
       let randomRangeStart = selectedTunnelForRule ? (selectedTunnelForRule as any).portRangeStart : null;
       let randomRangeEnd = selectedTunnelForRule ? (selectedTunnelForRule as any).portRangeEnd : null;
       sourcePortReservation = await reserveAvailableHostPort({
         hostId,
-        protocol: input.protocol,
+        protocol: ruleProtocol,
         findPort: (reservedPorts) => db.findAvailablePort(
           hostId,
           randomRangeStart,
           randomRangeEnd,
-          input.protocol,
+          ruleProtocol,
           reservedPorts,
           [],
           planRange?.ranges || [],
         ),
-        isUsed: (port) => db.isHostPortUnavailableForAllocation(hostId, port, undefined, input.protocol),
+        isUsed: (port) => db.isHostPortUnavailableForAllocation(hostId, port, undefined, ruleProtocol),
       });
       if (!sourcePortReservation) throw new Error("该主机端口区间内已无可用端口");
       sourcePort = sourcePortReservation.port;
     } else {
       if (!isPortAllowedByPolicy(sourcePort, effectivePolicy)) throw new Error(portPolicyErrorMessage(effectivePolicy, "源端口"));
-      sourcePortReservation = tryReserveHostPort(hostId, sourcePort, input.protocol);
+      if (tunnelId) {
+        directTunnelSniState = await getDirectTunnelSniEntryPortState({
+          tunnel: selectedTunnelForRule,
+          sourcePort,
+          sni: normalizedSni,
+        });
+        assertDirectTunnelSniEntryPortUse(directTunnelSniState, sourcePort, normalizedSni);
+      }
+      sourcePortReservation = tryReserveHostPort(hostId, sourcePort, ruleProtocol);
       if (!sourcePortReservation) throw new Error(`端口 ${sourcePort} 正在被其他请求分配，请稍后重试`);
-      const used = await db.isHostPortUnavailableForExplicitUse(hostId, sourcePort, undefined, input.protocol);
+      const used = await db.isHostPortUnavailableForExplicitUse(
+        hostId,
+        sourcePort,
+        directTunnelSniState?.shareableRuleIds || undefined,
+        ruleProtocol,
+      );
       if (used) {
         sourcePortReservation.release();
         sourcePortReservation = null;
@@ -1221,56 +1552,74 @@ export async function createDirectForwardRuleForActor(
       getPortCount: () => db.getUserPortCount(actor.id),
     });
     let tunnelExitPort: number | null = null;
-    assertNoDirectSelfForwardLoop({ host, sourcePort, targetIp: input.targetIp, targetPort: input.targetPort, tunnelId });
+    let sniSplitterPort: number | null = null;
+    assertNoDirectSelfForwardLoop({ host, sourcePort, targetIp: ruleInput.targetIp, targetPort: ruleInput.targetPort, tunnelId });
     if (tunnelId) {
       const tunnel = selectedTunnelForRule;
       if (!dbBool(tunnel.isEnabled)) throw new Error("所选隧道已停用");
       if (Number(tunnel.entryHostId) !== hostId) throw new Error("所选隧道的入口 Agent 必须与规则所属主机一致");
       const exit = await db.getHostById(tunnel.exitHostId);
-      // The primary managed GOST rule must point at the same listener that the
-      // tunnel service binds. Legacy rows may contain a high/unrestricted port
-      // after a NAT range was introduced; repair the tunnel first rather than
-      // merely assigning a new bookkeeping port to the rule.
-      const listenerRepair = usesSharedTunnelPrimaryListener(tunnel)
-        ? await ensureTunnelListenerPortPolicy(tunnel, {
-          hostId: Number(tunnel.exitHostId),
-          syncSharedPrimaryRule: true,
-        })
-        : null;
-      if (usesSharedTunnelPrimaryListener(tunnel) && !listenerRepair) {
-        throw new Error("出口 Agent 已无可用隧道监听端口");
-      }
-      const sharedListenPort = await preferredSharedTunnelListenPort(tunnel, 0, input.isEnabled !== false);
-      // Reuse the reservation acquired while repairing the listener when this
-      // new rule is the shared primary. Secondary rules must release it and
-      // allocate an independent exit port.
-      if (listenerRepair?.reservation && Number(sharedListenPort || 0) === listenerRepair.port) {
-        tunnelExitPortReservation = listenerRepair.reservation;
-      } else {
-        listenerRepair?.reservation.release();
-      }
-      if (!tunnelExitPortReservation) {
-        tunnelExitPortReservation = await reserveTunnelExitPort({
-          hostId: Number(tunnel.exitHostId),
-          preferredStart: (exit as any)?.portRangeStart,
-          preferredEnd: (exit as any)?.portRangeEnd,
-          currentPort: sharedListenPort,
-          // The configured nginx listener belongs to this tunnel and may be
-          // reused by its primary rule; other resources remain conflicts.
-          allowSameTunnelListener: Number(sharedListenPort || 0) > 0,
-          excludeTunnelId: Number(tunnel.id),
-          protocol: "both",
+      if (normalizedSni) {
+        directTunnelSniState = directTunnelSniState || await getDirectTunnelSniEntryPortState({
+          tunnel,
+          sourcePort,
+          sni: normalizedSni,
         });
+        assertDirectTunnelSniEntryPortUse(directTunnelSniState, sourcePort, normalizedSni);
+        const prepared = await reserveDirectTunnelSniRuntimePorts({
+          tunnel,
+          state: directTunnelSniState,
+          enabled: ruleInput.isEnabled !== false,
+          reservations: sniRuntimePortReservations,
+        });
+        tunnelExitPort = prepared.tunnelExitPort;
+        sniSplitterPort = prepared.sniSplitterPort;
+      } else {
+        // The primary managed GOST rule must point at the same listener that the
+        // tunnel service binds. Legacy rows may contain a high/unrestricted port
+        // after a NAT range was introduced; repair the tunnel first rather than
+        // merely assigning a new bookkeeping port to the rule.
+        const listenerRepair = usesSharedTunnelPrimaryListener(tunnel)
+          ? await ensureTunnelListenerPortPolicy(tunnel, {
+            hostId: Number(tunnel.exitHostId),
+            syncSharedPrimaryRule: true,
+          })
+          : null;
+        if (usesSharedTunnelPrimaryListener(tunnel) && !listenerRepair) {
+          throw new Error("出口 Agent 已无可用隧道监听端口");
+        }
+        const sharedListenPort = await preferredSharedTunnelListenPort(tunnel, 0, input.isEnabled !== false);
+        // Reuse the reservation acquired while repairing the listener when this
+        // new rule is the shared primary. Secondary rules must release it and
+        // allocate an independent exit port.
+        if (listenerRepair?.reservation && Number(sharedListenPort || 0) === listenerRepair.port) {
+          tunnelExitPortReservation = listenerRepair.reservation;
+        } else {
+          listenerRepair?.reservation.release();
+        }
+        if (!tunnelExitPortReservation) {
+          tunnelExitPortReservation = await reserveTunnelExitPort({
+            hostId: Number(tunnel.exitHostId),
+            preferredStart: (exit as any)?.portRangeStart,
+            preferredEnd: (exit as any)?.portRangeEnd,
+            currentPort: sharedListenPort,
+            // The configured nginx listener belongs to this tunnel and may be
+            // reused by its primary rule; other resources remain conflicts.
+            allowSameTunnelListener: Number(sharedListenPort || 0) > 0,
+            excludeTunnelId: Number(tunnel.id),
+            protocol: "both",
+          });
+        }
+        if (!tunnelExitPortReservation) throw new Error("出口 Agent 已无可用隧道端口");
+        tunnelExitPort = tunnelExitPortReservation.port;
       }
-      if (!tunnelExitPortReservation) throw new Error("出口 Agent 已无可用隧道端口");
-      tunnelExitPort = tunnelExitPortReservation.port;
     }
-    const runtimeOptionInput = tunnelId ? tunnelRuntimeOptionInput(selectedTunnelForRule) : input;
-    const proxyProtocol = normalizeProxyProtocolInput(runtimeOptionInput, input.protocol, input.forwardType, false, { tunnelRoute: !!tunnelId, clearUnsupported: !!tunnelId });
-    const transportTuning = normalizeTransportTuningInput(runtimeOptionInput, input.protocol, input.forwardType, false, { tunnelRoute: !!tunnelId, forwardxTunnel: String(selectedTunnelForRule?.mode || "").toLowerCase() === "forwardx", clearUnsupported: !!tunnelId });
+    const runtimeOptionInput = tunnelId ? tunnelRuntimeOptionInput(selectedTunnelForRule) : ruleInput;
+    const proxyProtocol = normalizeProxyProtocolInput(runtimeOptionInput, ruleProtocol, ruleInput.forwardType, false, { tunnelRoute: !!tunnelId, clearUnsupported: !!tunnelId });
+    const transportTuning = normalizeTransportTuningInput(runtimeOptionInput, ruleProtocol, ruleInput.forwardType, false, { tunnelRoute: !!tunnelId, forwardxTunnel: String(selectedTunnelForRule?.mode || "").toLowerCase() === "forwardx", clearUnsupported: !!tunnelId });
     const id = await db.createForwardRule({
-      ...input,
-      ...normalizeFailoverInput(input, input.protocol),
+      ...ruleInput,
+      ...normalizeFailoverInput(ruleInput, ruleProtocol),
       ...proxyProtocol,
       ...transportTuning,
       telegramErrorNotifyEnabled: !!input.telegramErrorNotifyEnabled,
@@ -1279,12 +1628,14 @@ export async function createDirectForwardRuleForActor(
       blockTls: false,
       sourcePort,
       hostId,
-      targetIp: normalizeRuleTargetIp(input.targetIp, { tunnelId }),
+      targetIp: normalizeRuleTargetIp(ruleInput.targetIp, { tunnelId }),
       gostMode: "direct",
       gostRelayHost: null,
       gostRelayPort: null,
       tunnelId,
       tunnelExitPort,
+      sni: normalizedSni,
+      sniSplitterPort,
       userId: actor.id,
     });
     await quotaReservation.release();
@@ -1296,7 +1647,8 @@ export async function createDirectForwardRuleForActor(
       // is not mistaken for an unrelated in-flight allocation.
       tunnelExitPortReservation?.release();
       tunnelExitPortReservation = null;
-      if (tunnel) await db.reconcileForwardRuleTunnelExits({ ...input, id, hostId, tunnelExitPort, sourcePort, tunnelId }, tunnel);
+      releaseHostPortReservations(sniRuntimePortReservations);
+      if (tunnel) await db.reconcileForwardRuleTunnelExits({ ...ruleInput, id, hostId, tunnelExitPort, sourcePort, tunnelId }, tunnel);
       await db.updateTunnel(tunnelId, { isRunning: false } as any);
       if (tunnel) await pushTunnelEndpointRefresh(tunnel, `${options.reasonPrefix || "forward-rule"}-created`);
     } else {
@@ -1306,6 +1658,7 @@ export async function createDirectForwardRuleForActor(
   } finally {
     await quotaReservation?.release();
     tunnelExitPortReservation?.release();
+    releaseHostPortReservations(sniRuntimePortReservations);
     sourcePortReservation?.release();
   }
 }
@@ -1395,6 +1748,7 @@ export const crudRulesRouter = router({
       ...failoverInputShape,
       ...proxyProtocolInputShape,
       ...transportTuningInputShape,
+      ...sniRuleLimitInputShape,
     }))
     .mutation(async ({ input, ctx }) => {
       await requireRuleTelegramNotifyReady(input.telegramErrorNotifyEnabled);
@@ -1570,6 +1924,7 @@ export const crudRulesRouter = router({
           sourcePort,
           sni: normalizedSni,
           sniSplitterPort,
+          ...resolveSniRuleLimits(normalizedSni, input),
           targetIp: normalizeRuleTargetIp(input.targetIp, { tunnelId: forwardType === "gost" && !isForwardChain && group.groupType === "tunnel" ? 1 : null }),
           targetPort: input.targetPort,
           isEnabled: input.isEnabled,
@@ -1617,7 +1972,13 @@ export const crudRulesRouter = router({
         });
       }
 
-      if (normalizedSni) throw new Error("SNI 分流当前仅支持转发链");
+      if (normalizedSni) {
+        const tunnelId = input.forwardType === "gost" ? Number(input.tunnelId || 0) : 0;
+        if (!tunnelId) throw new Error("SNI 分流仅支持端口转发、隧道或转发链");
+        return withKeyedTaskLock(`tunnel-sni:${tunnelId}:${Number(input.sourcePort || 0)}`, () => (
+          createDirectForwardRuleForActor(ctx.user, { ...input, protocol: "tcp", sni: normalizedSni })
+        ));
+      }
       return createDirectForwardRuleForActor(ctx.user, input);
     }),
   update: protectedProcedure
@@ -1647,6 +2008,7 @@ export const crudRulesRouter = router({
       ...failoverInputShape,
       ...proxyProtocolInputShape,
       ...transportTuningInputShape,
+      ...sniRuleLimitInputShape,
       isEnabled: z.boolean().optional(),
     }))
     .mutation(async ({ input, ctx }) => withKeyedTaskLock(`rule:${input.id}`, async () => {
@@ -1810,7 +2172,6 @@ export const crudRulesRouter = router({
       if ((rule as any).isForwardGroupTemplate) {
         const groupId = Number((rule as any).forwardGroupId || 0);
         if (input.forwardGroupId === null) {
-          if (normalizedInputSni) throw new Error("SNI 分流当前仅支持转发链");
           if (!groupId) throw new Error("Forward group does not exist");
           const childRules = await db.getForwardGroupChildRulesForTemplate(input.id);
           const excludeRuleIds = [
@@ -1841,7 +2202,14 @@ export const crudRulesRouter = router({
           const selectedTunnelForRule = route.selectedTunnelForRule;
           const nextHostId = route.hostId;
 
-          const nextProtocol = input.protocol ?? (rule as any).protocol;
+          const nextSni = normalizedInputSni !== undefined
+            ? normalizedInputSni
+            : normalizeSniInput((rule as any).sni);
+          assertSniRuleAdmin(ctx.user, nextSni);
+          if (nextSni && !nextTunnelId) {
+            throw new Error("SNI 分流仅支持端口转发、隧道或转发链");
+          }
+          const nextProtocol = nextSni ? "tcp" : input.protocol ?? (rule as any).protocol;
           const nextSourcePort = Number(input.sourcePort ?? (rule as any).sourcePort);
           const nextMainBackupEnabled = false;
           requireMainBackupAllowed({
@@ -1865,7 +2233,22 @@ export const crudRulesRouter = router({
               throw new Error(`套餐端口必须在 ${ranges} 区间内`);
             }
           }
-          const sourceReservation = await reserveRulePort(nextHostId, nextSourcePort, nextProtocol, excludeRuleIds);
+          let directTunnelSniState: DirectTunnelSniEntryPortState | null = null;
+          if (nextTunnelId && selectedTunnelForRule) {
+            directTunnelSniState = await getDirectTunnelSniEntryPortState({
+              tunnel: selectedTunnelForRule,
+              sourcePort: nextSourcePort,
+              sni: nextSni,
+              excludeRuleIds,
+            });
+            assertDirectTunnelSniEntryPortUse(directTunnelSniState, nextSourcePort, nextSni);
+          }
+          const sourceReservation = await reserveRulePort(
+            nextHostId,
+            nextSourcePort,
+            nextProtocol,
+            normalizePositiveIds([...excludeRuleIds, ...(directTunnelSniState?.shareableRuleIds || [])]),
+          );
           if (!sourceReservation) throw new Error(`Port ${nextSourcePort} is already used or being allocated`);
           if (!nextTunnelId) {
             const host = await db.getHostById(nextHostId);
@@ -1879,46 +2262,61 @@ export const crudRulesRouter = router({
           }
 
           let tunnelExitPort: number | null = null;
+          let sniSplitterPort: number | null = null;
           if (nextTunnelId) {
             const tunnel = selectedTunnelForRule;
             const exit = await db.getHostById(tunnel.exitHostId);
             const existingExitPort = Number((rule as any).tunnelExitPort || 0);
-            const listenerRepair = usesSharedTunnelPrimaryListener(tunnel)
-              ? await ensureTunnelListenerPortPolicy(tunnel, {
-                hostId: Number(tunnel.exitHostId),
-                syncSharedPrimaryRule: true,
-              })
-              : null;
-            if (usesSharedTunnelPrimaryListener(tunnel) && !listenerRepair) {
-              throw new Error("Tunnel exit agent has no available listener port");
-            }
-            const sharedListenPort = await preferredSharedTunnelListenPort(
-              tunnel,
-              Number(rule.id),
-              input.isEnabled !== undefined ? dbBool(input.isEnabled) : dbBool((rule as any).isEnabled),
-            );
-            let exitReservation: HostPortReservation | null = null;
-            if (listenerRepair?.reservation && Number(sharedListenPort || 0) === listenerRepair.port) {
-              exitReservation = listenerRepair.reservation;
-            } else {
-              listenerRepair?.reservation.release();
-            }
-            if (!exitReservation) {
-              exitReservation = await reserveTunnelExitPort({
-                hostId: Number(tunnel.exitHostId),
-                preferredStart: (exit as any)?.portRangeStart,
-                preferredEnd: (exit as any)?.portRangeEnd,
-                currentPort: sharedListenPort ?? existingExitPort,
-                reservedPorts: [],
-                excludeRuleIds,
-                allowSameTunnelListener: Number(sharedListenPort || 0) > 0,
-                excludeTunnelId: Number(tunnel.id),
-                protocol: "both",
+            if (nextSni && directTunnelSniState) {
+              const prepared = await reserveDirectTunnelSniRuntimePorts({
+                tunnel,
+                state: directTunnelSniState,
+                currentSplitterPort: (rule as any).sniSplitterPort,
+                currentTunnelExitPort: existingExitPort,
+                ownerRuleIds: excludeRuleIds,
+                enabled: input.isEnabled !== undefined ? dbBool(input.isEnabled) : dbBool((rule as any).isEnabled),
+                reservations: heldReservations,
               });
+              tunnelExitPort = prepared.tunnelExitPort;
+              sniSplitterPort = prepared.sniSplitterPort;
+            } else {
+              const listenerRepair = usesSharedTunnelPrimaryListener(tunnel)
+                ? await ensureTunnelListenerPortPolicy(tunnel, {
+                  hostId: Number(tunnel.exitHostId),
+                  syncSharedPrimaryRule: true,
+                })
+                : null;
+              if (usesSharedTunnelPrimaryListener(tunnel) && !listenerRepair) {
+                throw new Error("Tunnel exit agent has no available listener port");
+              }
+              const sharedListenPort = await preferredSharedTunnelListenPort(
+                tunnel,
+                Number(rule.id),
+                input.isEnabled !== undefined ? dbBool(input.isEnabled) : dbBool((rule as any).isEnabled),
+              );
+              let exitReservation: HostPortReservation | null = null;
+              if (listenerRepair?.reservation && Number(sharedListenPort || 0) === listenerRepair.port) {
+                exitReservation = listenerRepair.reservation;
+              } else {
+                listenerRepair?.reservation.release();
+              }
+              if (!exitReservation) {
+                exitReservation = await reserveTunnelExitPort({
+                  hostId: Number(tunnel.exitHostId),
+                  preferredStart: (exit as any)?.portRangeStart,
+                  preferredEnd: (exit as any)?.portRangeEnd,
+                  currentPort: sharedListenPort ?? existingExitPort,
+                  reservedPorts: [],
+                  excludeRuleIds,
+                  allowSameTunnelListener: Number(sharedListenPort || 0) > 0,
+                  excludeTunnelId: Number(tunnel.id),
+                  protocol: "both",
+                });
+              }
+              if (!exitReservation) throw new Error("Tunnel exit agent has no available port");
+              tunnelExitPortReservationForConversion = exitReservation;
+              tunnelExitPort = exitReservation.port;
             }
-            if (!exitReservation) throw new Error("Tunnel exit agent has no available port");
-            tunnelExitPortReservationForConversion = exitReservation;
-            tunnelExitPort = exitReservation.port;
           }
 
           const failoverData = normalizeFailoverInput({
@@ -1940,8 +2338,9 @@ export const crudRulesRouter = router({
             forwardGroupMemberId: null,
             isForwardGroupTemplate: false,
             sourcePort: nextSourcePort,
-            sni: null,
-            sniSplitterPort: null,
+            sni: nextSni,
+            sniSplitterPort,
+            ...resolveSniRuleLimits(nextSni, input, rule as any),
             targetIp: normalizeRuleTargetIp(input.targetIp ?? (rule as any).targetIp, { tunnelId: nextTunnelId }),
             targetPort: Number(input.targetPort ?? (rule as any).targetPort),
             telegramErrorNotifyEnabled: input.telegramErrorNotifyEnabled ?? (rule as any).telegramErrorNotifyEnabled,
@@ -1972,7 +2371,9 @@ export const crudRulesRouter = router({
           // appear busy and can rotate its port unnecessarily.
           tunnelExitPortReservationForConversion?.release();
           tunnelExitPortReservationForConversion = null;
+          releaseHostPortReservations(heldReservations);
           if (nextTunnelId && selectedTunnelForRule) {
+            await reconcileSharedTunnelRulePorts(selectedTunnelForRule);
             await db.reconcileForwardRuleTunnelExits({ ...rule, ...data, id: input.id, tunnelId: nextTunnelId, tunnelExitPort }, selectedTunnelForRule);
             await db.updateTunnel(nextTunnelId, { isRunning: false } as any);
           } else {
@@ -2096,6 +2497,7 @@ export const crudRulesRouter = router({
           protocol: nextProtocol,
           sni: nextSni,
           sniSplitterPort: nextSniSplitterPort,
+          ...resolveSniRuleLimits(nextSni, input, rule as any),
           ...(groupChanged ? normalizeProxyProtocolInput({}, nextProtocol, nextForwardType, isForwardChain, { clearUnsupported: true, tunnelRoute: !isForwardChain && group.groupType === "tunnel" }) : normalizeProxyProtocolInput(
             { ...rule, ...input },
             nextProtocol,
@@ -2129,7 +2531,7 @@ export const crudRulesRouter = router({
         delete data.blockHttp;
         delete data.blockSocks;
         delete data.blockTls;
-        const watchedFields = ["sourcePort", "targetIp", "targetPort", "forwardType", "protocol", "sni", "sniSplitterPort", "proxyProtocolReceive", "proxyProtocolSend", "proxyProtocolExitReceive", "proxyProtocolExitSend", "proxyProtocolVersion", "tcpFastOpen", "zeroCopy", "udpOverTcp", "udpOverTcpPort", "failoverEnabled", "failoverStrategy", "failoverTargets", "failoverSeconds", "recoverSeconds", "autoFailback"] as const;
+        const watchedFields = ["sourcePort", "targetIp", "targetPort", "forwardType", "protocol", "sni", "sniSplitterPort", "rateLimitMbps", "maxConnections", "proxyProtocolReceive", "proxyProtocolSend", "proxyProtocolExitReceive", "proxyProtocolExitSend", "proxyProtocolVersion", "tcpFastOpen", "zeroCopy", "udpOverTcp", "udpOverTcpPort", "failoverEnabled", "failoverStrategy", "failoverTargets", "failoverSeconds", "recoverSeconds", "autoFailback"] as const;
         const keyFieldChanged = watchedFields.some((field) => data[field] !== undefined && data[field] !== (rule as any)[field]);
         if (dbBool(data.isEnabled)) {
           data.disabledByUser = false;
@@ -2239,6 +2641,7 @@ export const crudRulesRouter = router({
           sourcePort,
           sni: nextSni,
           sniSplitterPort: nextSniSplitterPort,
+          ...resolveSniRuleLimits(nextSni, input, rule as any),
           targetIp: normalizeRuleTargetIp(input.targetIp ?? (rule as any).targetIp, { tunnelId: !isForwardChain && group.groupType === "tunnel" ? 1 : null }),
           targetPort: Number(input.targetPort ?? (rule as any).targetPort),
           telegramErrorNotifyEnabled: input.telegramErrorNotifyEnabled ?? (rule as any).telegramErrorNotifyEnabled,
@@ -2277,6 +2680,7 @@ export const crudRulesRouter = router({
         await db.clearForwardRuleTunnelExits(input.id);
         if ((rule as any).tunnelId) {
           const oldTunnel = await db.getTunnelById((rule as any).tunnelId);
+          await reconcileSharedTunnelRulePorts(oldTunnel);
           await db.updateTunnel((rule as any).tunnelId, { isRunning: false } as any);
           if (oldTunnel) await pushTunnelEndpointRefresh(oldTunnel, "forward-rule-route-changed");
         } else if (Number((rule as any).hostId || 0) > 0) {
@@ -2287,7 +2691,7 @@ export const crudRulesRouter = router({
         return { success: true, reset: true };
       }
       const nextDirectRuleSni = normalizedInputSni !== undefined ? normalizedInputSni : normalizeSniInput((rule as any).sni);
-      if (nextDirectRuleSni) throw new Error("SNI 分流当前仅支持转发链");
+      assertSniRuleAdmin(ctx.user, nextDirectRuleSni);
       // 如果修改了源端口，检查端口区间和占用
       let selectedTunnelForRule: any = null;
       let nextTunnelIdForRule: number | null = null;
@@ -2302,7 +2706,7 @@ export const crudRulesRouter = router({
         if (nextTunnelIdForRule) {
           const access = await requireTunnelUseOrTrafficBillingAccess(ctx, nextTunnelIdForRule);
           selectedTunnelForRule = access.tunnel;
-           if (!dbBool(selectedTunnelForRule.isEnabled)) throw new Error("Selected tunnel is disabled");
+          if (!dbBool(selectedTunnelForRule.isEnabled)) throw new Error("Selected tunnel is disabled");
           nextHostIdForRule = Number(selectedTunnelForRule.entryHostId);
           if (ctx.user.role !== "admin" && String(selectedTunnelForRule.mode).toLowerCase() === "forwardx") {
             const owner = await requireForwardAccessReady(ctx.user.id, { allowTrafficBillingRecovery: !!access.isTrafficBillingResource });
@@ -2319,10 +2723,17 @@ export const crudRulesRouter = router({
       if (directRouteChanged) {
         requireForwardTypeAllowedForActor(ctx.user, nextForwardTypeForRule);
       }
-      await requireRuleProtocolEnabled({ ...rule, forwardType: nextForwardTypeForRule, tunnelId: nextTunnelIdForRule }, selectedTunnelForRule);
       const requestedMainBackupEnabled = input.failoverEnabled ?? (rule as any).failoverEnabled;
-      const nextProtocolForRule = input.protocol ?? (rule as any).protocol;
-      const nextMainBackupEnabled = routeChanged ? false : (nextProtocolForRule === "tcp" && nextForwardTypeForRule === "gost" ? requestedMainBackupEnabled : false);
+      if (nextDirectRuleSni && !nextTunnelIdForRule) {
+        throw new Error("SNI 分流仅支持端口转发、隧道或转发链");
+      }
+      const nextProtocolForRule = nextDirectRuleSni ? "tcp" : input.protocol ?? (rule as any).protocol;
+      await requireRuleProtocolEnabled({ ...rule, protocol: nextProtocolForRule, forwardType: nextForwardTypeForRule, tunnelId: nextTunnelIdForRule }, selectedTunnelForRule);
+      const nextMainBackupEnabled = nextDirectRuleSni
+        ? false
+        : routeChanged
+          ? false
+          : (nextProtocolForRule === "tcp" && nextForwardTypeForRule === "gost" ? requestedMainBackupEnabled : false);
       requireMainBackupAllowed({
         enabled: nextMainBackupEnabled,
         protocol: nextProtocolForRule,
@@ -2331,9 +2742,9 @@ export const crudRulesRouter = router({
         tunnelMode: selectedTunnelForRule?.mode,
         isAdmin: ctx.user.role === "admin",
       });
-       const nextRuleEnabled = input.isEnabled !== undefined
-         ? dbBool(input.isEnabled)
-         : dbBool((rule as any).isEnabled);
+      const nextRuleEnabled = input.isEnabled !== undefined
+        ? dbBool(input.isEnabled)
+        : dbBool((rule as any).isEnabled);
       if (!nextTunnelIdForRule) {
         const access = await requireHostUseAccess(ctx, nextHostIdForRule);
         if (ctx.user.role !== "admin" && nextRuleEnabled) {
@@ -2354,6 +2765,20 @@ export const crudRulesRouter = router({
       }
 
       const nextSourcePortForRule = input.sourcePort ?? rule.sourcePort;
+      let directTunnelSniState: DirectTunnelSniEntryPortState | null = null;
+      if (nextTunnelIdForRule && selectedTunnelForRule) {
+        directTunnelSniState = await getDirectTunnelSniEntryPortState({
+          tunnel: selectedTunnelForRule,
+          sourcePort: Number(nextSourcePortForRule),
+          sni: nextDirectRuleSni,
+          excludeRuleIds: [Number(rule.id)],
+        });
+        assertDirectTunnelSniEntryPortUse(
+          directTunnelSniState,
+          Number(nextSourcePortForRule),
+          nextDirectRuleSni,
+        );
+      }
       if (!nextTunnelIdForRule) {
         const host = await db.getHostById(nextHostIdForRule);
         assertNoDirectSelfForwardLoop({
@@ -2366,6 +2791,7 @@ export const crudRulesRouter = router({
       }
       const shouldCheckSourcePort = input.sourcePort !== undefined
         || input.protocol !== undefined
+        || input.sni !== undefined
         || Number(nextHostIdForRule) !== Number(rule.hostId)
         || Number(nextTunnelIdForRule || 0) !== Number((rule as any).tunnelId || 0);
       if (shouldCheckSourcePort) {
@@ -2393,7 +2819,12 @@ export const crudRulesRouter = router({
               throw new Error(`套餐端口必须在 ${ranges} 区间内`);
             }
           }
-          const sourceReservation = await reserveRulePort(nextHostIdForRule, nextSourcePortForRule, nextProtocolForRule, rule.id);
+          const sourceReservation = await reserveRulePort(
+            nextHostIdForRule,
+            nextSourcePortForRule,
+            nextProtocolForRule,
+            normalizePositiveIds([Number(rule.id), ...(directTunnelSniState?.shareableRuleIds || [])]),
+          );
           if (!sourceReservation) {
             throw new Error(`端口 ${nextSourcePortForRule} 已被其他规则占用`);
           }
@@ -2405,6 +2836,9 @@ export const crudRulesRouter = router({
       delete (data as any).blockSocks;
       delete (data as any).blockTls;
       (data as any).hostId = nextHostIdForRule;
+      (data as any).protocol = nextProtocolForRule;
+      (data as any).sni = nextDirectRuleSni;
+      Object.assign(data as any, resolveSniRuleLimits(nextDirectRuleSni, input, rule as any));
       if (input.targetIp !== undefined) (data as any).targetIp = normalizeRuleTargetIp(input.targetIp, { tunnelId: nextTunnelIdForRule });
       if (
         input.failoverEnabled !== undefined ||
@@ -2414,6 +2848,7 @@ export const crudRulesRouter = router({
         input.recoverSeconds !== undefined ||
         input.autoFailback !== undefined ||
         routeChanged ||
+        !!nextDirectRuleSni ||
         nextMainBackupEnabled !== requestedMainBackupEnabled
       ) {
         Object.assign(data as any, normalizeFailoverInput({
@@ -2455,7 +2890,7 @@ export const crudRulesRouter = router({
         Object.assign(data as any, normalizeProxyProtocolInput({
           ...proxySource,
           failoverEnabled: nextMainBackupEnabled,
-        }, input.protocol ?? (rule as any).protocol, nextForwardTypeForRule, false, { clearUnsupported: true, tunnelRoute: !!nextTunnelIdForRule }));
+        }, nextProtocolForRule, nextForwardTypeForRule, false, { clearUnsupported: true, tunnelRoute: !!nextTunnelIdForRule }));
       }
       if (
         input.tcpFastOpen !== undefined ||
@@ -2476,7 +2911,7 @@ export const crudRulesRouter = router({
               udpOverTcp: input.udpOverTcp ?? (rule as any).udpOverTcp,
               udpOverTcpPort: input.udpOverTcpPort ?? (rule as any).udpOverTcpPort,
             };
-        const transportTuning = normalizeTransportTuningInput(transportSource, input.protocol ?? (rule as any).protocol, nextForwardTypeForRule, false, {
+        const transportTuning = normalizeTransportTuningInput(transportSource, nextProtocolForRule, nextForwardTypeForRule, false, {
           clearUnsupported: true,
           tunnelRoute: !!nextTunnelIdForRule,
           forwardxTunnel: String(selectedTunnelForRule?.mode || "").toLowerCase() === "forwardx",
@@ -2505,74 +2940,100 @@ export const crudRulesRouter = router({
         const nextTunnelId = data.tunnelId !== undefined ? data.tunnelId : (rule as any).tunnelId;
         if (nextTunnelId) {
           const tunnel = selectedTunnelForRule ?? (await requireTunnelUseOrTrafficBillingAccess(ctx, nextTunnelId)).tunnel;
-           if (!dbBool(tunnel.isEnabled)) throw new Error("所选隧道已停用");
+          if (!dbBool(tunnel.isEnabled)) throw new Error("所选隧道已停用");
           if (Number(tunnel.entryHostId) !== Number(nextHostIdForRule)) {
             throw new Error("所选隧道的入口 Agent 必须与规则所属主机一致");
           }
           const sameTunnel = Number(nextTunnelId) === Number((rule as any).tunnelId || 0);
           const existingExitPort = Number((rule as any).tunnelExitPort || 0);
-          // Disabling an existing rule is a state change, not a request to
-          // move its data-plane listener. In particular, a primary managed
-          // GOST rule intentionally shares tunnel.listenPort. Passing
-          // `enabled=false` to preferredSharedTunnelListenPort removes that
-          // sharing exemption, so a one-port NAT range would report "no
-          // available port" (or silently rotate the stored port) merely when
-          // the user toggles the rule off.  Keep the old value as the next
-          // enable's preference; the enabled path below will revalidate it
-          // against the current NAT policy and repair it when necessary.
-          const preserveDisabledExitPort = !nextRuleEnabled
-            && sameTunnel
-            && !routeChanged
-            && existingExitPort > 0;
-          if (preserveDisabledExitPort) {
-            (data as any).tunnelExitPort = existingExitPort;
-          } else {
-            const exit = await db.getHostById(tunnel.exitHostId);
-            // Repair a stale tunnel listener before assigning this rule's exit
-            // port. Otherwise the rule could be pointed at a newly allocated
-            // NAT port while the tunnel runtime keeps listening on the old one.
-            const listenerRepair = usesSharedTunnelPrimaryListener(tunnel)
-              ? await ensureTunnelListenerPortPolicy(tunnel, {
-                hostId: Number(tunnel.exitHostId),
-                syncSharedPrimaryRule: true,
-              })
-              : null;
-            if (usesSharedTunnelPrimaryListener(tunnel) && !listenerRepair) {
-              throw new Error("出口 Agent 已无可用隧道监听端口");
-            }
-            const sharedListenPort = await preferredSharedTunnelListenPort(
-              tunnel,
-              Number(rule.id),
-              nextRuleEnabled,
-            );
-            let reservation: HostPortReservation | null = null;
-            if (listenerRepair?.reservation && Number(sharedListenPort || 0) === listenerRepair.port) {
-              reservation = listenerRepair.reservation;
+          if (nextDirectRuleSni && directTunnelSniState) {
+            if (
+              !nextRuleEnabled
+              && sameTunnel
+              && existingExitPort > 0
+              && Number((rule as any).sniSplitterPort || 0) > 0
+            ) {
+              (data as any).tunnelExitPort = existingExitPort;
+              (data as any).sniSplitterPort = Number((rule as any).sniSplitterPort);
             } else {
-              listenerRepair?.reservation.release();
-            }
-            if (!reservation) {
-              reservation = await reserveTunnelExitPort({
-                hostId: Number(tunnel.exitHostId),
-                preferredStart: (exit as any)?.portRangeStart,
-                preferredEnd: (exit as any)?.portRangeEnd,
-                currentPort: sharedListenPort ?? (sameTunnel ? existingExitPort : 0),
-                excludeRuleIds: [Number(rule.id)],
-                allowSameTunnelListener: Number(sharedListenPort || 0) > 0,
-                excludeTunnelId: Number(tunnel.id),
-                protocol: "both",
+              const prepared = await reserveDirectTunnelSniRuntimePorts({
+                tunnel,
+                state: directTunnelSniState,
+                currentSplitterPort: (rule as any).sniSplitterPort,
+                currentTunnelExitPort: existingExitPort,
+                ownerRuleIds: [Number(rule.id)],
+                enabled: nextRuleEnabled,
+                reservations: heldReservations,
               });
+              (data as any).tunnelExitPort = prepared.tunnelExitPort;
+              (data as any).sniSplitterPort = prepared.sniSplitterPort;
             }
-            if (!reservation) throw new Error("出口 Agent 已无可用隧道端口");
-            tunnelExitPortReservationForUpdate = reservation;
-            (data as any).tunnelExitPort = reservation.port;
+          } else {
+            (data as any).sniSplitterPort = null;
+            // Disabling an existing rule is a state change, not a request to
+            // move its data-plane listener. In particular, a primary managed
+            // GOST rule intentionally shares tunnel.listenPort. Passing
+            // `enabled=false` to preferredSharedTunnelListenPort removes that
+            // sharing exemption, so a one-port NAT range would report "no
+            // available port" (or silently rotate the stored port) merely when
+            // the user toggles the rule off. Keep the old value as the next
+            // enable's preference; the enabled path below will revalidate it
+            // against the current NAT policy and repair it when necessary.
+            const preserveDisabledExitPort = !nextRuleEnabled
+              && sameTunnel
+              && !routeChanged
+              && existingExitPort > 0;
+            if (preserveDisabledExitPort) {
+              (data as any).tunnelExitPort = existingExitPort;
+            } else {
+              const exit = await db.getHostById(tunnel.exitHostId);
+              // Repair a stale tunnel listener before assigning this rule's exit
+              // port. Otherwise the rule could be pointed at a newly allocated
+              // NAT port while the tunnel runtime keeps listening on the old one.
+              const listenerRepair = usesSharedTunnelPrimaryListener(tunnel)
+                ? await ensureTunnelListenerPortPolicy(tunnel, {
+                  hostId: Number(tunnel.exitHostId),
+                  syncSharedPrimaryRule: true,
+                })
+                : null;
+              if (usesSharedTunnelPrimaryListener(tunnel) && !listenerRepair) {
+                throw new Error("出口 Agent 已无可用隧道监听端口");
+              }
+              const sharedListenPort = await preferredSharedTunnelListenPort(
+                tunnel,
+                Number(rule.id),
+                nextRuleEnabled,
+              );
+              let reservation: HostPortReservation | null = null;
+              if (listenerRepair?.reservation && Number(sharedListenPort || 0) === listenerRepair.port) {
+                reservation = listenerRepair.reservation;
+              } else {
+                listenerRepair?.reservation.release();
+              }
+              if (!reservation) {
+                reservation = await reserveTunnelExitPort({
+                  hostId: Number(tunnel.exitHostId),
+                  preferredStart: (exit as any)?.portRangeStart,
+                  preferredEnd: (exit as any)?.portRangeEnd,
+                  currentPort: sharedListenPort ?? (sameTunnel ? existingExitPort : 0),
+                  excludeRuleIds: [Number(rule.id)],
+                  allowSameTunnelListener: Number(sharedListenPort || 0) > 0,
+                  excludeTunnelId: Number(tunnel.id),
+                  protocol: "both",
+                });
+              }
+              if (!reservation) throw new Error("出口 Agent 已无可用隧道端口");
+              tunnelExitPortReservationForUpdate = reservation;
+              (data as any).tunnelExitPort = reservation.port;
+            }
           }
         } else {
           (data as any).tunnelExitPort = null;
+          (data as any).sniSplitterPort = null;
           await db.clearForwardRuleTunnelExits(id);
         }
       }
-       if (dbBool(data.isEnabled)) {
+      if (dbBool(data.isEnabled)) {
         const sourcePort = Number(data.sourcePort ?? rule.sourcePort);
         await assertRulePortWithinEntryPolicy({
           hostId: nextHostIdForRule,
@@ -2588,7 +3049,12 @@ export const crudRulesRouter = router({
             tunnelId: nextTunnelIdForRule,
           });
         }
-        const sourceReservation = await reserveRulePort(nextHostIdForRule, sourcePort, nextProtocolForRule, rule.id);
+        const sourceReservation = await reserveRulePort(
+          nextHostIdForRule,
+          sourcePort,
+          nextProtocolForRule,
+          normalizePositiveIds([Number(rule.id), ...(directTunnelSniState?.shareableRuleIds || [])]),
+        );
         if (!sourceReservation) throw new Error(`端口 ${sourcePort} 已被占用，请更换端口后再启用`);
         (data as any).disabledByUser = false;
         (data as any).disabledByTunnel = false;
@@ -2596,12 +3062,16 @@ export const crudRulesRouter = router({
         (data as any).protocolBlockReason = null;
       }
       // 关键字段变更时重置 isRunning
-      const watchedFields: (keyof typeof data)[] = [
+      const watchedFields = [
         "sourcePort",
         "targetIp",
         "targetPort",
         "forwardType",
         "protocol",
+        "sni",
+        "sniSplitterPort",
+        "rateLimitMbps",
+        "maxConnections",
         "gostMode",
         "gostRelayHost",
         "gostRelayPort",
@@ -2623,24 +3093,22 @@ export const crudRulesRouter = router({
         "failoverSeconds",
         "recoverSeconds",
         "autoFailback",
-      ];
+      ] as const;
       const keyFieldChanged = watchedFields.some((f) => {
-        const v = data[f];
+        const v = (data as any)[f];
         return v !== undefined && v !== (rule as any)[f];
       });
       const failoverHotUpdate = keyFieldChanged
         && isFailoverHotUpdate(data as any, rule as any, nextHostIdForRule, nextTunnelIdForRule);
       const oldHostIdForRule = Number(rule.hostId);
       const hostChanged = Number(oldHostIdForRule) !== Number(nextHostIdForRule);
+      const affectedTunnelIdsForRefresh = new Set<number>();
       if (keyFieldChanged && !failoverHotUpdate) {
         (data as any).isRunning = false;
-        const affectedTunnelIds = new Set<number>();
-        if ((rule as any).tunnelId) affectedTunnelIds.add((rule as any).tunnelId);
-        if ((data as any).tunnelId) affectedTunnelIds.add((data as any).tunnelId);
-        for (const affectedTunnelId of affectedTunnelIds) {
-          const affectedTunnel = await db.getTunnelById(affectedTunnelId);
+        if ((rule as any).tunnelId) affectedTunnelIdsForRefresh.add((rule as any).tunnelId);
+        if ((data as any).tunnelId) affectedTunnelIdsForRefresh.add((data as any).tunnelId);
+        for (const affectedTunnelId of affectedTunnelIdsForRefresh) {
           await db.updateTunnel(affectedTunnelId, { isRunning: false } as any);
-          if (affectedTunnel) await pushTunnelEndpointRefresh(affectedTunnel, "forward-rule-updated");
         }
       }
       await db.updateForwardRule(id, data);
@@ -2649,6 +3117,21 @@ export const crudRulesRouter = router({
       // idempotent and the finalizer below still covers error paths.
       tunnelExitPortReservationForUpdate?.release();
       tunnelExitPortReservationForUpdate = null;
+      releaseHostPortReservations(heldReservations);
+      const tunnelUnitChanged = input.sni !== undefined
+        || input.sourcePort !== undefined
+        || input.tunnelId !== undefined
+        || input.forwardType !== undefined
+        || input.isEnabled !== undefined;
+      if (tunnelUnitChanged) {
+        const affectedTunnelIds = normalizePositiveIds([
+          Number((rule as any).tunnelId || 0),
+          Number(nextTunnelIdForRule || 0),
+        ]);
+        for (const affectedTunnelId of affectedTunnelIds) {
+          await reconcileSharedTunnelRulePorts(await db.getTunnelById(affectedTunnelId));
+        }
+      }
       if ((data.forwardType ?? rule.forwardType) === "gost") {
         const activeTunnelId = Number(nextTunnelIdForRule || 0);
         if (activeTunnelId) {
@@ -2664,6 +3147,10 @@ export const crudRulesRouter = router({
         }
       } else {
         await db.clearForwardRuleTunnelExits(id);
+      }
+      for (const affectedTunnelId of affectedTunnelIdsForRefresh) {
+        const affectedTunnel = await db.getTunnelById(affectedTunnelId);
+        if (affectedTunnel) await pushTunnelEndpointRefresh(affectedTunnel, "forward-rule-updated");
       }
       if (keyFieldChanged) {
         if (hostChanged) {

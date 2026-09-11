@@ -280,6 +280,8 @@ type RuleFormData = {
   forwardGroupId: number | null;
   sourcePort: number;
   sni: string;
+  rateLimitMbps: number;
+  maxConnections: number;
   targetIp: string;
   targetPort: number;
   telegramErrorNotifyEnabled: boolean;
@@ -340,6 +342,8 @@ const defaultForm: RuleFormData = {
   forwardGroupId: null,
   sourcePort: 0,
   sni: "",
+  rateLimitMbps: 0,
+  maxConnections: 0,
   targetIp: "",
   targetPort: 0,
   telegramErrorNotifyEnabled: false,
@@ -2189,11 +2193,17 @@ function formatFailoverTargetsText(raw: unknown) {
 }
 
 function exportRuleForTransfer(rule: any): RuleTransferFileRule {
+  const sni = normalizeSniImportDomain(rule?.sni);
   return {
     name: String(rule?.name || "导入规则"),
     forwardType: normalizeRuleForwardType(rule?.forwardType),
     protocol: normalizeRuleProtocol(rule?.protocol),
     sourcePort: Number(rule?.sourcePort || 0),
+    ...(sni ? {
+      sni,
+      rateLimitMbps: Math.min(1_000_000, Math.max(0, Math.floor(Number(rule?.rateLimitMbps) || 0))),
+      maxConnections: Math.min(1_000_000, Math.max(0, Math.floor(Number(rule?.maxConnections) || 0))),
+    } : {}),
     targetIp: String(rule?.targetIp || ""),
     targetPort: Number(rule?.targetPort || 0),
     isEnabled: rule?.isEnabled !== false,
@@ -2647,24 +2657,29 @@ function RulesContent() {
     latestPortCheckRef.current += 1;
     setPortStatus("idle");
     setPortRangeError(null);
-    setForm((prev) => ({
-      ...prev,
-      routeMode: mode,
-      forwardType: nextForwardType,
-      tunnelId: mode === "tunnel" && nextTunnel ? Number(nextTunnel.id) : null,
-      forwardGroupId: usesForwardGroup && nextGroup ? Number(nextGroup.id) : null,
-      hostId: mode === "tunnel" && nextTunnel
-        ? nextTunnel.entryHostId
-        : usesForwardGroup
-        ? null
-        : availableTrafficBillingHosts.some((host: any) => Number(host.id) === Number(prev.hostId))
-        ? prev.hostId
-        : (Number(nextBillingHost?.id || 0) || null),
-      sni: mode === "chain" ? prev.sni : "",
-      protocol: mode === "chain" && prev.sni.trim() ? "tcp" : prev.protocol,
-      failoverEnabled: false,
-      failoverTargetsText: "",
-    }));
+    setForm((prev) => {
+      const nextSni = mode === "chain" || mode === "tunnel" || localUsesSavedForward ? prev.sni : "";
+      return {
+        ...prev,
+        routeMode: mode,
+        forwardType: nextForwardType,
+        tunnelId: mode === "tunnel" && nextTunnel ? Number(nextTunnel.id) : null,
+        forwardGroupId: usesForwardGroup && nextGroup ? Number(nextGroup.id) : null,
+        hostId: mode === "tunnel" && nextTunnel
+          ? nextTunnel.entryHostId
+          : usesForwardGroup
+          ? null
+          : availableTrafficBillingHosts.some((host: any) => Number(host.id) === Number(prev.hostId))
+          ? prev.hostId
+          : (Number(nextBillingHost?.id || 0) || null),
+        sni: nextSni,
+        rateLimitMbps: nextSni.trim() ? prev.rateLimitMbps : 0,
+        maxConnections: nextSni.trim() ? prev.maxConnections : 0,
+        protocol: nextSni.trim() ? "tcp" : prev.protocol,
+        failoverEnabled: false,
+        failoverTargetsText: "",
+      };
+    });
   };
   const toggleMutation = trpc.rules.toggle.useMutation({
     onSuccess: async (_data, variables) => {
@@ -2860,6 +2875,8 @@ function RulesContent() {
       forwardGroupId: rule.forwardGroupId || null,
       sourcePort: rule.sourcePort,
       sni: String(rule.sni || ""),
+      rateLimitMbps: Number(rule.rateLimitMbps || 0),
+      maxConnections: Number(rule.maxConnections || 0),
       targetIp: rule.targetIp,
       targetPort: rule.targetPort,
       telegramErrorNotifyEnabled: !!rule.telegramErrorNotifyEnabled,
@@ -3215,7 +3232,11 @@ function RulesContent() {
   const telegramBotReady = !!systemSettings?.telegram?.enabled && !!systemSettings?.telegram?.configured;
   const selectedForwardGroupIsChain = form.routeMode === "chain" || isForwardChainGroup(selectedForwardGroup);
   const selectedForwardGroupIsPort = normalizeForwardGroupModeForRule(selectedForwardGroup) === "port";
-  const canConfigureSni = user?.role === "admin" && selectedForwardGroupIsChain;
+  const canConfigureSni = user?.role === "admin" && (
+    selectedForwardGroupIsChain
+    || (form.routeMode === "local" && selectedForwardGroupIsPort)
+    || form.routeMode === "tunnel"
+  );
   const sniProtocolLocked = canConfigureSni && form.sni.trim().length > 0;
   const effectiveFormProtocol = sniProtocolLocked ? "tcp" : form.protocol;
   const mainBackupForwardType = effectiveRouteForwardType;
@@ -3234,7 +3255,8 @@ function RulesContent() {
     && user?.role === "admin"
     && form.routeMode === "local"
     && !selectedForwardGroupIsPort;
-  const canUseMainBackup = !selectedForwardGroupIsChain
+  const canUseMainBackup = !sniProtocolLocked
+    && !selectedForwardGroupIsChain
     && (
       (mainBackupUsesTunnelRoute && mainBackupForwardType === "gost" && mainBackupIsTunnelRoute)
       || mainBackupPortForwardSupported
@@ -3290,6 +3312,7 @@ function RulesContent() {
         sourcePort,
         excludeRuleId: editingId || undefined,
         protocol: effectiveFormProtocol,
+        sni: canConfigureSni ? form.sni.trim() || null : null,
       });
       if (latestPortCheckRef.current !== checkId) return;
       setPortRangeError(result.used ? result.reason ?? null : null);
@@ -3298,13 +3321,13 @@ function RulesContent() {
       if (latestPortCheckRef.current !== checkId) return;
       setPortStatus("idle");
     }
-  }, [form.forwardGroupId, form.hostId, effectiveFormProtocol, form.routeMode, form.sourcePort, form.tunnelId, editingId, utils, selectedEntryPortPolicy, isForwardGroupRouteMode]);
+  }, [form.forwardGroupId, form.hostId, form.sni, effectiveFormProtocol, form.routeMode, form.sourcePort, form.tunnelId, editingId, utils, selectedEntryPortPolicy, isForwardGroupRouteMode, canConfigureSni]);
 
   // A response started for the previous route must not mark the new route occupied.
   useEffect(() => {
     latestPortCheckRef.current += 1;
     setPortStatus("idle");
-  }, [editingId, form.forwardGroupId, form.hostId, effectiveFormProtocol, form.routeMode, form.sourcePort, form.tunnelId, isForwardGroupRouteMode]);
+  }, [editingId, form.forwardGroupId, form.hostId, form.sni, effectiveFormProtocol, form.routeMode, form.sourcePort, form.tunnelId, isForwardGroupRouteMode]);
 
   // 源端口变化时自动检测
   useEffect(() => {
@@ -3315,7 +3338,7 @@ function RulesContent() {
     } else {
       setPortStatus("idle");
     }
-  }, [form.sourcePort, form.forwardGroupId, form.hostId, effectiveFormProtocol, form.routeMode, form.tunnelId, checkPort, isForwardGroupRouteMode]);
+  }, [form.sourcePort, form.forwardGroupId, form.hostId, form.sni, effectiveFormProtocol, form.routeMode, form.tunnelId, checkPort, isForwardGroupRouteMode]);
 
   useEffect(() => {
     if (form.routeMode !== "local") return;
@@ -3801,6 +3824,14 @@ function RulesContent() {
       toast.error("目标端口必须在 1-65535 之间");
       return;
     }
+    if (submitSni && (!Number.isInteger(form.rateLimitMbps) || form.rateLimitMbps < 0 || form.rateLimitMbps > 1_000_000)) {
+      toast.error("规则限速必须是 0-1000000 之间的整数");
+      return;
+    }
+    if (submitSni && (!Number.isInteger(form.maxConnections) || form.maxConnections < 0 || form.maxConnections > 1_000_000)) {
+      toast.error("最大连接数必须是 0-1000000 之间的整数");
+      return;
+    }
     if (form.telegramErrorNotifyEnabled && !telegramBotReady) {
       toast.error("请先在系统设置中配置并启用 Telegram 机器人，再开启异常TG提醒");
       return;
@@ -3874,6 +3905,8 @@ function RulesContent() {
         forwardGroupId: isForwardGroupRouteMode ? form.forwardGroupId : null,
         sourcePort: form.sourcePort,
         sni: submitSniPayload,
+        rateLimitMbps: submitSni ? form.rateLimitMbps : 0,
+        maxConnections: submitSni ? form.maxConnections : 0,
         isEnabled: portStatus === "available" ? true : undefined,
         targetIp: form.targetIp,
         targetPort: form.targetPort,
@@ -3893,6 +3926,8 @@ function RulesContent() {
         forwardGroupId: isForwardGroupRouteMode ? form.forwardGroupId : null,
         sourcePort: form.sourcePort,
         sni: submitSniPayload,
+        rateLimitMbps: submitSni ? form.rateLimitMbps : 0,
+        maxConnections: submitSni ? form.maxConnections : 0,
         targetIp: form.targetIp,
         targetPort: form.targetPort,
         telegramErrorNotifyEnabled: form.telegramErrorNotifyEnabled,
@@ -5577,6 +5612,8 @@ function RulesContent() {
       forwardGroupId: importScopeType === "tunnel" ? null : resourceId,
       sourcePort: rule.sourcePort,
       sni: sni || null,
+      rateLimitMbps: sni ? Number(rule.rateLimitMbps || 0) : 0,
+      maxConnections: sni ? Number(rule.maxConnections || 0) : 0,
       targetIp: rule.targetIp,
       targetPort: rule.targetPort,
       isEnabled: rule.isEnabled,
@@ -7672,7 +7709,8 @@ function RulesContent() {
                         onValueChange={(v) => {
                           const nextGroupId = Number(v);
                           const group = nextGroupId ? forwardGroupById.get(nextGroupId) : null;
-                          const nextSni = user?.role === "admin" && isForwardChainGroup(group) ? form.sni : "";
+                          const groupSupportsSni = isForwardChainGroup(group) || normalizeForwardGroupModeForRule(group) === "port";
+                          const nextSni = user?.role === "admin" && groupSupportsSni ? form.sni : "";
                           setForm({
                             ...form,
                             forwardGroupId: nextGroupId,
@@ -7681,7 +7719,9 @@ function RulesContent() {
                             hostId: null,
                             tunnelId: null,
                             sni: nextSni,
-                            failoverEnabled: isForwardChainGroup(group) ? false : form.failoverEnabled,
+                            rateLimitMbps: nextSni.trim() ? form.rateLimitMbps : 0,
+                            maxConnections: nextSni.trim() ? form.maxConnections : 0,
+                            failoverEnabled: nextSni.trim() ? false : isForwardChainGroup(group) ? false : form.failoverEnabled,
                           });
                         }}
                       >
@@ -7904,10 +7944,40 @@ function RulesContent() {
                         sni: nextSni,
                         protocol: nextSni.trim() ? "tcp" : form.protocol,
                         failoverEnabled: nextSni.trim() ? false : form.failoverEnabled,
+                        rateLimitMbps: nextSni.trim() ? form.rateLimitMbps : 0,
+                        maxConnections: nextSni.trim() ? form.maxConnections : 0,
                       });
                     }}
                   />
                 </div>
+              )}
+              {sniProtocolLocked && (
+                <>
+                  <div className="space-y-2">
+                    <Label>规则限速 Mbps</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      max={1_000_000}
+                      step={1}
+                      value={form.rateLimitMbps || ""}
+                      placeholder="0"
+                      onChange={(e) => setForm({ ...form, rateLimitMbps: parseInt(e.target.value) || 0 })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>最大连接数</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      max={1_000_000}
+                      step={1}
+                      value={form.maxConnections || ""}
+                      placeholder="0"
+                      onChange={(e) => setForm({ ...form, maxConnections: parseInt(e.target.value) || 0 })}
+                    />
+                  </div>
+                </>
               )}
               <div className="space-y-2 sm:col-span-2">
                 <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(220px,0.9fr)] sm:items-end">

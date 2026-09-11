@@ -33,6 +33,7 @@ import {
 import { resolveRuleProxyProtocolOptions } from "../gostProxyProtocol";
 import { HOST_ONLINE_TTL_MS } from "../hostHeartbeatPolicy";
 import { LINK_PROBE_FRESH_MS, LINK_PROBE_MAX_FUTURE_SKEW_MS } from "../../shared/linkProbePolicy";
+import { getSniRuleGroupKey } from "../../shared/sni";
 
 function databaseBool(value: unknown, fallback = false) {
   if (value === undefined || value === null || value === "") return fallback;
@@ -42,11 +43,10 @@ function databaseBool(value: unknown, fallback = false) {
   return normalized === "1" || normalized === "true";
 }
 
-// The Agent uses the tunnel row's listener for the lowest-id active GOST
-// rule. Nginx Stream follows the same convention. Keep this predicate local
-// to the allocation repository so every writer applies the same ownership
-// rule; ForwardX has a separate endpoint allocator and is intentionally not
-// included here.
+// The Agent uses the tunnel row's listener for the lowest-id active runtime
+// unit. A normal GOST rule is one unit, while an SNI group is one shared unit.
+// Nginx Stream follows the same convention. ForwardX has a separate endpoint
+// allocator and is intentionally not included here.
 const SHARED_TUNNEL_PRIMARY_LISTENER_MODES = new Set([
   "tls",
   "wss",
@@ -59,6 +59,49 @@ const SHARED_TUNNEL_PRIMARY_LISTENER_MODES = new Set([
 
 export function usesSharedTunnelPrimaryListener(tunnel: any) {
   return SHARED_TUNNEL_PRIMARY_LISTENER_MODES.has(String(tunnel?.mode || "").trim().toLowerCase());
+}
+
+function managedTunnelRuleUnits(
+  rules: any[],
+  options: { includeTunnelDisabled?: boolean } = {},
+) {
+  const candidates = rules
+    .filter((rule) => (
+      rule
+      && !databaseBool(rule.pendingDelete)
+      && !databaseBool(rule.isForwardGroupTemplate)
+      && (databaseBool(rule.isEnabled)
+        || (options.includeTunnelDisabled && databaseBool(rule.disabledByTunnel)))
+      && String(rule.forwardType || "").trim().toLowerCase() === "gost"
+    ))
+    .sort((left, right) => Number(left.id || 0) - Number(right.id || 0));
+  const units: any[][] = [];
+  const sniUnits = new Map<string, any[]>();
+  for (const rule of candidates) {
+    const sniGroupKey = getSniRuleGroupKey(rule);
+    if (!sniGroupKey) {
+      units.push([rule]);
+      continue;
+    }
+    const unit = sniUnits.get(sniGroupKey);
+    if (unit) {
+      unit.push(rule);
+      continue;
+    }
+    const nextUnit = [rule];
+    sniUnits.set(sniGroupKey, nextUnit);
+    units.push(nextUnit);
+  }
+  return units;
+}
+
+export function primaryManagedTunnelRuleIds(
+  rules: any[],
+  options: { includeTunnelDisabled?: boolean } = {},
+) {
+  return (managedTunnelRuleUnits(rules, options)[0] || [])
+    .map((rule) => Number(rule.id || 0))
+    .filter((ruleId) => ruleId > 0);
 }
 
 /**
@@ -1065,32 +1108,26 @@ export async function reserveTunnelListenerPort(
   if (excludeRuleIds == null && tunnelId > 0) {
     const db = await getDb();
     if (db) {
-      // A tunnel listener may be shared by the Agent's primary GOST rule,
-      // but secondary rules still own independent exit ports.  Excluding all
+      // A tunnel listener may be shared by the Agent's primary runtime unit,
+      // but secondary units still own independent exit ports. Excluding all
       // rules here (the old fallback) made a stale secondary exit port
       // invisible during listener allocation and allowed a collision.  Only
-      // exempt the lowest-id active GOST rule, which is the same primary
-      // convention used by the Agent runtime.
+      // exempt the lowest-id active runtime unit, including every rule in a
+      // primary SNI group.
       const rows = await db.select({
         id: forwardRules.id,
+        tunnelId: forwardRules.tunnelId,
+        sourcePort: forwardRules.sourcePort,
+        sni: forwardRules.sni,
         isEnabled: forwardRules.isEnabled,
+        disabledByTunnel: forwardRules.disabledByTunnel,
         pendingDelete: forwardRules.pendingDelete,
         isForwardGroupTemplate: forwardRules.isForwardGroupTemplate,
         forwardType: forwardRules.forwardType,
       })
         .from(forwardRules)
         .where(eq(forwardRules.tunnelId, tunnelId));
-      const primaryId = (rows as any[])
-        .filter((row) => (
-          !databaseBool(row.pendingDelete)
-          && !databaseBool(row.isForwardGroupTemplate)
-          && databaseBool(row.isEnabled)
-          && String(row.forwardType || "").trim().toLowerCase() === "gost"
-        ))
-        .map((row) => Number(row.id || 0))
-        .filter((id) => Number.isInteger(id) && id > 0)
-        .sort((left, right) => left - right)[0];
-      excludeRuleIds = primaryId ? [primaryId] : [];
+      excludeRuleIds = primaryManagedTunnelRuleIds(rows as any[]);
     }
   }
   const host = await getHostById(hostId) as any;
@@ -1216,9 +1253,9 @@ export async function ensureTunnelListenerPortPolicy(
 /**
  * Keep the persisted references that share a tunnel listener in sync after a
  * listener repair. The final multi-hop row always follows the tunnel
- * listener. The Agent also uses the listener for the lowest-id active GOST
- * rule (for every GOST transport, plus nginx_stream), so that primary rule
- * must follow it as well.
+ * listener. The Agent also uses the listener for the lowest-id active runtime
+ * unit for every GOST transport plus nginx_stream, so every rule in that
+ * primary unit must follow it as well.
  */
 export async function syncTunnelListenerPortReferences(
   tunnelIdValue: number,
@@ -1243,25 +1280,22 @@ export async function syncTunnelListenerPortReferences(
   if (!options.syncSharedPrimaryRule) return;
   const rules = await db.select({
     id: forwardRules.id,
+    tunnelId: forwardRules.tunnelId,
+    sourcePort: forwardRules.sourcePort,
+    sni: forwardRules.sni,
     isEnabled: forwardRules.isEnabled,
+    disabledByTunnel: forwardRules.disabledByTunnel,
     pendingDelete: forwardRules.pendingDelete,
     isForwardGroupTemplate: forwardRules.isForwardGroupTemplate,
     forwardType: forwardRules.forwardType,
   }).from(forwardRules).where(eq(forwardRules.tunnelId, tunnelId));
-  const primary = (rules as any[])
-    .filter((rule) => (
-      !databaseBool(rule.pendingDelete)
-      && !databaseBool(rule.isForwardGroupTemplate)
-      && databaseBool(rule.isEnabled)
-      && String(rule.forwardType || "").trim().toLowerCase() === "gost"
-    ))
-    .sort((left, right) => Number(left.id) - Number(right.id))[0];
-  if (primary) {
+  const primaryRuleIds = primaryManagedTunnelRuleIds(rules as any[]);
+  if (primaryRuleIds.length > 0) {
     await db.update(forwardRules).set({
       tunnelExitPort: listenPort,
       isRunning: false,
       updatedAt: nowDate(),
-    } as any).where(eq(forwardRules.id, Number(primary.id)));
+    } as any).where(inArray(forwardRules.id, primaryRuleIds));
   }
 }
 
@@ -1271,20 +1305,22 @@ export async function syncTunnelListenerPortReferences(
  * `tunnelExitPort` is persisted on the entry rule, but it is a listener on
  * the tunnel's exit Agent.  Moving a tunnel to another Agent (or repairing
  * its listener after a NAT policy change) therefore makes the old value only
- * a preference.  Keep disabled, pending-delete and template rows untouched;
- * they are not part of the Agent data plane and rotating them can create
- * surprising conflicts when they are restored later.
+ * a preference. Pending-delete and template rows stay untouched. Disabled
+ * rows normally stay untouched as well; callers restoring a tunnel can opt
+ * into reconciling rows marked `disabledByTunnel` before they are enabled.
  *
  * GOST and Nginx Stream have one shared primary listener per tunnel. The
- * lowest-id active GOST rule is the runtime primary and must point at
- * `tunnel.listenPort`; all other active GOST rules receive independent exit
- * ports. Load-balanced mapping rows are reconciled separately.
+ * lowest-id active runtime unit is the primary and must point at
+ * `tunnel.listenPort`. A normal rule is one unit, while all SNI rules with the
+ * same tunnel and source port form one unit and share an exit port.
  */
 export async function reconcileTunnelRulePrimaryExitPorts(
   tunnelInput: any,
   options: {
     hostId?: number;
     listenPort?: number;
+    includeTunnelDisabledRules?: boolean;
+    reconcileSniSplitterPorts?: boolean;
     /**
      * Reservations held by the surrounding tunnel update. The primary
      * managed GOST/Nginx rule may reuse the tunnel listener reservation;
@@ -1299,9 +1335,7 @@ export async function reconcileTunnelRulePrimaryExitPorts(
   if (!Number.isInteger(tunnelId) || tunnelId <= 0) return { processed: 0, changed: 0 };
   const tunnel = await getTunnelById(tunnelId) || tunnelInput;
   const mode = String(tunnel?.mode || "").trim().toLowerCase();
-  // ForwardX does not use forwardRules.tunnelExitPort for its transport; its
-  // endpoint/mimic state is reconciled by the dedicated ForwardX paths.
-  if (!tunnel || mode === "forwardx") return { processed: 0, changed: 0 };
+  if (!tunnel) return { processed: 0, changed: 0 };
   const hostId = Number(options.hostId || tunnel?.exitHostId || 0);
   const listenPort = Number(options.listenPort ?? tunnel?.listenPort ?? 0);
   if (!Number.isInteger(hostId) || hostId <= 0) return { processed: 0, changed: 0 };
@@ -1310,16 +1344,17 @@ export async function reconcileTunnelRulePrimaryExitPorts(
   const rules = (await getForwardRulesByTunnel(tunnelId) as any[])
     .filter((rule) => (
       rule
-      && !databaseBool(rule.pendingDelete)
-      && !databaseBool(rule.isForwardGroupTemplate)
-      && databaseBool(rule.isEnabled)
-      && String(rule.forwardType || "").trim().toLowerCase() === "gost"
-    ))
-    .sort((left, right) => Number(left.id || 0) - Number(right.id || 0));
-  if (rules.length === 0) return { processed: 0, changed: 0 };
+      && (mode !== "forwardx" || !!getSniRuleGroupKey(rule))
+    ));
+  const units = managedTunnelRuleUnits(rules, {
+    includeTunnelDisabled: options.includeTunnelDisabledRules,
+  });
+  if (units.length === 0) return { processed: 0, changed: 0 };
 
-  const activeRuleIds = rules.map((rule) => Number(rule.id || 0)).filter((id) => id > 0);
-  const sharedPrimaryId = usesSharedTunnelPrimaryListener(tunnel) ? activeRuleIds[0] || 0 : 0;
+  const activeRuleIds = units
+    .flatMap((unit) => unit.map((rule) => Number(rule.id || 0)))
+    .filter((id) => id > 0);
+  const sharedPrimaryUnit = usesSharedTunnelPrimaryListener(tunnel) ? units[0] || null : null;
   const reservedPorts: number[] = [];
   const heldReservations: HostPortReservation[] = [];
   const callerReservations = Array.isArray(options.reservations)
@@ -1341,11 +1376,13 @@ export async function reconcileTunnelRulePrimaryExitPorts(
   if (!db) return { processed: 0, changed: 0 };
 
   try {
-    for (const rule of rules) {
-      const ruleId = Number(rule.id || 0);
-      if (!Number.isInteger(ruleId) || ruleId <= 0) continue;
-      const isSharedPrimary = sharedPrimaryId > 0 && ruleId === sharedPrimaryId;
-      const previousPort = Number(rule.tunnelExitPort || 0);
+    for (const unit of units) {
+      const unitRuleIds = unit.map((rule) => Number(rule.id || 0)).filter((id) => id > 0);
+      if (unitRuleIds.length === 0) continue;
+      const isSharedPrimary = unit === sharedPrimaryUnit;
+      const previousPort = unit
+        .map((rule) => Number(rule.tunnelExitPort || 0))
+        .find((port) => Number.isInteger(port) && port > 0 && port <= 65535) || 0;
       const preferredPort = isSharedPrimary ? listenPort : previousPort;
       if (isSharedPrimary && preferredPort <= 0) {
         throw new Error("隧道缺少有效的出口监听端口");
@@ -1402,15 +1439,44 @@ export async function reconcileTunnelRulePrimaryExitPorts(
       if (isSharedPrimary && nextPort !== preferredPort) {
         throw new Error(`隧道监听端口 ${preferredPort} 无法复用`);
       }
-      if (nextPort === previousPort) continue;
+      let nextSplitterPort: number | null = null;
+      if (options.reconcileSniSplitterPorts && getSniRuleGroupKey(unit[0])) {
+        const previousSplitterPort = unit
+          .map((rule) => Number(rule.sniSplitterPort || 0))
+          .find((port) => Number.isInteger(port) && port > 0 && port <= 65535) || 0;
+        const splitterReservation = await reserveTunnelExitPort({
+          hostId,
+          preferredStart: host.portRangeStart,
+          preferredEnd: host.portRangeEnd,
+          currentPort: previousSplitterPort,
+          reservedPorts,
+          excludeRuleIds: activeRuleIds,
+          protocol: "both",
+        });
+        if (!splitterReservation) {
+          throw new Error(`出口 Agent ${host.name || hostId} 已无可用 SNI 分流器端口`);
+        }
+        heldReservations.push(splitterReservation);
+        nextSplitterPort = Number(splitterReservation.port);
+        if (!reservedPorts.includes(nextSplitterPort)) reservedPorts.push(nextSplitterPort);
+      }
+      const changedRuleIds = unit
+        .filter((rule) => (
+          Number(rule.tunnelExitPort || 0) !== nextPort
+          || (nextSplitterPort !== null && Number(rule.sniSplitterPort || 0) !== nextSplitterPort)
+        ))
+        .map((rule) => Number(rule.id || 0))
+        .filter((id) => id > 0);
+      if (changedRuleIds.length === 0) continue;
       await db.update(forwardRules).set({
         tunnelExitPort: nextPort,
+        ...(nextSplitterPort !== null ? { sniSplitterPort: nextSplitterPort } : {}),
         isRunning: false,
         updatedAt: nowDate(),
-      } as any).where(eq(forwardRules.id, ruleId));
-      changed += 1;
+      } as any).where(inArray(forwardRules.id, changedRuleIds));
+      changed += changedRuleIds.length;
     }
-    return { processed: rules.length, changed };
+    return { processed: activeRuleIds.length, changed };
   } finally {
     releaseHostPortReservations(heldReservations);
   }
@@ -1679,7 +1745,6 @@ async function getUsedSniSplitterPortsOnHost(hostId: number, excludeRuleIds: num
       .filter((id) => Number.isInteger(id) && id > 0),
   ));
   const conds: any[] = [
-    eq(forwardGroups.groupMode, "chain"),
     eq(forwardRules.isForwardGroupTemplate, false),
     eq(forwardRules.isEnabled, true),
     eq(forwardRules.pendingDelete, false),
@@ -1692,6 +1757,7 @@ async function getUsedSniSplitterPortsOnHost(hostId: number, excludeRuleIds: num
   const rows = await db.select({
     ruleId: forwardRules.id,
     groupId: forwardRules.forwardGroupId,
+    groupMode: forwardGroups.groupMode,
     port: forwardRules.sniSplitterPort,
     memberId: forwardGroupMembers.id,
     memberType: forwardGroupMembers.memberType,
@@ -1706,6 +1772,8 @@ async function getUsedSniSplitterPortsOnHost(hostId: number, excludeRuleIds: num
 
   const exitHostByGroup = new Map<number, { hostId: number; priority: number; memberId: number }>();
   for (const row of rows as any[]) {
+    const groupMode = String(row.groupMode || "");
+    if (groupMode !== "chain" && groupMode !== "port") continue;
     if (String(row.memberType || "") !== "host" || !databaseBool(row.memberEnabled)) continue;
     const groupId = Number(row.groupId || 0);
     const memberHostId = Number(row.memberHostId || 0);
@@ -1720,9 +1788,32 @@ async function getUsedSniSplitterPortsOnHost(hostId: number, excludeRuleIds: num
 
   const used = new Set<number>();
   for (const row of rows as any[]) {
+    const groupMode = String(row.groupMode || "");
+    if (groupMode !== "chain" && groupMode !== "port") continue;
     const groupId = Number(row.groupId || 0);
     const exitHost = exitHostByGroup.get(groupId);
     if (!exitHost || exitHost.hostId !== Number(hostId)) continue;
+    const port = Number(row.port || 0);
+    if (Number.isInteger(port) && port >= 1 && port <= 65535) used.add(port);
+  }
+  const tunnelConds: any[] = [
+    eq(tunnels.exitHostId, hostId),
+    eq(forwardRules.isForwardGroupTemplate, false),
+    eq(forwardRules.isEnabled, true),
+    eq(forwardRules.pendingDelete, false),
+    sql`${forwardRules.tunnelId} IS NOT NULL`,
+    sql`TRIM(COALESCE(${forwardRules.sni}, '')) <> ''`,
+    sql`${forwardRules.sniSplitterPort} IS NOT NULL`,
+    sql`${forwardRules.sniSplitterPort} > 0`,
+  ];
+  if (excludedIds.length > 0) {
+    tunnelConds.push(sql`${forwardRules.id} NOT IN (${sql.join(excludedIds.map((id) => sql`${id}`), sql`, `)})`);
+  }
+  const tunnelRows = await db.select({ port: forwardRules.sniSplitterPort })
+    .from(forwardRules)
+    .innerJoin(tunnels, eq(forwardRules.tunnelId, tunnels.id))
+    .where(and(...tunnelConds));
+  for (const row of tunnelRows as any[]) {
     const port = Number(row.port || 0);
     if (Number.isInteger(port) && port >= 1 && port <= 65535) used.add(port);
   }
@@ -2479,11 +2570,10 @@ export async function reconcileForwardRuleTunnelExits(
   if (!ruleId || !tunnelId) return [];
   return withKeyedTaskLock(`rule-tunnel-exits:${ruleId}`, async () => {
   /*
-   * The lowest-id active GOST rule is the primary route for every managed
-   * GOST/Nginx tunnel (the same convention used by the Agent), so its
-   * bookkeeping port must always follow the tunnel endpoint's listenPort.
-   * Reconcile it here as well as secondary mappings so every call site shares
-   * the same invariant.
+   * The lowest-id active runtime unit is the primary route for every managed
+   * GOST/Nginx tunnel. A normal rule is one unit; SNI rules with the same
+   * tunnel and source port form one shared unit. Every rule in the primary
+   * unit must follow the tunnel endpoint's listenPort.
    *
    * Values read from SQLite/MySQL are not guaranteed to have the same boolean
    * representation. Do not use a double-negation for active-rule selection:
@@ -2509,12 +2599,11 @@ export async function reconcileForwardRuleTunnelExits(
       && String(rule?.forwardType || "gost").trim().toLowerCase() === "gost") {
       candidates.push(rule);
     }
-    const primaryRule = candidates
-      .filter((candidate) => Number(candidate?.id || 0) > 0)
-      .sort((left, right) => Number(left.id) - Number(right.id))[0];
-    if (primaryRule && Number(primaryRule.id) === ruleId) {
+    const primaryRuleIds = primaryManagedTunnelRuleIds(candidates);
+    if (primaryRuleIds.includes(ruleId)) {
       const endpointListenPort = Number((tunnel as any)?.listenPort || 0);
-      if (endpointListenPort > 0 && Number(rule?.tunnelExitPort || 0) !== endpointListenPort) {
+      const primaryRules = candidates.filter((candidate) => primaryRuleIds.includes(Number(candidate?.id || 0)));
+      if (endpointListenPort > 0 && primaryRules.some((candidate) => Number(candidate?.tunnelExitPort || 0) !== endpointListenPort)) {
         const db = await getDb();
         if (db) {
           await db.update(forwardRules).set({
@@ -2522,7 +2611,7 @@ export async function reconcileForwardRuleTunnelExits(
             // Force the normal runtime refresh after repairing stale data.
             isRunning: false,
             updatedAt: nowDate(),
-          } as any).where(eq(forwardRules.id, ruleId));
+          } as any).where(inArray(forwardRules.id, primaryRuleIds));
         }
         // Callers consume this object later in the same heartbeat.
         rule.tunnelExitPort = endpointListenPort;
