@@ -135,7 +135,7 @@ const (
 	fxpUDPIdleTimeout    = 5 * time.Minute
 	fxpProtocolSampleMax = 512
 	fxpMasterContext     = "forwardx-fxp-v2 master"
-	fxpRuntimeVersion    = "2.2.117"
+	fxpRuntimeVersion    = "2.2.118"
 	fxpFallbackRetry     = 5 * time.Second
 	fxpFallbackDial      = 3 * time.Second
 	fxpShutdownDrain     = 5 * time.Second
@@ -553,6 +553,8 @@ func main() {
 		err = runEntry(ctx.done, cfg)
 	case "entry-group":
 		err = runEntryGroup(ctx.done, cfg)
+	case "sni-splitter":
+		err = runSniSplitter(ctx.done, cfg)
 	case "exit":
 		err = runExit(ctx.done, cfg)
 	case "relay":
@@ -893,6 +895,367 @@ func runEntryGroup(done <-chan struct{}, cfg config) error {
 		}
 	}
 	return firstErr
+}
+
+const sniSplitterMaxClientHello = 64 * 1024
+
+var sniSplitterReadTimeout = 2 * time.Second
+
+type sniRouteRuntime struct {
+	route      sniRoute
+	gate       *connGate
+	inLimiter  *limiter
+	outLimiter *limiter
+}
+
+type sniSplitterConnSet struct {
+	mu    sync.Mutex
+	conns map[net.Conn]struct{}
+}
+
+func newSNISplitterConnSet() *sniSplitterConnSet {
+	return &sniSplitterConnSet{conns: map[net.Conn]struct{}{}}
+}
+
+func (set *sniSplitterConnSet) add(conn net.Conn) func() {
+	if set == nil || conn == nil {
+		return func() {}
+	}
+	set.mu.Lock()
+	set.conns[conn] = struct{}{}
+	set.mu.Unlock()
+	return func() {
+		set.mu.Lock()
+		delete(set.conns, conn)
+		set.mu.Unlock()
+	}
+}
+
+func (set *sniSplitterConnSet) closeAll() {
+	if set == nil {
+		return
+	}
+	set.mu.Lock()
+	conns := make([]net.Conn, 0, len(set.conns))
+	for conn := range set.conns {
+		conns = append(conns, conn)
+	}
+	set.mu.Unlock()
+	for _, conn := range conns {
+		_ = conn.Close()
+	}
+}
+
+func buildSNIRouteRuntimeMap(routes []sniRoute) map[string]*sniRouteRuntime {
+	bySNI := make(map[string]*sniRouteRuntime, len(routes))
+	for _, route := range routes {
+		sni := normalizeSNIName(route.SNI)
+		if sni == "" {
+			continue
+		}
+		route.SNI = sni
+		bySNI[sni] = &sniRouteRuntime{
+			route:      route,
+			gate:       newConnGate(route.MaxConnections, route.MaxIPs),
+			inLimiter:  newLimiter(route.LimitIn),
+			outLimiter: newLimiter(route.LimitOut),
+		}
+	}
+	return bySNI
+}
+
+func runSniSplitter(done <-chan struct{}, cfg config) error {
+	routes := buildSNIRouteRuntimeMap(cfg.SNIRoutes)
+	ln, err := listenTCP(cfg.ListenHost, cfg.ListenPort, cfg.TCPFastOpen)
+	if err != nil {
+		return fmt.Errorf("sni-splitter tcp listen :%d: %w", cfg.ListenPort, err)
+	}
+	log.Printf("sni-splitter tcp listening on :%d routes=%d", cfg.ListenPort, len(routes))
+
+	var sessionWG sync.WaitGroup
+	active := newSNISplitterConnSet()
+	errCh := make(chan error, 1)
+	go func() {
+		errCh <- acceptSniSplitterTCP(ln, cfg, routes, &sessionWG, active)
+	}()
+
+	select {
+	case <-done:
+		_ = ln.Close()
+		active.closeAll()
+		waitForFXPSessionDrain("sni-splitter", cfg, &sessionWG)
+		err := <-errCh
+		if err != nil && !errors.Is(err, net.ErrClosed) {
+			return err
+		}
+		return nil
+	case err := <-errCh:
+		active.closeAll()
+		waitForFXPSessionDrain("sni-splitter", cfg, &sessionWG)
+		return err
+	}
+}
+
+func acceptSniSplitterTCP(ln net.Listener, cfg config, routes map[string]*sniRouteRuntime, sessionWG *sync.WaitGroup, active *sniSplitterConnSet) error {
+	for {
+		client, err := ln.Accept()
+		if err != nil {
+			return err
+		}
+		enableTCPKeepAlive(client)
+		removeActive := active.add(client)
+		sessionWG.Add(1)
+		go func() {
+			defer sessionWG.Done()
+			defer removeActive()
+			if err := handleSniSplitterTCP(client, cfg, routes); err != nil && !isClosedErr(err) {
+				log.Printf("sni-splitter tcp session error: %v", err)
+			}
+		}()
+	}
+}
+
+func handleSniSplitterTCP(client net.Conn, cfg config, routes map[string]*sniRouteRuntime) error {
+	defer client.Close()
+	sni, ech, hello, err := readClientHelloForSNI(client, sniSplitterReadTimeout, sniSplitterMaxClientHello)
+	if err != nil {
+		return err
+	}
+	if ech || sni == "" {
+		return nil
+	}
+	runtime := routes[normalizeSNIName(sni)]
+	if runtime == nil {
+		return nil
+	}
+	release, ok, reason := runtime.gate.acquire(client.RemoteAddr())
+	if !ok {
+		active, ips, connectionsForIP := runtime.gate.statsFor(client.RemoteAddr())
+		log.Printf("sni-splitter tcp rejected by connection gate rule=%d client=%s reason=%s active=%d maxConnections=%d distinctIPs=%d connectionsForIP=%d maxIPs=%d", runtime.route.RuleID, client.RemoteAddr(), reason, active, runtime.route.MaxConnections, ips, connectionsForIP, runtime.route.MaxIPs)
+		return nil
+	}
+	defer release()
+	target, err := dialTCP(runtime.route.TargetIP, runtime.route.TargetPort, 10*time.Second)
+	if err != nil {
+		return fmt.Errorf("dial sni route %s target: %w", runtime.route.SNI, err)
+	}
+	defer target.Close()
+	if len(hello) > 0 {
+		runtime.inLimiter.wait(len(hello))
+		if err := writeAll(target, hello); err != nil {
+			return err
+		}
+	}
+	fxpVerbosef("sni-splitter tcp routed rule=%d listen=%d client=%s sni=%s target=%s:%d", runtime.route.RuleID, cfg.ListenPort, client.RemoteAddr(), runtime.route.SNI, runtime.route.TargetIP, runtime.route.TargetPort)
+	return proxyPlainTCP(client, target, runtime.inLimiter, runtime.outLimiter)
+}
+
+func readClientHelloForSNI(conn net.Conn, timeout time.Duration, maxBytes int) (string, bool, []byte, error) {
+	if maxBytes <= 0 {
+		maxBytes = sniSplitterMaxClientHello
+	}
+	if timeout > 0 {
+		_ = conn.SetReadDeadline(time.Now().Add(timeout))
+		defer conn.SetReadDeadline(time.Time{})
+	}
+	header := make([]byte, 5)
+	if _, err := io.ReadFull(conn, header); err != nil {
+		return "", false, nil, err
+	}
+	if header[0] != 0x16 {
+		return "", false, header, errors.New("not a TLS handshake record")
+	}
+	recordLen := int(binary.BigEndian.Uint16(header[3:5]))
+	if recordLen <= 0 || recordLen+len(header) > maxBytes {
+		return "", false, header, errors.New("invalid TLS record length")
+	}
+	hello := make([]byte, 5+recordLen)
+	copy(hello, header)
+	if _, err := io.ReadFull(conn, hello[5:]); err != nil {
+		return "", false, hello[:5], err
+	}
+	sni, ech, err := parseClientHelloSNI(hello)
+	if err != nil {
+		return "", false, hello, err
+	}
+	return sni, ech, hello, nil
+}
+
+func parseClientHelloSNI(hello []byte) (string, bool, error) {
+	if len(hello) < 9 {
+		return "", false, errors.New("TLS record too short")
+	}
+	if hello[0] != 0x16 {
+		return "", false, errors.New("not a TLS handshake record")
+	}
+	recordEnd := 5 + int(binary.BigEndian.Uint16(hello[3:5]))
+	if recordEnd > len(hello) {
+		return "", false, errors.New("incomplete TLS record")
+	}
+	if hello[5] != 0x01 {
+		return "", false, errors.New("not a TLS ClientHello")
+	}
+	handshakeLen := tlsUint24(hello[6:9])
+	pos := 9
+	handshakeEnd := pos + handshakeLen
+	if handshakeEnd > recordEnd {
+		return "", false, errors.New("incomplete TLS ClientHello")
+	}
+	if pos+34 > handshakeEnd {
+		return "", false, errors.New("short TLS ClientHello header")
+	}
+	pos += 34
+	if pos >= handshakeEnd {
+		return "", false, errors.New("missing TLS session id")
+	}
+	sessionLen := int(hello[pos])
+	pos++
+	if pos+sessionLen > handshakeEnd {
+		return "", false, errors.New("invalid TLS session id length")
+	}
+	pos += sessionLen
+	if pos+2 > handshakeEnd {
+		return "", false, errors.New("missing TLS cipher suites")
+	}
+	cipherLen := int(binary.BigEndian.Uint16(hello[pos : pos+2]))
+	pos += 2
+	if cipherLen <= 0 || pos+cipherLen > handshakeEnd {
+		return "", false, errors.New("invalid TLS cipher suites length")
+	}
+	pos += cipherLen
+	if pos >= handshakeEnd {
+		return "", false, errors.New("missing TLS compression methods")
+	}
+	compressionLen := int(hello[pos])
+	pos++
+	if compressionLen <= 0 || pos+compressionLen > handshakeEnd {
+		return "", false, errors.New("invalid TLS compression methods length")
+	}
+	pos += compressionLen
+	if pos == handshakeEnd {
+		return "", false, nil
+	}
+	if pos+2 > handshakeEnd {
+		return "", false, errors.New("missing TLS extensions length")
+	}
+	extensionsLen := int(binary.BigEndian.Uint16(hello[pos : pos+2]))
+	pos += 2
+	extensionsEnd := pos + extensionsLen
+	if extensionsEnd > handshakeEnd {
+		return "", false, errors.New("invalid TLS extensions length")
+	}
+	var sni string
+	ech := false
+	for pos < extensionsEnd {
+		if pos+4 > extensionsEnd {
+			return "", false, errors.New("truncated TLS extension header")
+		}
+		extensionType := binary.BigEndian.Uint16(hello[pos : pos+2])
+		extensionLen := int(binary.BigEndian.Uint16(hello[pos+2 : pos+4]))
+		pos += 4
+		if pos+extensionLen > extensionsEnd {
+			return "", false, errors.New("truncated TLS extension payload")
+		}
+		extensionData := hello[pos : pos+extensionLen]
+		pos += extensionLen
+		switch extensionType {
+		case 0x0000:
+			name, err := parseServerNameExtension(extensionData)
+			if err != nil {
+				return "", false, err
+			}
+			if name != "" {
+				sni = name
+			}
+		case 0xfe0d:
+			ech = true
+		}
+	}
+	if pos != extensionsEnd {
+		return "", false, errors.New("invalid TLS extensions cursor")
+	}
+	return sni, ech, nil
+}
+
+func parseServerNameExtension(data []byte) (string, error) {
+	if len(data) < 2 {
+		return "", errors.New("short TLS server_name extension")
+	}
+	listLen := int(binary.BigEndian.Uint16(data[0:2]))
+	if 2+listLen > len(data) {
+		return "", errors.New("invalid TLS server_name list length")
+	}
+	pos := 2
+	end := 2 + listLen
+	for pos < end {
+		if pos+3 > end {
+			return "", errors.New("truncated TLS server_name item")
+		}
+		nameType := data[pos]
+		nameLen := int(binary.BigEndian.Uint16(data[pos+1 : pos+3]))
+		pos += 3
+		if pos+nameLen > end {
+			return "", errors.New("truncated TLS server_name value")
+		}
+		name := data[pos : pos+nameLen]
+		pos += nameLen
+		if nameType == 0 {
+			return normalizeSNIName(string(name)), nil
+		}
+	}
+	return "", nil
+}
+
+func tlsUint24(data []byte) int {
+	if len(data) < 3 {
+		return 0
+	}
+	return int(data[0])<<16 | int(data[1])<<8 | int(data[2])
+}
+
+func proxyPlainTCP(left, right net.Conn, leftToRightLimiter, rightToLeftLimiter *limiter) error {
+	errCh := make(chan error, 2)
+	go func() { errCh <- copyPlainTCP(right, left, leftToRightLimiter) }()
+	go func() { errCh <- copyPlainTCP(left, right, rightToLeftLimiter) }()
+	return waitBidirectional(errCh, func() {
+		_ = left.Close()
+		_ = right.Close()
+	})
+}
+
+func copyPlainTCP(dst, src net.Conn, limiter *limiter) error {
+	buf := getFXPByteBuffer(32 * 1024)
+	defer putFXPByteBuffer(buf)
+	for {
+		n, err := src.Read(buf)
+		if n > 0 {
+			limiter.wait(n)
+			if writeErr := writeAll(dst, buf[:n]); writeErr != nil {
+				return writeErr
+			}
+		}
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				closeWriteConn(dst)
+				return nil
+			}
+			return err
+		}
+	}
+}
+
+func writeAll(conn net.Conn, data []byte) error {
+	for len(data) > 0 {
+		n, err := conn.Write(data)
+		if err != nil {
+			return err
+		}
+		if n <= 0 {
+			return io.ErrShortWrite
+		}
+		data = data[n:]
+	}
+	return nil
 }
 
 func acceptEntryTCP(ln net.Listener, cfg config, gate *connGate, selector *exitEndpointSelector, inLimiter, outLimiter *limiter, sessionWG *sync.WaitGroup) error {

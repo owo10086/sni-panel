@@ -16,6 +16,18 @@ type udpTarget struct {
 	TargetPort int    `json:"targetPort"`
 }
 
+type sniRoute struct {
+	SNI            string `json:"sni"`
+	RuleID         int    `json:"ruleId"`
+	TargetIP       string `json:"targetIp"`
+	TargetPort     int    `json:"targetPort"`
+	LimitIn        int64  `json:"limitIn,omitempty"`
+	LimitOut       int64  `json:"limitOut,omitempty"`
+	MaxConnections int    `json:"maxConnections,omitempty"`
+	MaxIPs         int    `json:"maxIPs,omitempty"`
+	AccessScope    string `json:"accessScope,omitempty"`
+}
+
 type config struct {
 	Role                     string         `json:"role"`
 	Entries                  []config       `json:"entries,omitempty"`
@@ -33,6 +45,7 @@ type config struct {
 	TargetIP                 string         `json:"targetIp"`
 	TargetPort               int            `json:"targetPort"`
 	UDPTargets               []udpTarget    `json:"udpTargets,omitempty"`
+	SNIRoutes                []sniRoute     `json:"sniRoutes,omitempty"`
 	Key                      string         `json:"key"`
 	LimitIn                  int64          `json:"limitIn"`
 	LimitOut                 int64          `json:"limitOut"`

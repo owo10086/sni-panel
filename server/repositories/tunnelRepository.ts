@@ -895,6 +895,7 @@ export async function findAvailableTunnelExitPort(
   ];
   if (excludeRulesSql) usedRuleConds.push(excludeRulesSql);
   const usedRulePorts = await db.select({ port: forwardRules.sourcePort }).from(forwardRules).where(and(...usedRuleConds));
+  const usedSniSplitterPorts = await getUsedSniSplitterPortsOnHost(exitHostId, excludedIds);
   const usedTunnelPorts = await db.select({ port: tunnels.listenPort }).from(tunnels).where(eq(tunnels.exitHostId, exitHostId));
   const usedTunnelMimicPorts = await db.select({ port: tunnels.mimicPort }).from(tunnels).where(eq(tunnels.exitHostId, exitHostId));
   const usedExtraTunnelPorts = await db.select({ port: tunnelExitNodes.listenPort }).from(tunnelExitNodes).where(eq(tunnelExitNodes.hostId, exitHostId));
@@ -921,6 +922,7 @@ export async function findAvailableTunnelExitPort(
     if (Number.isInteger(n) && n > 0) used.add(n);
   });
   usedRulePorts.forEach((r: any) => used.add(Number(r.port)));
+  usedSniSplitterPorts.forEach((port) => used.add(port));
   usedTunnelPorts.forEach((r: any) => used.add(Number(r.port)));
   usedTunnelMimicPorts.forEach((r: any) => used.add(Number(r.port)));
   usedExtraTunnelPorts.forEach((r: any) => used.add(Number(r.port)));
@@ -1668,6 +1670,65 @@ function protocolConflictCondition(_protocol: unknown) {
   return null;
 }
 
+async function getUsedSniSplitterPortsOnHost(hostId: number, excludeRuleIds: number[] = []) {
+  const db = await getDb();
+  if (!db) return new Set<number>();
+  const excludedIds = Array.from(new Set(
+    excludeRuleIds
+      .map((id) => Number(id || 0))
+      .filter((id) => Number.isInteger(id) && id > 0),
+  ));
+  const conds: any[] = [
+    eq(forwardGroups.groupMode, "chain"),
+    eq(forwardRules.isForwardGroupTemplate, false),
+    eq(forwardRules.isEnabled, true),
+    eq(forwardRules.pendingDelete, false),
+    sql`${forwardRules.sniSplitterPort} IS NOT NULL`,
+    sql`${forwardRules.sniSplitterPort} > 0`,
+  ];
+  if (excludedIds.length > 0) {
+    conds.push(sql`${forwardRules.id} NOT IN (${sql.join(excludedIds.map((id) => sql`${id}`), sql`, `)})`);
+  }
+  const rows = await db.select({
+    ruleId: forwardRules.id,
+    groupId: forwardRules.forwardGroupId,
+    port: forwardRules.sniSplitterPort,
+    memberId: forwardGroupMembers.id,
+    memberType: forwardGroupMembers.memberType,
+    memberHostId: forwardGroupMembers.hostId,
+    memberPriority: forwardGroupMembers.priority,
+    memberEnabled: forwardGroupMembers.isEnabled,
+  })
+    .from(forwardRules)
+    .innerJoin(forwardGroups, eq(forwardRules.forwardGroupId, forwardGroups.id))
+    .innerJoin(forwardGroupMembers, eq(forwardGroupMembers.groupId, forwardGroups.id))
+    .where(and(...conds));
+
+  const exitHostByGroup = new Map<number, { hostId: number; priority: number; memberId: number }>();
+  for (const row of rows as any[]) {
+    if (String(row.memberType || "") !== "host" || !databaseBool(row.memberEnabled)) continue;
+    const groupId = Number(row.groupId || 0);
+    const memberHostId = Number(row.memberHostId || 0);
+    if (!groupId || !memberHostId) continue;
+    const priority = Number(row.memberPriority || 0);
+    const memberId = Number(row.memberId || 0);
+    const current = exitHostByGroup.get(groupId);
+    if (!current || priority > current.priority || (priority === current.priority && memberId > current.memberId)) {
+      exitHostByGroup.set(groupId, { hostId: memberHostId, priority, memberId });
+    }
+  }
+
+  const used = new Set<number>();
+  for (const row of rows as any[]) {
+    const groupId = Number(row.groupId || 0);
+    const exitHost = exitHostByGroup.get(groupId);
+    if (!exitHost || exitHost.hostId !== Number(hostId)) continue;
+    const port = Number(row.port || 0);
+    if (Number.isInteger(port) && port >= 1 && port <= 65535) used.add(port);
+  }
+  return used;
+}
+
 export async function getUsedPortsOnHost(
   hostId: number,
   excludeRuleId?: number | number[],
@@ -1715,6 +1776,7 @@ export async function getUsedPortsOnHost(
 
   const [
     usedRules,
+    usedSniSplitters,
     usedPrimaryExits,
     usedMappedExits,
     usedTunnels,
@@ -1722,6 +1784,7 @@ export async function getUsedPortsOnHost(
     usedHops,
   ] = await Promise.all([
     db.select({ port: forwardRules.sourcePort }).from(forwardRules).where(and(...usedRuleConds)),
+    getUsedSniSplitterPortsOnHost(hostId, excludedIds),
     db.select({ port: forwardRules.tunnelExitPort })
       .from(forwardRules)
       .innerJoin(tunnels, eq(forwardRules.tunnelId, tunnels.id))
@@ -1747,6 +1810,7 @@ export async function getUsedPortsOnHost(
     if (Number.isInteger(port) && port >= 1 && port <= 65535) used.add(port);
   };
   usedRules.forEach((row: any) => addPort(row.port));
+  usedSniSplitters.forEach((port) => addPort(port));
   usedPrimaryExits.forEach((row: any) => addPort(row.port));
   usedMappedExits.forEach((row: any) => addPort(row.port));
   usedTunnels.forEach((row: any) => {
@@ -1802,6 +1866,8 @@ export async function isPortUsedOnHost(
   }
   const r = await db.select({ count: sqlCountAll() }).from(forwardRules).where(and(...conds));
   if ((Number(r[0]?.count) || 0) > 0) return true;
+  const splitterPorts = await getUsedSniSplitterPortsOnHost(hostId, excludedIds);
+  if (splitterPorts.has(Number(sourcePort))) return true;
   const primaryExitConds: any[] = [
     eq(tunnels.exitHostId, hostId),
     eq(forwardRules.tunnelExitPort, sourcePort),

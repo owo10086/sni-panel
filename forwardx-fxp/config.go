@@ -62,6 +62,7 @@ func normalizeConfig(cfg config) config {
 	}
 	sort.Slice(udpTargets, func(i, j int) bool { return udpTargets[i].RuleID < udpTargets[j].RuleID })
 	cfg.UDPTargets = udpTargets
+	cfg.SNIRoutes = normalizeSNIRoutes(cfg.SNIRoutes)
 	for i := range cfg.Entries {
 		cfg.Entries[i] = normalizeConfig(cfg.Entries[i])
 	}
@@ -80,6 +81,9 @@ func normalizeExitStrategy(value string) string {
 func validateConfig(cfg config) error {
 	if cfg.Role == "entry-group" {
 		return validateEntryGroupConfig(cfg)
+	}
+	if cfg.Role == "sni-splitter" {
+		return validateSNISplitterConfig(cfg)
 	}
 	if cfg.Key == "" {
 		return errors.New("empty key")
@@ -121,6 +125,84 @@ func validateConfig(cfg config) error {
 		}
 	}
 	return nil
+}
+
+func normalizeSNIRoutes(routes []sniRoute) []sniRoute {
+	normalized := make([]sniRoute, 0, len(routes))
+	seen := map[string]int{}
+	for _, route := range routes {
+		route.SNI = normalizeSNIName(route.SNI)
+		route.TargetIP = strings.TrimSpace(route.TargetIP)
+		route.AccessScope = strings.TrimSpace(route.AccessScope)
+		if index, exists := seen[route.SNI]; exists {
+			normalized[index] = route
+			continue
+		}
+		seen[route.SNI] = len(normalized)
+		normalized = append(normalized, route)
+	}
+	sort.Slice(normalized, func(i, j int) bool {
+		if normalized[i].SNI != normalized[j].SNI {
+			return normalized[i].SNI < normalized[j].SNI
+		}
+		return normalized[i].RuleID < normalized[j].RuleID
+	})
+	return normalized
+}
+
+func normalizeSNIName(value string) string {
+	return strings.TrimRight(strings.ToLower(strings.TrimSpace(value)), ".")
+}
+
+func validateSNISplitterConfig(cfg config) error {
+	if cfg.ListenPort <= 0 || cfg.ListenPort > 65535 {
+		return fmt.Errorf("bad listen port %d", cfg.ListenPort)
+	}
+	if cfg.ListenHost != "" && cfg.ListenHost != "127.0.0.1" && cfg.ListenHost != "::1" {
+		return fmt.Errorf("unsupported listen host %q", cfg.ListenHost)
+	}
+	if cfg.Protocol != "tcp" {
+		return errors.New("sni-splitter requires tcp protocol")
+	}
+	if len(cfg.SNIRoutes) == 0 {
+		return errors.New("sni-splitter requires at least one route")
+	}
+	for i, route := range cfg.SNIRoutes {
+		if route.RuleID <= 0 {
+			return fmt.Errorf("sni-splitter route %d requires rule id", i)
+		}
+		if !validSNIName(route.SNI) {
+			return fmt.Errorf("sni-splitter route %d requires valid sni", i)
+		}
+		if route.TargetIP == "" || route.TargetPort <= 0 || route.TargetPort > 65535 {
+			return fmt.Errorf("sni-splitter route %d requires target host and port", i)
+		}
+	}
+	return nil
+}
+
+func validSNIName(value string) bool {
+	value = normalizeSNIName(value)
+	if value == "" || len(value) > 253 || strings.Contains(value, "*") {
+		return false
+	}
+	for _, label := range strings.Split(value, ".") {
+		if len(label) == 0 || len(label) > 63 {
+			return false
+		}
+		for i, r := range label {
+			alpha := r >= 'a' && r <= 'z'
+			digit := r >= '0' && r <= '9'
+			hyphen := r == '-'
+			if !alpha && !digit && !hyphen {
+				return false
+			}
+			if (i == 0 || i == len(label)-1) && hyphen {
+				return false
+			}
+		}
+	}
+	return true
 }
 
 type entryListenLane struct {

@@ -189,10 +189,11 @@ function canPreserveChildRuleRuntime(existing: any, payload: any, options: SyncF
     "forwardGroupRuleId",
     "forwardGroupMemberId",
     "proxyProtocolVersion",
+    "sniSplitterPort",
     "failoverSeconds",
     "recoverSeconds",
   ];
-  const stringKeys = ["forwardType", "protocol", "gostMode", "targetIp", "failoverStrategy", "failoverTargets", "protocolBlockReason"];
+  const stringKeys = ["forwardType", "protocol", "gostMode", "targetIp", "sni", "failoverStrategy", "failoverTargets", "protocolBlockReason"];
   const boolKeys = [
     "proxyProtocolReceive",
     "proxyProtocolSend",
@@ -2788,6 +2789,8 @@ async function ensureMemberRuleForTemplate(group: any, templateRule: any, member
     forwardGroupMemberId: Number(member.id),
     isForwardGroupTemplate: false,
     sourcePort: Number(templateRule.sourcePort),
+    sni: (templateRule as any).sni || null,
+    sniSplitterPort: Number((templateRule as any).sniSplitterPort || 0) || null,
     targetIp: templateRule.targetIp,
     targetPort: Number(templateRule.targetPort),
     telegramErrorNotifyEnabled: dbBool((templateRule as any).telegramErrorNotifyEnabled),
@@ -2928,6 +2931,7 @@ async function ensureChainRuleForTemplate(
     sourcePort?: number | null;
     targetIp?: string | null;
     targetPort?: number | null;
+    portUsageIgnoreRuleIds?: number[];
     namePrefix?: string;
   } = {},
 ) {
@@ -2954,10 +2958,15 @@ async function ensureChainRuleForTemplate(
   const sourcePort = Number(overrides.sourcePort || templateRule.sourcePort);
   if (options.validatePorts !== false) {
     await assertEntryPortAllowed(sourceMember, sourcePort);
+    const portUsageIgnoreRuleIds = Array.from(new Set([
+      Number(templateRule.id),
+      Number(existing?.id || 0),
+      ...(Array.isArray(overrides.portUsageIgnoreRuleIds) ? overrides.portUsageIgnoreRuleIds : []),
+    ].filter((id) => Number.isInteger(id) && id > 0)));
     const used = await isHostPortUnavailableForGroupChildExplicitUse(
       hostId,
       sourcePort,
-      [Number(templateRule.id), Number(existing?.id || 0)].filter(Boolean),
+      portUsageIgnoreRuleIds,
       templateRule.protocol,
     );
     if (used) throw new Error(`Entry agent port ${sourcePort} is already used`);
@@ -3003,6 +3012,8 @@ async function ensureChainRuleForTemplate(
     forwardGroupMemberId: Number(member.id),
     isForwardGroupTemplate: false,
     sourcePort,
+    sni: (templateRule as any).sni || null,
+    sniSplitterPort: Number((templateRule as any).sniSplitterPort || 0) || null,
     targetIp,
     targetPort,
     telegramErrorNotifyEnabled: dbBool((templateRule as any).telegramErrorNotifyEnabled),
@@ -3231,7 +3242,20 @@ async function syncForwardGroupRulesUnlocked(groupId: number, options: SyncForwa
       const chainPortReservations: HostPortReservation[] = [];
       try {
         const chainSourcePorts: number[] = [];
+        const templateSniSplitterPort = Number((template as any).sniSplitterPort || 0);
+        const templateUsesSniSplitter = !!String((template as any).sni || "").trim() && templateSniSplitterPort > 0;
+        const templateSniSplitterRuleIds = templateUsesSniSplitter
+          ? [
+            Number(template.id),
+            ...(await getForwardGroupChildRulesForTemplate(Number(template.id)) as any[])
+              .map((rule: any) => Number(rule.id || 0)),
+          ].filter((id) => Number.isInteger(id) && id > 0)
+          : [];
         for (const [index, member] of activeChainMembers.entries()) {
+          if (templateUsesSniSplitter && index === activeChainMembers.length - 1) {
+            chainSourcePorts.push(templateSniSplitterPort);
+            continue;
+          }
           if (index === 0 && entryMembers.length === 0) {
             chainSourcePorts.push(Number(template.sourcePort));
             continue;
@@ -3246,9 +3270,11 @@ async function syncForwardGroupRulesUnlocked(groupId: number, options: SyncForwa
         for (let index = activeChainMembers.length - 1; index >= 0; index--) {
           const member = activeChainMembers[index];
           const nextMember = activeChainMembers[index + 1] || null;
+          const isSniSplitterExitMember = templateUsesSniSplitter && index === activeChainMembers.length - 1;
           const ruleId = await ensureChainRuleForTemplate(group, template, member, nextMember, index, activeChainMembers.length, options, {
             sourcePort: chainSourcePorts[index],
             targetPort: nextMember ? chainSourcePorts[index + 1] : null,
+            portUsageIgnoreRuleIds: isSniSplitterExitMember ? templateSniSplitterRuleIds : undefined,
           });
           if (ruleId && !preserveRuntime) {
             await db.update(forwardRules).set({ isRunning: false, updatedAt: nowDate() }).where(eq(forwardRules.id, ruleId));

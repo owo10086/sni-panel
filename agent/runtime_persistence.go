@@ -116,12 +116,23 @@ func persistentFXPEntryGroupPath(spec fxpSpec) string {
 	)
 }
 
+func fxpSpecHasPersistenceIdentity(spec fxpSpec) bool {
+	spec = normalizeFXPSpec(spec)
+	if isFXPEntryGroup(spec) {
+		return spec.TransportVersion != "" && spec.TunnelID > 0 && len(spec.Entries) > 0
+	}
+	if spec.Role == "sni-splitter" {
+		return spec.TransportVersion != "" && spec.RuleID > 0 && spec.ListenPort > 0 && len(spec.SNIRoutes) > 0
+	}
+	return spec.Role != "" && spec.TransportVersion != "" && spec.TunnelID > 0 && spec.ListenPort > 0 && spec.Key != ""
+}
+
 func persistFXPSpec(spec fxpSpec) error {
 	spec = scrubFXPSpec(spec)
 	if isFXPEntryGroup(spec) {
 		return replacePersistedSharedFXPEntryGroup(spec)
 	}
-	if spec.Role == "" || spec.TunnelID <= 0 || spec.ListenPort <= 0 || spec.Key == "" {
+	if !fxpSpecHasPersistenceIdentity(spec) {
 		return fmt.Errorf("invalid FXP persistence identity role=%s tunnel=%d rule=%d port=%d", spec.Role, spec.TunnelID, spec.RuleID, spec.ListenPort)
 	}
 	persistentRuntimeMu.Lock()
@@ -323,7 +334,7 @@ func loadPersistedFXPSpecs() []fxpSpec {
 			}
 			continue
 		}
-		if stored.Spec.Role == "" || stored.Spec.TunnelID <= 0 || stored.Spec.ListenPort <= 0 || stored.Spec.Key == "" {
+		if !fxpSpecHasPersistenceIdentity(stored.Spec) {
 			logf("persistent runtime snapshot invalid path=%s", path)
 			continue
 		}

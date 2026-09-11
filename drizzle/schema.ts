@@ -343,6 +343,8 @@ export const forwardRules = table("forward_rules", {
   forwardGroupMemberId: int("forwardGroupMemberId"),
   isForwardGroupTemplate: boolean("isForwardGroupTemplate").notNull().default(false),
   sourcePort: int("sourcePort").notNull(),
+  sni: text("sni"),
+  sniSplitterPort: int("sniSplitterPort"),
   targetIp: text("targetIp").notNull(),
   targetPort: int("targetPort").notNull(),
   telegramErrorNotifyEnabled: boolean("telegramErrorNotifyEnabled").notNull().default(false),

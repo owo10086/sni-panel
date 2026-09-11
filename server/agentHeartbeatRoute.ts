@@ -2408,6 +2408,71 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
     // realm/socat/gost 进程命令使用原始 targetIp（域名形式），以便工具自身解析 DNS，
     // iptables/nftables/计数链使用已解析的 IP（rule.targetIp 已被替换为解析后的值）。
     const processTarget = (rule: any) => (rule as any)._originalTargetIp || rule.targetIp;
+    const normalizeRuntimeSni = (value: unknown) => {
+      const normalized = String(value || "").trim().toLowerCase().replace(/\.+$/, "");
+      return normalized || "";
+    };
+    const sniRouteForRule = (rule: any) => {
+      const sni = normalizeRuntimeSni(rule?.sni);
+      const splitterPort = Number(rule?.sniSplitterPort || 0);
+      if (!sni || splitterPort <= 0 || splitterPort > 65535) return null;
+      return { sni, splitterPort };
+    };
+    type SniForwardChainRuntime = {
+      mode: "entry" | "exit";
+      sni: string;
+      splitterPort: number;
+      targetIp: string;
+      targetPort: number;
+    };
+    const resolveSniForwardChainRuntime = async (rule: any): Promise<SniForwardChainRuntime | null> => {
+      const sniRoute = sniRouteForRule(rule);
+      if (!sniRoute) return null;
+      const groupId = Number(rule?.forwardGroupId || 0);
+      const memberId = Number(rule?.forwardGroupMemberId || 0);
+      if (!groupId || !memberId) return null;
+      const group = await getForwardChainGroup(groupId);
+      if (String((group as any)?.groupMode || "") !== "chain") return null;
+      const members = [...(((group as any).members || []) as any[])]
+        .filter((member: any) => runtimeBool(member?.isEnabled))
+        .sort((a: any, b: any) => Number(a.priority) - Number(b.priority));
+      const memberIndex = members.findIndex((member: any) => Number(member.id) === memberId);
+      if (memberIndex < 0) return null;
+      const exitMember = members[members.length - 1] as any;
+      const exitHostId = Number(exitMember?.hostId || 0);
+      if (!exitHostId) return null;
+      const isExitHost = Number(rule?.hostId || 0) === exitHostId && memberIndex === members.length - 1;
+      if (isExitHost) {
+        return {
+          mode: "exit",
+          sni: sniRoute.sni,
+          splitterPort: sniRoute.splitterPort,
+          targetIp: processTarget(rule),
+          targetPort: Number(rule?.targetPort || 0),
+        };
+      }
+      const nextMember = members[memberIndex + 1] as any | undefined;
+      const targetPort = !nextMember || Number(nextMember?.id || 0) === Number(exitMember.id)
+        ? sniRoute.splitterPort
+        : Number(rule?.targetPort || 0);
+      return {
+        mode: "entry",
+        sni: sniRoute.sni,
+        splitterPort: sniRoute.splitterPort,
+        targetIp: String(rule?.targetIp || "").trim(),
+        targetPort,
+      };
+    };
+    const sniForwardChainRuntimeByRuleId = new Map<number, SniForwardChainRuntime>();
+    await mapWithConcurrency(agentHostRules as any[], 16, async (rule: any) => {
+      const runtime = await resolveSniForwardChainRuntime(rule);
+      if (runtime) sniForwardChainRuntimeByRuleId.set(Number(rule.id), runtime);
+    });
+    const sniForwardChainRuntimeForRule = (rule: any) => sniForwardChainRuntimeByRuleId.get(Number(rule?.id || 0)) || null;
+    const sniEntryRuntimeForRule = (rule: any) => {
+      const runtime = sniForwardChainRuntimeForRule(rule);
+      return runtime?.mode === "entry" ? runtime : null;
+    };
     const forwardXUDPTargets = (tunnel: any) => {
       if (!tunnel || !isForwardXTunnel(tunnel) || !runtimeBool(tunnel.isEnabled) || !isTunnelProtocolEnabled(forwardProtocolSettings, tunnel)) {
         return [] as Array<{ ruleId: number; targetIp: string; targetPort: number }>;
@@ -2461,6 +2526,7 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
     const gostRules = agentHostRules
       .filter((r: any) => {
         if (runtimeBool(r.pendingDelete) || !runtimeBool(r.isEnabled) || r.forwardType !== "gost") return false;
+        if (sniForwardChainRuntimeForRule(r)?.mode === "exit") return false;
         const tunnel = (r as any).tunnelId ? tunnelById.get((r as any).tunnelId) as any : null;
         if (tunnel && isNginxTunnelMode(tunnel)) return false;
         return isRuleProtocolEnabled(forwardProtocolSettings, r, tunnel);
@@ -3468,9 +3534,10 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
     };
     const gostServiceConfig = (await Promise.all(gostRules
       .map(async (r: any) => {
-        const useRuleGuard = await shouldUseRuleGuard(r);
         const tunnel = (r as any).tunnelId ? tunnelById.get((r as any).tunnelId) as any : null;
         if (tunnel && !isGostTunnelMode(tunnel)) return [];
+        const sniEntryRuntime = sniEntryRuntimeForRule(r);
+        const useRuleGuard = sniEntryRuntime ? false : await shouldUseRuleGuard(r);
         const protos = tunnel ? tunnelForwardProtos(r.protocol) : forwardRuleProtocols(r.protocol);
         return Promise.all(protos.map(async (proto) => {
           const tunnelHops = tunnel ? tunnelHopsByTunnelId.get(Number(tunnel.id)) : null;
@@ -3526,10 +3593,13 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
             service.metadata = { ...(service.metadata || {}), dialTimeout: "3s" };
           }
           if (!tunnel) {
+            const targetAddr = sniEntryRuntime
+              ? endpointHostPort(sniEntryRuntime.targetIp, sniEntryRuntime.targetPort)
+              : failoverTargetAddr(r);
             service.forwarder = {
               nodes: [{
                 name: `target-${r.id}`,
-                addr: failoverTargetAddr(r),
+                addr: targetAddr,
                 connector: { type: proto },
                 dialer: { type: proto },
               }],
@@ -3548,7 +3618,7 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
               }],
             };
           }
-          return applyGostLimiter(service, r, tunnel);
+          return sniEntryRuntime ? service : applyGostLimiter(service, r, tunnel);
         }));
       })))
       .flat()
@@ -3969,13 +4039,18 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
 
       for (const rule of agentHostRules as any[]) {
         if (!rule || runtimeBool(rule.pendingDelete) || !runtimeBool(rule.isEnabled) || rule.forwardType !== "nginx") continue;
+        const sniRuntime = sniForwardChainRuntimeForRule(rule);
+        if (sniRuntime?.mode === "exit") continue;
         if (!isRuleProtocolEnabled(forwardProtocolSettings, rule, null)) continue;
-        const useRuleGuard = await shouldUseRuleGuard(rule);
+        const useRuleGuard = sniRuntime?.mode === "entry" ? false : await shouldUseRuleGuard(rule);
         const listenPort = useRuleGuard ? guardBackendPort(rule) : Number(rule.sourcePort);
+        const target = sniRuntime?.mode === "entry"
+          ? { targetIp: sniRuntime.targetIp, targetPort: sniRuntime.targetPort }
+          : { targetIp: processTarget(rule), targetPort: Number(rule.targetPort) };
         for (const proto of nginxProtocolsForRule(rule)) {
           const upstream = `fwx_rule_${Number(rule.id)}_${proto}`;
-          if (!addUpstreamServer(upstream, [{ addr: nginxEndpoint(processTarget(rule), rule.targetPort), primary: true }])) continue;
-          routeSummaries.push(`rule=${rule.id} port=${Number(rule.sourcePort)} listen=${listenPort} proto=${proto} target=${processTarget(rule)}:${Number(rule.targetPort) || 0}`);
+          if (!addUpstreamServer(upstream, [{ addr: nginxEndpoint(target.targetIp, target.targetPort), primary: true }])) continue;
+          routeSummaries.push(`rule=${rule.id} port=${Number(rule.sourcePort)} listen=${listenPort} proto=${proto} target=${target.targetIp}:${target.targetPort || 0}`);
           addServer({
             name: `rule ${Number(rule.id)} ${proto}`,
             listenPort,
@@ -3984,8 +4059,10 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
             loopbackOnly: useRuleGuard,
           });
         }
-        countingCmds.push(...buildCountingChainCmds(rule.sourcePort, rule.targetIp, rule.targetPort, rule.protocol));
-        countingCmds.push(...buildRuleAccessLimitCmds(rule));
+        if (sniRuntime?.mode !== "entry") {
+          countingCmds.push(...buildCountingChainCmds(rule.sourcePort, rule.targetIp, rule.targetPort, rule.protocol));
+          countingCmds.push(...buildRuleAccessLimitCmds(rule));
+        }
       }
 
       for (const rule of agentHostRules as any[]) {
@@ -4482,20 +4559,45 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
         && forwardTypeCompatible(local.forwardType, expectedForwardType)
         && (passiveForwardXFirstHop || localForwardXTransportCompatible(local, expectedForwardXTransportVersion(tunnelId, expectedForwardType)));
     };
+    const ruleByIdForRuntimeCleanup = new Map((rules as any[]).map((rule: any) => [Number(rule.id), rule]));
+    const sniSplitterRouteForLocalRule = (local: AgentLocalRuntimeRuleState) => {
+      const ruleId = Number(local.ruleId || 0);
+      if (ruleId <= 0) return null;
+      const rule = ruleByIdForRuntimeCleanup.get(ruleId) as any;
+      const sni = normalizeRuntimeSni(rule?.sni);
+      const splitterPort = Number(rule?.sniSplitterPort || 0);
+      if (!sni || splitterPort !== Number(local.port || 0)) return null;
+      return {
+        sni,
+        ruleId,
+        targetIp: String(processTarget(rule) || local.targetIp || "").trim(),
+        targetPort: Number(rule?.targetPort || local.targetPort || 0),
+      };
+    };
     const buildGenericLocalRuleRemovalAction = (local: AgentLocalRuntimeRuleState) => {
       const port = Number(local.port || 0);
+      const ruleId = Number(local.ruleId || 0);
       const forwardType = String(local.forwardType || "").trim() || "unknown";
       const protocol = local.protocol || "both";
+      const sniSplitterRoute = forwardType === "forwardx" ? sniSplitterRouteForLocalRule(local) : null;
       const transportVersion = resolveLocalForwardXTransportVersion({
         reportedTransportVersion: local.transportVersion,
         tunnel: tunnelById.get(Number(local.tunnelId || 0)),
       });
-      const fxp = forwardType === "forwardx" && Number(local.ruleId || 0) > 0
-        ? {
+      const fxp = forwardType === "forwardx" && ruleId > 0
+        ? sniSplitterRoute
+          ? {
+            role: "sni-splitter",
+            ruleId,
+            listenPort: port,
+            protocol: "tcp",
+            sniRoutes: [sniSplitterRoute],
+          }
+          : {
             role: "entry",
             ...(transportVersion ? { transportVersion } : {}),
             tunnelId: Number(local.tunnelId || 0),
-            ruleId: Number(local.ruleId || 0),
+            ruleId,
             listenPort: port,
             protocol,
             key: "",
@@ -4612,6 +4714,159 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
         await db.updateRuleRunningStatus(id, false);
       }
       rule.isRunning = false;
+    };
+
+    const localSniRuntimeMatches = (rule: any, forwardType: string, port: number, targetIp: string, targetPort: number) => {
+      if (!hasReportedRuntimeState || port <= 0) return true;
+      const local = findLocalRuleState(port, "tcp", Number(rule?.id || 0));
+      return !!local
+        && local.ready !== false
+        && Number(local.ruleId || 0) === Number(rule?.id || 0)
+        && forwardTypeCompatible(local.forwardType, forwardType)
+        && localTextCompatible(local.targetIp, targetIp)
+        && localNumberCompatible(local.targetPort, targetPort)
+        && localProtocolCompatible(local.protocol, "tcp");
+    };
+    const sniEntryForwardAction = (rule: any, runtime: SniForwardChainRuntime, runtimeMatches: boolean) => {
+      const runtimeRule = {
+        ...rule,
+        protocol: "tcp",
+        targetIp: runtime.targetIp,
+        targetPort: runtime.targetPort,
+        _originalTargetIp: runtime.targetIp,
+        failoverEnabled: false,
+        failoverTargets: null,
+      };
+      const baseAction: any = {
+        ruleId: rule.id,
+        op: "apply",
+        forwardType: rule.forwardType,
+        sourcePort: rule.sourcePort,
+        targetIp: runtime.targetIp,
+        targetPort: runtime.targetPort,
+        protocol: "tcp",
+        networkInterface: hostInterface,
+        knownRunning: runtimeMatches,
+      };
+      if (rule.forwardType === "iptables") {
+        return {
+          ...baseAction,
+          commands: [
+            ...buildNftTransitionCleanupCmds(runtimeRule),
+            ...buildIptablesForwardCmds(runtimeRule),
+          ],
+        };
+      }
+      if (rule.forwardType === "nftables") {
+        return {
+          ...baseAction,
+          commands: [
+            ...buildIptablesTransitionCleanupCmds(runtimeRule),
+            ...buildNftForwardCmds(runtimeRule),
+          ],
+        };
+      }
+      if (rule.forwardType === "realm") {
+        const svcName = realmServiceNameForPort(runtimeRule.sourcePort, "tcp");
+        const realmConfigPath = realmConfigPathForPort(runtimeRule.sourcePort, "tcp");
+        const realmConfig = [
+          "[log]",
+          'level = "warn"',
+          "",
+          "[network]",
+          "use_udp = false",
+          "tcp_timeout = 300",
+          "udp_timeout = 30",
+          "ipv6_only = false",
+          "send_proxy = false",
+          "send_proxy_version = 1",
+          "accept_proxy = false",
+          "accept_proxy_timeout = 5",
+          "",
+          "[[endpoints]]",
+          `listen = ${realmTomlString(`[::0]:${Number(runtimeRule.sourcePort) || 0}`)}`,
+          `remote = ${realmTomlString(endpointHostPort(processTarget(runtimeRule), runtimeRule.targetPort))}`,
+          "",
+        ].join("\n");
+        const ifaceFlag = hostInterface ? ` --interface ${hostInterface}` : "";
+        return {
+          ...baseAction,
+          svcName,
+          unit: [
+            "[Unit]",
+            `Description=ForwardX realm SNI entry ${runtimeRule.sourcePort}->${runtime.targetIp}:${runtime.targetPort}`,
+            "After=network.target",
+            "StartLimitIntervalSec=60",
+            "StartLimitBurst=5",
+            "",
+            "[Service]",
+            "Type=simple",
+            `ExecStart=/usr/local/bin/realm -c ${realmConfigPath}${ifaceFlag}`,
+            "Restart=always",
+            "RestartSec=5",
+            "LimitNOFILE=65535",
+            "",
+            "[Install]",
+            "WantedBy=multi-user.target",
+            "",
+          ].join("\n"),
+          preCommands: [
+            ...buildKernelForwardTransitionCleanupCmds(runtimeRule),
+            ...cleanupGuardBackendCmds(runtimeRule),
+            ...legacyRealmCleanupCmds(runtimeRule.sourcePort, "tcp"),
+            `mkdir -p ${shQuote(REALM_CONFIG_DIR)}`,
+            `printf '%s' '${Buffer.from(realmConfig, "utf8").toString("base64")}' | base64 -d > ${shQuote(realmConfigPath)}`,
+          ],
+          commands: [],
+        };
+      }
+      if (rule.forwardType === "socat") {
+        const svcName = socatServiceNameForPort(runtimeRule.sourcePort, "tcp");
+        return {
+          ...baseAction,
+          svcName,
+          unit: [
+            "[Unit]",
+            `Description=ForwardX socat SNI entry ${runtimeRule.sourcePort}->${runtime.targetIp}:${runtime.targetPort}`,
+            "After=network.target",
+            "",
+            "[Service]",
+            "Type=simple",
+            `ExecStart=/usr/bin/socat TCP6-LISTEN:${runtimeRule.sourcePort},fork,reuseaddr,ipv6only=0 ${socatDialEndpoint("TCP", processTarget(runtimeRule), runtimeRule.targetPort)}`,
+            "Restart=always",
+            "RestartSec=5",
+            "LimitNOFILE=65535",
+            "",
+            "[Install]",
+            "WantedBy=multi-user.target",
+            "",
+          ].join("\n"),
+          preCommands: [
+            ...buildKernelForwardTransitionCleanupCmds(runtimeRule),
+            ...cleanupGuardBackendCmds(runtimeRule),
+            `command -v socat >/dev/null 2>&1 || { apt-get update -qq && apt-get install -y -qq socat || yum install -y -q socat || dnf install -y -q socat || zypper -n install socat || apk add --no-cache socat || pacman -Sy --noconfirm socat; } 2>/dev/null`,
+            ...legacySocatCleanupCmds(runtimeRule.sourcePort, "tcp"),
+          ],
+          commands: [],
+        };
+      }
+      if (rule.forwardType === "nginx") {
+        return {
+          ...baseAction,
+          commands: [
+            ...buildKernelForwardTransitionCleanupCmds(runtimeRule),
+            ...cleanupGuardBackendCmds(runtimeRule),
+            nginxRuntimeVerifyCmd(),
+          ],
+        };
+      }
+      return {
+        ...baseAction,
+        commands: [
+          ...buildKernelForwardTransitionCleanupCmds(runtimeRule),
+          ...buildManagedPortCleanupCmds(runtimeRule.sourcePort, runtime.targetIp, runtime.targetPort, "tcp"),
+        ],
+      };
     };
 
     const pendingTunnelExitRuleIds = new Set(
@@ -4827,8 +5082,118 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
     }
 
     const runtimeDriftedRuleIds: number[] = [];
+    const sniRuntimeHandledRuleIds = new Set<number>();
+    const sniExitGroups = new Map<number, {
+      splitterPort: number;
+      rules: any[];
+      routes: any[];
+      needsApply: boolean;
+    }>();
+    await mapWithConcurrency(rules as any[], 16, async (rule: any) => {
+      const sniRuntime = sniForwardChainRuntimeForRule(rule);
+      if (!sniRuntime) return;
+      sniRuntimeHandledRuleIds.add(Number(rule.id || 0));
+      const ruleTunnel = (rule as any).tunnelId ? tunnelById.get((rule as any).tunnelId) as any : null;
+      if (!isRuleProtocolEnabled(forwardProtocolSettings, rule, ruleTunnel)) return;
+      if (runtimeBool(rule.isEnabled) && sniRuntime.mode === "entry") {
+        expectedRulePorts.add(runtimePortProtocolKey(Number(rule.sourcePort), "tcp"));
+        expectedRuleIdentityKeys.add(ruleRuntimeIdentityKey(rule.id, Number(rule.sourcePort), "tcp"));
+        expectedRulePortIdentityKeys.add(ruleRuntimePortIdentityKey(rule.id, Number(rule.sourcePort)));
+        protectActiveRulePort(rule, Number(rule.sourcePort));
+        const runtimeMatches = localSniRuntimeMatches(
+          rule,
+          rule.forwardType,
+          Number(rule.sourcePort),
+          sniRuntime.targetIp,
+          sniRuntime.targetPort,
+        );
+        if (!runtimeMatches && runtimeBool(rule.isRunning)) {
+          runtimeDriftedRuleIds.push(Number(rule.id));
+          rule.isRunning = false;
+        }
+        if (!runtimeBool(rule.isRunning) || !runtimeMatches) {
+          actions.push(sniEntryForwardAction(rule, sniRuntime, runtimeMatches));
+        }
+        addRunningRule({
+          ruleId: rule.id,
+          sourcePort: Number(rule.sourcePort),
+          targetIp: sniRuntime.targetIp,
+          targetPort: sniRuntime.targetPort,
+          protocol: "tcp",
+          forwardType: rule.forwardType,
+        });
+        return;
+      }
+      if (runtimeBool(rule.isEnabled) && sniRuntime.mode === "exit") {
+        expectedRulePorts.add(runtimePortProtocolKey(sniRuntime.splitterPort, "tcp"));
+        expectedRuleIdentityKeys.add(ruleRuntimeIdentityKey(rule.id, sniRuntime.splitterPort, "tcp"));
+        expectedRulePortIdentityKeys.add(ruleRuntimePortIdentityKey(rule.id, sniRuntime.splitterPort));
+        protectActiveRulePort(rule, sniRuntime.splitterPort);
+        const rateLimits = ruleRateLimits(rule, null);
+        const accessLimits = userAccessLimits(Number(rule.userId));
+        const targetIp = sniRuntime.targetIp;
+        const targetPort = Number(sniRuntime.targetPort || 0);
+        if (!targetIp || targetPort <= 0 || targetPort > 65535) return;
+        const splitterRuntimeTargetIp = String(host.ip || "").trim();
+        const splitterRuntimeTargetPort = sniRuntime.splitterPort;
+        const route = {
+          sni: sniRuntime.sni,
+          ruleId: Number(rule.id),
+          targetIp,
+          targetPort,
+          limitIn: rateLimits.limitIn,
+          limitOut: rateLimits.limitOut,
+          maxConnections: accessLimits.maxConnections,
+          maxIPs: accessLimits.maxIPs,
+          accessScope: accessScopeForRule(rule),
+        };
+        const group = sniExitGroups.get(sniRuntime.splitterPort) || {
+          splitterPort: sniRuntime.splitterPort,
+          rules: [],
+          routes: [],
+          needsApply: false,
+        };
+        group.rules.push(rule);
+        group.routes.push(route);
+        group.needsApply = group.needsApply
+          || !runtimeBool(rule.isRunning)
+          || !localSniRuntimeMatches(rule, "forwardx", sniRuntime.splitterPort, splitterRuntimeTargetIp, splitterRuntimeTargetPort);
+        sniExitGroups.set(sniRuntime.splitterPort, group);
+        addRunningRule({
+          ruleId: rule.id,
+          sourcePort: sniRuntime.splitterPort,
+          targetIp: splitterRuntimeTargetIp,
+          targetPort: splitterRuntimeTargetPort,
+          protocol: "tcp",
+          forwardType: "forwardx",
+        });
+      }
+    });
+    for (const group of Array.from(sniExitGroups.values()).sort((a, b) => a.splitterPort - b.splitterPort)) {
+      if (!group.needsApply || group.routes.length === 0) continue;
+      const firstRule = group.rules.slice().sort((a: any, b: any) => Number(a.id) - Number(b.id))[0];
+      const routes = group.routes.slice().sort((a: any, b: any) => String(a.sni).localeCompare(String(b.sni)));
+      actions.push({
+        ruleId: Number(firstRule?.id || 0),
+        op: "apply",
+        forwardType: "forwardx",
+        sourcePort: group.splitterPort,
+        targetIp: host.ip,
+        targetPort: group.splitterPort,
+        protocol: "tcp",
+        networkInterface: hostInterface,
+        commands: [],
+        fxp: {
+          role: "sni-splitter",
+          ruleId: Number(firstRule?.id || 0),
+          listenPort: group.splitterPort,
+          protocol: "tcp",
+          sniRoutes: routes,
+        },
+      });
+    }
     for (const rule of rules) {
-      if ((rule as any)._skipRuntimeApply) continue;
+      if (sniRuntimeHandledRuleIds.has(Number((rule as any).id || 0))) continue;
       const ruleTunnel = (rule as any).tunnelId ? tunnelById.get((rule as any).tunnelId) as any : null;
       const ruleProtocolEnabled = isRuleProtocolEnabled(forwardProtocolSettings, rule, ruleTunnel);
       const useRuleGuard = await shouldUseRuleGuard(rule);
@@ -6067,6 +6432,7 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
     const nginxDesiredRelevant = (agentHostRules as any[]).some((rule: any) => {
       if (!rule || runtimeBool(rule.pendingDelete) || !runtimeBool(rule.isEnabled)) return false;
       if (rule.forwardType === "nginx") {
+        if (sniForwardChainRuntimeForRule(rule)?.mode === "exit") return false;
         return isRuleProtocolEnabled(forwardProtocolSettings, rule, null);
       }
       if (rule.forwardType !== "gost" || !rule.tunnelId) return false;
@@ -6307,6 +6673,7 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
         rule
         && runtimeBool(rule.isEnabled)
         && !runtimeBool(rule.pendingDelete)
+        && !sniForwardChainRuntimeForRule(rule)
         && !runtimeBool(rule.isRunning)
         && !rule.tunnelId
         && Number(rule.sourcePort || 0) > 0

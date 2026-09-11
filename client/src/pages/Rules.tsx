@@ -272,6 +272,7 @@ type RuleFormData = {
   tunnelId: number | null;
   forwardGroupId: number | null;
   sourcePort: number;
+  sni: string;
   targetIp: string;
   targetPort: number;
   telegramErrorNotifyEnabled: boolean;
@@ -331,6 +332,7 @@ const defaultForm: RuleFormData = {
   tunnelId: null,
   forwardGroupId: null,
   sourcePort: 0,
+  sni: "",
   targetIp: "",
   targetPort: 0,
   telegramErrorNotifyEnabled: false,
@@ -2594,6 +2596,8 @@ function RulesContent() {
         : availableTrafficBillingHosts.some((host: any) => Number(host.id) === Number(prev.hostId))
         ? prev.hostId
         : (Number(nextBillingHost?.id || 0) || null),
+      sni: mode === "chain" ? prev.sni : "",
+      protocol: mode === "chain" && prev.sni.trim() ? "tcp" : prev.protocol,
       failoverEnabled: false,
       failoverTargetsText: "",
     }));
@@ -2791,6 +2795,7 @@ function RulesContent() {
       tunnelId: rule.tunnelId || null,
       forwardGroupId: rule.forwardGroupId || null,
       sourcePort: rule.sourcePort,
+      sni: String(rule.sni || ""),
       targetIp: rule.targetIp,
       targetPort: rule.targetPort,
       telegramErrorNotifyEnabled: !!rule.telegramErrorNotifyEnabled,
@@ -3137,6 +3142,9 @@ function RulesContent() {
   const telegramBotReady = !!systemSettings?.telegram?.enabled && !!systemSettings?.telegram?.configured;
   const selectedForwardGroupIsChain = form.routeMode === "chain" || isForwardChainGroup(selectedForwardGroup);
   const selectedForwardGroupIsPort = normalizeForwardGroupModeForRule(selectedForwardGroup) === "port";
+  const canConfigureSni = user?.role === "admin" && selectedForwardGroupIsChain;
+  const sniProtocolLocked = canConfigureSni && form.sni.trim().length > 0;
+  const effectiveFormProtocol = sniProtocolLocked ? "tcp" : form.protocol;
   const mainBackupForwardType = effectiveRouteForwardType;
   const mainBackupUsesTunnelRoute = form.routeMode === "tunnel" || (!selectedForwardGroupIsChain && selectedForwardGroup?.groupType === "tunnel");
   const mainBackupIsTunnelRoute =
@@ -3167,7 +3175,7 @@ function RulesContent() {
     ? "仅支持 GOST 的隧道或转发工具可以使用出站策略。"
     : user?.role !== "admin" && !mainBackupUsesTunnelRoute && !selectedForwardGroupIsPort
     ? "普通用户的普通端口转发不支持出站策略，请使用已保存的 GOST 端口转发或 GOST 隧道。"
-    : form.protocol !== "tcp"
+    : effectiveFormProtocol !== "tcp"
     ? "出站策略仅支持 TCP 协议。"
     : "";
   const showMainBackupConfig = canUseMainBackup;
@@ -3208,7 +3216,7 @@ function RulesContent() {
           : { hostId: Number(hostId), tunnelId: routeMode === "tunnel" ? tunnelId : null }),
         sourcePort,
         excludeRuleId: editingId || undefined,
-        protocol: form.protocol,
+        protocol: effectiveFormProtocol,
       });
       if (latestPortCheckRef.current !== checkId) return;
       setPortRangeError(result.used ? result.reason ?? null : null);
@@ -3217,13 +3225,13 @@ function RulesContent() {
       if (latestPortCheckRef.current !== checkId) return;
       setPortStatus("idle");
     }
-  }, [form.forwardGroupId, form.hostId, form.protocol, form.routeMode, form.sourcePort, form.tunnelId, editingId, utils, selectedEntryPortPolicy, isForwardGroupRouteMode]);
+  }, [form.forwardGroupId, form.hostId, effectiveFormProtocol, form.routeMode, form.sourcePort, form.tunnelId, editingId, utils, selectedEntryPortPolicy, isForwardGroupRouteMode]);
 
   // A response started for the previous route must not mark the new route occupied.
   useEffect(() => {
     latestPortCheckRef.current += 1;
     setPortStatus("idle");
-  }, [editingId, form.forwardGroupId, form.hostId, form.protocol, form.routeMode, form.sourcePort, form.tunnelId, isForwardGroupRouteMode]);
+  }, [editingId, form.forwardGroupId, form.hostId, effectiveFormProtocol, form.routeMode, form.sourcePort, form.tunnelId, isForwardGroupRouteMode]);
 
   // 源端口变化时自动检测
   useEffect(() => {
@@ -3234,7 +3242,7 @@ function RulesContent() {
     } else {
       setPortStatus("idle");
     }
-  }, [form.sourcePort, form.forwardGroupId, form.hostId, form.protocol, form.routeMode, form.tunnelId, checkPort, isForwardGroupRouteMode]);
+  }, [form.sourcePort, form.forwardGroupId, form.hostId, effectiveFormProtocol, form.routeMode, form.tunnelId, checkPort, isForwardGroupRouteMode]);
 
   useEffect(() => {
     if (form.routeMode !== "local") return;
@@ -3292,8 +3300,8 @@ function RulesContent() {
     }
     try {
       const randomPortInput = isForwardGroupRouteMode
-        ? { forwardGroupId: Number(form.forwardGroupId), excludeRuleId: editingId || undefined, protocol: form.protocol }
-        : { hostId: Number(form.hostId), tunnelId: form.routeMode === "tunnel" ? form.tunnelId : null, excludeRuleId: editingId || undefined, protocol: form.protocol };
+        ? { forwardGroupId: Number(form.forwardGroupId), excludeRuleId: editingId || undefined, protocol: effectiveFormProtocol }
+        : { hostId: Number(form.hostId), tunnelId: form.routeMode === "tunnel" ? form.tunnelId : null, excludeRuleId: editingId || undefined, protocol: effectiveFormProtocol };
       const result = await utils.rules.randomPort.fetch(randomPortInput);
       setForm({ ...form, sourcePort: result.port });
       setPortStatus("available");
@@ -3661,6 +3669,13 @@ function RulesContent() {
 
   const handleSubmit = async () => {
     const submitForwardType = effectiveRouteForwardType;
+    const submitSni = canConfigureSni ? form.sni.trim() : "";
+    const submitProtocol = submitSni ? "tcp" : effectiveFormProtocol;
+    const submitSniPayload = user?.role === "admin"
+      ? canConfigureSni
+        ? submitSni || null
+        : null
+      : undefined;
     if (!form.name || !form.targetIp || !form.targetPort || (!isForwardGroupRouteMode && !form.hostId)) {
       toast.error("请填写所有必填字段（目标端口必须填写）");
       return;
@@ -3728,7 +3743,7 @@ function RulesContent() {
         toast.error(mainBackupDisabledText || "当前规则类型不支持出站策略");
         return;
       }
-      if (form.protocol !== "tcp") {
+      if (submitProtocol !== "tcp") {
         toast.error("出站策略当前仅支持 TCP 协议");
         return;
       }
@@ -3764,10 +3779,10 @@ function RulesContent() {
     if (kernelForwardWarning) {
       toast.warning(kernelForwardWarning, { duration: 7000 });
     }
-    if (editingId && editingOriginalProtocol === "both" && form.protocol !== "both") {
+    if (editingId && editingOriginalProtocol === "both" && submitProtocol !== "both") {
       const confirmed = await confirmDialog({
         title: "确认缩小协议范围",
-        description: `当前规则同时转发 TCP 和 UDP。保存后将只保留 ${form.protocol.toUpperCase()}，另一协议的监听会被停止。`,
+        description: `当前规则同时转发 TCP 和 UDP。保存后将只保留 ${submitProtocol.toUpperCase()}，另一协议的监听会被停止。`,
         confirmText: "继续保存",
       });
       if (!confirmed) return;
@@ -3778,13 +3793,14 @@ function RulesContent() {
         hostId: isForwardGroupRouteMode ? undefined : form.hostId!,
         name: form.name,
         forwardType: submitForwardType,
-        protocol: form.protocol,
+        protocol: submitProtocol,
         gostMode: "direct" as const,
         gostRelayHost: null,
         gostRelayPort: null,
         tunnelId: form.routeMode === "tunnel" ? form.tunnelId : null,
         forwardGroupId: isForwardGroupRouteMode ? form.forwardGroupId : null,
         sourcePort: form.sourcePort,
+        sni: submitSniPayload,
         isEnabled: portStatus === "available" ? true : undefined,
         targetIp: form.targetIp,
         targetPort: form.targetPort,
@@ -3796,13 +3812,14 @@ function RulesContent() {
         hostId: isForwardGroupRouteMode ? undefined : form.hostId!,
         name: form.name,
         forwardType: submitForwardType,
-        protocol: form.protocol,
+        protocol: submitProtocol,
         gostMode: "direct" as const,
         gostRelayHost: null,
         gostRelayPort: null,
         tunnelId: form.routeMode === "tunnel" ? form.tunnelId : null,
         forwardGroupId: isForwardGroupRouteMode ? form.forwardGroupId : null,
         sourcePort: form.sourcePort,
+        sni: submitSniPayload,
         targetIp: form.targetIp,
         targetPort: form.targetPort,
         telegramErrorNotifyEnabled: form.telegramErrorNotifyEnabled,
@@ -7311,12 +7328,15 @@ function RulesContent() {
                         onValueChange={(v) => {
                           const nextGroupId = Number(v);
                           const group = nextGroupId ? forwardGroupById.get(nextGroupId) : null;
+                          const nextSni = user?.role === "admin" && isForwardChainGroup(group) ? form.sni : "";
                           setForm({
                             ...form,
                             forwardGroupId: nextGroupId,
                             forwardType: getForwardGroupRuleForwardType(group, form.forwardType),
+                            protocol: nextSni.trim() ? "tcp" : form.protocol,
                             hostId: null,
                             tunnelId: null,
+                            sni: nextSni,
                             failoverEnabled: isForwardChainGroup(group) ? false : form.failoverEnabled,
                           });
                         }}
@@ -7417,12 +7437,13 @@ function RulesContent() {
               <div className="space-y-2">
                 <Label>协议</Label>
                 <Select
-                  value={form.protocol}
+                  value={effectiveFormProtocol}
                   onValueChange={(v) => setForm({
                     ...form,
                     protocol: v as any,
                     failoverEnabled: v === "tcp" ? form.failoverEnabled : false,
                   })}
+                  disabled={sniProtocolLocked}
                 >
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -7526,6 +7547,24 @@ function RulesContent() {
                   onChange={(e) => setForm({ ...form, targetIp: e.target.value })}
                 />
               </div>
+              {canConfigureSni && (
+                <div className="space-y-2">
+                  <Label>SNI 域名</Label>
+                  <Input
+                    placeholder="api.example.com"
+                    value={form.sni}
+                    onChange={(e) => {
+                      const nextSni = e.target.value;
+                      setForm({
+                        ...form,
+                        sni: nextSni,
+                        protocol: nextSni.trim() ? "tcp" : form.protocol,
+                        failoverEnabled: nextSni.trim() ? false : form.failoverEnabled,
+                      });
+                    }}
+                  />
+                </div>
+              )}
               <div className="space-y-2 sm:col-span-2">
                 <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(220px,0.9fr)] sm:items-end">
                   <div className="space-y-2">
@@ -7652,7 +7691,7 @@ function RulesContent() {
             </Button>
             <Button
               onClick={handleSubmit}
-              disabled={isPending || !form.name || (!isForwardGroupRouteMode && !form.hostId) || !form.targetIp || !form.targetPort || portStatus === "used" || (form.routeMode === "local" && !canUseLocalForward) || (form.routeMode === "tunnel" && !form.tunnelId) || (isForwardGroupRouteMode && !form.forwardGroupId) || (form.failoverEnabled && form.protocol !== "tcp")}
+              disabled={isPending || !form.name || (!isForwardGroupRouteMode && !form.hostId) || !form.targetIp || !form.targetPort || portStatus === "used" || (form.routeMode === "local" && !canUseLocalForward) || (form.routeMode === "tunnel" && !form.tunnelId) || (isForwardGroupRouteMode && !form.forwardGroupId) || (form.failoverEnabled && effectiveFormProtocol !== "tcp")}
             >
               {isPending ? "处理中..." : editingId ? "保存" : "创建"}
             </Button>

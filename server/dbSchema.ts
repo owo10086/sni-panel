@@ -238,7 +238,7 @@ const tables: TableDef[] = [
       c("tunnelId", "int"), c("tunnelExitPort", "int"),
       c("forwardGroupId", "int"), c("forwardGroupRuleId", "int"), c("forwardGroupMemberId", "int"),
       c("isForwardGroupTemplate", "bool", { notNull: true, default: false }),
-      c("sourcePort", "int", { notNull: true }), c("targetIp", "text", { notNull: true }),
+      c("sourcePort", "int", { notNull: true }), c("sni", "text"), c("sniSplitterPort", "int"), c("targetIp", "text", { notNull: true }),
       c("targetPort", "int", { notNull: true }),
       c("telegramErrorNotifyEnabled", "bool", { notNull: true, default: false }),
       c("blockHttp", "bool", { notNull: true, default: false }), c("blockSocks", "bool", { notNull: true, default: false }),
@@ -261,7 +261,7 @@ const tables: TableDef[] = [
       c("userId", "int", { notNull: true }), c("createdAt", "epoch", { notNull: true, default: "now" }),
       c("updatedAt", "epoch", { notNull: true, default: "now" }),
     ],
-    indexes: [["hostId"], ["hostId", "createdAt"], ["hostId", "sourcePort", "pendingDelete", "isEnabled"], ["userId"], ["userId", "sortOrder"], ["userId", "createdAt"], ["userId", "pendingDelete", "createdAt"], ["tunnelId"], ["forwardGroupId"], ["forwardGroupId", "isForwardGroupTemplate", "pendingDelete"], ["forwardGroupRuleId"], ["forwardGroupRuleId", "pendingDelete"], ["forwardGroupMemberId"], ["forwardGroupMemberId", "pendingDelete"]],
+    indexes: [["hostId"], ["hostId", "createdAt"], ["hostId", "sourcePort", "pendingDelete", "isEnabled"], ["hostId", "sourcePort", "sni"], ["userId"], ["userId", "sortOrder"], ["userId", "createdAt"], ["userId", "pendingDelete", "createdAt"], ["tunnelId"], ["forwardGroupId"], ["forwardGroupId", "isForwardGroupTemplate", "pendingDelete"], ["forwardGroupRuleId"], ["forwardGroupRuleId", "pendingDelete"], ["forwardGroupMemberId"], ["forwardGroupMemberId", "pendingDelete"], ["sniSplitterPort"]],
   },
   {
     name: "forward_groups",

@@ -37,7 +37,7 @@ import (
 	"golang.org/x/time/rate"
 )
 
-var Version = "2.2.194"
+var Version = "2.2.195"
 var agentProcessStartedAt = time.Now()
 var agentBootID = readAgentBootID()
 var runtimeAgentToken atomic.Value
@@ -2609,6 +2609,7 @@ type fxpSpec struct {
 	TargetIP                 string            `json:"targetIp"`
 	TargetPort               int               `json:"targetPort"`
 	UDPTargets               []fxpUDPTarget    `json:"udpTargets,omitempty"`
+	SNIRoutes                []fxpSNIRoute     `json:"sniRoutes,omitempty"`
 	Key                      string            `json:"key"`
 	LimitIn                  int64             `json:"limitIn"`
 	LimitOut                 int64             `json:"limitOut"`
@@ -2646,6 +2647,18 @@ type fxpUDPTarget struct {
 	RuleID     int    `json:"ruleId"`
 	TargetIP   string `json:"targetIp"`
 	TargetPort int    `json:"targetPort"`
+}
+
+type fxpSNIRoute struct {
+	SNI            string `json:"sni"`
+	RuleID         int    `json:"ruleId"`
+	TargetIP       string `json:"targetIp"`
+	TargetPort     int    `json:"targetPort"`
+	LimitIn        int64  `json:"limitIn,omitempty"`
+	LimitOut       int64  `json:"limitOut,omitempty"`
+	MaxConnections int    `json:"maxConnections,omitempty"`
+	MaxIPs         int    `json:"maxIPs,omitempty"`
+	AccessScope    string `json:"accessScope,omitempty"`
 }
 
 type protocolPolicy struct {
@@ -9192,7 +9205,53 @@ func normalizeFXPSpec(spec fxpSpec) fxpSpec {
 	}
 	sort.Slice(targets, func(i, j int) bool { return targets[i].RuleID < targets[j].RuleID })
 	spec.UDPTargets = targets
+	spec.SNIRoutes = normalizeFXPSNIRoutes(spec.SNIRoutes)
+	if spec.Role == "sni-splitter" {
+		spec.Protocol = "tcp"
+		spec.Key = ""
+		spec.ExitHost = ""
+		spec.ExitPort = 0
+		spec.UDPExitPort = 0
+		spec.ExitPeerID = ""
+		spec.Exits = nil
+		spec.ExitStrategy = "round_robin"
+		spec.TargetIP = ""
+		spec.TargetPort = 0
+		spec.UDPTargets = nil
+		spec.RelayExitHost = ""
+		spec.RelayExitPort = 0
+		spec.UDPRelayExitPort = 0
+		spec.RelayPeerID = ""
+		spec.RelayKey = ""
+	}
 	return spec
+}
+
+func normalizeFXPSNIRoutes(routes []fxpSNIRoute) []fxpSNIRoute {
+	normalized := make([]fxpSNIRoute, 0, len(routes))
+	seen := map[string]int{}
+	for _, route := range routes {
+		route.SNI = normalizeFXPSNIName(route.SNI)
+		route.TargetIP = strings.TrimSpace(route.TargetIP)
+		route.AccessScope = strings.TrimSpace(route.AccessScope)
+		if index, exists := seen[route.SNI]; exists {
+			normalized[index] = route
+			continue
+		}
+		seen[route.SNI] = len(normalized)
+		normalized = append(normalized, route)
+	}
+	sort.Slice(normalized, func(i, j int) bool {
+		if normalized[i].SNI != normalized[j].SNI {
+			return normalized[i].SNI < normalized[j].SNI
+		}
+		return normalized[i].RuleID < normalized[j].RuleID
+	})
+	return normalized
+}
+
+func normalizeFXPSNIName(value string) string {
+	return strings.TrimRight(strings.ToLower(strings.TrimSpace(value)), ".")
 }
 
 func fxpServerSignature(spec fxpSpec) string {
@@ -9247,6 +9306,19 @@ func fxpServerSignature(spec fxpSpec) string {
 	}
 	for _, target := range spec.UDPTargets {
 		parts = append(parts, strconv.Itoa(target.RuleID), strings.TrimSpace(target.TargetIP), strconv.Itoa(target.TargetPort))
+	}
+	for _, route := range spec.SNIRoutes {
+		parts = append(parts,
+			route.SNI,
+			strconv.Itoa(route.RuleID),
+			strings.TrimSpace(route.TargetIP),
+			strconv.Itoa(route.TargetPort),
+			strconv.FormatInt(route.LimitIn, 10),
+			strconv.FormatInt(route.LimitOut, 10),
+			strconv.Itoa(route.MaxConnections),
+			strconv.Itoa(route.MaxIPs),
+			strings.TrimSpace(route.AccessScope),
+		)
 	}
 	return strings.Join(parts, "|")
 }
@@ -9509,8 +9581,7 @@ func fxpRuntimeReadyForRulePort(ruleID int, port int, protocol string, listenSna
 		}
 		for _, candidate := range fxpRuleReadinessCandidates(process.spec) {
 			candidate = normalizeFXPSpec(candidate)
-			if candidate.Role != "entry" || candidate.RuleID != ruleID || candidate.ListenPort != port ||
-				!runtimeProtocolsOverlap(candidate.Protocol, protocol) {
+			if !fxpRuleReadinessCandidateMatches(candidate, ruleID, port, protocol) {
 				continue
 			}
 			if !fxpRuntimeListenersReady(candidate, listenSnapshot) {
@@ -9535,7 +9606,7 @@ func fxpRuntimeReadyForRulePort(ruleID int, port int, protocol string, listenSna
 		}
 		if json.Unmarshal(raw, &spec) == nil {
 			spec = normalizeFXPSpec(spec)
-			if spec.TransportVersion != forwardXWireGuardVersion && runtimeProtocolsOverlap(spec.Protocol, protocol) &&
+			if spec.TransportVersion != forwardXWireGuardVersion && fxpRuleReadinessCandidateMatches(spec, ruleID, port, protocol) &&
 				fxpRuntimeUsesCurrentExecutable(path) && fxpRuntimeUsesCurrentPanelCredentials(path) && fxpRuntimeListenersReady(spec, listenSnapshot) {
 				return true
 			}
@@ -9556,7 +9627,7 @@ func fxpRuntimeReadyForRulePort(ruleID int, port int, protocol string, listenSna
 			continue
 		}
 		for _, entry := range group.Entries {
-			if entry.RuleID == ruleID && entry.ListenPort == port && runtimeProtocolsOverlap(entry.Protocol, protocol) &&
+			if fxpRuleReadinessCandidateMatches(entry, ruleID, port, protocol) &&
 				fxpRuntimeUsesCurrentExecutable(path) && fxpRuntimeUsesCurrentPanelCredentials(path) && fxpRuntimeListenersReady(entry, listenSnapshot) {
 				return true
 			}
@@ -9571,6 +9642,19 @@ func fxpRuleReadinessCandidates(spec fxpSpec) []fxpSpec {
 		return spec.Entries
 	}
 	return []fxpSpec{spec}
+}
+
+func fxpRuleReadinessCandidateMatches(candidate fxpSpec, ruleID int, port int, protocol string) bool {
+	candidate = normalizeFXPSpec(candidate)
+	if candidate.RuleID != ruleID || candidate.ListenPort != port || !runtimeProtocolsOverlap(candidate.Protocol, protocol) {
+		return false
+	}
+	switch candidate.Role {
+	case "entry", "sni-splitter":
+		return true
+	default:
+		return false
+	}
 }
 
 func fxpRuntimeListenersReady(spec fxpSpec, listenSnapshot *runtimeListenSnapshot) bool {
@@ -9887,9 +9971,20 @@ func startFXPProcessLocked(cfg Config, spec fxpSpec, actionMessage *actionMessag
 	return startFXPProcessLockedWithPersistence(cfg, spec, actionMessage, true)
 }
 
+func fxpSpecHasStartIdentity(spec fxpSpec) bool {
+	spec = normalizeFXPSpec(spec)
+	if isFXPEntryGroup(spec) {
+		return len(spec.Entries) > 0
+	}
+	if spec.Role == "sni-splitter" {
+		return spec.RuleID > 0 && spec.ListenPort > 0 && len(spec.SNIRoutes) > 0
+	}
+	return spec.Key != "" && spec.ListenPort > 0
+}
+
 func startFXPProcessLockedWithPersistence(cfg Config, spec fxpSpec, actionMessage *actionMessage, persistenceEnabled bool) bool {
 	spec = normalizeFXPSpec(spec)
-	if (!isFXPEntryGroup(spec) && (spec.Key == "" || spec.ListenPort <= 0)) || (isFXPEntryGroup(spec) && len(spec.Entries) == 0) {
+	if !fxpSpecHasStartIdentity(spec) {
 		actionMessage.set("fxp invalid config role=%s tunnel=%d rule=%d port=%d", spec.Role, spec.TunnelID, spec.RuleID, spec.ListenPort)
 		return false
 	}

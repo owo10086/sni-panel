@@ -10,7 +10,7 @@
 
 ### 版本
 
-- 面板与 APK Release `2.3.280`，Agent `2.2.194`，ForwardX FXP runtime `2.2.117`，Android APP `2.3.97`。
+- 面板与 APK Release `2.3.280`，Agent `2.2.195`，ForwardX FXP runtime `2.2.118`，Android APP `2.3.97`。
 
 ## [2.3.279] - 2026-09-03
 
