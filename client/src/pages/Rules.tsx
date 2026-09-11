@@ -2291,7 +2291,8 @@ function RulesContent() {
     return () => window.clearTimeout(timer);
   }, []);
   const { data: hosts, isFetched: hostsFetched } = trpc.hosts.options.useQuery(undefined, {
-    staleTime: 60000,
+    refetchInterval: pollingInterval("normal"),
+    staleTime: 10000,
     refetchOnWindowFocus: false,
   });
   const { data: tunnels } = trpc.tunnels.options.useQuery(undefined, {

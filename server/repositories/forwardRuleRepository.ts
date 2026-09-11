@@ -751,6 +751,18 @@ type ForwardRuleDisplayRow = {
   sni: string | null;
 };
 
+type ForwardRuleSortRow = ForwardRuleDisplayRow & {
+  userId: number;
+  tunnelId: number | null;
+  groupMode: string | null;
+  sortOrder: number;
+};
+
+type ForwardRuleReorderSelectionRow = Pick<
+  ForwardRuleSortRow,
+  "id" | "userId" | "tunnelId" | "forwardGroupId" | "groupMode"
+>;
+
 type ForwardRuleDisplayUnit = {
   ruleIds: number[];
 };
@@ -1129,7 +1141,7 @@ export async function reorderForwardRules(category: ForwardRuleSortCategory, ids
     userWhere = ` AND r.${q("userId")} = ?`;
     params.push(userId);
   }
-  const rows = await queryRaw<any>(
+  const rows = await queryRaw<ForwardRuleReorderSelectionRow>(
     `SELECT
         r.${q("id")} AS ${q("id")},
         r.${q("userId")} AS ${q("userId")},
@@ -1148,10 +1160,46 @@ export async function reorderForwardRules(category: ForwardRuleSortCategory, ids
     params,
   );
   if (rows.length !== orderedIds.length) throw new Error("排序中包含不存在或无权访问的规则");
-  if (rows.some((row: any) => forwardRuleCategoryFromRow(row) !== category)) throw new Error("排序规则类型不一致");
+  if (rows.some((row) => forwardRuleCategoryFromRow(row) !== category)) throw new Error("排序规则类型不一致");
+  const ownerIds = new Set(rows.map((row) => Number(row.userId || 0)));
+  if (ownerIds.size !== 1 || ownerIds.has(0)) throw new Error("排序规则所属用户不一致");
+  const ownerUserId = Array.from(ownerIds)[0];
+  const allRows = await queryRaw<ForwardRuleSortRow>(
+    `SELECT
+        r.${q("id")} AS ${q("id")},
+        r.${q("userId")} AS ${q("userId")},
+        r.${q("tunnelId")} AS ${q("tunnelId")},
+        r.${q("forwardGroupId")} AS ${q("forwardGroupId")},
+        r.${q("sourcePort")} AS ${q("sourcePort")},
+        r.${q("sni")} AS ${q("sni")},
+        r.${q("sortOrder")} AS ${q("sortOrder")},
+        g.${q("groupMode")} AS ${q("groupMode")}
+       FROM ${q("forward_rules")} r
+       LEFT JOIN ${q("forward_groups")} g ON g.${q("id")} = r.${q("forwardGroupId")}
+      WHERE r.${q("userId")} = ?
+        AND r.${q("pendingDelete")} = ?
+        AND r.${q("forwardGroupRuleId")} IS NULL
+        AND r.${q("id")} NOT IN (
+          SELECT ${q("ruleId")} FROM ${q("forward_group_members")} WHERE ${q("ruleId")} IS NOT NULL
+        )
+        AND ${forwardRuleCategorySql("r", "g")} = ?
+      ORDER BY r.${q("sortOrder")} ASC, r.${q("createdAt")} DESC, r.${q("id")} DESC`,
+    [ownerUserId, boolValue(false), category],
+  );
+  const selectedIds = new Set(orderedIds);
+  const currentIds = buildForwardRuleDisplayUnits(allRows).flatMap((unit) => unit.ruleIds);
+  const remainingIds = currentIds.filter((id) => !selectedIds.has(id));
   const normalizedStartIndex = Math.max(0, Math.floor(Number(startIndex) || 0));
-  for (const [index, id] of orderedIds.entries()) {
-    await executeRaw(`UPDATE ${q("forward_rules")} SET ${q("sortOrder")} = ? WHERE ${q("id")} = ?`, [normalizedStartIndex + index, id]);
+  const insertionIndex = Math.min(normalizedStartIndex, remainingIds.length);
+  const normalizedIds = [
+    ...remainingIds.slice(0, insertionIndex),
+    ...orderedIds,
+    ...remainingIds.slice(insertionIndex),
+  ];
+  const currentSortOrderById = new Map(allRows.map((row) => [Number(row.id), Number(row.sortOrder)]));
+  for (const [index, id] of normalizedIds.entries()) {
+    if (currentSortOrderById.get(id) === index) continue;
+    await executeRaw(`UPDATE ${q("forward_rules")} SET ${q("sortOrder")} = ? WHERE ${q("id")} = ?`, [index, id]);
   }
 }
 
