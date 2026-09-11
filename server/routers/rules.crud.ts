@@ -26,7 +26,8 @@ import { trafficBillingUserLockKey, withKeyedTaskLock } from "../keyedTaskLock";
 import { mapWithConcurrency } from "../asyncPool";
 import { reserveRuleCreateQuota, type RuleQuotaReservation } from "../ruleQuotaReservations";
 import { isAgentVersionAtLeast } from "../agentRouteUtils";
-import { normalizePositiveIds, normalizeSniValue } from "../repositories/repositoryUtils";
+import { isValidSniValue, normalizeSniValue } from "@shared/sni";
+import { normalizePositiveIds } from "../repositories/repositoryUtils";
 
 const targetHostSchema = z.string().min(1).max(253).refine(
   (v) => /^[a-zA-Z0-9]([a-zA-Z0-9\-_.]*[a-zA-Z0-9])?$|^[a-fA-F0-9:.]+$/.test(v.trim()),
@@ -82,15 +83,7 @@ export function normalizeSniInput(value: unknown) {
   if (value === undefined || value === null) return null;
   const normalized = normalizeSniValue(value);
   if (!normalized) return null;
-  if (normalized.length > 253 || normalized.includes("*")) {
-    throw new Error("SNI 域名格式不正确");
-  }
-  const labels = normalized.split(".");
-  if (labels.some((label) => (
-    label.length < 1
-    || label.length > 63
-    || !/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/.test(label)
-  ))) {
+  if (!isValidSniValue(normalized)) {
     throw new Error("SNI 域名格式不正确");
   }
   return normalized;

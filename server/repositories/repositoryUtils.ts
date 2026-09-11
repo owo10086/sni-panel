@@ -1,4 +1,7 @@
+import { normalizeSniValue } from "@shared/sni";
+
 export { epochSeconds, sqlBool } from "../dbCompat";
+export { normalizeSniValue };
 
 export function clampPositiveInt(value: unknown, fallback: number, max: number) {
   const n = Math.floor(Number(value));
@@ -10,10 +13,6 @@ export function normalizePositiveIds(values: unknown[] | undefined) {
   return Array.from(new Set((values || [])
     .map((value) => Math.floor(Number(value)))
     .filter((value) => Number.isInteger(value) && value > 0)));
-}
-
-export function normalizeSniValue(value: unknown) {
-  return String(value || "").trim().toLowerCase().replace(/\.+$/, "");
 }
 
 function truthyDatabaseFlag(value: unknown) {

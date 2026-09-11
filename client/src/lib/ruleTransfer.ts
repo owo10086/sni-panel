@@ -3,6 +3,7 @@ import {
   type ForwardRuleProtocol,
   type ForwardType,
 } from "@shared/forwardTypes";
+import { isValidSniValue, normalizeSniValue } from "@shared/sni";
 import { z } from "zod";
 
 export const RULE_TRANSFER_FILE_KIND = "forwardx.forward-rules";
@@ -80,6 +81,7 @@ const targetHostSchema = z.string().trim().min(1).max(253).refine(
   (value) => /^[a-zA-Z0-9]([a-zA-Z0-9\-_.]*[a-zA-Z0-9])?$|^[a-fA-F0-9:.]+$/.test(value),
   "地址格式不正确",
 );
+const ipv6AddressSchema = z.string().ip({ version: "v6" });
 
 const failoverTargetSchema = z.object({
   targetIp: targetHostSchema,
@@ -113,17 +115,7 @@ const ruleTransferRuleSchema = z.object({
 });
 
 export function normalizeSniImportDomain(value: unknown) {
-  return String(value || "").trim().toLowerCase().replace(/\.+$/, "");
-}
-
-function isValidSniImportDomain(value: string) {
-  const normalized = normalizeSniImportDomain(value);
-  if (!normalized || normalized.length > 253 || normalized.includes("*")) return false;
-  return normalized.split(".").every((label) => (
-    label.length >= 1
-    && label.length <= 63
-    && /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/.test(label)
-  ));
+  return normalizeSniValue(value);
 }
 
 export function isSniBulkImportRule(rule: RuleBulkImportRule): rule is RuleBulkImportRule & { sni: string } {
@@ -147,7 +139,7 @@ function parseSniBulkImportLine(line: string, lineNumber: number, sourcePort: nu
   if (nameRaw.length > 128) return { ok: false, message: `第 ${lineNumber} 行：规则名不能超过 128 个字符` };
   const sni = normalizeSniImportDomain(sniRaw);
   if (!sni) return { ok: false, message: `第 ${lineNumber} 行：SNI 域名不能为空` };
-  if (!isValidSniImportDomain(sni)) return { ok: false, message: `第 ${lineNumber} 行：SNI 域名格式不正确` };
+  if (!isValidSniValue(sni)) return { ok: false, message: `第 ${lineNumber} 行：SNI 域名格式不正确` };
   const targetIsBracketed = targetIpRaw.startsWith("[") && targetIpRaw.endsWith("]");
   const targetIp = targetIsBracketed ? targetIpRaw.slice(1, -1).trim() : targetIpRaw;
   if (targetIp.includes(":") && !targetIsBracketed) {
@@ -155,6 +147,9 @@ function parseSniBulkImportLine(line: string, lineNumber: number, sourcePort: nu
   }
   if (targetIsBracketed && !targetIp.includes(":")) {
     return { ok: false, message: `第 ${lineNumber} 行：目标地址格式不正确` };
+  }
+  if (targetIsBracketed && !ipv6AddressSchema.safeParse(targetIp).success) {
+    return { ok: false, message: `第 ${lineNumber} 行：IPv6 地址格式不正确` };
   }
   const targetResult = targetHostSchema.safeParse(targetIp);
   if (!targetResult.success) {
