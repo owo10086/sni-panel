@@ -7,9 +7,68 @@ import { selfTestRulesRouter } from "./rules.selfTest";
 import { trafficRulesRouter } from "./rules.traffic";
 import { canUseForwardRuleResource, getLinkAccessScope } from "../linkAccessView";
 import { isManagedForwardGroupChildRule } from "../forwardRuleVisibility";
+import { getSniRuntimeGroupStatus } from "../sniRuntimeObservability";
+import { normalizeSniValue } from "@shared/sni";
+
+function runtimeBool(value: unknown, fallback = false) {
+  if (value === undefined || value === null || value === "") return fallback;
+  return value === true || value === 1 || value === "1" || String(value).trim().toLowerCase() === "true";
+}
+
+async function attachSniRuntimeStatus<T extends any>(value: T): Promise<T> {
+  const rules = Array.isArray(value)
+    ? value
+    : value && Array.isArray((value as any).items)
+      ? (value as any).items
+      : value
+        ? [value]
+        : [];
+  const sniRules = rules.filter((rule: any) => (
+    !!normalizeSniValue(rule?.sni)
+    && Number(rule?.forwardGroupId || 0) > 0
+    && Number(rule?.sniSplitterPort || 0) > 0
+  ));
+  if (sniRules.length === 0) return value;
+  const groupIds = Array.from(new Set(sniRules.map((rule: any) => Number(rule.forwardGroupId))));
+  const groups = await db.getForwardGroups(undefined, { includeRuntime: false, ids: groupIds }) as any[];
+  const groupById = new Map(groups.map((group: any) => [Number(group.id), group]));
+  const decorate = (rule: any) => {
+    const sni = normalizeSniValue(rule?.sni);
+    const splitterPort = Number(rule?.sniSplitterPort || 0);
+    const group = groupById.get(Number(rule?.forwardGroupId || 0)) as any;
+    if (!sni || splitterPort <= 0 || !group) return rule;
+    const exitMember = [...(group.members || [])]
+      .filter((member: any) => (
+        runtimeBool(member?.isEnabled, true)
+        && String(member?.memberType || "") === "host"
+        && Number(member?.hostId || 0) > 0
+      ))
+      .sort((left: any, right: any) => Number(left.priority) - Number(right.priority))
+      .at(-1);
+    const exitHostId = Number(exitMember?.hostId || 0);
+    const runtime = getSniRuntimeGroupStatus(exitHostId, splitterPort);
+    return {
+      ...rule,
+      sniRuntime: {
+        observed: !!runtime,
+        applied: !!runtime?.appliedDomains.includes(sni),
+        currentVersion: Number(runtime?.currentVersion || 0),
+        unmatchedConnections: Number(runtime?.unmatchedConnections || 0),
+        lastConfigError: String(runtime?.lastConfigError || ""),
+        observedAt: Number(runtime?.observedAt || 0),
+        exitHostId,
+      },
+    };
+  };
+  if (Array.isArray(value)) return value.map(decorate) as T;
+  if (value && Array.isArray((value as any).items)) {
+    return { ...value, items: (value as any).items.map(decorate) } as T;
+  }
+  return decorate(value) as T;
+}
 
 async function withRuleResourceAccess<T extends any>(value: T, user: { id: number; role: string }): Promise<T> {
-  if (user.role === "admin") return value;
+  if (user.role === "admin") return attachSniRuntimeStatus(value);
   const scope = await getLinkAccessScope(user);
   const decorate = (rule: any) => ({
     ...rule,

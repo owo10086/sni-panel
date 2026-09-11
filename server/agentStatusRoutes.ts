@@ -14,6 +14,7 @@ import { mapWithConcurrency } from "./asyncPool";
 import { withKeyedTaskLock } from "./keyedTaskLock";
 import { agentStatusOrderGuard, agentStatusOrderingKey } from "./agentStatusOrdering";
 import { pruneMapEntries, setBoundedMapValue } from "./boundedCache";
+import { recordSniRuntimeApplyResult } from "./sniRuntimeObservability";
 
 function isForwardXTunnel(tunnel: any) {
   return String(tunnel?.mode || "").toLowerCase() === "forwardx";
@@ -296,6 +297,26 @@ async function applyAgentRuleStatus(host: any, payload: any): Promise<AgentStatu
 
   const reportedRulePort = Number(payload?.sourcePort || 0);
   const currentRulePort = Number((rule as any).sourcePort || 0);
+  const sni = String((rule as any).sni || "").trim();
+  const sniSplitterPort = Number((rule as any).sniSplitterPort || 0);
+  if (sni) {
+    if (reportedRulePort > 0 && reportedRulePort === sniSplitterPort) {
+      recordSniRuntimeApplyResult({
+        hostId: Number(host.id),
+        splitterPort: sniSplitterPort,
+        attemptedVersion: payload?.sniRouteVersion,
+        success: !!isRunning,
+        message,
+      });
+      if (shouldLogStatus(`sni-runtime:${host.id}:${sniSplitterPort}`, `running=${!!isRunning}:version=${Number(payload?.sniRouteVersion || 0)}`, !isRunning || !!message)) {
+        appendPanelLog(
+          isRunning ? "info" : "warn",
+          `[SNI] config status ${hostLogText} splitterPort=${sniSplitterPort} version=${Number(payload?.sniRouteVersion || 0) || "-"} running=${!!isRunning}${logMessage !== "-" ? ` message=${logMessage}` : ""}`,
+        );
+      }
+    }
+    return { status: 200, body: { success: true } };
+  }
   if (reportedRulePort > 0 && currentRulePort > 0 && reportedRulePort !== currentRulePort) {
     if (shouldLogStatus(`rule:${ruleId}:stale-port:${host.id}`, `reported=${reportedRulePort}:current=${currentRulePort}`)) {
       appendPanelLog(

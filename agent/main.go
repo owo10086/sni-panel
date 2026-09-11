@@ -896,23 +896,25 @@ type localRuntimeStatePayload struct {
 }
 
 type localRuntimeRuleState struct {
-	Port             int      `json:"port"`
-	RuleID           int      `json:"ruleId"`
-	TunnelID         int      `json:"tunnelId,omitempty"`
-	ForwardType      string   `json:"forwardType"`
-	SNI              string   `json:"sni,omitempty"`
-	TargetIP         string   `json:"targetIp,omitempty"`
-	TargetPort       int      `json:"targetPort,omitempty"`
-	LimitIn          int64    `json:"limitIn,omitempty"`
-	LimitOut         int64    `json:"limitOut,omitempty"`
-	MaxConnections   int      `json:"maxConnections,omitempty"`
-	MaxIPs           int      `json:"maxIPs,omitempty"`
-	AccessScope      string   `json:"accessScope,omitempty"`
-	Protocol         string   `json:"protocol,omitempty"`
-	TransportVersion string   `json:"transportVersion,omitempty"`
-	SNIRouteVersion  int64    `json:"sniRouteVersion,omitempty"`
-	SourceAllowIPs   []string `json:"sourceAllowIps,omitempty"`
-	Ready            bool     `json:"ready"`
+	Port                    int      `json:"port"`
+	RuleID                  int      `json:"ruleId"`
+	TunnelID                int      `json:"tunnelId,omitempty"`
+	ForwardType             string   `json:"forwardType"`
+	SNI                     string   `json:"sni,omitempty"`
+	TargetIP                string   `json:"targetIp,omitempty"`
+	TargetPort              int      `json:"targetPort,omitempty"`
+	LimitIn                 int64    `json:"limitIn,omitempty"`
+	LimitOut                int64    `json:"limitOut,omitempty"`
+	MaxConnections          int      `json:"maxConnections,omitempty"`
+	MaxIPs                  int      `json:"maxIPs,omitempty"`
+	AccessScope             string   `json:"accessScope,omitempty"`
+	Protocol                string   `json:"protocol,omitempty"`
+	TransportVersion        string   `json:"transportVersion,omitempty"`
+	SNIRouteVersion         int64    `json:"sniRouteVersion,omitempty"`
+	SNIUnmatchedConnections uint64   `json:"sniUnmatchedConnections,omitempty"`
+	SNILastConfigError      string   `json:"sniLastConfigError,omitempty"`
+	SourceAllowIPs          []string `json:"sourceAllowIps,omitempty"`
+	Ready                   bool     `json:"ready"`
 }
 
 type localRuntimeTunnelState struct {
@@ -2151,29 +2153,43 @@ func readLocalRuntimeStatePayload() localRuntimeStatePayload {
 				}
 			}
 			sniSplitterIDs[id] = struct{}{}
+			routes := spec.SNIRoutes
+			routeVersion := int64(0)
+			unmatchedConnections := uint64(0)
+			lastConfigError := trackedFXPSNILastConfigError(spec)
+			if runtimeStatus, ok := readFXPSNIRuntimeStatus(fxpConfigPath(spec)); ok {
+				routes = runtimeStatus.SNIRoutes
+				routeVersion = runtimeStatus.Version
+				unmatchedConnections = runtimeStatus.UnmatchedConnections
+				if lastConfigError == "" {
+					lastConfigError = runtimeStatus.LastConfigError
+				}
+			}
 			ready := fxpRuntimeListenersReady(spec, readiness.listenSnapshot)
-			for _, route := range spec.SNIRoutes {
+			for _, route := range routes {
 				if route.RuleID <= 0 {
 					continue
 				}
 				appendRuleState(localRuntimeRuleState{
-					Port:             spec.ListenPort,
-					RuleID:           route.RuleID,
-					TunnelID:         spec.TunnelID,
-					ForwardType:      "forwardx",
-					SNI:              route.SNI,
-					TargetIP:         strings.TrimSpace(route.TargetIP),
-					TargetPort:       route.TargetPort,
-					LimitIn:          route.LimitIn,
-					LimitOut:         route.LimitOut,
-					MaxConnections:   route.MaxConnections,
-					MaxIPs:           route.MaxIPs,
-					AccessScope:      strings.TrimSpace(route.AccessScope),
-					Protocol:         "tcp",
-					TransportVersion: spec.TransportVersion,
-					SNIRouteVersion:  spec.SNIRouteVersion,
-					SourceAllowIPs:   append([]string(nil), spec.SourceAllowIPs...),
-					Ready:            ready,
+					Port:                    spec.ListenPort,
+					RuleID:                  route.RuleID,
+					TunnelID:                spec.TunnelID,
+					ForwardType:             "forwardx",
+					SNI:                     route.SNI,
+					TargetIP:                strings.TrimSpace(route.TargetIP),
+					TargetPort:              route.TargetPort,
+					LimitIn:                 route.LimitIn,
+					LimitOut:                route.LimitOut,
+					MaxConnections:          route.MaxConnections,
+					MaxIPs:                  route.MaxIPs,
+					AccessScope:             strings.TrimSpace(route.AccessScope),
+					Protocol:                "tcp",
+					TransportVersion:        spec.TransportVersion,
+					SNIRouteVersion:         routeVersion,
+					SNIUnmatchedConnections: unmatchedConnections,
+					SNILastConfigError:      lastConfigError,
+					SourceAllowIPs:          append([]string(nil), spec.SourceAllowIPs...),
+					Ready:                   ready,
 				})
 			}
 		}
@@ -8829,9 +8845,37 @@ type fxpProcess struct {
 	cmd                   *exec.Cmd
 	configPath            string
 	spec                  fxpSpec
+	sniLastConfigError    string
 	wireGuardRefID        string
 	runtimeExecutable     os.FileInfo
 	panelCredentialDigest string
+}
+
+func trackedFXPSNILastConfigError(spec fxpSpec) string {
+	spec = normalizeFXPSpec(spec)
+	if spec.Role != "sni-splitter" {
+		return ""
+	}
+	fxpMu.Lock()
+	process := fxpServers[fxpServerID(spec)]
+	message := ""
+	if process != nil {
+		message = strings.TrimSpace(process.sniLastConfigError)
+	}
+	fxpMu.Unlock()
+	return message
+}
+
+func recordFXPSNILastConfigError(spec fxpSpec, message string) {
+	spec = normalizeFXPSpec(spec)
+	if spec.Role != "sni-splitter" {
+		return
+	}
+	fxpMu.Lock()
+	if process := fxpServers[fxpServerID(spec)]; process != nil {
+		process.sniLastConfigError = strings.TrimSpace(message)
+	}
+	fxpMu.Unlock()
 }
 
 const fxpEntryGroupRole = "entry-group"
@@ -9599,17 +9643,45 @@ func fxpSpecWithSNIControlSocket(spec fxpSpec, configPath string) fxpSpec {
 }
 
 type fxpSNIRouteTableUpdateRequest struct {
+	Operation string        `json:"operation,omitempty"`
 	Version   int64         `json:"version"`
 	SNIRoutes []fxpSNIRoute `json:"sniRoutes"`
 }
 
 type fxpSNIRouteTableUpdateResponse struct {
-	OK      bool   `json:"ok"`
-	Version int64  `json:"version"`
-	Error   string `json:"error,omitempty"`
+	OK                   bool          `json:"ok"`
+	Version              int64         `json:"version"`
+	SNIRoutes            []fxpSNIRoute `json:"sniRoutes,omitempty"`
+	UnmatchedConnections uint64        `json:"unmatchedConnections,omitempty"`
+	LastConfigError      string        `json:"lastConfigError,omitempty"`
+	Error                string        `json:"error,omitempty"`
 }
 
 var applyFXPSNIRouteTableUpdate = applyFXPSNIRouteTableUpdateDefault
+
+func readFXPSNIRuntimeStatus(configPath string) (fxpSNIRouteTableUpdateResponse, bool) {
+	var response fxpSNIRouteTableUpdateResponse
+	configPath = strings.TrimSpace(configPath)
+	if configPath == "" {
+		return response, false
+	}
+	socketPath := fxpSNIControlSocketPath(configPath)
+	conn, err := net.DialTimeout("unix", socketPath, 500*time.Millisecond)
+	if err != nil {
+		return response, false
+	}
+	defer conn.Close()
+	_ = conn.SetDeadline(time.Now().Add(time.Second))
+	if err := json.NewEncoder(conn).Encode(fxpSNIRouteTableUpdateRequest{Operation: "status"}); err != nil {
+		return response, false
+	}
+	if err := json.NewDecoder(conn).Decode(&response); err != nil || !response.OK || response.Version <= 0 {
+		return response, false
+	}
+	response.SNIRoutes = normalizeFXPSNIRoutes(response.SNIRoutes)
+	response.LastConfigError = strings.TrimSpace(response.LastConfigError)
+	return response, len(response.SNIRoutes) > 0
+}
 
 func applyFXPSNIRouteTableUpdateDefault(configPath string, spec fxpSpec) error {
 	spec = fxpSpecWithSNIControlSocket(spec, configPath)
@@ -10347,34 +10419,33 @@ func hotSwapFXPSNIRouteTableLocked(cfg Config, spec fxpSpec, configPath string, 
 	if spec.Role != "sni-splitter" {
 		return true
 	}
-	if err := validateFXPSNIRouteTable(spec); err != nil {
-		actionMessage.set("fxp sni route table validation failed port=%d version=%d: %v", spec.ListenPort, spec.SNIRouteVersion, err)
+	fail := func(format string, args ...any) bool {
+		actionMessage.set(format, args...)
+		recordFXPSNILastConfigError(spec, actionMessage.get())
 		return false
 	}
+	if err := validateFXPSNIRouteTable(spec); err != nil {
+		return fail("fxp sni route table validation failed port=%d version=%d: %v", spec.ListenPort, spec.SNIRouteVersion, err)
+	}
 	if err := applyFXPSNIRouteTableUpdate(configPath, spec); err != nil {
-		actionMessage.set("fxp sni route table update failed port=%d version=%d: %v", spec.ListenPort, spec.SNIRouteVersion, err)
-		return false
+		return fail("fxp sni route table update failed port=%d version=%d: %v", spec.ListenPort, spec.SNIRouteVersion, err)
 	}
 	runtimeSpec := spec
 	runtimeSpec.PanelURL = currentPanelURL(cfg)
 	runtimeSpec.Token = cfg.Token
 	cfgBytes, err := json.Marshal(runtimeSpec)
 	if err != nil {
-		actionMessage.set("fxp marshal sni route table config failed: %v", err)
-		return false
+		return fail("fxp marshal sni route table config failed: %v", err)
 	}
 	if err := os.MkdirAll(filepath.Dir(configPath), 0700); err != nil {
-		actionMessage.set("fxp create runtime dir failed: %v", err)
-		return false
+		return fail("fxp create runtime dir failed: %v", err)
 	}
 	if err := os.WriteFile(configPath, cfgBytes, 0600); err != nil {
-		actionMessage.set("fxp write sni route table config failed: %v", err)
-		return false
+		return fail("fxp write sni route table config failed: %v", err)
 	}
 	if persistenceEnabled {
 		if err := persistFXPSpec(spec); err != nil {
-			actionMessage.set("fxp persistent sni route table snapshot failed tunnel=%d: %v", spec.TunnelID, err)
-			return false
+			return fail("fxp persistent sni route table snapshot failed tunnel=%d: %v", spec.TunnelID, err)
 		}
 	}
 	id := fxpServerID(spec)
@@ -10385,6 +10456,7 @@ func hotSwapFXPSNIRouteTableLocked(cfg Config, spec fxpSpec, configPath string, 
 		process.signature = signature
 		process.configPath = configPath
 		process.spec = spec
+		process.sniLastConfigError = ""
 		process.panelCredentialDigest = fxpPanelCredentialDigest(currentPanelURL(cfg), cfg.Token)
 		if process.runtimeExecutable == nil {
 			process.runtimeExecutable = currentFXPRuntimeExecutableInfo()

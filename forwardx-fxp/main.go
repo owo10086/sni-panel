@@ -918,14 +918,18 @@ type sniRouteTable struct {
 }
 
 type sniRouteTableUpdate struct {
+	Operation string     `json:"operation,omitempty"`
 	Version   int64      `json:"version"`
 	SNIRoutes []sniRoute `json:"sniRoutes"`
 }
 
 type sniRouteTableControlResponse struct {
-	OK      bool   `json:"ok"`
-	Version int64  `json:"version"`
-	Error   string `json:"error,omitempty"`
+	OK                   bool       `json:"ok"`
+	Version              int64      `json:"version"`
+	SNIRoutes            []sniRoute `json:"sniRoutes,omitempty"`
+	UnmatchedConnections uint64     `json:"unmatchedConnections,omitempty"`
+	LastConfigError      string     `json:"lastConfigError,omitempty"`
+	Error                string     `json:"error,omitempty"`
 }
 
 type sniRouteTableStore struct {
@@ -933,6 +937,8 @@ type sniRouteTableStore struct {
 	active        *sniSplitterConnSet
 	mu            sync.Mutex
 	table         atomic.Value
+	unmatched     atomic.Uint64
+	lastError     string
 	reporterStops map[int]func()
 }
 
@@ -1154,6 +1160,55 @@ func (store *sniRouteTableStore) version() int64 {
 		return 0
 	}
 	return table.version
+}
+
+func (store *sniRouteTableStore) recordUnmatched() {
+	if store != nil {
+		store.unmatched.Add(1)
+	}
+}
+
+func (store *sniRouteTableStore) recordConfigResult(err error) {
+	if store == nil {
+		return
+	}
+	store.mu.Lock()
+	if err == nil {
+		store.lastError = ""
+	} else {
+		store.lastError = strings.TrimSpace(err.Error())
+	}
+	store.mu.Unlock()
+}
+
+func (store *sniRouteTableStore) status() sniRouteTableControlResponse {
+	response := sniRouteTableControlResponse{OK: true}
+	if store == nil {
+		response.OK = false
+		response.Error = "sni-splitter route table unavailable"
+		return response
+	}
+	store.mu.Lock()
+	table := store.current()
+	response.LastConfigError = store.lastError
+	if table != nil {
+		response.Version = table.version
+		response.SNIRoutes = make([]sniRoute, 0, len(table.bySNI))
+		for _, runtime := range table.bySNI {
+			if runtime != nil {
+				response.SNIRoutes = append(response.SNIRoutes, runtime.route)
+			}
+		}
+		sort.Slice(response.SNIRoutes, func(i, j int) bool {
+			if response.SNIRoutes[i].SNI != response.SNIRoutes[j].SNI {
+				return response.SNIRoutes[i].SNI < response.SNIRoutes[j].SNI
+			}
+			return response.SNIRoutes[i].RuleID < response.SNIRoutes[j].RuleID
+		})
+	}
+	store.mu.Unlock()
+	response.UnmatchedConnections = store.unmatched.Load()
+	return response
 }
 
 func (store *sniRouteTableStore) update(update sniRouteTableUpdate) (int64, []int, error) {
@@ -1461,16 +1516,22 @@ func handleSNIRouteTableControl(conn net.Conn, store *sniRouteTableStore) {
 	_ = conn.SetDeadline(time.Now().Add(5 * time.Second))
 	var update sniRouteTableUpdate
 	err := json.NewDecoder(io.LimitReader(conn, 1024*1024)).Decode(&update)
+	if err == nil && strings.EqualFold(strings.TrimSpace(update.Operation), "status") {
+		_ = json.NewEncoder(conn).Encode(store.status())
+		return
+	}
 	if err == nil {
 		var changed []int
 		var version int64
 		version, changed, err = store.update(update)
 		if err == nil {
+			store.recordConfigResult(nil)
 			log.Printf("sni-splitter route table updated version=%d routes=%d changedRules=%v", version, len(update.SNIRoutes), changed)
 			_ = json.NewEncoder(conn).Encode(sniRouteTableControlResponse{OK: true, Version: version})
 			return
 		}
 	}
+	store.recordConfigResult(err)
 	version := int64(0)
 	if store != nil {
 		version = store.version()
@@ -1501,14 +1562,17 @@ func handleSniSplitterTCP(client net.Conn, cfg config, store *sniRouteTableStore
 	defer client.Close()
 	sni, ech, hello, err := readClientHelloForSNI(client, sniSplitterReadTimeout, sniSplitterMaxClientHello)
 	if err != nil {
+		store.recordUnmatched()
 		return err
 	}
 	if ech || sni == "" {
+		store.recordUnmatched()
 		return nil
 	}
 	sni = normalizeSNIName(sni)
 	runtime, version := store.lookup(sni)
 	if runtime == nil {
+		store.recordUnmatched()
 		return nil
 	}
 	removeRuleActive := active.addForRule(runtime.route.RuleID, client)

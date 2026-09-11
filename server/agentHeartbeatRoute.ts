@@ -113,6 +113,7 @@ import { runAgentRuntimeRecovery } from "./agentRuntimeRecovery";
 import { observePresenceCapableHostActivity, registerPresenceCapableHost } from "./agentFastLiveness";
 import { recordAuthenticatedAgentActivity } from "./agentActivity";
 import { normalizeSniValue } from "./repositories/repositoryUtils";
+import { recordSniRuntimeSnapshot } from "./sniRuntimeObservability";
 
 // DNS 解析缓存：ruleId → 主目标上次解析到的 IPv4 地址。
 // 备用出站策略里的域名由 Agent 的 TCP 拨号和健康检查动态解析。
@@ -439,6 +440,8 @@ type AgentLocalRuntimeRuleState = {
   protocol?: string;
   transportVersion?: "v1" | "v2";
   sniRouteVersion?: number;
+  sniUnmatchedConnections?: number;
+  sniLastConfigError?: string;
   sourceAllowIps?: string[];
   ready?: boolean;
 };
@@ -674,6 +677,10 @@ function normalizeAgentLocalRuntimeState(input: any): AgentLocalRuntimeState | n
         sniRouteVersion: Number(item?.sniRouteVersion || 0) > 0
           ? Number(item.sniRouteVersion)
           : undefined,
+        sniUnmatchedConnections: Number(item?.sniUnmatchedConnections || 0) > 0
+          ? Math.floor(Number(item.sniUnmatchedConnections))
+          : undefined,
+        sniLastConfigError: normalizeAgentText(item?.sniLastConfigError, 1000) || undefined,
         sourceAllowIps: normalizeSourceAllowIps(Array.isArray(item?.sourceAllowIps) ? item.sourceAllowIps : []),
         ready: item?.ready !== false,
       }))
@@ -1540,10 +1547,14 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
     const dnsChangedReports = Array.isArray(req.body?.dnsChanged) ? req.body.dnsChanged : [];
     const agentStateSignatures = normalizeAgentStateSignatures(req.body?.stateSignatures);
     const localRuntimeStateSignature = normalizeRuntimeStateSignature(req.body?.localStateSignature);
+    const reportedLocalRuntimeState = normalizeAgentLocalRuntimeState(req.body?.localState);
+    if (reportedLocalRuntimeState) {
+      recordSniRuntimeSnapshot(Number(host.id), reportedLocalRuntimeState.rules);
+    }
     const localRuntimeState = resolveAgentLocalRuntimeState(
       Number(host.id),
       localRuntimeStateSignature,
-      normalizeAgentLocalRuntimeState(req.body?.localState),
+      reportedLocalRuntimeState,
     );
     const mimicEnvironment = normalizeMimicEnvironment(req.body?.mimicEnvironment);
     const fxpEndpointEvents = Array.isArray(req.body?.fxpEndpointEvents) ? req.body.fxpEndpointEvents.slice(0, 256) : [];
@@ -5513,12 +5524,34 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
           acceptedSourceAllowIps: sourceAllowIps,
         },
       );
-      if (!runtimeMatches) {
+      if (hasReportedRuntimeState) {
+        const appliedDomains = new Set(reportedLocalRules
+          .filter((local: AgentLocalRuntimeRuleState) => (
+            Number(local.port || 0) === Number(group.splitterPort)
+            && local.ready !== false
+            && Number(local.sniRouteVersion || 0) > 0
+            && forwardTypeCompatible(local.forwardType, "forwardx")
+            && localProtocolCompatible(local.protocol, "tcp")
+          ))
+          .map((local: AgentLocalRuntimeRuleState) => normalizeSniValue(local.sni))
+          .filter(Boolean));
+        const appliedRuleIds: number[] = [];
+        const unappliedRuleIds: number[] = [];
         for (const rule of rulesInGroup) {
-          if (!runtimeBool(rule.isRunning)) continue;
-          runtimeDriftedRuleIds.push(Number(rule.id));
+          const domainApplied = appliedDomains.has(normalizeSniValue(rule.sni));
+          if (domainApplied) {
+            if (!runtimeBool(rule.isRunning)) appliedRuleIds.push(Number(rule.id));
+            rule.isRunning = true;
+            continue;
+          }
+          if (runtimeBool(rule.isRunning)) {
+            unappliedRuleIds.push(Number(rule.id));
+            runtimeDriftedRuleIds.push(Number(rule.id));
+          }
           rule.isRunning = false;
         }
+        if (appliedRuleIds.length > 0) await db.markForwardRulesRunning(appliedRuleIds);
+        if (unappliedRuleIds.length > 0) await db.markForwardRulesNotRunning(unappliedRuleIds);
       }
       if (!rulesInGroup.some((rule) => !runtimeBool(rule.isRunning)) && runtimeMatches) continue;
       const routes = group.routes.slice().sort((a, b) => String(a.sni).localeCompare(String(b.sni)));
@@ -5543,6 +5576,19 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
           sniRoutes: routes,
         },
       });
+    }
+    if (hasReportedRuntimeState) {
+      for (const rule of rules as SniRuntimeRuleLike[]) {
+        const sniRuntime = sniForwardChainRuntimeForRule(rule);
+        if (!sniRuntime || sniRuntime.mode !== "exit" || runtimeBool(rule.isEnabled)) continue;
+        const domainApplied = reportedLocalRules.some((local: AgentLocalRuntimeRuleState) => (
+          Number(local.port || 0) === Number(sniRuntime.splitterPort)
+          && local.ready !== false
+          && Number(local.sniRouteVersion || 0) > 0
+          && normalizeSniValue(local.sni) === normalizeSniValue(rule.sni)
+        ));
+        if (!domainApplied && runtimeBool(rule.isRunning)) await settleStoppedRule(rule);
+      }
     }
     for (const rule of rules) {
       if (sniRuntimeHandledRuleIds.has(Number((rule as any).id || 0))) continue;

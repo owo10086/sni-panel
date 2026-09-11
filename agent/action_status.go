@@ -13,16 +13,17 @@ const actionStatusRetryMinDelay = time.Second
 const actionStatusRetryMaxDelay = 30 * time.Second
 
 type actionStatusPayload struct {
-	RuleID      int    `json:"ruleId"`
-	TunnelID    int    `json:"tunnelId"`
-	StatusType  string `json:"statusType,omitempty"`
-	SourcePort  int    `json:"sourcePort,omitempty"`
-	TargetPort  int    `json:"targetPort,omitempty"`
-	IsRunning   bool   `json:"isRunning"`
-	Message     string `json:"message,omitempty"`
-	ForwardType string `json:"forwardType,omitempty"`
-	Protocol    string `json:"protocol,omitempty"`
-	IssuedAt    int64  `json:"issuedAt,omitempty"`
+	RuleID          int    `json:"ruleId"`
+	TunnelID        int    `json:"tunnelId"`
+	StatusType      string `json:"statusType,omitempty"`
+	SourcePort      int    `json:"sourcePort,omitempty"`
+	TargetPort      int    `json:"targetPort,omitempty"`
+	IsRunning       bool   `json:"isRunning"`
+	Message         string `json:"message,omitempty"`
+	ForwardType     string `json:"forwardType,omitempty"`
+	Protocol        string `json:"protocol,omitempty"`
+	SNIRouteVersion int64  `json:"sniRouteVersion,omitempty"`
+	IssuedAt        int64  `json:"issuedAt,omitempty"`
 }
 
 type actionStatusReport struct {
@@ -63,6 +64,9 @@ func enqueueActionStatusReport(cfg Config, a action, running bool, message strin
 		ForwardType: strings.TrimSpace(a.ForwardType),
 		Protocol:    strings.TrimSpace(a.Protocol),
 		IssuedAt:    a.IssuedAt,
+	}
+	if a.Fxp != nil && strings.EqualFold(strings.TrimSpace(a.Fxp.Role), "sni-splitter") {
+		payload.SNIRouteVersion = a.Fxp.SNIRouteVersion
 	}
 	if payload.StatusType == "" {
 		payload.StatusType = "rule"

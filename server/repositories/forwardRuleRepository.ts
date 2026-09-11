@@ -346,6 +346,7 @@ function buildForwardRuleSqlFilter(
       ruleColumn("r", "gostMode"),
       ruleColumn("r", "gostRelayHost"),
       ruleColumn("r", "targetIp"),
+      ruleColumn("r", "sni"),
       ruleColumn("r", "protocolBlockReason"),
       ruleColumn("r", "failoverStrategy"),
       ruleColumn("r", "failoverTargets"),
