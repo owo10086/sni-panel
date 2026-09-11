@@ -900,10 +900,17 @@ type localRuntimeRuleState struct {
 	RuleID           int    `json:"ruleId"`
 	TunnelID         int    `json:"tunnelId,omitempty"`
 	ForwardType      string `json:"forwardType"`
+	SNI              string `json:"sni,omitempty"`
 	TargetIP         string `json:"targetIp,omitempty"`
 	TargetPort       int    `json:"targetPort,omitempty"`
+	LimitIn          int64  `json:"limitIn,omitempty"`
+	LimitOut         int64  `json:"limitOut,omitempty"`
+	MaxConnections   int    `json:"maxConnections,omitempty"`
+	MaxIPs           int    `json:"maxIPs,omitempty"`
+	AccessScope      string `json:"accessScope,omitempty"`
 	Protocol         string `json:"protocol,omitempty"`
 	TransportVersion string `json:"transportVersion,omitempty"`
+	SNIRouteVersion  int64  `json:"sniRouteVersion,omitempty"`
 	Ready            bool   `json:"ready"`
 }
 
@@ -2089,6 +2096,21 @@ func readLocalRuntimeStatePayload() localRuntimeStatePayload {
 	var persistedFXPEntries []fxpSpec
 	persistedFXPLoaded := false
 	rules := make([]localRuntimeRuleState, 0, len(ruleStates))
+	ruleStateIndexes := map[string]int{}
+	appendRuleState := func(state localRuntimeRuleState) {
+		if state.Port <= 0 {
+			return
+		}
+		key := fmt.Sprintf("%d:%s:%d", state.Port, normalizeRuntimeProtocol(state.Protocol), state.RuleID)
+		if index, ok := ruleStateIndexes[key]; ok {
+			if rules[index].SNIRouteVersion <= 0 && state.SNIRouteVersion > 0 {
+				rules[index] = state
+			}
+			return
+		}
+		ruleStateIndexes[key] = len(rules)
+		rules = append(rules, state)
+	}
 	for _, state := range ruleStates {
 		port := atoi(state.Port)
 		if port <= 0 {
@@ -2102,7 +2124,7 @@ func readLocalRuntimeStatePayload() localRuntimeStatePayload {
 			}
 			transportVersion = fxpTransportVersionForLocalRule(state, persistedFXPEntries)
 		}
-		rules = append(rules, localRuntimeRuleState{
+		appendRuleState(localRuntimeRuleState{
 			Port:             port,
 			RuleID:           state.RuleID,
 			TunnelID:         state.TunnelID,
@@ -2114,6 +2136,52 @@ func readLocalRuntimeStatePayload() localRuntimeStatePayload {
 			Ready:            localRuleStateReady(state, &readiness),
 		})
 	}
+	sniSplitterIDs := map[string]struct{}{}
+	appendSNISplitterRules := func(specs []fxpSpec, skipIDs map[string]struct{}) {
+		for _, spec := range specs {
+			spec = normalizeFXPSpec(spec)
+			if spec.Role != "sni-splitter" || spec.ListenPort <= 0 || len(spec.SNIRoutes) == 0 {
+				continue
+			}
+			id := fxpServerID(spec)
+			if skipIDs != nil {
+				if _, ok := skipIDs[id]; ok {
+					continue
+				}
+			}
+			sniSplitterIDs[id] = struct{}{}
+			ready := fxpRuntimeListenersReady(spec, readiness.listenSnapshot)
+			for _, route := range spec.SNIRoutes {
+				if route.RuleID <= 0 {
+					continue
+				}
+				appendRuleState(localRuntimeRuleState{
+					Port:             spec.ListenPort,
+					RuleID:           route.RuleID,
+					TunnelID:         spec.TunnelID,
+					ForwardType:      "forwardx",
+					SNI:              route.SNI,
+					TargetIP:         strings.TrimSpace(route.TargetIP),
+					TargetPort:       route.TargetPort,
+					LimitIn:          route.LimitIn,
+					LimitOut:         route.LimitOut,
+					MaxConnections:   route.MaxConnections,
+					MaxIPs:           route.MaxIPs,
+					AccessScope:      strings.TrimSpace(route.AccessScope),
+					Protocol:         "tcp",
+					TransportVersion: spec.TransportVersion,
+					SNIRouteVersion:  spec.SNIRouteVersion,
+					Ready:            ready,
+				})
+			}
+		}
+	}
+	appendSNISplitterRules(activeFXPSpecs, nil)
+	if !persistedFXPLoaded {
+		persistedFXPEntries = loadPersistedFXPSpecs()
+		persistedFXPLoaded = true
+	}
+	appendSNISplitterRules(persistedFXPEntries, sniSplitterIDs)
 	tunnels := []localRuntimeTunnelState{}
 	files, err := os.ReadDir(agentStateDir)
 	if err == nil {
@@ -2610,6 +2678,8 @@ type fxpSpec struct {
 	TargetPort               int               `json:"targetPort"`
 	UDPTargets               []fxpUDPTarget    `json:"udpTargets,omitempty"`
 	SNIRoutes                []fxpSNIRoute     `json:"sniRoutes,omitempty"`
+	SNIRouteVersion          int64             `json:"sniRouteVersion,omitempty"`
+	ControlSocketPath        string            `json:"controlSocketPath,omitempty"`
 	Key                      string            `json:"key"`
 	LimitIn                  int64             `json:"limitIn"`
 	LimitOut                 int64             `json:"limitOut"`
@@ -5052,6 +5122,12 @@ func handleActionJobWithRuntimeSnapshot(cfg Config, a action, releaseRuntimeGate
 			ok = runShellBatch(a.Commands) && ok
 		}
 		if cleanup.ok && a.Fxp != nil {
+			if strings.EqualFold(strings.TrimSpace(a.Fxp.Role), "sni-splitter") && a.Fxp.SNIRouteVersion <= 0 {
+				a.Fxp.SNIRouteVersion = a.ConfigRevision + 1
+				if a.Fxp.SNIRouteVersion <= 0 {
+					a.Fxp.SNIRouteVersion = 1
+				}
+			}
 			fxpOK := startFXP(cfg, *a.Fxp, a.FXPEntryGroup, actionMessage)
 			if !fxpOK || agentVerboseLogs {
 				logf("action fxp role=%s tunnel=%d rule=%d listen=%d udpListen=%d protocol=%s proxyReceive=%v proxySend=%v ok=%v", a.Fxp.Role, a.Fxp.TunnelID, a.Fxp.RuleID, a.Fxp.ListenPort, a.Fxp.UDPListenPort, a.Fxp.Protocol, a.Fxp.ProxyProtocolReceive, a.Fxp.ProxyProtocolSend, fxpOK)
@@ -6390,6 +6466,10 @@ func cleanupStaleRuntimeBeforeApply(cfg Config, a action, actionMessage *actionM
 		hasLocalProtocol = previousRuntime.hasProtocol
 		logf("rule runtime cleanup uses queued owner snapshot port=%d oldRule=%d oldTunnel=%d oldForwardType=%s", a.SourcePort, localRuleID, localRuleTunnelID, localForwardType)
 	}
+	if actionCanReuseSNISplitterRuntimeForRouteTableUpdate(cfg, a, localRuleID, localForwardType, localRuleTunnelID, localProtocol, hasLocalProtocol) {
+		writeState(a)
+		return staleRuntimeCleanupResult{preserveRunningFXP: true, ok: true}
+	}
 	if localRuleID <= 0 && localForwardType == "" {
 		if fxpMatchesRunning(a.Fxp, a.FXPEntryGroup) {
 			writeState(a)
@@ -7244,7 +7324,7 @@ func fxpMatchesRunning(spec *fxpSpec, desiredGroups ...*fxpSpec) bool {
 	fxpMu.Lock()
 	existing := fxpServers[id]
 	existingActive := existing != nil && fxpProcessActive(existing)
-	matches := existingActive && existing.signature == signature
+	matches := existingActive && existing.signature == signature && fxpSNIRouteTableMatches(existing.spec, normalized)
 	if existing != nil && !existingActive {
 		delete(fxpServers, id)
 	}
@@ -7264,6 +7344,65 @@ func fxpMatchesRunning(spec *fxpSpec, desiredGroups ...*fxpSpec) bool {
 		logf("fxp %s already running with matching runtime tunnel=%d rule=%d listen=:%d protocol=%s", normalized.Role, normalized.TunnelID, normalized.RuleID, normalized.ListenPort, normalized.Protocol)
 	}
 	return matches
+}
+
+func fxpSNISplitterReadyForRouteTableUpdate(cfg Config, spec *fxpSpec) bool {
+	if spec == nil {
+		return false
+	}
+	normalized := normalizeFXPSpec(*spec)
+	if normalized.Role != "sni-splitter" {
+		return false
+	}
+	configPath := fxpConfigPath(normalized)
+	normalized = fxpSpecWithSNIControlSocket(normalized, configPath)
+	id := fxpServerID(normalized)
+	signature := fxpServerSignature(normalized)
+	expectedCredentialDigest := fxpPanelCredentialDigest(currentPanelURL(cfg), cfg.Token)
+
+	fxpMu.Lock()
+	existing := fxpServers[id]
+	existingActive := existing != nil && fxpProcessActive(existing)
+	matches := existingActive && existing.signature == signature
+	if existing != nil && !existingActive {
+		delete(fxpServers, id)
+	}
+	fxpMu.Unlock()
+	if matches {
+		matches = fxpProcessUsesCurrentExecutable(existing) &&
+			fxpProcessUsesPanelCredentialDigest(existing, expectedCredentialDigest)
+	}
+	if !matches {
+		matches = adoptExistingFXPWithOptions(normalized, signature, configPath, fxpAdoptExistingOptions{
+			expectedCredentialDigest:   expectedCredentialDigest,
+			allowSNIRouteTableMismatch: true,
+		})
+	}
+	if matches {
+		readiness := readLocalRuntimeReadinessCached()
+		matches = fxpRuntimeListenersReady(normalized, readiness.listenSnapshot)
+	}
+	return matches
+}
+
+func actionCanReuseSNISplitterRuntimeForRouteTableUpdate(cfg Config, a action, localRuleID int, localForwardType string, localRuleTunnelID int, localProtocol string, hasLocalProtocol bool) bool {
+	if a.Fxp == nil || localRuleID <= 0 {
+		return false
+	}
+	spec := normalizeFXPSpec(*a.Fxp)
+	if spec.Role != "sni-splitter" || a.SourcePort <= 0 || spec.ListenPort != a.SourcePort {
+		return false
+	}
+	if localForwardType != "" && localForwardType != a.ForwardType {
+		return false
+	}
+	if localRuleTunnelID > 0 && a.TunnelID > 0 && localRuleTunnelID != a.TunnelID {
+		return false
+	}
+	if hasLocalProtocol && !runtimeProtocolsOverlap(localProtocol, a.Protocol) {
+		return false
+	}
+	return fxpSNISplitterReadyForRouteTableUpdate(cfg, &spec)
 }
 
 func waitForActionListenPortFree(a action, timeout time.Duration) bool {
@@ -9114,7 +9253,11 @@ func fxpServerID(spec fxpSpec) string {
 	if isFXPEntryGroup(spec) {
 		return fxpEntryGroupServerID(spec.TransportVersion, spec.TunnelID)
 	}
-	return normalizeFXPTransportVersion(spec.TransportVersion) + ":" + spec.Role + ":" + strconv.Itoa(spec.TunnelID) + ":" + strconv.Itoa(spec.RuleID) + ":" + strconv.Itoa(spec.ListenPort)
+	role := strings.ToLower(strings.TrimSpace(spec.Role))
+	if role == "sni-splitter" {
+		return normalizeFXPTransportVersion(spec.TransportVersion) + ":" + role + ":" + strconv.Itoa(spec.TunnelID) + ":" + strconv.Itoa(spec.ListenPort)
+	}
+	return normalizeFXPTransportVersion(spec.TransportVersion) + ":" + role + ":" + strconv.Itoa(spec.TunnelID) + ":" + strconv.Itoa(spec.RuleID) + ":" + strconv.Itoa(spec.ListenPort)
 }
 
 func normalizeFXPSpec(spec fxpSpec) fxpSpec {
@@ -9163,6 +9306,7 @@ func normalizeFXPSpec(spec fxpSpec) fxpSpec {
 	spec.Entries = nil
 	spec.Protocol = normalizeRuntimeProtocol(spec.Protocol)
 	spec.ListenHost = strings.TrimSpace(spec.ListenHost)
+	spec.ControlSocketPath = strings.TrimSpace(spec.ControlSocketPath)
 	spec.ExitHost = strings.TrimSpace(spec.ExitHost)
 	switch strings.ToLower(strings.TrimSpace(spec.ExitStrategy)) {
 	case "fallback", "random", "ip_hash":
@@ -9267,7 +9411,7 @@ func fxpServerSignature(spec fxpSpec) string {
 		spec.Role,
 		spec.TransportVersion,
 		strconv.Itoa(spec.TunnelID),
-		strconv.Itoa(spec.RuleID),
+		strconv.Itoa(fxpServerSignatureRuleID(spec)),
 		strconv.Itoa(spec.ListenPort),
 		strconv.Itoa(spec.UDPListenPort),
 		spec.ListenHost,
@@ -9307,6 +9451,37 @@ func fxpServerSignature(spec fxpSpec) string {
 	for _, target := range spec.UDPTargets {
 		parts = append(parts, strconv.Itoa(target.RuleID), strings.TrimSpace(target.TargetIP), strconv.Itoa(target.TargetPort))
 	}
+	if spec.Role != "sni-splitter" {
+		for _, route := range spec.SNIRoutes {
+			parts = append(parts,
+				route.SNI,
+				strconv.Itoa(route.RuleID),
+				strings.TrimSpace(route.TargetIP),
+				strconv.Itoa(route.TargetPort),
+				strconv.FormatInt(route.LimitIn, 10),
+				strconv.FormatInt(route.LimitOut, 10),
+				strconv.Itoa(route.MaxConnections),
+				strconv.Itoa(route.MaxIPs),
+				strings.TrimSpace(route.AccessScope),
+			)
+		}
+	}
+	return strings.Join(parts, "|")
+}
+
+func fxpServerSignatureRuleID(spec fxpSpec) int {
+	if spec.Role == "sni-splitter" {
+		return 0
+	}
+	return spec.RuleID
+}
+
+func fxpSNIRouteTableSignature(spec fxpSpec) string {
+	spec = normalizeFXPSpec(spec)
+	if spec.Role != "sni-splitter" {
+		return ""
+	}
+	parts := []string{strconv.FormatInt(spec.SNIRouteVersion, 10)}
 	for _, route := range spec.SNIRoutes {
 		parts = append(parts,
 			route.SNI,
@@ -9323,12 +9498,147 @@ func fxpServerSignature(spec fxpSpec) string {
 	return strings.Join(parts, "|")
 }
 
+func fxpSNIRouteTableMatches(left fxpSpec, right fxpSpec) bool {
+	left = normalizeFXPSpec(left)
+	right = normalizeFXPSpec(right)
+	if left.Role != "sni-splitter" || right.Role != "sni-splitter" {
+		return true
+	}
+	return fxpSNIRouteTableSignature(left) == fxpSNIRouteTableSignature(right)
+}
+
 func fxpConfigPath(spec fxpSpec) string {
 	if isFXPEntryGroup(spec) || isSharedFXPEntry(spec) {
 		return fmt.Sprintf("/run/forwardx-agent/fxp-entry-group-%s-%d.json", normalizeFXPTransportVersion(spec.TransportVersion), spec.TunnelID)
 	}
 	role := strings.ToLower(strings.TrimSpace(spec.Role))
+	if role == "sni-splitter" {
+		return fmt.Sprintf("/run/forwardx-agent/fxp-%s-%d-%d.json", role, spec.TunnelID, spec.ListenPort)
+	}
 	return fmt.Sprintf("/run/forwardx-agent/fxp-%s-%d-%d-%d.json", role, spec.TunnelID, spec.RuleID, spec.ListenPort)
+}
+
+func fxpSNIControlSocketPath(configPath string) string {
+	configPath = strings.TrimSpace(configPath)
+	if configPath == "" {
+		return ""
+	}
+	return strings.TrimSuffix(configPath, filepath.Ext(configPath)) + ".sock"
+}
+
+func fxpSpecWithSNIControlSocket(spec fxpSpec, configPath string) fxpSpec {
+	spec = normalizeFXPSpec(spec)
+	if spec.Role == "sni-splitter" && strings.TrimSpace(spec.ControlSocketPath) == "" {
+		spec.ControlSocketPath = fxpSNIControlSocketPath(configPath)
+	}
+	return spec
+}
+
+type fxpSNIRouteTableUpdateRequest struct {
+	Version   int64         `json:"version"`
+	SNIRoutes []fxpSNIRoute `json:"sniRoutes"`
+}
+
+type fxpSNIRouteTableUpdateResponse struct {
+	OK      bool   `json:"ok"`
+	Version int64  `json:"version"`
+	Error   string `json:"error,omitempty"`
+}
+
+var applyFXPSNIRouteTableUpdate = applyFXPSNIRouteTableUpdateDefault
+
+func applyFXPSNIRouteTableUpdateDefault(configPath string, spec fxpSpec) error {
+	spec = fxpSpecWithSNIControlSocket(spec, configPath)
+	if spec.Role != "sni-splitter" {
+		return nil
+	}
+	if err := validateFXPSNIRouteTable(spec); err != nil {
+		return err
+	}
+	socketPath := strings.TrimSpace(spec.ControlSocketPath)
+	if socketPath == "" {
+		return errors.New("sni-splitter control socket path missing")
+	}
+	conn, err := net.DialTimeout("unix", socketPath, 2*time.Second)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+	_ = conn.SetDeadline(time.Now().Add(5 * time.Second))
+	request := fxpSNIRouteTableUpdateRequest{
+		Version:   spec.SNIRouteVersion,
+		SNIRoutes: spec.SNIRoutes,
+	}
+	if err := json.NewEncoder(conn).Encode(request); err != nil {
+		return err
+	}
+	var response fxpSNIRouteTableUpdateResponse
+	if err := json.NewDecoder(conn).Decode(&response); err != nil {
+		return err
+	}
+	if !response.OK {
+		message := strings.TrimSpace(response.Error)
+		if message == "" {
+			message = "sni-splitter rejected route table update"
+		}
+		return errors.New(message)
+	}
+	return nil
+}
+
+func validateFXPSNIRouteTable(spec fxpSpec) error {
+	spec = normalizeFXPSpec(spec)
+	if spec.Role != "sni-splitter" {
+		return nil
+	}
+	if !validActionPort(spec.ListenPort) {
+		return fmt.Errorf("bad listen port %d", spec.ListenPort)
+	}
+	if spec.Protocol != "tcp" {
+		return errors.New("sni-splitter requires tcp protocol")
+	}
+	if spec.SNIRouteVersion <= 0 {
+		return errors.New("sni-splitter route table version required")
+	}
+	if len(spec.SNIRoutes) == 0 {
+		return errors.New("sni-splitter requires at least one route")
+	}
+	for index, route := range spec.SNIRoutes {
+		if route.RuleID <= 0 {
+			return fmt.Errorf("sni-splitter route %d requires rule id", index)
+		}
+		if !validFXPSNIName(route.SNI) {
+			return fmt.Errorf("sni-splitter route %d requires valid sni", index)
+		}
+		if strings.TrimSpace(route.TargetIP) == "" || !validActionPort(route.TargetPort) {
+			return fmt.Errorf("sni-splitter route %d requires target host and port", index)
+		}
+	}
+	return nil
+}
+
+func validFXPSNIName(value string) bool {
+	value = normalizeFXPSNIName(value)
+	if value == "" || len(value) > 253 || strings.Contains(value, "*") {
+		return false
+	}
+	for _, label := range strings.Split(value, ".") {
+		if len(label) == 0 || len(label) > 63 {
+			return false
+		}
+		for index, r := range label {
+			alpha := r >= 'a' && r <= 'z'
+			digit := r >= '0' && r <= '9'
+			hyphen := r == '-'
+			if !alpha && !digit && !hyphen {
+				return false
+			}
+			if (index == 0 || index == len(label)-1) && hyphen {
+				return false
+			}
+		}
+	}
+	return true
 }
 
 func fxpProcessActive(process *fxpProcess) bool {
@@ -9467,7 +9777,7 @@ func fxpPanelCredentialDigest(panelURL string, token string) string {
 
 func fxpSpecNeedsPanelCredentials(spec fxpSpec) bool {
 	spec = normalizeFXPSpec(spec)
-	return spec.Role == "entry" || isFXPEntryGroup(spec)
+	return spec.Role == "entry" || spec.Role == "sni-splitter" || isFXPEntryGroup(spec)
 }
 
 func fxpSpecPanelCredentialDigest(spec fxpSpec) (string, bool) {
@@ -9646,12 +9956,19 @@ func fxpRuleReadinessCandidates(spec fxpSpec) []fxpSpec {
 
 func fxpRuleReadinessCandidateMatches(candidate fxpSpec, ruleID int, port int, protocol string) bool {
 	candidate = normalizeFXPSpec(candidate)
-	if candidate.RuleID != ruleID || candidate.ListenPort != port || !runtimeProtocolsOverlap(candidate.Protocol, protocol) {
+	if candidate.ListenPort != port || !runtimeProtocolsOverlap(candidate.Protocol, protocol) {
 		return false
 	}
 	switch candidate.Role {
-	case "entry", "sni-splitter":
-		return true
+	case "entry":
+		return candidate.RuleID == ruleID
+	case "sni-splitter":
+		for _, route := range candidate.SNIRoutes {
+			if route.RuleID == ruleID {
+				return true
+			}
+		}
+		return candidate.RuleID == ruleID
 	default:
 		return false
 	}
@@ -9725,10 +10042,24 @@ func killFXPByConfigPath(configPath string) {
 	}
 }
 
+type fxpAdoptExistingOptions struct {
+	expectedCredentialDigest   string
+	allowSNIRouteTableMismatch bool
+}
+
 func adoptExistingFXP(spec fxpSpec, signature string, configPath string, expectedCredentialDigests ...string) bool {
+	options := fxpAdoptExistingOptions{}
+	if len(expectedCredentialDigests) > 0 {
+		options.expectedCredentialDigest = expectedCredentialDigests[0]
+	}
+	return adoptExistingFXPWithOptions(spec, signature, configPath, options)
+}
+
+func adoptExistingFXPWithOptions(spec fxpSpec, signature string, configPath string, options fxpAdoptExistingOptions) bool {
 	if spec.TransportVersion == forwardXWireGuardVersion {
 		return false
 	}
+	spec = normalizeFXPSpec(spec)
 	raw, err := os.ReadFile(configPath)
 	if err != nil {
 		return false
@@ -9745,15 +10076,18 @@ func adoptExistingFXP(spec fxpSpec, signature string, configPath string, expecte
 	if fxpServerSignature(existing) != signature {
 		return false
 	}
+	if spec.Role == "sni-splitter" && !options.allowSNIRouteTableMismatch && !fxpSNIRouteTableMatches(existing, spec) {
+		return false
+	}
 	if !fxpRuntimeUsesCurrentExecutable(configPath) {
 		return false
 	}
 	credentialDigest, credentialsValid := fxpSpecPanelCredentialDigest(existing)
-	expectedCredentialDigest := ""
-	if len(expectedCredentialDigests) > 0 {
-		expectedCredentialDigest = expectedCredentialDigests[0]
-	} else if current, known := currentFXPPanelCredentialDigest(); known {
-		expectedCredentialDigest = current
+	expectedCredentialDigest := strings.TrimSpace(options.expectedCredentialDigest)
+	if expectedCredentialDigest == "" {
+		if current, known := currentFXPPanelCredentialDigest(); known {
+			expectedCredentialDigest = current
+		}
 	}
 	if fxpSpecNeedsPanelCredentials(existing) && expectedCredentialDigest != "" &&
 		(!credentialsValid || !hmac.Equal([]byte(credentialDigest), []byte(expectedCredentialDigest))) {
@@ -9764,11 +10098,15 @@ func adoptExistingFXP(spec fxpSpec, signature string, configPath string, expecte
 		return false
 	}
 	id := fxpServerID(spec)
+	trackedSpec := spec
+	if spec.Role == "sni-splitter" && options.allowSNIRouteTableMismatch && !fxpSNIRouteTableMatches(existing, spec) {
+		trackedSpec = existing
+	}
 	fxpMu.Lock()
 	fxpServers[id] = &fxpProcess{
 		signature:             signature,
 		configPath:            configPath,
-		spec:                  spec,
+		spec:                  trackedSpec,
 		runtimeExecutable:     currentFXPRuntimeExecutableInfo(),
 		panelCredentialDigest: credentialDigest,
 	}
@@ -9940,6 +10278,67 @@ func restoreFXPTransitionLockedWithStarter(cfg Config, desired fxpSpec, desiredS
 	}
 }
 
+func hotSwapFXPSNIRouteTableLocked(cfg Config, spec fxpSpec, configPath string, actionMessage *actionMessage, persistenceEnabled bool) bool {
+	spec = fxpSpecWithSNIControlSocket(spec, configPath)
+	if spec.Role != "sni-splitter" {
+		return true
+	}
+	if err := validateFXPSNIRouteTable(spec); err != nil {
+		actionMessage.set("fxp sni route table validation failed port=%d version=%d: %v", spec.ListenPort, spec.SNIRouteVersion, err)
+		return false
+	}
+	if err := applyFXPSNIRouteTableUpdate(configPath, spec); err != nil {
+		actionMessage.set("fxp sni route table update failed port=%d version=%d: %v", spec.ListenPort, spec.SNIRouteVersion, err)
+		return false
+	}
+	runtimeSpec := spec
+	runtimeSpec.PanelURL = currentPanelURL(cfg)
+	runtimeSpec.Token = cfg.Token
+	cfgBytes, err := json.Marshal(runtimeSpec)
+	if err != nil {
+		actionMessage.set("fxp marshal sni route table config failed: %v", err)
+		return false
+	}
+	if err := os.MkdirAll(filepath.Dir(configPath), 0700); err != nil {
+		actionMessage.set("fxp create runtime dir failed: %v", err)
+		return false
+	}
+	if err := os.WriteFile(configPath, cfgBytes, 0600); err != nil {
+		actionMessage.set("fxp write sni route table config failed: %v", err)
+		return false
+	}
+	if persistenceEnabled {
+		if err := persistFXPSpec(spec); err != nil {
+			actionMessage.set("fxp persistent sni route table snapshot failed tunnel=%d: %v", spec.TunnelID, err)
+			return false
+		}
+	}
+	id := fxpServerID(spec)
+	signature := fxpServerSignature(spec)
+	fxpMu.Lock()
+	process := fxpServers[id]
+	if process != nil {
+		process.signature = signature
+		process.configPath = configPath
+		process.spec = spec
+		process.panelCredentialDigest = fxpPanelCredentialDigest(currentPanelURL(cfg), cfg.Token)
+		if process.runtimeExecutable == nil {
+			process.runtimeExecutable = currentFXPRuntimeExecutableInfo()
+		}
+	} else {
+		fxpServers[id] = &fxpProcess{
+			signature:             signature,
+			configPath:            configPath,
+			spec:                  spec,
+			runtimeExecutable:     currentFXPRuntimeExecutableInfo(),
+			panelCredentialDigest: fxpPanelCredentialDigest(currentPanelURL(cfg), cfg.Token),
+		}
+	}
+	fxpMu.Unlock()
+	logf("fxp sni-splitter route table hot swapped rule=%d listen=:%d version=%d routes=%d", spec.RuleID, spec.ListenPort, spec.SNIRouteVersion, len(spec.SNIRoutes))
+	return true
+}
+
 func startFXP(cfg Config, spec fxpSpec, desiredGroup *fxpSpec, actionMessage *actionMessage) bool {
 	fxpControlMu.Lock()
 	defer fxpControlMu.Unlock()
@@ -9984,6 +10383,8 @@ func fxpSpecHasStartIdentity(spec fxpSpec) bool {
 
 func startFXPProcessLockedWithPersistence(cfg Config, spec fxpSpec, actionMessage *actionMessage, persistenceEnabled bool) bool {
 	spec = normalizeFXPSpec(spec)
+	configPath := fxpConfigPath(spec)
+	spec = fxpSpecWithSNIControlSocket(spec, configPath)
 	if !fxpSpecHasStartIdentity(spec) {
 		actionMessage.set("fxp invalid config role=%s tunnel=%d rule=%d port=%d", spec.Role, spec.TunnelID, spec.RuleID, spec.ListenPort)
 		return false
@@ -10003,7 +10404,6 @@ func startFXPProcessLockedWithPersistence(cfg Config, spec fxpSpec, actionMessag
 		wireGuardRefID = fmt.Sprintf("%s#%d", id, atomic.AddUint64(&fxpWireGuardRefSequence, 1))
 	}
 	signature := fxpServerSignature(spec)
-	configPath := fxpConfigPath(spec)
 	var previousSame *fxpSpec
 	fxpMu.Lock()
 	existing := fxpServers[id]
@@ -10024,6 +10424,9 @@ func startFXPProcessLockedWithPersistence(cfg Config, spec fxpSpec, actionMessag
 			wireGuardFXPProxiesReady(spec)
 	}
 	if existingMatches {
+		if spec.Role == "sni-splitter" && !fxpSNIRouteTableMatches(existing.spec, spec) {
+			return hotSwapFXPSNIRouteTableLocked(cfg, spec, configPath, actionMessage, persistenceEnabled)
+		}
 		logf("fxp %s already running tunnel=%d rule=%d listen=:%d protocol=%s", spec.Role, spec.TunnelID, spec.RuleID, spec.ListenPort, spec.Protocol)
 		// A tracked process can outlive its persistent snapshot (for example
 		// after a handoff or a partial state-directory cleanup). Refresh the
@@ -10039,7 +10442,19 @@ func startFXPProcessLockedWithPersistence(cfg Config, spec fxpSpec, actionMessag
 	if existingActive && existing.signature == signature {
 		logf("fxp dependency or listener drift detected; rebuilding role=%s version=%s tunnel=%d rule=%d", spec.Role, spec.TransportVersion, spec.TunnelID, spec.RuleID)
 	}
-	if adoptExistingFXP(spec, signature, configPath, expectedCredentialDigest) {
+	if adoptExistingFXPWithOptions(spec, signature, configPath, fxpAdoptExistingOptions{
+		expectedCredentialDigest:   expectedCredentialDigest,
+		allowSNIRouteTableMismatch: spec.Role == "sni-splitter",
+	}) {
+		if spec.Role == "sni-splitter" {
+			fxpMu.Lock()
+			adopted := fxpServers[id]
+			routeTableMatches := adopted != nil && fxpSNIRouteTableMatches(adopted.spec, spec)
+			fxpMu.Unlock()
+			if !routeTableMatches && !hotSwapFXPSNIRouteTableLocked(cfg, spec, configPath, actionMessage, persistenceEnabled) {
+				return false
+			}
+		}
 		if persistenceEnabled {
 			if err := persistFXPSpec(originalSpec); err != nil {
 				logf("fxp persistent snapshot refresh failed tunnel=%d rule=%d port=%d: %v", originalSpec.TunnelID, originalSpec.RuleID, originalSpec.ListenPort, err)
@@ -10102,7 +10517,7 @@ func startFXPProcessLockedWithPersistence(cfg Config, spec fxpSpec, actionMessag
 		actionMessage.set("fxp create runtime dir failed: %v", err)
 		return false
 	}
-	if spec.Role == "entry" {
+	if spec.Role == "entry" || spec.Role == "sni-splitter" {
 		spec.PanelURL = currentPanelURL(cfg)
 		spec.Token = cfg.Token
 	} else if isFXPEntryGroup(spec) {

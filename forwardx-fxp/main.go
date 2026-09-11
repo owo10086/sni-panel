@@ -20,6 +20,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -910,27 +911,154 @@ type sniRouteRuntime struct {
 	counter    *trafficCounter
 }
 
+type sniRouteTable struct {
+	version int64
+	bySNI   map[string]*sniRouteRuntime
+	byRule  map[int]*sniRouteRuntime
+}
+
+type sniRouteTableUpdate struct {
+	Version   int64      `json:"version"`
+	SNIRoutes []sniRoute `json:"sniRoutes"`
+}
+
+type sniRouteTableControlResponse struct {
+	OK      bool   `json:"ok"`
+	Version int64  `json:"version"`
+	Error   string `json:"error,omitempty"`
+}
+
+type sniRouteTableStore struct {
+	cfg           config
+	active        *sniSplitterConnSet
+	mu            sync.Mutex
+	table         atomic.Value
+	reporterStops map[int]func()
+}
+
+type sniSplitterTrackedConn struct {
+	mu     sync.Mutex
+	conns  map[net.Conn]struct{}
+	closed bool
+}
+
 type sniSplitterConnSet struct {
-	mu    sync.Mutex
-	conns map[net.Conn]struct{}
+	mu     sync.Mutex
+	conns  map[net.Conn]*sniSplitterTrackedConn
+	byRule map[int]map[net.Conn]*sniSplitterTrackedConn
+}
+
+func newSNISplitterTrackedConn(conn net.Conn) *sniSplitterTrackedConn {
+	tracked := &sniSplitterTrackedConn{conns: map[net.Conn]struct{}{}}
+	if conn != nil {
+		tracked.conns[conn] = struct{}{}
+	}
+	return tracked
+}
+
+func (tracked *sniSplitterTrackedConn) add(conn net.Conn) func() {
+	if tracked == nil || conn == nil {
+		return func() {}
+	}
+	tracked.mu.Lock()
+	if tracked.closed {
+		tracked.mu.Unlock()
+		_ = conn.Close()
+		return func() {}
+	}
+	tracked.conns[conn] = struct{}{}
+	tracked.mu.Unlock()
+	return func() {
+		tracked.mu.Lock()
+		delete(tracked.conns, conn)
+		tracked.mu.Unlock()
+	}
+}
+
+func (tracked *sniSplitterTrackedConn) close() {
+	if tracked == nil {
+		return
+	}
+	tracked.mu.Lock()
+	tracked.closed = true
+	conns := make([]net.Conn, 0, len(tracked.conns))
+	for conn := range tracked.conns {
+		conns = append(conns, conn)
+	}
+	tracked.mu.Unlock()
+	for _, conn := range conns {
+		_ = conn.Close()
+	}
 }
 
 func newSNISplitterConnSet() *sniSplitterConnSet {
-	return &sniSplitterConnSet{conns: map[net.Conn]struct{}{}}
+	return &sniSplitterConnSet{
+		conns:  map[net.Conn]*sniSplitterTrackedConn{},
+		byRule: map[int]map[net.Conn]*sniSplitterTrackedConn{},
+	}
 }
 
 func (set *sniSplitterConnSet) add(conn net.Conn) func() {
 	if set == nil || conn == nil {
 		return func() {}
 	}
+	tracked := newSNISplitterTrackedConn(conn)
 	set.mu.Lock()
-	set.conns[conn] = struct{}{}
+	set.conns[conn] = tracked
 	set.mu.Unlock()
 	return func() {
 		set.mu.Lock()
 		delete(set.conns, conn)
+		for ruleID, conns := range set.byRule {
+			delete(conns, conn)
+			if len(conns) == 0 {
+				delete(set.byRule, ruleID)
+			}
+		}
 		set.mu.Unlock()
 	}
+}
+
+func (set *sniSplitterConnSet) addForRule(ruleID int, conn net.Conn) func() {
+	if set == nil || conn == nil || ruleID <= 0 {
+		return func() {}
+	}
+	set.mu.Lock()
+	tracked := set.conns[conn]
+	if tracked == nil {
+		tracked = newSNISplitterTrackedConn(conn)
+		set.conns[conn] = tracked
+	}
+	conns := set.byRule[ruleID]
+	if conns == nil {
+		conns = map[net.Conn]*sniSplitterTrackedConn{}
+		set.byRule[ruleID] = conns
+	}
+	conns[conn] = tracked
+	set.mu.Unlock()
+	return func() {
+		set.mu.Lock()
+		if conns := set.byRule[ruleID]; conns != nil {
+			delete(conns, conn)
+			if len(conns) == 0 {
+				delete(set.byRule, ruleID)
+			}
+		}
+		set.mu.Unlock()
+	}
+}
+
+func (set *sniSplitterConnSet) addPeer(conn net.Conn, peer net.Conn) func() {
+	if set == nil || conn == nil || peer == nil {
+		return func() {}
+	}
+	set.mu.Lock()
+	tracked := set.conns[conn]
+	set.mu.Unlock()
+	if tracked == nil {
+		return func() {}
+	}
+	return tracked.add(peer)
 }
 
 func (set *sniSplitterConnSet) closeAll() {
@@ -938,95 +1066,419 @@ func (set *sniSplitterConnSet) closeAll() {
 		return
 	}
 	set.mu.Lock()
-	conns := make([]net.Conn, 0, len(set.conns))
-	for conn := range set.conns {
-		conns = append(conns, conn)
+	trackedConns := make([]*sniSplitterTrackedConn, 0, len(set.conns))
+	seen := map[*sniSplitterTrackedConn]bool{}
+	for _, tracked := range set.conns {
+		if tracked != nil && !seen[tracked] {
+			seen[tracked] = true
+			trackedConns = append(trackedConns, tracked)
+		}
 	}
 	set.mu.Unlock()
-	for _, conn := range conns {
-		_ = conn.Close()
+	for _, tracked := range trackedConns {
+		tracked.close()
 	}
 }
 
-func buildSNIRouteRuntimeMap(routes []sniRoute) map[string]*sniRouteRuntime {
-	bySNI := make(map[string]*sniRouteRuntime, len(routes))
+func (set *sniSplitterConnSet) closeRule(ruleID int) {
+	if set == nil || ruleID <= 0 {
+		return
+	}
+	set.mu.Lock()
+	ruleConns := set.byRule[ruleID]
+	trackedConns := make([]*sniSplitterTrackedConn, 0, len(ruleConns))
+	seen := map[*sniSplitterTrackedConn]bool{}
+	for _, tracked := range ruleConns {
+		if tracked != nil && !seen[tracked] {
+			seen[tracked] = true
+			trackedConns = append(trackedConns, tracked)
+		}
+	}
+	set.mu.Unlock()
+	for _, tracked := range trackedConns {
+		tracked.close()
+	}
+}
+
+func newSNIRouteTableStore(cfg config, active *sniSplitterConnSet) (*sniRouteTableStore, error) {
+	cfg = normalizeConfig(cfg)
+	if err := validateSNISplitterConfig(cfg); err != nil {
+		return nil, err
+	}
+	store := &sniRouteTableStore{
+		cfg:           cfg,
+		active:        active,
+		reporterStops: map[int]func(){},
+	}
+	table := buildSNIRouteTable(cfg.SNIRouteVersion, cfg.SNIRoutes, nil)
+	store.table.Store(table)
+	store.syncTrafficReportersLocked(table)
+	return store, nil
+}
+
+func (store *sniRouteTableStore) current() *sniRouteTable {
+	if store == nil {
+		return nil
+	}
+	value := store.table.Load()
+	if value == nil {
+		return nil
+	}
+	table, _ := value.(*sniRouteTable)
+	return table
+}
+
+func (store *sniRouteTableStore) lookup(sni string) (*sniRouteRuntime, int64) {
+	table := store.current()
+	if table == nil {
+		return nil, 0
+	}
+	runtime := table.bySNI[normalizeSNIName(sni)]
+	return runtime, table.version
+}
+
+func (store *sniRouteTableStore) runtimeStillCurrent(sni string, runtime *sniRouteRuntime) bool {
+	if runtime == nil {
+		return false
+	}
+	table := store.current()
+	if table == nil {
+		return false
+	}
+	return table.bySNI[normalizeSNIName(sni)] == runtime
+}
+
+func (store *sniRouteTableStore) version() int64 {
+	table := store.current()
+	if table == nil {
+		return 0
+	}
+	return table.version
+}
+
+func (store *sniRouteTableStore) update(update sniRouteTableUpdate) (int64, []int, error) {
+	if store == nil {
+		return 0, nil, errors.New("sni-splitter route table unavailable")
+	}
+	if update.Version <= 0 {
+		return store.version(), nil, errors.New("sni-splitter route table version required")
+	}
+	nextCfg := store.cfg
+	nextCfg.SNIRouteVersion = update.Version
+	nextCfg.SNIRoutes = update.SNIRoutes
+	nextCfg = normalizeConfig(nextCfg)
+	if err := validateSNISplitterConfig(nextCfg); err != nil {
+		return store.version(), nil, err
+	}
+
+	store.mu.Lock()
+	current := store.current()
+	if current != nil && update.Version < current.version {
+		version := current.version
+		store.mu.Unlock()
+		return version, nil, fmt.Errorf("stale sni-splitter route table version %d current %d", update.Version, version)
+	}
+	next := buildSNIRouteTable(update.Version, nextCfg.SNIRoutes, current)
+	if current != nil && update.Version == current.version {
+		if sniRouteTableSignature(current) == sniRouteTableSignature(next) {
+			store.mu.Unlock()
+			return current.version, nil, nil
+		}
+		version := current.version
+		store.mu.Unlock()
+		return version, nil, fmt.Errorf("sni-splitter route table version %d already applied with different routes", update.Version)
+	}
+	changedRuleIDs := changedSNIRouteRuleIDs(current, next)
+	store.cfg = nextCfg
+	store.table.Store(next)
+	store.syncTrafficReportersLocked(next)
+	store.mu.Unlock()
+
+	for _, ruleID := range changedRuleIDs {
+		store.active.closeRule(ruleID)
+	}
+	store.stopRemovedTrafficReporters(next)
+	return next.version, changedRuleIDs, nil
+}
+
+func (store *sniRouteTableStore) close() {
+	if store == nil {
+		return
+	}
+	store.mu.Lock()
+	stops := make([]func(), 0, len(store.reporterStops))
+	for ruleID, stop := range store.reporterStops {
+		if stop != nil {
+			stops = append(stops, stop)
+		}
+		delete(store.reporterStops, ruleID)
+	}
+	store.mu.Unlock()
+	for _, stop := range stops {
+		stop()
+	}
+}
+
+func (store *sniRouteTableStore) syncTrafficReportersLocked(table *sniRouteTable) {
+	if store == nil || table == nil {
+		return
+	}
+	for ruleID, runtime := range table.byRule {
+		if ruleID <= 0 || runtime == nil {
+			continue
+		}
+		if runtime.counter == nil {
+			runtime.counter = &trafficCounter{}
+		}
+		if store.reporterStops[ruleID] == nil {
+			store.reporterStops[ruleID] = startTrafficReporterForRule(store.cfg, ruleID, runtime.counter)
+		}
+	}
+}
+
+func (store *sniRouteTableStore) stopRemovedTrafficReporters(table *sniRouteTable) {
+	if store == nil || table == nil {
+		return
+	}
+	keep := map[int]bool{}
+	for ruleID := range table.byRule {
+		keep[ruleID] = true
+	}
+	store.mu.Lock()
+	stops := make([]func(), 0)
+	for ruleID, stop := range store.reporterStops {
+		if keep[ruleID] {
+			continue
+		}
+		if stop != nil {
+			stops = append(stops, stop)
+		}
+		delete(store.reporterStops, ruleID)
+	}
+	store.mu.Unlock()
+	for _, stop := range stops {
+		stop()
+	}
+}
+
+func buildSNIRouteTable(version int64, routes []sniRoute, previous *sniRouteTable) *sniRouteTable {
+	table := &sniRouteTable{
+		version: version,
+		bySNI:   make(map[string]*sniRouteRuntime, len(routes)),
+		byRule:  make(map[int]*sniRouteRuntime, len(routes)),
+	}
 	for _, route := range routes {
 		sni := normalizeSNIName(route.SNI)
 		if sni == "" {
 			continue
 		}
 		route.SNI = sni
-		bySNI[sni] = &sniRouteRuntime{
-			route:      route,
-			gate:       newConnGate(route.MaxConnections, route.MaxIPs),
-			inLimiter:  newLimiter(route.LimitIn),
-			outLimiter: newLimiter(route.LimitOut),
-			counter:    &trafficCounter{},
-		}
+		runtime := buildSNIRouteRuntime(route, previous)
+		table.bySNI[sni] = runtime
+		table.byRule[route.RuleID] = runtime
 	}
-	return bySNI
+	return table
 }
 
-func startSNIRouteTrafficReporters(cfg config, routes map[string]*sniRouteRuntime) func() {
-	stops := make([]func(), 0, len(routes))
-	ordered := make([]*sniRouteRuntime, 0, len(routes))
-	for _, runtime := range routes {
-		ordered = append(ordered, runtime)
+func buildSNIRouteRuntime(route sniRoute, previous *sniRouteTable) *sniRouteRuntime {
+	var old *sniRouteRuntime
+	if previous != nil {
+		old = previous.byRule[route.RuleID]
 	}
-	sort.Slice(ordered, func(i, j int) bool {
-		return ordered[i].route.RuleID < ordered[j].route.RuleID
-	})
-	for _, runtime := range ordered {
-		if runtime.counter == nil {
-			runtime.counter = &trafficCounter{}
+	if old != nil && sniRouteSignature(old.route) == sniRouteSignature(route) {
+		return old
+	}
+	counter := &trafficCounter{}
+	if old != nil && old.counter != nil {
+		counter = old.counter
+	}
+	return &sniRouteRuntime{
+		route:      route,
+		gate:       newConnGate(route.MaxConnections, route.MaxIPs),
+		inLimiter:  newLimiter(route.LimitIn),
+		outLimiter: newLimiter(route.LimitOut),
+		counter:    counter,
+	}
+}
+
+func sniRouteSignature(route sniRoute) string {
+	parts := []string{
+		normalizeSNIName(route.SNI),
+		strconv.Itoa(route.RuleID),
+		strings.TrimSpace(route.TargetIP),
+		strconv.Itoa(route.TargetPort),
+		strconv.FormatInt(route.LimitIn, 10),
+		strconv.FormatInt(route.LimitOut, 10),
+		strconv.Itoa(route.MaxConnections),
+		strconv.Itoa(route.MaxIPs),
+		strings.TrimSpace(route.AccessScope),
+	}
+	return strings.Join(parts, "\x00")
+}
+
+func sniRouteTableSignature(table *sniRouteTable) string {
+	if table == nil {
+		return ""
+	}
+	ruleIDs := make([]int, 0, len(table.byRule))
+	for ruleID := range table.byRule {
+		ruleIDs = append(ruleIDs, ruleID)
+	}
+	sort.Ints(ruleIDs)
+	parts := make([]string, 0, len(ruleIDs))
+	for _, ruleID := range ruleIDs {
+		if runtime := table.byRule[ruleID]; runtime != nil {
+			parts = append(parts, sniRouteSignature(runtime.route))
 		}
-		stops = append(stops, startTrafficReporterForRule(cfg, runtime.route.RuleID, runtime.counter))
 	}
-	var once sync.Once
-	return func() {
-		once.Do(func() {
-			for _, stop := range stops {
-				stop()
-			}
-		})
+	return strings.Join(parts, "\x01")
+}
+
+func changedSNIRouteRuleIDs(current, next *sniRouteTable) []int {
+	if current == nil {
+		return nil
 	}
+	changed := make([]int, 0)
+	for ruleID, currentRuntime := range current.byRule {
+		nextRuntime := next.byRule[ruleID]
+		if nextRuntime == nil || currentRuntime == nil || sniRouteSignature(currentRuntime.route) != sniRouteSignature(nextRuntime.route) {
+			changed = append(changed, ruleID)
+		}
+	}
+	sort.Ints(changed)
+	return changed
 }
 
 func runSniSplitter(done <-chan struct{}, cfg config) error {
-	routes := buildSNIRouteRuntimeMap(cfg.SNIRoutes)
-	stopTrafficReporters := startSNIRouteTrafficReporters(cfg, routes)
-	defer stopTrafficReporters()
 	ln, err := listenTCP(cfg.ListenHost, cfg.ListenPort, cfg.TCPFastOpen)
 	if err != nil {
 		return fmt.Errorf("sni-splitter tcp listen :%d: %w", cfg.ListenPort, err)
 	}
-	log.Printf("sni-splitter tcp listening on :%d routes=%d", cfg.ListenPort, len(routes))
 
 	var sessionWG sync.WaitGroup
 	active := newSNISplitterConnSet()
+	store, err := newSNIRouteTableStore(cfg, active)
+	if err != nil {
+		_ = ln.Close()
+		return err
+	}
+	defer store.close()
+	controlStop, controlErrCh, err := startSNIRouteTableControlServer(cfg, store)
+	if err != nil {
+		_ = ln.Close()
+		return err
+	}
+	defer controlStop()
+	log.Printf("sni-splitter tcp listening on :%d routes=%d version=%d", cfg.ListenPort, len(store.current().bySNI), store.version())
+
 	errCh := make(chan error, 1)
 	go func() {
-		errCh <- acceptSniSplitterTCP(ln, cfg, routes, &sessionWG, active)
+		errCh <- acceptSniSplitterTCP(ln, cfg, store, &sessionWG, active)
 	}()
 
+	stopRuntime := func() {
+		_ = ln.Close()
+		controlStop()
+		active.closeAll()
+	}
 	select {
 	case <-done:
-		_ = ln.Close()
-		active.closeAll()
+		stopRuntime()
 		waitForFXPSessionDrain("sni-splitter", cfg, &sessionWG)
-		err := <-errCh
+		err := waitForSNISplitterAcceptStop(errCh)
 		if err != nil && !errors.Is(err, net.ErrClosed) {
 			return err
 		}
 		return nil
 	case err := <-errCh:
-		active.closeAll()
+		stopRuntime()
 		waitForFXPSessionDrain("sni-splitter", cfg, &sessionWG)
 		return err
+	case err := <-controlErrCh:
+		stopRuntime()
+		waitForFXPSessionDrain("sni-splitter", cfg, &sessionWG)
+		tcpErr := waitForSNISplitterAcceptStop(errCh)
+		if err != nil {
+			return err
+		}
+		return tcpErr
 	}
 }
 
-func acceptSniSplitterTCP(ln net.Listener, cfg config, routes map[string]*sniRouteRuntime, sessionWG *sync.WaitGroup, active *sniSplitterConnSet) error {
+func waitForSNISplitterAcceptStop(errCh <-chan error) error {
+	select {
+	case err := <-errCh:
+		return err
+	case <-time.After(2 * time.Second):
+		log.Printf("sni-splitter tcp accept stop timed out after listener close")
+		return nil
+	}
+}
+
+func startSNIRouteTableControlServer(cfg config, store *sniRouteTableStore) (func(), <-chan error, error) {
+	path := strings.TrimSpace(cfg.ControlSocketPath)
+	if path == "" {
+		return func() {}, nil, nil
+	}
+	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
+		return nil, nil, fmt.Errorf("sni-splitter control socket dir: %w", err)
+	}
+	_ = os.Remove(path)
+	ln, err := net.Listen("unix", path)
+	if err != nil {
+		return nil, nil, fmt.Errorf("sni-splitter control socket listen %s: %w", path, err)
+	}
+	_ = os.Chmod(path, 0600)
+	errCh := make(chan error, 1)
+	go func() {
+		errCh <- acceptSNIRouteTableControl(ln, store)
+	}()
+	var once sync.Once
+	stop := func() {
+		once.Do(func() {
+			_ = ln.Close()
+			_ = os.Remove(path)
+		})
+	}
+	return stop, errCh, nil
+}
+
+func acceptSNIRouteTableControl(ln net.Listener, store *sniRouteTableStore) error {
+	for {
+		conn, err := ln.Accept()
+		if err != nil {
+			if errors.Is(err, net.ErrClosed) {
+				return nil
+			}
+			return err
+		}
+		go handleSNIRouteTableControl(conn, store)
+	}
+}
+
+func handleSNIRouteTableControl(conn net.Conn, store *sniRouteTableStore) {
+	defer conn.Close()
+	_ = conn.SetDeadline(time.Now().Add(5 * time.Second))
+	var update sniRouteTableUpdate
+	err := json.NewDecoder(io.LimitReader(conn, 1024*1024)).Decode(&update)
+	if err == nil {
+		var changed []int
+		var version int64
+		version, changed, err = store.update(update)
+		if err == nil {
+			log.Printf("sni-splitter route table updated version=%d routes=%d changedRules=%v", version, len(update.SNIRoutes), changed)
+			_ = json.NewEncoder(conn).Encode(sniRouteTableControlResponse{OK: true, Version: version})
+			return
+		}
+	}
+	version := int64(0)
+	if store != nil {
+		version = store.version()
+	}
+	_ = json.NewEncoder(conn).Encode(sniRouteTableControlResponse{OK: false, Version: version, Error: err.Error()})
+}
+
+func acceptSniSplitterTCP(ln net.Listener, cfg config, store *sniRouteTableStore, sessionWG *sync.WaitGroup, active *sniSplitterConnSet) error {
 	for {
 		client, err := ln.Accept()
 		if err != nil {
@@ -1038,14 +1490,14 @@ func acceptSniSplitterTCP(ln net.Listener, cfg config, routes map[string]*sniRou
 		go func() {
 			defer sessionWG.Done()
 			defer removeActive()
-			if err := handleSniSplitterTCP(client, cfg, routes); err != nil && !isClosedErr(err) {
+			if err := handleSniSplitterTCP(client, cfg, store, active); err != nil && !isClosedErr(err) {
 				log.Printf("sni-splitter tcp session error: %v", err)
 			}
 		}()
 	}
 }
 
-func handleSniSplitterTCP(client net.Conn, cfg config, routes map[string]*sniRouteRuntime) error {
+func handleSniSplitterTCP(client net.Conn, cfg config, store *sniRouteTableStore, active *sniSplitterConnSet) error {
 	defer client.Close()
 	sni, ech, hello, err := readClientHelloForSNI(client, sniSplitterReadTimeout, sniSplitterMaxClientHello)
 	if err != nil {
@@ -1054,8 +1506,14 @@ func handleSniSplitterTCP(client net.Conn, cfg config, routes map[string]*sniRou
 	if ech || sni == "" {
 		return nil
 	}
-	runtime := routes[normalizeSNIName(sni)]
+	sni = normalizeSNIName(sni)
+	runtime, version := store.lookup(sni)
 	if runtime == nil {
+		return nil
+	}
+	removeRuleActive := active.addForRule(runtime.route.RuleID, client)
+	defer removeRuleActive()
+	if !store.runtimeStillCurrent(sni, runtime) {
 		return nil
 	}
 	release, ok, reason := runtime.gate.acquire(client.RemoteAddr())
@@ -1070,6 +1528,8 @@ func handleSniSplitterTCP(client net.Conn, cfg config, routes map[string]*sniRou
 		return fmt.Errorf("dial sni route %s target: %w", runtime.route.SNI, err)
 	}
 	defer target.Close()
+	removeTargetActive := active.addPeer(client, target)
+	defer removeTargetActive()
 	if runtime.counter != nil {
 		runtime.counter.connections.Add(1)
 	}
@@ -1082,7 +1542,7 @@ func handleSniSplitterTCP(client net.Conn, cfg config, routes map[string]*sniRou
 			runtime.counter.in.Add(uint64(len(hello)))
 		}
 	}
-	fxpVerbosef("sni-splitter tcp routed rule=%d listen=%d client=%s sni=%s target=%s:%d", runtime.route.RuleID, cfg.ListenPort, client.RemoteAddr(), runtime.route.SNI, runtime.route.TargetIP, runtime.route.TargetPort)
+	fxpVerbosef("sni-splitter tcp routed rule=%d listen=%d version=%d client=%s sni=%s target=%s:%d", runtime.route.RuleID, cfg.ListenPort, version, client.RemoteAddr(), runtime.route.SNI, runtime.route.TargetIP, runtime.route.TargetPort)
 	return proxyPlainTCPWithCounter(client, target, runtime.inLimiter, runtime.outLimiter, runtime.counter)
 }
 

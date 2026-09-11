@@ -184,6 +184,7 @@ test("SNI forward-chain desired state sends entry traffic to the splitter and ro
         assert.equal(splitterApply.targetIp, exitHostIp);
         assert.equal(splitterApply.targetPort, scenario.splitterPort);
         assert.equal(splitterApply.fxp.listenPort, scenario.splitterPort);
+        assert.equal(splitterApply.fxp.sniRouteVersion, 1);
         assert.deepEqual(splitterApply.fxp.sniRoutes, [{
           sni: scenario.sni,
           ruleId: scenario.exitRuleId,
@@ -209,15 +210,22 @@ test("SNI forward-chain desired state sends entry traffic to the splitter and ro
         agentProcessId: 2002,
         forceReconcile: true,
         localState: {
-          rules: runningSplitters.map((rule) => ({
-            port: rule.sourcePort,
-            ruleId: rule.ruleId,
-            forwardType: rule.forwardType,
-            targetIp: rule.targetIp,
-            targetPort: rule.targetPort,
-            protocol: rule.protocol,
-            ready: true,
-          })),
+          rules: runningSplitters.map((rule) => {
+            const scenario = scenarios.find((item) => Number(item.splitterPort) === Number(rule.sourcePort));
+            assert.ok(scenario);
+            return {
+              port: scenario.splitterPort,
+              ruleId: scenario.exitRuleId,
+              forwardType: "forwardx",
+              sni: scenario.sni,
+              targetIp: finalTargetIp,
+              targetPort: 443,
+              accessScope: "u1_h2",
+              protocol: "tcp",
+              sniRouteVersion: 1,
+              ready: true,
+            };
+          }),
           tunnels: [],
           services: [],
         },
@@ -238,9 +246,12 @@ test("SNI forward-chain desired state sends entry traffic to the splitter and ro
             port: scenarios[0].splitterPort,
             ruleId: scenarios[0].exitRuleId,
             forwardType: "forwardx",
-            targetIp: exitHostIp,
-            targetPort: scenarios[0].splitterPort,
+            sni: scenarios[0].sni,
+            targetIp: finalTargetIp,
+            targetPort: 443,
+            accessScope: "u1_h2",
             protocol: "tcp",
+            sniRouteVersion: 1,
             ready: true,
           }],
           tunnels: [],
@@ -458,6 +469,7 @@ test("SNI forward-chain desired state shares one entry listener for multiple dom
       const splitterApplies = exit.payload.desiredState.actions.filter((action) => action.op === "apply" && action.fxp?.role === "sni-splitter" && Number(action.sourcePort) === 24000);
       assert.equal(splitterApplies.length, 1);
       assert.equal(splitterApplies[0].sourcePort, 24000);
+      assert.equal(splitterApplies[0].fxp.sniRouteVersion, 1);
       assert.deepEqual(splitterApplies[0].fxp.sniRoutes, [
         {
           sni: "api.example.com",
@@ -490,15 +502,32 @@ test("SNI forward-chain desired state shares one entry listener for multiple dom
         agentBootId: "boot-exit-shared",
         agentProcessId: 2002,
         localState: {
-          rules: [{
-            port: 24000,
-            ruleId: 102,
-            forwardType: "forwardx",
-            targetIp: exitHostIp,
-            targetPort: 24000,
-            protocol: "tcp",
-            ready: true,
-          }],
+          rules: [
+            {
+              port: 24000,
+              ruleId: 102,
+              forwardType: "forwardx",
+              sni: "api.example.com",
+              targetIp: "203.0.113.20",
+              targetPort: 443,
+              accessScope: "u1_h2",
+              protocol: "tcp",
+              sniRouteVersion: 1,
+              ready: true,
+            },
+            {
+              port: 24000,
+              ruleId: 112,
+              forwardType: "forwardx",
+              sni: "web.example.com",
+              targetIp: "203.0.113.21",
+              targetPort: 8443,
+              accessScope: "u1_h2",
+              protocol: "tcp",
+              sniRouteVersion: 1,
+              ready: true,
+            },
+          ],
           tunnels: [],
           services: [],
         },
@@ -509,22 +538,105 @@ test("SNI forward-chain desired state shares one entry listener for multiple dom
         .filter((action) => action.op === "apply" && action.fxp?.role === "sni-splitter" && Number(action.sourcePort) === 24000);
       assert.equal(repeatedSplitterApplies.length, 0);
 
-      const deletion = await rulesCrud.deleteForwardRuleForActor({ id: 1, role: "admin" }, 110);
+      const gostGroup = runtimeGroups[0];
+      const initialGostSplitterApply = exit.payload.desiredState.actions.find(
+        (action) => action.op === "apply" && action.fxp?.role === "sni-splitter" && Number(action.sourcePort) === gostGroup.splitterPort,
+      );
+      assert.ok(initialGostSplitterApply, "missing initial gost sni splitter apply");
+      for (const route of gostGroup.routes) {
+        await runtime.executeRaw('UPDATE "forward_rules" SET "isRunning" = 1 WHERE "id" = ?', [route.exitRuleId]);
+      }
+      const nonRepresentativeDeletion = await rulesCrud.deleteForwardRuleForActor({ id: 1, role: "admin" }, 210);
+      assert.equal(nonRepresentativeDeletion.success, true);
+      const exitAfterNonRepresentativeDelete = await postHeartbeat(baseUrl, "exit-token", {
+        agentBootId: "boot-exit-shared",
+        agentProcessId: 2002,
+        forceReconcile: true,
+        localState: {
+          rules: [
+            {
+              port: gostGroup.splitterPort,
+              ruleId: 202,
+              forwardType: "forwardx",
+              sni: "gost-api.example.com",
+              targetIp: "203.0.113.30",
+              targetPort: 443,
+              accessScope: "u1_h2",
+              protocol: "tcp",
+              sniRouteVersion: 9,
+              ready: true,
+            },
+            {
+              port: gostGroup.splitterPort,
+              ruleId: 212,
+              forwardType: "forwardx",
+              sni: "gost-web.example.com",
+              targetIp: "203.0.113.31",
+              targetPort: 8443,
+              accessScope: "u1_h2",
+              protocol: "tcp",
+              sniRouteVersion: 9,
+              ready: true,
+            },
+          ],
+          tunnels: [],
+          services: [],
+        },
+      });
+      assert.equal(exitAfterNonRepresentativeDelete.status, 200);
+      assert.equal(exitAfterNonRepresentativeDelete.payload.success, true);
+      const shrinkSplitterApplies = exitAfterNonRepresentativeDelete.payload.desiredState.actions
+        .filter((action) => action.op === "apply" && action.fxp?.role === "sni-splitter" && Number(action.sourcePort) === gostGroup.splitterPort);
+      assert.equal(shrinkSplitterApplies.length, 1);
+      assert.equal(shrinkSplitterApplies[0].ruleId, 202);
+      assert.equal(shrinkSplitterApplies[0].fxp.ruleId, 202);
+      assert.ok(Number(shrinkSplitterApplies[0].fxp.sniRouteVersion) > Number(initialGostSplitterApply.fxp.sniRouteVersion));
+      assert.ok(Number(shrinkSplitterApplies[0].fxp.sniRouteVersion) > 9);
+      assert.deepEqual(shrinkSplitterApplies[0].fxp.sniRoutes, [{
+        sni: "gost-api.example.com",
+        ruleId: 202,
+        targetIp: "203.0.113.30",
+        targetPort: 443,
+        limitIn: 0,
+        limitOut: 0,
+        maxConnections: 0,
+        maxIPs: 0,
+        accessScope: "u1_h2",
+      }]);
+
+      const deletion = await rulesCrud.deleteForwardRuleForActor({ id: 1, role: "admin" }, 100);
       assert.equal(deletion.success, true);
       const exitAfterDelete = await postHeartbeat(baseUrl, "exit-token", {
         agentBootId: "boot-exit-shared",
         agentProcessId: 2002,
         forceReconcile: true,
         localState: {
-          rules: [{
-            port: 24000,
-            ruleId: 102,
-            forwardType: "forwardx",
-            targetIp: exitHostIp,
-            targetPort: 24000,
-            protocol: "tcp",
-            ready: true,
-          }],
+          rules: [
+            {
+              port: 24000,
+              ruleId: 102,
+              forwardType: "forwardx",
+              sni: "api.example.com",
+              targetIp: "203.0.113.20",
+              targetPort: 443,
+              accessScope: "u1_h2",
+              protocol: "tcp",
+              sniRouteVersion: 1,
+              ready: true,
+            },
+            {
+              port: 24000,
+              ruleId: 112,
+              forwardType: "forwardx",
+              sni: "web.example.com",
+              targetIp: "203.0.113.21",
+              targetPort: 8443,
+              accessScope: "u1_h2",
+              protocol: "tcp",
+              sniRouteVersion: 1,
+              ready: true,
+            },
+          ],
           tunnels: [],
           services: [],
         },
@@ -534,11 +646,14 @@ test("SNI forward-chain desired state shares one entry listener for multiple dom
       const refreshedSplitterApplies = exitAfterDelete.payload.desiredState.actions
         .filter((action) => action.op === "apply" && action.fxp?.role === "sni-splitter" && Number(action.sourcePort) === 24000);
       assert.equal(refreshedSplitterApplies.length, 1);
+      assert.equal(refreshedSplitterApplies[0].ruleId, 112);
+      assert.equal(refreshedSplitterApplies[0].fxp.ruleId, 112);
+      assert.ok(Number(refreshedSplitterApplies[0].fxp.sniRouteVersion) > Number(splitterApplies[0].fxp.sniRouteVersion));
       assert.deepEqual(refreshedSplitterApplies[0].fxp.sniRoutes, [{
-        sni: "api.example.com",
-        ruleId: 102,
-        targetIp: "203.0.113.20",
-        targetPort: 443,
+        sni: "web.example.com",
+        ruleId: 112,
+        targetIp: "203.0.113.21",
+        targetPort: 8443,
         limitIn: 0,
         limitOut: 0,
         maxConnections: 0,

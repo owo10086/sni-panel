@@ -30,6 +30,7 @@ func normalizeConfig(cfg config) config {
 	cfg.ExitStrategy = normalizeExitStrategy(cfg.ExitStrategy)
 	cfg.RelayExitHost = strings.TrimSpace(cfg.RelayExitHost)
 	cfg.ListenHost = strings.TrimSpace(cfg.ListenHost)
+	cfg.ControlSocketPath = strings.TrimSpace(cfg.ControlSocketPath)
 	cfg.ProxyProtocolVersion = normalizeProxyProtocolVersion(cfg.ProxyProtocolVersion)
 	if cfg.UDPListenPort <= 0 {
 		cfg.UDPListenPort = cfg.ListenPort
@@ -163,6 +164,9 @@ func validateSNISplitterConfig(cfg config) error {
 	}
 	if cfg.Protocol != "tcp" {
 		return errors.New("sni-splitter requires tcp protocol")
+	}
+	if cfg.SNIRouteVersion <= 0 {
+		return errors.New("sni-splitter route table version required")
 	}
 	if len(cfg.SNIRoutes) == 0 {
 		return errors.New("sni-splitter requires at least one route")

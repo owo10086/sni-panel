@@ -4,11 +4,16 @@ import (
 	"bytes"
 	"crypto/tls"
 	"encoding/binary"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
+	"runtime"
 	"strconv"
 	"sync"
 	"testing"
@@ -144,12 +149,13 @@ func TestSniSplitterRoutesMultipleDomainsAndReportsTrafficByRule(t *testing.T) {
 	defer stopWebBackend()
 
 	cfg := normalizeConfig(config{
-		Role:       "sni-splitter",
-		ListenPort: freeTCPPort(t),
-		Protocol:   "tcp",
-		PanelURL:   panel.URL,
-		Token:      "traffic-test-token",
-		RuleID:     900,
+		Role:            "sni-splitter",
+		ListenPort:      freeTCPPort(t),
+		Protocol:        "tcp",
+		PanelURL:        panel.URL,
+		Token:           "traffic-test-token",
+		RuleID:          900,
+		SNIRouteVersion: 1,
 		SNIRoutes: []sniRoute{
 			{SNI: "api.example.com", RuleID: 101, TargetIP: "127.0.0.1", TargetPort: apiBackendPort},
 			{SNI: "web.example.com", RuleID: 202, TargetIP: "127.0.0.1", TargetPort: webBackendPort},
@@ -170,10 +176,12 @@ func TestSniSplitterRoutesMultipleDomainsAndReportsTrafficByRule(t *testing.T) {
 		t.Fatalf("web backend received wrong payload")
 	}
 
-	stop()
 	cfg.ListenPort = splitterPort
 	key := trafficBatchKey{panelURL: panel.URL, token: cfg.Token, producerID: fxpTrafficProducerID(cfg)}
+	trafficBatchFlushMu.Lock()
+	stop()
 	pending := trafficBatchPendingSnapshot()[key]
+	trafficBatchFlushMu.Unlock()
 	if len(pending.byRule) != 2 {
 		t.Fatalf("sni splitter traffic batch rules = %d, want 2: %+v", len(pending.byRule), pending.byRule)
 	}
@@ -185,11 +193,80 @@ func TestSniSplitterRoutesMultipleDomainsAndReportsTrafficByRule(t *testing.T) {
 	}
 }
 
+func TestSniSplitterHotSwapsRouteTableWithoutRestartingUnchangedRules(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("unix control sockets are not available on windows")
+	}
+	apiHello := clientHelloBytes(t, "api.example.com")
+	webHello := clientHelloBytes(t, "web.example.com")
+	apiBackendPort, stopAPIBackend := startPersistentSNIBackend(t, len(apiHello), "api-v1")
+	defer stopAPIBackend()
+	webBackendPort, stopWebBackend := startPersistentSNIBackend(t, len(webHello), "web-v1")
+	defer stopWebBackend()
+	webBackendPortV2, stopWebBackendV2 := startPersistentSNIBackend(t, len(webHello), "web-v2")
+	defer stopWebBackendV2()
+
+	cfg := normalizeConfig(config{
+		Role:              "sni-splitter",
+		ListenPort:        freeTCPPort(t),
+		Protocol:          "tcp",
+		SNIRouteVersion:   1,
+		ControlSocketPath: testUnixSocketPath(t),
+		SNIRoutes: []sniRoute{{
+			SNI:        "api.example.com",
+			RuleID:     101,
+			TargetIP:   "127.0.0.1",
+			TargetPort: apiBackendPort,
+		}},
+	})
+	splitterPort, stopSplitter := startTestSniSplitterWithConfig(t, cfg)
+	defer stopSplitter()
+
+	apiClient := openSniSplitterSession(t, splitterPort, apiHello, []byte("api-before"), []byte("api-v1:api-before"))
+	defer apiClient.Close()
+	sendSNIRouteTableUpdate(t, cfg.ControlSocketPath, 2, []sniRoute{
+		{SNI: "api.example.com", RuleID: 101, TargetIP: "127.0.0.1", TargetPort: apiBackendPort},
+		{SNI: "web.example.com", RuleID: 202, TargetIP: "127.0.0.1", TargetPort: webBackendPort},
+	})
+	expectSNIBackendReply(t, apiClient, []byte("api-after-add"), []byte("api-v1:api-after-add"))
+
+	webClient := openSniSplitterSession(t, splitterPort, webHello, []byte("web-before"), []byte("web-v1:web-before"))
+	defer webClient.Close()
+	sendSNIRouteTableUpdate(t, cfg.ControlSocketPath, 3, []sniRoute{
+		{SNI: "api.example.com", RuleID: 101, TargetIP: "127.0.0.1", TargetPort: apiBackendPort},
+		{SNI: "web.example.com", RuleID: 202, TargetIP: "127.0.0.1", TargetPort: webBackendPortV2},
+	})
+	expectTCPClosed(t, webClient)
+	expectSNIBackendReply(t, apiClient, []byte("api-after-web-change"), []byte("api-v1:api-after-web-change"))
+	webClientV2 := openSniSplitterSession(t, splitterPort, webHello, []byte("web-after-change"), []byte("web-v2:web-after-change"))
+	defer webClientV2.Close()
+
+	sendSNIRouteTableUpdate(t, cfg.ControlSocketPath, 4, []sniRoute{
+		{SNI: "api.example.com", RuleID: 101, TargetIP: "127.0.0.1", TargetPort: apiBackendPort},
+	})
+	expectTCPClosed(t, webClientV2)
+	expectSNIBackendReply(t, apiClient, []byte("api-after-web-delete"), []byte("api-v1:api-after-web-delete"))
+	webDenied := dialTestTCP(t, splitterPort)
+	defer webDenied.Close()
+	if _, err := webDenied.Write(webHello); err != nil {
+		t.Fatal(err)
+	}
+	expectTCPClosed(t, webDenied)
+
+	if err := sendSNIRouteTableUpdateResult(cfg.ControlSocketPath, 5, []sniRoute{
+		{SNI: "api.example.com", RuleID: 101, TargetIP: "127.0.0.1", TargetPort: 0},
+	}); err == nil {
+		t.Fatal("invalid sni route table update succeeded")
+	}
+	expectSNIBackendReply(t, apiClient, []byte("api-after-invalid"), []byte("api-v1:api-after-invalid"))
+}
+
 func TestSniSplitterConfigValidation(t *testing.T) {
 	cfg := normalizeConfig(config{
-		Role:       " SNI-SPLITTER ",
-		ListenPort: 18443,
-		Protocol:   " TCP ",
+		Role:            " SNI-SPLITTER ",
+		ListenPort:      18443,
+		Protocol:        " TCP ",
+		SNIRouteVersion: 1,
 		SNIRoutes: []sniRoute{{
 			SNI:        " API.EXAMPLE.COM. ",
 			RuleID:     42,
@@ -214,26 +291,38 @@ func TestSniSplitterConfigValidation(t *testing.T) {
 	}{
 		{
 			name:    "no routes",
-			cfg:     normalizeConfig(config{Role: "sni-splitter", ListenPort: 18443, Protocol: "tcp"}),
+			cfg:     normalizeConfig(config{Role: "sni-splitter", ListenPort: 18443, Protocol: "tcp", SNIRouteVersion: 1}),
 			wantErr: "requires at least one route",
+		},
+		{
+			name: "missing version",
+			cfg: normalizeConfig(config{
+				Role:       "sni-splitter",
+				ListenPort: 18443,
+				Protocol:   "tcp",
+				SNIRoutes:  []sniRoute{{SNI: "api.example.com", RuleID: 42, TargetIP: "127.0.0.1", TargetPort: 443}},
+			}),
+			wantErr: "route table version required",
 		},
 		{
 			name: "udp protocol",
 			cfg: normalizeConfig(config{
-				Role:       "sni-splitter",
-				ListenPort: 18443,
-				Protocol:   "udp",
-				SNIRoutes:  []sniRoute{{SNI: "api.example.com", RuleID: 42, TargetIP: "127.0.0.1", TargetPort: 443}},
+				Role:            "sni-splitter",
+				ListenPort:      18443,
+				Protocol:        "udp",
+				SNIRouteVersion: 1,
+				SNIRoutes:       []sniRoute{{SNI: "api.example.com", RuleID: 42, TargetIP: "127.0.0.1", TargetPort: 443}},
 			}),
 			wantErr: "requires tcp protocol",
 		},
 		{
 			name: "bad route",
 			cfg: normalizeConfig(config{
-				Role:       "sni-splitter",
-				ListenPort: 18443,
-				Protocol:   "tcp",
-				SNIRoutes:  []sniRoute{{SNI: "api.example.com", RuleID: 42, TargetIP: "", TargetPort: 443}},
+				Role:            "sni-splitter",
+				ListenPort:      18443,
+				Protocol:        "tcp",
+				SNIRouteVersion: 1,
+				SNIRoutes:       []sniRoute{{SNI: "api.example.com", RuleID: 42, TargetIP: "", TargetPort: 443}},
 			}),
 			wantErr: "route 0 requires target host and port",
 		},
@@ -248,13 +337,21 @@ func TestSniSplitterConfigValidation(t *testing.T) {
 	}
 }
 
+func testUnixSocketPath(t *testing.T) string {
+	t.Helper()
+	path := filepath.Join("/tmp", fmt.Sprintf("forwardx-sni-%d-%d.sock", os.Getpid(), time.Now().UnixNano()))
+	t.Cleanup(func() { _ = os.Remove(path) })
+	return path
+}
+
 func startTestSniSplitter(t *testing.T, routes []sniRoute) (int, func()) {
 	t.Helper()
 	cfg := normalizeConfig(config{
-		Role:       "sni-splitter",
-		ListenPort: freeTCPPort(t),
-		Protocol:   "tcp",
-		SNIRoutes:  routes,
+		Role:            "sni-splitter",
+		ListenPort:      freeTCPPort(t),
+		Protocol:        "tcp",
+		SNIRouteVersion: 1,
+		SNIRoutes:       routes,
 	})
 	return startTestSniSplitterWithConfig(t, cfg)
 }
@@ -279,6 +376,162 @@ func startTestSniSplitterWithConfig(t *testing.T, cfg config) (int, func()) {
 			t.Fatal("sni splitter did not stop")
 		}
 	}
+}
+
+func sendSNIRouteTableUpdate(t *testing.T, socketPath string, version int64, routes []sniRoute) {
+	t.Helper()
+	if err := sendSNIRouteTableUpdateResult(socketPath, version, routes); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func sendSNIRouteTableUpdateResult(socketPath string, version int64, routes []sniRoute) error {
+	conn, err := net.DialTimeout("unix", socketPath, 2*time.Second)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+	_ = conn.SetDeadline(time.Now().Add(2 * time.Second))
+	if err := json.NewEncoder(conn).Encode(map[string]any{
+		"version":   version,
+		"sniRoutes": routes,
+	}); err != nil {
+		return err
+	}
+	var response struct {
+		OK      bool   `json:"ok"`
+		Version int64  `json:"version"`
+		Error   string `json:"error"`
+	}
+	if err := json.NewDecoder(conn).Decode(&response); err != nil {
+		return err
+	}
+	if !response.OK {
+		return errors.New(response.Error)
+	}
+	return nil
+}
+
+func startPersistentSNIBackend(t *testing.T, helloLen int, label string) (int, func()) {
+	t.Helper()
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var wg sync.WaitGroup
+	var conns sync.Map
+	errCh := make(chan error, 1)
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for {
+			conn, err := ln.Accept()
+			if err != nil {
+				if !errors.Is(err, net.ErrClosed) {
+					select {
+					case errCh <- err:
+					default:
+					}
+				}
+				return
+			}
+			conns.Store(conn, struct{}{})
+			wg.Add(1)
+			go func(conn net.Conn) {
+				defer wg.Done()
+				defer conns.Delete(conn)
+				defer conn.Close()
+				_ = conn.SetReadDeadline(time.Now().Add(2 * time.Second))
+				hello := make([]byte, helloLen)
+				if _, err := io.ReadFull(conn, hello); err != nil {
+					select {
+					case errCh <- err:
+					default:
+					}
+					return
+				}
+				_ = conn.SetReadDeadline(time.Time{})
+				buf := make([]byte, 1024)
+				for {
+					n, err := conn.Read(buf)
+					if err != nil {
+						if !isClosedErr(err) {
+							select {
+							case errCh <- err:
+							default:
+							}
+						}
+						return
+					}
+					reply := append([]byte(label+":"), buf[:n]...)
+					_ = conn.SetWriteDeadline(time.Now().Add(2 * time.Second))
+					if _, err := conn.Write(reply); err != nil {
+						if !isClosedErr(err) {
+							select {
+							case errCh <- err:
+							default:
+							}
+						}
+						return
+					}
+				}
+			}(conn)
+		}
+	}()
+	port := ln.Addr().(*net.TCPAddr).Port
+	return port, func() {
+		_ = ln.Close()
+		conns.Range(func(key, _ any) bool {
+			if conn, ok := key.(net.Conn); ok {
+				_ = conn.Close()
+			}
+			return true
+		})
+		done := make(chan struct{})
+		go func() {
+			wg.Wait()
+			close(done)
+		}()
+		select {
+		case <-done:
+		case <-time.After(2 * time.Second):
+			t.Fatal("persistent backend did not stop")
+		}
+		select {
+		case err := <-errCh:
+			if err != nil && !isClosedErr(err) {
+				t.Fatalf("persistent backend error: %v", err)
+			}
+		default:
+		}
+	}
+}
+
+func openSniSplitterSession(t *testing.T, port int, hello, payload, response []byte) net.Conn {
+	t.Helper()
+	client := dialTestTCP(t, port)
+	if _, err := client.Write(hello); err != nil {
+		_ = client.Close()
+		t.Fatal(err)
+	}
+	expectSNIBackendReply(t, client, payload, response)
+	return client
+}
+
+func expectSNIBackendReply(t *testing.T, conn net.Conn, payload, response []byte) {
+	t.Helper()
+	if _, err := conn.Write(payload); err != nil {
+		t.Fatal(err)
+	}
+	_ = conn.SetReadDeadline(time.Now().Add(2 * time.Second))
+	got := make([]byte, len(response))
+	if _, err := io.ReadFull(conn, got); err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(got, response) {
+		t.Fatalf("sni backend reply = %q, want %q", got, response)
+	}
+	_ = conn.SetReadDeadline(time.Time{})
 }
 
 func startReplyingTCPBackend(t *testing.T, wantBytes int, response []byte) (int, <-chan []byte, func()) {
