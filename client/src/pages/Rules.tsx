@@ -130,6 +130,7 @@ import {
   type ForwardProtocolKey,
 } from "@shared/forwardTypes";
 import { ruleLatencyProbeMethodForRule } from "@shared/latencyProbe";
+import { getSniRuleGroupKey } from "@shared/sni";
 import { formatTrafficMultiplier } from "@shared/trafficMultiplier";
 import { Fragment, lazy, Suspense, useState, useMemo, useEffect, useCallback, useRef, type ReactNode } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
@@ -658,14 +659,11 @@ function groupSniRulesForDisplay(rules: any[]): RuleDisplayItem[] {
   const items: RuleDisplayItem[] = [];
   const sniGroups = new Map<string, SniRuleDisplayGroup>();
   for (const rule of rules) {
-    const forwardGroupId = Number(rule?.forwardGroupId || 0);
-    const sourcePort = Number(rule?.sourcePort || 0);
-    const sni = String(rule?.sni || "").trim();
-    if (!sni || forwardGroupId <= 0 || sourcePort <= 0) {
+    const key = getSniRuleGroupKey(rule);
+    if (!key) {
       items.push({ kind: "rule", key: `rule:${Number(rule?.id || 0)}`, rule });
       continue;
     }
-    const key = `sni:${forwardGroupId}:${sourcePort}`;
     const existing = sniGroups.get(key);
     if (existing) {
       existing.rules.push(rule);

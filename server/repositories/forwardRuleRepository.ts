@@ -6,6 +6,7 @@ import { boolLiteral, boolValue, inList, quoteIdentifier } from "../dbCompat";
 import { describePortPolicy, isPortAllowedByPolicy, portPolicyFrom, portPolicyHasRestriction, type PortPolicySource } from "../portPolicy";
 import { normalizePositiveIds, normalizeSniValue, sqlBool } from "./repositoryUtils";
 import { pageResult, pageWindowForTotal, type PageRequest } from "../../shared/pagination";
+import { getSniRuleGroupKey } from "../../shared/sni";
 import { recordConfigAuditEvent, shouldAuditConfigPatch } from "../configAudit";
 import { withKeyedTaskLock } from "../keyedTaskLock";
 
@@ -751,7 +752,6 @@ type ForwardRuleDisplayRow = {
 };
 
 type ForwardRuleDisplayUnit = {
-  key: string;
   ruleIds: number[];
 };
 
@@ -761,20 +761,17 @@ function buildForwardRuleDisplayUnits(rows: ForwardRuleDisplayRow[]) {
   for (const row of rows) {
     const ruleId = Number(row.id || 0);
     if (ruleId <= 0) continue;
-    const forwardGroupId = Number(row.forwardGroupId || 0);
-    const sourcePort = Number(row.sourcePort || 0);
-    const sni = normalizeSniValue(row.sni);
-    if (!sni || forwardGroupId <= 0 || sourcePort <= 0) {
-      units.push({ key: `rule:${ruleId}`, ruleIds: [ruleId] });
+    const key = getSniRuleGroupKey(row);
+    if (!key) {
+      units.push({ ruleIds: [ruleId] });
       continue;
     }
-    const key = `sni:${forwardGroupId}:${sourcePort}`;
     const existing = sniGroups.get(key);
     if (existing) {
       existing.ruleIds.push(ruleId);
       continue;
     }
-    const unit = { key, ruleIds: [ruleId] };
+    const unit = { ruleIds: [ruleId] };
     sniGroups.set(key, unit);
     units.push(unit);
   }
