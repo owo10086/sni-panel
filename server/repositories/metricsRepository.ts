@@ -14,7 +14,7 @@ import {
 } from "../../drizzle/schema";
 import { executeRaw, getDb, getDatabaseKind, nowDate, queryRaw, rawAffectedRows, withDatabaseTransaction } from "../dbRuntime";
 import { boolLiteral, bucketExpression, limitOffset, quoteIdentifier } from "../dbCompat";
-import { clampPositiveInt, epochSeconds, sqlBool } from "./repositoryUtils";
+import { clampPositiveInt, epochSeconds, isSniSplitterChainExitRule, sqlBool } from "./repositoryUtils";
 import { getSetting, setSetting } from "./settingsRepository";
 import { appendPanelLog } from "../_core/panelLogger";
 import { notifyTunnelLatencyRefresh } from "../tunnelLatencyRefresh";
@@ -1592,6 +1592,8 @@ type ForwardGroupTrafficChildRow = {
   groupId: number;
   memberId: number;
   hostId: number;
+  sni: string;
+  sniSplitterPort: number;
 };
 
 type ForwardGroupLatencyChildRow = {
@@ -1618,7 +1620,7 @@ function selectPreferredForwardGroupLatencyChild(
   return childRows[0];
 }
 
-async function getFirstEnabledMemberByGroup(groupIds: number[]) {
+async function getEnabledMemberBoundaryByGroup(groupIds: number[], boundary: "first" | "last") {
   const db = await getDb();
   const ids = Array.from(new Set(groupIds.map((id) => Number(id)).filter((id) => Number.isInteger(id) && id > 0)));
   const map = new Map<number, { id: number; hostId: number; priority: number }>();
@@ -1638,11 +1640,24 @@ async function getFirstEnabledMemberByGroup(groupIds: number[]) {
     if (groupId <= 0 || id <= 0) continue;
     const priority = Number(row.priority || 0);
     const prev = map.get(groupId);
-    if (!prev || priority < prev.priority || (priority === prev.priority && id < prev.id)) {
+    const replace = boundary === "first"
+      ? priority < Number(prev?.priority ?? Number.POSITIVE_INFINITY)
+        || (priority === Number(prev?.priority) && id < Number(prev?.id || 0))
+      : priority > Number(prev?.priority ?? Number.NEGATIVE_INFINITY)
+        || (priority === Number(prev?.priority) && id > Number(prev?.id || 0));
+    if (!prev || replace) {
       map.set(groupId, { id, hostId: Number(row.hostId || 0), priority });
     }
   }
   return map;
+}
+
+async function getFirstEnabledMemberByGroup(groupIds: number[]) {
+  return getEnabledMemberBoundaryByGroup(groupIds, "first");
+}
+
+async function getLastEnabledMemberByGroup(groupIds: number[]) {
+  return getEnabledMemberBoundaryByGroup(groupIds, "last");
 }
 
 async function getActiveMemberByGroup(groupIds: number[]) {
@@ -1676,6 +1691,8 @@ async function getForwardGroupTrafficChildRows(parentRuleIds: number[]) {
       groupId: forwardRules.forwardGroupId,
       memberId: forwardRules.forwardGroupMemberId,
       hostId: forwardRules.hostId,
+      sni: forwardRules.sni,
+      sniSplitterPort: forwardRules.sniSplitterPort,
     })
     .from(forwardRules)
     .where(sql`${forwardRules.forwardGroupRuleId} IN (${sql.join(parentIds.map((id) => sql`${id}`), sql`, `)}) AND ${forwardRules.pendingDelete} = ${sqlBool(false)}`);
@@ -1685,17 +1702,31 @@ async function getForwardGroupTrafficChildRows(parentRuleIds: number[]) {
     groupId: Number(row.groupId || 0),
     memberId: Number(row.memberId || 0),
     hostId: Number(row.hostId || 0),
+    sni: String(row.sni || "").trim(),
+    sniSplitterPort: Number(row.sniSplitterPort || 0),
   })).filter((row) => row.id > 0 && row.parentId > 0);
   const groupModeById = await getForwardGroupModeMap(childRows.map((row) => row.groupId));
   const chainGroupIds = childRows
     .filter((row) => groupModeById.get(row.groupId) === "chain")
     .map((row) => row.groupId);
   const firstMemberByGroup = await getFirstEnabledMemberByGroup(chainGroupIds);
+  const lastMemberByGroup = await getLastEnabledMemberByGroup(chainGroupIds);
   return childRows.filter((row) => {
     if (groupModeById.get(row.groupId) !== "chain") return true;
     const firstMember = firstMemberByGroup.get(row.groupId);
-    return Number(firstMember?.id || 0) === row.memberId
+    const isFirstMemberRule = Number(firstMember?.id || 0) === row.memberId
       && (!Number(firstMember?.hostId || 0) || Number(firstMember?.hostId || 0) === row.hostId);
+    if (isFirstMemberRule) return true;
+    const lastMember = lastMemberByGroup.get(row.groupId);
+    return isSniSplitterChainExitRule({
+      sni: row.sni,
+      sniSplitterPort: row.sniSplitterPort,
+      forwardGroupMemberId: row.memberId,
+      hostId: row.hostId,
+    }, {
+      groupMode: "chain",
+      members: lastMember ? [{ ...lastMember, isEnabled: true }] : [],
+    });
   });
 }
 
@@ -1769,15 +1800,19 @@ async function normalizeTrafficSummaryRowsForRules(
         groupId: forwardRules.forwardGroupId,
         memberId: forwardRules.forwardGroupMemberId,
         hostId: forwardRules.hostId,
+        sni: forwardRules.sni,
+        sniSplitterPort: forwardRules.sniSplitterPort,
       })
       .from(forwardRules)
       .where(sql`${forwardRules.id} IN (${sql.join(groupChildIds.map(id => sql`${id}`), sql`, `)}) AND ${forwardRules.forwardGroupRuleId} IS NOT NULL`);
     const groupModeById = await getForwardGroupModeMap((childRows as any[]).map((row: any) => Number(row.groupId || 0)));
     const chainMemberRows = (childRows as any[]).filter((row: any) => groupModeById.get(Number(row.groupId || 0)) === "chain");
     const firstChainMemberByGroup = new Map<number, { id: number; hostId: number; priority: number }>();
+    let lastChainMemberByGroup = new Map<number, { id: number; hostId: number; priority: number }>();
     if (chainMemberRows.length > 0) {
       const groupIds = Array.from(new Set(chainMemberRows.map((row: any) => Number(row.groupId || 0)).filter((id: number) => id > 0)));
       if (groupIds.length > 0) {
+        lastChainMemberByGroup = await getLastEnabledMemberByGroup(groupIds);
         const memberRows = await db
           .select({
             id: forwardGroupMembers.id,
@@ -1810,14 +1845,29 @@ async function normalizeTrafficSummaryRowsForRules(
     const parentByChild = new Map<number, { parentId: number; hostId: number }>();
     for (const row of childRows as any[]) {
       const groupMode = groupModeById.get(Number(row.groupId || 0));
+      let summaryHostId = Number(row.hostId || 0);
       if (groupMode === "chain") {
         const firstMember = firstChainMemberByGroup.get(Number(row.groupId || 0));
-        if (Number(firstMember?.id || 0) !== Number(row.memberId || 0)
-          || (Number(firstMember?.hostId || 0) > 0 && Number(firstMember?.hostId || 0) !== Number(row.hostId || 0))) {
+        const isFirstMemberRule = Number(firstMember?.id || 0) === Number(row.memberId || 0)
+          && (Number(firstMember?.hostId || 0) <= 0 || Number(firstMember?.hostId || 0) === Number(row.hostId || 0));
+        const lastMember = lastChainMemberByGroup.get(Number(row.groupId || 0));
+        const isSniSplitterExitRule = isSniSplitterChainExitRule({
+          sni: row.sni,
+          sniSplitterPort: row.sniSplitterPort,
+          forwardGroupMemberId: row.memberId,
+          hostId: row.hostId,
+        }, {
+          groupMode: "chain",
+          members: lastMember ? [{ ...lastMember, isEnabled: true }] : [],
+        });
+        if (!isFirstMemberRule && !isSniSplitterExitRule) {
           continue;
         }
+        if (isSniSplitterExitRule) {
+          summaryHostId = Number(firstMember?.hostId || 0) || summaryHostId;
+        }
       }
-      parentByChild.set(Number(row.id), { parentId: Number(row.parentId), hostId: Number(row.hostId) });
+      parentByChild.set(Number(row.id), { parentId: Number(row.parentId), hostId: summaryHostId });
     }
     if (parentByChild.size > 0) {
       const merged = new Map<string, TrafficSummaryRow>();

@@ -351,9 +351,10 @@ export function buildIptablesTransitionCleanupCmds(rule: any): string[] {
   return buildIptablesForwardCleanupCmds(rule);
 }
 
-export function buildNftForwardCmds(rule: any): string[] {
+export function buildNftForwardCmds(rule: any, options: { includeCounters?: boolean } = {}): string[] {
   const protos = forwardRuleProtocols(rule.protocol);
   const ruleId = Number(rule.id) || 0;
+  const includeCounters = options.includeCounters !== false;
   const comment = nftComment(rule);
   const targetIp = cleanAddress(rule.targetIp);
   const family = nftAddressFamily(targetIp);
@@ -394,6 +395,12 @@ export function buildNftForwardCmds(rule: any): string[] {
       `${comment}-masquerade-${proto}`,
       `meta l4proto ${proto} ${family} daddr ${targetIp} ${proto} dport ${rule.targetPort} masquerade`,
     ));
+    if (!includeCounters) {
+      cmds.push(`nft add rule inet ${nftTable} prerouting meta l4proto ${proto} ${proto} dport ${rule.sourcePort} dnat ${family} to ${dnatTarget} comment ${nftCommentLiteral(inComment)} || nft add rule inet ${nftTable} prerouting meta l4proto ${proto} ${proto} dport ${rule.sourcePort} dnat ${family} to ${dnatTarget}`);
+      cmds.push(`nft add rule inet ${nftTable} forward meta l4proto ${proto} ${family} saddr ${targetIp} ${proto} sport ${rule.targetPort} ${originalPortMatch} ct state established,related accept comment ${nftCommentLiteral(outComment)} || ${targetOnlyOutAccept}`);
+      cmds.push(`nft add rule inet ${nftTable} forward meta l4proto ${proto} ${family} daddr ${targetIp} ${proto} dport ${rule.targetPort} ${originalPortMatch} accept comment ${nftCommentLiteral(comment)} || { echo "[nftables] forward selector failed, fallback=fwx-rule-${ruleId}"; ${targetOnlyInAccept}; }`);
+      continue;
+    }
     cmds.push(nftDnatCounterRuleWithFallback(
       `nft add rule inet ${nftTable} prerouting meta l4proto ${proto} ${proto} dport ${rule.sourcePort} counter dnat ${family} to ${dnatTarget} comment ${nftCommentLiteral(inComment)}`,
       `nft add rule inet ${nftTable} prerouting meta l4proto ${proto} ${proto} dport ${rule.sourcePort} comment ${nftCommentLiteral(inComment)} counter dnat ${family} to ${dnatTarget}`,

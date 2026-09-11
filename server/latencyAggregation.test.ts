@@ -376,4 +376,13 @@ test("forward-chain traffic counts only the first internal listener", () => {
     shouldAccountForwardRuleTraffic({ ...common, hostId: 2, forwardGroupMemberId: 102 }, group),
     false,
   );
+  const sniCommon = { ...common, sni: "api.example.com", sniSplitterPort: 24000 };
+  assert.equal(
+    shouldAccountForwardRuleTraffic({ ...sniCommon, hostId: 1 }, group),
+    false,
+  );
+  assert.equal(
+    shouldAccountForwardRuleTraffic({ ...sniCommon, hostId: 2, forwardGroupMemberId: 102 }, group),
+    true,
+  );
 });

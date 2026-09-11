@@ -28,6 +28,7 @@ test("SQLite Agent traffic route is atomic, idempotent, and follows the current 
       30, 31, 32,
       40, 41, 42,
       50, 51, 52,
+      60, 61,
     ];
     const producerByHost = new Map(hostIds.map((hostId) => [hostId, "route-producer-" + hostId]));
     let server;
@@ -150,6 +151,26 @@ test("SQLite Agent traffic route is atomic, idempotent, and follows the current 
         'INSERT INTO "forward_rules" ("id", "hostId", "name", "forwardType", "protocol", "tunnelId", "forwardGroupId", "forwardGroupRuleId", "forwardGroupMemberId", "sourcePort", "targetIp", "targetPort", "userId") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
         [701, 20, "stale-admin-child", "gost", "tcp", 300, 700, 700, 7001, 10700, "127.0.0.1", 80, 1],
       );
+      await runtime.executeRaw(
+        'INSERT INTO "forward_groups" ("id", "name", "groupMode", "targetIp", "isEnabled", "userId") VALUES (?, ?, ?, ?, ?, ?)',
+        [800, "sni-chain", "chain", "127.0.0.1", 1, 2],
+      );
+      await runtime.executeRaw(
+        'INSERT INTO "forward_group_members" ("id", "groupId", "memberType", "hostId", "priority", "isEnabled") VALUES (?, ?, ?, ?, ?, ?), (?, ?, ?, ?, ?, ?)',
+        [8001, 800, "host", 60, 10, 1, 8002, 800, "host", 61, 20, 1],
+      );
+      await runtime.executeRaw(
+        'INSERT INTO "forward_rules" ("id", "hostId", "name", "forwardType", "protocol", "forwardGroupId", "isForwardGroupTemplate", "sourcePort", "sni", "sniSplitterPort", "targetIp", "targetPort", "userId", "isEnabled") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [800, 60, "sni-template", "nftables", "tcp", 800, 1, 18800, "api.example.com", 24800, "203.0.113.80", 443, 2, 1],
+      );
+      await runtime.executeRaw(
+        'INSERT INTO "forward_rules" ("id", "hostId", "name", "forwardType", "protocol", "forwardGroupId", "forwardGroupRuleId", "forwardGroupMemberId", "isForwardGroupTemplate", "sourcePort", "sni", "sniSplitterPort", "targetIp", "targetPort", "userId", "isEnabled") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [801, 60, "sni-entry-child", "nftables", "tcp", 800, 800, 8001, 0, 18800, "api.example.com", 24800, "127.0.0.61", 24800, 1, 1],
+      );
+      await runtime.executeRaw(
+        'INSERT INTO "forward_rules" ("id", "hostId", "name", "forwardType", "protocol", "forwardGroupId", "forwardGroupRuleId", "forwardGroupMemberId", "isForwardGroupTemplate", "sourcePort", "sni", "sniSplitterPort", "targetIp", "targetPort", "userId", "isEnabled") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [802, 61, "sni-exit-child", "nftables", "tcp", 800, 800, 8002, 0, 24800, "api.example.com", 24800, "203.0.113.80", 443, 1, 1],
+      );
 
       const app = express();
       app.use(express.json());
@@ -231,6 +252,20 @@ test("SQLite Agent traffic route is atomic, idempotent, and follows the current 
       assert.equal(ordinaryFirst.body.success, true);
       assert.equal(ordinarySecond.status, 200);
       assert.equal(ordinarySecond.body.success, true);
+      const sniEntryHostReport = await postTraffic(baseUrl, 60, "sni-chain-entry-host", 802, 1, 1);
+      assert.equal(sniEntryHostReport.status, 200);
+      assert.equal(sniEntryHostReport.body.success, true);
+      assert.deepEqual(await trafficRows(802), []);
+      const sniEntryRuleReport = await postTraffic(baseUrl, 60, "sni-chain-entry-rule", 801, 77, 88);
+      assert.equal(sniEntryRuleReport.status, 200);
+      assert.equal(sniEntryRuleReport.body.success, true);
+      assert.deepEqual(await trafficRows(801), []);
+      const sniExitHostReport = await postTraffic(baseUrl, 61, "sni-chain-exit-host", 802, 111, 222);
+      assert.equal(sniExitHostReport.status, 200);
+      assert.equal(sniExitHostReport.body.success, true);
+      assert.deepEqual(await trafficRows(802), [
+        { hostId: 61, bytesIn: 111, bytesOut: 222, connections: 1 },
+      ]);
 
       for (const request of [
         [10, "forwardx-primary", 200],
@@ -279,8 +314,12 @@ test("SQLite Agent traffic route is atomic, idempotent, and follows the current 
         [{ userId: 2, bytesIn: 42, bytesOut: 50, connections: 2 }],
       );
       assert.deepEqual(
+        await runtime.queryRaw('SELECT "userId", "bytesIn", "bytesOut", "connections" FROM "forward_rule_traffic_counters" WHERE "ruleId" = ?', [802]),
+        [{ userId: 2, bytesIn: 111, bytesOut: 222, connections: 1 }],
+      );
+      assert.deepEqual(
         await runtime.queryRaw('SELECT "bytesIn", "bytesOut", "connections" FROM "user_traffic_counters" WHERE "userId" = ?', [2]),
-        [{ bytesIn: 42, bytesOut: 50, connections: 2 }],
+        [{ bytesIn: 153, bytesOut: 272, connections: 3 }],
       );
       const ordinarySummary = await metrics.getTrafficCounterSummaryByRule({
         userId: 2,
@@ -291,14 +330,23 @@ test("SQLite Agent traffic route is atomic, idempotent, and follows the current 
         ordinarySummary.map(({ ruleId, bytesIn, bytesOut, connections }) => ({ ruleId, bytesIn, bytesOut, connections })),
         [{ ruleId: 700, bytesIn: 42, bytesOut: 50, connections: 2 }],
       );
+      const sniSummary = await metrics.getTrafficCounterSummaryByRule({
+        userId: 2,
+        ruleIds: [800],
+        includeLatency: false,
+      });
+      assert.deepEqual(
+        sniSummary.map(({ ruleId, bytesIn, bytesOut, connections }) => ({ ruleId, bytesIn, bytesOut, connections })),
+        [{ ruleId: 800, bytesIn: 111, bytesOut: 222, connections: 1 }],
+      );
 
       const adminSummed = (await runtime.queryRaw(
-        'SELECT COALESCE(SUM("bytesIn" + "bytesOut"), 0) AS "total" FROM "traffic_stats" WHERE "ruleId" <> ?',
-        [701],
+        'SELECT COALESCE(SUM("bytesIn" + "bytesOut"), 0) AS "total" FROM "traffic_stats" WHERE "ruleId" NOT IN (?, ?)',
+        [701, 802],
       ))[0].total;
       const ordinarySummed = (await runtime.queryRaw(
-        'SELECT COALESCE(SUM("bytesIn" + "bytesOut"), 0) AS "total" FROM "traffic_stats" WHERE "ruleId" = ?',
-        [701],
+        'SELECT COALESCE(SUM("bytesIn" + "bytesOut"), 0) AS "total" FROM "traffic_stats" WHERE "ruleId" IN (?, ?)',
+        [701, 802],
       ))[0].total;
       const admin = (await runtime.queryRaw('SELECT "trafficUsed" FROM "users" WHERE "id" = 1'))[0];
       const ordinary = (await runtime.queryRaw('SELECT "trafficUsed" FROM "users" WHERE "id" = 2'))[0];

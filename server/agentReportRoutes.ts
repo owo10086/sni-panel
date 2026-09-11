@@ -31,6 +31,7 @@ import { isTunnelRelayFailover, tunnelRelayCandidates } from "../shared/tunnelRe
 import { exitGroupUsesMultipleExits } from "../shared/exitStrategy";
 import { isRuleLatencyReportMethodCompatible } from "../shared/latencyProbe";
 import { completeSupportBundleHost } from "./supportBundle";
+import { isSniSplitterChainExitRule } from "./repositories/repositoryUtils";
 import {
   combineTunnelRuleLatencySample,
   validateTunnelRuleLatencyReport,
@@ -117,6 +118,9 @@ export function shouldAccountForwardRuleTraffic(rule: any, group: any | null) {
   const memberId = Number(rule?.forwardGroupMemberId || 0);
   if (!groupId || !templateId || !memberId) return true;
   if (String(group?.groupMode || "failover") !== "chain") return true;
+  if (String(rule?.sni || "").trim() && Number(rule?.sniSplitterPort || 0) > 0) {
+    return isSniSplitterChainExitRule(rule, group);
+  }
   const members = [...(group.members || [])]
     .filter((member: any) => !!member.isEnabled)
     .sort((a: any, b: any) => Number(a.priority) - Number(b.priority));

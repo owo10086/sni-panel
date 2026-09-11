@@ -53,6 +53,10 @@ var trafficDiagnostics = struct {
 }{last: make(map[string]time.Time)}
 
 func enqueueTraffic(cfg config, bytesIn, bytesOut uint64, connectionDeltas ...uint64) {
+	enqueueTrafficForRule(cfg, cfg.RuleID, bytesIn, bytesOut, connectionDeltas...)
+}
+
+func enqueueTrafficForRule(cfg config, ruleID int, bytesIn, bytesOut uint64, connectionDeltas ...uint64) {
 	panelURL := strings.TrimRight(strings.TrimSpace(cfg.PanelURL), "/")
 	token := strings.TrimSpace(cfg.Token)
 	connections := uint64(0)
@@ -69,7 +73,7 @@ func enqueueTraffic(cfg config, bytesIn, bytesOut uint64, connectionDeltas ...ui
 	if token == "" {
 		missing = append(missing, "token")
 	}
-	if cfg.RuleID <= 0 {
+	if ruleID <= 0 {
 		missing = append(missing, "ruleId")
 	}
 	if len(missing) > 0 {
@@ -78,7 +82,7 @@ func enqueueTraffic(cfg config, bytesIn, bytesOut uint64, connectionDeltas ...ui
 			"traffic report skipped role=%q tunnel=%d rule=%d listen=%d missing=%s",
 			strings.ToLower(strings.TrimSpace(cfg.Role)),
 			cfg.TunnelID,
-			cfg.RuleID,
+			ruleID,
 			cfg.ListenPort,
 			strings.Join(missing, ","),
 		)
@@ -91,11 +95,11 @@ func enqueueTraffic(cfg config, bytesIn, bytesOut uint64, connectionDeltas ...ui
 		byRule = map[int]trafficBatchValue{}
 		trafficBatches[key] = byRule
 	}
-	current := byRule[cfg.RuleID]
+	current := byRule[ruleID]
 	current.bytesIn += bytesIn
 	current.bytesOut += bytesOut
 	current.connections += connections
-	byRule[cfg.RuleID] = current
+	byRule[ruleID] = current
 	trafficBatchMu.Unlock()
 	startTrafficBatchWorker()
 }
@@ -381,6 +385,10 @@ func trafficBatchPendingSnapshot() map[trafficBatchKey]pendingTrafficBatch {
 }
 
 func startTrafficReporter(cfg config, counter *trafficCounter) func() {
+	return startTrafficReporterForRule(cfg, cfg.RuleID, counter)
+}
+
+func startTrafficReporterForRule(cfg config, ruleID int, counter *trafficCounter) func() {
 	done := make(chan struct{})
 	var reportMu sync.Mutex
 	var lastIn, lastOut, lastConnections uint64
@@ -394,7 +402,7 @@ func startTrafficReporter(cfg config, counter *trafficCounter) func() {
 		curConnections := counter.connections.Load()
 		deltaConnections := curConnections - lastConnections
 		if deltaIn > 0 || deltaOut > 0 || deltaConnections > 0 {
-			enqueueTraffic(cfg, deltaIn, deltaOut, deltaConnections)
+			enqueueTrafficForRule(cfg, ruleID, deltaIn, deltaOut, deltaConnections)
 			lastIn = curIn
 			lastOut = curOut
 			lastConnections = curConnections

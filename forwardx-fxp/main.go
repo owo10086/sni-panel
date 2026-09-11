@@ -20,6 +20,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -906,6 +907,7 @@ type sniRouteRuntime struct {
 	gate       *connGate
 	inLimiter  *limiter
 	outLimiter *limiter
+	counter    *trafficCounter
 }
 
 type sniSplitterConnSet struct {
@@ -959,13 +961,41 @@ func buildSNIRouteRuntimeMap(routes []sniRoute) map[string]*sniRouteRuntime {
 			gate:       newConnGate(route.MaxConnections, route.MaxIPs),
 			inLimiter:  newLimiter(route.LimitIn),
 			outLimiter: newLimiter(route.LimitOut),
+			counter:    &trafficCounter{},
 		}
 	}
 	return bySNI
 }
 
+func startSNIRouteTrafficReporters(cfg config, routes map[string]*sniRouteRuntime) func() {
+	stops := make([]func(), 0, len(routes))
+	ordered := make([]*sniRouteRuntime, 0, len(routes))
+	for _, runtime := range routes {
+		ordered = append(ordered, runtime)
+	}
+	sort.Slice(ordered, func(i, j int) bool {
+		return ordered[i].route.RuleID < ordered[j].route.RuleID
+	})
+	for _, runtime := range ordered {
+		if runtime.counter == nil {
+			runtime.counter = &trafficCounter{}
+		}
+		stops = append(stops, startTrafficReporterForRule(cfg, runtime.route.RuleID, runtime.counter))
+	}
+	var once sync.Once
+	return func() {
+		once.Do(func() {
+			for _, stop := range stops {
+				stop()
+			}
+		})
+	}
+}
+
 func runSniSplitter(done <-chan struct{}, cfg config) error {
 	routes := buildSNIRouteRuntimeMap(cfg.SNIRoutes)
+	stopTrafficReporters := startSNIRouteTrafficReporters(cfg, routes)
+	defer stopTrafficReporters()
 	ln, err := listenTCP(cfg.ListenHost, cfg.ListenPort, cfg.TCPFastOpen)
 	if err != nil {
 		return fmt.Errorf("sni-splitter tcp listen :%d: %w", cfg.ListenPort, err)
@@ -1040,14 +1070,20 @@ func handleSniSplitterTCP(client net.Conn, cfg config, routes map[string]*sniRou
 		return fmt.Errorf("dial sni route %s target: %w", runtime.route.SNI, err)
 	}
 	defer target.Close()
+	if runtime.counter != nil {
+		runtime.counter.connections.Add(1)
+	}
 	if len(hello) > 0 {
 		runtime.inLimiter.wait(len(hello))
 		if err := writeAll(target, hello); err != nil {
 			return err
 		}
+		if runtime.counter != nil {
+			runtime.counter.in.Add(uint64(len(hello)))
+		}
 	}
 	fxpVerbosef("sni-splitter tcp routed rule=%d listen=%d client=%s sni=%s target=%s:%d", runtime.route.RuleID, cfg.ListenPort, client.RemoteAddr(), runtime.route.SNI, runtime.route.TargetIP, runtime.route.TargetPort)
-	return proxyPlainTCP(client, target, runtime.inLimiter, runtime.outLimiter)
+	return proxyPlainTCPWithCounter(client, target, runtime.inLimiter, runtime.outLimiter, runtime.counter)
 }
 
 func readClientHelloForSNI(conn net.Conn, timeout time.Duration, maxBytes int) (string, bool, []byte, error) {
@@ -1214,9 +1250,18 @@ func tlsUint24(data []byte) int {
 }
 
 func proxyPlainTCP(left, right net.Conn, leftToRightLimiter, rightToLeftLimiter *limiter) error {
+	return proxyPlainTCPWithCounter(left, right, leftToRightLimiter, rightToLeftLimiter, nil)
+}
+
+func proxyPlainTCPWithCounter(left, right net.Conn, leftToRightLimiter, rightToLeftLimiter *limiter, counter *trafficCounter) error {
 	errCh := make(chan error, 2)
-	go func() { errCh <- copyPlainTCP(right, left, leftToRightLimiter) }()
-	go func() { errCh <- copyPlainTCP(left, right, rightToLeftLimiter) }()
+	var leftToRightCounter, rightToLeftCounter *atomic.Uint64
+	if counter != nil {
+		leftToRightCounter = &counter.in
+		rightToLeftCounter = &counter.out
+	}
+	go func() { errCh <- copyPlainTCPWithCounter(right, left, leftToRightLimiter, leftToRightCounter) }()
+	go func() { errCh <- copyPlainTCPWithCounter(left, right, rightToLeftLimiter, rightToLeftCounter) }()
 	return waitBidirectional(errCh, func() {
 		_ = left.Close()
 		_ = right.Close()
@@ -1224,6 +1269,10 @@ func proxyPlainTCP(left, right net.Conn, leftToRightLimiter, rightToLeftLimiter 
 }
 
 func copyPlainTCP(dst, src net.Conn, limiter *limiter) error {
+	return copyPlainTCPWithCounter(dst, src, limiter, nil)
+}
+
+func copyPlainTCPWithCounter(dst, src net.Conn, limiter *limiter, counter *atomic.Uint64) error {
 	buf := getFXPByteBuffer(32 * 1024)
 	defer putFXPByteBuffer(buf)
 	for {
@@ -1232,6 +1281,9 @@ func copyPlainTCP(dst, src net.Conn, limiter *limiter) error {
 			limiter.wait(n)
 			if writeErr := writeAll(dst, buf[:n]); writeErr != nil {
 				return writeErr
+			}
+			if counter != nil {
+				counter.Add(uint64(n))
 			}
 		}
 		if err != nil {

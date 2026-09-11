@@ -4,7 +4,7 @@ import { executeRaw, getDb, insertAndGetId, nowDate } from "../dbRuntime";
 import { queryRaw } from "../dbRuntime";
 import { boolLiteral, boolValue, inList, quoteIdentifier } from "../dbCompat";
 import { describePortPolicy, isPortAllowedByPolicy, portPolicyFrom, portPolicyHasRestriction, type PortPolicySource } from "../portPolicy";
-import { sqlBool } from "./repositoryUtils";
+import { normalizePositiveIds, normalizeSniValue, sqlBool } from "./repositoryUtils";
 import { pageResult, pageWindowForTotal, type PageRequest } from "../../shared/pagination";
 import { recordConfigAuditEvent, shouldAuditConfigPatch } from "../configAudit";
 import { withKeyedTaskLock } from "../keyedTaskLock";
@@ -612,6 +612,8 @@ export async function getForwardRuleTrafficContextsByIds(ruleIds: number[]) {
         forwardGroupId: forwardRules.forwardGroupId,
         forwardGroupRuleId: forwardRules.forwardGroupRuleId,
         forwardGroupMemberId: forwardRules.forwardGroupMemberId,
+        sni: forwardRules.sni,
+        sniSplitterPort: forwardRules.sniSplitterPort,
         userId: forwardRules.userId,
         isEnabled: forwardRules.isEnabled,
         isRunning: forwardRules.isRunning,
@@ -700,6 +702,8 @@ export async function getForwardRuleTrafficContextsByIds(ruleIds: number[]) {
         forwardGroupId: row.forwardGroupId,
         forwardGroupRuleId: row.forwardGroupRuleId,
         forwardGroupMemberId: row.forwardGroupMemberId,
+        sni: row.sni,
+        sniSplitterPort: row.sniSplitterPort,
         // Managed group children inherit ownership from the visible template.
         // Older restores and preserved runtimes can retain a stale child userId.
         userId: inheritedUserId,
@@ -937,22 +941,53 @@ export async function repairConflictingProtocolPortRules() {
     byPort.set(key, items);
   }
   const repaired: Array<{ keptRuleId: number; disabledRuleId: number; hostId: number; sourcePort: number }> = [];
+  const sniShareKey = (row: any) => {
+    const sni = normalizeSniValue(row.sni);
+    const groupId = Number(row.forwardGroupId || 0);
+    const splitterPort = Number(row.sniSplitterPort || 0);
+    if (!sni || !groupId || !splitterPort) return null;
+    return `${groupId}:${splitterPort}`;
+  };
+  const disableRule = async (kept: any, duplicate: any) => {
+    await db.update(forwardRules).set({
+      isEnabled: false,
+      isRunning: false,
+      protocolBlockReason: `同一主机端口只能由一条规则管理；与规则 #${kept.id} 冲突，请合并为 TCP + UDP 后重新启用`,
+      updatedAt: nowDate(),
+    } as any).where(eq(forwardRules.id, Number(duplicate.id)));
+    repaired.push({
+      keptRuleId: Number(kept.id),
+      disabledRuleId: Number(duplicate.id),
+      hostId: Number(duplicate.hostId),
+      sourcePort: Number(duplicate.sourcePort),
+    });
+  };
   for (const items of byPort.values()) {
     if (items.length <= 1) continue;
-    const [kept, ...duplicates] = items.sort((left, right) => Number(left.id) - Number(right.id));
+    const ordered = items.sort((left, right) => Number(left.id) - Number(right.id));
+    const sniItems = ordered.map((row) => ({
+      row,
+      sni: normalizeSniValue(row.sni),
+      shareKey: sniShareKey(row),
+    }));
+    if (sniItems.every((item) => item.shareKey)) {
+      const primaryShareKey = sniItems[0]?.shareKey || "";
+      const keptBySni = new Map<string, any>();
+      for (const item of sniItems) {
+        if (item.shareKey === primaryShareKey && !keptBySni.has(item.sni)) {
+          keptBySni.set(item.sni, item.row);
+          continue;
+        }
+        const kept = item.shareKey === primaryShareKey
+          ? keptBySni.get(item.sni) || ordered[0]
+          : ordered[0];
+        await disableRule(kept, item.row);
+      }
+      continue;
+    }
+    const [kept, ...duplicates] = ordered;
     for (const duplicate of duplicates) {
-      await db.update(forwardRules).set({
-        isEnabled: false,
-        isRunning: false,
-        protocolBlockReason: `同一主机端口只能由一条规则管理；与规则 #${kept.id} 冲突，请合并为 TCP + UDP 后重新启用`,
-        updatedAt: nowDate(),
-      } as any).where(eq(forwardRules.id, Number(duplicate.id)));
-      repaired.push({
-        keptRuleId: Number(kept.id),
-        disabledRuleId: Number(duplicate.id),
-        hostId: Number(duplicate.hostId),
-        sourcePort: Number(duplicate.sourcePort),
-      });
+      await disableRule(kept, duplicate);
     }
   }
   return repaired;
@@ -1299,4 +1334,3 @@ export async function disableForwardRulesOutsideHostPortRange(
   );
   return affected.length;
 }
-

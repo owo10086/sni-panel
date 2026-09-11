@@ -288,6 +288,18 @@ test("SQLite billing transactions roll back and serialize concurrent updates", (
       assert.equal(ruleRows[0].isEnabled, 1);
       assert.equal(ruleRows[1].isEnabled, 0);
       assert.match(ruleRows[1].protocolBlockReason, /规则 #1 冲突/);
+
+      await runtime.executeRaw('INSERT INTO "forward_groups" ("id", "name", "groupType", "groupMode", "forwardType", "domain", "targetIp", "targetPort", "userId", "isEnabled") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [10, "sni-chain", "host", "chain", "nftables", "", "0.0.0.0", 1, 1, true]);
+      await runtime.executeRaw('INSERT INTO "forward_rules" ("id", "hostId", "name", "forwardType", "protocol", "sourcePort", "targetIp", "targetPort", "userId", "forwardGroupId", "forwardGroupRuleId", "forwardGroupMemberId", "isForwardGroupTemplate", "sni", "sniSplitterPort", "isEnabled", "pendingDelete") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [10, 1, "sni-api", "nftables", "tcp", 13000, "198.51.100.20", 24000, 1, 10, 100, 101, false, "api.example.com", 24000, true, false]);
+      await runtime.executeRaw('INSERT INTO "forward_rules" ("id", "hostId", "name", "forwardType", "protocol", "sourcePort", "targetIp", "targetPort", "userId", "forwardGroupId", "forwardGroupRuleId", "forwardGroupMemberId", "isForwardGroupTemplate", "sni", "sniSplitterPort", "isEnabled", "pendingDelete") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [11, 1, "sni-web", "nftables", "tcp", 13000, "198.51.100.20", 24000, 1, 10, 110, 101, false, "web.example.com", 24000, true, false]);
+      await runtime.executeRaw('INSERT INTO "forward_rules" ("id", "hostId", "name", "forwardType", "protocol", "sourcePort", "targetIp", "targetPort", "userId", "forwardGroupId", "forwardGroupRuleId", "forwardGroupMemberId", "isForwardGroupTemplate", "sni", "sniSplitterPort", "isEnabled", "pendingDelete") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [12, 1, "sni-api-duplicate", "nftables", "tcp", 13000, "198.51.100.20", 24000, 1, 10, 120, 101, false, "API.EXAMPLE.COM.", 24000, true, false]);
+      const sniRepaired = await rules.repairConflictingProtocolPortRules();
+      assert.equal(sniRepaired.length, 1);
+      const sniRows = await runtime.queryRaw('SELECT "id", "isEnabled", "protocolBlockReason" FROM "forward_rules" WHERE "id" IN (?, ?, ?) ORDER BY "id"', [10, 11, 12]);
+      assert.equal(sniRows[0].isEnabled, 1);
+      assert.equal(sniRows[1].isEnabled, 1);
+      assert.equal(sniRows[2].isEnabled, 0);
+      assert.match(sniRows[2].protocolBlockReason, /规则 #10 冲突/);
     } finally {
       await runtime.closeDatabase();
     }

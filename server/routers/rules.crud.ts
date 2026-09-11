@@ -26,6 +26,7 @@ import { trafficBillingUserLockKey, withKeyedTaskLock } from "../keyedTaskLock";
 import { mapWithConcurrency } from "../asyncPool";
 import { reserveRuleCreateQuota, type RuleQuotaReservation } from "../ruleQuotaReservations";
 import { isAgentVersionAtLeast } from "../agentRouteUtils";
+import { normalizePositiveIds, normalizeSniValue } from "../repositories/repositoryUtils";
 
 const targetHostSchema = z.string().min(1).max(253).refine(
   (v) => /^[a-zA-Z0-9]([a-zA-Z0-9\-_.]*[a-zA-Z0-9])?$|^[a-fA-F0-9:.]+$/.test(v.trim()),
@@ -46,6 +47,27 @@ const mainBackupGostTunnelModes = new Set(["tls", "wss", "tcp", "mtls", "mwss", 
 const SNI_SPLITTER_MIN_AGENT_VERSION = "2.2.195";
 const sniInputSchema = z.string().max(1024).nullable().optional();
 
+type SniEntryPortState = Awaited<ReturnType<typeof db.getForwardGroupSniEntryPortState>>;
+type ForwardRuleConflictTarget = {
+  id?: unknown;
+  name?: unknown;
+};
+type ForwardGroupRuntimeMember = {
+  id?: unknown;
+  memberType?: unknown;
+  hostId?: unknown;
+  tunnelId?: unknown;
+  priority?: unknown;
+  isEnabled?: unknown;
+};
+type ForwardGroupRuntimeConfig = {
+  id?: unknown;
+  groupMode?: unknown;
+  groupType?: unknown;
+  forwardType?: unknown;
+  members?: ForwardGroupRuntimeMember[] | null;
+};
+
 function isMainBackupGostTunnelMode(mode: unknown) {
   return mainBackupGostTunnelModes.has(String(mode || "").toLowerCase());
 }
@@ -57,7 +79,7 @@ function dbBool(value: unknown, fallback = false) {
 
 export function normalizeSniInput(value: unknown) {
   if (value === undefined || value === null) return null;
-  const normalized = String(value).trim().toLowerCase().replace(/\.+$/, "");
+  const normalized = normalizeSniValue(value);
   if (!normalized) return null;
   if (normalized.length > 253 || normalized.includes("*")) {
     throw new Error("SNI 域名格式不正确");
@@ -79,10 +101,10 @@ function assertSniRuleAdmin(actor: { role: string }, sni: string | null) {
   }
 }
 
-async function inferForwardGroupSniExitHost(group: any) {
+async function inferForwardGroupSniExitHost(group: ForwardGroupRuntimeConfig) {
   const members = Array.isArray(group?.members) ? group.members : [];
-  const enabledMembers = members.filter((member: any) => dbBool(member?.isEnabled, true));
-  const enabledHostMembers = enabledMembers.filter((member: any) => (
+  const enabledMembers = members.filter((member) => dbBool(member?.isEnabled, true));
+  const enabledHostMembers = enabledMembers.filter((member) => (
     String(member?.memberType || "") === "host"
     && Number(member?.hostId || 0) > 0
   ));
@@ -111,7 +133,7 @@ async function inferForwardGroupSniExitHost(group: any) {
 }
 
 async function reserveSniSplitterPortForForwardGroup(
-  group: any,
+  group: ForwardGroupRuntimeConfig,
   options: { currentPort?: unknown; excludeRuleIds?: number | number[] } = {},
 ) {
   const exitHost = await inferForwardGroupSniExitHost(group);
@@ -126,6 +148,121 @@ async function reserveSniSplitterPortForForwardGroup(
   });
   if (!reservation) throw new Error("出口 Agent 已无可用 SNI 分流器端口");
   return reservation;
+}
+
+function forwardRuleConflictLabel(rule: ForwardRuleConflictTarget | null | undefined) {
+  const name = String(rule?.name || "").trim();
+  const id = Number(rule?.id || 0);
+  if (name && id > 0) return `「${name}」（ID ${id}）`;
+  if (name) return `「${name}」`;
+  if (id > 0) return `ID ${id}`;
+  return "已有规则";
+}
+
+function assertSniEntryPortCanUseSni(state: SniEntryPortState, sourcePort: number, normalizedSni: string) {
+  if (state?.duplicateRule) {
+    throw new Error(`SNI 域名 ${normalizedSni} 与规则 ${forwardRuleConflictLabel(state.duplicateRule)} 冲突`);
+  }
+  if (state?.plainRule) {
+    throw new Error(`入口端口 ${sourcePort} 已被普通转发规则 ${forwardRuleConflictLabel(state.plainRule)} 占用，无法创建 SNI 分流规则`);
+  }
+  if (state?.otherGroupSniRule) {
+    throw new Error(`入口端口 ${sourcePort} 已被其它转发链的 SNI 分流规则 ${forwardRuleConflictLabel(state.otherGroupSniRule)} 占用`);
+  }
+}
+
+function assertSniEntryPortCanUsePlain(state: SniEntryPortState, sourcePort: number) {
+  if (state?.anySniRule) {
+    throw new Error(`入口端口 ${sourcePort} 已被 SNI 分流规则 ${forwardRuleConflictLabel(state.anySniRule)} 占用，无法创建普通转发规则`);
+  }
+}
+
+type SniEntryPortValidation = {
+  state: SniEntryPortState;
+  portUsageIgnoreRuleIds: number[];
+  splitterPortUsageIgnoreRuleIds: number[];
+};
+
+type ForwardGroupRuntimePortPreparation = {
+  group: ForwardGroupRuntimeConfig;
+  isForwardChain: boolean;
+  isPortGroup: boolean;
+  sniSplitterPort: number | null;
+  entryPortReservationExcludeRuleIds: number[];
+};
+
+async function validateSniEntryPortUse(options: {
+  groupId: number;
+  sourcePort: number;
+  entryHostIds: number[];
+  sni: string | null;
+  excludeRuleIds?: number[];
+}): Promise<SniEntryPortValidation> {
+  const state = await db.getForwardGroupSniEntryPortState({
+    groupId: options.groupId,
+    sourcePort: options.sourcePort,
+    entryHostIds: options.entryHostIds,
+    sni: options.sni,
+    excludeRuleIds: options.excludeRuleIds,
+  });
+  if (options.sni) {
+    assertSniEntryPortCanUseSni(state, options.sourcePort, options.sni);
+  } else {
+    assertSniEntryPortCanUsePlain(state, options.sourcePort);
+  }
+  const portUsageIgnoreRuleIds = options.sni
+    ? normalizePositiveIds(state.shareableRuleIds || [])
+    : [];
+  const splitterPortUsageIgnoreRuleIds = options.sni && Number(state.splitterPort || 0) > 0
+    ? normalizePositiveIds(await db.getForwardGroupSniSplitterPortRuleIds(options.groupId, Number(state.splitterPort)))
+    : [];
+  return { state, portUsageIgnoreRuleIds, splitterPortUsageIgnoreRuleIds };
+}
+
+async function prepareForwardGroupRuntimePorts(options: {
+  groupId: number;
+  sourcePort: number;
+  protocol: "tcp" | "udp" | "both" | string;
+  sni: string | null;
+  sniEntryPortValidation: SniEntryPortValidation;
+  excludeTemplateRuleId?: number | null;
+  ownerRuleIds?: number[];
+  currentSplitterPort?: unknown;
+  reservations: HostPortReservation[];
+}): Promise<ForwardGroupRuntimePortPreparation> {
+  const ownerRuleIds = normalizePositiveIds(options.ownerRuleIds);
+  const group = await db.validateForwardGroupRuleConfig(options.groupId, {
+    sourcePort: options.sourcePort,
+    protocol: options.protocol,
+    excludeTemplateRuleId: options.excludeTemplateRuleId,
+    portUsageIgnoreRuleIds: options.sni ? options.sniEntryPortValidation.portUsageIgnoreRuleIds : [],
+  });
+  const isForwardChain = group.groupMode === "chain";
+  const isPortGroup = group.groupMode === "port";
+  let sniSplitterPort: number | null = null;
+  if (options.sni) {
+    if (!isForwardChain) throw new Error("SNI 分流当前仅支持转发链");
+    const splitterReservation = await reserveSniSplitterPortForForwardGroup(group, {
+      currentPort: Number(options.sniEntryPortValidation.state.splitterPort || 0)
+        || Number(options.currentSplitterPort || 0)
+        || undefined,
+      excludeRuleIds: normalizePositiveIds([
+        ...ownerRuleIds,
+        ...options.sniEntryPortValidation.splitterPortUsageIgnoreRuleIds,
+      ]),
+    });
+    options.reservations.push(splitterReservation);
+    sniSplitterPort = splitterReservation.port;
+  }
+  return {
+    group,
+    isForwardChain,
+    isPortGroup,
+    sniSplitterPort,
+    entryPortReservationExcludeRuleIds: normalizePositiveIds(options.sni
+      ? [...ownerRuleIds, ...options.sniEntryPortValidation.portUsageIgnoreRuleIds]
+      : ownerRuleIds),
+  };
 }
 
 const failoverInputShape = {
@@ -424,16 +561,16 @@ function normalizeLockedForwardType(value: unknown) {
   return parsed.success ? parsed.data : "iptables";
 }
 
-function lockedForwardTypeForGroup(group: any, fallback: unknown = "iptables") {
+function lockedForwardTypeForGroup(group: ForwardGroupRuntimeConfig, fallback: unknown = "iptables") {
   const groupMode = String(group?.groupMode || "failover");
   const groupType = String(group?.groupType || "host");
   if (groupMode !== "chain" && groupType === "tunnel") return "gost";
   return normalizeLockedForwardType(group?.forwardType || fallback);
 }
 
-async function forwardGroupTunnelMembersSupportMainBackup(group: any) {
+async function forwardGroupTunnelMembersSupportMainBackup(group: ForwardGroupRuntimeConfig) {
   const members = Array.isArray(group?.members) ? group.members : [];
-  const tunnelMembers = members.filter((member: any) => dbBool(member?.isEnabled, true) && Number(member?.tunnelId || 0) > 0);
+  const tunnelMembers = members.filter((member) => dbBool(member?.isEnabled, true) && Number(member?.tunnelId || 0) > 0);
   if (tunnelMembers.length === 0) return false;
   for (const member of tunnelMembers) {
     const tunnel = await db.getTunnelById(Number(member.tunnelId));
@@ -748,6 +885,33 @@ async function refreshPendingTemplateChildren(childRules: any[], reason: string)
   for (const hostId of hostIds) pushAgentRefresh(hostId, reason);
 }
 
+async function refreshRemainingSniSplitterRulesAfterTemplateDelete(templateRule: any, deletedChildRules: any[], reason: string) {
+  const groupId = Number(templateRule?.forwardGroupId || 0);
+  const splitterPort = Number(templateRule?.sniSplitterPort || 0);
+  if (!groupId || !splitterPort || !normalizeSniValue(templateRule?.sni)) return;
+  const deletedRuleIds = new Set(normalizePositiveIds([
+    Number(templateRule?.id || 0),
+    ...deletedChildRules.map((child: any) => Number(child?.id || 0)),
+  ]));
+  const remainingRuleIds = normalizePositiveIds(
+    await db.getForwardGroupSniSplitterPortRuleIds(groupId, splitterPort),
+  ).filter((id) => !deletedRuleIds.has(id));
+  if (remainingRuleIds.length === 0) return;
+  const remainingRules = (await db.getForwardRulesByIds(remainingRuleIds) as any[])
+    .filter((rule: any) => (
+      !dbBool(rule?.isForwardGroupTemplate)
+      && dbBool(rule?.isEnabled)
+      && !dbBool(rule?.pendingDelete)
+      && Number(rule?.forwardGroupId || 0) === groupId
+      && Number(rule?.sniSplitterPort || 0) === splitterPort
+      && !!normalizeSniValue(rule?.sni)
+    ));
+  for (const rule of remainingRules) {
+    await db.updateRuleRunningStatus(Number(rule.id), false);
+  }
+  await refreshPendingTemplateChildren(remainingRules, reason);
+}
+
 async function markTemplateChildrenPendingDelete(
   templateRuleId: number,
   reason: string,
@@ -801,6 +965,7 @@ export async function deleteForwardRuleForActor(
       // Templates never run on an Agent, so they cannot receive a runtime stop ACK.
       // Their managed children remain pending until each Agent confirms removal.
       await db.finalizeForwardRuleDelete(ruleId);
+      await refreshRemainingSniSplitterRulesAfterTemplateDelete(rule, childRules as any[], `${reasonPrefix}-group-deleted`);
       return { success: true, rule, childRules, chargedCents, balanceAfterCents };
     }
 
@@ -849,15 +1014,30 @@ export async function toggleForwardRuleForActor(
         }
         if (isEnabled) {
           const groupId = Number((rule as any).forwardGroupId || 0);
+          if (!groupId) throw new Error("转发组不存在");
           const ruleSni = normalizeSniInput((rule as any).sni);
           const nextProtocol = ruleSni ? "tcp" : (rule as any).protocol;
+          const childRules = await db.getForwardGroupChildRulesForTemplate(ruleId);
+          const ownRuleIds = normalizePositiveIds([
+            Number(rule.id),
+            ...(childRules as any[]).map((child: any) => Number(child.id)),
+          ]);
+          const entryHostIds = await db.getForwardGroupRuleEntryHostIds(groupId);
+          const sniEntryPortValidation = await validateSniEntryPortUse({
+            groupId,
+            sourcePort: Number(rule.sourcePort || 0),
+            entryHostIds,
+            sni: ruleSni,
+            excludeRuleIds: ownRuleIds,
+          });
           const group = await db.validateForwardGroupRuleConfig(groupId, {
             sourcePort: rule.sourcePort,
             protocol: nextProtocol,
             excludeTemplateRuleId: rule.id,
+            portUsageIgnoreRuleIds: sniEntryPortValidation.portUsageIgnoreRuleIds,
           });
-          const isForwardChain = (group as any).groupMode === "chain";
-          const isPortGroup = (group as any).groupMode === "port";
+          const isForwardChain = group.groupMode === "chain";
+          const isPortGroup = group.groupMode === "port";
           const enableData: any = {
             isEnabled: true,
             isRunning: false,
@@ -868,25 +1048,20 @@ export async function toggleForwardRuleForActor(
           };
           if (ruleSni) {
             if (!isForwardChain) throw new Error("SNI 分流当前仅支持转发链");
-            const childRules = await db.getForwardGroupChildRulesForTemplate(ruleId);
-            const excludeRuleIds = [
-              Number(rule.id),
-              ...(childRules as any[]).map((child: any) => Number(child.id)),
-            ].filter((id) => Number.isInteger(id) && id > 0);
             sniSplitterPortReservation = await reserveSniSplitterPortForForwardGroup(group, {
-              currentPort: (rule as any).sniSplitterPort,
-              excludeRuleIds,
+              currentPort: Number(sniEntryPortValidation.state.splitterPort || 0) || (rule as any).sniSplitterPort,
+              excludeRuleIds: normalizePositiveIds([...ownRuleIds, ...sniEntryPortValidation.splitterPortUsageIgnoreRuleIds]),
             });
             enableData.protocol = "tcp";
             enableData.sni = ruleSni;
             enableData.sniSplitterPort = sniSplitterPortReservation.port;
           }
-          const groupIsTunnel = !isForwardChain && (group as any).groupType === "tunnel";
+          const groupIsTunnel = !isForwardChain && group.groupType === "tunnel";
           const groupTunnelSupportsFailover = groupIsTunnel ? await forwardGroupTunnelMembersSupportMainBackup(group) : true;
           requireMainBackupAllowed({
             enabled: isForwardChain || (groupIsTunnel && !groupTunnelSupportsFailover) ? false : (rule as any).failoverEnabled,
             protocol: nextProtocol,
-            forwardType: !isForwardChain && (group as any).groupType === "tunnel" ? "gost" : (rule as any).forwardType,
+            forwardType: !isForwardChain && group.groupType === "tunnel" ? "gost" : (rule as any).forwardType,
             isTunnelRoute: groupIsTunnel,
             isPortForwardGroup: isPortGroup,
             isAdmin: actor.role === "admin",
@@ -1199,6 +1374,7 @@ export const crudRulesRouter = router({
           await inferForwardGroupSniExitHost(sniGroup);
         }
         const entryHostIds = await db.getForwardGroupRuleEntryHostIds(forwardGroupId);
+        let sniEntryPortValidation: SniEntryPortValidation | null = null;
         const reserveEntryPortFor = async (
           port: number,
           isUnavailable: (hostId: number, candidate: number) => Promise<boolean>,
@@ -1252,26 +1428,43 @@ export const crudRulesRouter = router({
           }
           if (sourcePort === 0) throw new Error("转发组入口端口区间内已无可用端口");
         } else {
-          const reservations = await reserveEntryPortForExplicitUse(sourcePort);
+          sniEntryPortValidation = await validateSniEntryPortUse({
+            groupId: forwardGroupId,
+            sourcePort,
+            entryHostIds,
+            sni: normalizedSni,
+          });
+          const reservations = normalizedSni
+            ? await reserveEntryPortFor(
+              sourcePort,
+              (entryHostId, candidate) => db.isHostPortUnavailableForExplicitUse(entryHostId, candidate, sniEntryPortValidation?.portUsageIgnoreRuleIds || [], ruleProtocol),
+            )
+            : await reserveEntryPortForExplicitUse(sourcePort);
           if (!reservations) throw new Error(`入口 Agent 端口 ${sourcePort} 已被占用或正在分配`);
           groupReservations.push(...reservations);
         }
-        const group = await db.validateForwardGroupRuleConfig(forwardGroupId, { sourcePort, protocol: ruleProtocol });
-        const isForwardChain = (group as any).groupMode === "chain";
-        const isPortGroup = (group as any).groupMode === "port";
-        let sniSplitterPort: number | null = null;
-        if (normalizedSni) {
-          const splitterReservation = await reserveSniSplitterPortForForwardGroup(group);
-          groupReservations.push(splitterReservation);
-          sniSplitterPort = splitterReservation.port;
-        }
+        sniEntryPortValidation = sniEntryPortValidation || await validateSniEntryPortUse({
+          groupId: forwardGroupId,
+          sourcePort,
+          entryHostIds,
+          sni: normalizedSni,
+        });
+        const preparedGroupRuntime = await prepareForwardGroupRuntimePorts({
+          groupId: forwardGroupId,
+          sourcePort,
+          protocol: ruleProtocol,
+          sni: normalizedSni,
+          sniEntryPortValidation,
+          reservations: groupReservations,
+        });
+        const { group, isForwardChain, isPortGroup, sniSplitterPort } = preparedGroupRuntime;
         if (ctx.user.role !== "admin") {
           await requireTrafficBillingBalanceForRule(ctx.user.id, groupAccess.isTrafficBillingResource);
         }
         const hostId = await db.getForwardGroupDefaultHostId(forwardGroupId);
         const forwardType = lockedForwardTypeForGroup(group, input.forwardType);
         requireForwardTypeAllowedForActor(ctx.user, forwardType);
-        const groupIsTunnel = !isForwardChain && (group as any).groupType === "tunnel";
+        const groupIsTunnel = !isForwardChain && group.groupType === "tunnel";
         if (!isForwardChain && !groupIsTunnel) {
           const host = await db.getHostById(hostId);
           assertNoDirectSelfForwardLoop({
@@ -1320,7 +1513,7 @@ export const crudRulesRouter = router({
           sourcePort,
           sni: normalizedSni,
           sniSplitterPort,
-          targetIp: normalizeRuleTargetIp(input.targetIp, { tunnelId: forwardType === "gost" && !isForwardChain && (group as any).groupType === "tunnel" ? 1 : null }),
+          targetIp: normalizeRuleTargetIp(input.targetIp, { tunnelId: forwardType === "gost" && !isForwardChain && group.groupType === "tunnel" ? 1 : null }),
           targetPort: input.targetPort,
           isEnabled: input.isEnabled,
           telegramErrorNotifyEnabled: !!input.telegramErrorNotifyEnabled,
@@ -1332,14 +1525,14 @@ export const crudRulesRouter = router({
             ruleProtocol,
             forwardType,
             isForwardChain,
-            { tunnelRoute: !isForwardChain && (group as any).groupType === "tunnel", clearUnsupported: true },
+            { tunnelRoute: !isForwardChain && group.groupType === "tunnel", clearUnsupported: true },
           ),
           ...normalizeTransportTuningInput(
             input,
             ruleProtocol,
             forwardType,
             isForwardChain,
-            { tunnelRoute: !isForwardChain && (group as any).groupType === "tunnel", forwardxTunnel: false, clearUnsupported: true },
+            { tunnelRoute: !isForwardChain && group.groupType === "tunnel", forwardxTunnel: false, clearUnsupported: true },
           ),
           ...normalizeFailoverInput({
             ...input,
@@ -1758,30 +1951,32 @@ export const crudRulesRouter = router({
         }
         const nextSni = normalizedInputSni !== undefined ? normalizedInputSni : normalizeSniInput((rule as any).sni);
         const nextProtocol = nextSni ? "tcp" : input.protocol ?? (rule as any).protocol;
-        const group = await db.validateForwardGroupRuleConfig(activeGroupId, {
-          sourcePort: input.sourcePort ?? rule.sourcePort,
-          protocol: nextProtocol,
-          excludeTemplateRuleId: rule.id,
-        });
-        const isForwardChain = (group as any).groupMode === "chain";
-        const isPortGroup = (group as any).groupMode === "port";
         const childRules = await db.getForwardGroupChildRulesForTemplate(input.id);
-        const ownRuleIds = [
+        const ownRuleIds = normalizePositiveIds([
           Number(rule.id),
           ...(childRules as any[]).map((child: any) => Number(child.id)),
-        ].filter((id) => Number.isInteger(id) && id > 0);
-        let nextSniSplitterPort: number | null = null;
-        if (nextSni) {
-          if (!isForwardChain) throw new Error("SNI 分流当前仅支持转发链");
-          await inferForwardGroupSniExitHost(group);
-          const existingSplitterPort = Number((rule as any).sniSplitterPort || 0);
-          const splitterReservation = await reserveSniSplitterPortForForwardGroup(group, {
-            currentPort: groupChanged ? undefined : existingSplitterPort,
-            excludeRuleIds: ownRuleIds,
-          });
-          heldReservations.push(splitterReservation);
-          nextSniSplitterPort = splitterReservation.port;
-        }
+        ]);
+        const nextSourcePort = Number(input.sourcePort ?? (rule as any).sourcePort);
+        const entryHostIds = await db.getForwardGroupRuleEntryHostIds(activeGroupId);
+        const sniEntryPortValidation = await validateSniEntryPortUse({
+          groupId: activeGroupId,
+          sourcePort: nextSourcePort,
+          entryHostIds,
+          sni: nextSni,
+          excludeRuleIds: ownRuleIds,
+        });
+        const preparedGroupRuntime = await prepareForwardGroupRuntimePorts({
+          groupId: activeGroupId,
+          sourcePort: nextSourcePort,
+          protocol: nextProtocol,
+          sni: nextSni,
+          sniEntryPortValidation,
+          excludeTemplateRuleId: rule.id,
+          ownerRuleIds: ownRuleIds,
+          currentSplitterPort: groupChanged ? undefined : (rule as any).sniSplitterPort,
+          reservations: heldReservations,
+        });
+        const { group, isForwardChain, isPortGroup, sniSplitterPort: nextSniSplitterPort } = preparedGroupRuntime;
         if (ctx.user.role !== "admin" && (input.isEnabled === true || dbBool((rule as any).isEnabled))) {
           await requireTrafficBillingBalanceForRule(ctx.user.id, groupAccess.isTrafficBillingResource);
         }
@@ -1793,11 +1988,11 @@ export const crudRulesRouter = router({
         }
         await reserveForwardGroupEntryPorts(
           activeGroupId,
-          Number(input.sourcePort ?? (rule as any).sourcePort),
+          nextSourcePort,
           nextProtocol,
-          ownRuleIds,
+          preparedGroupRuntime.entryPortReservationExcludeRuleIds,
         );
-        const groupIsTunnel = !isForwardChain && (group as any).groupType === "tunnel";
+        const groupIsTunnel = !isForwardChain && group.groupType === "tunnel";
         const groupTunnelSupportsFailover = groupIsTunnel ? await forwardGroupTunnelMembersSupportMainBackup(group) : true;
         const groupSupportsFailover = !isForwardChain && nextProtocol === "tcp" && nextForwardType === "gost" && (!groupIsTunnel || groupTunnelSupportsFailover);
         const nextMainBackupEnabled = groupChanged ? false : (groupSupportsFailover ? input.failoverEnabled ?? (rule as any).failoverEnabled : false);
@@ -1839,26 +2034,26 @@ export const crudRulesRouter = router({
                 autoFailback: groupChanged ? true : input.autoFailback ?? (rule as any).autoFailback,
               }, nextProtocol)
             : {}),
-          ...(input.targetIp !== undefined ? { targetIp: normalizeRuleTargetIp(input.targetIp, { tunnelId: !isForwardChain && (group as any).groupType === "tunnel" ? 1 : null }) } : {}),
+          ...(input.targetIp !== undefined ? { targetIp: normalizeRuleTargetIp(input.targetIp, { tunnelId: !isForwardChain && group.groupType === "tunnel" ? 1 : null }) } : {}),
           forwardType: nextForwardType,
           protocol: nextProtocol,
           sni: nextSni,
           sniSplitterPort: nextSniSplitterPort,
-          ...(groupChanged ? normalizeProxyProtocolInput({}, nextProtocol, nextForwardType, isForwardChain, { clearUnsupported: true, tunnelRoute: !isForwardChain && (group as any).groupType === "tunnel" }) : normalizeProxyProtocolInput(
+          ...(groupChanged ? normalizeProxyProtocolInput({}, nextProtocol, nextForwardType, isForwardChain, { clearUnsupported: true, tunnelRoute: !isForwardChain && group.groupType === "tunnel" }) : normalizeProxyProtocolInput(
             { ...rule, ...input },
             nextProtocol,
             nextForwardType,
             isForwardChain,
-            { clearUnsupported: true, tunnelRoute: !isForwardChain && (group as any).groupType === "tunnel" },
+            { clearUnsupported: true, tunnelRoute: !isForwardChain && group.groupType === "tunnel" },
           )),
-          ...(groupChanged ? normalizeTransportTuningInput({}, nextProtocol, nextForwardType, isForwardChain, { clearUnsupported: true, tunnelRoute: !isForwardChain && (group as any).groupType === "tunnel", forwardxTunnel: false }) : normalizeTransportTuningInput(
+          ...(groupChanged ? normalizeTransportTuningInput({}, nextProtocol, nextForwardType, isForwardChain, { clearUnsupported: true, tunnelRoute: !isForwardChain && group.groupType === "tunnel", forwardxTunnel: false }) : normalizeTransportTuningInput(
             { ...rule, ...input },
             nextProtocol,
             nextForwardType,
             isForwardChain,
             {
               clearUnsupported: true,
-              tunnelRoute: !isForwardChain && (group as any).groupType === "tunnel",
+              tunnelRoute: !isForwardChain && group.groupType === "tunnel",
               forwardxTunnel: false,
             },
           )),
@@ -1919,38 +2114,48 @@ export const crudRulesRouter = router({
         }
         const nextSni = normalizedInputSni !== undefined ? normalizedInputSni : normalizeSniInput((rule as any).sni);
         const nextProtocol = nextSni ? "tcp" : input.protocol ?? (rule as any).protocol;
-        const group = await db.validateForwardGroupRuleConfig(groupId, {
+        const ownRuleIds = normalizePositiveIds([Number(rule.id)]);
+        const entryHostIds = await db.getForwardGroupRuleEntryHostIds(groupId);
+        const sniEntryPortValidation = await validateSniEntryPortUse({
+          groupId,
+          sourcePort,
+          entryHostIds,
+          sni: nextSni,
+          excludeRuleIds: ownRuleIds,
+        });
+        const preparedGroupRuntime = await prepareForwardGroupRuntimePorts({
+          groupId,
           sourcePort,
           protocol: nextProtocol,
+          sni: nextSni,
+          sniEntryPortValidation,
           excludeTemplateRuleId: rule.id,
+          ownerRuleIds: ownRuleIds,
+          reservations: heldReservations,
         });
-        const isForwardChain = (group as any).groupMode === "chain";
-        const isPortGroup = (group as any).groupMode === "port";
-        let nextSniSplitterPort: number | null = null;
-        if (nextSni) {
-          if (!isForwardChain) throw new Error("SNI 分流当前仅支持转发链");
-          await inferForwardGroupSniExitHost(group);
-          const splitterReservation = await reserveSniSplitterPortForForwardGroup(group);
-          heldReservations.push(splitterReservation);
-          nextSniSplitterPort = splitterReservation.port;
-        }
+        const { group, isForwardChain, isPortGroup, sniSplitterPort: nextSniSplitterPort } = preparedGroupRuntime;
         if (ctx.user.role !== "admin" && (input.isEnabled === true || dbBool((rule as any).isEnabled))) {
           await requireTrafficBillingBalanceForRule(ctx.user.id, groupAccess.isTrafficBillingResource);
         }
         const nextForwardType = lockedForwardTypeForGroup(group, input.forwardType ?? (rule as any).forwardType);
         requireForwardTypeAllowedForActor(ctx.user, nextForwardType);
-        await reserveForwardGroupEntryPorts(groupId, sourcePort, nextProtocol, [Number(rule.id)]);
+        await reserveForwardGroupEntryPorts(
+          groupId,
+          sourcePort,
+          nextProtocol,
+          preparedGroupRuntime.entryPortReservationExcludeRuleIds,
+        );
         const nextMainBackupEnabled = false;
         requireMainBackupAllowed({
           enabled: nextMainBackupEnabled,
           protocol: nextProtocol,
           forwardType: nextForwardType,
-          isTunnelRoute: !isForwardChain && (group as any).groupType === "tunnel",
+          isTunnelRoute: !isForwardChain && group.groupType === "tunnel",
           isAdmin: ctx.user.role === "admin",
         });
         await requireRuleProtocolEnabled({ ...rule, forwardType: nextForwardType, tunnelId: null });
         const hostId = await db.getForwardGroupDefaultHostId(groupId);
-        if (!isForwardChain && (group as any).groupType !== "tunnel") {
+        if (!isForwardChain && group.groupType !== "tunnel") {
           const host = await db.getHostById(hostId);
           assertNoDirectSelfForwardLoop({
             host,
@@ -1977,7 +2182,7 @@ export const crudRulesRouter = router({
           sourcePort,
           sni: nextSni,
           sniSplitterPort: nextSniSplitterPort,
-          targetIp: normalizeRuleTargetIp(input.targetIp ?? (rule as any).targetIp, { tunnelId: !isForwardChain && (group as any).groupType === "tunnel" ? 1 : null }),
+          targetIp: normalizeRuleTargetIp(input.targetIp ?? (rule as any).targetIp, { tunnelId: !isForwardChain && group.groupType === "tunnel" ? 1 : null }),
           targetPort: Number(input.targetPort ?? (rule as any).targetPort),
           telegramErrorNotifyEnabled: input.telegramErrorNotifyEnabled ?? (rule as any).telegramErrorNotifyEnabled,
           blockHttp: false,
@@ -1988,14 +2193,14 @@ export const crudRulesRouter = router({
             nextProtocol,
             nextForwardType,
             isForwardChain,
-            { clearUnsupported: true, tunnelRoute: !isForwardChain && (group as any).groupType === "tunnel" },
+            { clearUnsupported: true, tunnelRoute: !isForwardChain && group.groupType === "tunnel" },
           ),
           ...normalizeTransportTuningInput(
             {},
             nextProtocol,
             nextForwardType,
             isForwardChain,
-            { clearUnsupported: true, tunnelRoute: !isForwardChain && (group as any).groupType === "tunnel", forwardxTunnel: false },
+            { clearUnsupported: true, tunnelRoute: !isForwardChain && group.groupType === "tunnel", forwardxTunnel: false },
           ),
           ...normalizeFailoverInput({
             failoverEnabled: false,

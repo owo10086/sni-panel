@@ -7,7 +7,10 @@ import (
 	"errors"
 	"io"
 	"net"
+	"net/http"
+	"net/http/httptest"
 	"strconv"
+	"sync"
 	"testing"
 	"time"
 )
@@ -120,6 +123,68 @@ func TestSniSplitterReassemblesFragmentedClientHello(t *testing.T) {
 	}
 }
 
+func TestSniSplitterRoutesMultipleDomainsAndReportsTrafficByRule(t *testing.T) {
+	resetTrafficBatchesForTest()
+	t.Cleanup(resetTrafficBatchesForTest)
+	panel := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusServiceUnavailable)
+	}))
+	defer panel.Close()
+
+	apiHello := clientHelloBytes(t, "api.example.com")
+	apiPayload := []byte("api request bytes")
+	apiResponse := []byte("api response bytes")
+	apiBackendPort, apiReceived, stopAPIBackend := startReplyingTCPBackend(t, len(apiHello)+len(apiPayload), apiResponse)
+	defer stopAPIBackend()
+
+	webHello := clientHelloBytes(t, "web.example.com")
+	webPayload := []byte("web request payload")
+	webResponse := []byte("web response payload")
+	webBackendPort, webReceived, stopWebBackend := startReplyingTCPBackend(t, len(webHello)+len(webPayload), webResponse)
+	defer stopWebBackend()
+
+	cfg := normalizeConfig(config{
+		Role:       "sni-splitter",
+		ListenPort: freeTCPPort(t),
+		Protocol:   "tcp",
+		PanelURL:   panel.URL,
+		Token:      "traffic-test-token",
+		RuleID:     900,
+		SNIRoutes: []sniRoute{
+			{SNI: "api.example.com", RuleID: 101, TargetIP: "127.0.0.1", TargetPort: apiBackendPort},
+			{SNI: "web.example.com", RuleID: 202, TargetIP: "127.0.0.1", TargetPort: webBackendPort},
+		},
+	})
+	splitterPort, stopSplitter := startTestSniSplitterWithConfig(t, cfg)
+	var stopOnce sync.Once
+	stop := func() { stopOnce.Do(stopSplitter) }
+	defer stop()
+
+	exchangeThroughSniSplitter(t, splitterPort, apiHello, apiPayload, apiResponse)
+	exchangeThroughSniSplitter(t, splitterPort, webHello, webPayload, webResponse)
+
+	if got := receiveBytes(t, apiReceived); !bytes.Equal(got, append(append([]byte(nil), apiHello...), apiPayload...)) {
+		t.Fatalf("api backend received wrong payload")
+	}
+	if got := receiveBytes(t, webReceived); !bytes.Equal(got, append(append([]byte(nil), webHello...), webPayload...)) {
+		t.Fatalf("web backend received wrong payload")
+	}
+
+	stop()
+	cfg.ListenPort = splitterPort
+	key := trafficBatchKey{panelURL: panel.URL, token: cfg.Token, producerID: fxpTrafficProducerID(cfg)}
+	pending := trafficBatchPendingSnapshot()[key]
+	if len(pending.byRule) != 2 {
+		t.Fatalf("sni splitter traffic batch rules = %d, want 2: %+v", len(pending.byRule), pending.byRule)
+	}
+	if got := pending.byRule[101]; got.bytesIn != uint64(len(apiHello)+len(apiPayload)) || got.bytesOut != uint64(len(apiResponse)) || got.connections != 1 {
+		t.Fatalf("api traffic = %+v", got)
+	}
+	if got := pending.byRule[202]; got.bytesIn != uint64(len(webHello)+len(webPayload)) || got.bytesOut != uint64(len(webResponse)) || got.connections != 1 {
+		t.Fatalf("web traffic = %+v", got)
+	}
+}
+
 func TestSniSplitterConfigValidation(t *testing.T) {
 	cfg := normalizeConfig(config{
 		Role:       " SNI-SPLITTER ",
@@ -185,15 +250,20 @@ func TestSniSplitterConfigValidation(t *testing.T) {
 
 func startTestSniSplitter(t *testing.T, routes []sniRoute) (int, func()) {
 	t.Helper()
-	port := freeTCPPort(t)
-	done := make(chan struct{})
-	errCh := make(chan error, 1)
 	cfg := normalizeConfig(config{
 		Role:       "sni-splitter",
-		ListenPort: port,
+		ListenPort: freeTCPPort(t),
 		Protocol:   "tcp",
 		SNIRoutes:  routes,
 	})
+	return startTestSniSplitterWithConfig(t, cfg)
+}
+
+func startTestSniSplitterWithConfig(t *testing.T, cfg config) (int, func()) {
+	t.Helper()
+	port := cfg.ListenPort
+	done := make(chan struct{})
+	errCh := make(chan error, 1)
 	go func() {
 		errCh <- runSniSplitter(done, cfg)
 	}()
@@ -211,7 +281,35 @@ func startTestSniSplitter(t *testing.T, routes []sniRoute) (int, func()) {
 	}
 }
 
+func startReplyingTCPBackend(t *testing.T, wantBytes int, response []byte) (int, <-chan []byte, func()) {
+	t.Helper()
+	return startTCPBackend(t, wantBytes, response)
+}
+
+func exchangeThroughSniSplitter(t *testing.T, port int, hello, payload, response []byte) {
+	t.Helper()
+	client := dialTestTCP(t, port)
+	defer client.Close()
+	data := append(append([]byte(nil), hello...), payload...)
+	if _, err := client.Write(data); err != nil {
+		t.Fatal(err)
+	}
+	_ = client.SetReadDeadline(time.Now().Add(2 * time.Second))
+	got := make([]byte, len(response))
+	if _, err := io.ReadFull(client, got); err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(got, response) {
+		t.Fatalf("splitter response = %q, want %q", got, response)
+	}
+}
+
 func startRecordingTCPBackend(t *testing.T, wantBytes int) (int, <-chan []byte, func()) {
+	t.Helper()
+	return startTCPBackend(t, wantBytes, nil)
+}
+
+func startTCPBackend(t *testing.T, wantBytes int, response []byte) (int, <-chan []byte, func()) {
 	t.Helper()
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
@@ -234,6 +332,13 @@ func startRecordingTCPBackend(t *testing.T, wantBytes int) (int, <-chan []byte, 
 			return
 		}
 		received <- buf
+		if response != nil {
+			_ = conn.SetWriteDeadline(time.Now().Add(2 * time.Second))
+			if _, err := conn.Write(response); err != nil {
+				errCh <- err
+				return
+			}
+		}
 	}()
 	port := ln.Addr().(*net.TCPAddr).Port
 	return port, received, func() {

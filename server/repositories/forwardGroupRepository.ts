@@ -75,7 +75,7 @@ import {
 } from "../portReservations";
 import { repairPortForwardRuleHostReferences } from "../portForwardRuleHosts";
 import { summarizeForwardGroupRuntime } from "../forwardGroupRuntimeStatus";
-import { sqlBool } from "./repositoryUtils";
+import { normalizePositiveIds, normalizeSniValue, sqlBool } from "./repositoryUtils";
 import { normalizeExitGroupStrategy } from "@shared/exitStrategy";
 import { MAX_FORWARD_GROUP_MEMBERS } from "../../shared/forwardGroup";
 import { getLastAuthenticatedAgentActivity } from "../agentActivity";
@@ -115,6 +115,7 @@ type ForwardGroupRuleConfig = {
   sourcePort: number;
   protocol?: "tcp" | "udp" | "both" | string | null;
   excludeTemplateRuleId?: number | null;
+  portUsageIgnoreRuleIds?: number[];
 };
 
 type SyncForwardGroupRulesOptions = {
@@ -140,6 +141,169 @@ function dbBool(value: unknown, fallback = false) {
   if (typeof value !== "string") return false;
   const normalized = value.trim().toLowerCase();
   return normalized === "1" || normalized === "true";
+}
+
+type ForwardGroupSniRuleRow = {
+  id: number;
+  name: string | null;
+  hostId: number | null;
+  forwardGroupId: number | null;
+  forwardGroupRuleId: number | null;
+  isForwardGroupTemplate: unknown;
+  sni: string | null;
+  sniSplitterPort: number | null;
+};
+
+function preferTemplateRule<T extends { isForwardGroupTemplate?: unknown }>(rows: T[]) {
+  return rows.find((row) => dbBool(row?.isForwardGroupTemplate)) || rows[0] || null;
+}
+
+export type ForwardGroupSniEntryPortState = {
+  shareableRuleIds: number[];
+  splitterPort: number | null;
+  duplicateRule: ForwardGroupSniRuleRow | null;
+  plainRule: ForwardGroupSniRuleRow | null;
+  otherGroupSniRule: ForwardGroupSniRuleRow | null;
+  anySniRule: ForwardGroupSniRuleRow | null;
+};
+
+export async function getForwardGroupSniEntryPortState(options: {
+  groupId: number;
+  sourcePort: number;
+  entryHostIds: number[];
+  sni?: string | null;
+  excludeRuleIds?: number[];
+}): Promise<ForwardGroupSniEntryPortState> {
+  const empty = {
+    shareableRuleIds: [],
+    splitterPort: null,
+    duplicateRule: null,
+    plainRule: null,
+    otherGroupSniRule: null,
+    anySniRule: null,
+  };
+  const db = await getDb();
+  const groupId = Number(options.groupId || 0);
+  const sourcePort = Number(options.sourcePort || 0);
+  const entryHostIds = normalizePositiveIds(options.entryHostIds);
+  if (!db || groupId <= 0 || sourcePort <= 0 || entryHostIds.length === 0) return empty;
+  const excludedIds = normalizePositiveIds(options.excludeRuleIds);
+  const conds: any[] = [
+    inArray(forwardRules.hostId, entryHostIds),
+    eq(forwardRules.sourcePort, sourcePort),
+    eq(forwardRules.isEnabled, true),
+    eq(forwardRules.pendingDelete, false),
+  ];
+  if (excludedIds.length > 0) {
+    conds.push(notInArray(forwardRules.id, excludedIds));
+  }
+  const rows = await db.select({
+    id: forwardRules.id,
+    name: forwardRules.name,
+    hostId: forwardRules.hostId,
+    forwardGroupId: forwardRules.forwardGroupId,
+    forwardGroupRuleId: forwardRules.forwardGroupRuleId,
+    isForwardGroupTemplate: forwardRules.isForwardGroupTemplate,
+    sni: forwardRules.sni,
+    sniSplitterPort: forwardRules.sniSplitterPort,
+  }).from(forwardRules).where(and(...conds)) as ForwardGroupSniRuleRow[];
+
+  const normalizedSni = normalizeSniValue(options.sni);
+  const duplicateRows = normalizedSni
+    ? await db.select({
+      id: forwardRules.id,
+      name: forwardRules.name,
+      hostId: forwardRules.hostId,
+      forwardGroupId: forwardRules.forwardGroupId,
+      forwardGroupRuleId: forwardRules.forwardGroupRuleId,
+      isForwardGroupTemplate: forwardRules.isForwardGroupTemplate,
+      sni: forwardRules.sni,
+      sniSplitterPort: forwardRules.sniSplitterPort,
+    }).from(forwardRules).where(and(
+      inArray(forwardRules.hostId, entryHostIds),
+      eq(forwardRules.pendingDelete, false),
+      ...(excludedIds.length > 0 ? [notInArray(forwardRules.id, excludedIds)] : []),
+    )) as ForwardGroupSniRuleRow[]
+    : [];
+  const sniRows = rows.filter((row) => !!normalizeSniValue(row.sni));
+  const plainRows = rows.filter((row) => !normalizeSniValue(row.sni));
+  const sameGroupSniRows = sniRows.filter((row) => Number(row.forwardGroupId || 0) === groupId);
+  const otherGroupSniRows = sniRows.filter((row) => Number(row.forwardGroupId || 0) !== groupId);
+  const matchingDuplicateRows = duplicateRows.filter((row) => normalizeSniValue(row.sni) === normalizedSni);
+  const splitterPorts = Array.from(new Set(
+    sameGroupSniRows
+      .map((row) => Number(row.sniSplitterPort || 0))
+      .filter((port) => Number.isInteger(port) && port > 0 && port <= 65535),
+  )).sort((left, right) => left - right);
+
+  return {
+    shareableRuleIds: normalizePositiveIds(sameGroupSniRows.map((row) => row.id)),
+    splitterPort: splitterPorts[0] || null,
+    duplicateRule: preferTemplateRule(matchingDuplicateRows),
+    plainRule: preferTemplateRule(plainRows),
+    otherGroupSniRule: preferTemplateRule(otherGroupSniRows),
+    anySniRule: preferTemplateRule(sniRows),
+  };
+}
+
+export async function getForwardGroupSniSplitterPortRuleIds(groupId: number, splitterPort: number) {
+  const db = await getDb();
+  const normalizedGroupId = Number(groupId || 0);
+  const normalizedSplitterPort = Number(splitterPort || 0);
+  if (!db || normalizedGroupId <= 0 || normalizedSplitterPort <= 0) return [];
+  const rows = await db.select({ id: forwardRules.id })
+    .from(forwardRules)
+    .where(and(
+      eq(forwardRules.forwardGroupId, normalizedGroupId),
+      eq(forwardRules.sniSplitterPort, normalizedSplitterPort),
+      eq(forwardRules.isEnabled, true),
+      eq(forwardRules.pendingDelete, false),
+      sql`TRIM(COALESCE(${forwardRules.sni}, '')) <> ''`,
+    ));
+  return normalizePositiveIds((rows as any[]).map((row) => row.id));
+}
+
+type ForwardGroupSniChainMemberPortState = {
+  ruleIds: number[];
+  sourcePort: number | null;
+};
+
+async function getForwardGroupSniChainMemberPortState(options: {
+  groupId: number;
+  splitterPort: number;
+  memberId: number;
+  hostId: number;
+}): Promise<ForwardGroupSniChainMemberPortState> {
+  const db = await getDb();
+  const groupId = Number(options.groupId || 0);
+  const splitterPort = Number(options.splitterPort || 0);
+  const memberId = Number(options.memberId || 0);
+  const hostId = Number(options.hostId || 0);
+  if (!db || groupId <= 0 || splitterPort <= 0 || memberId <= 0 || hostId <= 0) {
+    return { ruleIds: [], sourcePort: null };
+  }
+  const rows = await db.select({
+    id: forwardRules.id,
+    sourcePort: forwardRules.sourcePort,
+  })
+    .from(forwardRules)
+    .where(and(
+      eq(forwardRules.forwardGroupId, groupId),
+      eq(forwardRules.forwardGroupMemberId, memberId),
+      eq(forwardRules.hostId, hostId),
+      eq(forwardRules.isForwardGroupTemplate, false),
+      eq(forwardRules.pendingDelete, false),
+      eq(forwardRules.sniSplitterPort, splitterPort),
+      sql`TRIM(COALESCE(${forwardRules.sni}, '')) <> ''`,
+    ))
+    .orderBy(forwardRules.id);
+  const sourcePort = (rows as any[])
+    .map((row) => Number(row.sourcePort || 0))
+    .find((port) => Number.isInteger(port) && port > 0 && port <= 65535) || null;
+  return {
+    ruleIds: normalizePositiveIds((rows as any[]).map((row) => row.id)),
+    sourcePort,
+  };
 }
 
 function runtimeFieldEqual(current: unknown, next: unknown) {
@@ -2286,6 +2450,7 @@ export async function validateForwardGroupRuleConfig(groupId: number, config: Fo
         Number(config.excludeTemplateRuleId || 0),
         ...excludedChildRuleIds,
         Number(existing?.id || 0),
+        ...(Array.isArray(config.portUsageIgnoreRuleIds) ? config.portUsageIgnoreRuleIds : []),
       ].filter(Boolean),
       protocol,
     );
@@ -2886,14 +3051,19 @@ async function reserveChainMemberListenerPort(
   member: any,
   hostId: number,
   options: Pick<SyncForwardGroupRulesOptions, "createMissing"> = {},
+  overrides: { preferredPort?: number | null; ignoreRuleIds?: number[] } = {},
 ) {
   const existing = await existingChildRule(Number(templateRule.id), Number(member.id), hostId);
   if (!dbBool(templateRule?.isEnabled) || (!existing && options.createMissing === false)) return null;
   const entry = await entryPortPolicyForMember(member);
   if (entry.hostId !== hostId) throw new Error("Port forwarding chain member host changed during allocation");
-  const ignoreRuleIds = [Number(templateRule.id), Number(existing?.id || 0)].filter(Boolean);
+  const ignoreRuleIds = normalizePositiveIds([
+    Number(templateRule.id),
+    Number(existing?.id || 0),
+    ...(Array.isArray(overrides.ignoreRuleIds) ? overrides.ignoreRuleIds : []),
+  ]);
   const protocol = normalizeRuleProtocol(templateRule.protocol);
-  const preferredPort = Number(existing?.sourcePort || 0);
+  const preferredPort = Number(overrides.preferredPort || existing?.sourcePort || 0);
 
   if (preferredPort > 0 && isPortAllowedByPolicy(preferredPort, entry.policy)) {
     const preserved = await reserveSpecificHostPort({
@@ -2908,7 +3078,7 @@ async function reserveChainMemberListenerPort(
   const reservation = await reserveAvailableHostPort({
     hostId,
     protocol,
-    findPort: (reservedPorts) => findAvailablePort(hostId, null, null, protocol, reservedPorts),
+    findPort: (reservedPorts) => findAvailablePort(hostId, null, null, protocol, reservedPorts, ignoreRuleIds),
     isUsed: (port) => isHostPortUnavailableForAllocation(hostId, port, ignoreRuleIds, protocol, undefined, false),
   });
   if (!reservation) {
@@ -3175,6 +3345,7 @@ async function syncForwardGroupRulesUnlocked(groupId: number, options: SyncForwa
   }
 
   const activeChainEntryMembers = groupMode === "chain" ? await chainEntryMembers(group) : [];
+  const groupEntryHostIds = groupMode === "chain" ? await getForwardGroupRuleEntryHostIds(groupId) : [];
   if (groupMode === "chain" && activeChainEntryMembers.length > 0) {
     const chainHostIds = new Set(activeChainMembers.map((member: any) => Number(member.hostId || 0)));
     for (const entryMember of activeChainEntryMembers) {
@@ -3221,6 +3392,11 @@ async function syncForwardGroupRulesUnlocked(groupId: number, options: SyncForwa
     }
   }
 
+  const sniChainPortReservationByKey = new Map<string, HostPortReservation>();
+  const sniChainPortKey = (splitterPort: number, memberId: number, hostId: number) => (
+    `${Number(groupId)}:${Number(splitterPort)}:${Number(memberId)}:${Number(hostId)}`
+  );
+
   for (const template of templates as any[]) {
     if (groupMode === "chain") {
       const entryMembers = activeChainEntryMembers;
@@ -3244,13 +3420,23 @@ async function syncForwardGroupRulesUnlocked(groupId: number, options: SyncForwa
         const chainSourcePorts: number[] = [];
         const templateSniSplitterPort = Number((template as any).sniSplitterPort || 0);
         const templateUsesSniSplitter = !!String((template as any).sni || "").trim() && templateSniSplitterPort > 0;
-        const templateSniSplitterRuleIds = templateUsesSniSplitter
-          ? [
+        const templateSniEntryPortRuleIds = templateUsesSniSplitter
+          ? normalizePositiveIds([
             Number(template.id),
-            ...(await getForwardGroupChildRulesForTemplate(Number(template.id)) as any[])
-              .map((rule: any) => Number(rule.id || 0)),
-          ].filter((id) => Number.isInteger(id) && id > 0)
+            ...(await getForwardGroupSniEntryPortState({
+              groupId,
+              sourcePort: Number(template.sourcePort || 0),
+              entryHostIds: groupEntryHostIds,
+            })).shareableRuleIds,
+          ])
           : [];
+        const templateSniSplitterRuleIds = templateUsesSniSplitter
+          ? normalizePositiveIds([
+            Number(template.id),
+            ...(await getForwardGroupSniSplitterPortRuleIds(groupId, templateSniSplitterPort)),
+          ])
+          : [];
+        const templateSniChainPortRuleIdsByIndex = new Map<number, number[]>();
         for (const [index, member] of activeChainMembers.entries()) {
           if (templateUsesSniSplitter && index === activeChainMembers.length - 1) {
             chainSourcePorts.push(templateSniSplitterPort);
@@ -3262,19 +3448,54 @@ async function syncForwardGroupRulesUnlocked(groupId: number, options: SyncForwa
           }
           const hostId = await memberEntryHostId(member);
           if (!hostId) throw new Error("Port forwarding chain member has no valid entry agent");
-          const reservation = await reserveChainMemberListenerPort(template, member, hostId, options);
+          const sniChainPortState = templateUsesSniSplitter
+            ? await getForwardGroupSniChainMemberPortState({
+              groupId,
+              splitterPort: templateSniSplitterPort,
+              memberId: Number(member.id),
+              hostId,
+            })
+            : null;
+          const sniChainPortRuleIds = templateUsesSniSplitter
+            ? normalizePositiveIds([
+              ...templateSniSplitterRuleIds,
+              ...(sniChainPortState?.ruleIds || []),
+            ])
+            : [];
+          if (sniChainPortRuleIds.length > 0) {
+            templateSniChainPortRuleIdsByIndex.set(index, sniChainPortRuleIds);
+          }
+          const sharedReservationKey = templateUsesSniSplitter
+            ? sniChainPortKey(templateSniSplitterPort, Number(member.id), hostId)
+            : "";
+          const sharedReservation = sharedReservationKey
+            ? sniChainPortReservationByKey.get(sharedReservationKey)
+            : null;
+          if (sharedReservation) {
+            chainSourcePorts.push(sharedReservation.port);
+            continue;
+          }
+          const reservation = await reserveChainMemberListenerPort(template, member, hostId, options, {
+            preferredPort: sniChainPortState?.sourcePort || null,
+            ignoreRuleIds: sniChainPortRuleIds,
+          });
           if (reservation) chainPortReservations.push(reservation);
-          chainSourcePorts.push(reservation?.port || Number(template.sourcePort));
+          if (reservation && sharedReservationKey) sniChainPortReservationByKey.set(sharedReservationKey, reservation);
+          chainSourcePorts.push(reservation?.port || sniChainPortState?.sourcePort || Number(template.sourcePort));
         }
 
         for (let index = activeChainMembers.length - 1; index >= 0; index--) {
           const member = activeChainMembers[index];
           const nextMember = activeChainMembers[index + 1] || null;
           const isSniSplitterExitMember = templateUsesSniSplitter && index === activeChainMembers.length - 1;
+          const isSniEntryMember = templateUsesSniSplitter && index === 0 && entryMembers.length === 0;
+          let portUsageIgnoreRuleIds = templateSniChainPortRuleIdsByIndex.get(index);
+          if (isSniEntryMember) portUsageIgnoreRuleIds = templateSniEntryPortRuleIds;
+          if (isSniSplitterExitMember) portUsageIgnoreRuleIds = templateSniSplitterRuleIds;
           const ruleId = await ensureChainRuleForTemplate(group, template, member, nextMember, index, activeChainMembers.length, options, {
             sourcePort: chainSourcePorts[index],
             targetPort: nextMember ? chainSourcePorts[index + 1] : null,
-            portUsageIgnoreRuleIds: isSniSplitterExitMember ? templateSniSplitterRuleIds : undefined,
+            portUsageIgnoreRuleIds,
           });
           if (ruleId && !preserveRuntime) {
             await db.update(forwardRules).set({ isRunning: false, updatedAt: nowDate() }).where(eq(forwardRules.id, ruleId));
@@ -3298,6 +3519,7 @@ async function syncForwardGroupRulesUnlocked(groupId: number, options: SyncForwa
               targetIp,
               targetPort: chainSourcePorts[0],
               namePrefix: `entry ${entryIndex + 1}/${entryMembers.length}`,
+              portUsageIgnoreRuleIds: templateUsesSniSplitter ? templateSniEntryPortRuleIds : undefined,
             });
             if (ruleId && !preserveRuntime) {
               await db.update(forwardRules).set({ isRunning: false, updatedAt: nowDate() }).where(eq(forwardRules.id, ruleId));
