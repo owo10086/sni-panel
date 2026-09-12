@@ -893,12 +893,7 @@ func clientHelloBytes(t *testing.T, serverName string) []byte {
 
 func clientHelloWithECHBytes(t *testing.T, serverName string) []byte {
 	t.Helper()
-	return appendTLSClientHelloExtension(t, clientHelloBytes(t, serverName), 0xfe0d, []byte{0x9d, 0x2f, 0x81, 0x44})
-}
-
-func appendTLSClientHelloExtension(t *testing.T, hello []byte, extType uint16, data []byte) []byte {
-	t.Helper()
-	return insertTLSClientHelloExtension(t, hello, extType, data, tlsExtensionLast)
+	return insertTLSClientHelloExtension(t, clientHelloBytes(t, serverName), 0xfe0d, []byte{0x9d, 0x2f, 0x81, 0x44}, tlsExtensionLast)
 }
 
 type tlsExtensionPosition int
