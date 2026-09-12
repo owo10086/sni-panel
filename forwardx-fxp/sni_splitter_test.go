@@ -167,7 +167,7 @@ func TestPublishedSniSplitterForwardsClientHelloWithECH(t *testing.T) {
 		t.Fatalf("published FXP binary changed ECH ClientHello: got %d bytes want %d bytes", len(got), len(hello))
 	}
 	stop()
-	if !strings.Contains(logs.String(), "forwardx-fxp runtime version=2.2.118") {
+	if !strings.Contains(logs.String(), "forwardx-fxp runtime version="+fxpRuntimeVersion) {
 		t.Fatalf("published FXP binary reported an unexpected runtime version\n%s", logs.String())
 	}
 }
