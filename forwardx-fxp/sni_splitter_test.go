@@ -12,9 +12,11 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strconv"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -92,6 +94,81 @@ func TestSniSplitterForwardsClientHelloWithECHUsingReadableSNIUnchanged(t *testi
 				t.Fatalf("ECH route changed unmatched connections to %d, want 1", status.UnmatchedConnections)
 			}
 		})
+	}
+}
+
+func TestPublishedSniSplitterForwardsClientHelloWithECH(t *testing.T) {
+	binaryPath := strings.TrimSpace(os.Getenv("FORWARDX_FXP_RELEASE_BINARY"))
+	if binaryPath == "" {
+		t.Skip("FORWARDX_FXP_RELEASE_BINARY is not set")
+	}
+
+	hello := clientHelloWithECHBytes(t, "release-check.example")
+	backendPort, received, stopBackend := startRecordingTCPBackend(t, len(hello))
+	defer stopBackend()
+	cfg := normalizeConfig(config{
+		Role:            "sni-splitter",
+		TunnelID:        1,
+		RuleID:          1,
+		ListenHost:      "127.0.0.1",
+		ListenPort:      freeTCPPort(t),
+		Protocol:        "tcp",
+		SNIRouteVersion: 1,
+		SNIRoutes: []sniRoute{{
+			SNI:        "release-check.example",
+			RuleID:     1,
+			TargetIP:   "127.0.0.1",
+			TargetPort: backendPort,
+		}},
+	})
+	configBytes, err := json.Marshal(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	configPath := filepath.Join(t.TempDir(), "sni-splitter.json")
+	if err := os.WriteFile(configPath, configBytes, 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	var logs bytes.Buffer
+	cmd := exec.Command(binaryPath, "-config", configPath)
+	cmd.Stdout = &logs
+	cmd.Stderr = &logs
+	if err := cmd.Start(); err != nil {
+		t.Fatalf("start published FXP binary: %v", err)
+	}
+	var stopOnce sync.Once
+	stop := func() {
+		stopOnce.Do(func() {
+			_ = cmd.Process.Signal(os.Interrupt)
+			done := make(chan error, 1)
+			go func() { done <- cmd.Wait() }()
+			select {
+			case err := <-done:
+				if err != nil {
+					t.Fatalf("published FXP binary stopped with error: %v\n%s", err, logs.String())
+				}
+			case <-time.After(3 * time.Second):
+				_ = cmd.Process.Kill()
+				<-done
+				t.Fatalf("published FXP binary did not stop\n%s", logs.String())
+			}
+		})
+	}
+	defer stop()
+	waitForTCPPort(t, cfg.ListenPort)
+
+	client := dialTestTCP(t, cfg.ListenPort)
+	defer client.Close()
+	if _, err := client.Write(hello); err != nil {
+		t.Fatal(err)
+	}
+	if got := receiveBytes(t, received); !bytes.Equal(got, hello) {
+		t.Fatalf("published FXP binary changed ECH ClientHello: got %d bytes want %d bytes", len(got), len(hello))
+	}
+	stop()
+	if !strings.Contains(logs.String(), "forwardx-fxp runtime version=2.2.118") {
+		t.Fatalf("published FXP binary reported an unexpected runtime version\n%s", logs.String())
 	}
 }
 

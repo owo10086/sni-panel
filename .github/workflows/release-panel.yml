@@ -79,6 +79,12 @@ jobs:
       - name: Build bundled Agent assets
         run: bash scripts/build-agent-release.sh
 
+      - name: Verify bundled FXP behavior
+        env:
+          FORWARDX_FXP_RELEASE_BINARY: ${{ github.workspace }}/dist/agent/forwardx-fxp-linux-amd64
+        run: go test -run '^TestPublishedSniSplitterForwardsClientHelloWithECH$' -count=1 .
+        working-directory: forwardx-fxp
+
       - name: Package panel runtime bundle
         shell: bash
         env:

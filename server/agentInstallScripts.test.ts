@@ -139,6 +139,28 @@ test("Agent upgrade keeps a usable existing FXP when its asset is unavailable", 
   assert.doesNotMatch(upgrade, /download_release_binary "forwardx-fxp-linux-\$\{GO_ARCH\}" "\$FXP_BIN" "ForwardX FXP" "0" \|\| true/);
 });
 
+test("panel-first Agent upgrade falls back to GitHub without deleting SNI runtime state", () => {
+  const script = generateInstallScript("https://panel.example.com", { preferPanelInstall: true });
+  const downloader = scriptSection(
+    script,
+    "download_current_release_binary() {",
+    "download_release_binary() {",
+  );
+  const upgrade = scriptSection(script, "do_upgrade() {", "# ============ 入口 ============");
+  const panelIndex = downloader.indexOf('URL="$(panel_asset_url "$RELEASE_VERSION" "$ASSET")"');
+  const githubIndex = downloader.indexOf(
+    'URL="https://github.com/poouo/Forwardx/releases/download/v${RELEASE_VERSION}/${ASSET}"',
+  );
+
+  assert.match(script, /FORWARDX_AGENT_PANEL_FIRST_DEFAULT="true"/);
+  assert.ok(panelIndex >= 0, "panel asset URL must be available");
+  assert.ok(githubIndex > panelIndex, "GitHub fallback must follow the panel asset attempt");
+  assert.match(downloader, /面板端暂未提供 \$LABEL，尝试从 GitHub 下载/);
+  assert.match(upgrade, /normalize_upgrade_agent_config/);
+  assert.doesNotMatch(upgrade, /rm -rf "\$CONFIG_DIR"/);
+  assert.doesNotMatch(upgrade, /pgrep -f "\[\/\]usr\/local\/bin\/forwardx-fxp"/);
+});
+
 test("gost runtime upgrades validate a same-directory candidate before replacement", () => {
   const script = generateInstallScript("https://panel.example.com");
   const panel = scriptSection(script, "install_runtime_from_panel() {", "install_runtime_from_github() {");

@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.3.281] - 2026-09-13
+
+### 修复与优化
+
+- 修复分流器把带 ECH 扩展且明文 SNI 可读的 TLS ClientHello 当作未匹配并断开的问题。
+- 面板发布包携带双架构 Agent、ForwardX FXP runtime 与 GOST runtime 资产，Agent 升级可优先从面板取得对应资产。
+
+### 版本
+
+- 面板与 APK Release `2.3.281`，Agent `2.2.195`，ForwardX FXP runtime `2.2.118`，Android APP `2.3.97`。
+
 ## [2.3.280] - 2026-09-08
 
 ### 修复与优化
