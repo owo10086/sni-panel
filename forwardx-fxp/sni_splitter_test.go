@@ -261,6 +261,156 @@ func TestSniSplitterHotSwapsRouteTableWithoutRestartingUnchangedRules(t *testing
 	expectSNIBackendReply(t, apiClient, []byte("api-after-invalid"), []byte("api-v1:api-after-invalid"))
 }
 
+func TestSniSplitterRateLimitAppliesToOnlyTheLimitedRule(t *testing.T) {
+	const rateBytesPerSecond = 512 * 1024
+	const payloadBytes = 1024 * 1024
+
+	limitedHello := clientHelloBytes(t, "limited.example.com")
+	freeHello := clientHelloBytes(t, "free.example.com")
+	payload := bytes.Repeat([]byte("x"), payloadBytes)
+
+	limitedPort, limitedDrained, stopLimitedBackend := startDrainingTCPBackend(t, len(limitedHello)+payloadBytes, 30*time.Second)
+	defer stopLimitedBackend()
+	freePort, freeDrained, stopFreeBackend := startDrainingTCPBackend(t, len(freeHello)+payloadBytes, 30*time.Second)
+	defer stopFreeBackend()
+
+	splitterPort, stopSplitter := startTestSniSplitter(t, []sniRoute{
+		{SNI: "limited.example.com", RuleID: 101, TargetIP: "127.0.0.1", TargetPort: limitedPort, LimitIn: rateBytesPerSecond},
+		{SNI: "free.example.com", RuleID: 202, TargetIP: "127.0.0.1", TargetPort: freePort},
+	})
+	defer stopSplitter()
+
+	freeElapsed := sniSplitterTransferDuration(t, splitterPort, freeHello, payload, freeDrained)
+	limitedElapsed := sniSplitterTransferDuration(t, splitterPort, limitedHello, payload, limitedDrained)
+
+	// The limiter hands out a burst of `rate` bytes before throttling, so the
+	// second half of the payload has to wait roughly a second.
+	if limitedElapsed < 600*time.Millisecond {
+		t.Fatalf("rate limited rule was not throttled: %s", limitedElapsed)
+	}
+	if freeElapsed > 500*time.Millisecond {
+		t.Fatalf("unlimited rule on the same port was throttled: %s", freeElapsed)
+	}
+	if limitedElapsed < freeElapsed*2 {
+		t.Fatalf("limited %s was not meaningfully slower than unlimited %s", limitedElapsed, freeElapsed)
+	}
+}
+
+func TestSniSplitterConnectionLimitAppliesToOnlyTheLimitedRule(t *testing.T) {
+	cappedHello := clientHelloBytes(t, "capped.example.com")
+	freeHello := clientHelloBytes(t, "free.example.com")
+	cappedBackendPort, stopCappedBackend := startPersistentSNIBackend(t, len(cappedHello), "capped")
+	defer stopCappedBackend()
+	freeBackendPort, stopFreeBackend := startPersistentSNIBackend(t, len(freeHello), "free")
+	defer stopFreeBackend()
+
+	splitterPort, stopSplitter := startTestSniSplitter(t, []sniRoute{
+		{SNI: "capped.example.com", RuleID: 101, TargetIP: "127.0.0.1", TargetPort: cappedBackendPort, MaxConnections: 1},
+		{SNI: "free.example.com", RuleID: 202, TargetIP: "127.0.0.1", TargetPort: freeBackendPort},
+	})
+	defer stopSplitter()
+
+	capped := openSniSplitterSession(t, splitterPort, cappedHello, []byte("capped-1"), []byte("capped:capped-1"))
+	defer capped.Close()
+
+	overflow := dialTestTCP(t, splitterPort)
+	defer overflow.Close()
+	if _, err := overflow.Write(cappedHello); err != nil {
+		t.Fatal(err)
+	}
+	expectTCPClosed(t, overflow)
+
+	// The cap belongs to one rule, not to the shared entry port.
+	free1 := openSniSplitterSession(t, splitterPort, freeHello, []byte("free-1"), []byte("free:free-1"))
+	defer free1.Close()
+	free2 := openSniSplitterSession(t, splitterPort, freeHello, []byte("free-2"), []byte("free:free-2"))
+	defer free2.Close()
+
+	expectSNIBackendReply(t, capped, []byte("capped-still-alive"), []byte("capped:capped-still-alive"))
+
+	// Releasing the slot lets the capped rule accept a connection again.
+	capped.Close()
+	var reopened net.Conn
+	for attempt := 0; attempt < 20; attempt++ {
+		candidate := dialTestTCP(t, splitterPort)
+		if _, err := candidate.Write(cappedHello); err != nil {
+			_ = candidate.Close()
+			t.Fatal(err)
+		}
+		_ = candidate.SetReadDeadline(time.Now().Add(500 * time.Millisecond))
+		if _, err := candidate.Write([]byte("capped-2")); err != nil {
+			_ = candidate.Close()
+			t.Fatal(err)
+		}
+		want := []byte("capped:capped-2")
+		got := make([]byte, len(want))
+		if _, err := io.ReadFull(candidate, got); err == nil && bytes.Equal(got, want) {
+			_ = candidate.SetReadDeadline(time.Time{})
+			reopened = candidate
+			break
+		}
+		_ = candidate.Close()
+		time.Sleep(50 * time.Millisecond)
+	}
+	if reopened == nil {
+		t.Fatal("capped rule never accepted a connection after the previous one closed")
+	}
+	reopened.Close()
+}
+
+func TestSniSplitterHotUpdatesLimitsWithoutDisturbingOtherRules(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("unix control sockets are not available on windows")
+	}
+	stableHello := clientHelloBytes(t, "stable.example.com")
+	cappedHello := clientHelloBytes(t, "capped.example.com")
+	stableBackendPort, stopStableBackend := startPersistentSNIBackend(t, len(stableHello), "stable")
+	defer stopStableBackend()
+	cappedBackendPort, stopCappedBackend := startPersistentSNIBackend(t, len(cappedHello), "capped")
+	defer stopCappedBackend()
+
+	stableRoute := sniRoute{SNI: "stable.example.com", RuleID: 101, TargetIP: "127.0.0.1", TargetPort: stableBackendPort}
+	cfg := normalizeConfig(config{
+		Role:              "sni-splitter",
+		ListenPort:        freeTCPPort(t),
+		Protocol:          "tcp",
+		SNIRouteVersion:   1,
+		ControlSocketPath: testUnixSocketPath(t),
+		SNIRoutes: []sniRoute{
+			stableRoute,
+			{SNI: "capped.example.com", RuleID: 202, TargetIP: "127.0.0.1", TargetPort: cappedBackendPort},
+		},
+	})
+	splitterPort, stopSplitter := startTestSniSplitterWithConfig(t, cfg)
+	defer stopSplitter()
+
+	stable := openSniSplitterSession(t, splitterPort, stableHello, []byte("stable-before"), []byte("stable:stable-before"))
+	defer stable.Close()
+	uncapped := openSniSplitterSession(t, splitterPort, cappedHello, []byte("capped-before"), []byte("capped:capped-before"))
+	defer uncapped.Close()
+
+	sendSNIRouteTableUpdate(t, cfg.ControlSocketPath, 2, []sniRoute{
+		stableRoute,
+		{SNI: "capped.example.com", RuleID: 202, TargetIP: "127.0.0.1", TargetPort: cappedBackendPort, MaxConnections: 1, LimitIn: 4 * 1024 * 1024},
+	})
+
+	// Changing a rule's limits drops that rule's own connections, and nothing
+	// else: the splitter is never restarted.
+	expectTCPClosed(t, uncapped)
+	expectSNIBackendReply(t, stable, []byte("stable-after"), []byte("stable:stable-after"))
+
+	capped := openSniSplitterSession(t, splitterPort, cappedHello, []byte("capped-after"), []byte("capped:capped-after"))
+	defer capped.Close()
+	overflow := dialTestTCP(t, splitterPort)
+	defer overflow.Close()
+	if _, err := overflow.Write(cappedHello); err != nil {
+		t.Fatal(err)
+	}
+	expectTCPClosed(t, overflow)
+
+	expectSNIBackendReply(t, stable, []byte("stable-still-alive"), []byte("stable:stable-still-alive"))
+}
+
 func TestSniSplitterConfigValidation(t *testing.T) {
 	cfg := normalizeConfig(config{
 		Role:            " SNI-SPLITTER ",
@@ -778,4 +928,68 @@ func expectTCPClosed(t *testing.T, conn net.Conn) {
 	if n > 0 || err == nil {
 		t.Fatalf("connection stayed open: n=%d err=%v", n, err)
 	}
+}
+
+// startDrainingTCPBackend reads wantBytes and reports how long that took. The
+// shared startTCPBackend helper caps reads at two seconds, which a deliberately
+// rate limited transfer is meant to exceed.
+func startDrainingTCPBackend(t *testing.T, wantBytes int, timeout time.Duration) (int, <-chan error, func()) {
+	t.Helper()
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	drained := make(chan error, 1)
+	go func() {
+		conn, err := ln.Accept()
+		if err != nil {
+			drained <- err
+			return
+		}
+		defer conn.Close()
+		_ = conn.SetReadDeadline(time.Now().Add(timeout))
+		if _, err := io.CopyN(io.Discard, conn, int64(wantBytes)); err != nil {
+			drained <- err
+			return
+		}
+		drained <- nil
+	}()
+	return ln.Addr().(*net.TCPAddr).Port, drained, func() { _ = ln.Close() }
+}
+
+// sniSplitterTransferDuration measures how long the splitter takes to hand a
+// full payload to the landing server, which is what a per-rule rate limit is
+// supposed to stretch.
+func sniSplitterTransferDuration(t *testing.T, port int, hello, payload []byte, drained <-chan error) time.Duration {
+	t.Helper()
+	client := dialTestTCP(t, port)
+	defer client.Close()
+	started := time.Now()
+	writeErr := make(chan error, 1)
+	go func() {
+		if _, err := client.Write(hello); err != nil {
+			writeErr <- err
+			return
+		}
+		_, err := client.Write(payload)
+		writeErr <- err
+	}()
+	select {
+	case err := <-drained:
+		if err != nil {
+			t.Fatalf("landing server did not receive the payload: %v", err)
+		}
+	case <-time.After(30 * time.Second):
+		t.Fatal("landing server did not receive the payload in time")
+	}
+	elapsed := time.Since(started)
+	select {
+	case err := <-writeErr:
+		if err != nil {
+			t.Fatalf("client write failed: %v", err)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("client write did not finish")
+	}
+	return elapsed
 }

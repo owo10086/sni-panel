@@ -7,7 +7,7 @@
  * failure budget.
  */
 
-import { pruneMapEntries, setBoundedMapValue } from "./boundedCache";
+import { pruneMapEntries, setBoundedMapValue, updateBoundedMapValueInPlace } from "./boundedCache";
 
 export type AuthRateLimitState = {
   limited: boolean;
@@ -161,7 +161,7 @@ export function pruneAuthRateLimitState(now = Date.now()) {
   for (const store of [challengeIssueStore, challengeIssueAccountStore, challengeIssueIpStore]) {
     for (const [key, timestamps] of store) {
       const active = timestamps.filter((timestamp) => timestamp > cutoff);
-      if (active.length > 0) setBoundedMapValue(store, key, active, AUTH_RATE_LIMIT_MAX_KEYS);
+      if (active.length > 0) updateBoundedMapValueInPlace(store, key, active, AUTH_RATE_LIMIT_MAX_KEYS);
       else store.delete(key);
     }
   }

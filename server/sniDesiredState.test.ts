@@ -766,3 +766,267 @@ test("SNI forward-chain desired state shares one entry listener for multiple dom
   fs.rmSync(directory, { recursive: true, force: true });
   assert.equal(result.status, 0, result.stderr || result.stdout);
 });
+
+test("a tunnel SNI rule update reaches the very next heartbeat", () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "forwardx-sni-update-order-"));
+  const databasePath = path.join(directory, "sni-update-order.db");
+  const script = String.raw`
+    import assert from "node:assert/strict";
+    import http from "node:http";
+    import path from "node:path";
+    import { pathToFileURL } from "node:url";
+    import express from "express";
+
+    const moduleUrl = (file) => pathToFileURL(path.join(process.cwd(), file)).href;
+    const runtime = await import(moduleUrl("server/dbRuntime.ts"));
+    const schema = await import(moduleUrl("server/dbSchema.ts"));
+    const heartbeat = await import(moduleUrl("server/agentHeartbeatRoute.ts"));
+    const { rulesRouter } = await import(moduleUrl("server/routers/rules.ts"));
+    const q = (name) => '"' + name + '"';
+    const insert = async (table, columns, values) => {
+      await runtime.executeRaw(
+        "INSERT INTO " + q(table) + " (" + columns.map(q).join(", ") + ") VALUES (" + values.map(() => "?").join(", ") + ")",
+        values,
+      );
+    };
+    const entryHostIp = "198.51.100.10";
+    const exitHostIp = "198.51.100.20";
+    const sourcePort = 18443;
+    const splitterPort = 24000;
+    const tunnelExitPort = 24005;
+    const callerContext = (user) => ({
+      req: { headers: {} },
+      res: { clearCookie() {} },
+      user,
+      authSession: null,
+      authFailureReason: null,
+    });
+    let server;
+
+    async function postExitHeartbeat(baseUrl) {
+      const response = await fetch(baseUrl + "/api/agent/heartbeat", {
+        method: "POST",
+        headers: { authorization: "Bearer exit-token", "content-type": "application/json" },
+        body: JSON.stringify({
+          agentVersion: "2.2.195",
+          agentBootId: "boot-exit",
+          agentProcessId: 2002,
+          agentProcessStartedAt: Math.floor(Date.now() / 1000),
+          forceReconcile: true,
+        }),
+      });
+      const payload = await response.json();
+      assert.equal(response.status, 200);
+      assert.equal(payload.success, true);
+      return payload.desiredState.actions;
+    }
+
+    function splitterRoutes(actions) {
+      const apply = actions.find(
+        (action) => action.op === "apply" && action.fxp?.role === "sni-splitter" && Number(action.sourcePort) === splitterPort,
+      );
+      assert.ok(apply, "missing sni splitter apply action");
+      return apply.fxp.sniRoutes;
+    }
+
+    try {
+      await runtime.connectDatabase({ type: "sqlite", sqlite: { path: process.env.FORWARDX_TEST_DB } });
+      await schema.ensureDatabaseSchema();
+      const now = Math.floor(Date.now() / 1000);
+      await insert("users", ["id", "username", "password", "role", "canAddRules", "manualCanAddRules"], [1, "admin", "x", "admin", 1, 1]);
+      await insert("hosts", ["id", "name", "ip", "ipv4", "agentToken", "userId", "isOnline", "lastHeartbeat", "agentVersion", "portRangeStart", "portRangeEnd"], [1, "entry", entryHostIp, entryHostIp, "entry-token", 1, 1, now, "2.2.195", 18000, 19000]);
+      await insert("hosts", ["id", "name", "ip", "ipv4", "agentToken", "userId", "isOnline", "lastHeartbeat", "agentVersion", "portRangeStart", "portRangeEnd"], [2, "exit", exitHostIp, exitHostIp, "exit-token", 1, 1, now, "2.2.195", 24000, 24010]);
+      await insert("tunnels", ["id", "name", "entryHostId", "exitHostId", "mode", "listenPort", "userId", "isEnabled"], [7, "kr-hk", 1, 2, "tls", 21000, 1, 1]);
+      for (const route of [
+        { id: 101, name: "api", sni: "api.example.com", targetIp: "203.0.113.20", targetPort: 443 },
+        { id: 102, name: "web", sni: "web.example.com", targetIp: "203.0.113.21", targetPort: 8443 },
+      ]) {
+        await insert("forward_rules", [
+          "id", "hostId", "name", "forwardType", "protocol", "tunnelId", "sourcePort", "sni", "sniSplitterPort",
+          "tunnelExitPort", "targetIp", "targetPort", "rateLimitMbps", "maxConnections", "userId", "isEnabled", "isRunning",
+        ], [route.id, 1, route.name, "gost", "tcp", 7, sourcePort, route.sni, splitterPort, tunnelExitPort, route.targetIp, route.targetPort, 0, 0, 1, 1, 0]);
+      }
+
+      const app = express();
+      app.use(express.json());
+      app.use((req, _res, next) => {
+        const authorization = String(req.headers.authorization || "");
+        req.agentToken = authorization.startsWith("Bearer ") ? authorization.slice(7) : "";
+        next();
+      });
+      heartbeat.registerAgentHeartbeatRoute(app);
+      server = http.createServer(app);
+      await new Promise((resolve, reject) => {
+        server.once("error", reject);
+        server.listen(0, "127.0.0.1", resolve);
+      });
+      const baseUrl = "http://127.0.0.1:" + server.address().port;
+
+      const before = splitterRoutes(await postExitHeartbeat(baseUrl));
+      const apiBefore = before.find((route) => route.sni === "api.example.com");
+      assert.ok(apiBefore, "missing api route in the initial sni route table");
+      assert.equal(apiBefore.targetIp, "203.0.113.20");
+      assert.equal(apiBefore.limitIn, 0);
+      assert.equal(apiBefore.maxConnections, 0);
+
+      const caller = rulesRouter.createCaller(callerContext({ id: 1, username: "admin", role: "admin", accountEnabled: true }));
+      await caller.update({
+        id: 101,
+        targetIp: "203.0.113.99",
+        targetPort: 8443,
+        rateLimitMbps: 50,
+        maxConnections: 7,
+      });
+
+      // No sleep: the heartbeat that arrives right after the write must already
+      // carry the new landing server and the new limits.
+      const after = splitterRoutes(await postExitHeartbeat(baseUrl));
+      const apiAfter = after.find((route) => route.sni === "api.example.com");
+      assert.ok(apiAfter, "missing api route after the update");
+      assert.equal(apiAfter.targetIp, "203.0.113.99");
+      assert.equal(apiAfter.targetPort, 8443);
+      assert.ok(apiAfter.limitIn > 0, "rate limit did not reach the splitter: " + JSON.stringify(apiAfter));
+      assert.equal(apiAfter.maxConnections, 7);
+
+      const webAfter = after.find((route) => route.sni === "web.example.com");
+      assert.ok(webAfter, "updating one rule dropped the other rule from the sni route table");
+      assert.equal(webAfter.targetIp, "203.0.113.21");
+      assert.equal(webAfter.limitIn, 0);
+    } finally {
+      if (server) await new Promise((resolve) => server.close(resolve));
+      await runtime.closeDatabase();
+    }
+  `;
+  const result = spawnSync(process.execPath, ["--import", "tsx", "--input-type=module", "-e", script], {
+    cwd: process.cwd(),
+    env: { ...process.env, DATABASE_TYPE: "sqlite", FORWARDX_TEST_DB: databasePath },
+    encoding: "utf8",
+    timeout: 60_000,
+  });
+  fs.rmSync(directory, { recursive: true, force: true });
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+});
+
+test("deleting the first rule of a tunnel SNI group leaves the entry runtime untouched", () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "forwardx-sni-representative-"));
+  const databasePath = path.join(directory, "sni-representative.db");
+  const script = String.raw`
+    import assert from "node:assert/strict";
+    import http from "node:http";
+    import path from "node:path";
+    import { pathToFileURL } from "node:url";
+    import express from "express";
+
+    const moduleUrl = (file) => pathToFileURL(path.join(process.cwd(), file)).href;
+    const runtime = await import(moduleUrl("server/dbRuntime.ts"));
+    const schema = await import(moduleUrl("server/dbSchema.ts"));
+    const heartbeat = await import(moduleUrl("server/agentHeartbeatRoute.ts"));
+    const rulesCrud = await import(moduleUrl("server/routers/rules.crud.ts"));
+    const q = (name) => '"' + name + '"';
+    const insert = async (table, columns, values) => {
+      await runtime.executeRaw(
+        "INSERT INTO " + q(table) + " (" + columns.map(q).join(", ") + ") VALUES (" + values.map(() => "?").join(", ") + ")",
+        values,
+      );
+    };
+    const entryHostIp = "198.51.100.10";
+    const exitHostIp = "198.51.100.20";
+    const sourcePort = 18443;
+    const splitterPort = 24000;
+    const tunnelListenPort = 24001;
+    let server;
+
+    async function heartbeatActions(baseUrl, token, bootId, processId) {
+      const response = await fetch(baseUrl + "/api/agent/heartbeat", {
+        method: "POST",
+        headers: { authorization: "Bearer " + token, "content-type": "application/json" },
+        body: JSON.stringify({
+          agentVersion: "2.2.195",
+          agentBootId: bootId,
+          agentProcessId: processId,
+          agentProcessStartedAt: Math.floor(Date.now() / 1000),
+          forceReconcile: true,
+        }),
+      });
+      const payload = await response.json();
+      assert.equal(response.status, 200);
+      assert.equal(payload.success, true);
+      return payload.desiredState.actions || [];
+    }
+
+    function managedConfig(actions, suffix) {
+      for (const action of actions) {
+        for (const config of action.managedConfigs || []) {
+          if (String(config.path || "").endsWith(suffix)) {
+            return Buffer.from(String(config.contentBase64 || ""), "base64").toString("utf8");
+          }
+        }
+      }
+      return "";
+    }
+
+    try {
+      await runtime.connectDatabase({ type: "sqlite", sqlite: { path: process.env.FORWARDX_TEST_DB } });
+      await schema.ensureDatabaseSchema();
+      const now = Math.floor(Date.now() / 1000);
+      await insert("users", ["id", "username", "password", "role", "canAddRules", "manualCanAddRules"], [1, "admin", "x", "admin", 1, 1]);
+      await insert("hosts", ["id", "name", "ip", "ipv4", "agentToken", "userId", "isOnline", "lastHeartbeat", "agentVersion", "portRangeStart", "portRangeEnd"], [1, "entry", entryHostIp, entryHostIp, "entry-token", 1, 1, now, "2.2.195", 18000, 19000]);
+      await insert("hosts", ["id", "name", "ip", "ipv4", "agentToken", "userId", "isOnline", "lastHeartbeat", "agentVersion", "portRangeStart", "portRangeEnd"], [2, "exit", exitHostIp, exitHostIp, "exit-token", 1, 1, now, "2.2.195", 24000, 24010]);
+      await insert("tunnels", ["id", "name", "entryHostId", "exitHostId", "mode", "listenPort", "userId", "isEnabled"], [7, "kr-hk", 1, 2, "tls", tunnelListenPort, 1, 1]);
+      for (const route of [
+        { id: 101, name: "api", sni: "api.example.com", targetIp: "203.0.113.20", targetPort: 443 },
+        { id: 102, name: "web", sni: "web.example.com", targetIp: "203.0.113.21", targetPort: 8443 },
+      ]) {
+        await insert("forward_rules", [
+          "id", "hostId", "name", "forwardType", "protocol", "tunnelId", "sourcePort", "sni", "sniSplitterPort",
+          "tunnelExitPort", "targetIp", "targetPort", "userId", "isEnabled", "isRunning",
+        ], [route.id, 1, route.name, "gost", "tcp", 7, sourcePort, route.sni, splitterPort, tunnelListenPort, route.targetIp, route.targetPort, 1, 1, 0]);
+      }
+
+      const app = express();
+      app.use(express.json());
+      app.use((req, _res, next) => {
+        const authorization = String(req.headers.authorization || "");
+        req.agentToken = authorization.startsWith("Bearer ") ? authorization.slice(7) : "";
+        next();
+      });
+      heartbeat.registerAgentHeartbeatRoute(app);
+      server = http.createServer(app);
+      await new Promise((resolve, reject) => {
+        server.once("error", reject);
+        server.listen(0, "127.0.0.1", resolve);
+      });
+      const baseUrl = "http://127.0.0.1:" + server.address().port;
+
+      const entryBefore = managedConfig(await heartbeatActions(baseUrl, "entry-token", "boot-entry", 2001), "gost.json");
+      assert.ok(entryBefore.includes('":' + sourcePort + '"'), "entry runtime is not listening on the shared entry port: " + entryBefore);
+      assert.doesNotMatch(entryBefore, /203\.0\.113\.2[01]/, "landing servers must not reach the entry host");
+
+      await rulesCrud.deleteForwardRuleForActor({ id: 1, role: "admin" }, 101);
+
+      // The whole point of a 分流组: removing one member changes the 分流表 on the
+      // exit, and nothing at all on the entry. Any difference here means the
+      // shared runtime gets restarted and every other rule drops its connections.
+      const entryAfter = managedConfig(await heartbeatActions(baseUrl, "entry-token", "boot-entry", 2001), "gost.json");
+      assert.equal(entryAfter, entryBefore, "deleting one rule rewrote the shared entry runtime config");
+
+      const exitActions = await heartbeatActions(baseUrl, "exit-token", "boot-exit", 2002);
+      const splitterApply = exitActions.find(
+        (action) => action.op === "apply" && action.fxp?.role === "sni-splitter" && Number(action.sourcePort) === splitterPort,
+      );
+      assert.ok(splitterApply, "missing sni splitter apply action after the delete");
+      assert.deepEqual(splitterApply.fxp.sniRoutes.map((route) => route.sni), ["web.example.com"]);
+    } finally {
+      if (server) await new Promise((resolve) => server.close(resolve));
+      await runtime.closeDatabase();
+    }
+  `;
+  const result = spawnSync(process.execPath, ["--import", "tsx", "--input-type=module", "-e", script], {
+    cwd: process.cwd(),
+    env: { ...process.env, DATABASE_TYPE: "sqlite", FORWARDX_TEST_DB: databasePath },
+    encoding: "utf8",
+    timeout: 60_000,
+  });
+  fs.rmSync(directory, { recursive: true, force: true });
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+});

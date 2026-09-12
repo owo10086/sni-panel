@@ -1,4 +1,4 @@
-import { setBoundedMapValue } from "./boundedCache";
+import { setBoundedMapValue, updateBoundedMapValueInPlace } from "./boundedCache";
 import { normalizeSniValue } from "./repositories/repositoryUtils";
 
 export type SniRuntimeRuleReport = {
@@ -76,7 +76,7 @@ export function recordSniRuntimeSnapshot(
   const observedKeys = new Set(Array.from(groups.keys()).map((splitterPort) => cacheKey(hostId, splitterPort)));
   for (const [key, current] of sniRuntimeStatusCache) {
     if (current.hostId !== hostId || observedKeys.has(key)) continue;
-    setBoundedMapValue(
+    updateBoundedMapValueInPlace(
       sniRuntimeStatusCache,
       key,
       {

@@ -33,6 +33,16 @@ import { reserveRuleCreateQuota, type RuleQuotaReservation } from "../ruleQuotaR
 import { isAgentVersionAtLeast } from "../agentRouteUtils";
 import { isValidSniValue, normalizeSniValue, SNI_SPLITTER_MIN_AGENT_VERSION } from "@shared/sni";
 import { normalizePositiveIds } from "../repositories/repositoryUtils";
+import {
+  assertDirectTunnelSniEntryPortUse,
+  assertSniEntryPortCanUsePlain,
+  assertSniEntryPortCanUseSni,
+  forwardRuleConflictLabel,
+  getDirectTunnelSniEntryPortState,
+  type DirectTunnelSniEntryPortState,
+  type ForwardRuleConflictTarget,
+  type SniEntryPortState,
+} from "../sniEntryPort";
 
 const targetHostSchema = z.string().min(1).max(253).refine(
   (v) => /^[a-zA-Z0-9]([a-zA-Z0-9\-_.]*[a-zA-Z0-9])?$|^[a-fA-F0-9:.]+$/.test(v.trim()),
@@ -57,11 +67,6 @@ const sniRuleLimitInputShape = {
   maxConnections: z.number().int().min(0).max(1_000_000).optional(),
 } as const;
 
-type SniEntryPortState = Awaited<ReturnType<typeof db.getForwardGroupSniEntryPortState>>;
-type ForwardRuleConflictTarget = {
-  id?: unknown;
-  name?: unknown;
-};
 type ForwardGroupRuntimeMember = {
   id?: unknown;
   memberType?: unknown;
@@ -103,11 +108,23 @@ function assertSniRuleAdmin(actor: { role: string }, sni: string | null) {
   }
 }
 
+// 限速与连接数上限只对 SNI 分流规则有意义，而且永远成对出现：入口不解析 SNI，
+// 两项都只能由出口的分流器按匹配到的规则执行（ADR-0001）。
+type SniRuleLimitInput = {
+  rateLimitMbps?: unknown;
+  maxConnections?: unknown;
+};
+
+export type SniRuleLimits = {
+  rateLimitMbps: number;
+  maxConnections: number;
+};
+
 function resolveSniRuleLimits(
   sni: string | null,
-  input: { rateLimitMbps?: unknown; maxConnections?: unknown },
-  current?: { rateLimitMbps?: unknown; maxConnections?: unknown },
-) {
+  input: SniRuleLimitInput,
+  current?: SniRuleLimitInput,
+): SniRuleLimits {
   if (!sni) return { rateLimitMbps: 0, maxConnections: 0 };
   const normalizeLimit = (value: unknown) => {
     const numeric = Number(value);
@@ -120,6 +137,8 @@ function resolveSniRuleLimits(
   };
 }
 
+const MULTI_EXIT_FORWARD_GROUP_MODES = new Set(["failover", "exit"]);
+
 async function inferForwardGroupSniExitHost(group: ForwardGroupRuntimeConfig) {
   const members = Array.isArray(group?.members) ? group.members : [];
   const enabledMembers = members.filter((member) => dbBool(member?.isEnabled, true));
@@ -128,6 +147,12 @@ async function inferForwardGroupSniExitHost(group: ForwardGroupRuntimeConfig) {
     && Number(member?.hostId || 0) > 0
   ));
   const groupMode = String(group?.groupMode || "").trim().toLowerCase();
+  // Members of these modes are alternatives to each other, so no single exit
+  // host can be derived. Say that plainly instead of blaming the link type —
+  // v1 rejects multi-exit rather than silently picking the first host.
+  if (MULTI_EXIT_FORWARD_GROUP_MODES.has(groupMode)) {
+    throw new Error("SNI 分流当前只支持单出口");
+  }
   if (groupMode !== "chain" && groupMode !== "port") {
     throw new Error("SNI 分流仅支持端口转发、隧道或转发链");
   }
@@ -169,33 +194,6 @@ async function reserveSniSplitterPortForForwardGroup(
   return reservation;
 }
 
-function forwardRuleConflictLabel(rule: ForwardRuleConflictTarget | null | undefined) {
-  const name = String(rule?.name || "").trim();
-  const id = Number(rule?.id || 0);
-  if (name && id > 0) return `「${name}」（ID ${id}）`;
-  if (name) return `「${name}」`;
-  if (id > 0) return `ID ${id}`;
-  return "已有规则";
-}
-
-function assertSniEntryPortCanUseSni(state: SniEntryPortState, sourcePort: number, normalizedSni: string) {
-  if (state?.duplicateRule) {
-    throw new Error(`SNI 域名 ${normalizedSni} 与规则 ${forwardRuleConflictLabel(state.duplicateRule)} 冲突`);
-  }
-  if (state?.plainRule) {
-    throw new Error(`入口端口 ${sourcePort} 已被普通转发规则 ${forwardRuleConflictLabel(state.plainRule)} 占用，无法创建 SNI 分流规则`);
-  }
-  if (state?.otherGroupSniRule) {
-    throw new Error(`入口端口 ${sourcePort} 已被其它转发链的 SNI 分流规则 ${forwardRuleConflictLabel(state.otherGroupSniRule)} 占用`);
-  }
-}
-
-function assertSniEntryPortCanUsePlain(state: SniEntryPortState, sourcePort: number) {
-  if (state?.anySniRule) {
-    throw new Error(`入口端口 ${sourcePort} 已被 SNI 分流规则 ${forwardRuleConflictLabel(state.anySniRule)} 占用，无法创建普通转发规则`);
-  }
-}
-
 type SniEntryPortValidation = {
   state: SniEntryPortState;
   portUsageIgnoreRuleIds: number[];
@@ -208,16 +206,6 @@ type ForwardGroupRuntimePortPreparation = {
   isPortGroup: boolean;
   sniSplitterPort: number | null;
   entryPortReservationExcludeRuleIds: number[];
-};
-
-type DirectTunnelSniEntryPortState = {
-  shareableRuleIds: number[];
-  splitterPort: number | null;
-  tunnelExitPort: number | null;
-  duplicateRule: ForwardRuleConflictTarget | null;
-  plainRule: ForwardRuleConflictTarget | null;
-  otherResourceSniRule: ForwardRuleConflictTarget | null;
-  anySniRule: ForwardRuleConflictTarget | null;
 };
 
 async function inferDirectTunnelSniExitHost(tunnel: any) {
@@ -239,109 +227,6 @@ async function inferDirectTunnelSniExitHost(tunnel: any) {
     throw new Error(`出口 Agent 版本不足，SNI 分流需要 ${SNI_SPLITTER_MIN_AGENT_VERSION} 或更高版本`);
   }
   return exitHost as any;
-}
-
-async function directTunnelSniEntryHostIds(tunnel: any) {
-  const hostIds = new Set<number>();
-  const primaryEntryHostId = Number(tunnel?.entryHostId || 0);
-  if (primaryEntryHostId > 0) hostIds.add(primaryEntryHostId);
-  const entryGroupId = Number(tunnel?.entryGroupId || 0);
-  if (entryGroupId <= 0) return Array.from(hostIds);
-  const entryGroup = await db.getForwardGroupById(entryGroupId) as any;
-  if (!entryGroup || !dbBool(entryGroup.isEnabled) || String(entryGroup.groupMode || "") !== "entry") {
-    return Array.from(hostIds);
-  }
-  for (const member of entryGroup.members || []) {
-    if (!member || !dbBool(member.isEnabled, true) || String(member.memberType || "") !== "host") continue;
-    const hostId = Number(member.hostId || 0);
-    if (hostId > 0) hostIds.add(hostId);
-  }
-  return Array.from(hostIds);
-}
-
-async function getDirectTunnelSniEntryPortState(options: {
-  tunnel: any;
-  sourcePort: number;
-  sni: string | null;
-  excludeRuleIds?: number[];
-}): Promise<DirectTunnelSniEntryPortState> {
-  const tunnelId = Number(options.tunnel?.id || 0);
-  const sourcePort = Number(options.sourcePort || 0);
-  const excludedIds = new Set(normalizePositiveIds(options.excludeRuleIds));
-  const empty: DirectTunnelSniEntryPortState = {
-    shareableRuleIds: [],
-    splitterPort: null,
-    tunnelExitPort: null,
-    duplicateRule: null,
-    plainRule: null,
-    otherResourceSniRule: null,
-    anySniRule: null,
-  };
-  const entryHostIds = await directTunnelSniEntryHostIds(options.tunnel);
-  if (tunnelId <= 0 || entryHostIds.length === 0 || sourcePort <= 0) return empty;
-  const ruleById = new Map<number, any>();
-  const rulesByEntryHost = await Promise.all(
-    entryHostIds.map((entryHostId) => db.getForwardRulesForAgent(entryHostId)),
-  );
-  for (const entryHostRules of rulesByEntryHost) {
-    for (const rule of entryHostRules as any[]) {
-      const ruleId = Number(rule?.id || 0);
-      if (ruleId > 0 && !ruleById.has(ruleId)) ruleById.set(ruleId, rule);
-    }
-  }
-  const rows = Array.from(ruleById.values()).filter((rule) => (
-    rule
-    && !excludedIds.has(Number(rule.id || 0))
-    && !dbBool(rule.pendingDelete)
-    && !dbBool(rule.isForwardGroupTemplate)
-  ));
-  const portRows = rows.filter((rule) => Number(rule.sourcePort || 0) === sourcePort);
-  const activeRows = portRows.filter((rule) => dbBool(rule.isEnabled));
-  const sniRows = activeRows.filter((rule) => !!normalizeSniValue(rule.sni));
-  const sameTunnelRows = sniRows.filter((rule) => Number(rule.tunnelId || 0) === tunnelId);
-  const normalizedSni = normalizeSniValue(options.sni);
-  const duplicateRule = normalizedSni
-    ? rows.find((rule) => (
-      normalizeSniValue(rule.sni) === normalizedSni
-    )) || null
-    : null;
-  const splitterPort = sameTunnelRows
-    .map((rule) => Number(rule.sniSplitterPort || 0))
-    .find((port) => Number.isInteger(port) && port > 0 && port <= 65535) || null;
-  const tunnelExitPort = sameTunnelRows
-    .map((rule) => Number(rule.tunnelExitPort || 0))
-    .find((port) => Number.isInteger(port) && port > 0 && port <= 65535) || null;
-  return {
-    shareableRuleIds: normalizePositiveIds(sameTunnelRows.map((rule) => Number(rule.id))),
-    splitterPort,
-    tunnelExitPort,
-    duplicateRule,
-    plainRule: activeRows.find((rule) => !normalizeSniValue(rule.sni)) || null,
-    otherResourceSniRule: sniRows.find((rule) => Number(rule.tunnelId || 0) !== tunnelId) || null,
-    anySniRule: sniRows[0] || null,
-  };
-}
-
-function assertDirectTunnelSniEntryPortUse(
-  state: DirectTunnelSniEntryPortState,
-  sourcePort: number,
-  normalizedSni: string | null,
-) {
-  if (normalizedSni) {
-    if (state.duplicateRule) {
-      throw new Error(`SNI 域名 ${normalizedSni} 与规则 ${forwardRuleConflictLabel(state.duplicateRule)} 冲突`);
-    }
-    if (state.plainRule) {
-      throw new Error(`入口端口 ${sourcePort} 已被普通转发规则 ${forwardRuleConflictLabel(state.plainRule)} 占用，无法创建 SNI 分流规则`);
-    }
-    if (state.otherResourceSniRule) {
-      throw new Error(`入口端口 ${sourcePort} 已被其它链路资源的 SNI 分流规则 ${forwardRuleConflictLabel(state.otherResourceSniRule)} 占用`);
-    }
-    return;
-  }
-  if (state.anySniRule) {
-    throw new Error(`入口端口 ${sourcePort} 已被 SNI 分流规则 ${forwardRuleConflictLabel(state.anySniRule)} 占用，无法创建普通转发规则`);
-  }
 }
 
 async function reserveDirectTunnelSniRuntimePorts(options: {
@@ -1666,22 +1551,35 @@ export async function createDirectForwardRuleForActor(
 export const crudRulesRouter = router({
   checkSniImport: protectedProcedure
     .input(z.object({
-      forwardGroupId: z.number().int().positive(),
+      forwardGroupId: z.number().int().positive().nullable().optional(),
+      tunnelId: z.number().int().positive().nullable().optional(),
       sourcePort: z.number().int().min(1).max(65535),
       rules: z.array(z.object({
         lineNumber: z.number().int().positive(),
         sni: z.string().min(1).max(1024),
       })).min(1).max(SNI_BULK_IMPORT_MAX_COUNT),
-    }))
+    }).refine(
+      (value) => !!value.forwardGroupId !== !!value.tunnelId,
+      { message: "请选择一个链路资源" },
+    ))
     .mutation(async ({ input, ctx }) => {
       if (ctx.user.role !== "admin") {
         throw new Error("SNI 分流仅管理员可创建");
       }
-      const group = await db.getForwardGroupById(input.forwardGroupId);
-      if (!group) throw new Error("转发链不存在");
-      await inferForwardGroupSniExitHost(group);
-      const entryHostIds = await db.getForwardGroupRuleEntryHostIds(input.forwardGroupId);
-      if (entryHostIds.length === 0) throw new Error("转发链没有可用入口 Agent");
+      const tunnelId = Number(input.tunnelId || 0);
+      const forwardGroupId = Number(input.forwardGroupId || 0);
+      const tunnel = tunnelId > 0 ? await db.getTunnelById(tunnelId) : null;
+      if (tunnelId > 0 && !tunnel) throw new Error("隧道不存在");
+      const group = forwardGroupId > 0 ? await db.getForwardGroupById(forwardGroupId) : null;
+      if (forwardGroupId > 0 && !group) throw new Error("链路资源不存在");
+      let entryHostIds: number[] = [];
+      if (tunnel) {
+        await inferDirectTunnelSniExitHost(tunnel);
+      } else {
+        await inferForwardGroupSniExitHost(group as any);
+        entryHostIds = await db.getForwardGroupRuleEntryHostIds(forwardGroupId);
+        if (entryHostIds.length === 0) throw new Error("链路资源没有可用入口 Agent");
+      }
 
       const seen = new Map<string, number>();
       const normalizedRules: Array<{ lineNumber: number; sni: string }> = [];
@@ -1705,17 +1603,26 @@ export const crudRulesRouter = router({
       for (const item of normalizedRules) {
         const prefix = sniImportLinePrefix(item.lineNumber);
         try {
-          const sniEntryPortValidation = await validateSniEntryPortUse({
-            groupId: input.forwardGroupId,
-            sourcePort: input.sourcePort,
-            entryHostIds,
-            sni: item.sni,
-          });
-          await db.validateForwardGroupRuleConfig(input.forwardGroupId, {
-            sourcePort: input.sourcePort,
-            protocol: "tcp",
-            portUsageIgnoreRuleIds: sniEntryPortValidation.portUsageIgnoreRuleIds,
-          });
+          if (tunnel) {
+            const state = await getDirectTunnelSniEntryPortState({
+              tunnel,
+              sourcePort: input.sourcePort,
+              sni: item.sni,
+            });
+            assertDirectTunnelSniEntryPortUse(state, input.sourcePort, item.sni);
+          } else {
+            const sniEntryPortValidation = await validateSniEntryPortUse({
+              groupId: forwardGroupId,
+              sourcePort: input.sourcePort,
+              entryHostIds,
+              sni: item.sni,
+            });
+            await db.validateForwardGroupRuleConfig(forwardGroupId, {
+              sourcePort: input.sourcePort,
+              protocol: "tcp",
+              portUsageIgnoreRuleIds: sniEntryPortValidation.portUsageIgnoreRuleIds,
+            });
+          }
         } catch (error) {
           throw new Error(`${prefix}${error instanceof Error ? error.message : "SNI 分流规则校验失败"}`);
         }

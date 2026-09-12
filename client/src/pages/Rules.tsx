@@ -442,7 +442,11 @@ const ruleTransferScopeOptions: Array<{ value: RuleTransferScopeType; label: str
   { value: "group", label: "转发组" },
 ];
 const importRuleTransferScopeOptions = ruleTransferScopeOptions;
-const sniImportRuleTransferScopeOptions = ruleTransferScopeOptions.filter((option) => option.value === "chain");
+// 分流器与链路类型无关（ADR-0001）：端口转发、隧道、转发链都能挂在它前面。
+// 只有转发组不行——它天然多出口，推导不出唯一的出口主机。
+const SNI_IMPORT_SCOPE_TYPES: RuleTransferScopeType[] = ["local", "tunnel", "chain"];
+const sniImportRuleTransferScopeOptions = ruleTransferScopeOptions
+  .filter((option) => SNI_IMPORT_SCOPE_TYPES.includes(option.value));
 
 function parseRuleResourceFilter(value: unknown): { type: RuleTransferScopeType | null; id: number | null } {
   const raw = String(value || "").trim();
@@ -3109,7 +3113,7 @@ function RulesContent() {
     ? sniImportRuleTransferScopeOptions
     : importRuleTransferScopeOptions;
   useEffect(() => {
-    if (importSourceMode !== "sni" || importScopeType === "chain") return;
+    if (importSourceMode !== "sni" || SNI_IMPORT_SCOPE_TYPES.includes(importScopeType)) return;
     setImportScopeType("chain");
     setImportResourceId("");
     setImportResourceSearch("");
@@ -5496,8 +5500,8 @@ function RulesContent() {
     if (user?.role !== "admin") {
       return { ok: false, message: "SNI 分流仅管理员可导入", rules: [] };
     }
-    if (importScopeType !== "chain") {
-      return { ok: false, message: "SNI 分流规则只能导入到转发链", rules: [] };
+    if (!SNI_IMPORT_SCOPE_TYPES.includes(importScopeType)) {
+      return { ok: false, message: "SNI 分流规则不能导入到转发组，请选择端口转发、隧道或转发链", rules: [] };
     }
     return parseSniBulkImportText(importManualText, importSniSourcePort);
   }, [importManualText, importScopeType, importSniSourcePort, user?.role]);
@@ -5505,8 +5509,9 @@ function RulesContent() {
   const importValidation = useMemo<{ ok: boolean; message: string; rules: RuleBulkImportRule[] }>(() => {
     if (!importResourceId) return { ok: false, message: `请选择${ruleTransferScopeLabels[importScopeType]}`, rules: [] };
     if (importSourceMode === "sni") {
-      if (importScopeType !== "chain") return { ok: false, message: "请选择转发链", rules: [] };
-      if (!selectedImportResource) return { ok: false, message: "请选择转发链", rules: [] };
+      if (!SNI_IMPORT_SCOPE_TYPES.includes(importScopeType) || !selectedImportResource) {
+        return { ok: false, message: `请选择${ruleTransferScopeLabels[importScopeType]}`, rules: [] };
+      }
       return sniImportValidation;
     }
     if (importSourceMode === "manual") {
@@ -5647,7 +5652,8 @@ function RulesContent() {
     try {
       if (importSourceMode === "sni") {
         await checkSniImportMutation.mutateAsync({
-          forwardGroupId: Number(importResourceId),
+          forwardGroupId: importScopeType === "tunnel" ? null : Number(importResourceId),
+          tunnelId: importScopeType === "tunnel" ? Number(importResourceId) : null,
           sourcePort: Number(importSniSourcePort),
           rules: importValidation.rules.map((rule) => ({
             lineNumber: Number(rule.sourceLineNumber),
@@ -8367,7 +8373,7 @@ function RulesContent() {
                           aria-pressed={importSourceMode === "sni"}
                           onClick={() => {
                             setImportSourceMode("sni");
-                            setImportScopeType("chain");
+                            if (!SNI_IMPORT_SCOPE_TYPES.includes(importScopeType)) setImportScopeType("chain");
                             setImportResourceId("");
                             setImportResourceSearch("");
                             setImportFile(null);

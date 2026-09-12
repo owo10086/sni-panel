@@ -2154,7 +2154,10 @@ func readLocalRuntimeStatePayload() localRuntimeStatePayload {
 			}
 			sniSplitterIDs[id] = struct{}{}
 			routes := spec.SNIRoutes
-			routeVersion := int64(0)
+			// Without a runtime status file the deployed spec is the best
+			// evidence of what the splitter is serving. Reporting 0 would tell
+			// the panel none of these rules ever took effect.
+			routeVersion := spec.SNIRouteVersion
 			unmatchedConnections := uint64(0)
 			lastConfigError := trackedFXPSNILastConfigError(spec)
 			if runtimeStatus, ok := readFXPSNIRuntimeStatus(fxpConfigPath(spec)); ok {
@@ -9481,6 +9484,11 @@ func normalizeFXPSNIRoutes(routes []fxpSNIRoute) []fxpSNIRoute {
 	return normalized
 }
 
+// normalizeFXPSNIName and normalizeFXPSourceAllowIPs must stay byte-identical
+// to normalizeSNIName / normalizeSourceAllowIPs in forwardx-fxp/config.go: the
+// Agent compares the spec it wrote against what the splitter reports back, and
+// any divergence shows up as a config that never stops "drifting". They are
+// separate Go modules, so the compiler cannot enforce this.
 func normalizeFXPSNIName(value string) string {
 	return strings.TrimRight(strings.ToLower(strings.TrimSpace(value)), ".")
 }

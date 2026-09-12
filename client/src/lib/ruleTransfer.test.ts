@@ -14,6 +14,8 @@ function validRule(overrides: Partial<RuleTransferFileRule> = {}) {
     forwardType: "gost",
     protocol: "tcp",
     sourcePort: 10001,
+    rateLimitMbps: 0,
+    maxConnections: 0,
     targetIp: "example.com",
     targetPort: 443,
     isEnabled: true,

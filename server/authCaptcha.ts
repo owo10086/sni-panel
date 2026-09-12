@@ -3,7 +3,7 @@ import { nanoid } from "nanoid";
 import * as svgCaptcha from "svg-captcha";
 import Cap from "@cap.js/server";
 import { Router, type Request, type Response } from "express";
-import { setBoundedMapValue } from "./boundedCache";
+import { setBoundedMapValue, updateBoundedMapValueInPlace } from "./boundedCache";
 
 export const LOGIN_CAPTCHA_FAILURE_THRESHOLD = 3;
 export const LOGIN_CAPTCHA_REQUIREMENT_TTL_MS = 15 * 60 * 1000;
@@ -318,7 +318,7 @@ export class AuthCaptchaService {
     const cutoff = now - this.refreshWindowMs;
     for (const [key, timestamps] of this.refreshTimestamps) {
       const active = timestamps.filter((timestamp) => timestamp > cutoff);
-      if (active.length > 0) setBoundedMapValue(this.refreshTimestamps, key, active, this.maxRateLimitKeys);
+      if (active.length > 0) updateBoundedMapValueInPlace(this.refreshTimestamps, key, active, this.maxRateLimitKeys);
       else this.refreshTimestamps.delete(key);
     }
     this.pruneCapState(now);

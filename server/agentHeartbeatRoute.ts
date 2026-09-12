@@ -2681,6 +2681,18 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
       if (runtime) sniRuntimeByRuleId.set(Number(rule.id), runtime);
     });
     const sniRuntimeForRule = (rule: { id?: unknown }) => sniRuntimeByRuleId.get(Number(rule?.id || 0)) || null;
+    // 一个 SNI 分流组共用一个入口监听，所以它的 GOST 运行时不能用「排序最小的那条
+    // 规则」命名：删掉那条规则会把配置里每个节点改名，触发受管运行时重启并换掉隧道
+    // 的中继凭据，连没人动过的规则也一起断线。分流器早就按分流组取身份
+    // （fxpServerID 对 sni-splitter 跳过 ruleId），这里给 GOST 侧同样的稳定性。
+    const tunnelRuntimeIdentity = (rule: { id?: unknown; tunnelId?: unknown; sourcePort?: unknown }) => {
+      const tunnelId = Number(rule?.tunnelId || 0);
+      const sourcePort = Number(rule?.sourcePort || 0);
+      if (sniRuntimeForRule(rule)?.resource === "tunnel" && tunnelId > 0 && sourcePort > 0) {
+        return `sni-${tunnelId}-${sourcePort}`;
+      }
+      return String(Number(rule?.id || 0));
+    };
     const sniEntryRuntimeForRule = (rule: { id?: unknown }) => {
       const runtime = sniRuntimeForRule(rule);
       return runtime?.mode === "entry" ? runtime : null;
@@ -3804,6 +3816,7 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
         protocol: rule.protocol,
         tunnelId: Number(tunnel.id),
         ruleId: Number(rule.id),
+        ruleKey: tunnelRuntimeIdentity(rule),
         secretSeed: tunnelSecretSeed(tunnel),
       });
       for (const endpoint of tunnelExitEndpointsForRule(rule, tunnel)) {
@@ -3813,7 +3826,7 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
         if (!exitHost || endpoint.listenPort <= 0) continue;
         const exitKey = endpoint.primary ? 0 : (endpoint.exitSeq || endpoint.exitNodeId);
         nodes.push(gostTunnelNode(
-          `exit-${rule.id}-${exitKey}`,
+          `exit-${tunnelRuntimeIdentity(rule)}-${exitKey}`,
           endpointHostPort(exitHost, endpoint.listenPort),
           gostTunnelTransportType(tunnel.mode),
           tunnel,
@@ -3864,6 +3877,7 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
             protocol: r.protocol,
             tunnelId: Number(tunnel.id),
             ruleId: Number(r.id),
+            ruleKey: tunnelRuntimeIdentity(r),
             secretSeed: tunnelSecretSeed(tunnel),
           }) : null;
           const handlerProxyMetadata = proto === "tcp"
@@ -3871,12 +3885,12 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
             : undefined;
           const serviceListenPort = useRuleGuard && !tunnel ? guardBackendPort(r) : Number(r.sourcePort);
           const service: any = {
-            name: `fwx-${r.id}-${proto}`,
+            name: `fwx-${tunnelRuntimeIdentity(r)}-${proto}`,
             addr: useRuleGuard && !tunnel ? `127.0.0.1:${serviceListenPort}` : `:${serviceListenPort}`,
             handler: tunnel
               ? {
                   type: proto,
-                  chain: `chain-tunnel-${r.id}`,
+                  chain: `chain-tunnel-${tunnelRuntimeIdentity(r)}`,
                   ...(routeRetries > 0 ? { retries: routeRetries } : {}),
                   ...(handlerProxyMetadata ? { metadata: handlerProxyMetadata } : {}),
                 }
@@ -3899,7 +3913,7 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
               : failoverTargetAddr(r);
             service.forwarder = {
               nodes: [{
-                name: `target-${r.id}`,
+                name: `target-${tunnelRuntimeIdentity(r)}`,
                 addr: targetAddr,
                 connector: { type: proto },
                 dialer: { type: proto },
@@ -3910,7 +3924,7 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
           } else if (useMultiHopEntry || protocolPlan?.entryNeedsTarget) {
             service.forwarder = {
               nodes: [{
-                name: `target-${r.id}`,
+                name: `target-${tunnelRuntimeIdentity(r)}`,
                 addr: protocolPlan?.entryNeedsTarget
                   ? await gostTunnelExitTargetAddr(r, tunnel)
                   : failoverTargetAddr(r),
@@ -3979,7 +3993,7 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
               const hopAddr = endpointHostPort(hopDialHost, hop.listenPort);
               routeParts.push(`relay#${index + 1}:${Number(hop.hostId)}@${hopAddr}`);
               return gostTunnelNode(
-                `relay-${r.id}-${Number(hop.seq)}`,
+                `relay-${tunnelRuntimeIdentity(r)}-${Number(hop.seq)}`,
                 hopAddr,
                 gostTunnelTransportType(tunnel.mode),
                 tunnel,
@@ -3988,7 +4002,7 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
             const validRelayNodes = relayNodes.filter(Boolean);
             if (validRelayNodes.length !== tunnelRelayCandidates(tunnelHops).length) return null;
             chainHops.push({
-              name: `hop-tunnel-${r.id}-relay-failover`,
+              name: `hop-tunnel-${tunnelRuntimeIdentity(r)}-relay-failover`,
               selector: gostRelayFailoverHopMetadata,
               nodes: validRelayNodes,
             });
@@ -4000,9 +4014,9 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
               const hopAddr = endpointHostPort(hopDialHost, hop.listenPort);
               routeParts.push(`hop#${Number(hop.hostId)}@${hopAddr}`);
               chainHops.push({
-                name: `hop-tunnel-${r.id}-${Number(hop.seq)}`,
+                name: `hop-tunnel-${tunnelRuntimeIdentity(r)}-${Number(hop.seq)}`,
                 nodes: [gostTunnelNode(
-                  `mhop-${r.id}-${Number(hop.seq)}`,
+                  `mhop-${tunnelRuntimeIdentity(r)}-${Number(hop.seq)}`,
                   hopAddr,
                   gostTunnelTransportType(tunnel.mode),
                   tunnel,
@@ -4015,7 +4029,7 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
           const exitNodes = await buildLoadBalancedExitNodes(r, tunnel, exitHost);
           if (!exitHost || exitNodes.length === 0) return null;
           chainHops.push({
-            name: `hop-tunnel-${r.id}-exit`,
+            name: `hop-tunnel-${tunnelRuntimeIdentity(r)}-exit`,
             ...(exitNodes.length > 1 ? { selector: gostExitSelector((tunnel as any).loadBalanceStrategy) } : {}),
             nodes: exitNodes,
           });
@@ -4027,18 +4041,18 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
             setBoundedMapValue(tunnelRouteLogCache, routeKey, route, AGENT_DYNAMIC_CACHE_MAX);
             appendPanelLog("info", `[TunnelRoute] gost multi-hop tunnel=${tunnel.id} rule=${r.id} host=${host.id} proxyEntrySend=${proxyProtocolEnabled(r, "entrySend")} route=${route}`);
           }
-          return { name: `chain-tunnel-${r.id}`, hops: chainHops };
+          return { name: `chain-tunnel-${tunnelRuntimeIdentity(r)}`, hops: chainHops };
         }
         const firstExitEndpoint = tunnelExitEndpointsForRule(r, tunnel)[0];
         const chainTargetAddr = useMultiHopEntry
           ? endpointHostPort("127.0.0.1", firstHop.listenPort)
           : endpointHostPort(tunnelExitHost, firstExitEndpoint?.listenPort || 0);
-        const chainNodeName = useMultiHopEntry ? `mhop-entry-${r.id}` : `exit-${r.id}`;
+        const chainNodeName = useMultiHopEntry ? `mhop-entry-${tunnelRuntimeIdentity(r)}` : `exit-${tunnelRuntimeIdentity(r)}`;
         const exitNodes = !useMultiHopEntry ? await buildLoadBalancedExitNodes(r, tunnel) : [];
         return {
-          name: `chain-tunnel-${r.id}`,
+          name: `chain-tunnel-${tunnelRuntimeIdentity(r)}`,
           hops: [{
-            name: `hop-tunnel-${r.id}`,
+            name: `hop-tunnel-${tunnelRuntimeIdentity(r)}`,
             ...(exitNodes.length > 1 ? { selector: gostExitSelector((tunnel as any).loadBalanceStrategy) } : {}),
             nodes: useMultiHopEntry ? [gostTunnelNode(
               chainNodeName,
@@ -4067,7 +4081,7 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
           proxyProtocolEnabled(rule, "exitSend")
         ))
         .map((rule: any) => buildProxyRuleDebugCmd("entry", rule, {
-          chain: `chain-tunnel-${Number(rule.id || 0)}`,
+          chain: `chain-tunnel-${tunnelRuntimeIdentity(rule)}`,
         })) : [];
       const cmds = [
         `mkdir -p ${shQuote(RUNTIME_CONFIG_DIR)}`,
@@ -4133,12 +4147,13 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
           protocol: rule.protocol,
           tunnelId: Number(tunnel.id),
           ruleId: Number(rule.id),
+          ruleKey: tunnelRuntimeIdentity(rule),
           secretSeed: tunnelSecretSeed(tunnel),
         });
         const targetAddr = protocolPlan.exitTargetDialType ? await gostTunnelExitTargetAddr(rule, tunnel) : "";
         return exitPorts.map((exitPort) => {
           return {
-            name: `fwx-tunnel-exit-${tunnel.id}-${rule.id}-${exitPort}`,
+            name: `fwx-tunnel-exit-${tunnel.id}-${tunnelRuntimeIdentity(rule)}-${exitPort}`,
             addr: `:${exitPort}`,
             handler: protocolPlan.exitHandler,
             listener: {
@@ -4148,7 +4163,7 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
               ? {
                   forwarder: {
                     nodes: [{
-                      name: `target-${rule.id}`,
+                      name: `target-${tunnelRuntimeIdentity(rule)}`,
                       addr: targetAddr,
                       connector: { type: protocolPlan.exitTargetDialType },
                       dialer: { type: protocolPlan.exitTargetDialType },
@@ -5180,6 +5195,19 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
         && localSourceAllowIpsMatch(local);
       if (!localMatches) return false;
       if (!requiresRouteSetMatch) return true;
+      // A route the splitter still holds for a rule that is no longer part of
+      // this 分流组 (deleted or moved away) is drift: its target no longer
+      // matches the group, so it never lands in localRuleIds and the size check
+      // below would call the stale 分流表 a match.
+      if (options.acceptedRoutes !== undefined && reportedLocalRules.some((candidate: AgentLocalRuntimeRuleState) => (
+        Number(candidate.port || 0) === Number(port || 0)
+        && Number(candidate.ruleId || 0) > 0
+        && !acceptedRuleIds.has(Number(candidate.ruleId || 0))
+        && candidate.ready !== false
+        && !!normalizeSniValue(candidate.sni)
+        && forwardTypeCompatible(candidate.forwardType, forwardType)
+        && localProtocolCompatible(candidate.protocol, "tcp")
+      ))) return false;
       if (localRuleIds.size !== acceptedRuleIds.size) return false;
       for (const acceptedRuleId of acceptedRuleIds) {
         if (!localRuleIds.has(acceptedRuleId)) return false;

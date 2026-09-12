@@ -153,6 +153,10 @@ func normalizeSNIRoutes(routes []sniRoute) []sniRoute {
 	return normalized
 }
 
+// normalizeSNIName and normalizeSourceAllowIPs are mirrored in the Agent as
+// normalizeFXPSNIName / normalizeFXPSourceAllowIPs (agent/main.go). Keep the
+// two byte-identical — the Agent diffs its spec against what this process
+// reports, so any divergence reads as a config that never converges.
 func normalizeSNIName(value string) string {
 	return strings.TrimRight(strings.ToLower(strings.TrimSpace(value)), ".")
 }
