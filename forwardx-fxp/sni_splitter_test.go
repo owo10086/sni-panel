@@ -44,6 +44,57 @@ func TestSniSplitterForwardsMatchingClientHelloUnchanged(t *testing.T) {
 	}
 }
 
+func TestSniSplitterForwardsClientHelloWithECHUsingReadableSNIUnchanged(t *testing.T) {
+	tests := []struct {
+		name     string
+		position tlsExtensionPosition
+		data     []byte
+	}{
+		{name: "first extension", position: tlsExtensionFirst, data: []byte{0x9d, 0x2f, 0x81, 0x44}},
+		{name: "middle extension", position: tlsExtensionMiddle, data: []byte{0x00, 0x01, 0x02, 0x03, 0x04}},
+		{name: "last extension", position: tlsExtensionLast, data: []byte{0x6a, 0xc3, 0x17}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			hello := insertTLSClientHelloExtension(t, clientHelloBytes(t, "api.example.com"), 0xfe0d, tt.data, tt.position)
+			backendPort, received, stopBackend := startRecordingTCPBackend(t, len(hello))
+			defer stopBackend()
+			controlSocketPath := testUnixSocketPath(t)
+			cfg := normalizeConfig(config{
+				Role:              "sni-splitter",
+				ListenPort:        freeTCPPort(t),
+				Protocol:          "tcp",
+				SNIRouteVersion:   1,
+				ControlSocketPath: controlSocketPath,
+				SNIRoutes: []sniRoute{{
+					SNI:        "api.example.com",
+					RuleID:     42,
+					TargetIP:   "127.0.0.1",
+					TargetPort: backendPort,
+				}},
+			})
+			splitterPort, stopSplitter := startTestSniSplitterWithConfig(t, cfg)
+			defer stopSplitter()
+			waitForSNIUnmatchedConnections(t, controlSocketPath, 1)
+
+			client := dialTestTCP(t, splitterPort)
+			defer client.Close()
+			if _, err := client.Write(hello); err != nil {
+				t.Fatal(err)
+			}
+
+			got := receiveBytes(t, received)
+			if !bytes.Equal(got, hello) {
+				t.Fatalf("backend received changed ClientHello with ECH: got %d bytes want %d bytes", len(got), len(hello))
+			}
+			if status := getSNIRouteTableStatus(t, controlSocketPath); status.UnmatchedConnections != 1 {
+				t.Fatalf("ECH route changed unmatched connections to %d, want 1", status.UnmatchedConnections)
+			}
+		})
+	}
+}
+
 func TestSniSplitterRejectsUnmatchedTraffic(t *testing.T) {
 	hello := clientHelloBytes(t, "api.example.com")
 	noSNI := clientHelloBytes(t, "")
@@ -55,7 +106,6 @@ func TestSniSplitterRejectsUnmatchedTraffic(t *testing.T) {
 		{name: "unknown sni", payload: clientHelloBytes(t, "www.example.com")},
 		{name: "without sni", payload: noSNI},
 		{name: "plain http", payload: []byte("GET / HTTP/1.1\r\nHost: api.example.com\r\n\r\n")},
-		{name: "ech extension", payload: appendTLSClientHelloExtension(t, hello, 0xfe0d, []byte{0x00})},
 		{name: "malformed extension length", payload: withBadTLSExtensionsLength(t, hello, 0xffff)},
 		{name: "oversized record length", payload: []byte{0x16, 0x03, 0x01, 0xff, 0xff}},
 	}
@@ -102,7 +152,7 @@ func TestSniSplitterRejectsIncompleteHandshakeWithinReadWindow(t *testing.T) {
 }
 
 func TestSniSplitterReassemblesFragmentedClientHello(t *testing.T) {
-	hello := clientHelloBytes(t, "api.example.com")
+	hello := clientHelloWithECHBytes(t, "api.example.com")
 	backendPort, received, stopBackend := startRecordingTCPBackend(t, len(hello))
 	defer stopBackend()
 	splitterPort, stopSplitter := startTestSniSplitter(t, []sniRoute{{
@@ -136,13 +186,13 @@ func TestSniSplitterRoutesMultipleDomainsAndReportsTrafficByRule(t *testing.T) {
 	}))
 	defer panel.Close()
 
-	apiHello := clientHelloBytes(t, "api.example.com")
+	apiHello := clientHelloWithECHBytes(t, "api.example.com")
 	apiPayload := []byte("api request bytes")
 	apiResponse := []byte("api response bytes")
 	apiBackendPort, apiReceived, stopAPIBackend := startReplyingTCPBackend(t, len(apiHello)+len(apiPayload), apiResponse)
 	defer stopAPIBackend()
 
-	webHello := clientHelloBytes(t, "web.example.com")
+	webHello := clientHelloWithECHBytes(t, "web.example.com")
 	webPayload := []byte("web request payload")
 	webResponse := []byte("web response payload")
 	webBackendPort, webReceived, stopWebBackend := startReplyingTCPBackend(t, len(webHello)+len(webPayload), webResponse)
@@ -197,8 +247,8 @@ func TestSniSplitterHotSwapsRouteTableWithoutRestartingUnchangedRules(t *testing
 	if runtime.GOOS == "windows" {
 		t.Skip("unix control sockets are not available on windows")
 	}
-	apiHello := clientHelloBytes(t, "api.example.com")
-	webHello := clientHelloBytes(t, "web.example.com")
+	apiHello := clientHelloWithECHBytes(t, "api.example.com")
+	webHello := clientHelloWithECHBytes(t, "web.example.com")
 	apiBackendPort, stopAPIBackend := startPersistentSNIBackend(t, len(apiHello), "api-v1")
 	defer stopAPIBackend()
 	webBackendPort, stopWebBackend := startPersistentSNIBackend(t, len(webHello), "web-v1")
@@ -265,8 +315,8 @@ func TestSniSplitterRateLimitAppliesToOnlyTheLimitedRule(t *testing.T) {
 	const rateBytesPerSecond = 512 * 1024
 	const payloadBytes = 1024 * 1024
 
-	limitedHello := clientHelloBytes(t, "limited.example.com")
-	freeHello := clientHelloBytes(t, "free.example.com")
+	limitedHello := clientHelloWithECHBytes(t, "limited.example.com")
+	freeHello := clientHelloWithECHBytes(t, "free.example.com")
 	payload := bytes.Repeat([]byte("x"), payloadBytes)
 
 	limitedPort, limitedDrained, stopLimitedBackend := startDrainingTCPBackend(t, len(limitedHello)+payloadBytes, 30*time.Second)
@@ -297,8 +347,8 @@ func TestSniSplitterRateLimitAppliesToOnlyTheLimitedRule(t *testing.T) {
 }
 
 func TestSniSplitterConnectionLimitAppliesToOnlyTheLimitedRule(t *testing.T) {
-	cappedHello := clientHelloBytes(t, "capped.example.com")
-	freeHello := clientHelloBytes(t, "free.example.com")
+	cappedHello := clientHelloWithECHBytes(t, "capped.example.com")
+	freeHello := clientHelloWithECHBytes(t, "free.example.com")
 	cappedBackendPort, stopCappedBackend := startPersistentSNIBackend(t, len(cappedHello), "capped")
 	defer stopCappedBackend()
 	freeBackendPort, stopFreeBackend := startPersistentSNIBackend(t, len(freeHello), "free")
@@ -362,8 +412,8 @@ func TestSniSplitterHotUpdatesLimitsWithoutDisturbingOtherRules(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("unix control sockets are not available on windows")
 	}
-	stableHello := clientHelloBytes(t, "stable.example.com")
-	cappedHello := clientHelloBytes(t, "capped.example.com")
+	stableHello := clientHelloWithECHBytes(t, "stable.example.com")
+	cappedHello := clientHelloWithECHBytes(t, "capped.example.com")
 	stableBackendPort, stopStableBackend := startPersistentSNIBackend(t, len(stableHello), "stable")
 	defer stopStableBackend()
 	cappedBackendPort, stopCappedBackend := startPersistentSNIBackend(t, len(cappedHello), "capped")
@@ -570,6 +620,49 @@ func sendSNIRouteTableUpdateResult(socketPath string, version int64, routes []sn
 		return errors.New(response.Error)
 	}
 	return nil
+}
+
+func getSNIRouteTableStatus(t *testing.T, socketPath string) sniRouteTableControlResponse {
+	t.Helper()
+	response, err := readSNIRouteTableStatus(socketPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return response
+}
+
+func readSNIRouteTableStatus(socketPath string) (sniRouteTableControlResponse, error) {
+	conn, err := net.DialTimeout("unix", socketPath, 2*time.Second)
+	if err != nil {
+		return sniRouteTableControlResponse{}, err
+	}
+	defer conn.Close()
+	_ = conn.SetDeadline(time.Now().Add(2 * time.Second))
+	if err := json.NewEncoder(conn).Encode(map[string]string{"operation": "status"}); err != nil {
+		return sniRouteTableControlResponse{}, err
+	}
+	var response sniRouteTableControlResponse
+	if err := json.NewDecoder(conn).Decode(&response); err != nil {
+		return sniRouteTableControlResponse{}, err
+	}
+	if !response.OK {
+		return sniRouteTableControlResponse{}, fmt.Errorf("sni route table status failed: %s", response.Error)
+	}
+	return response, nil
+}
+
+func waitForSNIUnmatchedConnections(t *testing.T, socketPath string, want uint64) {
+	t.Helper()
+	deadline := time.Now().Add(2 * time.Second)
+	for time.Now().Before(deadline) {
+		status, err := readSNIRouteTableStatus(socketPath)
+		if err == nil && status.UnmatchedConnections == want {
+			return
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	status := getSNIRouteTableStatus(t, socketPath)
+	t.Fatalf("unmatched connections = %d, want %d", status.UnmatchedConnections, want)
 }
 
 func startPersistentSNIBackend(t *testing.T, helloLen int, label string) (int, func()) {
@@ -798,18 +891,60 @@ func clientHelloBytes(t *testing.T, serverName string) []byte {
 	return append(header, body...)
 }
 
+func clientHelloWithECHBytes(t *testing.T, serverName string) []byte {
+	t.Helper()
+	return appendTLSClientHelloExtension(t, clientHelloBytes(t, serverName), 0xfe0d, []byte{0x9d, 0x2f, 0x81, 0x44})
+}
+
 func appendTLSClientHelloExtension(t *testing.T, hello []byte, extType uint16, data []byte) []byte {
+	t.Helper()
+	return insertTLSClientHelloExtension(t, hello, extType, data, tlsExtensionLast)
+}
+
+type tlsExtensionPosition int
+
+const (
+	tlsExtensionFirst tlsExtensionPosition = iota
+	tlsExtensionMiddle
+	tlsExtensionLast
+)
+
+func insertTLSClientHelloExtension(t *testing.T, hello []byte, extType uint16, data []byte, position tlsExtensionPosition) []byte {
 	t.Helper()
 	out := append([]byte(nil), hello...)
 	extLenPos, extEnd, ok := tlsClientHelloExtensionsRange(out)
 	if !ok {
 		t.Fatal("ClientHello extension block not found")
 	}
+	extStart := extLenPos + 2
+	extensionOffsets := []int{extStart}
+	for offset := extStart; offset < extEnd; {
+		if offset+4 > extEnd {
+			t.Fatal("truncated ClientHello extension header")
+		}
+		extensionLen := int(binary.BigEndian.Uint16(out[offset+2 : offset+4]))
+		offset += 4 + extensionLen
+		if offset > extEnd {
+			t.Fatal("truncated ClientHello extension payload")
+		}
+		extensionOffsets = append(extensionOffsets, offset)
+	}
+	insertAt := extEnd
+	switch position {
+	case tlsExtensionFirst:
+		insertAt = extensionOffsets[0]
+	case tlsExtensionMiddle:
+		insertAt = extensionOffsets[len(extensionOffsets)/2]
+	case tlsExtensionLast:
+		insertAt = extensionOffsets[len(extensionOffsets)-1]
+	default:
+		t.Fatalf("unknown TLS extension position %d", position)
+	}
 	extension := make([]byte, 4+len(data))
 	binary.BigEndian.PutUint16(extension[0:2], extType)
 	binary.BigEndian.PutUint16(extension[2:4], uint16(len(data)))
 	copy(extension[4:], data)
-	out = append(out[:extEnd], append(extension, out[extEnd:]...)...)
+	out = append(out[:insertAt], append(extension, out[insertAt:]...)...)
 	extLen := int(binary.BigEndian.Uint16(out[extLenPos:extLenPos+2])) + len(extension)
 	if extLen > 0xffff {
 		t.Fatal("extension block too large")

@@ -1560,12 +1560,12 @@ func acceptSniSplitterTCP(ln net.Listener, cfg config, store *sniRouteTableStore
 
 func handleSniSplitterTCP(client net.Conn, cfg config, store *sniRouteTableStore, active *sniSplitterConnSet) error {
 	defer client.Close()
-	sni, ech, hello, err := readClientHelloForSNI(client, sniSplitterReadTimeout, sniSplitterMaxClientHello)
+	sni, hello, err := readClientHelloForSNI(client, sniSplitterReadTimeout, sniSplitterMaxClientHello)
 	if err != nil {
 		store.recordUnmatched()
 		return err
 	}
-	if ech || sni == "" {
+	if sni == "" {
 		store.recordUnmatched()
 		return nil
 	}
@@ -1610,7 +1610,7 @@ func handleSniSplitterTCP(client net.Conn, cfg config, store *sniRouteTableStore
 	return proxyPlainTCPWithCounter(client, target, runtime.inLimiter, runtime.outLimiter, runtime.counter)
 }
 
-func readClientHelloForSNI(conn net.Conn, timeout time.Duration, maxBytes int) (string, bool, []byte, error) {
+func readClientHelloForSNI(conn net.Conn, timeout time.Duration, maxBytes int) (string, []byte, error) {
 	if maxBytes <= 0 {
 		maxBytes = sniSplitterMaxClientHello
 	}
@@ -1620,101 +1620,100 @@ func readClientHelloForSNI(conn net.Conn, timeout time.Duration, maxBytes int) (
 	}
 	header := make([]byte, 5)
 	if _, err := io.ReadFull(conn, header); err != nil {
-		return "", false, nil, err
+		return "", nil, err
 	}
 	if header[0] != 0x16 {
-		return "", false, header, errors.New("not a TLS handshake record")
+		return "", header, errors.New("not a TLS handshake record")
 	}
 	recordLen := int(binary.BigEndian.Uint16(header[3:5]))
 	if recordLen <= 0 || recordLen+len(header) > maxBytes {
-		return "", false, header, errors.New("invalid TLS record length")
+		return "", header, errors.New("invalid TLS record length")
 	}
 	hello := make([]byte, 5+recordLen)
 	copy(hello, header)
 	if _, err := io.ReadFull(conn, hello[5:]); err != nil {
-		return "", false, hello[:5], err
+		return "", hello[:5], err
 	}
-	sni, ech, err := parseClientHelloSNI(hello)
+	sni, err := parseClientHelloSNI(hello)
 	if err != nil {
-		return "", false, hello, err
+		return "", hello, err
 	}
-	return sni, ech, hello, nil
+	return sni, hello, nil
 }
 
-func parseClientHelloSNI(hello []byte) (string, bool, error) {
+func parseClientHelloSNI(hello []byte) (string, error) {
 	if len(hello) < 9 {
-		return "", false, errors.New("TLS record too short")
+		return "", errors.New("TLS record too short")
 	}
 	if hello[0] != 0x16 {
-		return "", false, errors.New("not a TLS handshake record")
+		return "", errors.New("not a TLS handshake record")
 	}
 	recordEnd := 5 + int(binary.BigEndian.Uint16(hello[3:5]))
 	if recordEnd > len(hello) {
-		return "", false, errors.New("incomplete TLS record")
+		return "", errors.New("incomplete TLS record")
 	}
 	if hello[5] != 0x01 {
-		return "", false, errors.New("not a TLS ClientHello")
+		return "", errors.New("not a TLS ClientHello")
 	}
 	handshakeLen := tlsUint24(hello[6:9])
 	pos := 9
 	handshakeEnd := pos + handshakeLen
 	if handshakeEnd > recordEnd {
-		return "", false, errors.New("incomplete TLS ClientHello")
+		return "", errors.New("incomplete TLS ClientHello")
 	}
 	if pos+34 > handshakeEnd {
-		return "", false, errors.New("short TLS ClientHello header")
+		return "", errors.New("short TLS ClientHello header")
 	}
 	pos += 34
 	if pos >= handshakeEnd {
-		return "", false, errors.New("missing TLS session id")
+		return "", errors.New("missing TLS session id")
 	}
 	sessionLen := int(hello[pos])
 	pos++
 	if pos+sessionLen > handshakeEnd {
-		return "", false, errors.New("invalid TLS session id length")
+		return "", errors.New("invalid TLS session id length")
 	}
 	pos += sessionLen
 	if pos+2 > handshakeEnd {
-		return "", false, errors.New("missing TLS cipher suites")
+		return "", errors.New("missing TLS cipher suites")
 	}
 	cipherLen := int(binary.BigEndian.Uint16(hello[pos : pos+2]))
 	pos += 2
 	if cipherLen <= 0 || pos+cipherLen > handshakeEnd {
-		return "", false, errors.New("invalid TLS cipher suites length")
+		return "", errors.New("invalid TLS cipher suites length")
 	}
 	pos += cipherLen
 	if pos >= handshakeEnd {
-		return "", false, errors.New("missing TLS compression methods")
+		return "", errors.New("missing TLS compression methods")
 	}
 	compressionLen := int(hello[pos])
 	pos++
 	if compressionLen <= 0 || pos+compressionLen > handshakeEnd {
-		return "", false, errors.New("invalid TLS compression methods length")
+		return "", errors.New("invalid TLS compression methods length")
 	}
 	pos += compressionLen
 	if pos == handshakeEnd {
-		return "", false, nil
+		return "", nil
 	}
 	if pos+2 > handshakeEnd {
-		return "", false, errors.New("missing TLS extensions length")
+		return "", errors.New("missing TLS extensions length")
 	}
 	extensionsLen := int(binary.BigEndian.Uint16(hello[pos : pos+2]))
 	pos += 2
 	extensionsEnd := pos + extensionsLen
 	if extensionsEnd > handshakeEnd {
-		return "", false, errors.New("invalid TLS extensions length")
+		return "", errors.New("invalid TLS extensions length")
 	}
 	var sni string
-	ech := false
 	for pos < extensionsEnd {
 		if pos+4 > extensionsEnd {
-			return "", false, errors.New("truncated TLS extension header")
+			return "", errors.New("truncated TLS extension header")
 		}
 		extensionType := binary.BigEndian.Uint16(hello[pos : pos+2])
 		extensionLen := int(binary.BigEndian.Uint16(hello[pos+2 : pos+4]))
 		pos += 4
 		if pos+extensionLen > extensionsEnd {
-			return "", false, errors.New("truncated TLS extension payload")
+			return "", errors.New("truncated TLS extension payload")
 		}
 		extensionData := hello[pos : pos+extensionLen]
 		pos += extensionLen
@@ -1722,19 +1721,17 @@ func parseClientHelloSNI(hello []byte) (string, bool, error) {
 		case 0x0000:
 			name, err := parseServerNameExtension(extensionData)
 			if err != nil {
-				return "", false, err
+				return "", err
 			}
 			if name != "" {
 				sni = name
 			}
-		case 0xfe0d:
-			ech = true
 		}
 	}
 	if pos != extensionsEnd {
-		return "", false, errors.New("invalid TLS extensions cursor")
+		return "", errors.New("invalid TLS extensions cursor")
 	}
-	return sni, ech, nil
+	return sni, nil
 }
 
 func parseServerNameExtension(data []byte) (string, error) {
