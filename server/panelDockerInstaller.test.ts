@@ -4,6 +4,10 @@ import path from "node:path";
 import test from "node:test";
 
 const script = fs.readFileSync(path.join(process.cwd(), "scripts/install-panel-docker.sh"), "utf8");
+const dockerImageWorkflow = fs.readFileSync(
+  path.join(process.cwd(), ".github/workflows/docker-image.yml"),
+  "utf8",
+);
 
 function section(start: string, end: string) {
   const startIndex = script.indexOf(start);
@@ -80,6 +84,20 @@ test("Docker install and upgrade carry the resolved release version into verific
   assert.match(install, /start_panel "\$image" "\$EXPECTED_PANEL_VERSION"/);
   assertBefore(upgrade, "resolve_image_selection", 'image="$RESOLVED_IMAGE"');
   assert.match(upgrade, /start_panel "\$image" "\$EXPECTED_PANEL_VERSION"/);
+});
+
+test("Docker install defaults to the repository-owned GHCR image", () => {
+  assert.match(script, /^IMAGE_REPO="\$\{FORWARDX_IMAGE_REPO:-ghcr\.io\/owo10086\/sni-panel\}"$/m);
+  assert.doesNotMatch(script, /ghcr\.io\/poouo\/forwardx/i);
+});
+
+test("Docker image merge expects one digest for every build matrix platform", () => {
+  const platformCount = [...dockerImageWorkflow.matchAll(/^\s+- platform: /gm)].length;
+  const expectedDigestCount = Number(
+    dockerImageWorkflow.match(/"\$\{#digest_files\[@\]\}" -ne (\d+)/)?.[1],
+  );
+
+  assert.equal(expectedDigestCount, platformCount);
 });
 
 test("Docker upgrade verifies both image metadata version sources before replacing the old container", () => {

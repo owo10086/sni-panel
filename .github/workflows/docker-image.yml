@@ -151,15 +151,15 @@ jobs:
           path: ${{ runner.temp }}/digests
           merge-multiple: true
 
-      - name: Create and verify multi-platform image
+      - name: Create and verify image manifest
         shell: bash
         env:
           VERSION: ${{ needs.prepare.outputs.version }}
         run: |
           set -euo pipefail
           mapfile -t digest_files < <(find "${RUNNER_TEMP}/digests" -maxdepth 1 -type f | sort)
-          if [ "${#digest_files[@]}" -ne 2 ]; then
-            echo "::error::Expected 2 platform digests, found ${#digest_files[@]}"
+          if [ "${#digest_files[@]}" -ne 1 ]; then
+            echo "::error::Expected 1 platform digest, found ${#digest_files[@]}"
             exit 1
           fi
 
