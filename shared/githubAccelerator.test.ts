@@ -12,7 +12,7 @@ import {
 const accelerator = { enabled: true, url: "https://mirror.example.com/" };
 
 test("prefixes GitHub URLs and keeps a direct fallback candidate", () => {
-  const raw = "https://github.com/poouo/Forwardx/releases/download/v1.2.3/panel.tar.gz";
+  const raw = "https://github.com/owo10086/sni-panel/releases/download/v1.2.3/panel.tar.gz";
   assert.equal(
     applyGithubAccelerator(raw, accelerator),
     `https://mirror.example.com/${raw}`,
@@ -51,6 +51,6 @@ test("panel updates require both the main accelerator and panel switch", () => {
 test("builds an accelerated installer command with a persistent script argument", () => {
   assert.equal(
     buildPanelInstallerCommand({ deployment: "docker", action: "upgrade", accelerator }),
-    "curl -fsSL 'https://mirror.example.com/https://raw.githubusercontent.com/poouo/Forwardx/main/scripts/install-panel-docker.sh' | sudo bash -s -- upgrade --github-accelerator 'https://mirror.example.com'",
+    "curl -fsSL 'https://mirror.example.com/https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/install-panel-docker.sh' | sudo bash -s -- upgrade --github-accelerator 'https://mirror.example.com'",
   );
 });

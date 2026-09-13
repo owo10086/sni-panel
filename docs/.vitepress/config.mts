@@ -20,7 +20,7 @@ export default defineConfig({
       { text: "部署面板", link: "/guide/deploy-panel" },
       { text: "功能使用", link: "/guide/rules" },
       { text: "常见问题", link: "/guide/troubleshooting" },
-      { text: "GitHub", link: "https://github.com/poouo/Forwardx" },
+      { text: "GitHub", link: "https://github.com/owo10086/sni-panel" },
     ],
     sidebar: [
       {
@@ -106,6 +106,6 @@ export default defineConfig({
         },
       },
     },
-    socialLinks: [{ icon: "github", link: "https://github.com/poouo/Forwardx" }],
+    socialLinks: [{ icon: "github", link: "https://github.com/owo10086/sni-panel" }],
   },
 });

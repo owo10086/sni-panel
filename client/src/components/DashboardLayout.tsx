@@ -82,6 +82,7 @@ import { AvatarPicker } from "@/components/AvatarPicker";
 import { UserAvatar } from "@/components/UserAvatar";
 import { normalizeSidebarMenuSettings, type SidebarMenuKey } from "@shared/sidebarMenu";
 import { buildPanelInstallerCommand } from "@shared/githubAccelerator";
+import { REPO_URL } from "@shared/repo";
 
 const TWO_FACTOR_SETUP_SECONDS = 5 * 60;
 const SITE_LOGO_CACHE_KEY = "forwardx.siteLogoDataUrl";
@@ -1627,7 +1628,7 @@ function DashboardLayoutContent({
         <footer className="pb-4 text-center text-xs text-muted-foreground">
           <div className="inline-flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
             <a
-              href={publicInfo?.repoUrl || "https://github.com/poouo/Forwardx"}
+              href={publicInfo?.repoUrl || REPO_URL}
               target="_blank"
               rel="noopener noreferrer"
               className="transition-colors hover:text-foreground"

@@ -1,3 +1,5 @@
+import { REPO_RAW_BASE_URL } from "./repo";
+
 export type GithubAcceleratorConfig = {
   enabled?: boolean;
   url?: string | null;
@@ -16,8 +18,8 @@ export type PanelInstallerDeployment = "local" | "docker";
 export type PanelInstallerAction = "install" | "upgrade" | "uninstall";
 
 export const PANEL_INSTALLER_RAW_URLS: Record<PanelInstallerDeployment, string> = {
-  local: "https://raw.githubusercontent.com/poouo/Forwardx/main/scripts/install-panel-local.sh",
-  docker: "https://raw.githubusercontent.com/poouo/Forwardx/main/scripts/install-panel-docker.sh",
+  local: `${REPO_RAW_BASE_URL}/scripts/install-panel-local.sh`,
+  docker: `${REPO_RAW_BASE_URL}/scripts/install-panel-docker.sh`,
 };
 
 export function normalizeGithubAcceleratorUrl(value: unknown) {

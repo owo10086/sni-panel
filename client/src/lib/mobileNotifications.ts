@@ -2,11 +2,12 @@ import { App } from "@capacitor/app";
 import { Browser } from "@capacitor/browser";
 import { LocalNotifications } from "@capacitor/local-notifications";
 import { mobileAuth } from "@/lib/mobileAuth";
+import { GITHUB_SLUG, REPO_RELEASES_URL } from "@shared/repo";
 
 const SETTINGS_KEY = "forwardx.mobile.notificationSettings";
-const RELEASES_URL = "https://github.com/poouo/Forwardx/releases";
-const LATEST_RELEASE_URL = "https://github.com/poouo/Forwardx/releases/latest";
-const RELEASES_API_URL = "https://api.github.com/repos/poouo/Forwardx/releases?per_page=20";
+const RELEASES_URL = REPO_RELEASES_URL;
+const LATEST_RELEASE_URL = `${REPO_RELEASES_URL}/latest`;
+const RELEASES_API_URL = `https://api.github.com/repos/${GITHUB_SLUG}/releases?per_page=20`;
 
 export type MobileNotificationSettings = {
   trafficEnabled: boolean;

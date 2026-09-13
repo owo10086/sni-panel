@@ -7,7 +7,7 @@
 推荐使用 Docker 一键安装：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/poouo/Forwardx/main/scripts/install-panel-docker.sh | bash -s -- install
+curl -fsSL https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/install-panel-docker.sh | bash -s -- install
 ```
 
 安装完成后访问面板：

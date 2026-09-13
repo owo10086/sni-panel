@@ -1,4 +1,5 @@
 import { APP_VERSION } from "./_core/systemRouter";
+import { GITHUB_SLUG } from "../shared/repo";
 
 function getPreviousReleaseVersion(version: string) {
   const normalized = String(version || "").trim().replace(/^v/i, "");
@@ -72,7 +73,7 @@ export function generateInstallScript(defaultPanelUrl: string, options: AgentIns
     `PANEL_MIGRATION_ID=${shellQuote(panelMigrationId)}`,
     `PANEL_MIGRATION_STARTED_AT="${panelMigrationStartedAt}"`,
     'FORWARDX_INSTALL_MIMIC="${FORWARDX_INSTALL_MIMIC:-ask}"',
-    'FORWARDX_MIMIC_INSTALLER_URL="${FORWARDX_MIMIC_INSTALLER_URL:-https://raw.githubusercontent.com/poouo/Forwardx/main/scripts/install-mimic.sh}"',
+    `FORWARDX_MIMIC_INSTALLER_URL="\${FORWARDX_MIMIC_INSTALLER_URL:-https://raw.githubusercontent.com/${GITHUB_SLUG}/main/scripts/install-mimic.sh}"`,
     'FORWARDX_MIMIC_VERSION="${FORWARDX_MIMIC_VERSION:-0.7.1}"',
     // Realm v2.9.6's default GNU build requires a newer glibc than many
     // supported distributions. Keep the known-compatible release as the
@@ -589,7 +590,7 @@ export function generateInstallScript(defaultPanelUrl: string, options: AgentIns
     '    echo "[信息] mimic ${FORWARDX_MIMIC_VERSION#v} UDP 混淆环境已就绪"',
     '    return 0',
     '  fi',
-    '  RAW_URL="${FORWARDX_MIMIC_INSTALLER_URL:-https://raw.githubusercontent.com/poouo/Forwardx/main/scripts/install-mimic.sh}"',
+    `  RAW_URL="\${FORWARDX_MIMIC_INSTALLER_URL:-https://raw.githubusercontent.com/${GITHUB_SLUG}/main/scripts/install-mimic.sh}"`,
     '  URL="$(github_url "$RAW_URL")"',
     '  TMP="$(mktemp /tmp/forwardx-mimic-install.XXXXXX)"',
     '  echo "[信息] 正在下载 mimic 安装脚本: $URL"',
@@ -750,7 +751,7 @@ export function generateInstallScript(defaultPanelUrl: string, options: AgentIns
     '    fi',
     '    echo "[信息] 面板端暂未提供 $LABEL，尝试从 GitHub 下载..."',
     '  fi',
-    '  URL="https://github.com/poouo/Forwardx/releases/download/v${RELEASE_VERSION}/${ASSET}"',
+    `  URL="https://github.com/${GITHUB_SLUG}/releases/download/v\${RELEASE_VERSION}/\${ASSET}"`,
     '  if download_github_binary "$URL" "$DST" "$LABEL"; then',
     '    DOWNLOADED_RELEASE_VERSION="$RELEASE_VERSION"',
     '    return 0',
@@ -792,7 +793,7 @@ export function generateInstallScript(defaultPanelUrl: string, options: AgentIns
     '      fi',
     '      echo "[信息] 面板端上一版本 $LABEL 不可用，尝试从 GitHub 下载..."',
     '    fi',
-    '    URL="https://github.com/poouo/Forwardx/releases/download/v${FALLBACK_RELEASE_VERSION}/${ASSET}"',
+    `    URL="https://github.com/${GITHUB_SLUG}/releases/download/v\${FALLBACK_RELEASE_VERSION}/\${ASSET}"`,
     '    if download_github_binary "$URL" "$DST" "$LABEL"; then',
     '      DOWNLOADED_RELEASE_VERSION="$FALLBACK_RELEASE_VERSION"',
     '      echo "[信息] 临时使用上一版本 v${FALLBACK_RELEASE_VERSION} 的 $LABEL"',

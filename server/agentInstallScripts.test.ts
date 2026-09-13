@@ -149,7 +149,7 @@ test("panel-first Agent upgrade falls back to GitHub without deleting SNI runtim
   const upgrade = scriptSection(script, "do_upgrade() {", "# ============ 入口 ============");
   const panelIndex = downloader.indexOf('URL="$(panel_asset_url "$RELEASE_VERSION" "$ASSET")"');
   const githubIndex = downloader.indexOf(
-    'URL="https://github.com/poouo/Forwardx/releases/download/v${RELEASE_VERSION}/${ASSET}"',
+    'URL="https://github.com/owo10086/sni-panel/releases/download/v${RELEASE_VERSION}/${ASSET}"',
   );
 
   assert.match(script, /FORWARDX_AGENT_PANEL_FIRST_DEFAULT="true"/);
@@ -294,7 +294,8 @@ test("Agent release always builds the published FXP assets from Go", () => {
   const script = fs.readFileSync(path.join(process.cwd(), "scripts/build-agent-release.sh"), "utf8");
 
   assert.match(script, /build_fxp amd64 forwardx-fxp-linux-amd64/);
-  assert.match(script, /build_fxp arm64 forwardx-fxp-linux-arm64/);
   assert.match(script, /CGO_ENABLED=0 GOOS=linux GOARCH="\$goarch"/);
+  // 当前只发布 linux/amd64：产出 arm64 资产会让发布产物与镜像清单校验不一致。
+  assert.doesNotMatch(script, /arm64 forwardx-(agent|fxp|runtime)-linux-arm64/);
   assert.doesNotMatch(script, /FXP_IMPLEMENTATION|forwardx-fxp-rust|cargo|cross build/);
 });

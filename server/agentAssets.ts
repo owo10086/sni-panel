@@ -3,8 +3,8 @@ import fsp from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
 import { AGENT_VERSION, APP_VERSION } from "../shared/versions";
+import { REPO_URL } from "../shared/repo";
 
-const REPO_URL = "https://github.com/poouo/Forwardx";
 const MAX_AGENT_ASSET_BYTES = 80 * 1024 * 1024;
 const fetchLocks = new Map<string, Promise<string | null>>();
 

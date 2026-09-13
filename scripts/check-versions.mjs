@@ -71,8 +71,20 @@ if (!fxpRuntimeVersion) {
 } else if (!semverPattern.test(fxpRuntimeVersion)) {
   errors.push(`FXP runtime version ${fxpRuntimeVersion} must use x.y.z format`);
 }
-if (appVersion === agentVersion) {
-  errors.push(`APP_VERSION and AGENT_VERSION are both ${appVersion}; keep panel and Agent version lines separate`);
+// 版本线不变式（见 .scratch/release-rebrand/spec.md）：
+// - 面板与 Agent 的 major.minor 恒等：只改面板时面板推补丁位，Agent 不动；
+//   改动涉及 Agent 时两者一起推小版本位并把补丁位归零。
+// - Agent 与 FXP runtime 版本恒等：两者是同一批资产、同一条升级命令装上去的。
+const majorMinor = (version) => parseSemver(version).slice(0, 2).join(".");
+if (semverPattern.test(appVersion) && semverPattern.test(agentVersion)
+  && majorMinor(appVersion) !== majorMinor(agentVersion)) {
+  errors.push(`APP_VERSION ${appVersion} and AGENT_VERSION ${agentVersion} must share the same major.minor`);
+}
+if (semverPattern.test(agentVersion) && parseSemver(agentVersion)[2] !== 0) {
+  errors.push(`AGENT_VERSION ${agentVersion} must keep its patch at 0; bump the minor when the Agent changes`);
+}
+if (fxpRuntimeVersion && fxpRuntimeVersion !== agentVersion) {
+  errors.push(`FXP runtime version ${fxpRuntimeVersion} must match AGENT_VERSION ${agentVersion}`);
 }
 for (const [name, version] of [
   ["APP_VERSION", appVersion],

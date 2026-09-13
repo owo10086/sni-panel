@@ -3,16 +3,16 @@
 ForwardX 通过轻量 Agent 统一管理多台 Linux 服务器上的端口转发、加密隧道、转发链、故障转移、用户权限、套餐和流量统计。面板不保存主机 SSH 密钥。
 
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](LICENSE)
-[![Latest Release](https://img.shields.io/github/v/release/poouo/Forwardx?display_name=tag&sort=semver)](https://github.com/poouo/Forwardx/releases/latest)
+[![Latest Release](https://img.shields.io/github/v/release/owo10086/sni-panel?display_name=tag&sort=semver)](https://github.com/owo10086/sni-panel/releases/latest)
 [![Node.js](https://img.shields.io/badge/Node.js-22+-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
 
 ## 链接
 
 - [使用文档](https://poouo.github.io/Forwardx/)
-- [GitHub Releases](https://github.com/poouo/Forwardx/releases/latest)
+- [GitHub Releases](https://github.com/owo10086/sni-panel/releases/latest)
 - [Telegram 群组](https://t.me/ForwardX_panel)
-- [Android APK](https://github.com/poouo/Forwardx/releases/latest)
+- [Android APK](https://github.com/owo10086/sni-panel/releases/latest)
 
 ## 主要功能
 
@@ -47,19 +47,19 @@ ForwardX 通过轻量 Agent 统一管理多台 Linux 服务器上的端口转发
 安装：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/poouo/Forwardx/main/scripts/install-panel-docker.sh | bash -s -- install
+curl -fsSL https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/install-panel-docker.sh | bash -s -- install
 ```
 
 升级：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/poouo/Forwardx/main/scripts/install-panel-docker.sh | bash -s -- upgrade
+curl -fsSL https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/install-panel-docker.sh | bash -s -- upgrade
 ```
 
 卸载：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/poouo/Forwardx/main/scripts/install-panel-docker.sh | bash -s -- uninstall
+curl -fsSL https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/install-panel-docker.sh | bash -s -- uninstall
 ```
 
 Docker 默认拉取 `ghcr.io/poouo/forwardx:latest`，数据库配置和 SQLite 数据保存在数据卷中。升级会保留 `.env`、数据卷和部署目录中的 `data/`；卸载脚本仅在用户确认后删除这些数据。
@@ -69,19 +69,19 @@ Docker 默认拉取 `ghcr.io/poouo/forwardx:latest`，数据库配置和 SQLite 
 安装：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/poouo/Forwardx/main/scripts/install-panel-local.sh | bash -s -- install
+curl -fsSL https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/install-panel-local.sh | bash -s -- install
 ```
 
 升级：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/poouo/Forwardx/main/scripts/install-panel-local.sh | bash -s -- upgrade
+curl -fsSL https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/install-panel-local.sh | bash -s -- upgrade
 ```
 
 卸载：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/poouo/Forwardx/main/scripts/install-panel-local.sh | bash -s -- uninstall
+curl -fsSL https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/install-panel-local.sh | bash -s -- uninstall
 ```
 
 默认安装目录为 `/opt/forwardx-panel`，服务名为 `forwardx-panel.service`，数据位于 `/opt/forwardx-panel/data`。
@@ -108,11 +108,11 @@ GitHub 访问不稳定时，可为 Docker 或本地安装脚本指定加速站�
 
 ```bash
 # Docker 安装
-curl -fsSL "https://mirror.example.com/https://raw.githubusercontent.com/poouo/Forwardx/main/scripts/install-panel-docker.sh" \
+curl -fsSL "https://mirror.example.com/https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/install-panel-docker.sh" \
   | bash -s -- install --github-accelerator "https://mirror.example.com"
 
 # 本地 systemd 安装
-curl -fsSL "https://mirror.example.com/https://raw.githubusercontent.com/poouo/Forwardx/main/scripts/install-panel-local.sh" \
+curl -fsSL "https://mirror.example.com/https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/install-panel-local.sh" \
   | bash -s -- install --github-accelerator "https://mirror.example.com"
 ```
 
@@ -163,7 +163,7 @@ mimic 仅在用户为 ForwardX 隧道启用混淆时使用。V1 处理 FXP UDP�
 Agent 安装脚本会询问是否安装 mimic，默认选择 `n`。也可以手动执行：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/poouo/Forwardx/main/scripts/install-mimic.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/install-mimic.sh | sudo bash
 ```
 
 安装器默认使用 `wg-mimic-fabric v1.4.9` 安装或升级到 `mimic v0.7.1`；已满足目标版本时不会重复安装。可通过 `FORWARDX_MIMIC_VERSION` 和 `WMF_REF` 显式覆盖目标版本与安装器版本。
@@ -238,4 +238,4 @@ under the MIT License. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 ## Star 趋势
 
-[![Stargazers over time](https://starchart.cc/poouo/Forwardx.svg)](https://starchart.cc/poouo/Forwardx)
+[![Stargazers over time](https://starchart.cc/owo10086/sni-panel.svg)](https://starchart.cc/owo10086/sni-panel)

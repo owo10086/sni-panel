@@ -115,7 +115,9 @@ export {
  *   - settings：登录后只读访问/管理员可写的系统设置
  */
 
-export const REPO_URL = "https://github.com/poouo/Forwardx";
+import { REPO_URL } from "../../shared/repo";
+
+export { REPO_URL };
 /** Telegram 双向消息机器人：用户可通过此反馈问题、接收补充信息 */
 export const TELEGRAM_BOT_URL = "https://t.me/miyin_private_bot";
 const ANDROID_APK_DOWNLOAD_URL =

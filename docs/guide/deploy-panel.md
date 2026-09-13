@@ -7,7 +7,7 @@ ForwardX 面板支持 Docker 部署和本地 systemd 部署。普通用户优先
 以 root 用户执行：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/poouo/Forwardx/main/scripts/install-panel-docker.sh | bash -s -- install
+curl -fsSL https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/install-panel-docker.sh | bash -s -- install
 ```
 
 安装完成后访问：
@@ -31,10 +31,10 @@ Docker 部署的特点：
 
 ```bash
 # 升级面板
-curl -fsSL https://raw.githubusercontent.com/poouo/Forwardx/main/scripts/install-panel-docker.sh | bash -s -- upgrade
+curl -fsSL https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/install-panel-docker.sh | bash -s -- upgrade
 
 # 卸载面板
-curl -fsSL https://raw.githubusercontent.com/poouo/Forwardx/main/scripts/install-panel-docker.sh | bash -s -- uninstall
+curl -fsSL https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/install-panel-docker.sh | bash -s -- uninstall
 
 # 查看容器日志
 docker logs -n 300 forwardx-panel
@@ -233,7 +233,7 @@ docker image ls --no-trunc --format '{{.Repository}} {{.Tag}} {{.ID}}' ghcr.io/p
 如果你不想使用 Docker，可以使用本地部署：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/poouo/Forwardx/main/scripts/install-panel-local.sh | bash -s -- install
+curl -fsSL https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/install-panel-local.sh | bash -s -- install
 ```
 
 安装完成后访问：
@@ -246,10 +246,10 @@ http://服务器IP:9810
 
 ```bash
 # 升级面板
-curl -fsSL https://raw.githubusercontent.com/poouo/Forwardx/main/scripts/install-panel-local.sh | bash -s -- upgrade
+curl -fsSL https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/install-panel-local.sh | bash -s -- upgrade
 
 # 卸载面板
-curl -fsSL https://raw.githubusercontent.com/poouo/Forwardx/main/scripts/install-panel-local.sh | bash -s -- uninstall
+curl -fsSL https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/install-panel-local.sh | bash -s -- uninstall
 
 # 查看面板日志
 journalctl -u forwardx-panel -n 300 --no-pager
@@ -279,11 +279,11 @@ GitHub 访问不稳定时，Docker 和本地 systemd 一键脚本都支持：
 
 ```bash
 # 安装，连安装脚本本身也通过加速站下载
-curl -fsSL "https://mirror.example.com/https://raw.githubusercontent.com/poouo/Forwardx/main/scripts/install-panel-docker.sh" \
+curl -fsSL "https://mirror.example.com/https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/install-panel-docker.sh" \
   | bash -s -- install --github-accelerator "https://mirror.example.com"
 
 # 升级；已保存地址时可省略 --github-accelerator
-curl -fsSL "https://mirror.example.com/https://raw.githubusercontent.com/poouo/Forwardx/main/scripts/install-panel-docker.sh" \
+curl -fsSL "https://mirror.example.com/https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/install-panel-docker.sh" \
   | bash -s -- upgrade --github-accelerator "https://mirror.example.com"
 ```
 
@@ -291,18 +291,18 @@ curl -fsSL "https://mirror.example.com/https://raw.githubusercontent.com/poouo/F
 
 ```bash
 # 安装，连安装脚本本身也通过加速站下载
-curl -fsSL "https://mirror.example.com/https://raw.githubusercontent.com/poouo/Forwardx/main/scripts/install-panel-local.sh" \
+curl -fsSL "https://mirror.example.com/https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/install-panel-local.sh" \
   | bash -s -- install --github-accelerator "https://mirror.example.com"
 
 # 升级；已保存地址时可省略 --github-accelerator
-curl -fsSL "https://mirror.example.com/https://raw.githubusercontent.com/poouo/Forwardx/main/scripts/install-panel-local.sh" \
+curl -fsSL "https://mirror.example.com/https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/install-panel-local.sh" \
   | bash -s -- upgrade --github-accelerator "https://mirror.example.com"
 ```
 
 也可以用环境变量传入相同配置：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/poouo/Forwardx/main/scripts/install-panel-local.sh \
+curl -fsSL https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/install-panel-local.sh \
   | sudo env FORWARDX_GITHUB_ACCELERATOR_URL="https://mirror.example.com" bash -s -- install
 ```
 
@@ -340,7 +340,7 @@ VERSION=v2.3.266
 APP_DIR=/opt/forwardx-panel
 
 mkdir -p "$APP_DIR"
-curl -fL "https://github.com/poouo/Forwardx/releases/download/${VERSION}/forwardx-panel-${VERSION}.tar.gz" -o /tmp/forwardx-panel.tar.gz
+curl -fL "https://github.com/owo10086/sni-panel/releases/download/${VERSION}/forwardx-panel-${VERSION}.tar.gz" -o /tmp/forwardx-panel.tar.gz
 tar -xzf /tmp/forwardx-panel.tar.gz -C "$APP_DIR"
 cd "$APP_DIR"
 pnpm install --prod --frozen-lockfile
@@ -420,7 +420,7 @@ systemctl stop forwardx-panel
 cd "$APP_DIR"
 rm -rf dist client drizzle scripts
 rm -f package.json pnpm-lock.yaml pnpm-workspace.yaml
-curl -fL "https://github.com/poouo/Forwardx/releases/download/${VERSION}/forwardx-panel-${VERSION}.tar.gz" -o /tmp/forwardx-panel.tar.gz
+curl -fL "https://github.com/owo10086/sni-panel/releases/download/${VERSION}/forwardx-panel-${VERSION}.tar.gz" -o /tmp/forwardx-panel.tar.gz
 tar -xzf /tmp/forwardx-panel.tar.gz -C "$APP_DIR"
 pnpm install --prod --frozen-lockfile
 systemctl start forwardx-panel

@@ -33,7 +33,7 @@ systemctl stop forwardx-agent
 如果面板使用 Docker 安装，执行：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/poouo/Forwardx/main/scripts/install-panel-docker.sh | bash -s -- uninstall
+curl -fsSL https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/install-panel-docker.sh | bash -s -- uninstall
 ```
 
 卸载完成后，检查是否还有残留容器或数据卷：
@@ -62,7 +62,7 @@ Docker 部署的数据通常保存在 Docker volume 中。删除容器不会自�
 如果面板使用本地 systemd 安装，执行：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/poouo/Forwardx/main/scripts/install-panel-local.sh | bash -s -- uninstall
+curl -fsSL https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/install-panel-local.sh | bash -s -- uninstall
 ```
 
 卸载完成后，检查服务和程序目录是否已清除：
@@ -79,7 +79,7 @@ ls -la /opt/forwardx-panel
 在 Agent 所在服务器执行：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/poouo/Forwardx/main/scripts/install-agent.sh | bash -s -- uninstall
+curl -fsSL https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/install-agent.sh | bash -s -- uninstall
 ```
 
 确认服务已停止并移除：

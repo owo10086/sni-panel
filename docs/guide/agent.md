@@ -81,7 +81,7 @@ curl -fsSL http://你的面板地址:9810/api/agent/install.sh | bash -s -- upgr
 卸载命令可在 Token 管理的安装命令弹窗中获取，通用卸载命令如下：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/poouo/Forwardx/main/scripts/install-agent.sh | bash -s -- uninstall
+curl -fsSL https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/install-agent.sh | bash -s -- uninstall
 ```
 
 ---

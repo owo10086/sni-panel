@@ -1,5 +1,18 @@
 # Changelog
 
+## [3.0.0] - 2026-09-13
+
+### 变更
+
+- 项目独立发布，在线安装、升级、版本检查与 GitHub 加速器全部改为从 `owo10086/sni-panel` 获取，不再使用上游 `poouo/Forwardx` 的发布产物。
+- 面板、Agent 与 ForwardX FXP runtime 的版本号统一重置为 `3.0.0`，此后按同一规则递增：只改面板时面板推补丁位；改动涉及 Agent 时面板与 Agent 一起推小版本位，FXP runtime 始终跟随 Agent。
+- 版本校验脚本改为强制上述规则：面板与 Agent 的大小版本位必须相等，Agent 与 FXP runtime 版本必须相等。
+- 发布产物暂时只保留 `linux/amd64`。**arm64 主机将无法安装 Agent**，面板镜像也不再内置 arm64 资产。
+
+### 版本
+
+- 面板与 APK Release `3.0.0`，Agent `3.0.0`，ForwardX FXP runtime `3.0.0`，Android APP `2.3.97`。
+
 ## [2.3.281] - 2026-09-13
 
 ### 修复与优化

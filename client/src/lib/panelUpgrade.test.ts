@@ -10,7 +10,7 @@ const enabledAccelerator = {
 };
 
 test("builds a direct changelog URL unless panel update acceleration is fully enabled", () => {
-  const directUrl = "https://github.com/poouo/Forwardx/releases/tag/v2.3.275";
+  const directUrl = "https://github.com/owo10086/sni-panel/releases/tag/v2.3.275";
 
   assert.equal(getPanelChangelogUrl("2.3.275"), directUrl);
   assert.equal(
@@ -28,7 +28,7 @@ test("builds a direct changelog URL unless panel update acceleration is fully en
 });
 
 test("accelerates generated and supplied GitHub release URLs", () => {
-  const releaseUrl = "https://github.com/poouo/Forwardx/releases/tag/v2.3.275";
+  const releaseUrl = "https://github.com/owo10086/sni-panel/releases/tag/v2.3.275";
   const acceleratedUrl = `https://mirror.example.com/${releaseUrl}`;
 
   assert.equal(getPanelChangelogUrl("2.3.275", null, enabledAccelerator), acceleratedUrl);

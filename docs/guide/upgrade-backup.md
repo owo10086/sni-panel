@@ -2,7 +2,7 @@
 
 ## 升级前建议
 
-升级前建议备份数据库，并查看 [GitHub Release](https://github.com/poouo/Forwardx/releases) 或项目更新日志，确认是否包含面板、Agent 或 Android 客户端更新。
+升级前建议备份数据库，并查看 [GitHub Release](https://github.com/owo10086/sni-panel/releases) 或项目更新日志，确认是否包含面板、Agent 或 Android 客户端更新。
 
 ### 备份 SQLite（本地部署）
 
@@ -33,13 +33,13 @@ Docker 部署建议备份 Docker 数据卷，或先导出数据库后再升级�
 ### Docker 部署
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/poouo/Forwardx/main/scripts/install-panel-docker.sh | bash -s -- upgrade
+curl -fsSL https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/install-panel-docker.sh | bash -s -- upgrade
 ```
 
 指定版本升级：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/poouo/Forwardx/main/scripts/install-panel-docker.sh | sudo env FORWARDX_TARGET_VERSION=vX.Y.Z bash -s -- upgrade
+curl -fsSL https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/install-panel-docker.sh | sudo env FORWARDX_TARGET_VERSION=vX.Y.Z bash -s -- upgrade
 ```
 
 升级会保留 `.env`、部署目录数据和 Docker 数据卷。如果 `latest` 镜像尚未构建到目标版本，脚本会提示稍后重试并保留旧容器运行。
@@ -56,13 +56,13 @@ docker exec forwardx-panel node -p "require('./package.json').version"
 ### 本地 systemd 部署
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/poouo/Forwardx/main/scripts/install-panel-local.sh | bash -s -- upgrade
+curl -fsSL https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/install-panel-local.sh | bash -s -- upgrade
 ```
 
 指定版本升级：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/poouo/Forwardx/main/scripts/install-panel-local.sh | sudo env FORWARDX_TARGET_VERSION=vX.Y.Z bash -s -- upgrade
+curl -fsSL https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/install-panel-local.sh | sudo env FORWARDX_TARGET_VERSION=vX.Y.Z bash -s -- upgrade
 ```
 
 本地 systemd 部署升级会保留 `.env`、`data` 目录、数据库配置和已有数据。如果面板程序包尚未上传到 GitHub Release，脚本会提示等待 GitHub Actions 构建完成。
@@ -73,11 +73,11 @@ curl -fsSL https://raw.githubusercontent.com/poouo/Forwardx/main/scripts/install
 
 ```bash
 # Docker
-curl -fsSL "https://mirror.example.com/https://raw.githubusercontent.com/poouo/Forwardx/main/scripts/install-panel-docker.sh" \
+curl -fsSL "https://mirror.example.com/https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/install-panel-docker.sh" \
   | bash -s -- upgrade --github-accelerator "https://mirror.example.com"
 
 # 本地 systemd
-curl -fsSL "https://mirror.example.com/https://raw.githubusercontent.com/poouo/Forwardx/main/scripts/install-panel-local.sh" \
+curl -fsSL "https://mirror.example.com/https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/install-panel-local.sh" \
   | bash -s -- upgrade --github-accelerator "https://mirror.example.com"
 ```
 
@@ -157,8 +157,8 @@ sudo systemctl start forwardx-panel
 在安装过插件的 Agent 主机先预检，再确认执行：
 
 ~~~bash
-curl -fsSL https://raw.githubusercontent.com/poouo/Forwardx/main/scripts/migrate-agent-legacy.sh | bash
-curl -fsSL https://raw.githubusercontent.com/poouo/Forwardx/main/scripts/migrate-agent-legacy.sh | bash -s -- --apply
+curl -fsSL https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/migrate-agent-legacy.sh | bash
+curl -fsSL https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/migrate-agent-legacy.sh | bash -s -- --apply
 ~~~
 
 该脚本不会升级或重启 Agent。迁移后仍需把 Agent 升级到 2.2.151 或更高版本，并在插件管理中重新同步 Agent；损坏或完全缺少版本的清单必须通过重新同步恢复。
@@ -179,7 +179,7 @@ curl -fsSL https://raw.githubusercontent.com/poouo/Forwardx/main/scripts/migrate
 
 ## 更新日志
 
-升级前建议查看 [GitHub Release](https://github.com/poouo/Forwardx/releases) 或项目更新日志，确认是否包含面板、Agent 或 Android 客户端更新。
+升级前建议查看 [GitHub Release](https://github.com/owo10086/sni-panel/releases) 或项目更新日志，确认是否包含面板、Agent 或 Android 客户端更新。
 
 ## 卸载
 

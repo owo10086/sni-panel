@@ -73,8 +73,8 @@ build_one() {
   )
 }
 
+# 当前只发布 linux/amd64，arm64 主机无法安装 Agent（见 .scratch/release-rebrand/spec.md）。
 build_one amd64 forwardx-agent-linux-amd64
-build_one arm64 forwardx-agent-linux-arm64
 
 build_fxp() {
   local goarch="$1"
@@ -88,7 +88,6 @@ build_fxp() {
 }
 
 build_fxp amd64 forwardx-fxp-linux-amd64
-build_fxp arm64 forwardx-fxp-linux-arm64
 
 download_gost_runtime() {
   local gost_arch="$1"
@@ -111,7 +110,6 @@ download_gost_runtime() {
 }
 
 download_gost_runtime amd64 forwardx-runtime-linux-amd64
-download_gost_runtime arm64 forwardx-runtime-linux-arm64
 
 NOTICE_FILE="$ROOT_DIR/THIRD_PARTY_NOTICES.md"
 if [ ! -f "$NOTICE_FILE" ]; then
