@@ -1,6 +1,10 @@
 # SNI 分流
 
-Status: ready-for-agent
+Status: resolved
+
+> 十张实施工单均已完成并部署到生产（见 `issues/`）。两项后续工作另有规格：
+> ECH 判定更正见 `.scratch/sni-routing-ech/`，端口占用检测见 `.scratch/sni-port/`。
+> 工单 07 的 Comments 里记录了两个尚未开单的遗留缺陷。
 
 ## Problem Statement
 
