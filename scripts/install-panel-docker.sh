@@ -12,7 +12,7 @@ IMAGE_REPO="${FORWARDX_IMAGE_REPO:-ghcr.io/owo10086/sni-panel}"
 ASSETS_PENDING_EXIT_CODE=12
 ENABLE_ADMIN_ACCOUNT="false"
 EXPLICIT_FORWARDX_IMAGE="${FORWARDX_IMAGE:-}"
-DATA_VOLUME_REUSE_NOTIFIED="false"
+DATA_DIRECTORY_REUSE_NOTIFIED="false"
 RESOLVED_IMAGE=""
 EXPECTED_PANEL_VERSION=""
 GITHUB_ACCELERATOR_URL=""
@@ -313,9 +313,9 @@ read_database_config_json() {
   if [ "$ACTION" != "install" ]; then
     return
   fi
-  if docker volume inspect "$(data_volume_name)" >/dev/null 2>&1; then
-    echo "[WARN] Existing Docker data volume detected; preserving its database configuration and administrator data."
-    echo "[INFO] Database selection is skipped on reinstall. Use the existing administrator account, or fully uninstall and confirm volume deletion before a clean install."
+  if data_storage_exists; then
+    echo "[WARN] Existing Docker data directory or legacy data volume detected; preserving its database configuration and administrator data."
+    echo "[INFO] Database selection is skipped on reinstall. Use the existing administrator account, or fully uninstall and confirm data deletion before a clean install."
     return
   fi
   if [ ! -r /dev/tty ] || [ ! -w /dev/tty ]; then
@@ -410,16 +410,27 @@ EOF
   fi
 }
 
-write_database_config_to_volume() {
+write_database_config_to_directory() {
   if [ -z "${DATABASE_CONFIG_JSON:-}" ]; then
     return
   fi
-  ensure_data_volume
-  printf "%s\n" "$DATABASE_CONFIG_JSON" | docker run --rm -i -v "$(data_volume_name):/data" busybox sh -c 'umask 077; cat > /data/database.json'
+  ensure_data_directory
+  (umask 077; printf "%s\n" "$DATABASE_CONFIG_JSON" > "$(data_directory)/database.json")
 }
 
 data_volume_name() {
   printf "%s_forwardx-data" "$PROJECT_NAME"
+}
+
+data_directory() {
+  printf "%s/forwardx-data" "$APP_DIR"
+}
+
+data_storage_exists() {
+  if [ -d "$(data_directory)" ] && [ -n "$(find "$(data_directory)" -mindepth 1 -maxdepth 1 -print -quit 2>/dev/null)" ]; then
+    return 0
+  fi
+  docker volume inspect "$(data_volume_name)" >/dev/null 2>&1
 }
 
 panel_container_ids() {
@@ -469,21 +480,27 @@ persist_uninstall_data_volume_names() {
   (umask 077; printf "%s\n" "$volume_names" > "$state_file")
 }
 
-ensure_data_volume() {
-  local volume_name
+ensure_data_directory() {
+  local data_dir volume_name
+  data_dir="$(data_directory)"
   volume_name="$(data_volume_name)"
-  if docker volume inspect "$volume_name" >/dev/null 2>&1; then
-    if [ "$ACTION" = "install" ] && [ "$DATA_VOLUME_REUSE_NOTIFIED" != "true" ]; then
-      echo "[WARN] Existing Docker data volume will be reused: $volume_name"
-      echo "[WARN] Existing SQLite data and administrator credentials are retained. Run the uninstall action and confirm volume deletion before a clean reinstall."
-      DATA_VOLUME_REUSE_NOTIFIED="true"
+  mkdir -p "$data_dir"
+  if [ -n "$(find "$data_dir" -mindepth 1 -maxdepth 1 -print -quit 2>/dev/null)" ]; then
+    if [ "$ACTION" = "install" ] && [ "$DATA_DIRECTORY_REUSE_NOTIFIED" != "true" ]; then
+      echo "[WARN] Existing Docker data directory will be reused: $data_dir"
+      echo "[WARN] Existing SQLite data and administrator credentials are retained. Run the uninstall action and confirm data deletion before a clean reinstall."
+      DATA_DIRECTORY_REUSE_NOTIFIED="true"
     fi
-    return
+    return 0
   fi
-  docker volume create \
-    --label "com.docker.compose.project=${PROJECT_NAME}" \
-    --label "com.docker.compose.volume=forwardx-data" \
-    "$volume_name" >/dev/null
+  if docker volume inspect "$volume_name" >/dev/null 2>&1; then
+    echo "[INFO] Migrating legacy Docker data volume to: $data_dir"
+    docker run --rm \
+      -v "$volume_name:/source:ro" \
+      -v "$data_dir:/target" \
+      busybox sh -c 'cp -a /source/. /target/'
+    echo "[INFO] Legacy Docker data volume migrated: $volume_name"
+  fi
 }
 
 load_existing_env() {
@@ -660,17 +677,12 @@ services:
       POSTGRES_SSL: ${POSTGRES_SSL:-false}
       JWT_SECRET: ${JWT_SECRET:-change-me-to-a-random-string}
     volumes:
-      - forwardx-data:/data
+      - ./forwardx-data:/data
     logging:
       driver: local
       options:
         max-size: "${FORWARDX_LOG_MAX_SIZE:-20m}"
         max-file: "${FORWARDX_LOG_MAX_FILES:-3}"
-
-volumes:
-  forwardx-data:
-    name: ${COMPOSE_PROJECT_NAME:-forwardx}_forwardx-data
-    external: true
 EOF
 }
 
@@ -891,7 +903,7 @@ start_panel() {
     return 1
   fi
   remove_existing_panel_containers
-  ensure_data_volume
+  ensure_data_directory
   compose_cmd --env-file "$APP_DIR/.env" -p "$PROJECT_NAME" up -d --remove-orphans forwardx
   assert_running_panel_ready "$pulled_image_id" "$expected_version"
   cleanup_old_panel_images "$image"
@@ -908,7 +920,7 @@ install_panel() {
   image="$RESOLVED_IMAGE"
   write_compose_file
   write_env "$image"
-  write_database_config_to_volume
+  write_database_config_to_directory
   start_panel "$image" "$EXPECTED_PANEL_VERSION"
   echo "[DONE] ForwardX Docker panel started: http://SERVER_IP:$PORT"
   echo "[INFO] Image: $image"
@@ -935,7 +947,7 @@ uninstall_panel() {
   local volume_remove_failed="false"
   require_root
   load_existing_env
-  if ! confirm_yes "Confirm uninstall ForwardX Docker panel and delete deployment dir + Docker volume? [y/N] "; then
+  if ! confirm_yes "Confirm uninstall ForwardX Docker panel and delete deployment dir + data directory? [y/N] "; then
     echo "[INFO] Uninstall cancelled"
     return
   fi

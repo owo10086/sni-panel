@@ -3,7 +3,7 @@
 本页说明如何卸载面板和 Agent（当前版本：面板 2.3.266 / Agent 2.2.181）。卸载前请先确认是否需要备份数据库、配置和日志。
 
 ::: warning 先备份
-卸载可能删除服务、程序目录、容器或数据卷。生产环境建议先从面板导出备份，或手动备份数据库文件，再执行卸载。
+卸载可能删除服务、程序目录、容器或数据目录。生产环境建议先从面板导出备份，或手动备份数据库文件，再执行卸载。
 :::
 
 ## 卸载前确认
@@ -12,7 +12,7 @@
 
 - 是否还需要保留用户、主机、规则、套餐和订单数据。
 - 是否还需要保留 Agent 主机上的转发规则。
-- 是否使用 Docker 数据卷保存 SQLite 数据。
+- 是否使用 Docker 部署目录中的 `forwardx-data` 保存 SQLite 数据。
 - 是否使用外部 MySQL / PostgreSQL。
 
 如果只是暂时停用，不建议直接卸载，可以先停止服务：
@@ -36,25 +36,25 @@ systemctl stop forwardx-agent
 curl -fsSL https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/install-panel-docker.sh | bash -s -- uninstall
 ```
 
-卸载完成后，检查是否还有残留容器或数据卷：
+卸载完成后，检查是否还有残留容器或数据目录：
 
 ```bash
 docker ps -a | grep forwardx
-docker volume ls | grep forwardx
+ls -la /opt/forwardx-docker
 ```
 
-一键卸载会先读取面板容器实际挂载到 `/data` 的 Docker volume，并把待删除卷名保存在部署目录，再删除容器和对应数据卷，最后删除部署目录。若数据卷仍被其他容器占用或 Docker 拒绝删除，脚本会以错误状态退出、显示具体卷名并保留部署目录，下一次卸载仍能定位该数据卷；在数据卷真正删除前重新安装，旧管理员账号和密码仍会继续生效。
+一键卸载会删除容器和部署目录，部署目录中的 `forwardx-data` 也会一并删除。对于旧版安装遗留的 Docker 数据卷，脚本会先读取面板容器实际挂载到 `/data` 的卷名并保存，然后尝试删除对应数据卷。旧数据卷仍被其他容器占用或 Docker 拒绝删除时，脚本会显示具体卷名并保留部署目录，以便再次执行卸载。
 
-外部 MySQL/PostgreSQL 中的表和管理员账号不属于 Docker 数据卷，一键卸载不会删除它们。重新安装后若仍连接同一个外部数据库，应继续使用原管理员凭据；需要全新初始化时，应先备份，再改用确认为空的新数据库。
+外部 MySQL/PostgreSQL 中的表和管理员账号不在 `forwardx-data` 中，一键卸载不会删除它们。重新安装后若仍连接同一个外部数据库，应继续使用原管理员凭据；需要全新初始化时，应先备份，再改用确认为空的新数据库。
 
-只执行 `docker rm`、`docker compose down` 或删除 `/opt/forwardx-docker` 不属于完整卸载，这些操作默认都会保留数据卷。需要判断当前容器使用哪个卷时，可执行：
+只执行 `docker rm` 或 `docker compose down` 会保留 `/opt/forwardx-docker/forwardx-data`。需要判断当前容器的数据挂载来源时，可执行：
 
 ```bash
 docker inspect forwardx-panel --format '{{range .Mounts}}{{println .Type .Name .Source .Destination}}{{end}}'
 ```
 
-::: warning Docker 数据卷
-Docker 部署的数据通常保存在 Docker volume 中。删除容器不会自动删除数据卷；删除数据卷会永久清除 SQLite 数据库和持久化配置。确认已备份后，再手动删除对应数据卷。
+::: warning Docker 数据目录
+Docker 部署的数据保存在 `/opt/forwardx-docker/forwardx-data`。删除容器不会自动删除该目录；删除部署目录会永久清除 SQLite 数据库和持久化配置。执行删除操作前应确认备份完整。
 :::
 
 ## 卸载面板（本地 systemd）

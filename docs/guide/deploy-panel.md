@@ -18,13 +18,13 @@ http://服务器IP:9810
 
 第一次打开面板时不会直接进入后台，而是进入初始化向导。你需要先选择数据库，再创建管理员账号。
 
-如果安装脚本提示正在复用已有 Docker data volume，这不是全新安装：脚本会保留 `/data/database.json`，原 SQLite 数据库和管理员凭据也会继续生效，应使用原账号登录。SQLite 需要全新初始化时，先运行一键卸载并确认日志明确显示数据卷已删除；仅删除容器或执行 `docker compose down` 不会清空管理员数据。外部 MySQL/PostgreSQL 不会随 Docker 卸载而清空，重新连接同一个外部数据库时仍应使用原管理员账号；全新部署应改用已备份并确认为空的新数据库。
+如果安装脚本提示正在复用已有 Docker 数据目录，这不是全新安装：脚本会保留 `forwardx-data` 中的数据库配置、原 SQLite 数据库和管理员凭据，应使用原账号登录。旧版 Docker 数据卷会在安装或升级时自动复制到该目录。SQLite 需要全新初始化时，先运行一键卸载并确认数据目录已删除；仅删除容器或执行 `docker compose down` 不会清空管理员数据。外部 MySQL/PostgreSQL 不会随 Docker 卸载而清空，重新连接同一个外部数据库时仍应使用原管理员账号；全新部署应改用已备份并确认为空的新数据库。
 
 Docker 部署的特点：
 
 - 安装简单。
 - 升级方便。
-- 数据保存在 Docker 数据卷中。
+- 数据保存在部署目录的 `forwardx-data` 子目录中。
 - 默认使用官方镜像，不需要在服务器上编译项目。
 
 常用命令：
@@ -46,7 +46,7 @@ docker logs -n 300 forwardx-panel
 /opt/forwardx-docker
 ```
 
-如需卸载 Docker 面板，请先阅读 [卸载 ForwardX](./uninstall.md)，确认是否保留数据卷和数据库。
+如需卸载 Docker 面板，请先阅读 [卸载 ForwardX](./uninstall.md)，确认是否保留数据目录和数据库。
 
 ## 重置管理员密码
 
@@ -170,16 +170,12 @@ services:
       POSTGRES_SSL: ${POSTGRES_SSL:-false}
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
     volumes:
-      - forwardx-data:/data
+      - ./forwardx-data:/data
     logging:
       driver: local
       options:
         max-size: "${FORWARDX_LOG_MAX_SIZE:-20m}"
         max-file: "${FORWARDX_LOG_MAX_FILES:-3}"
-
-volumes:
-  forwardx-data:
-    driver: local
 EOF
 ```
 
@@ -209,7 +205,7 @@ docker image ls --no-trunc --format '{{.Repository}} {{.Tag}} {{.ID}}' ghcr.io/o
   | xargs -r docker image rm
 ```
 
-一键升级脚本会在新容器成功运行后自动删除同一仓库内不再使用的旧版 ForwardX 镜像；上面的手动命令也只清理 ForwardX 镜像，不会影响其他项目。升级不会删除 `forwardx-data` 数据卷，也不会改动 `.env`。如果你手动执行 `docker volume rm`，数据才会被删除。
+一键升级脚本会在新容器成功运行后自动删除同一仓库内不再使用的旧版 ForwardX 镜像；上面的手动命令也只清理 ForwardX 镜像，不会影响其他项目。升级会保留部署目录中的 `forwardx-data` 和 `.env`。旧版 Docker 数据卷会由一键脚本复制到 `forwardx-data`，确认新容器数据完整后，可以手动删除旧数据卷。
 
 ### 7. Docker 外部数据库地址怎么填
 

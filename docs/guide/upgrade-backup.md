@@ -22,7 +22,7 @@ mysqldump -h 127.0.0.1 -u forwardx -p forwardx > forwardx.sql
 pg_dump -h 127.0.0.1 -U forwardx forwardx > forwardx.sql
 ```
 
-Docker 部署建议备份 Docker 数据卷，或先导出数据库后再升级。
+Docker 部署建议备份部署目录中的 `forwardx-data`，或先导出数据库后再升级。
 
 ## 面板升级
 
@@ -42,7 +42,7 @@ curl -fsSL https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/ins
 curl -fsSL https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/install-panel-docker.sh | sudo env FORWARDX_TARGET_VERSION=vX.Y.Z bash -s -- upgrade
 ```
 
-升级会保留 `.env`、部署目录数据和 Docker 数据卷。如果 `latest` 镜像尚未构建到目标版本，脚本会提示稍后重试并保留旧容器运行。
+升级会保留 `.env` 和部署目录中的 `forwardx-data`。旧版 Docker 数据卷会在首次升级时复制到该目录。如果 `latest` 镜像尚未构建到目标版本，脚本会提示稍后重试并保留旧容器运行。
 
 升级完成后不要只看镜像拉取提示，可核对运行容器实际使用的镜像和程序版本：
 
@@ -135,7 +135,7 @@ docker compose run --rm --no-deps forwardx node dist/migrate-legacy.js --apply
 docker compose up -d forwardx
 ~~~
 
-使用旧版 docker-compose 命令的环境，将上面的 **docker compose** 替换为 **docker-compose**。脚本会读取容器原有的数据库配置和数据卷，支持 SQLite、MySQL、PostgreSQL。
+使用旧版 docker-compose 命令的环境，将上面的 **docker compose** 替换为 **docker-compose**。脚本会读取容器原有的数据库配置和 `forwardx-data` 目录，支持 SQLite、MySQL、PostgreSQL。
 
 ### systemd 面板
 

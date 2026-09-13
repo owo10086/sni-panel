@@ -37,7 +37,7 @@ test("Docker uninstall resolves the data volume from the live container before r
 });
 
 test("Docker uninstall remembers a non-default data volume across retries", () => {
-  const resolver = section("uninstall_volume_state_file() {", "ensure_data_volume() {");
+  const resolver = section("uninstall_volume_state_file() {", "ensure_data_directory() {");
 
   assert.match(resolver, /\.forwardx-uninstall-volumes/);
   assert.match(resolver, /awk 'NF' "\$state_file"/);
@@ -55,15 +55,24 @@ test("Docker uninstall reports persistent volume removal failures instead of cla
   assert.doesNotMatch(uninstall, /docker volume rm .*\|\| true/);
 });
 
-test("Docker install warns when existing administrator data will be reused", () => {
-  const ensureVolume = section("ensure_data_volume() {", "load_existing_env() {");
-  const readDatabaseConfig = section("read_database_config_json() {", "write_database_config_to_volume() {");
+test("Docker install reuses its data directory and migrates a legacy volume", () => {
+  const ensureDirectory = section("ensure_data_directory() {", "load_existing_env() {");
+  const readDatabaseConfig = section("read_database_config_json() {", "write_database_config_to_directory() {");
 
-  assert.match(ensureVolume, /Existing Docker data volume will be reused/);
-  assert.match(ensureVolume, /administrator credentials are retained/);
-  assert.match(readDatabaseConfig, /docker volume inspect .*data_volume_name/);
+  assert.match(ensureDirectory, /Existing Docker data directory will be reused/);
+  assert.match(ensureDirectory, /administrator credentials are retained/);
+  assert.match(ensureDirectory, /Migrating legacy Docker data volume/);
+  assert.match(ensureDirectory, /cp -a \/source\/\. \/target\//);
+  assert.match(readDatabaseConfig, /data_storage_exists/);
   assert.match(readDatabaseConfig, /preserving its database configuration and administrator data/);
   assertBefore(readDatabaseConfig, "preserving its database configuration", "Select database type");
+});
+
+test("Docker Compose mounts the deployment data directory", () => {
+  const compose = section("write_compose_file() {", "write_env() {");
+
+  assert.match(compose, /- \.\/forwardx-data:\/data/);
+  assert.doesNotMatch(compose, /^volumes:$/m);
 });
 
 test("Docker uninstall retains deployment metadata until every data volume is removed", () => {

@@ -62,7 +62,7 @@ curl -fsSL https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/ins
 curl -fsSL https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/install-panel-docker.sh | bash -s -- uninstall
 ```
 
-Docker 默认拉取 `ghcr.io/owo10086/sni-panel:latest`，数据库配置和 SQLite 数据保存在数据卷中。升级会保留 `.env`、数据卷和部署目录中的 `data/`；卸载脚本仅在用户确认后删除这些数据。
+Docker 默认拉取 `ghcr.io/owo10086/sni-panel:latest`，数据库配置和 SQLite 数据保存在部署目录的 `forwardx-data` 子目录中。升级会保留 `.env` 和 `forwardx-data`；卸载脚本仅在用户确认后删除这些数据。
 
 ### 本地 systemd
 
