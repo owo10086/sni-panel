@@ -57,6 +57,7 @@ ForwardX 用于管理多台 Linux 服务器上的转发资源、业务规则、�
 | [转发链](./port-chains.md) | 固定多跳转发配置 |
 | [入口组、出口组和转发组](./groups.md) | 资源复用与故障转移 |
 | [SNI 分流](./sni-routing.md) | 按域名共用入口端口、检查运行状态并排查连接问题 |
+| [Cloudflare 橙云接入](./cloudflare-cdn.md) | 不部署反向代理，用面板内置 HTTPS 承接 CDN 回源 |
 | [Telegram 和通知](./notifications.md) | 机器人、提醒、用户绑定和 AI 助手 |
 | [升级和备份](./upgrade-backup.md) | 面板升级、数据备份和更新记录 |
 | [插件开发](./plugins.md) | 插件清单、权限、Agent 动作和资源界面 |

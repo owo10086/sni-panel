@@ -431,6 +431,8 @@ journalctl -u forwardx-panel -n 100 --no-pager
 
 建议使用 Nginx、Caddy 或宝塔反向代理到面板端口。
 
+不希望额外部署反向代理时，面板也可以自己加载证书直接提供 HTTPS。配合 Cloudflare CDN 的完整步骤见 [Cloudflare 橙云接入](./cloudflare-cdn.md)。
+
 Nginx 示例：
 
 ```nginx

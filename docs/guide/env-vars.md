@@ -13,6 +13,8 @@ Docker 部署时，环境变量通常写在部署目录的 `.env` 文件中。�
 | 变量 | 默认值 | 说明 |
 | --- | --- | --- |
 | `PORT` | `9810` | 面板对外访问端口。本地部署时是面板监听端口；Docker Compose 中通常是宿主机端口，容器内仍监听 `3000`。 |
+| `FORWARDX_PUBLIC_PORT` / `FORWARDX_EXTERNAL_PORT` | 跟随 `PORT` | 面板在后台展示的对外端口。官方 `docker-compose.yml` 已把它固定为跟随 `PORT`，Docker 部署时在 `.env` 中单独设置它不会生效。 |
+| `FORWARDX_TRUST_PROXY` | `loopback` | 允许携带 `X-Forwarded-*` 的可信代理。可填 `loopback`、`false`、代理跳数，或逗号分隔的 IP / 网段列表。出于安全考虑，`true`、`all`、`*` 会被当作不信任处理。 |
 | `NODE_ENV` | `production` | 运行模式，正式部署保持 `production`。 |
 | `JWT_SECRET` | 自动生成或示例值 | 登录签名密钥。生产环境建议使用 32 位以上随机字符串，并长期保持不变。 |
 | `FORWARDX_JWT_SECRET_PATH` | 空 | 未配置 `JWT_SECRET` 时，面板保存自动生成登录密钥的路径。 |
@@ -21,6 +23,12 @@ Docker 部署时，环境变量通常写在部署目录的 `.env` 文件中。�
 | `FORWARDX_PANEL_TIME_SYNC` | `true` | 启动并定期校准旧版 Agent/FXP 加密协议使用的面板时钟；不会修改宿主机或 Docker 的系统时间。 |
 | `FORWARDX_PANEL_TIME_SOURCES` | 内置多个 HTTPS 来源 | 可选，使用逗号分隔的可信 HTTPS 地址覆盖默认校时来源。 |
 | `FORWARDX_PANEL_TIME_ALLOW_SINGLE_SOURCE` | `false` | 是否允许仅一个 HTTPS 来源可用时校准；单源无法交叉验证，仅建议在可信内网时间服务场景开启。 |
+
+::: tip 反向代理或 CDN 后面要配置 FORWARDX_TRUST_PROXY
+默认只信任回环地址。面板前面有 Nginx、宝塔或 Cloudflare 时，请把 `FORWARDX_TRUST_PROXY` 设为这些代理的 IP 或网段，否则登录限流、验证码阈值和登录日志会按代理地址计算，不同用户会互相影响。官方 `docker-compose.yml` 默认没有这一项，Docker 部署需要先在 `environment` 中把它传入容器。具体做法见 [Cloudflare 橙云接入](./cloudflare-cdn.md)。
+
+面板 SSL 另有 `FORWARDX_PANEL_SSL_ENABLED`、`FORWARDX_PANEL_SSL_CERT_PATH` 和 `FORWARDX_PANEL_SSL_KEY_PATH` 三个变量，只作为后台未保存过 SSL 配置时的初始值使用。日常请在「系统设置 -> 系统信息 -> 面板 SSL 访问」中配置。
+:::
 
 ::: tip JWT_SECRET 为什么重要
 `JWT_SECRET` 变化后，已登录用户会需要重新登录。建议 Docker 首次部署时就在 `.env` 中固定一个随机值，后续升级不要更换。

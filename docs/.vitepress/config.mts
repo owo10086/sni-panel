@@ -35,6 +35,12 @@ export default defineConfig({
         ],
       },
       {
+        text: "域名和 CDN",
+        items: [
+          { text: "Cloudflare 橙云接入", link: "/guide/cloudflare-cdn" },
+        ],
+      },
+      {
         text: "基础功能",
         items: [
           { text: "安装 Agent", link: "/guide/agent" },
