@@ -26,24 +26,33 @@ export function receivePortOccupancy(hostId: number, input: {
     return { requestPortOccupancy: false, verified: false };
   }
   const signature = String(input.signature || "");
-  if (!Number.isSafeInteger(hostId) || hostId <= 0 || !/^[a-f0-9]{1,128}$/i.test(signature)) {
+  if (!Number.isSafeInteger(hostId) || hostId <= 0) {
     return { requestPortOccupancy: false, verified: false };
   }
   const cached = snapshots.get(hostId);
-  if (input.collected !== true) {
+  const markUnverified = () => {
     if (cached) updateBoundedMapValueInPlace(snapshots, hostId, { ...cached, failed: true }, MAX_HOSTS);
+  };
+  if (!/^[a-f0-9]{1,128}$/i.test(signature)) {
+    markUnverified();
+    return { requestPortOccupancy: false, verified: false };
+  }
+  if (input.collected !== true) {
+    markUnverified();
     return { requestPortOccupancy: false, verified: false };
   }
   if (input.snapshot != null) {
     const raw = input.snapshot;
     if (!raw || !Array.isArray(raw.listeners) || raw.listeners.length > MAX_LISTENERS ||
         Buffer.byteLength(JSON.stringify(raw)) > 33 * 1024 || typeof raw.complete !== "boolean") {
+      markUnverified();
       return { requestPortOccupancy: true, verified: false };
     }
     const collectedAt = Number(raw.collectedAt);
     const coveredThrough = Number(raw.coveredThrough || 0);
     if (!Number.isFinite(collectedAt) || collectedAt <= 0 || collectedAt > now + FUTURE_SKEW_MS ||
         !Number.isInteger(coveredThrough) || coveredThrough < 0 || coveredThrough > 65535) {
+      markUnverified();
       return { requestPortOccupancy: true, verified: false };
     }
     const listeners: PortListener[] = [];
@@ -54,6 +63,7 @@ export function receivePortOccupancy(hostId: number, input: {
           (item?.protocol !== "tcp" && item?.protocol !== "udp") || !address || address.length > 128 ||
           String(item?.process || "").length > 128 ||
           (item?.managedRuntime && !["forwardx-runtime", "forwardx-tunnel-runtime", "forwardx-nginx", "forwardx-fxp", "forwardx-realm", "forwardx-socat"].includes(item.managedRuntime))) {
+        markUnverified();
         return { requestPortOccupancy: true, verified: false };
       }
       listeners.push({ port, protocol: item.protocol, address,
@@ -68,7 +78,10 @@ export function receivePortOccupancy(hostId: number, input: {
     }, MAX_HOSTS);
     return { requestPortOccupancy: false, verified: true };
   }
-  if (!cached || cached.signature !== signature) return { requestPortOccupancy: true, verified: false };
+  if (!cached || cached.signature !== signature) {
+    markUnverified();
+    return { requestPortOccupancy: true, verified: false };
+  }
   updateBoundedMapValueInPlace(snapshots, hostId, {
     ...cached, failed: false, snapshot: { ...cached.snapshot, verifiedAt: now },
   }, MAX_HOSTS);

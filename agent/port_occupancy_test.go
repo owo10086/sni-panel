@@ -42,6 +42,24 @@ func TestPortOccupancySnapshotMarksTruncatedPortsUnknown(t *testing.T) {
 	}
 }
 
+func TestPortOccupancySnapshotPrioritizesRuleRangeOverLowPortNoise(t *testing.T) {
+	listen := &runtimeListenSnapshot{tcpPorts: map[int][]string{}, udpPorts: map[int][]string{}, usable: true}
+	for port := 1; port <= 300; port++ {
+		listen.add("tcp", port, "tcp LISTEN 0 128 0.0.0.0:"+strconv.Itoa(port)+" 0.0.0.0:*")
+	}
+	listen.add("tcp", 11127, "tcp LISTEN 0 128 127.0.0.1:11127 0.0.0.0:* users:((\"code\",pid=518917,fd=8))")
+	snapshot := portOccupancyFromListen(listen)
+	found := false
+	for _, listener := range snapshot.Listeners {
+		if listener.Port == 11127 {
+			found = true
+		}
+	}
+	if !found || snapshot.Complete || snapshot.CoveredThrough >= 300 {
+		t.Fatalf("common rule port or truncation coverage was lost: %+v", snapshot)
+	}
+}
+
 func TestPortOccupancySnapshotDecodesProcNetAddresses(t *testing.T) {
 	listen := &runtimeListenSnapshot{tcpPorts: map[int][]string{}, udpPorts: map[int][]string{}, usable: true}
 	listen.add("tcp", 11127, "/proc/net/tcp:0100007F:2B77")
@@ -62,6 +80,16 @@ func TestPortBindFailureMessageNamesKnownOwner(t *testing.T) {
 	snapshot.tcpPorts[11127] = []string{"tcp LISTEN 0 128 127.0.0.1:11127 0.0.0.0:*"}
 	if message := portBindFailureMessage(snapshot, 11127, "tcp"); strings.Contains(message, "code") || !strings.Contains(message, "11127") {
 		t.Fatalf("bind failure invented owner: %s", message)
+	}
+	for port := 1; port <= 300; port++ {
+		snapshot.add("tcp", port, "tcp LISTEN 0 128 0.0.0.0:"+strconv.Itoa(port)+" 0.0.0.0:*")
+	}
+	snapshot.add("tcp", 55000, "tcp LISTEN 0 128 0.0.0.0:55000 0.0.0.0:* users:((\"busy\",pid=88,fd=1))")
+	if got := portBindFailureMessage(snapshot, 55000, "tcp"); !strings.Contains(got, "busy") {
+		t.Fatalf("high port bind failure lost its owner: %s", got)
+	}
+	if got := bindFailureMessage("listen tcp :55001: bind: address already in use", 55001, "tcp", nil); got != "port 55001 occupied" {
+		t.Fatalf("bind failure without a snapshot lost its port: %s", got)
 	}
 }
 

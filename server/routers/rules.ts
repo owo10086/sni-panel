@@ -145,9 +145,20 @@ async function withRuleResourceAccess(
     .map((rule) => Number(rule.forwardGroupId || 0)).filter((id) => id > 0)));
   const groupHostIds = new Map(await Promise.all(groupIds.map(async (id) =>
     [id, await db.getForwardGroupRuleEntryHostIds(id)] as const)));
+  const tunnelIds = Array.from(new Set(ruleRows
+    .filter((rule) => rule.isEnabled && !rule.forwardGroupId)
+    .map((rule) => Number(rule.tunnelId || 0)).filter((id) => id > 0)));
+  const tunnelEntryHostIds = new Map(await Promise.all(tunnelIds.map(async (id) => {
+    const tunnel = await db.getTunnelById(id);
+    const entryGroupId = Number((tunnel as any)?.entryGroupId || 0);
+    return [id, entryGroupId ? await db.getForwardGroupRuleEntryHostIds(entryGroupId) : []] as const;
+  })));
+  const entryHostsForRule = (rule: ForwardRule) =>
+    groupHostIds.get(Number(rule.forwardGroupId || 0)) ||
+    tunnelEntryHostIds.get(Number(rule.tunnelId || 0)) || [Number(rule.hostId)];
   const occupancyHostIds = Array.from(new Set(ruleRows
     .filter((rule) => rule.isEnabled)
-    .flatMap((rule) => groupHostIds.get(Number(rule.forwardGroupId || 0)) || [Number(rule.hostId)])
+    .flatMap(entryHostsForRule)
     .filter((id) => id > 0)));
   const onlineHosts = new Map(await Promise.all(occupancyHostIds.map(async (id) =>
     [id, isHostStatusOnline(await db.getHostById(id))] as const)));
@@ -157,8 +168,7 @@ async function withRuleResourceAccess(
       ? entry
       : { status: "unverified" as const, message: "主机端口信息未经核实", hostId: entry.hostId });
     if (rule.isEnabled) {
-      const hosts = groupHostIds.get(Number(rule.forwardGroupId || 0)) || [Number(rule.hostId)];
-      for (const hostId of hosts) {
+      for (const hostId of entryHostsForRule(rule)) {
         if (warnings.some((entry) => entry.hostId === hostId)) continue;
         const status = inspectPortOccupancy(onlineHosts.get(hostId) ? getPortOccupancy(hostId) : null, Number(rule.sourcePort),
           rule.protocol === "udp" ? "udp" : rule.protocol === "tcp" ? "tcp" : "both");

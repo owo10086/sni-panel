@@ -94,6 +94,29 @@ func procNetListenAddress(line string) string {
 	return net.IP(bytes).String()
 }
 
+func ssListenerProcess(line string) string {
+	if index := strings.Index(line, "users:((\""); index >= 0 {
+		start := index + len("users:((\"")
+		if end := strings.IndexByte(line[start:], '"'); end >= 0 {
+			return line[start : start+end]
+		}
+	}
+	return ""
+}
+
+func listenerPriority(listener portOccupancyListener) int {
+	if listener.ManagedRuntime != "" {
+		return 0
+	}
+	if listener.Port == 80 || listener.Port == 443 || listener.Port >= 10000 && listener.Port < 49152 {
+		return 1
+	}
+	if listener.Port < 49152 {
+		return 2
+	}
+	return 3
+}
+
 type portOccupancyPayload struct {
 	Listeners      []portOccupancyListener `json:"listeners"`
 	CollectedAt    int64                   `json:"collectedAt"`
@@ -125,13 +148,7 @@ func portOccupancyFromListen(snapshot *runtimeListenSnapshot) portOccupancyPaylo
 				} else {
 					result.Complete = false
 				}
-				process := ""
-				if index := strings.Index(line, "users:((\""); index >= 0 {
-					start := index + len("users:((\"")
-					if end := strings.IndexByte(line[start:], '"'); end >= 0 {
-						process = line[start : start+end]
-					}
-				}
+				process := ssListenerProcess(line)
 				if len(address) > 128 {
 					address = address[:128]
 				}
@@ -147,6 +164,9 @@ func portOccupancyFromListen(snapshot *runtimeListenSnapshot) portOccupancyPaylo
 	}
 	sort.Slice(result.Listeners, func(i, j int) bool {
 		a, b := result.Listeners[i], result.Listeners[j]
+		if listenerPriority(a) != listenerPriority(b) {
+			return listenerPriority(a) < listenerPriority(b)
+		}
 		if a.Port != b.Port {
 			return a.Port < b.Port
 		}
@@ -172,10 +192,27 @@ func portOccupancyFromListen(snapshot *runtimeListenSnapshot) portOccupancyPaylo
 	if limit < len(all) {
 		result.Complete = false
 		result.Listeners = all[:limit]
-		if limit > 0 {
-			result.CoveredThrough = all[limit-1].Port - 1
+		firstOmittedPort := all[limit].Port
+		for _, listener := range all[limit+1:] {
+			if listener.Port < firstOmittedPort {
+				firstOmittedPort = listener.Port
+			}
 		}
+		result.CoveredThrough = firstOmittedPort - 1
 	}
+	sort.Slice(result.Listeners, func(i, j int) bool {
+		a, b := result.Listeners[i], result.Listeners[j]
+		if a.Port != b.Port {
+			return a.Port < b.Port
+		}
+		if a.Protocol != b.Protocol {
+			return a.Protocol < b.Protocol
+		}
+		if a.Address != b.Address {
+			return a.Address < b.Address
+		}
+		return a.Process < b.Process
+	})
 	return result
 }
 
@@ -194,14 +231,34 @@ func portBindFailureMessage(snapshot *runtimeListenSnapshot, port int, protocol 
 	if snapshot == nil || !snapshot.usable || port <= 0 {
 		return ""
 	}
-	for _, listener := range portOccupancyFromListen(snapshot).Listeners {
-		if listener.Port != port || protocol != "both" && listener.Protocol != protocol {
+	for _, entries := range []struct {
+		name  string
+		lines map[int][]string
+	}{{"tcp", snapshot.tcpPorts}, {"udp", snapshot.udpPorts}} {
+		if protocol != "both" && protocol != entries.name {
 			continue
 		}
-		if listener.Process != "" {
-			return "port " + strconv.Itoa(port) + " occupied by " + listener.Process
+		for _, line := range entries.lines[port] {
+			if process := ssListenerProcess(line); process != "" {
+				return "port " + strconv.Itoa(port) + " occupied by " + process
+			}
+			return "port " + strconv.Itoa(port) + " occupied"
 		}
-		return "port " + strconv.Itoa(port) + " occupied"
 	}
 	return ""
+}
+
+func bindFailureMessage(message string, port int, protocol string, snapshot *runtimeListenSnapshot) string {
+	lower := strings.ToLower(message)
+	bindFailed := strings.Contains(lower, "address already in use") || strings.Contains(lower, "listen port still busy")
+	if !bindFailed && message != "" {
+		return message
+	}
+	if occupied := portBindFailureMessage(snapshot, port, protocol); occupied != "" {
+		return occupied
+	}
+	if bindFailed && port > 0 {
+		return "port " + strconv.Itoa(port) + " occupied"
+	}
+	return message
 }

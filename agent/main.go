@@ -5505,10 +5505,9 @@ func reportActionStatus(cfg Config, a action, running bool, message string) {
 	if !running && a.Op == "apply" && a.RuleID > 0 && a.StatusType != "runtime" &&
 		a.ForwardType != "iptables" && a.ForwardType != "nftables" &&
 		(message == "" || strings.Contains(strings.ToLower(message), "address already in use") ||
-		strings.Contains(strings.ToLower(message), "listen port still busy")) {
-		if occupied := portBindFailureMessage(readLocalRuntimeReadinessCached().listenSnapshot, a.SourcePort, normalizeRuntimeProtocol(a.Protocol)); occupied != "" {
-			message = occupied
-		}
+			strings.Contains(strings.ToLower(message), "listen port still busy")) {
+		message = bindFailureMessage(message, a.SourcePort, normalizeRuntimeProtocol(a.Protocol),
+			readLocalRuntimeReadinessCached().listenSnapshot)
 	}
 	enqueueActionStatusReport(cfg, a, running, message)
 }

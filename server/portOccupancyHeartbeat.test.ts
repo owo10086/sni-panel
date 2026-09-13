@@ -75,6 +75,8 @@ test("agent heartbeat caches verified listeners and requests a changed snapshot"
       assert.ok(getPortOccupancy(1).verifiedAt >= verifiedAt);
       const missing = await post({ forceReconcile: false, portOccupancySignature: "abc2", portOccupancyCollected: true });
       assert.equal(missing.requestPortOccupancy, true);
+      assert.equal(getPortOccupancy(1), null);
+      assert.equal((await caller.checkPort({ hostId: 1, sourcePort: 11127, protocol: "tcp", excludeRuleId: 601 })).occupancy, "unverified");
       const changed = await post({ forceReconcile: false, portOccupancySignature: "abc2", portOccupancyCollected: true,
         portOccupancy: { listeners: [{ port: 11127, protocol: "tcp", address: "127.0.0.1", process: "new-owner" }],
           collectedAt: Date.now(), complete: true } });

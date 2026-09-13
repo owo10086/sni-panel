@@ -56,10 +56,11 @@ export function rulePortOwnerChanged(ruleId: number, input: PortCheck) {
   return previous !== signature && signature !== "";
 }
 
-function managedProcessMatches(listener: PortListener, type: string) {
+export function managedListenerMatchesForwardType(listener: PortListener, type: string) {
   if (type === "gost") return listener.managedRuntime === "forwardx-runtime" ||
     listener.managedRuntime === "forwardx-tunnel-runtime" || listener.managedRuntime === "forwardx-fxp";
   if (type === "nginx") return listener.managedRuntime === "forwardx-nginx" || listener.managedRuntime === "forwardx-fxp";
+  if (type === "realm" || type === "socat") return listener.managedRuntime === `forwardx-${type}`;
   return listener.managedRuntime === "forwardx-fxp";
 }
 
@@ -85,7 +86,7 @@ export async function evaluateRulePortOccupancy(input: PortCheck) {
       : [];
     const result = inspectPortOccupancy(getPortOccupancy(hostId), input.port, input.protocol,
       (listener) => input.forwardType !== "iptables" && input.forwardType !== "nftables" &&
-        existingRules.length > 0 && managedProcessMatches(listener, input.forwardType));
+        existingRules.length > 0 && managedListenerMatchesForwardType(listener, input.forwardType));
     if (result.status === "unverified") {
       unverifiedHosts.push(hostId);
     } else if (result.status === "occupied") {

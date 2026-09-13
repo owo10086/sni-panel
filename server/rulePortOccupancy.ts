@@ -2,7 +2,7 @@ import * as db from "./db";
 import { getPortOccupancy, inspectPortOccupancy, type PortListener } from "./portOccupancy";
 import { notifyForwardRuleOccupancy, portOccupancyNotificationTransition } from "./forwardRuleErrorNotifier";
 import { updateBoundedMapValueInPlace } from "./boundedCache";
-import { seedRulePortOwner } from "./rulePortValidation";
+import { managedListenerMatchesForwardType, seedRulePortOwner } from "./rulePortValidation";
 
 export type RulePortWarning = { status: "occupied" | "unverified"; message: string; hostId: number; collectedAt?: number; verifiedAt?: number };
 const warnings = new Map<string, { admin: RulePortWarning; user: RulePortWarning }>();
@@ -22,9 +22,9 @@ export async function refreshRulePortWarningsForHost(hostId: number) {
   const activeKeys = new Set<string>();
   const groupHosts = new Map<number, number[]>();
   for (const rule of rules) {
-    if (![true, 1, "1"].includes(rule.isEnabled) || Number(rule.sourcePort) <= 0 || Number(rule.hostId) !== hostId) continue;
+    if (![true, 1, "1"].includes(rule.isEnabled) || Number(rule.sourcePort) <= 0) continue;
     const result = inspectPortOccupancy(snapshot, Number(rule.sourcePort), rule.protocol || "both",
-      (listener) => !!listener.managedRuntime);
+      (listener) => !!rule.isRunning && managedListenerMatchesForwardType(listener, rule.forwardType));
     const ruleId = Number(rule.forwardGroupRuleId || rule.id);
     const key = `${ruleId}:${hostId}:${rule.sourcePort}:${rule.protocol}`;
     activeKeys.add(key);

@@ -178,6 +178,12 @@ test("forward-group port checks cover every entry and exclude the edited templat
       } });
       await refreshRulePortWarningsForHost(1);
       assert.deepEqual((await caller.getById({ id: 501 })).portOccupancyWarnings, []);
+      assert.match((await caller.getById({ id: 502 })).portOccupancyWarnings[0].message, /realm/);
+      receivePortOccupancy(1, { signature: "abc124b", collected: true, snapshot: {
+        listeners: [{ port: 17506, protocol: "tcp", address: "0.0.0.0", process: "gost", managedRuntime: "forwardx-runtime" }],
+        collectedAt: Date.now(), complete: true,
+      } });
+      await refreshRulePortWarningsForHost(1);
       assert.deepEqual((await caller.getById({ id: 502 })).portOccupancyWarnings, []);
       await runtime.executeRaw('UPDATE "hosts" SET "portRangeStart" = ?, "portRangeEnd" = ? WHERE "id" = ?', [17000, 18000, 1]);
       receivePortOccupancy(1, { signature: "abc125", collected: true, snapshot: {
@@ -271,6 +277,24 @@ test("forward-group port checks cover every entry and exclude the edited templat
       await assert.rejects(() => caller.update({ id: 100, sourcePort: 17508 }), /确认.*占用/);
       await caller.update({ id: 100, sourcePort: 17508, confirmPortOccupancy: true });
       assert.match((await caller.getById({ id: 100 })).portOccupancyWarnings[0].message, /group-owner/);
+      await runtime.executeRaw('UPDATE "hosts" SET "isOnline" = ? WHERE "id" = ?', [1, 4]);
+      await insert("forward_groups", ["id", "name", "groupType", "groupMode", "domain", "targetIp", "userId", "isEnabled"],
+        [15, "tunnel-entry-group", "host", "entry", "", "0.0.0.0", 1, 1]);
+      await insert("forward_group_members", ["id", "groupId", "memberType", "hostId", "priority", "isEnabled"], [151, 15, "host", 1, 0, 1]);
+      await insert("forward_group_members", ["id", "groupId", "memberType", "hostId", "priority", "isEnabled"], [152, 15, "host", 4, 1, 1]);
+      await insert("tunnels", ["id", "name", "entryHostId", "exitHostId", "entryGroupId", "listenPort", "userId"],
+        [202, "multi-entry-tunnel", 1, 2, 15, 17777, 1]);
+      await insert("forward_rules", ["id", "hostId", "tunnelId", "name", "forwardType", "protocol", "sourcePort", "targetIp", "targetPort", "userId", "isEnabled", "isRunning"],
+        [9000, 1, 202, "entry-group-rule", "gost", "tcp", 17511, "203.0.113.5", 80, 1, 1, 1]);
+      receivePortOccupancy(4, { signature: "abc132", collected: true, snapshot: {
+        listeners: [{ port: 17511, protocol: "tcp", address: "127.0.0.1", process: "remote-owner" }],
+        collectedAt: Date.now(), complete: true,
+      } });
+      await refreshRulePortWarningsForHost(4);
+      const entryGroupRule = await caller.getById({ id: 9000 });
+      assert.equal(entryGroupRule.isRunning, true);
+      assert.equal(entryGroupRule.portOccupancyWarnings[0].hostId, 4);
+      assert.match(entryGroupRule.portOccupancyWarnings[0].message, /remote-owner/);
     } finally {
       await runtime.closeDatabase();
     }
