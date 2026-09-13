@@ -17,11 +17,12 @@ const maxPortOccupancyListeners = 256
 const maxPortOccupancyBytes = 32 * 1024
 
 type portOccupancyListener struct {
-	Port           int    `json:"port"`
-	Protocol       string `json:"protocol"`
-	Address        string `json:"address"`
-	Process        string `json:"process,omitempty"`
-	ManagedRuntime string `json:"managedRuntime,omitempty"`
+	Port             int    `json:"port"`
+	Protocol         string `json:"protocol"`
+	Address          string `json:"address"`
+	Process          string `json:"process,omitempty"`
+	ManagedRuntime   string `json:"managedRuntime,omitempty"`
+	ManagedRuntimeID string `json:"managedRuntimeId,omitempty"`
 }
 
 var ssProcessIDPattern = regexp.MustCompile(`\bpid=([0-9]+)\b`)
@@ -72,6 +73,28 @@ func managedRuntimeForListener(line string, process string) string {
 		return ""
 	}
 	return service
+}
+
+func managedRuntimeIDForListener(line string, process string) string {
+	if process != "forwardx-fxp" {
+		return ""
+	}
+	match := ssProcessIDPattern.FindStringSubmatch(line)
+	if len(match) < 2 {
+		return ""
+	}
+	pid, err := strconv.Atoi(match[1])
+	if err != nil || pid <= 0 {
+		return ""
+	}
+	fxpMu.Lock()
+	defer fxpMu.Unlock()
+	for id, tracked := range fxpServers {
+		if tracked != nil && tracked.cmd != nil && tracked.cmd.Process != nil && tracked.cmd.Process.Pid == pid {
+			return id
+		}
+	}
+	return ""
 }
 
 func procNetListenAddress(line string) string {
@@ -155,9 +178,15 @@ func portOccupancyFromListen(snapshot *runtimeListenSnapshot) portOccupancyPaylo
 				if len(process) > 128 {
 					process = process[:128]
 				}
+				managedRuntime := managedRuntimeForListener(line, process)
+				managedRuntimeID := ""
+				if managedRuntime == "forwardx-fxp" {
+					managedRuntimeID = managedRuntimeIDForListener(line, process)
+				}
 				result.Listeners = append(result.Listeners, portOccupancyListener{
 					Port: port, Protocol: protocol, Address: address, Process: process,
-					ManagedRuntime: managedRuntimeForListener(line, process),
+					ManagedRuntime:   managedRuntime,
+					ManagedRuntimeID: managedRuntimeID,
 				})
 			}
 		}

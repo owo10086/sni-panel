@@ -1,6 +1,8 @@
 package main
 
 import (
+	"os"
+	"os/exec"
 	"strconv"
 	"strings"
 	"testing"
@@ -28,6 +30,32 @@ func TestPortOccupancySnapshotPreservesListenerDetails(t *testing.T) {
 	copy.CollectedAt++
 	if portOccupancySignature(copy) != portOccupancySignature(snapshot) {
 		t.Fatal("collection time changed the listener content signature")
+	}
+}
+
+func TestPortOccupancyTracksFXPInstance(t *testing.T) {
+	fxpMu.Lock()
+	previous := fxpServers
+	fxpServers = map[string]*fxpProcess{
+		"entry-group:v1:42": {cmd: &exec.Cmd{Process: &os.Process{Pid: 919191}}},
+	}
+	fxpMu.Unlock()
+	t.Cleanup(func() {
+		fxpMu.Lock()
+		fxpServers = previous
+		fxpMu.Unlock()
+	})
+	listen := &runtimeListenSnapshot{tcpPorts: map[int][]string{}, udpPorts: map[int][]string{}, usable: true}
+	listen.parseSSListenOutput("tcp LISTEN 0 128 0.0.0.0:11127 0.0.0.0:* users:((\"forwardx-fxp\",pid=919191,fd=8))")
+	snapshot := portOccupancyFromListen(listen)
+	if len(snapshot.Listeners) != 1 || snapshot.Listeners[0].ManagedRuntimeID != "entry-group:v1:42" {
+		t.Fatalf("FXP listener instance was not identified: %+v", snapshot.Listeners)
+	}
+	other := snapshot
+	other.Listeners = append([]portOccupancyListener(nil), snapshot.Listeners...)
+	other.Listeners[0].ManagedRuntimeID = "entry-group:v1:43"
+	if portOccupancySignature(snapshot) == portOccupancySignature(other) {
+		t.Fatal("FXP instance change did not update the snapshot signature")
 	}
 }
 

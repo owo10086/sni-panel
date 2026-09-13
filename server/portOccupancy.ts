@@ -1,6 +1,6 @@
 import { pruneMapEntries, updateBoundedMapValueInPlace } from "./boundedCache";
 
-export type PortListener = { port: number; protocol: "tcp" | "udp"; address: string; process?: string; managedRuntime?: string };
+export type PortListener = { port: number; protocol: "tcp" | "udp"; address: string; process?: string; managedRuntime?: string; managedRuntimeId?: string };
 export type PortOccupancySnapshot = {
   listeners: PortListener[];
   collectedAt: number;
@@ -62,6 +62,8 @@ export function receivePortOccupancy(hostId: number, input: {
       if (!Number.isInteger(port) || port < 1 || port > 65535 ||
           (item?.protocol !== "tcp" && item?.protocol !== "udp") || !address || address.length > 128 ||
           String(item?.process || "").length > 128 ||
+          (item?.managedRuntimeId && (item.managedRuntime !== "forwardx-fxp" ||
+            typeof item.managedRuntimeId !== "string" || !/^[a-z0-9:-]{1,128}$/.test(item.managedRuntimeId))) ||
           (item?.managedRuntime && !["forwardx-runtime", "forwardx-tunnel-runtime", "forwardx-nginx", "forwardx-fxp", "forwardx-realm", "forwardx-socat"].includes(item.managedRuntime))) {
         markUnverified();
         return { requestPortOccupancy: true, verified: false };
@@ -69,6 +71,7 @@ export function receivePortOccupancy(hostId: number, input: {
       listeners.push({ port, protocol: item.protocol, address,
         ...(item.process ? { process: String(item.process) } : {}),
         ...(item.managedRuntime ? { managedRuntime: item.managedRuntime } : {}),
+        ...(item.managedRuntimeId ? { managedRuntimeId: item.managedRuntimeId } : {}),
       });
     }
     updateBoundedMapValueInPlace(snapshots, hostId, {

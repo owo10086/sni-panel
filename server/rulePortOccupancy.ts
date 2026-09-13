@@ -2,7 +2,7 @@ import * as db from "./db";
 import { getPortOccupancy, inspectPortOccupancy, type PortListener } from "./portOccupancy";
 import { notifyForwardRuleOccupancy, portOccupancyNotificationTransition } from "./forwardRuleErrorNotifier";
 import { updateBoundedMapValueInPlace } from "./boundedCache";
-import { managedListenerMatchesForwardType, seedRulePortOwner } from "./rulePortValidation";
+import { managedListenerMatchesRule, seedRulePortOwner } from "./rulePortValidation";
 
 export type RulePortWarning = { status: "occupied" | "unverified"; message: string; hostId: number; collectedAt?: number; verifiedAt?: number };
 const warnings = new Map<string, { admin: RulePortWarning; user: RulePortWarning }>();
@@ -24,7 +24,7 @@ export async function refreshRulePortWarningsForHost(hostId: number) {
   for (const rule of rules) {
     if (![true, 1, "1"].includes(rule.isEnabled) || Number(rule.sourcePort) <= 0) continue;
     const result = inspectPortOccupancy(snapshot, Number(rule.sourcePort), rule.protocol || "both",
-      (listener) => !!rule.isRunning && managedListenerMatchesForwardType(listener, rule.forwardType));
+      (listener) => managedListenerMatchesRule(listener, rule));
     const ruleId = Number(rule.forwardGroupRuleId || rule.id);
     const key = `${ruleId}:${hostId}:${rule.sourcePort}:${rule.protocol}`;
     activeKeys.add(key);
@@ -54,7 +54,7 @@ export async function refreshRulePortWarningsForHost(hostId: number) {
     }
     if (![true, 1, "1"].includes(rule.telegramErrorNotifyEnabled)) continue;
     const owner = result.status === "occupied"
-      ? result.listeners.map((listener: PortListener) => `${listener.protocol}:${listener.address}:${listener.port}:${listener.process || ""}`).sort().join("|")
+      ? result.listeners.map((listener: PortListener) => `${listener.protocol}:${listener.address}:${listener.port}:${listener.process || ""}:${listener.managedRuntimeId || ""}`).sort().join("|")
       : "";
     const change = portOccupancyNotificationTransition(key, owner, true);
     if (change) {

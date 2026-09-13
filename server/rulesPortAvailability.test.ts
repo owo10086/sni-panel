@@ -19,6 +19,7 @@ test("forward-group port checks cover every entry and exclude the edited templat
     const { rulesRouter } = await import(moduleUrl("server/routers/rules.ts"));
     const { receivePortOccupancy } = await import(moduleUrl("server/portOccupancy.ts"));
     const { refreshRulePortWarningsForHost } = await import(moduleUrl("server/rulePortOccupancy.ts"));
+    const { managedListenerMatchesRule } = await import(moduleUrl("server/rulePortValidation.ts"));
     const { recordRulePortFailure, getRulePortFailure } = await import(moduleUrl("server/rulePortFailure.ts"));
     const q = (name) => '"' + name + '"';
     const insert = async (table, columns, values) => {
@@ -185,6 +186,31 @@ test("forward-group port checks cover every entry and exclude the edited templat
       } });
       await refreshRulePortWarningsForHost(1);
       assert.deepEqual((await caller.getById({ id: 502 })).portOccupancyWarnings, []);
+      const fxpListener = { port: 17506, protocol: "tcp", address: "0.0.0.0", process: "forwardx-fxp",
+        managedRuntime: "forwardx-fxp", managedRuntimeId: "entry-group:v1:200" };
+      assert.equal(managedListenerMatchesRule(fxpListener, { id: 501, forwardType: "iptables", sourcePort: 17506, isRunning: true }), false);
+      assert.equal(managedListenerMatchesRule(fxpListener, { id: 502, forwardType: "gost", sourcePort: 17506, isRunning: true, tunnelId: 201 }), false);
+      assert.equal(managedListenerMatchesRule(fxpListener, { id: 502, forwardType: "gost", sourcePort: 17506, isRunning: true, tunnelId: 200 }), true);
+      assert.equal(managedListenerMatchesRule(fxpListener, { id: 502, forwardType: "gost", sourcePort: 17506, isRunning: false, tunnelId: 200 }), false);
+      assert.equal(managedListenerMatchesRule({ ...fxpListener, managedRuntime: "forwardx-runtime", managedRuntimeId: undefined },
+        { id: 502, forwardType: "gost", sourcePort: 17506, isRunning: false, sni: "a.example.com" }, true), true);
+      assert.equal(managedListenerMatchesRule({ ...fxpListener, managedRuntime: "forwardx-runtime", managedRuntimeId: undefined },
+        { id: 502, forwardType: "gost", sourcePort: 17506, isRunning: false, sni: "a.example.com" }), false);
+      assert.equal(managedListenerMatchesRule({ ...fxpListener, managedRuntimeId: "entry-group:v1:201" },
+        { id: 502, forwardType: "gost", sourcePort: 17506, isRunning: false, sni: "a.example.com", tunnelId: 200 }, true), false);
+      assert.equal(managedListenerMatchesRule({ ...fxpListener, managedRuntime: "forwardx-runtime" },
+        { id: 502, forwardType: "gost", sourcePort: 17506, isRunning: true, tunnelId: 200 }), true);
+      assert.equal(managedListenerMatchesRule({ ...fxpListener, managedRuntime: "forwardx-tunnel-runtime" },
+        { id: 502, forwardType: "gost", sourcePort: 17506, isRunning: true, tunnelId: 200 }), false);
+      assert.equal(managedListenerMatchesRule({ ...fxpListener, managedRuntimeId: "v1:sni-splitter:0:17506" },
+        { id: 502, forwardType: "gost", sourcePort: 17506, isRunning: true, forwardGroupId: 10, sni: "a.example.com", sniSplitterPort: 17506 }), true);
+      assert.equal(managedListenerMatchesRule({ ...fxpListener, managedRuntimeId: "v1:sni-splitter:0:17506" },
+        { id: 502, forwardType: "gost", sourcePort: 17506, isRunning: true, forwardGroupId: 0, sni: "a.example.com", sniSplitterPort: 17506 }), false);
+      receivePortOccupancy(1, { signature: "abc124c", collected: true, snapshot: {
+        listeners: [{ ...fxpListener, port: 17501 }], collectedAt: Date.now(), complete: true,
+      } });
+      await refreshRulePortWarningsForHost(1);
+      assert.match((await caller.getById({ id: 501 })).portOccupancyWarnings[0].message, /forwardx-fxp/);
       await runtime.executeRaw('UPDATE "hosts" SET "portRangeStart" = ?, "portRangeEnd" = ? WHERE "id" = ?', [17000, 18000, 1]);
       receivePortOccupancy(1, { signature: "abc125", collected: true, snapshot: {
         listeners: [{ port: 17502, protocol: "tcp", address: "127.0.0.1", process: "code" }],

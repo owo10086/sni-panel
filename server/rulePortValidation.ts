@@ -31,7 +31,7 @@ function ruleOwnerSignature(input: PortCheck): string | null {
     if (occupied.status === "unverified") return null;
     if (occupied.status === "occupied") {
       entries.push(...occupied.listeners.map((listener) =>
-        `${hostId}:${listener.protocol}:${listener.port}:${listener.address}:${listener.process || ""}:${listener.managedRuntime || ""}`));
+        `${hostId}:${listener.protocol}:${listener.port}:${listener.address}:${listener.process || ""}:${listener.managedRuntime || ""}:${listener.managedRuntimeId || ""}`));
     }
   }
   return entries.sort().join("|");
@@ -56,12 +56,32 @@ export function rulePortOwnerChanged(ruleId: number, input: PortCheck) {
   return previous !== signature && signature !== "";
 }
 
-export function managedListenerMatchesForwardType(listener: PortListener, type: string) {
-  if (type === "gost") return listener.managedRuntime === "forwardx-runtime" ||
-    listener.managedRuntime === "forwardx-tunnel-runtime" || listener.managedRuntime === "forwardx-fxp";
-  if (type === "nginx") return listener.managedRuntime === "forwardx-nginx" || listener.managedRuntime === "forwardx-fxp";
-  if (type === "realm" || type === "socat") return listener.managedRuntime === `forwardx-${type}`;
-  return listener.managedRuntime === "forwardx-fxp";
+type ListeningRule = { id: number; isRunning?: unknown; forwardType: string; tunnelId?: number | null; forwardGroupId?: number | null;
+  sni?: string | null; sniSplitterPort?: number | null; sourcePort: number };
+
+export function managedListenerMatchesRule(listener: PortListener, rule: ListeningRule, allowPendingSni = false) {
+  if (![true, 1, "1"].includes(rule.isRunning as string | number | boolean) && !(allowPendingSni && rule.sni)) return false;
+  if (rule.forwardType === "gost") {
+    if (listener.managedRuntime === "forwardx-fxp") {
+      const tunnelId = Number(rule.tunnelId || 0);
+      const runtimeId = listener.managedRuntimeId || "";
+      if (!runtimeId) return false;
+      if (rule.sni && Number(rule.sniSplitterPort) === listener.port &&
+          (runtimeId === `v1:sni-splitter:${tunnelId}:${listener.port}` ||
+           runtimeId === `v2:sni-splitter:${tunnelId}:${listener.port}`) &&
+          (tunnelId > 0 || Number(rule.forwardGroupId || 0) > 0)) return true;
+      if (!tunnelId) return false;
+      return runtimeId === `entry-group:v1:${tunnelId}` || runtimeId === `entry-group:v2:${tunnelId}` ||
+        runtimeId === `v1:entry:${tunnelId}:${rule.id}:${listener.port}` ||
+        runtimeId === `v2:entry:${tunnelId}:${rule.id}:${listener.port}`;
+    }
+    return listener.managedRuntime === "forwardx-runtime";
+  }
+  if (rule.forwardType === "nginx") return listener.managedRuntime === "forwardx-nginx";
+  if (rule.forwardType === "realm" || rule.forwardType === "socat") {
+    return listener.managedRuntime === `forwardx-${rule.forwardType}`;
+  }
+  return false;
 }
 
 export async function evaluateRulePortOccupancy(input: PortCheck) {
@@ -75,18 +95,16 @@ export async function evaluateRulePortOccupancy(input: PortCheck) {
       continue;
     }
     const existingRules = input.sni
-      ? (input.forwardGroupId
-          ? await db.getForwardGroupTemplateRules(input.forwardGroupId)
-          : await db.getForwardRules(undefined, hostId) as any[]).filter((rule: any) => (
+      ? ((await db.getForwardRulesForAgent(hostId)) as any[]).filter((rule: any) => (
         Number(rule.id) !== input.excludeRuleId && Number(rule.sourcePort) === input.port &&
         !!rule.sni && !!rule.isEnabled && rule.forwardType === input.forwardType &&
         rule.protocol === "tcp" && input.protocol === "tcp" &&
-        (input.forwardGroupId ? Number(rule.forwardGroupId) === input.forwardGroupId : Number(rule.tunnelId) === input.tunnelId)
+        (input.forwardGroupId ? Number(rule.forwardGroupId) === input.forwardGroupId : Number(rule.tunnelId || 0) === Number(input.tunnelId || 0))
       ))
       : [];
     const result = inspectPortOccupancy(getPortOccupancy(hostId), input.port, input.protocol,
       (listener) => input.forwardType !== "iptables" && input.forwardType !== "nftables" &&
-        existingRules.length > 0 && managedListenerMatchesForwardType(listener, input.forwardType));
+        existingRules.some((rule) => managedListenerMatchesRule(listener, rule, true)));
     if (result.status === "unverified") {
       unverifiedHosts.push(hostId);
     } else if (result.status === "occupied") {
