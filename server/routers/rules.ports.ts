@@ -9,6 +9,8 @@ import {
 } from "./helpers";
 import { combineHostPortPolicyWithRange, combinePortPolicies, isPortAllowedByPolicy, portPolicyErrorMessage, portPolicyFrom } from "../portPolicy";
 import { isValidSniValue, normalizeSniValue } from "@shared/sni";
+import { evaluateRulePortOccupancy, occupiedOnlineSnapshotPorts } from "../rulePortValidation";
+import { lockedForwardTypeForGroup } from "./rules.crud";
 import {
   assertDirectTunnelSniEntryPortUse,
   assertSniEntryPortCanUseSni,
@@ -46,6 +48,7 @@ export const portsRulesRouter = router({
       excludeRuleId: z.number().optional(),
       protocol: z.enum(["tcp", "udp", "both"]).optional().default("both"),
       sni: z.string().max(1024).nullable().optional(),
+      forwardType: z.string().max(32).optional().default("iptables"),
     }).refine(
       (input) => !!input.hostId !== !!input.forwardGroupId,
       { message: "请选择一个主机、隧道或转发组" },
@@ -99,7 +102,14 @@ export const portsRulesRouter = router({
             excludeTemplateRuleId: input.excludeRuleId,
             portUsageIgnoreRuleIds,
           });
-          return { used: false };
+          const entryHostIds = await db.getForwardGroupRuleEntryHostIds(input.forwardGroupId);
+          const selectedGroup = await db.getForwardGroupById(input.forwardGroupId);
+          const occupancy = await evaluateRulePortOccupancy({
+            hostIds: entryHostIds, port: input.sourcePort, protocol: input.protocol,
+            forwardType: lockedForwardTypeForGroup(selectedGroup, input.forwardType), sni: normalizedSni, forwardGroupId: input.forwardGroupId,
+            excludeRuleId: input.excludeRuleId, admin: ctx.user.role === "admin",
+          });
+          return { used: occupancy.occupancy === "blocked", ...occupancy };
         } catch (error) {
           const reason = error instanceof Error ? error.message : "";
           const isRangeError = /必须在.*(?:范围|区间)|must be.*range/i.test(reason);
@@ -156,7 +166,13 @@ export const portsRulesRouter = router({
         portUsageIgnoreRuleIds = [...excludeRuleIds, ...state.shareableRuleIds];
       }
       const used = await db.isHostPortUnavailableForExplicitUse(hostId, input.sourcePort, portUsageIgnoreRuleIds, input.protocol, undefined, false);
-      return { used };
+      if (used) return { used };
+      const occupancy = await evaluateRulePortOccupancy({
+        hostIds: [hostId], port: input.sourcePort, protocol: input.protocol,
+        forwardType: input.forwardType, sni: normalizedSni, tunnelId: input.tunnelId,
+        excludeRuleId: input.excludeRuleId, admin: ctx.user.role === "admin",
+      });
+      return { used: occupancy.occupancy === "blocked", ...occupancy };
     }),
   randomPort: protectedProcedure
     .input(randomPortInputSchema)
@@ -170,7 +186,9 @@ export const portsRulesRouter = router({
           await requireForwardGroupPortAccess(ctx, input.forwardGroupId);
           planRange = await db.getUserForwardGroupPlanPortRange(ctx.user.id, input.forwardGroupId);
         }
-        const port = await db.findAvailableForwardGroupPort(input.forwardGroupId, input.excludeRuleId, planRange, input.protocol);
+        const hostIds = await db.getForwardGroupRuleEntryHostIds(input.forwardGroupId);
+        const port = await db.findAvailableForwardGroupPort(input.forwardGroupId, input.excludeRuleId, planRange, input.protocol,
+          await occupiedOnlineSnapshotPorts(hostIds, input.protocol));
         if (!port) throw new Error("转发组入口端口区间内已无可用端口");
         return { port };
       }
@@ -202,7 +220,7 @@ export const portsRulesRouter = router({
         rangeStart,
         rangeEnd,
         input.protocol,
-        [],
+        [...await occupiedOnlineSnapshotPorts([input.hostId], input.protocol)],
         excludeRuleIds,
         planRange?.ranges || [],
       );

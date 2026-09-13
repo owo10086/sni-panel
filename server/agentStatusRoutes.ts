@@ -10,6 +10,7 @@ import {
 } from "./tunnelRuntimeStatus";
 import { getAgentHostFromRequest } from "./agentAuth";
 import { notifyForwardRuleError } from "./forwardRuleErrorNotifier";
+import { recordRulePortFailure } from "./rulePortFailure";
 import { mapWithConcurrency } from "./asyncPool";
 import { withKeyedTaskLock } from "./keyedTaskLock";
 import { agentStatusOrderGuard, agentStatusOrderingKey } from "./agentStatusOrdering";
@@ -352,6 +353,7 @@ async function applyAgentRuleStatus(host: any, payload: any): Promise<AgentStatu
 
   const wasRunning = !!(rule as any).isRunning;
   await db.updateRuleRunningStatus(ruleId, !!isRunning);
+  recordRulePortFailure(ruleId, !isRunning && rule.forwardType !== "iptables" && rule.forwardType !== "nftables" ? message : "");
   if (
     (wasRunning || !!message)
     && !isRunning

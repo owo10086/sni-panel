@@ -14,6 +14,21 @@ type ForwardRuleErrorPayload = {
 const RULE_ERROR_NOTIFY_COOLDOWN_MS = 5 * 60 * 1000;
 const RULE_ERROR_NOTIFY_CACHE_MAX = 10_000;
 const lastRuleErrorNotifyAt = new Map<string, number>();
+const portOccupancyNotifyState = new Map<string, { owner: string; notifiedAt: number; pending: boolean }>();
+
+export function portOccupancyNotificationTransition(key: string, owner: string, verified: boolean, now = Date.now()): "occupied" | "recovered" | null {
+  if (!verified) return null;
+  const previous = portOccupancyNotifyState.get(key);
+  if (previous?.owner === owner && !previous.pending) return null;
+  if (!previous && !owner) return null;
+  const notifiedAt = previous?.notifiedAt || 0;
+  const nextNotifiedAt = now - notifiedAt >= RULE_ERROR_NOTIFY_COOLDOWN_MS ? now : notifiedAt;
+  if (portOccupancyNotifyState.size >= RULE_ERROR_NOTIFY_CACHE_MAX && !previous) {
+    portOccupancyNotifyState.delete(portOccupancyNotifyState.keys().next().value!);
+  }
+  portOccupancyNotifyState.set(key, { owner, notifiedAt: nextNotifiedAt, pending: nextNotifiedAt !== now });
+  return nextNotifiedAt === now ? (owner ? "occupied" : "recovered") : null;
+}
 
 export function pruneForwardRuleErrorNotifyCache(now = Date.now()) {
   let deleted = 0;
@@ -116,6 +131,25 @@ export async function notifyForwardRuleError(payload: ForwardRuleErrorPayload) {
   }
   if (sent > 0 || failed > 0) {
     console.info(`[Telegram] Forward rule error notify rule=${ruleId} sent=${sent} failed=${failed}`);
+  }
+}
+
+export async function notifyForwardRuleOccupancy(payload: ForwardRuleErrorPayload & { recovered: boolean }) {
+  if (!payload.rule?.telegramErrorNotifyEnabled || !(await isTelegramBotReady())) return;
+  const recipients = await getTelegramAdminRecipients();
+  const text = [
+    `<b>ForwardX 端口占用${payload.recovered ? "解除提醒" : "警告"}</b>`,
+    `<b>规则</b>：${escapeHtml(payload.rule.name)} (#${escapeHtml(payload.rule.id)})`,
+    `<b>入口主机</b>：${escapeHtml(hostName(payload.host))}`,
+    `<b>入口端口</b>：${escapeHtml(payload.rule.sourcePort)}`,
+    `<b>信息</b>：${escapeHtml(payload.message || (payload.recovered ? "监听占用已解除" : "该端口存在监听"))}`,
+    `<b>时间</b>：${escapeHtml(formatTime())}`,
+  ].join("\n");
+  for (const user of recipients as any[]) {
+    if (!user.telegramId) continue;
+    await sendTelegramMessage(user.telegramId, text).catch((error) => {
+      console.warn(`[Telegram] Port occupancy notify failed rule=${payload.rule.id}: ${error instanceof Error ? error.message : String(error)}`);
+    });
   }
 }
 

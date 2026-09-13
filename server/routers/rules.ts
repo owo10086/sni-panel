@@ -8,6 +8,10 @@ import { trafficRulesRouter } from "./rules.traffic";
 import { canUseForwardRuleResource, getLinkAccessScope } from "../linkAccessView";
 import { isManagedForwardGroupChildRule } from "../forwardRuleVisibility";
 import { getSniRuntimeGroupStatus } from "../sniRuntimeObservability";
+import { getPortOccupancy, inspectPortOccupancy } from "../portOccupancy";
+import { getRulePortWarnings, type RulePortWarning } from "../rulePortOccupancy";
+import { getRulePortFailure } from "../rulePortFailure";
+import { isHostStatusOnline } from "../hostStatusNotifier";
 import { normalizeSniValue } from "@shared/sni";
 import type { ForwardRule } from "../../drizzle/schema";
 
@@ -23,6 +27,8 @@ type SniRuntimeRuleStatus = {
 
 type ForwardRuleView = ForwardRule & {
   sniRuntime?: SniRuntimeRuleStatus;
+  portOccupancyWarnings?: RulePortWarning[];
+  portBindFailure?: string | null;
   resourceAccessAllowed?: boolean;
 };
 
@@ -133,13 +139,44 @@ async function withRuleResourceAccess(
   value: ForwardRuleViewInput,
   user: { id: number; role: string },
 ): Promise<ForwardRuleViewOutput> {
-  if (user.role === "admin") return attachSniRuntimeStatus(value);
+  const ruleRows = Array.isArray(value) ? value : isForwardRulePage(value) ? value.items : value ? [value] : [];
+  const groupIds = Array.from(new Set(ruleRows
+    .filter((rule) => rule.isEnabled)
+    .map((rule) => Number(rule.forwardGroupId || 0)).filter((id) => id > 0)));
+  const groupHostIds = new Map(await Promise.all(groupIds.map(async (id) =>
+    [id, await db.getForwardGroupRuleEntryHostIds(id)] as const)));
+  const occupancyHostIds = Array.from(new Set(ruleRows
+    .filter((rule) => rule.isEnabled)
+    .flatMap((rule) => groupHostIds.get(Number(rule.forwardGroupId || 0)) || [Number(rule.hostId)])
+    .filter((id) => id > 0)));
+  const onlineHosts = new Map(await Promise.all(occupancyHostIds.map(async (id) =>
+    [id, isHostStatusOnline(await db.getHostById(id))] as const)));
+  const decorateOccupancy = (rule: ForwardRule): ForwardRuleView => {
+    const entries = rule.isEnabled ? getRulePortWarnings(Number(rule.id), user.role === "admin") : [];
+    const warnings = entries.map((entry) => onlineHosts.get(entry.hostId) && getPortOccupancy(entry.hostId)
+      ? entry
+      : { status: "unverified" as const, message: "主机端口信息未经核实", hostId: entry.hostId });
+    if (rule.isEnabled) {
+      const hosts = groupHostIds.get(Number(rule.forwardGroupId || 0)) || [Number(rule.hostId)];
+      for (const hostId of hosts) {
+        if (warnings.some((entry) => entry.hostId === hostId)) continue;
+        const status = inspectPortOccupancy(onlineHosts.get(hostId) ? getPortOccupancy(hostId) : null, Number(rule.sourcePort),
+          rule.protocol === "udp" ? "udp" : rule.protocol === "tcp" ? "tcp" : "both");
+        if (status.status === "unverified") {
+          warnings.push({ status: "unverified", message: "主机端口信息未经核实", hostId });
+        }
+      }
+    }
+    return { ...rule, portOccupancyWarnings: warnings, portBindFailure: getRulePortFailure(Number(rule.id), user.role === "admin") };
+  };
+  const decorated = mapForwardRuleView(value, decorateOccupancy);
+  if (user.role === "admin") return attachSniRuntimeStatus(decorated);
   const scope = await getLinkAccessScope(user);
   const decorate = (rule: ForwardRule): ForwardRuleView => ({
     ...rule,
     resourceAccessAllowed: canUseForwardRuleResource(rule, scope),
   });
-  return mapForwardRuleView(value, decorate);
+  return mapForwardRuleView(decorated, decorate);
 }
 
 

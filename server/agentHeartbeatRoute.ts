@@ -34,6 +34,9 @@ import { getAgentPluginInventory, updateAgentPluginInventory } from "./agentPlug
 import { getAgentHostFromRequest, getAgentPresenceHostFromRequest, getResolvedAgentToken } from "./agentAuth";
 import { normalizeAgentText, normalizeNetworkInterface } from "./agentInputValidation";
 import { pruneMapEntries, setBoundedMapValue } from "./boundedCache";
+import { receivePortOccupancy, prunePortOccupancy, getPortOccupancy, inspectPortOccupancy } from "./portOccupancy";
+import { refreshRulePortWarningsForHost } from "./rulePortOccupancy";
+import { recordRulePortFailure } from "./rulePortFailure";
 import { mergeAgentReportedAddress } from "./agentAddressState";
 import {
   gostTunnelTransportType,
@@ -193,6 +196,7 @@ function runtimeBool(value: unknown, fallback = false): boolean {
 }
 
 export function pruneAgentHeartbeatCaches(now = Date.now()) {
+  prunePortOccupancy(now);
   const stale = (timestamp: number) => !Number.isFinite(timestamp) || now - timestamp >= AGENT_CACHE_IDLE_TTL_MS;
   for (const [ruleId, checkedAt] of resolvedIpCheckedAt) {
     if (!stale(checkedAt)) continue;
@@ -1480,6 +1484,12 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
       releaseHeartbeatReconciliation = agentHeartbeatGate.tryAcquire(logHostId, { force: forceReconcile });
       if (!releaseHeartbeatReconciliation) {
         await db.touchHostHeartbeat(logHostId);
+        const coalescedOccupancy = receivePortOccupancy(logHostId, {
+          signature: req.body?.portOccupancySignature,
+          collected: req.body?.portOccupancyCollected,
+          snapshot: req.body?.portOccupancy,
+        });
+        if (coalescedOccupancy.verified) await refreshRulePortWarningsForHost(logHostId);
         if (!wasOnline) {
           await resetAgentRuntimeStateForRecovery(logHostId, "agent-reconnected-heartbeat-coalesced");
           void notifyHostOnlineIfNeeded({ ...host, isOnline: true, lastHeartbeat: new Date() }).catch((error) => {
@@ -1509,6 +1519,7 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
           selfTests: [],
           nextInterval: 5,
           requestLocalState: coalescedRequestLocalState,
+          requestPortOccupancy: coalescedOccupancy.requestPortOccupancy,
           compactReports: true,
           presenceSupported: true,
           reconciliationCoalesced: true,
@@ -1558,6 +1569,30 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
       localRuntimeStateSignature,
       reportedLocalRuntimeState,
     );
+    const portOccupancy = receivePortOccupancy(Number(host.id), {
+      signature: req.body?.portOccupancySignature,
+      collected: req.body?.portOccupancyCollected,
+      snapshot: req.body?.portOccupancy,
+    });
+    if (reportedLocalRuntimeState && portOccupancy.verified) {
+      const snapshot = getPortOccupancy(Number(host.id));
+      for (const ruleState of reportedLocalRuntimeState.rules) {
+        if (ruleState.ruleId <= 0 || ruleState.forwardType === "iptables" || ruleState.forwardType === "nftables") continue;
+        if (ruleState.ready) {
+          recordRulePortFailure(ruleState.ruleId, "");
+          continue;
+        }
+        const occupancy = inspectPortOccupancy(snapshot, ruleState.port,
+          ruleState.protocol === "udp" ? "udp" : ruleState.protocol === "tcp" ? "tcp" : "both");
+        const external = occupancy.status === "occupied"
+          ? occupancy.listeners.find((listener) => !listener.managedRuntime)
+          : null;
+        if (external) {
+          recordRulePortFailure(ruleState.ruleId, `port ${ruleState.port} occupied${external.process ? ` by ${external.process}` : ""}`);
+        }
+      }
+    }
+    if (portOccupancy.verified) await refreshRulePortWarningsForHost(Number(host.id));
     const mimicEnvironment = normalizeMimicEnvironment(req.body?.mimicEnvironment);
     const fxpEndpointEvents = Array.isArray(req.body?.fxpEndpointEvents) ? req.body.fxpEndpointEvents.slice(0, 256) : [];
     for (const rawEvent of fxpEndpointEvents) {
@@ -1806,12 +1841,12 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
         metricsWatching,
         nextInterval: metricsWatching ? 3 : 5,
       });
-      res.json(buildBusyAgentHeartbeatResponse({
+      res.json({ ...buildBusyAgentHeartbeatResponse({
         panelUrl,
         requestLocalState: localRuntimeState.requestLocalState,
         metricsWatching,
         trafficReportInterval: metricsWatching ? 10 : undefined,
-      }));
+      }), requestPortOccupancy: portOccupancy.requestPortOccupancy });
       return;
     }
 
@@ -1874,6 +1909,7 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
         forceTcping: false,
         nextInterval: metricsWatching ? 3 : stablePlan.idleNextInterval,
         requestLocalState: false,
+        requestPortOccupancy: portOccupancy.requestPortOccupancy,
         compactReports: true,
         presenceSupported: true,
         metricsOnly: metricsWatching,
@@ -7528,6 +7564,7 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
       forceTcping: forceTcping || (supportsStateSignatures && probeStateRefreshed),
       nextInterval,
       requestLocalState: localRuntimeState.requestLocalState,
+      requestPortOccupancy: portOccupancy.requestPortOccupancy,
       compactReports: true,
       presenceSupported: true,
       metricsOnly: metricsWatching

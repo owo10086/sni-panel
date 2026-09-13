@@ -330,6 +330,9 @@ var heartbeatStateSignatures = map[string]string{}
 var localRuntimeStateMu sync.Mutex
 var lastLocalRuntimeStateSignature string
 var forceSendLocalRuntimeState = true
+var portOccupancyMu sync.Mutex
+var lastPortOccupancySignature string
+var forceSendPortOccupancy = true
 
 // readLocalRuntimeReadiness 的跨心跳缓存。
 // TTL 5s：正常心跳间隔 30s，对数据新鲜度无影响；
@@ -852,6 +855,7 @@ type heartbeatResp struct {
 	AgentUpgrade            *agentUpgrade            `json:"agentUpgrade"`
 	StateSignatures         map[string]string        `json:"stateSignatures,omitempty"`
 	RequestLocalState       bool                     `json:"requestLocalState,omitempty"`
+	RequestPortOccupancy    bool                     `json:"requestPortOccupancy,omitempty"`
 	PanelURL                string                   `json:"panelUrl"`
 	ForceTCPing             bool                     `json:"forceTcping"`
 	NextInterval            int                      `json:"nextInterval"`
@@ -2394,6 +2398,26 @@ func localRuntimeStateForHeartbeat() (string, *localRuntimeStatePayload) {
 	return signature, nil
 }
 
+func portOccupancyForHeartbeat() (string, bool, *portOccupancyPayload) {
+	snapshot := readLocalRuntimeReadinessCached().listenSnapshot
+	if snapshot == nil || !snapshot.usable {
+		return "", false, nil
+	}
+	state := portOccupancyFromListen(snapshot)
+	signature := portOccupancySignature(state)
+	portOccupancyMu.Lock()
+	sendFull := forceSendPortOccupancy || signature != lastPortOccupancySignature
+	if sendFull {
+		lastPortOccupancySignature = signature
+		forceSendPortOccupancy = false
+	}
+	portOccupancyMu.Unlock()
+	if sendFull {
+		return signature, true, &state
+	}
+	return signature, true, nil
+}
+
 func requestLocalRuntimeStateUpload() {
 	localRuntimeStateMu.Lock()
 	forceSendLocalRuntimeState = true
@@ -3922,6 +3946,15 @@ func heartbeat(cfg Config, forceReconcile ...bool) (heartbeatResult, error) {
 			payload["localState"] = localState
 		}
 	}
+	if signature, collected, snapshot := portOccupancyForHeartbeat(); collected {
+		payload["portOccupancySignature"] = signature
+		payload["portOccupancyCollected"] = true
+		if snapshot != nil {
+			payload["portOccupancy"] = snapshot
+		}
+	} else {
+		payload["portOccupancyCollected"] = false
+	}
 	var resp heartbeatResp
 	if err := postHeartbeat(cfg, "/api/agent/heartbeat", payload, &resp); err != nil {
 		queuePendingDNSChanges(dnsChanges)
@@ -3974,6 +4007,12 @@ func heartbeat(cfg Config, forceReconcile ...bool) (heartbeatResult, error) {
 			next = 2
 		}
 		return heartbeatResult{NextInterval: next, ReconciliationCoalesced: resp.ReconciliationCoalesced, MetricsOnly: false}, nil
+	}
+	if resp.RequestPortOccupancy {
+		portOccupancyMu.Lock()
+		forceSendPortOccupancy = true
+		portOccupancyMu.Unlock()
+		return heartbeatResult{NextInterval: 2, MetricsOnly: false}, nil
 	}
 	if resp.ReconciliationCoalesced {
 		return heartbeatResult{NextInterval: resp.NextInterval, ReconciliationCoalesced: true, MetricsOnly: resp.MetricsOnly}, nil
@@ -4121,6 +4160,15 @@ func heartbeatKeepalive(cfg Config) (heartbeatResult, error) {
 	if currentStatic.DefaultNetworkInterface != "" {
 		payload["defaultNetworkInterface"] = currentStatic.DefaultNetworkInterface
 	}
+	if signature, collected, snapshot := portOccupancyForHeartbeat(); collected {
+		payload["portOccupancySignature"] = signature
+		payload["portOccupancyCollected"] = true
+		if snapshot != nil {
+			payload["portOccupancy"] = snapshot
+		}
+	} else {
+		payload["portOccupancyCollected"] = false
+	}
 	var resp heartbeatResp
 	if err := postHeartbeat(cfg, "/api/agent/heartbeat", payload, &resp); err != nil {
 		return heartbeatResult{NextInterval: cfg.Interval}, err
@@ -4142,6 +4190,12 @@ func heartbeatKeepalive(cfg Config) (heartbeatResult, error) {
 	syncPanelURLFromResponse(resp.PanelURL)
 	if resp.RequestLocalState {
 		requestLocalRuntimeStateUpload()
+	}
+	if resp.RequestPortOccupancy {
+		portOccupancyMu.Lock()
+		forceSendPortOccupancy = true
+		portOccupancyMu.Unlock()
+		return heartbeatResult{NextInterval: 2, MetricsOnly: false}, nil
 	}
 	return heartbeatResult{NextInterval: resp.NextInterval, MetricsOnly: resp.MetricsOnly}, nil
 }
@@ -5447,6 +5501,14 @@ func managedRuntimeConfigListenSummary(path string, port int) string {
 func reportActionStatus(cfg Config, a action, running bool, message string) {
 	if !shouldReportActionStatus(a) {
 		return
+	}
+	if !running && a.Op == "apply" && a.RuleID > 0 && a.StatusType != "runtime" &&
+		a.ForwardType != "iptables" && a.ForwardType != "nftables" &&
+		(message == "" || strings.Contains(strings.ToLower(message), "address already in use") ||
+		strings.Contains(strings.ToLower(message), "listen port still busy")) {
+		if occupied := portBindFailureMessage(readLocalRuntimeReadinessCached().listenSnapshot, a.SourcePort, normalizeRuntimeProtocol(a.Protocol)); occupied != "" {
+			message = occupied
+		}
 	}
 	enqueueActionStatusReport(cfg, a, running, message)
 }
@@ -7107,9 +7169,10 @@ func listenPortOwnerPIDsForProtocol(port int, protocol string) []int {
 }
 
 type runtimeListenSnapshot struct {
-	tcpPorts map[int][]string
-	udpPorts map[int][]string
-	usable   bool
+	tcpPorts    map[int][]string
+	udpPorts    map[int][]string
+	usable      bool
+	collectedAt time.Time
 }
 
 func newRuntimeListenSnapshot() *runtimeListenSnapshot {
@@ -7120,10 +7183,14 @@ func newRuntimeListenSnapshot() *runtimeListenSnapshot {
 	if _, err := exec.LookPath("ss"); err == nil {
 		if out, err := commandCombinedOutputWithTimeout(3*time.Second, "ss", "-H", "-ltnup"); err == nil {
 			snapshot.parseSSListenOutput(string(out))
+			snapshot.usable = true
 		}
 	}
 	if !snapshot.usable {
 		snapshot.parseProcNetListenFiles()
+	}
+	if snapshot.usable {
+		snapshot.collectedAt = time.Now()
 	}
 	return snapshot
 }
