@@ -11,9 +11,6 @@ on:
         options:
           - release
           - debug
-  push:
-    tags:
-      - "v*.*.*"
 
 permissions:
   contents: write
@@ -24,7 +21,6 @@ concurrency:
 
 jobs:
   build-android-apk:
-    if: github.event_name != 'push' || startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

@@ -202,6 +202,8 @@ pnpm dev
 
 检查与构建：
 
+版本标签发布只构建面板、Agent、ForwardX FXP runtime 和 `linux/amd64` Docker 镜像，不自动构建 Android APK。`Android APK` GitHub Actions 仅保留手动触发。
+
 ```bash
 pnpm exec tsc --noEmit
 pnpm test:server
