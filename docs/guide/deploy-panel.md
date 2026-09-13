@@ -106,7 +106,7 @@ cat > .env <<'EOF'
 PORT=9810
 COMPOSE_PROJECT_NAME=forwardx
 FORWARDX_CONTAINER_NAME=forwardx-panel
-FORWARDX_IMAGE=ghcr.io/poouo/forwardx:latest
+FORWARDX_IMAGE=ghcr.io/owo10086/sni-panel:latest
 JWT_SECRET=请替换为上一步生成的随机字符串
 
 # 可选：如果要通过环境变量指定 PostgreSQL，取消注释并填写
@@ -139,7 +139,7 @@ name: ${COMPOSE_PROJECT_NAME:-forwardx}
 
 services:
   forwardx:
-    image: ${FORWARDX_IMAGE:-ghcr.io/poouo/forwardx:latest}
+    image: ${FORWARDX_IMAGE:-ghcr.io/owo10086/sni-panel:latest}
     container_name: ${FORWARDX_CONTAINER_NAME:-forwardx-panel}
     restart: unless-stopped
     extra_hosts:
@@ -204,8 +204,8 @@ cd /opt/forwardx-docker
 docker compose --env-file .env -p forwardx pull forwardx
 docker compose --env-file .env -p forwardx up -d --remove-orphans forwardx
 CURRENT_IMAGE_ID="$(docker inspect --format '{{.Image}}' forwardx-panel)"
-docker image ls --no-trunc --format '{{.Repository}} {{.Tag}} {{.ID}}' ghcr.io/poouo/forwardx \
-  | awk -v current="$CURRENT_IMAGE_ID" '$1 == "ghcr.io/poouo/forwardx" && $2 != "<none>" && $3 != current { print $1 ":" $2 }' \
+docker image ls --no-trunc --format '{{.Repository}} {{.Tag}} {{.ID}}' ghcr.io/owo10086/sni-panel \
+  | awk -v current="$CURRENT_IMAGE_ID" '$1 == "ghcr.io/owo10086/sni-panel" && $2 != "<none>" && $3 != current { print $1 ":" $2 }' \
   | xargs -r docker image rm
 ```
 

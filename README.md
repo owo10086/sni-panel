@@ -9,7 +9,7 @@ ForwardX 通过轻量 Agent 统一管理多台 Linux 服务器上的端口转发
 
 ## 链接
 
-- [使用文档](https://poouo.github.io/Forwardx/)
+- [使用文档](https://owo10086.github.io/sni-panel/)
 - [GitHub Releases](https://github.com/owo10086/sni-panel/releases/latest)
 - [Telegram 群组](https://t.me/ForwardX_panel)
 - [Android APK](https://github.com/owo10086/sni-panel/releases/latest)
@@ -62,7 +62,7 @@ curl -fsSL https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/ins
 curl -fsSL https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/install-panel-docker.sh | bash -s -- uninstall
 ```
 
-Docker 默认拉取 `ghcr.io/poouo/forwardx:latest`，数据库配置和 SQLite 数据保存在数据卷中。升级会保留 `.env`、数据卷和部署目录中的 `data/`；卸载脚本仅在用户确认后删除这些数据。
+Docker 默认拉取 `ghcr.io/owo10086/sni-panel:latest`，数据库配置和 SQLite 数据保存在数据卷中。升级会保留 `.env`、数据卷和部署目录中的 `data/`；卸载脚本仅在用户确认后删除这些数据。
 
 ### 本地 systemd
 
@@ -118,7 +118,7 @@ curl -fsSL "https://mirror.example.com/https://raw.githubusercontent.com/owo1008
 
 安装器会把地址保存到部署 `.env`，后续升级可继续使用；加速请求失败时会自动回退直连 GitHub。也可在「系统设置 -> 系统信息 -> GitHub 下载加速」开启「面板更新使用加速站」，让版本检查、Release 信息、安装包检测、回退及升级命令使用该地址。
 
-该参数不代理 `ghcr.io` 镜像拉取。Docker 镜像源需要通过 `FORWARDX_IMAGE` 或 `FORWARDX_IMAGE_REPO` 单独配置。详细用法见[部署面板](https://poouo.github.io/Forwardx/guide/deploy-panel)和[升级与备份](https://poouo.github.io/Forwardx/guide/upgrade-backup)。
+该参数不代理 `ghcr.io` 镜像拉取。Docker 镜像源需要通过 `FORWARDX_IMAGE` 或 `FORWARDX_IMAGE_REPO` 单独配置。详细用法见[部署面板](https://owo10086.github.io/sni-panel/guide/deploy-panel)和[升级与备份](https://owo10086.github.io/sni-panel/guide/upgrade-backup)。
 
 ## 首次使用
 
@@ -181,7 +181,7 @@ ForwardX 支持 SQLite、MySQL 和 PostgreSQL：
 - 原地升级会保留数据库配置和业务数据。
 - 请按所选数据库定期备份 SQLite 文件或数据库实例。
 
-数据库地址、反向代理和升级相关变量见[环境变量文档](https://poouo.github.io/Forwardx/guide/env-vars)。MySQL/PostgreSQL 连接池由面板根据主机数量自动管理。常用变量如下：
+数据库地址、反向代理和升级相关变量见[环境变量文档](https://owo10086.github.io/sni-panel/guide/env-vars)。MySQL/PostgreSQL 连接池由面板根据主机数量自动管理。常用变量如下：
 
 | 变量 | 默认值 | 说明 |
 | --- | --- | --- |
@@ -191,7 +191,7 @@ ForwardX 支持 SQLite、MySQL 和 PostgreSQL：
 | `DATABASE_TYPE` / `DB_TYPE` | 空 | 强制指定 `sqlite`、`mysql` 或 `postgresql` |
 | `JWT_SECRET` | 自动生成 | 登录签名密钥；生产环境应固定配置 |
 | `TELEGRAM_BOT_TOKEN` | 空 | Telegram 机器人 Token |
-| `FORWARDX_IMAGE` | `ghcr.io/poouo/forwardx:latest` | Docker 镜像 |
+| `FORWARDX_IMAGE` | `ghcr.io/owo10086/sni-panel:latest` | Docker 镜像 |
 
 ## 本地开发
 

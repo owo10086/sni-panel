@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
 
 env:
-  IMAGE_NAME: ghcr.io/poouo/forwardx
+  IMAGE_NAME: ghcr.io/owo10086/sni-panel
 
 permissions:
   contents: read

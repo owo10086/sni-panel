@@ -124,7 +124,7 @@ const ANDROID_APK_DOWNLOAD_URL =
   `${REPO_URL}/releases/download/v${ANDROID_APK_RELEASE_VERSION}/forwardx-android-v${ANDROID_APP_VERSION}.apk`;
 const UPDATE_CHECK_COOLDOWN_MS = 60 * 1000;
 const UPGRADE_ASSETS_PENDING_EXIT_CODE = 12;
-const DEFAULT_DOCKER_IMAGE = "ghcr.io/poouo/forwardx:latest";
+const DEFAULT_DOCKER_IMAGE = "ghcr.io/owo10086/sni-panel:latest";
 const forwardProtocolSettingsSchema = z.object(
   Object.fromEntries(
     [...FORWARD_TYPES, ...TUNNEL_PROTOCOLS].map((key) => [key, z.boolean().optional()])

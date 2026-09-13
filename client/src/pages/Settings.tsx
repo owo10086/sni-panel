@@ -266,7 +266,7 @@ function toLocalAiProviderConfig(provider: AiProvider, source?: AiProviderServer
 }
 type DdnsProvider = "disabled" | "cloudflare" | "webhook" | "huaweicloud" | "aliyun" | "tencentcloud";
 const ddnsProviders: DdnsProvider[] = ["disabled", "cloudflare", "webhook", "huaweicloud", "aliyun", "tencentcloud"];
-const docsBaseUrl = "https://poouo.github.io/Forwardx";
+const docsBaseUrl = "https://owo10086.github.io/sni-panel";
 const ddnsProviderGuideAnchors: Record<DdnsProvider, string> = {
   disabled: "quick-setup",
   cloudflare: "cloudflare",

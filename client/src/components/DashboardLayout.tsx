@@ -1637,7 +1637,7 @@ function DashboardLayoutContent({
             </a>
             <span className="text-muted-foreground/45">|</span>
             <a
-              href="https://poouo.github.io/Forwardx/"
+              href="https://owo10086.github.io/sni-panel/"
               target="_blank"
               rel="noopener noreferrer"
               className="transition-colors hover:text-foreground"
