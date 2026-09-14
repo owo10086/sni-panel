@@ -163,20 +163,12 @@ async function withRuleResourceAccess(
   const onlineHosts = new Map(await Promise.all(occupancyHostIds.map(async (id) =>
     [id, isHostStatusOnline(await db.getHostById(id))] as const)));
   const decorateOccupancy = (rule: ForwardRule): ForwardRuleView => {
-    const entries = rule.isEnabled ? getRulePortWarnings(Number(rule.id), user.role === "admin") : [];
-    const warnings = entries.map((entry) => onlineHosts.get(entry.hostId) && getPortOccupancy(entry.hostId)
-      ? entry
-      : { status: "unverified" as const, message: "主机端口信息未经核实", hostId: entry.hostId });
-    if (rule.isEnabled) {
-      for (const hostId of entryHostsForRule(rule)) {
-        if (warnings.some((entry) => entry.hostId === hostId)) continue;
-        const status = inspectPortOccupancy(onlineHosts.get(hostId) ? getPortOccupancy(hostId) : null, Number(rule.sourcePort),
-          rule.protocol === "udp" ? "udp" : rule.protocol === "tcp" ? "tcp" : "both");
-        if (status.status === "unverified") {
-          warnings.push({ status: "unverified", message: "主机端口信息未经核实", hostId });
-        }
-      }
-    }
+    const warnings = rule.isEnabled && (rule.forwardType === "iptables" || rule.forwardType === "nftables")
+      ? getRulePortWarnings(Number(rule.id), user.role === "admin")
+        .filter((entry) => entry.port === Number(rule.sourcePort) && onlineHosts.get(entry.hostId) &&
+          inspectPortOccupancy(getPortOccupancy(entry.hostId), entry.port,
+            rule.protocol === "tcp" || rule.protocol === "udp" ? rule.protocol : "both").status === "occupied")
+      : [];
     return { ...rule, portOccupancyWarnings: warnings, portBindFailure: getRulePortFailure(Number(rule.id), user.role === "admin") };
   };
   const decorated = mapForwardRuleView(value, decorateOccupancy);

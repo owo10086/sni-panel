@@ -278,7 +278,7 @@ test("SNI splitter port belongs to the chain exit host for host port checks", ()
 
       assert.deepEqual(
         await caller.checkPort({ hostId: 1, sourcePort: splitterPort, protocol: "tcp" }),
-        { used: false, occupancy: "unverified", warning: "主机端口信息未经核实" },
+        { used: false },
       );
       assert.deepEqual(
         await caller.checkPort({ hostId: 2, sourcePort: splitterPort, protocol: "tcp" }),
@@ -523,20 +523,8 @@ test("forward-chain SNI rules share one entry port and reject duplicate or mixed
       }
       const gostSni = { ...createInput({ forwardGroupId: 11, forwardType: "gost", sourcePort: 18445, name: "gost-first", sni: "first.example.com" }) };
       await caller.create(gostSni);
-      const { receivePortOccupancy } = await import(moduleUrl("server/portOccupancy.ts"));
-      receivePortOccupancy(1, { signature: "a1", collected: true, snapshot: {
-        listeners: [{ port: 18445, protocol: "tcp", address: "0.0.0.0", process: "gost" }],
-        collectedAt: Date.now(), complete: true,
-      } });
-      const lookalike = await caller.checkPort({ forwardGroupId: 11, sourcePort: 18445, protocol: "tcp", forwardType: "gost", sni: "next.example.com" });
-      assert.equal(lookalike.occupancy, "blocked");
-      receivePortOccupancy(1, { signature: "a2", collected: true, snapshot: {
-        listeners: [{ port: 18445, protocol: "tcp", address: "0.0.0.0", process: "gost", managedRuntime: "forwardx-runtime" }],
-        collectedAt: Date.now(), complete: true,
-      } });
       const sharedPort = await caller.checkPort({ forwardGroupId: 11, sourcePort: 18445, protocol: "tcp", forwardType: "gost", sni: "next.example.com" });
-      assert.equal(sharedPort.used, false);
-      assert.equal(sharedPort.occupancy, "free");
+      assert.deepEqual(sharedPort, { used: false });
       await caller.create({ ...gostSni, name: "gost-second", sni: "next.example.com" });
     } finally {
       await runtime.closeDatabase();

@@ -16,6 +16,16 @@ const RULE_ERROR_NOTIFY_CACHE_MAX = 10_000;
 const lastRuleErrorNotifyAt = new Map<string, number>();
 const portOccupancyNotifyState = new Map<string, { owner: string; notifiedAt: number; pending: boolean }>();
 
+export function clearPortOccupancyNotification(key: string) {
+  portOccupancyNotifyState.delete(key);
+}
+
+export function prunePortOccupancyNotificationsForHost(hostId: number, activeKeys: Set<string>) {
+  for (const key of portOccupancyNotifyState.keys()) {
+    if (Number(key.split(":")[1]) === hostId && !activeKeys.has(key)) portOccupancyNotifyState.delete(key);
+  }
+}
+
 export function portOccupancyNotificationTransition(key: string, owner: string, verified: boolean, now = Date.now()): "occupied" | "recovered" | null {
   if (!verified) return null;
   const previous = portOccupancyNotifyState.get(key);

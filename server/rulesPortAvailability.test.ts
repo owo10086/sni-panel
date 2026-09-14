@@ -33,6 +33,9 @@ test("forward-group port checks cover every entry and exclude the edited templat
       await runtime.connectDatabase({ type: "sqlite", sqlite: { path: process.env.FORWARDX_TEST_DB } });
       await schema.ensureDatabaseSchema();
       const now = Math.floor(Date.now() / 1000);
+      await insert("users", ["id", "username", "password", "role", "canAddRules"], [1, "admin", "x", "admin", 1]);
+      await insert("users", ["id", "username", "password", "role", "canAddRules"], [2, "viewer", "x", "user", 1]);
+      await insert("user_host_permissions", ["userId", "hostId"], [2, 1]);
       await insert("hosts", ["id", "name", "ip", "ipv4", "userId", "isOnline", "lastHeartbeat", "portRangeStart", "portRangeEnd"], [1, "entry", "198.51.100.10", "198.51.100.10", 1, 1, now, 17000, 18000]);
       await insert("hosts", ["id", "name", "ip", "ipv4", "userId", "isOnline", "lastHeartbeat", "portRangeStart", "portRangeEnd"], [2, "tunnel-exit", "198.51.100.11", "198.51.100.11", 1, 1, now, 17650, 17650]);
       await insert("hosts", ["id", "name", "ip", "ipv4", "userId", "isOnline", "lastHeartbeat", "portRangeStart", "portRangeEnd"], [3, "overlapping-entry-exit", "198.51.100.12", "198.51.100.12", 1, 1, now, 17700, 17700]);
@@ -91,11 +94,11 @@ test("forward-group port checks cover every entry and exclude the edited templat
       );
       assert.deepEqual(
         await caller.checkPort({ forwardGroupId: 10, sourcePort: 17501, protocol: "tcp" }),
-        { used: false, occupancy: "unverified", warning: "主机 1：主机端口信息未经核实" },
+        { used: false },
       );
       assert.deepEqual(
         await caller.checkPort({ forwardGroupId: 10, sourcePort: 17500, excludeRuleId: 100, protocol: "tcp" }),
-        { used: false, occupancy: "unverified", warning: "主机 1：主机端口信息未经核实" },
+        { used: false },
       );
       assert.deepEqual(
         await caller.checkPort({ forwardGroupId: 10, sourcePort: 16000, protocol: "tcp" }),
@@ -130,7 +133,7 @@ test("forward-group port checks cover every entry and exclude the edited templat
       });
       assert.deepEqual(
         await userCaller.checkPort({ forwardGroupId: 10, sourcePort: 17501, protocol: "tcp" }),
-        { used: false, occupancy: "unverified", warning: "主机 1：主机端口信息未经核实" },
+        { used: false },
       );
       assert.deepEqual(
         await userCaller.checkPort({ forwardGroupId: 10, sourcePort: 17700, protocol: "tcp" }),
@@ -156,171 +159,39 @@ test("forward-group port checks cover every entry and exclude the edited templat
       await insert("forward_rules", ["id", "hostId", "name", "forwardType", "protocol", "sourcePort", "targetIp", "targetPort", "userId", "isEnabled", "isRunning"],
         [501, 1, "occupied-kernel", "iptables", "tcp", 17501, "203.0.113.5", 80, 2, 1, 1]);
       await insert("forward_rules", ["id", "hostId", "name", "forwardType", "protocol", "sourcePort", "targetIp", "targetPort", "userId", "isEnabled", "isRunning"],
-        [502, 1, "occupied-userspace", "gost", "tcp", 17506, "203.0.113.5", 80, 2, 1, 1]);
-      receivePortOccupancy(1, { signature: "abc123", collected: true, snapshot: {
+        [502, 1, "occupied-userspace", "gost", "tcp", 17506, "203.0.113.5", 80, 2, 1, 0]);
+      await runtime.executeRaw('UPDATE "hosts" SET "portRangeStart" = ?, "portRangeEnd" = ? WHERE "id" = ?', [17000, 18000, 1]);
+      receivePortOccupancy(1, { schemaVersion: 2, signature: "abc123", collected: true, snapshot: {
         listeners: [{ port: 17501, protocol: "tcp", address: "127.0.0.1", process: "code" },
-          { port: 17506, protocol: "tcp", address: "0.0.0.0", process: "external" }],
-        collectedAt: Date.now(), complete: true,
+          { port: 17506, protocol: "tcp", address: "0.0.0.0", process: "external" },
+          { port: 17502, protocol: "tcp", address: "0.0.0.0", process: "other" }],
+        covered: [{ port: 17501, protocol: "tcp" }, { port: 17506, protocol: "tcp" }, { port: 17502, protocol: "tcp" }],
+        collectedAt: Date.now(),
       } });
       await refreshRulePortWarningsForHost(1);
-      assert.equal((await caller.getById({ id: 502 })).isRunning, true);
-      assert.match((await caller.getById({ id: 502 })).portOccupancyWarnings[0].message, /external/);
-      const adminRule = await caller.getById({ id: 501 });
-      assert.equal(adminRule.isRunning, true);
-      assert.equal(adminRule.portOccupancyWarnings[0].status, "occupied");
-      assert.match(adminRule.portOccupancyWarnings[0].message, /code/);
-      const ordinaryRule = await userCaller.getById({ id: 501 });
-      assert.equal(ordinaryRule.isRunning, true);
-      assert.equal(ordinaryRule.portOccupancyWarnings[0].status, "occupied");
-      assert.doesNotMatch(JSON.stringify(ordinaryRule), /code/);
-      receivePortOccupancy(1, { signature: "abc124", collected: true, snapshot: {
-        listeners: [{ port: 17506, protocol: "tcp", address: "0.0.0.0", process: "realm", managedRuntime: "forwardx-realm" }],
-        collectedAt: Date.now(), complete: true,
-      } });
-      await refreshRulePortWarningsForHost(1);
-      assert.deepEqual((await caller.getById({ id: 501 })).portOccupancyWarnings, []);
-      assert.match((await caller.getById({ id: 502 })).portOccupancyWarnings[0].message, /realm/);
-      receivePortOccupancy(1, { signature: "abc124b", collected: true, snapshot: {
-        listeners: [{ port: 17506, protocol: "tcp", address: "0.0.0.0", process: "gost", managedRuntime: "forwardx-runtime" }],
-        collectedAt: Date.now(), complete: true,
-      } });
-      await refreshRulePortWarningsForHost(1);
+      const kernel = await caller.getById({ id: 501 });
+      assert.equal(kernel.isRunning, true);
+      assert.match(kernel.portOccupancyWarnings[0].message, /code/);
       assert.deepEqual((await caller.getById({ id: 502 })).portOccupancyWarnings, []);
-      const fxpListener = { port: 17506, protocol: "tcp", address: "0.0.0.0", process: "forwardx-fxp",
-        managedRuntime: "forwardx-fxp", managedRuntimeId: "entry-group:v1:200" };
-      assert.equal(managedListenerMatchesRule(fxpListener, { id: 501, forwardType: "iptables", sourcePort: 17506, isRunning: true }), false);
-      assert.equal(managedListenerMatchesRule(fxpListener, { id: 502, forwardType: "gost", sourcePort: 17506, isRunning: true, tunnelId: 201 }), false);
-      assert.equal(managedListenerMatchesRule(fxpListener, { id: 502, forwardType: "gost", sourcePort: 17506, isRunning: true, tunnelId: 200 }), true);
-      assert.equal(managedListenerMatchesRule(fxpListener, { id: 502, forwardType: "gost", sourcePort: 17506, isRunning: false, tunnelId: 200 }), false);
-      assert.equal(managedListenerMatchesRule({ ...fxpListener, managedRuntime: "forwardx-runtime", managedRuntimeId: undefined },
-        { id: 502, forwardType: "gost", sourcePort: 17506, isRunning: false, sni: "a.example.com" }, true), true);
-      assert.equal(managedListenerMatchesRule({ ...fxpListener, managedRuntime: "forwardx-runtime", managedRuntimeId: undefined },
-        { id: 502, forwardType: "gost", sourcePort: 17506, isRunning: false, sni: "a.example.com" }), false);
-      assert.equal(managedListenerMatchesRule({ ...fxpListener, managedRuntimeId: "entry-group:v1:201" },
-        { id: 502, forwardType: "gost", sourcePort: 17506, isRunning: false, sni: "a.example.com", tunnelId: 200 }, true), false);
-      assert.equal(managedListenerMatchesRule({ ...fxpListener, managedRuntime: "forwardx-runtime" },
-        { id: 502, forwardType: "gost", sourcePort: 17506, isRunning: true, tunnelId: 200 }), true);
-      assert.equal(managedListenerMatchesRule({ ...fxpListener, managedRuntime: "forwardx-tunnel-runtime" },
-        { id: 502, forwardType: "gost", sourcePort: 17506, isRunning: true, tunnelId: 200 }), false);
-      assert.equal(managedListenerMatchesRule({ ...fxpListener, managedRuntimeId: "v1:sni-splitter:0:17506" },
-        { id: 502, forwardType: "gost", sourcePort: 17506, isRunning: true, forwardGroupId: 10, sni: "a.example.com", sniSplitterPort: 17506 }), true);
-      assert.equal(managedListenerMatchesRule({ ...fxpListener, managedRuntimeId: "v1:sni-splitter:0:17506" },
-        { id: 502, forwardType: "gost", sourcePort: 17506, isRunning: true, forwardGroupId: 0, sni: "a.example.com", sniSplitterPort: 17506 }), false);
-      receivePortOccupancy(1, { signature: "abc124c", collected: true, snapshot: {
-        listeners: [{ ...fxpListener, port: 17501 }], collectedAt: Date.now(), complete: true,
-      } });
-      await refreshRulePortWarningsForHost(1);
-      assert.match((await caller.getById({ id: 501 })).portOccupancyWarnings[0].message, /forwardx-fxp/);
-      await runtime.executeRaw('UPDATE "hosts" SET "portRangeStart" = ?, "portRangeEnd" = ? WHERE "id" = ?', [17000, 18000, 1]);
-      receivePortOccupancy(1, { signature: "abc125", collected: true, snapshot: {
-        listeners: [{ port: 17502, protocol: "tcp", address: "127.0.0.1", process: "code" }],
-        collectedAt: Date.now(), complete: true,
-      } });
-      const warning = await caller.checkPort({ hostId: 1, sourcePort: 17502, protocol: "tcp", forwardType: "iptables" });
-      assert.equal(warning.used, false);
-      assert.equal(warning.occupancy, "warning");
-      assert.match(warning.warning, /127\.0\.0\.1.*code/);
-      assert.equal(warning.observations[0].collectedAt > 0, true);
-      assert.match(JSON.stringify(warning.observations), /code/);
-      const userspaceConflict = await caller.checkPort({ hostId: 1, sourcePort: 17502, protocol: "tcp", forwardType: "gost" });
-      assert.equal(userspaceConflict.used, true);
-      assert.equal(userspaceConflict.occupancy, "blocked");
-      assert.equal((await caller.checkPort({ hostId: 1, sourcePort: 17502, protocol: "udp", forwardType: "gost" })).used, false);
-      const newRule = { hostId: 1, name: "confirmed-kernel", forwardType: "iptables", protocol: "tcp",
-        sourcePort: 17502, targetIp: "203.0.113.5", targetPort: 80 };
-      await assert.rejects(() => caller.create(newRule), /确认.*占用/);
-      const createdWithWarning = await caller.create({ ...newRule, confirmPortOccupancy: true });
-      assert.ok(createdWithWarning.id > 0);
-      receivePortOccupancy(1, { signature: "abc126", collected: true, snapshot: {
-        listeners: [{ port: 17503, protocol: "tcp", address: "127.0.0.1", process: "code" }],
-        collectedAt: Date.now(), complete: true,
-      } });
-      await assert.rejects(() => caller.create({ ...newRule, name: "userspace-conflict", forwardType: "gost", sourcePort: 17503 }), /code/);
-      recordRulePortFailure(130, "port 17400 occupied by code");
-      assert.match((await caller.getById({ id: 130 })).portBindFailure, /code/);
-      const ownerCaller = rulesRouter.createCaller({ req: { headers: {} }, res: { clearCookie() {} },
-        user: { id: 1, username: "owner", role: "user", accountEnabled: true }, authSession: null, authFailureReason: null });
-      assert.doesNotMatch((await ownerCaller.getById({ id: 130 })).portBindFailure, /code/);
-      recordRulePortFailure(130, "");
-      assert.equal(getRulePortFailure(130, true), null);
-      await runtime.executeRaw('UPDATE "hosts" SET "portRangeStart" = ?, "portRangeEnd" = ? WHERE "id" = ?', [17504, 17505, 1]);
-      receivePortOccupancy(1, { signature: "abc127", collected: true, snapshot: {
-        listeners: [{ port: 17504, protocol: "tcp", address: "0.0.0.0", process: "other" }],
-        collectedAt: Date.now(), complete: true,
-      } });
-      assert.deepEqual(await caller.randomPort({ hostId: 1, protocol: "tcp" }), { port: 17505 });
-      assert.deepEqual(await caller.randomPort({ forwardGroupId: 10, protocol: "tcp" }), { port: 17505 });
-      await runtime.executeRaw('UPDATE "hosts" SET "portRangeStart" = ?, "portRangeEnd" = ? WHERE "id" = ?', [17504, 17504, 1]);
-      assert.deepEqual(await caller.randomPort({ hostId: 1, protocol: "udp" }), { port: 17504 });
-      await runtime.executeRaw('UPDATE "hosts" SET "isOnline" = ? WHERE "id" = ?', [0, 1]);
-      assert.deepEqual(await caller.randomPort({ hostId: 1, protocol: "tcp" }), { port: 17504 });
-      await runtime.executeRaw('UPDATE "hosts" SET "isOnline" = ? WHERE "id" = ?', [1, 1]);
-      await runtime.executeRaw('UPDATE "hosts" SET "portRangeStart" = ?, "portRangeEnd" = ? WHERE "id" = ?', [17000, 18000, 1]);
+      assert.doesNotMatch(JSON.stringify((await userCaller.getById({ id: 501 })).portOccupancyWarnings), /code/);
+      recordRulePortFailure(502, "port 17506 occupied by external");
+      assert.match((await caller.getById({ id: 502 })).portBindFailure, /external/);
+      assert.doesNotMatch(JSON.stringify((await userCaller.getById({ id: 502 })).portBindFailure), /external/);
+      recordRulePortFailure(502, "");
+      assert.deepEqual(await caller.checkPort({ hostId: 1, sourcePort: 17502, protocol: "tcp" }), { used: false });
+      const created = await caller.create({ hostId: 1, name: "listener-does-not-block-create",
+        forwardType: "gost", protocol: "tcp", sourcePort: 17502, targetIp: "203.0.113.5", targetPort: 80 });
+      assert.ok(created.id > 0);
       await caller.toggle({ id: 501, isEnabled: false });
-      receivePortOccupancy(1, { signature: "abc128", collected: true, snapshot: {
-        listeners: [{ port: 17501, protocol: "tcp", address: "127.0.0.1", process: "new-owner" }],
-        collectedAt: Date.now(), complete: true,
+      await caller.toggle({ id: 501, isEnabled: true });
+      await caller.update({ id: 501, name: "listener-does-not-block-update" });
+      await runtime.executeRaw('UPDATE "hosts" SET "portRangeStart" = ?, "portRangeEnd" = ? WHERE "id" = ?', [17504, 17504, 1]);
+      receivePortOccupancy(1, { schemaVersion: 2, signature: "abc124", collected: true, snapshot: {
+        listeners: [{ port: 17504, protocol: "tcp", address: "0.0.0.0", process: "external" }],
+        covered: [{ port: 17504, protocol: "tcp" }], collectedAt: Date.now(),
       } });
-      await assert.rejects(() => caller.toggle({ id: 501, isEnabled: true }), /确认.*占用/);
-      await caller.toggle({ id: 501, isEnabled: true, confirmPortOccupancy: true });
-      await caller.update({ id: 501, name: "unrelated-field" });
-      receivePortOccupancy(1, { signature: "abc130", collected: true, snapshot: {
-        listeners: [{ port: 17501, protocol: "tcp", address: "127.0.0.1", process: "changed-owner" }],
-        collectedAt: Date.now(), complete: true,
-      } });
-      await assert.rejects(() => caller.update({ id: 501, name: "owner-changed" }), /确认.*占用/);
-      await caller.update({ id: 501, name: "owner-changed", confirmPortOccupancy: true });
-      await runtime.executeRaw('UPDATE "hosts" SET "isOnline" = ? WHERE "id" = ?', [0, 1]);
-      assert.equal((await caller.getById({ id: 501 })).portOccupancyWarnings[0].status, "unverified");
-      assert.equal((await caller.checkPort({ hostId: 1, sourcePort: 17501, protocol: "tcp", forwardType: "iptables", excludeRuleId: 501 })).occupancy, "unverified");
-      await runtime.executeRaw('UPDATE "hosts" SET "isOnline" = ? WHERE "id" = ?', [1, 1]);
-      await insert("hosts", ["id", "name", "ip", "ipv4", "userId", "isOnline", "lastHeartbeat", "portRangeStart", "portRangeEnd"],
-        [4, "second-entry", "198.51.100.14", "198.51.100.14", 1, 1, now, 17000, 18000]);
-      await insert("forward_groups", ["id", "name", "groupType", "groupMode", "forwardType", "domain", "targetIp", "userId", "isEnabled"],
-        [14, "multi-entry", "host", "failover", "iptables", "", "0.0.0.0", 1, 1]);
-      await insert("forward_group_members", ["id", "groupId", "memberType", "hostId", "priority", "isEnabled"], [141, 14, "host", 1, 0, 1]);
-      await insert("forward_group_members", ["id", "groupId", "memberType", "hostId", "priority", "isEnabled"], [142, 14, "host", 4, 1, 1]);
-      await insert("subscription_plan_forward_groups", ["planId", "forwardGroupId"], [50, 14]);
-      receivePortOccupancy(4, { signature: "abc129", collected: true, snapshot: {
-        listeners: [{ port: 17510, protocol: "tcp", address: "0.0.0.0", process: "other-service" }],
-        collectedAt: Date.now(), complete: true,
-      } });
-      const groupWarning = await caller.checkPort({ forwardGroupId: 14, sourcePort: 17510, protocol: "tcp", forwardType: "iptables" });
-      assert.equal(groupWarning.occupancy, "warning", JSON.stringify(groupWarning));
-      assert.match(groupWarning.warning, /主机 4.*other-service/);
-      const groupUserWarning = await userCaller.checkPort({ forwardGroupId: 14, sourcePort: 17510, protocol: "tcp", forwardType: "iptables" });
-      assert.equal(groupUserWarning.occupancy, "warning");
-      assert.doesNotMatch(JSON.stringify(groupUserWarning), /other-service/);
-      assert.equal(groupUserWarning.observations[0].listeners[0].process, undefined);
-      await runtime.executeRaw('UPDATE "hosts" SET "isOnline" = ? WHERE "id" = ?', [0, 4]);
-      const offlineGroup = await caller.checkPort({ forwardGroupId: 14, sourcePort: 17510, protocol: "tcp", forwardType: "iptables" });
-      assert.equal(offlineGroup.occupancy, "unverified");
-      assert.match(offlineGroup.warning, /主机 4：主机端口信息未经核实/);
-      receivePortOccupancy(1, { signature: "abc131", collected: true, snapshot: {
-        listeners: [{ port: 17508, protocol: "tcp", address: "127.0.0.1", process: "group-owner" }],
-        collectedAt: Date.now(), complete: true,
-      } });
-      await assert.rejects(() => caller.update({ id: 100, sourcePort: 17508 }), /确认.*占用/);
-      await caller.update({ id: 100, sourcePort: 17508, confirmPortOccupancy: true });
-      assert.match((await caller.getById({ id: 100 })).portOccupancyWarnings[0].message, /group-owner/);
-      await runtime.executeRaw('UPDATE "hosts" SET "isOnline" = ? WHERE "id" = ?', [1, 4]);
-      await insert("forward_groups", ["id", "name", "groupType", "groupMode", "domain", "targetIp", "userId", "isEnabled"],
-        [15, "tunnel-entry-group", "host", "entry", "", "0.0.0.0", 1, 1]);
-      await insert("forward_group_members", ["id", "groupId", "memberType", "hostId", "priority", "isEnabled"], [151, 15, "host", 1, 0, 1]);
-      await insert("forward_group_members", ["id", "groupId", "memberType", "hostId", "priority", "isEnabled"], [152, 15, "host", 4, 1, 1]);
-      await insert("tunnels", ["id", "name", "entryHostId", "exitHostId", "entryGroupId", "listenPort", "userId"],
-        [202, "multi-entry-tunnel", 1, 2, 15, 17777, 1]);
-      await insert("forward_rules", ["id", "hostId", "tunnelId", "name", "forwardType", "protocol", "sourcePort", "targetIp", "targetPort", "userId", "isEnabled", "isRunning"],
-        [9000, 1, 202, "entry-group-rule", "gost", "tcp", 17511, "203.0.113.5", 80, 1, 1, 1]);
-      receivePortOccupancy(4, { signature: "abc132", collected: true, snapshot: {
-        listeners: [{ port: 17511, protocol: "tcp", address: "127.0.0.1", process: "remote-owner" }],
-        collectedAt: Date.now(), complete: true,
-      } });
-      await refreshRulePortWarningsForHost(4);
-      const entryGroupRule = await caller.getById({ id: 9000 });
-      assert.equal(entryGroupRule.isRunning, true);
-      assert.equal(entryGroupRule.portOccupancyWarnings[0].hostId, 4);
-      assert.match(entryGroupRule.portOccupancyWarnings[0].message, /remote-owner/);
+      assert.deepEqual(await caller.randomPort({ hostId: 1, protocol: "tcp" }), { port: 17504 });
+      assert.deepEqual(await caller.randomPort({ forwardGroupId: 10, protocol: "tcp" }), { port: 17504 });
     } finally {
       await runtime.closeDatabase();
     }
@@ -395,7 +266,7 @@ test("direct-host create, port lookup, enable, and update paths enforce subscrip
       );
       assert.deepEqual(
         await limitedCaller.checkPort({ hostId: 2, sourcePort: 17500, protocol: "tcp" }),
-        { used: false, occupancy: "unverified", warning: "主机端口信息未经核实" },
+        { used: false },
       );
       const randomPort = await limitedCaller.randomPort({ hostId: 2, protocol: "tcp" });
       assert.ok(randomPort.port >= 17000 && randomPort.port <= 18000, "random port escaped plan range: " + randomPort.port);

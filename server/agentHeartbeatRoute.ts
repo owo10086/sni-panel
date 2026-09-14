@@ -34,9 +34,9 @@ import { getAgentPluginInventory, updateAgentPluginInventory } from "./agentPlug
 import { getAgentHostFromRequest, getAgentPresenceHostFromRequest, getResolvedAgentToken } from "./agentAuth";
 import { normalizeAgentText, normalizeNetworkInterface } from "./agentInputValidation";
 import { pruneMapEntries, setBoundedMapValue } from "./boundedCache";
-import { receivePortOccupancy, prunePortOccupancy, getPortOccupancy, inspectPortOccupancy } from "./portOccupancy";
+import { receivePortOccupancy, prunePortOccupancy } from "./portOccupancy";
 import { refreshRulePortWarningsForHost } from "./rulePortOccupancy";
-import { recordRulePortFailure } from "./rulePortFailure";
+import { formatPortRuleManifest, loadPortRuleManifestForHost } from "./portRuleManifest";
 import { mergeAgentReportedAddress } from "./agentAddressState";
 import {
   gostTunnelTransportType,
@@ -1485,11 +1485,14 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
       if (!releaseHeartbeatReconciliation) {
         await db.touchHostHeartbeat(logHostId);
         const coalescedOccupancy = receivePortOccupancy(logHostId, {
+          schemaVersion: req.body?.portOccupancySchemaVersion,
           signature: req.body?.portOccupancySignature,
           collected: req.body?.portOccupancyCollected,
           snapshot: req.body?.portOccupancy,
         });
-        if (coalescedOccupancy.verified) await refreshRulePortWarningsForHost(logHostId);
+        const coalescedManifestData = await loadPortRuleManifestForHost(logHostId);
+        if (coalescedOccupancy.verified) await refreshRulePortWarningsForHost(logHostId, coalescedManifestData.entries);
+        const coalescedManifest = formatPortRuleManifest(coalescedManifestData, req.body?.portRuleManifestSignature);
         if (!wasOnline) {
           await resetAgentRuntimeStateForRecovery(logHostId, "agent-reconnected-heartbeat-coalesced");
           void notifyHostOnlineIfNeeded({ ...host, isOnline: true, lastHeartbeat: new Date() }).catch((error) => {
@@ -1514,6 +1517,7 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
           nextInterval: 5,
         });
         res.json({
+          ...coalescedManifest,
           success: true,
           actions: [],
           selfTests: [],
@@ -1570,29 +1574,14 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
       reportedLocalRuntimeState,
     );
     const portOccupancy = receivePortOccupancy(Number(host.id), {
+      schemaVersion: req.body?.portOccupancySchemaVersion,
       signature: req.body?.portOccupancySignature,
       collected: req.body?.portOccupancyCollected,
       snapshot: req.body?.portOccupancy,
     });
-    if (reportedLocalRuntimeState && portOccupancy.verified) {
-      const snapshot = getPortOccupancy(Number(host.id));
-      for (const ruleState of reportedLocalRuntimeState.rules) {
-        if (ruleState.ruleId <= 0 || ruleState.forwardType === "iptables" || ruleState.forwardType === "nftables") continue;
-        if (ruleState.ready) {
-          recordRulePortFailure(ruleState.ruleId, "");
-          continue;
-        }
-        const occupancy = inspectPortOccupancy(snapshot, ruleState.port,
-          ruleState.protocol === "udp" ? "udp" : ruleState.protocol === "tcp" ? "tcp" : "both");
-        const external = occupancy.status === "occupied"
-          ? occupancy.listeners.find((listener) => !listener.managedRuntime)
-          : null;
-        if (external) {
-          recordRulePortFailure(ruleState.ruleId, `port ${ruleState.port} occupied${external.process ? ` by ${external.process}` : ""}`);
-        }
-      }
-    }
-    if (portOccupancy.verified) await refreshRulePortWarningsForHost(Number(host.id));
+    const portRuleManifestData = await loadPortRuleManifestForHost(Number(host.id));
+    const portRuleManifestResponse = formatPortRuleManifest(portRuleManifestData, req.body?.portRuleManifestSignature);
+    if (portOccupancy.verified) await refreshRulePortWarningsForHost(Number(host.id), portRuleManifestData.entries);
     const mimicEnvironment = normalizeMimicEnvironment(req.body?.mimicEnvironment);
     const fxpEndpointEvents = Array.isArray(req.body?.fxpEndpointEvents) ? req.body.fxpEndpointEvents.slice(0, 256) : [];
     for (const rawEvent of fxpEndpointEvents) {
@@ -1841,7 +1830,7 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
         metricsWatching,
         nextInterval: metricsWatching ? 3 : 5,
       });
-      res.json({ ...buildBusyAgentHeartbeatResponse({
+      res.json({ ...portRuleManifestResponse, ...buildBusyAgentHeartbeatResponse({
         panelUrl,
         requestLocalState: localRuntimeState.requestLocalState,
         metricsWatching,
@@ -1898,6 +1887,7 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
         nextInterval: metricsWatching ? 3 : stablePlan.idleNextInterval,
       });
       res.json({
+        ...portRuleManifestResponse,
         success: true,
         actions: [],
         selfTests: [],
@@ -7459,8 +7449,8 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
     // 有 SSE 长连接时立即将 desiredState + runningRules 推送给 Agent，
     // 无需等待下一个心跳周期即可执行转发规则变更。
     // heartbeat response 里仍携带 desiredState 作为兜底（SSE 断开时的最终一致保证）。
-    if (desiredState) {
-      if (agentDesiredDispatchAuditHash.get(Number(host.id)) !== desiredState.configHash) {
+    if (desiredState || "portRuleManifest" in portRuleManifestResponse) {
+      if (desiredState && agentDesiredDispatchAuditHash.get(Number(host.id)) !== desiredState.configHash) {
         setBoundedMapValue(agentDesiredDispatchAuditHash, Number(host.id), desiredState.configHash, AGENT_HOST_CACHE_MAX);
         void recordConfigAuditEvent({
           resourceType: "runtime",
@@ -7472,6 +7462,7 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
         });
       }
       pushAgentDesiredState(Number(host.id), {
+        ...portRuleManifestResponse,
         desiredState,
         runningRules,
         ruleLatencyProbes,
@@ -7549,6 +7540,7 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
       ) : 0,
     });
     res.json({
+      ...portRuleManifestResponse,
       success: true,
       actions: supportsDesiredState ? [] : orderedActions,
       desiredState,

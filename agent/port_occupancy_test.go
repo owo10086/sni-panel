@@ -1,6 +1,8 @@
 package main
 
 import (
+	"encoding/json"
+	"errors"
 	"os"
 	"os/exec"
 	"strconv"
@@ -13,8 +15,8 @@ func TestPortOccupancySnapshotPreservesListenerDetails(t *testing.T) {
 	listen.parseSSListenOutput("tcp LISTEN 0 128 127.0.0.1:11127 0.0.0.0:* users:((\"code\",pid=518917,fd=8))\n" +
 		"tcp LISTEN 0 128 [::1]:11127 [::]:* users:((\"proxy\",pid=2,fd=4))\n" +
 		"udp UNCONN 0 0 0.0.0.0:11127 0.0.0.0:* users:((\"dns\",pid=3,fd=4))")
-	snapshot := portOccupancyFromListen(listen)
-	if !snapshot.Complete || len(snapshot.Listeners) != 3 {
+	snapshot := portOccupancyFromListen(listen, []portRuleEntry{{RuleID: 1, Port: 11127, Protocol: "both", ForwardType: "iptables"}})
+	if len(snapshot.Covered) != 2 || len(snapshot.Listeners) != 3 {
 		t.Fatalf("unexpected listener snapshot: %+v", snapshot)
 	}
 	if snapshot.Listeners[0].Address != "127.0.0.1" || snapshot.Listeners[0].Process != "code" || snapshot.Listeners[0].Protocol != "tcp" {
@@ -47,7 +49,7 @@ func TestPortOccupancyTracksFXPInstance(t *testing.T) {
 	})
 	listen := &runtimeListenSnapshot{tcpPorts: map[int][]string{}, udpPorts: map[int][]string{}, usable: true}
 	listen.parseSSListenOutput("tcp LISTEN 0 128 0.0.0.0:11127 0.0.0.0:* users:((\"forwardx-fxp\",pid=919191,fd=8))")
-	snapshot := portOccupancyFromListen(listen)
+	snapshot := portOccupancyFromListen(listen, []portRuleEntry{{RuleID: 1, Port: 11127, Protocol: "tcp", ForwardType: "gost"}})
 	if len(snapshot.Listeners) != 1 || snapshot.Listeners[0].ManagedRuntimeID != "entry-group:v1:42" {
 		t.Fatalf("FXP listener instance was not identified: %+v", snapshot.Listeners)
 	}
@@ -59,32 +61,30 @@ func TestPortOccupancyTracksFXPInstance(t *testing.T) {
 	}
 }
 
-func TestPortOccupancySnapshotMarksTruncatedPortsUnknown(t *testing.T) {
+func TestPortOccupancySnapshotDropsEntirePortWhenListenerLimitReached(t *testing.T) {
 	listen := &runtimeListenSnapshot{tcpPorts: map[int][]string{}, udpPorts: map[int][]string{}, usable: true}
-	for port := 1; port <= 600; port++ {
-		listen.add("tcp", port, "tcp LISTEN 0 128 0.0.0.0:"+strconv.Itoa(port)+" 0.0.0.0:* users:((\"service\",pid=1,fd=1))")
+	for idx := 0; idx < 257; idx++ {
+		listen.add("tcp", 11127, "tcp LISTEN 0 128 0.0.0.0:11127 0.0.0.0:* users:((\"service\",pid=1,fd=1))")
 	}
-	snapshot := portOccupancyFromListen(listen)
-	if snapshot.Complete || snapshot.CoveredThrough <= 0 || snapshot.CoveredThrough >= 600 || len(snapshot.Listeners) > 256 {
-		t.Fatalf("truncation lost coverage boundary: %+v", snapshot)
+	listen.add("tcp", 11128, "tcp LISTEN 0 128 127.0.0.1:11128 0.0.0.0:*")
+	snapshot := portOccupancyFromListen(listen, []portRuleEntry{
+		{RuleID: 1, Port: 11127, Protocol: "tcp", ForwardType: "gost"},
+		{RuleID: 2, Port: 11128, Protocol: "tcp", ForwardType: "iptables"},
+	})
+	if len(snapshot.Covered) != 1 || snapshot.Covered[0].Port != 11128 || len(snapshot.Listeners) != 1 {
+		t.Fatalf("oversized port must leave coverage as a whole: %+v", snapshot)
 	}
 }
 
-func TestPortOccupancySnapshotPrioritizesRuleRangeOverLowPortNoise(t *testing.T) {
+func TestPortOccupancySnapshotIgnoresUnrelatedListeners(t *testing.T) {
 	listen := &runtimeListenSnapshot{tcpPorts: map[int][]string{}, udpPorts: map[int][]string{}, usable: true}
 	for port := 1; port <= 300; port++ {
-		listen.add("tcp", port, "tcp LISTEN 0 128 0.0.0.0:"+strconv.Itoa(port)+" 0.0.0.0:*")
+		listen.add("tcp", port, "tcp LISTEN 0 128 0.0.0.0:1 0.0.0.0:*")
 	}
 	listen.add("tcp", 11127, "tcp LISTEN 0 128 127.0.0.1:11127 0.0.0.0:* users:((\"code\",pid=518917,fd=8))")
-	snapshot := portOccupancyFromListen(listen)
-	found := false
-	for _, listener := range snapshot.Listeners {
-		if listener.Port == 11127 {
-			found = true
-		}
-	}
-	if !found || snapshot.Complete || snapshot.CoveredThrough >= 300 {
-		t.Fatalf("common rule port or truncation coverage was lost: %+v", snapshot)
+	snapshot := portOccupancyFromListen(listen, []portRuleEntry{{RuleID: 1, Port: 11127, Protocol: "tcp", ForwardType: "iptables"}})
+	if len(snapshot.Covered) != 1 || snapshot.Covered[0].Port != 11127 || len(snapshot.Listeners) != 1 {
+		t.Fatalf("unrelated listeners changed rule coverage: %+v", snapshot)
 	}
 }
 
@@ -92,10 +92,91 @@ func TestPortOccupancySnapshotDecodesProcNetAddresses(t *testing.T) {
 	listen := &runtimeListenSnapshot{tcpPorts: map[int][]string{}, udpPorts: map[int][]string{}, usable: true}
 	listen.add("tcp", 11127, "/proc/net/tcp:0100007F:2B77")
 	listen.add("tcp", 11128, "/proc/net/tcp6:00000000000000000000000001000000:2B78")
-	snapshot := portOccupancyFromListen(listen)
-	if !snapshot.Complete || len(snapshot.Listeners) != 2 ||
+	snapshot := portOccupancyFromListen(listen, []portRuleEntry{
+		{RuleID: 1, Port: 11127, Protocol: "tcp", ForwardType: "gost"},
+		{RuleID: 2, Port: 11128, Protocol: "tcp", ForwardType: "gost"},
+	})
+	if len(snapshot.Covered) != 2 || len(snapshot.Listeners) != 2 ||
 		snapshot.Listeners[0].Address != "127.0.0.1" || snapshot.Listeners[1].Address != "::1" {
 		t.Fatalf("/proc/net addresses were not preserved: %+v", snapshot)
+	}
+}
+
+func TestFallbackCollectionDoesNotClaimCoverageWhenOneAddressFamilyFails(t *testing.T) {
+	snapshot := &runtimeListenSnapshot{tcpPorts: map[int][]string{}, udpPorts: map[int][]string{}}
+	snapshot.parseProcNetListenFilesWith(func(path string) ([]byte, error) {
+		if path == "/proc/net/tcp6" {
+			return nil, errors.New("permission denied")
+		}
+		return []byte("header\n  0: 0100007F:2B77 00000000:0000 0A\n"), nil
+	})
+	result := portOccupancyFromListen(snapshot, []portRuleEntry{{RuleID: 1, Port: 11127, Protocol: "both"}})
+	if snapshot.usable || len(result.Covered) != 0 || len(result.Listeners) != 0 {
+		t.Fatalf("partially read fallback declared coverage: %+v %+v", snapshot, result)
+	}
+}
+
+func TestPortRuleManifestRevisionAndRecovery(t *testing.T) {
+	portRuleManifestMu.Lock()
+	previousRevision, previousSignature, previousEntries := portRuleManifestRevision, portRuleManifestSignature, portRuleManifestEntries
+	portRuleManifestRevision, portRuleManifestSignature, portRuleManifestEntries = -1, "", nil
+	portRuleManifestMu.Unlock()
+	t.Cleanup(func() {
+		portRuleManifestMu.Lock()
+		portRuleManifestRevision, portRuleManifestSignature, portRuleManifestEntries = previousRevision, previousSignature, previousEntries
+		portRuleManifestMu.Unlock()
+	})
+	entries := []portRuleEntry{{RuleID: 1, Port: 11127, Protocol: "tcp", ForwardType: "gost"}}
+	signature := signPortRuleManifest(entries)
+	acceptPortRuleManifest(10, signature, &entries)
+	if current, rules := portRuleManifestForHeartbeat(); current != signature || len(rules) != 1 {
+		t.Fatalf("valid manifest was not applied: %q %+v", current, rules)
+	}
+	acceptPortRuleManifest(11, signature, nil)
+	if current, _ := portRuleManifestForHeartbeat(); current != signature {
+		t.Fatal("matching omitted manifest cleared the cache")
+	}
+	acceptPortRuleManifest(12, "different", nil)
+	if current, rules := portRuleManifestForHeartbeat(); current != "" || len(rules) != 0 {
+		t.Fatal("missing changed manifest retained old coverage")
+	}
+	acceptPortRuleManifest(10, signature, &entries)
+	if current, _ := portRuleManifestForHeartbeat(); current != "" {
+		t.Fatal("late old revision restored coverage")
+	}
+	acceptPortRuleManifest(12, signature, &entries)
+	if current, rules := portRuleManifestForHeartbeat(); current != signature || len(rules) != 1 {
+		t.Fatal("same-revision complete resend did not restore coverage")
+	}
+	empty := []portRuleEntry{}
+	acceptPortRuleManifest(13, signPortRuleManifest(empty), &empty)
+	if _, rules := portRuleManifestForHeartbeat(); len(rules) != 0 {
+		t.Fatal("explicit empty manifest did not clear coverage")
+	}
+}
+
+func TestPortOccupancySignatureTracksEmptyRulePorts(t *testing.T) {
+	listen := &runtimeListenSnapshot{tcpPorts: map[int][]string{}, udpPorts: map[int][]string{}, usable: true}
+	first := portOccupancyFromListen(listen, []portRuleEntry{{RuleID: 1, Port: 11127, Protocol: "tcp"}})
+	second := portOccupancyFromListen(listen, []portRuleEntry{{RuleID: 1, Port: 11127, Protocol: "tcp"}, {RuleID: 2, Port: 11128, Protocol: "udp"}})
+	if len(second.Listeners) != 0 || portOccupancySignature(first) == portOccupancySignature(second) {
+		t.Fatal("adding an empty rule port did not change coverage signature")
+	}
+	listen.add("tcp", 45000, "tcp LISTEN 0 128 0.0.0.0:45000 0.0.0.0:*")
+	if portOccupancySignature(second) != portOccupancySignature(portOccupancyFromListen(listen, []portRuleEntry{{Port: 11127, Protocol: "tcp"}, {Port: 11128, Protocol: "udp"}})) {
+		t.Fatal("unrelated listener changed the signature")
+	}
+}
+
+func TestPortOccupancyFitsEncryptedHeartbeatEnvelope(t *testing.T) {
+	listen := &runtimeListenSnapshot{tcpPorts: map[int][]string{}, udpPorts: map[int][]string{}, usable: true}
+	listen.add("tcp", 11127, "tcp LISTEN 0 128 0.0.0.0:11127 0.0.0.0:*")
+	snapshot := portOccupancyFromListen(listen, []portRuleEntry{{Port: 11127, Protocol: "tcp"}})
+	request := map[string]any{"otherHeartbeatData": strings.Repeat("x", maxPortOccupancyEnvelopeBytes/2-300), "portOccupancy": &snapshot}
+	fitPortOccupancyRequest(request)
+	plain, _ := json.Marshal(request)
+	if 2*len(plain)+256 > maxPortOccupancyEnvelopeBytes || len(snapshot.Covered) != 0 || len(snapshot.Listeners) != 0 {
+		t.Fatal("oversized encrypted request retained a partially covered port")
 	}
 }
 

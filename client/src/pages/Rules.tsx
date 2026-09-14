@@ -2399,9 +2399,6 @@ function RulesContent() {
   const effectiveRulesQuery = selectedRulesQuery || undefined;
   const selectedScopeQueryEnabled = false as boolean;
   const [portStatus, setPortStatus] = useState<"idle" | "checking" | "available" | "used">("idle");
-  const [portOccupancyNotice, setPortOccupancyNotice] = useState<{ occupancy: string; warning?: string;
-    observations?: Array<{ hostId: number; collectedAt: number; verifiedAt: number }> } | null>(null);
-  const originalPortOccupancyRef = useRef<{ hostId: number; forwardGroupId: number; tunnelId: number; port: number; protocol: string; forwardType: string; warnings: string[] } | null>(null);
   const [portRangeError, setPortRangeError] = useState<string | null>(null);
   const latestPortCheckRef = useRef(0);
   const [copyRuleIds, setCopyRuleIds] = useState<number[]>([]);
@@ -2727,26 +2724,7 @@ function RulesContent() {
     ) {
       throw new Error("流量计费余额不足，请充值后再启用规则");
     }
-    let confirmPortOccupancy = false;
-    if (checked) {
-      const result = await utils.rules.checkPort.fetch({
-        ...(rule.forwardGroupId && rule.isForwardGroupTemplate
-          ? { forwardGroupId: Number(rule.forwardGroupId) }
-          : { hostId: Number(rule.hostId) }),
-        sourcePort: Number(rule.sourcePort), protocol: rule.protocol || "both", forwardType: rule.forwardType,
-        excludeRuleId: id, sni: rule.sni || null, tunnelId: rule.tunnelId || null,
-      });
-      if ("occupancy" in result && result.occupancy === "blocked") {
-        throw new Error(result.warning);
-      }
-      if ("occupancy" in result && result.occupancy === "warning") {
-        confirmPortOccupancy = await confirmDialog({
-          title: "确认启用端口占用规则", description: result.warning, confirmText: "确认启用",
-        });
-        if (!confirmPortOccupancy) return;
-      }
-    }
-    await toggleMutation.mutateAsync({ id, isEnabled: checked, confirmPortOccupancy });
+    await toggleMutation.mutateAsync({ id, isEnabled: checked });
   };
 
   const renderRuleEnabledSwitch = (rule: any) => {
@@ -2883,12 +2861,6 @@ function RulesContent() {
   };
 
   const openEdit = (rule: any) => {
-    originalPortOccupancyRef.current = {
-      hostId: Number(rule.hostId || 0), forwardGroupId: Number(rule.forwardGroupId || 0),
-      tunnelId: Number(rule.tunnelId || 0), port: Number(rule.sourcePort || 0),
-      protocol: String(rule.protocol || "both"), forwardType: String(rule.forwardType || ""),
-      warnings: (rule.portOccupancyWarnings || []).filter((item: any) => item.status === "occupied").map((item: any) => String(item.message)),
-    };
     const editForwardGroup = rule.forwardGroupId
       ? (forwardGroups || []).find((group: any) => Number(group.id) === Number(rule.forwardGroupId))
       : null;
@@ -3348,11 +3320,8 @@ function RulesContent() {
         sni: canConfigureSni ? form.sni.trim() || null : null,
       });
       if (latestPortCheckRef.current !== checkId) return;
-      const notice = "occupancy" in result ? result : null;
-      setPortRangeError(result.used ? ("reason" in result ? result.reason : notice?.warning) ?? null : null);
+      setPortRangeError(result.used ? ("reason" in result ? result.reason : null) ?? null : null);
       setPortStatus(result.used ? "used" : "available");
-      setPortOccupancyNotice(notice ? { occupancy: notice.occupancy, warning: notice.warning,
-        observations: "observations" in notice ? notice.observations : [] } : null);
     } catch {
       if (latestPortCheckRef.current !== checkId) return;
       setPortStatus("idle");
@@ -3363,7 +3332,6 @@ function RulesContent() {
   useEffect(() => {
     latestPortCheckRef.current += 1;
     setPortStatus("idle");
-    setPortOccupancyNotice(null);
   }, [editingId, form.forwardGroupId, form.hostId, form.sni, effectiveFormProtocol, effectiveRouteForwardType, form.routeMode, form.sourcePort, form.tunnelId, isForwardGroupRouteMode]);
 
   // 源端口变化时自动检测
@@ -3920,24 +3888,6 @@ function RulesContent() {
     if (kernelForwardWarning) {
       toast.warning(kernelForwardWarning, { duration: 7000 });
     }
-    let confirmPortOccupancy = false;
-    const originalPort = originalPortOccupancyRef.current;
-    const unchangedEntry = !!editingId && !!originalPort &&
-      originalPort.hostId === Number(form.hostId || 0) && originalPort.forwardGroupId === Number(form.forwardGroupId || 0) &&
-      originalPort.tunnelId === Number(form.tunnelId || 0) && originalPort.port === Number(form.sourcePort) &&
-      originalPort.protocol === submitProtocol && originalPort.forwardType === submitForwardType;
-    const originalWarningStillApplies = unchangedEntry && !!portOccupancyNotice?.warning &&
-      originalPort.warnings.length > 0 &&
-      originalPort.warnings.every((warning) => portOccupancyNotice.warning?.includes(warning)) &&
-      (portOccupancyNotice.warning.match(/主机 \d+：/g) || []).length === originalPort.warnings.length;
-    if (portOccupancyNotice?.occupancy === "warning" && !originalWarningStillApplies) {
-      confirmPortOccupancy = await confirmDialog({
-        title: "确认端口监听占用",
-        description: portOccupancyNotice.warning || "该端口存在监听，建立后入站流量将由本规则接管。",
-        confirmText: "确认继续",
-      });
-      if (!confirmPortOccupancy) return;
-    }
     if (editingId && editingOriginalProtocol === "both" && submitProtocol !== "both") {
       const confirmed = await confirmDialog({
         title: "确认缩小协议范围",
@@ -3959,7 +3909,6 @@ function RulesContent() {
         tunnelId: form.routeMode === "tunnel" ? form.tunnelId : null,
         forwardGroupId: isForwardGroupRouteMode ? form.forwardGroupId : null,
         sourcePort: form.sourcePort,
-        confirmPortOccupancy,
         sni: submitSniPayload,
         rateLimitMbps: submitSni ? form.rateLimitMbps : 0,
         maxConnections: submitSni ? form.maxConnections : 0,
@@ -3981,7 +3930,6 @@ function RulesContent() {
         tunnelId: form.routeMode === "tunnel" ? form.tunnelId : null,
         forwardGroupId: isForwardGroupRouteMode ? form.forwardGroupId : null,
         sourcePort: form.sourcePort,
-        confirmPortOccupancy,
         sni: submitSniPayload,
         rateLimitMbps: submitSni ? form.rateLimitMbps : 0,
         maxConnections: submitSni ? form.maxConnections : 0,
@@ -5717,30 +5665,12 @@ function RulesContent() {
           })),
         });
       }
-      const occupancyWarnings: string[] = [];
-      for (const [index, rule] of importValidation.rules.entries()) {
-        if (rule.sourcePort <= 0) continue;
-        const payload = buildImportRulePayload(rule);
-        const result = await utils.rules.checkPort.fetch({
-          ...(payload.forwardGroupId ? { forwardGroupId: Number(payload.forwardGroupId) } : { hostId: Number(payload.hostId) }),
-          sourcePort: rule.sourcePort, protocol: payload.protocol, forwardType: payload.forwardType,
-          tunnelId: payload.tunnelId, sni: payload.sni,
-        });
-        if ("occupancy" in result && result.occupancy === "warning") {
-          occupancyWarnings.push(`第 ${rule.sourceLineNumber || index + 1} 行：${result.warning}`);
-        }
-      }
-      const confirmPortOccupancy = occupancyWarnings.length > 0 && await confirmDialog({
-        title: "确认批量导入的端口占用",
-        description: occupancyWarnings.join("\n"), confirmText: "确认导入",
-      });
-      if (occupancyWarnings.length > 0 && !confirmPortOccupancy) return;
       const results = await runBatchOperations(importValidation.rules, 6, async (rule) => {
         const payload = buildImportRulePayload(rule);
         try {
-          return await importCreateMutation.mutateAsync({ ...payload, confirmPortOccupancy });
+          return await importCreateMutation.mutateAsync(payload);
         } catch (error) {
-          if (isSniBulkImportRule(rule) || rule.sourcePort <= 0 || /主机 \d+：该端口存在(?:占用|监听)/.test(batchOperationErrorMessage(error)) || !isBatchPortConflictError(error)) throw error;
+          if (isSniBulkImportRule(rule) || rule.sourcePort <= 0 || !isBatchPortConflictError(error)) throw error;
           return importCreateMutation.mutateAsync({ ...payload, sourcePort: 0 });
         }
       });
@@ -6082,7 +6012,6 @@ function RulesContent() {
       Array.isArray(rule.portOccupancyWarnings) ? rule.portOccupancyWarnings : [];
     // 同一条规则可能横跨多台主机（入口组），逐台渲染会在卡片上堆出多个相同图标。
     // 这里合并成一个图标，逐台明细放进 tooltip。
-    const hasOccupied = notices.some((notice) => notice.status === "occupied");
     const occupancyTitle = notices
       .map((notice) => {
         const collected = notice.collectedAt ? `；采集时间 ${new Date(notice.collectedAt).toLocaleString()}` : "";
@@ -6095,9 +6024,9 @@ function RulesContent() {
         {renderResolvedStatusDot(visual)}
         {notices.length > 0 && (
           <span
-            className={`inline-flex shrink-0 items-center ${hasOccupied ? "text-amber-600" : "text-muted-foreground"}`}
+            className="inline-flex shrink-0 items-center text-amber-600"
             title={occupancyTitle}
-            aria-label={hasOccupied ? "端口占用" : "端口信息未经核实"}
+            aria-label="端口占用"
           >
             <AlertCircle className="h-3.5 w-3.5" />
           </span>
@@ -8001,22 +7930,12 @@ function RulesContent() {
                         setPortStatus("idle");
                         setForm({ ...form, sourcePort: parseInt(e.target.value) || 0 });
                       }}
-                      className={`pr-24 ${
-                        portStatus === "used" ? "border-destructive" :
-                        portStatus === "available" && portOccupancyNotice?.occupancy === "warning" ? "border-amber-500" :
-                        portStatus === "available" && portOccupancyNotice?.occupancy === "free" ? "border-emerald-500" : ""
-                      }`}
+                      className={`pr-24 ${portStatus === "used" ? "border-destructive" : ""}`}
                     />
                     {portStatus === "used" && (
                       <div className="absolute right-2.5 top-1/2 inline-flex max-w-[5.5rem] -translate-y-1/2 items-center gap-1 text-[11px] font-medium text-destructive" title={portStatusHint?.title}>
                         <XCircle className="h-3.5 w-3.5 shrink-0" />
                         <span className="truncate">{portStatusHint?.text || "不可用"}</span>
-                      </div>
-                    )}
-                    {portStatus === "available" && (
-                      <div className={`absolute right-2.5 top-1/2 inline-flex max-w-[5.5rem] -translate-y-1/2 items-center gap-1 text-[11px] font-medium ${portOccupancyNotice?.occupancy === "warning" ? "text-amber-600" : "text-muted-foreground"}`}>
-                        {portOccupancyNotice?.occupancy === "free" ? <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-600" /> : <AlertCircle className="h-3.5 w-3.5 shrink-0" />}
-                        <span className="truncate">{portOccupancyNotice?.occupancy === "warning" ? "有占用" : portOccupancyNotice?.occupancy === "unverified" ? "未核实" : "可用"}</span>
                       </div>
                     )}
                   </div>
@@ -8032,16 +7951,6 @@ function RulesContent() {
                     <Shuffle className="h-4 w-4" />
                   </Button>
                 </div>
-                {portOccupancyNotice?.warning && !portRangeError && (
-                  <p className={`text-xs ${portOccupancyNotice.occupancy === "warning" ? "text-amber-700" : "text-muted-foreground"}`}>
-                    {portOccupancyNotice.warning}
-                  </p>
-                )}
-                {portOccupancyNotice?.observations?.map((observation) => (
-                  <p key={observation.hostId} className="text-xs text-muted-foreground">
-                    主机 {observation.hostId}：采集于 {new Date(observation.collectedAt).toLocaleString()}，最近核实于 {new Date(observation.verifiedAt).toLocaleString()}
-                  </p>
-                ))}
               </div>
               <div className="space-y-2">
                 <Label>目标地址</Label>

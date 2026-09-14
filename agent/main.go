@@ -37,7 +37,7 @@ import (
 	"golang.org/x/time/rate"
 )
 
-var Version = "3.1.0"
+var Version = "3.2.0"
 var agentProcessStartedAt = time.Now()
 var agentBootID = readAgentBootID()
 var runtimeAgentToken atomic.Value
@@ -839,34 +839,37 @@ func (e agentHTTPStatusError) Error() string {
 }
 
 type heartbeatResp struct {
-	Actions                 []action                 `json:"actions"`
-	DesiredState            *desiredState            `json:"desiredState,omitempty"`
-	SelfTests               []selfTest               `json:"selfTests"`
-	RunningRules            []runningRule            `json:"runningRules"`
-	RuleLatencyProbes       []ruleLatencyProbe       `json:"ruleLatencyProbes"`
-	TunnelProbes            []tunnelProbe            `json:"tunnelProbes"`
-	ForwardGroupProbes      []forwardGroupProbe      `json:"forwardGroupProbes"`
-	HostProbeServices       []hostProbeServiceProbe  `json:"hostProbeServices"`
-	GuardRules              []guardRule              `json:"guardRules"`
-	DNSWatch                []dnsWatchItem           `json:"dnsWatch"`
-	LookingGlassTests       []lookingGlassTask       `json:"lookingGlassTests"`
-	Iperf3Tasks             []iperf3Task             `json:"iperf3Tasks"`
-	PluginTasks             []pluginAgentTask        `json:"pluginTasks"`
-	AgentUpgrade            *agentUpgrade            `json:"agentUpgrade"`
-	StateSignatures         map[string]string        `json:"stateSignatures,omitempty"`
-	RequestLocalState       bool                     `json:"requestLocalState,omitempty"`
-	RequestPortOccupancy    bool                     `json:"requestPortOccupancy,omitempty"`
-	PanelURL                string                   `json:"panelUrl"`
-	ForceTCPing             bool                     `json:"forceTcping"`
-	NextInterval            int                      `json:"nextInterval"`
-	CompactReports          bool                     `json:"compactReports"`
-	PanelMigration          *panelMigrationDirective `json:"panelMigration,omitempty"`
-	Presence                bool                     `json:"presence,omitempty"`
-	PresenceSupported       bool                     `json:"presenceSupported,omitempty"`
-	ReconciliationCoalesced bool                     `json:"reconciliationCoalesced,omitempty"`
-	NextPresenceInterval    int                      `json:"nextPresenceInterval,omitempty"`
-	MetricsOnly             bool                     `json:"metricsOnly,omitempty"`
-	TrafficReportInterval   int                      `json:"trafficReportInterval,omitempty"`
+	Actions                   []action                 `json:"actions"`
+	DesiredState              *desiredState            `json:"desiredState,omitempty"`
+	PortRuleManifestRevision  int64                    `json:"portRuleManifestRevision"`
+	PortRuleManifestSignature string                   `json:"portRuleManifestSignature"`
+	PortRuleManifest          *[]portRuleEntry         `json:"portRuleManifest"`
+	SelfTests                 []selfTest               `json:"selfTests"`
+	RunningRules              []runningRule            `json:"runningRules"`
+	RuleLatencyProbes         []ruleLatencyProbe       `json:"ruleLatencyProbes"`
+	TunnelProbes              []tunnelProbe            `json:"tunnelProbes"`
+	ForwardGroupProbes        []forwardGroupProbe      `json:"forwardGroupProbes"`
+	HostProbeServices         []hostProbeServiceProbe  `json:"hostProbeServices"`
+	GuardRules                []guardRule              `json:"guardRules"`
+	DNSWatch                  []dnsWatchItem           `json:"dnsWatch"`
+	LookingGlassTests         []lookingGlassTask       `json:"lookingGlassTests"`
+	Iperf3Tasks               []iperf3Task             `json:"iperf3Tasks"`
+	PluginTasks               []pluginAgentTask        `json:"pluginTasks"`
+	AgentUpgrade              *agentUpgrade            `json:"agentUpgrade"`
+	StateSignatures           map[string]string        `json:"stateSignatures,omitempty"`
+	RequestLocalState         bool                     `json:"requestLocalState,omitempty"`
+	RequestPortOccupancy      bool                     `json:"requestPortOccupancy,omitempty"`
+	PanelURL                  string                   `json:"panelUrl"`
+	ForceTCPing               bool                     `json:"forceTcping"`
+	NextInterval              int                      `json:"nextInterval"`
+	CompactReports            bool                     `json:"compactReports"`
+	PanelMigration            *panelMigrationDirective `json:"panelMigration,omitempty"`
+	Presence                  bool                     `json:"presence,omitempty"`
+	PresenceSupported         bool                     `json:"presenceSupported,omitempty"`
+	ReconciliationCoalesced   bool                     `json:"reconciliationCoalesced,omitempty"`
+	NextPresenceInterval      int                      `json:"nextPresenceInterval,omitempty"`
+	MetricsOnly               bool                     `json:"metricsOnly,omitempty"`
+	TrafficReportInterval     int                      `json:"trafficReportInterval,omitempty"`
 }
 
 type heartbeatResult struct {
@@ -2399,11 +2402,12 @@ func localRuntimeStateForHeartbeat() (string, *localRuntimeStatePayload) {
 }
 
 func portOccupancyForHeartbeat() (string, bool, *portOccupancyPayload) {
+	_, rules := portRuleManifestForHeartbeat()
 	snapshot := readLocalRuntimeReadinessCached().listenSnapshot
 	if snapshot == nil || !snapshot.usable {
 		return "", false, nil
 	}
-	state := portOccupancyFromListen(snapshot)
+	state := portOccupancyFromListen(snapshot, rules)
 	signature := portOccupancySignature(state)
 	portOccupancyMu.Lock()
 	sendFull := forceSendPortOccupancy || signature != lastPortOccupancySignature
@@ -2600,10 +2604,13 @@ type agentRefreshEvent struct {
 // agentDesiredStatePush 是服务端经 SSE 下发的 desiredState 推送载荷，
 // 包含运行规则及其延迟探测配置，让 Agent 无需等待下一个心跳即可立即执行。
 type agentDesiredStatePush struct {
-	DesiredState      *desiredState      `json:"desiredState,omitempty"`
-	RunningRules      []runningRule      `json:"runningRules,omitempty"`
-	RuleLatencyProbes []ruleLatencyProbe `json:"ruleLatencyProbes,omitempty"`
-	StateSignatures   map[string]string  `json:"stateSignatures,omitempty"`
+	DesiredState              *desiredState      `json:"desiredState,omitempty"`
+	PortRuleManifestRevision  int64              `json:"portRuleManifestRevision"`
+	PortRuleManifestSignature string             `json:"portRuleManifestSignature"`
+	PortRuleManifest          *[]portRuleEntry   `json:"portRuleManifest"`
+	RunningRules              []runningRule      `json:"runningRules,omitempty"`
+	RuleLatencyProbes         []ruleLatencyProbe `json:"ruleLatencyProbes,omitempty"`
+	StateSignatures           map[string]string  `json:"stateSignatures,omitempty"`
 }
 
 type desiredStatePushJob struct {
@@ -3940,6 +3947,9 @@ func heartbeat(cfg Config, forceReconcile ...bool) (heartbeatResult, error) {
 	if signatures := heartbeatStateSignaturePayload(); len(signatures) > 0 {
 		payload["stateSignatures"] = signatures
 	}
+	manifestSignature, _ := portRuleManifestForHeartbeat()
+	payload["portRuleManifestSignature"] = manifestSignature
+	payload["portOccupancySchemaVersion"] = 2
 	if signature, localState := localRuntimeStateForHeartbeat(); signature != "" {
 		payload["localStateSignature"] = signature
 		if localState != nil {
@@ -3955,6 +3965,7 @@ func heartbeat(cfg Config, forceReconcile ...bool) (heartbeatResult, error) {
 	} else {
 		payload["portOccupancyCollected"] = false
 	}
+	fitPortOccupancyRequest(payload)
 	var resp heartbeatResp
 	if err := postHeartbeat(cfg, "/api/agent/heartbeat", payload, &resp); err != nil {
 		queuePendingDNSChanges(dnsChanges)
@@ -3982,6 +3993,7 @@ func heartbeat(cfg Config, forceReconcile ...bool) (heartbeatResult, error) {
 		return heartbeatResult{NextInterval: cfg.Interval}, nil
 	}
 	syncPanelURLFromResponse(resp.PanelURL)
+	acceptPortRuleManifest(resp.PortRuleManifestRevision, resp.PortRuleManifestSignature, resp.PortRuleManifest)
 	if resp.AgentUpgrade != nil {
 		if handleLegacyPanelMigrationUpgrade(cfg, resp.AgentUpgrade) {
 			return heartbeatResult{NextInterval: cfg.Interval}, nil
@@ -4169,6 +4181,10 @@ func heartbeatKeepalive(cfg Config) (heartbeatResult, error) {
 	} else {
 		payload["portOccupancyCollected"] = false
 	}
+	manifestSignature, _ := portRuleManifestForHeartbeat()
+	payload["portRuleManifestSignature"] = manifestSignature
+	payload["portOccupancySchemaVersion"] = 2
+	fitPortOccupancyRequest(payload)
 	var resp heartbeatResp
 	if err := postHeartbeat(cfg, "/api/agent/heartbeat", payload, &resp); err != nil {
 		return heartbeatResult{NextInterval: cfg.Interval}, err
@@ -4188,6 +4204,7 @@ func heartbeatKeepalive(cfg Config) (heartbeatResult, error) {
 		return heartbeatResult{NextInterval: cfg.Interval}, nil
 	}
 	syncPanelURLFromResponse(resp.PanelURL)
+	acceptPortRuleManifest(resp.PortRuleManifestRevision, resp.PortRuleManifestSignature, resp.PortRuleManifest)
 	if resp.RequestLocalState {
 		requestLocalRuntimeStateUpload()
 	}
@@ -4993,9 +5010,10 @@ func decodeEventDataForPanel(raw string, token string, panelURL string, serverTi
 // 与心跳路径的 syncDesiredState 共享同一幂等性机制（签名 + desired_state_records.json），
 // 因此即使心跳和 SSE 推送同时触发也不会重复执行。
 func handleAgentDesiredStatePush(cfg Config, push agentDesiredStatePush) {
-	if push.DesiredState == nil && len(push.RunningRules) == 0 && len(push.RuleLatencyProbes) == 0 && len(push.StateSignatures) == 0 {
+	if push.DesiredState == nil && push.PortRuleManifest == nil && len(push.RunningRules) == 0 && len(push.RuleLatencyProbes) == 0 && len(push.StateSignatures) == 0 {
 		return
 	}
+	acceptPortRuleManifest(push.PortRuleManifestRevision, push.PortRuleManifestSignature, push.PortRuleManifest)
 	// 先应用 running rules，stale-remove 保护依赖这份数据。
 	if len(push.RunningRules) > 0 || len(push.RuleLatencyProbes) > 0 || len(push.StateSignatures) > 0 {
 		partial := heartbeatResp{
@@ -7221,6 +7239,10 @@ func (s *runtimeListenSnapshot) parseSSListenOutput(text string) {
 }
 
 func (s *runtimeListenSnapshot) parseProcNetListenFiles() {
+	s.parseProcNetListenFilesWith(os.ReadFile)
+}
+
+func (s *runtimeListenSnapshot) parseProcNetListenFilesWith(readFile func(string) ([]byte, error)) {
 	files := []struct {
 		path     string
 		protocol string
@@ -7230,9 +7252,11 @@ func (s *runtimeListenSnapshot) parseProcNetListenFiles() {
 		{"/proc/net/udp", "udp"},
 		{"/proc/net/udp6", "udp"},
 	}
+	complete := true
 	for _, file := range files {
-		raw, err := os.ReadFile(file.path)
+		raw, err := readFile(file.path)
 		if err != nil {
+			complete = false
 			continue
 		}
 		for idx, line := range strings.Split(string(raw), "\n") {
@@ -7252,6 +7276,13 @@ func (s *runtimeListenSnapshot) parseProcNetListenFiles() {
 			}
 			s.add(file.protocol, port, file.path+":"+fields[1])
 		}
+	}
+	if !complete {
+		s.tcpPorts = map[int][]string{}
+		s.udpPorts = map[int][]string{}
+		s.usable = false
+	} else {
+		s.usable = true
 	}
 }
 

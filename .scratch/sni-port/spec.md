@@ -1,5 +1,7 @@
 # 端口占用检测：面板必须知道主机上真实监听了什么
 
+> 本规格中与端口占用有关的设计已由 `.scratch/port-occupancy-rework/spec.md` 取代。创建时的主机端口占用校验已撤除，以下正文仅保留历史设计背景。
+
 **Status:** ready-for-agent
 
 ## Problem Statement

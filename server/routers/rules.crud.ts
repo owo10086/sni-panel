@@ -3,7 +3,6 @@ import { z } from "zod";
 import { isIP } from "node:net";
 import * as db from "../db";
 import { pushAgentRefresh } from "../agentEvents";
-import { assertRulePortOccupancy, rememberRulePortOwner, rulePortOwnerChanged, occupiedOnlineSnapshotPorts } from "../rulePortValidation";
 import { refreshRulePortWarningsForHost } from "../rulePortOccupancy";
 import { forwardTypeSchema } from "./schemas";
 import {
@@ -1117,7 +1116,7 @@ export async function toggleForwardRuleForActor(
   actor: { id: number; role: string },
   ruleId: number,
   isEnabled: boolean,
-  options: { reasonPrefix?: string; confirmPortOccupancy?: boolean } = {},
+  options: { reasonPrefix?: string } = {},
 ) {
   return withKeyedTaskLock(`rule:${ruleId}`, async () => {
     let sourcePortReservation: HostPortReservation | null = null;
@@ -1128,18 +1127,6 @@ export async function toggleForwardRuleForActor(
       if (!rule) throw new Error("规则不存在");
       if (actor.role !== "admin" && rule.userId !== actor.id) throw new Error("无权操作此规则");
       if ((rule as any).forwardGroupRuleId) throw new Error("转发组成员规则由系统维护，不能直接开关");
-      let enabledPortCheck: Parameters<typeof rememberRulePortOwner>[1] | null = null;
-      if (isEnabled) {
-        const groupId = Number((rule as any).isForwardGroupTemplate ? rule.forwardGroupId : 0);
-        const hostIds = groupId ? await db.getForwardGroupRuleEntryHostIds(groupId) : [Number(rule.hostId)];
-        enabledPortCheck = {
-          hostIds, port: Number(rule.sourcePort), protocol: (rule.protocol || "both") as "tcp" | "udp" | "both",
-          forwardType: String(rule.forwardType), sni: rule.sni, forwardGroupId: groupId || undefined,
-          tunnelId: Number(rule.tunnelId || 0) || undefined, excludeRuleId: ruleId,
-          admin: actor.role === "admin",
-        };
-        await assertRulePortOccupancy({ ...enabledPortCheck, confirmed: options.confirmPortOccupancy });
-      }
       if ((rule as any).isForwardGroupTemplate) {
         if (actor.role !== "admin") {
           const groupId = Number((rule as any).forwardGroupId || 0);
@@ -1228,7 +1215,6 @@ export async function toggleForwardRuleForActor(
         for (const entryHostId of await db.getForwardGroupRuleEntryHostIds(Number((rule as any).forwardGroupId))) {
           await refreshRulePortWarningsForHost(entryHostId);
         }
-        if (enabledPortCheck) rememberRulePortOwner(ruleId, enabledPortCheck);
         return { success: true, rule };
       }
 
@@ -1332,7 +1318,6 @@ export async function toggleForwardRuleForActor(
       if (toggleTunnelForRule) await pushTunnelEndpointRefresh(toggleTunnelForRule, `${reasonPrefix}-toggled`);
       pushAgentRefresh(Number(rule.hostId), `${reasonPrefix}-${isEnabled ? "enabled" : "disabled"}`);
       await refreshRulePortWarningsForHost(Number(rule.hostId));
-      if (enabledPortCheck) rememberRulePortOwner(ruleId, enabledPortCheck);
       return { success: true, rule };
     } finally {
       sourcePortReservation?.release();
@@ -1351,9 +1336,8 @@ export async function createDirectForwardRuleForActor(
   const normalizedSni = normalizeSniInput(input.sni);
   assertSniRuleAdmin(actor, normalizedSni);
   const ruleProtocol = normalizedSni ? "tcp" : input.protocol;
-  const { confirmPortOccupancy, ...createInput } = input;
   const ruleInput = {
-    ...createInput,
+    ...input,
     ...resolveSniRuleLimits(normalizedSni, input),
     ...(normalizedSni
       ? { protocol: "tcp", sni: normalizedSni, failoverEnabled: false, failoverTargets: [] }
@@ -1409,7 +1393,7 @@ export async function createDirectForwardRuleForActor(
     if (sourcePort === 0) {
       let randomRangeStart = selectedTunnelForRule ? (selectedTunnelForRule as any).portRangeStart : null;
       let randomRangeEnd = selectedTunnelForRule ? (selectedTunnelForRule as any).portRangeEnd : null;
-      const occupiedPorts = await occupiedOnlineSnapshotPorts([hostId], ruleProtocol);
+      const occupiedPorts = new Set<number>();
       sourcePortReservation = await reserveAvailableHostPort({
         hostId,
         protocol: ruleProtocol,
@@ -1451,11 +1435,6 @@ export async function createDirectForwardRuleForActor(
       }
     }
 
-    await assertRulePortOccupancy({
-      hostIds: [hostId], port: sourcePort, protocol: ruleProtocol,
-      forwardType: ruleInput.forwardType, sni: normalizedSni, tunnelId,
-      admin: actor.role === "admin", confirmed: !!confirmPortOccupancy,
-    });
     quotaReservation = await reserveRuleCreateQuota({
       userId: actor.id,
       maxRules: Number(currentUser?.maxRules || 0),
@@ -1567,8 +1546,6 @@ export async function createDirectForwardRuleForActor(
       pushAgentRefresh(hostId, `${options.reasonPrefix || "forward-rule"}-created`);
     }
     await refreshRulePortWarningsForHost(hostId);
-    rememberRulePortOwner(id, { hostIds: [hostId], port: sourcePort, protocol: ruleProtocol,
-      forwardType: ruleInput.forwardType, admin: actor.role === "admin" });
     return { id, sourcePort };
   } finally {
     await quotaReservation?.release();
@@ -1671,7 +1648,6 @@ export const crudRulesRouter = router({
       tunnelId: z.number().nullable().optional(),
       forwardGroupId: z.number().nullable().optional(),
       sourcePort: z.number().min(0).max(65535), // 0 = 随机分配
-      confirmPortOccupancy: z.boolean().optional().default(false),
       sni: sniInputSchema,
       targetIp: z.string().min(1).max(253).refine(
         (v) => /^[a-zA-Z0-9]([a-zA-Z0-9\-_.]*[a-zA-Z0-9])?$|^[a-fA-F0-9:.]+$/.test(v.trim()),
@@ -1758,8 +1734,7 @@ export const crudRulesRouter = router({
           (entryHostId, candidate) => db.isHostPortUnavailableForExplicitUse(entryHostId, candidate, undefined, ruleProtocol),
         );
         if (randomSourcePort) {
-          const unavailablePorts = new Set([...entryHostIds.flatMap((hostId) => reservedHostPorts(hostId, ruleProtocol)),
-            ...await occupiedOnlineSnapshotPorts(entryHostIds, ruleProtocol)]);
+          const unavailablePorts = new Set(entryHostIds.flatMap((hostId) => reservedHostPorts(hostId, ruleProtocol)));
           for (let attempt = 0; attempt < 256; attempt += 1) {
             const availablePort = await db.findAvailableForwardGroupPort(
               forwardGroupId,
@@ -1798,13 +1773,6 @@ export const crudRulesRouter = router({
           sourcePort,
           entryHostIds,
           sni: normalizedSni,
-        });
-        const occupancyGroup = await db.getForwardGroupById(forwardGroupId);
-        await assertRulePortOccupancy({
-          hostIds: entryHostIds, port: sourcePort, protocol: ruleProtocol,
-          forwardType: lockedForwardTypeForGroup(occupancyGroup, input.forwardType),
-          sni: normalizedSni, forwardGroupId, admin: ctx.user.role === "admin",
-          confirmed: input.confirmPortOccupancy,
         });
         const preparedGroupRuntime = await prepareForwardGroupRuntimePorts({
           groupId: forwardGroupId,
@@ -1911,8 +1879,6 @@ export const crudRulesRouter = router({
         quotaReservation = null;
         await db.runForwardGroupFailover(forwardGroupId);
         for (const entryHostId of entryHostIds) await refreshRulePortWarningsForHost(entryHostId);
-        rememberRulePortOwner(id, { hostIds: entryHostIds, port: sourcePort, protocol: ruleProtocol,
-          forwardType, admin: ctx.user.role === "admin" });
         return { id, sourcePort };
         } finally {
           await quotaReservation?.release();
@@ -1944,7 +1910,6 @@ export const crudRulesRouter = router({
       tunnelExitPort: z.number().min(1).max(65535).nullable().optional(),
       forwardGroupId: z.number().nullable().optional(),
       sourcePort: z.number().min(0).max(65535).optional(),
-      confirmPortOccupancy: z.boolean().optional().default(false),
       sni: sniInputSchema,
       targetIp: z.string().min(1).max(253).refine(
         (v) => /^[a-zA-Z0-9]([a-zA-Z0-9\-_.]*[a-zA-Z0-9])?$|^[a-fA-F0-9:.]+$/.test(v.trim()),
@@ -2007,8 +1972,6 @@ export const crudRulesRouter = router({
       if (!rule) throw new Error("规则不存在");
       if (ctx.user.role !== "admin" && rule.userId !== ctx.user.id) throw new Error("无权操作此规则");
       if ((rule as any).forwardGroupRuleId) throw new Error("转发组成员规则由系统维护，不能直接修改");
-      const confirmedPortOccupancy = input.confirmPortOccupancy;
-      delete (input as any).confirmPortOccupancy;
       await requireRuleTelegramNotifyReady(input.telegramErrorNotifyEnabled);
       const normalizedInputSni = input.sni !== undefined ? normalizeSniInput(input.sni) : undefined;
       if (normalizedInputSni || (ctx.user.role !== "admin" && normalizeSniInput((rule as any).sni))) {
@@ -2038,8 +2001,7 @@ export const crudRulesRouter = router({
             planRange = await db.getUserForwardGroupPlanPortRange(ctx.user.id, nextForwardGroupId);
           }
           const entryHostIds = await db.getForwardGroupRuleEntryHostIds(nextForwardGroupId);
-          const unavailablePorts = new Set([...entryHostIds.flatMap((hostId) => reservedHostPorts(hostId, nextProtocol)),
-            ...await occupiedOnlineSnapshotPorts(entryHostIds, nextProtocol)]);
+          const unavailablePorts = new Set(entryHostIds.flatMap((hostId) => reservedHostPorts(hostId, nextProtocol)));
           let selectedPort = 0;
           for (let attempt = 0; attempt < 256; attempt += 1) {
             const candidate = await db.findAvailableForwardGroupPort(
@@ -2101,7 +2063,7 @@ export const crudRulesRouter = router({
           if (ctx.user.role !== "admin") {
             planRange = await db.getUserPlanPortRange(ctx.user.id, nextHostId, nextTunnelId || undefined);
           }
-          const occupiedPorts = await occupiedOnlineSnapshotPorts([nextHostId], nextProtocol);
+          const occupiedPorts = new Set<number>();
           const reservation = await reserveAvailableHostPort({
             hostId: nextHostId,
             protocol: nextProtocol,
@@ -2123,42 +2085,15 @@ export const crudRulesRouter = router({
         }
       }
 
-      const nextGroupIdForOccupancy = Number(input.forwardGroupId !== undefined ? input.forwardGroupId :
-        ((rule as any).isForwardGroupTemplate ? rule.forwardGroupId : 0)) || 0;
-      const nextPortForOccupancy = Number(input.sourcePort ?? rule.sourcePort);
-      const nextSniForOccupancy = input.sni !== undefined ? input.sni : rule.sni;
-      const nextProtocolForOccupancy = (nextSniForOccupancy ? "tcp" : (input.protocol ?? rule.protocol)) as "tcp" | "udp" | "both";
-      const nextTypeForOccupancy = nextGroupIdForOccupancy
-        ? lockedForwardTypeForGroup(await db.getForwardGroupById(nextGroupIdForOccupancy), input.forwardType ?? rule.forwardType)
-        : String(input.forwardType ?? rule.forwardType);
-      const nextTunnelForOccupancy = Number(input.tunnelId !== undefined ? input.tunnelId : rule.tunnelId) || 0;
-      const nextHostForOccupancy = nextTunnelForOccupancy
-        ? Number((await db.getTunnelById(nextTunnelForOccupancy))?.entryHostId || 0)
-        : Number(input.hostId ?? rule.hostId);
-      const occupancyRelevantChange = nextPortForOccupancy !== Number(rule.sourcePort) ||
-        nextProtocolForOccupancy !== rule.protocol || nextTypeForOccupancy !== rule.forwardType ||
-        nextHostForOccupancy !== Number(rule.hostId) || nextGroupIdForOccupancy !== Number(rule.forwardGroupId || 0) ||
-        (input.isEnabled === true && !dbBool(rule.isEnabled));
-      const nextPortCheck = {
-        hostIds: nextGroupIdForOccupancy ? await db.getForwardGroupRuleEntryHostIds(nextGroupIdForOccupancy) : [nextHostForOccupancy],
-        port: nextPortForOccupancy, protocol: nextProtocolForOccupancy, forwardType: nextTypeForOccupancy,
-        sni: nextSniForOccupancy, forwardGroupId: nextGroupIdForOccupancy || undefined,
-        tunnelId: nextTunnelForOccupancy || undefined, excludeRuleId: Number(rule.id),
-        admin: ctx.user.role === "admin", confirmed: confirmedPortOccupancy,
-      };
       const refreshUpdatedRulePortWarnings = async () => {
-        rememberRulePortOwner(Number(rule.id), nextPortCheck);
         const previousHosts = (rule as any).isForwardGroupTemplate && Number(rule.forwardGroupId) > 0
           ? await db.getForwardGroupRuleEntryHostIds(Number(rule.forwardGroupId)) : [Number(rule.hostId)];
-        for (const hostId of new Set([...previousHosts, ...nextPortCheck.hostIds])) {
+        const nextGroupId = Number(input.forwardGroupId ?? rule.forwardGroupId ?? 0);
+        const nextHosts = nextGroupId ? await db.getForwardGroupRuleEntryHostIds(nextGroupId) : [Number(input.hostId ?? rule.hostId)];
+        for (const hostId of new Set([...previousHosts, ...nextHosts])) {
           if (hostId > 0) await refreshRulePortWarningsForHost(hostId);
         }
       };
-      if ((occupancyRelevantChange ||
-          (["iptables", "nftables"].includes(nextTypeForOccupancy) && rulePortOwnerChanged(Number(rule.id), nextPortCheck))) &&
-          (input.isEnabled !== false && dbBool(rule.isEnabled) || input.isEnabled === true)) {
-        await assertRulePortOccupancy(nextPortCheck);
-      }
 
       if ((rule as any).isForwardGroupTemplate) {
         const groupId = Number((rule as any).forwardGroupId || 0);
@@ -3195,6 +3130,6 @@ export const crudRulesRouter = router({
       };
     }),
   toggle: protectedProcedure
-    .input(z.object({ id: z.number(), isEnabled: z.boolean(), confirmPortOccupancy: z.boolean().optional().default(false) }))
-    .mutation(async ({ input, ctx }) => toggleForwardRuleForActor(ctx.user, input.id, input.isEnabled, { confirmPortOccupancy: input.confirmPortOccupancy }))
+    .input(z.object({ id: z.number(), isEnabled: z.boolean() }))
+    .mutation(async ({ input, ctx }) => toggleForwardRuleForActor(ctx.user, input.id, input.isEnabled))
 });

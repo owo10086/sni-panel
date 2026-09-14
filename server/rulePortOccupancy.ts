@@ -1,10 +1,12 @@
 import * as db from "./db";
 import { getPortOccupancy, inspectPortOccupancy, type PortListener } from "./portOccupancy";
-import { notifyForwardRuleOccupancy, portOccupancyNotificationTransition } from "./forwardRuleErrorNotifier";
+import { notifyForwardRuleOccupancy, portOccupancyNotificationTransition, prunePortOccupancyNotificationsForHost } from "./forwardRuleErrorNotifier";
 import { updateBoundedMapValueInPlace } from "./boundedCache";
-import { managedListenerMatchesRule, seedRulePortOwner } from "./rulePortValidation";
+import { managedListenerMatchesRule } from "./rulePortValidation";
+import { clearPortOccupancyNotification } from "./forwardRuleErrorNotifier";
+import { getPortRuleEntriesForHost, type PortRuleEntry } from "./portRuleManifest";
 
-export type RulePortWarning = { status: "occupied" | "unverified"; message: string; hostId: number; collectedAt?: number; verifiedAt?: number };
+export type RulePortWarning = { status: "occupied"; message: string; hostId: number; port: number; collectedAt?: number; verifiedAt?: number };
 const warnings = new Map<string, { admin: RulePortWarning; user: RulePortWarning }>();
 const MAX_WARNINGS = 20_000;
 
@@ -15,56 +17,56 @@ export function getRulePortWarnings(ruleId: number, admin: boolean) {
     .map(([, entry]) => admin ? entry.admin : entry.user);
 }
 
-export async function refreshRulePortWarningsForHost(hostId: number) {
+export async function refreshRulePortWarningsForHost(hostId: number, manifestEntries?: PortRuleEntry[]) {
   const snapshot = getPortOccupancy(hostId);
   if (!snapshot) return;
-  const rules = (await db.getForwardRulesForAgent(hostId)) as any[];
+  const [rules, entries] = await Promise.all([
+    db.getForwardRulesForAgent(hostId) as Promise<any[]>, manifestEntries ?? getPortRuleEntriesForHost(hostId),
+  ]);
+  const portsByRule = new Map<number, number[]>();
+  for (const entry of entries) {
+    if (entry.forwardType !== "iptables" && entry.forwardType !== "nftables") continue;
+    const ports = portsByRule.get(entry.ruleId) || [];
+    ports.push(entry.port);
+    portsByRule.set(entry.ruleId, ports);
+  }
   const activeKeys = new Set<string>();
-  const groupHosts = new Map<number, number[]>();
   for (const rule of rules) {
-    if (![true, 1, "1"].includes(rule.isEnabled) || Number(rule.sourcePort) <= 0) continue;
-    const result = inspectPortOccupancy(snapshot, Number(rule.sourcePort), rule.protocol || "both",
-      (listener) => managedListenerMatchesRule(listener, rule));
-    const ruleId = Number(rule.forwardGroupRuleId || rule.id);
-    const key = `${ruleId}:${hostId}:${rule.sourcePort}:${rule.protocol}`;
-    activeKeys.add(key);
-    if (result.status === "unverified") {
-      updateBoundedMapValueInPlace(warnings, key, {
-        admin: { status: "unverified", message: result.adminMessage, hostId },
-        user: { status: "unverified", message: result.userMessage, hostId },
-      }, MAX_WARNINGS);
-      continue;
-    }
-    if (result.status === "occupied") {
-      if (rule.forwardType === "iptables" || rule.forwardType === "nftables") {
-        const groupId = Number(rule.forwardGroupId || 0);
-        if (groupId > 0 && !groupHosts.has(groupId)) {
-          groupHosts.set(groupId, await db.getForwardGroupRuleEntryHostIds(groupId));
-        }
-        seedRulePortOwner(ruleId, { hostIds: groupId ? groupHosts.get(groupId)! : [hostId],
-          port: Number(rule.sourcePort), protocol: rule.protocol || "both", forwardType: rule.forwardType,
-          admin: true });
+    if (![true, 1, "1"].includes(rule.isEnabled) ||
+        (rule.forwardType !== "iptables" && rule.forwardType !== "nftables")) continue;
+    for (const port of portsByRule.get(Number(rule.id)) || []) {
+      const result = inspectPortOccupancy(snapshot, port, rule.protocol || "both",
+        (listener) => managedListenerMatchesRule(listener, rule));
+      const ruleId = Number(rule.forwardGroupRuleId || rule.id);
+      const key = `${ruleId}:${hostId}:${port}:${rule.protocol}`;
+      activeKeys.add(key);
+      if (result.status === "unverified") continue;
+      if (result.status === "occupied") {
+        const common = { status: "occupied" as const, hostId, port, collectedAt: result.collectedAt, verifiedAt: result.verifiedAt };
+        updateBoundedMapValueInPlace(warnings, key, {
+          admin: { ...common, message: result.adminMessage }, user: { ...common, message: result.userMessage },
+        }, MAX_WARNINGS);
+      } else {
+        warnings.delete(key);
       }
-      const common = { status: "occupied" as const, hostId, collectedAt: result.collectedAt, verifiedAt: result.verifiedAt };
-      updateBoundedMapValueInPlace(warnings, key, {
-        admin: { ...common, message: result.adminMessage }, user: { ...common, message: result.userMessage },
-      }, MAX_WARNINGS);
-    } else {
-      warnings.delete(key);
-    }
-    if (![true, 1, "1"].includes(rule.telegramErrorNotifyEnabled)) continue;
-    const owner = result.status === "occupied"
-      ? result.listeners.map((listener: PortListener) => `${listener.protocol}:${listener.address}:${listener.port}:${listener.process || ""}:${listener.managedRuntimeId || ""}`).sort().join("|")
-      : "";
-    const change = portOccupancyNotificationTransition(key, owner, true);
-    if (change) {
-      void notifyForwardRuleOccupancy({
-        rule, host: await db.getHostById(hostId), recovered: change === "recovered",
-        message: change === "recovered" ? "监听占用已解除" : (result.status === "occupied" ? result.adminMessage : ""),
-      }).catch((error) => console.warn(`[Telegram] Port occupancy notification failed: ${String(error)}`));
+      if (![true, 1, "1"].includes(rule.telegramErrorNotifyEnabled)) continue;
+      const owner = result.status === "occupied"
+        ? result.listeners.map((listener: PortListener) => `${listener.protocol}:${listener.address}:${listener.port}:${listener.process || ""}:${listener.managedRuntimeId || ""}`).sort().join("|")
+        : "";
+      const change = portOccupancyNotificationTransition(key, owner, true);
+      if (change) {
+        void notifyForwardRuleOccupancy({
+          rule, host: await db.getHostById(hostId), recovered: change === "recovered",
+          message: change === "recovered" ? "监听占用已解除" : (result.status === "occupied" ? result.adminMessage : ""),
+        }).catch((error) => console.warn(`[Telegram] Port occupancy notification failed: ${String(error)}`));
+      }
     }
   }
   for (const [key, entry] of warnings) {
-    if (entry.admin.hostId === hostId && !activeKeys.has(key)) warnings.delete(key);
+    if (entry.admin.hostId === hostId && !activeKeys.has(key)) {
+      warnings.delete(key);
+      clearPortOccupancyNotification(key);
+    }
   }
+  prunePortOccupancyNotificationsForHost(hostId, activeKeys);
 }

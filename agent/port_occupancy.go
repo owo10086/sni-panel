@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"hash/fnv"
@@ -10,11 +11,13 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
 const maxPortOccupancyListeners = 256
-const maxPortOccupancyBytes = 32 * 1024
+const maxPortOccupancyBytes = 16 * 1024
+const maxPortOccupancyEnvelopeBytes = 9 * 1024 * 1024
 
 type portOccupancyListener struct {
 	Port             int    `json:"port"`
@@ -127,28 +130,79 @@ func ssListenerProcess(line string) string {
 	return ""
 }
 
-func listenerPriority(listener portOccupancyListener) int {
-	if listener.ManagedRuntime != "" {
-		return 0
-	}
-	if listener.Port == 80 || listener.Port == 443 || listener.Port >= 10000 && listener.Port < 49152 {
-		return 1
-	}
-	if listener.Port < 49152 {
-		return 2
-	}
-	return 3
-}
-
 type portOccupancyPayload struct {
-	Listeners      []portOccupancyListener `json:"listeners"`
-	CollectedAt    int64                   `json:"collectedAt"`
-	Complete       bool                    `json:"complete"`
-	CoveredThrough int                     `json:"coveredThrough,omitempty"`
+	Listeners   []portOccupancyListener `json:"listeners"`
+	Covered     []portOccupancyPort     `json:"covered"`
+	CollectedAt int64                   `json:"collectedAt"`
 }
 
-func portOccupancyFromListen(snapshot *runtimeListenSnapshot) portOccupancyPayload {
-	result := portOccupancyPayload{Listeners: []portOccupancyListener{}, Complete: true}
+type portOccupancyPort struct {
+	Port     int    `json:"port"`
+	Protocol string `json:"protocol"`
+}
+
+type portRuleEntry struct {
+	RuleID      int    `json:"ruleId"`
+	Port        int    `json:"port"`
+	Protocol    string `json:"protocol"`
+	ForwardType string `json:"forwardType"`
+}
+
+var portRuleManifestMu sync.Mutex
+var portRuleManifestRevision int64 = -1
+var portRuleManifestSignature string
+var portRuleManifestEntries []portRuleEntry
+
+func signPortRuleManifest(entries []portRuleEntry) string {
+	var content strings.Builder
+	for _, entry := range entries {
+		content.WriteString(strconv.Itoa(entry.RuleID) + ":" + strconv.Itoa(entry.Port) + ":" + entry.Protocol + ":" + entry.ForwardType + "\n")
+	}
+	digest := sha256.Sum256([]byte(content.String()))
+	return hex.EncodeToString(digest[:])
+}
+
+func acceptPortRuleManifest(revision int64, signature string, entries *[]portRuleEntry) {
+	portRuleManifestMu.Lock()
+	defer portRuleManifestMu.Unlock()
+	if revision < 0 || revision < portRuleManifestRevision {
+		return
+	}
+	portRuleManifestRevision = revision
+	if entries == nil && signature == portRuleManifestSignature && signature != "" {
+		return
+	}
+	valid := entries != nil && len(signature) == 64
+	if valid {
+		for _, entry := range *entries {
+			if entry.RuleID <= 0 || entry.Port < 1 || entry.Port > 65535 ||
+				(entry.Protocol != "tcp" && entry.Protocol != "udp" && entry.Protocol != "both") || entry.ForwardType == "" {
+				valid = false
+				break
+			}
+		}
+		valid = valid && signPortRuleManifest(*entries) == signature
+	}
+	if valid {
+		portRuleManifestEntries = append([]portRuleEntry{}, (*entries)...)
+		portRuleManifestSignature = signature
+	} else {
+		portRuleManifestEntries = nil
+		portRuleManifestSignature = ""
+	}
+	portOccupancyMu.Lock()
+	forceSendPortOccupancy = true
+	portOccupancyMu.Unlock()
+}
+
+func portRuleManifestForHeartbeat() (string, []portRuleEntry) {
+	portRuleManifestMu.Lock()
+	defer portRuleManifestMu.Unlock()
+	return portRuleManifestSignature, append([]portRuleEntry{}, portRuleManifestEntries...)
+}
+
+func portOccupancyFromListen(snapshot *runtimeListenSnapshot, rules []portRuleEntry) portOccupancyPayload {
+	result := portOccupancyPayload{Listeners: []portOccupancyListener{}, Covered: []portOccupancyPort{}}
 	if snapshot == nil || !snapshot.usable {
 		return result
 	}
@@ -156,11 +210,41 @@ func portOccupancyFromListen(snapshot *runtimeListenSnapshot) portOccupancyPaylo
 	if result.CollectedAt <= 0 {
 		result.CollectedAt = time.Now().UnixMilli()
 	}
-	for protocol, ports := range map[string]map[int][]string{"tcp": snapshot.tcpPorts, "udp": snapshot.udpPorts} {
-		for port, lines := range ports {
-			for _, line := range lines {
+	requested := map[int]map[string]bool{}
+	for _, rule := range rules {
+		if rule.Port < 1 || rule.Port > 65535 {
+			continue
+		}
+		if requested[rule.Port] == nil {
+			requested[rule.Port] = map[string]bool{}
+		}
+		if rule.Protocol == "tcp" || rule.Protocol == "both" {
+			requested[rule.Port]["tcp"] = true
+		}
+		if rule.Protocol == "udp" || rule.Protocol == "both" {
+			requested[rule.Port]["udp"] = true
+		}
+	}
+	ports := make([]int, 0, len(requested))
+	for port := range requested {
+		ports = append(ports, port)
+	}
+	sort.Ints(ports)
+	for _, port := range ports {
+		group := []portOccupancyListener{}
+		coverage := []portOccupancyPort{}
+		valid := true
+		for _, source := range []struct {
+			protocol string
+			lines    map[int][]string
+		}{{"tcp", snapshot.tcpPorts}, {"udp", snapshot.udpPorts}} {
+			if !requested[port][source.protocol] {
+				continue
+			}
+			coverage = append(coverage, portOccupancyPort{Port: port, Protocol: source.protocol})
+			for _, line := range source.lines[port] {
 				fields := strings.Fields(line)
-				address := "unknown"
+				address := ""
 				if len(fields) >= 5 {
 					endpoint := fields[4]
 					if index := strings.LastIndex(endpoint, ":"); index >= 0 {
@@ -168,8 +252,10 @@ func portOccupancyFromListen(snapshot *runtimeListenSnapshot) portOccupancyPaylo
 					}
 				} else if procAddress := procNetListenAddress(line); procAddress != "" {
 					address = procAddress
-				} else {
-					result.Complete = false
+				}
+				if address == "" {
+					valid = false
+					break
 				}
 				process := ssListenerProcess(line)
 				if len(address) > 128 {
@@ -183,77 +269,80 @@ func portOccupancyFromListen(snapshot *runtimeListenSnapshot) portOccupancyPaylo
 				if managedRuntime == "forwardx-fxp" {
 					managedRuntimeID = managedRuntimeIDForListener(line, process)
 				}
-				result.Listeners = append(result.Listeners, portOccupancyListener{
-					Port: port, Protocol: protocol, Address: address, Process: process,
+				group = append(group, portOccupancyListener{
+					Port: port, Protocol: source.protocol, Address: address, Process: process,
 					ManagedRuntime:   managedRuntime,
 					ManagedRuntimeID: managedRuntimeID,
 				})
 			}
 		}
-	}
-	sort.Slice(result.Listeners, func(i, j int) bool {
-		a, b := result.Listeners[i], result.Listeners[j]
-		if listenerPriority(a) != listenerPriority(b) {
-			return listenerPriority(a) < listenerPriority(b)
+		if !valid || len(result.Listeners)+len(group) > maxPortOccupancyListeners {
+			continue
 		}
-		if a.Port != b.Port {
-			return a.Port < b.Port
-		}
-		if a.Protocol != b.Protocol {
-			return a.Protocol < b.Protocol
-		}
-		if a.Address != b.Address {
-			return a.Address < b.Address
-		}
-		return a.Process < b.Process
-	})
-	all := result.Listeners
-	bytesUsed := 128
-	limit := 0
-	for limit < len(all) && limit < maxPortOccupancyListeners {
-		encoded, _ := json.Marshal(all[limit])
-		if bytesUsed+len(encoded)+1 > maxPortOccupancyBytes {
-			break
-		}
-		bytesUsed += len(encoded) + 1
-		limit++
-	}
-	if limit < len(all) {
-		result.Complete = false
-		result.Listeners = all[:limit]
-		firstOmittedPort := all[limit].Port
-		for _, listener := range all[limit+1:] {
-			if listener.Port < firstOmittedPort {
-				firstOmittedPort = listener.Port
+		sort.Slice(group, func(i, j int) bool {
+			a, b := group[i], group[j]
+			if a.Port != b.Port {
+				return a.Port < b.Port
 			}
+			if a.Protocol != b.Protocol {
+				return a.Protocol < b.Protocol
+			}
+			if a.Address != b.Address {
+				return a.Address < b.Address
+			}
+			return a.Process < b.Process
+		})
+		candidate := portOccupancyPayload{
+			Listeners:   append(append([]portOccupancyListener{}, result.Listeners...), group...),
+			Covered:     append(append([]portOccupancyPort{}, result.Covered...), coverage...),
+			CollectedAt: result.CollectedAt,
 		}
-		result.CoveredThrough = firstOmittedPort - 1
+		encoded, _ := json.Marshal(candidate)
+		if len(encoded) > maxPortOccupancyBytes {
+			continue
+		}
+		result = candidate
 	}
-	sort.Slice(result.Listeners, func(i, j int) bool {
-		a, b := result.Listeners[i], result.Listeners[j]
-		if a.Port != b.Port {
-			return a.Port < b.Port
-		}
-		if a.Protocol != b.Protocol {
-			return a.Protocol < b.Protocol
-		}
-		if a.Address != b.Address {
-			return a.Address < b.Address
-		}
-		return a.Process < b.Process
-	})
 	return result
 }
 
 func portOccupancySignature(snapshot portOccupancyPayload) string {
 	contents, _ := json.Marshal(struct {
-		Listeners      []portOccupancyListener `json:"listeners"`
-		Complete       bool                    `json:"complete"`
-		CoveredThrough int                     `json:"coveredThrough"`
-	}{snapshot.Listeners, snapshot.Complete, snapshot.CoveredThrough})
+		Listeners []portOccupancyListener `json:"listeners"`
+		Covered   []portOccupancyPort     `json:"covered"`
+	}{snapshot.Listeners, snapshot.Covered})
 	h := fnv.New64a()
 	_, _ = h.Write(contents)
 	return strconv.FormatUint(h.Sum64(), 16)
+}
+
+func fitPortOccupancyRequest(payload map[string]any) {
+	snapshot, ok := payload["portOccupancy"].(*portOccupancyPayload)
+	if !ok || snapshot == nil {
+		return
+	}
+	for len(snapshot.Covered) > 0 {
+		plain, _ := json.Marshal(payload)
+		if 2*len(plain)+256 <= maxPortOccupancyEnvelopeBytes {
+			break
+		}
+		lastPort := snapshot.Covered[len(snapshot.Covered)-1].Port
+		for len(snapshot.Covered) > 0 && snapshot.Covered[len(snapshot.Covered)-1].Port == lastPort {
+			snapshot.Covered = snapshot.Covered[:len(snapshot.Covered)-1]
+		}
+		kept := snapshot.Listeners[:0]
+		for _, listener := range snapshot.Listeners {
+			if listener.Port != lastPort {
+				kept = append(kept, listener)
+			}
+		}
+		snapshot.Listeners = kept
+	}
+	signature := portOccupancySignature(*snapshot)
+	payload["portOccupancySignature"] = signature
+	portOccupancyMu.Lock()
+	lastPortOccupancySignature = signature
+	portOccupancyMu.Unlock()
 }
 
 func portBindFailureMessage(snapshot *runtimeListenSnapshot, port int, protocol string) string {
