@@ -6078,18 +6078,33 @@ function RulesContent() {
 
   const renderStatusDot = (rule: any) => {
     const visual = ruleVisualStatuses.get(Number(rule.id))?.display || resolveRuleVisualStatus(rule);
-    const notices = Array.isArray(rule.portOccupancyWarnings) ? rule.portOccupancyWarnings : [];
+    const notices: Array<{ status: string; message: string; hostId: number; collectedAt?: number; verifiedAt?: number }> =
+      Array.isArray(rule.portOccupancyWarnings) ? rule.portOccupancyWarnings : [];
+    // 同一条规则可能横跨多台主机（入口组），逐台渲染会在卡片上堆出多个相同图标。
+    // 这里合并成一个图标，逐台明细放进 tooltip。
+    const hasOccupied = notices.some((notice) => notice.status === "occupied");
+    const occupancyTitle = notices
+      .map((notice) => {
+        const collected = notice.collectedAt ? `；采集时间 ${new Date(notice.collectedAt).toLocaleString()}` : "";
+        const verified = notice.verifiedAt ? `；最近核实 ${new Date(notice.verifiedAt).toLocaleString()}` : "";
+        return `主机 ${notice.hostId}：${notice.message}${collected}${verified}`;
+      })
+      .join("\n");
     return (
       <span className="inline-flex items-center gap-1.5">
         {renderResolvedStatusDot(visual)}
-        {notices.map((notice: { status: string; message: string; hostId: number; collectedAt?: number; verifiedAt?: number }, index: number) => (
-          <span key={`${notice.hostId}-${index}`} className={`inline-flex items-center gap-0.5 text-[11px] ${notice.status === "occupied" ? "text-amber-600" : "text-muted-foreground"}`}
-            title={`${notice.message}${notice.collectedAt ? `；采集时间 ${new Date(notice.collectedAt).toLocaleString()}` : ""}${notice.verifiedAt ? `；最近核实 ${new Date(notice.verifiedAt).toLocaleString()}` : ""}`}>
-            <AlertCircle className="h-3.5 w-3.5 shrink-0" />{notice.status === "occupied" ? "端口占用" : "未经核实"}
+        {notices.length > 0 && (
+          <span
+            className={`inline-flex shrink-0 items-center ${hasOccupied ? "text-amber-600" : "text-muted-foreground"}`}
+            title={occupancyTitle}
+            aria-label={hasOccupied ? "端口占用" : "端口信息未经核实"}
+          >
+            <AlertCircle className="h-3.5 w-3.5" />
           </span>
-        ))}
-        {rule.portBindFailure && <span className="inline-flex items-center gap-1 text-[11px] text-destructive" title={rule.portBindFailure}>
-          <AlertCircle className="h-3.5 w-3.5 shrink-0" /><span className="max-w-48 break-words">{rule.portBindFailure}</span>
+        )}
+        {/* 绑定失败意味着规则此刻不工作，保留文字；但必须能截断，否则在窄容器里会逐字竖排。 */}
+        {rule.portBindFailure && <span className="inline-flex min-w-0 items-center gap-1 text-[11px] text-destructive" title={rule.portBindFailure}>
+          <AlertCircle className="h-3.5 w-3.5 shrink-0" /><span className="max-w-48 truncate whitespace-nowrap">{rule.portBindFailure}</span>
         </span>}
       </span>
     );
@@ -6903,7 +6918,7 @@ function RulesContent() {
           <CardContent className="action-card-content space-y-2.5 p-3">
             <div className="flex min-w-0 items-start justify-between gap-2">
               <div className="flex min-w-0 items-start gap-2">
-                <div className="mt-1.5 flex h-3.5 w-3.5 shrink-0 items-center justify-center">
+                <div className="mt-1.5 flex h-3.5 min-w-3.5 shrink-0 items-center justify-center">
                   {supported ? renderStatusDot(rule) : <span className="h-2.5 w-2.5 rounded-full bg-destructive/60" />}
                 </div>
                 <div className="min-w-0">
@@ -6989,7 +7004,7 @@ function RulesContent() {
         <CardContent className="action-card-content space-y-3 p-4">
           <div className="flex items-start justify-between gap-3">
             <div className="flex min-w-0 items-start gap-2">
-              <div className="mt-2 flex h-4 w-4 flex-shrink-0 items-center justify-center">
+              <div className="mt-2 flex h-4 min-w-4 flex-shrink-0 items-center justify-center">
                 {supported ? renderStatusDot(rule) : <span className="h-2.5 w-2.5 rounded-full bg-destructive/60" />}
               </div>
               <div className="min-w-0">
