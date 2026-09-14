@@ -57,7 +57,7 @@ export function receivePortOccupancy(hostId: number, input: {
       setBoundedMapValue(rejected, hostId, { signature, at: now, requestedAt: 0 }, MAX_HOSTS);
       return { requestPortOccupancy: false, verified: false };
     };
-    if (!raw || !Array.isArray(raw.listeners) || raw.listeners.length > MAX_LISTENERS ||
+    if (!raw || !Array.isArray(raw.listeners) ||
         !Array.isArray(raw.covered) || raw.covered.length > 1024 ||
         Buffer.byteLength(JSON.stringify(raw)) > MAX_PORT_OCCUPANCY_RECEIVE_BYTES ||
         "complete" in raw || "coveredThrough" in raw) {
@@ -78,6 +78,7 @@ export function receivePortOccupancy(hostId: number, input: {
       covered.push({ port: item.port, protocol: item.protocol });
     }
     const listeners: PortListener[] = [];
+    const listenerCountsByPort = new Map<number, number>();
     for (const item of raw.listeners) {
       const port = Number(item?.port);
       const address = String(item?.address || "").trim();
@@ -90,6 +91,9 @@ export function receivePortOccupancy(hostId: number, input: {
         return reject();
       }
       if (!coveredKeys.has(`${port}:${item.protocol}`)) return reject();
+      const listenerCount = (listenerCountsByPort.get(port) || 0) + 1;
+      if (listenerCount > MAX_LISTENERS) return reject();
+      listenerCountsByPort.set(port, listenerCount);
       listeners.push({ port, protocol: item.protocol, address,
         ...(item.process ? { process: String(item.process) } : {}),
         ...(item.managedRuntime ? { managedRuntime: item.managedRuntime } : {}),

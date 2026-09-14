@@ -1080,6 +1080,9 @@ export async function deleteForwardRuleForActor(
 
     if ((rule as any).isForwardGroupTemplate) {
       const childRules = await db.getForwardGroupChildRulesForTemplate(ruleId);
+      const warningHostIds = new Set<number>([Number(rule.hostId),
+        ...(childRules as any[]).map((child: any) => Number(child.hostId)),
+        ...await db.getForwardGroupRuleEntryHostIds(Number((rule as any).forwardGroupId || 0))]);
       for (const child of childRules as any[]) {
         collectBilling(await settleTrafficBillingForDeletedRule(child));
         const childTunnelId = Number((child as any).tunnelId || 0);
@@ -1097,6 +1100,9 @@ export async function deleteForwardRuleForActor(
       // Their managed children remain pending until each Agent confirms removal.
       await db.finalizeForwardRuleDelete(ruleId);
       await refreshRemainingSniSplitterRulesAfterTemplateDelete(rule, childRules as any[], `${reasonPrefix}-group-deleted`);
+      for (const hostId of warningHostIds) {
+        if (hostId > 0) await refreshRulePortWarningsForHost(hostId);
+      }
       return { success: true, rule, childRules, chargedCents, balanceAfterCents };
     }
 
@@ -1108,6 +1114,7 @@ export async function deleteForwardRuleForActor(
       if (tunnel) await pushTunnelEndpointRefresh(tunnel, `${reasonPrefix}-deleted`);
     }
     pushAgentRefresh(rule.hostId, `${reasonPrefix}-deleted`);
+    await refreshRulePortWarningsForHost(Number(rule.hostId));
     return { success: true, rule, childRules: [] as any[], chargedCents, balanceAfterCents };
   });
 }

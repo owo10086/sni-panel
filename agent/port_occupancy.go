@@ -276,7 +276,7 @@ func portOccupancyFromListen(snapshot *runtimeListenSnapshot, rules []portRuleEn
 				})
 			}
 		}
-		if !valid || len(result.Listeners)+len(group) > maxPortOccupancyListeners {
+		if !valid || len(group) > maxPortOccupancyListeners {
 			continue
 		}
 		sort.Slice(group, func(i, j int) bool {

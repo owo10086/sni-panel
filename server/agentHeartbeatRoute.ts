@@ -3312,6 +3312,7 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
     const useConfiguredTunnelListenPortsForRule = (rule: any, tunnel: any) => (
       !!rule
       && !!tunnel
+      && sniRuntimeForRule(rule)?.resource !== "tunnel"
       && Number(primaryManagedTunnelRuleIdByTunnelId.get(Number((tunnel as any).id || 0)) || 0) === Number((rule as any).id || 0)
     );
     const tunnelExtraExitNodes = (tunnel: any) => (

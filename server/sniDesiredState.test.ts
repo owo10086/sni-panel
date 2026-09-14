@@ -818,7 +818,7 @@ test("a tunnel SNI rule update reaches the very next heartbeat", () => {
       const payload = await response.json();
       assert.equal(response.status, 200);
       assert.equal(payload.success, true);
-      return payload.desiredState.actions;
+      return payload;
     }
 
     function splitterRoutes(actions) {
@@ -862,7 +862,10 @@ test("a tunnel SNI rule update reaches the very next heartbeat", () => {
       });
       const baseUrl = "http://127.0.0.1:" + server.address().port;
 
-      const before = splitterRoutes(await postExitHeartbeat(baseUrl));
+      const initial = await postExitHeartbeat(baseUrl);
+      const before = splitterRoutes(initial.desiredState.actions);
+      assert.ok(initial.runningRules.some((rule) => Number(rule.sourcePort) === tunnelExitPort && rule.forwardType === "gost-tunnel-exit"));
+      assert.ok(!initial.runningRules.some((rule) => Number(rule.sourcePort) === 21000 && rule.forwardType === "gost-tunnel-exit"));
       const apiBefore = before.find((route) => route.sni === "api.example.com");
       assert.ok(apiBefore, "missing api route in the initial sni route table");
       assert.equal(apiBefore.targetIp, "203.0.113.20");
@@ -880,7 +883,7 @@ test("a tunnel SNI rule update reaches the very next heartbeat", () => {
 
       // No sleep: the heartbeat that arrives right after the write must already
       // carry the new landing server and the new limits.
-      const after = splitterRoutes(await postExitHeartbeat(baseUrl));
+      const after = splitterRoutes((await postExitHeartbeat(baseUrl)).desiredState.actions);
       const apiAfter = after.find((route) => route.sni === "api.example.com");
       assert.ok(apiAfter, "missing api route after the update");
       assert.equal(apiAfter.targetIp, "203.0.113.99");

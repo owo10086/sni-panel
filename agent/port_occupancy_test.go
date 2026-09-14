@@ -76,6 +76,43 @@ func TestPortOccupancySnapshotDropsEntirePortWhenListenerLimitReached(t *testing
 	}
 }
 
+func TestPortOccupancySnapshotListenerLimitAppliesPerPort(t *testing.T) {
+	listen := &runtimeListenSnapshot{tcpPorts: map[int][]string{}, udpPorts: map[int][]string{}, usable: true}
+	for idx := 0; idx < 255; idx++ {
+		listen.add("tcp", 11127, "tcp LISTEN 0 128 127.0.0.1:11127 0.0.0.0:*")
+	}
+	for idx := 0; idx < 2; idx++ {
+		listen.add("tcp", 11128, "tcp LISTEN 0 128 127.0.0.1:11128 0.0.0.0:*")
+	}
+	snapshot := portOccupancyFromListen(listen, []portRuleEntry{
+		{RuleID: 1, Port: 11127, Protocol: "tcp", ForwardType: "iptables"},
+		{RuleID: 2, Port: 11128, Protocol: "tcp", ForwardType: "iptables"},
+	})
+	encoded, _ := json.Marshal(snapshot)
+	if len(encoded) > maxPortOccupancyBytes {
+		t.Fatalf("test snapshot exceeded the overall byte limit: %d", len(encoded))
+	}
+	if len(snapshot.Covered) != 2 || len(snapshot.Listeners) != 257 || snapshot.Covered[0].Port != 11127 || snapshot.Covered[1].Port != 11128 {
+		t.Fatalf("per-port listener limit discarded a complete port: %+v", snapshot.Covered)
+	}
+}
+
+func TestPortOccupancySnapshotDropsEntirePortWhenByteLimitReached(t *testing.T) {
+	listen := &runtimeListenSnapshot{tcpPorts: map[int][]string{}, udpPorts: map[int][]string{}, usable: true}
+	process := strings.Repeat("p", 100)
+	for idx := 0; idx < 200; idx++ {
+		listen.add("tcp", 11127, "tcp LISTEN 0 128 127.0.0.1:11127 0.0.0.0:* users:((\""+process+"\",pid=1,fd=1))")
+	}
+	listen.add("tcp", 11128, "tcp LISTEN 0 128 127.0.0.1:11128 0.0.0.0:*")
+	snapshot := portOccupancyFromListen(listen, []portRuleEntry{
+		{RuleID: 1, Port: 11127, Protocol: "tcp", ForwardType: "iptables"},
+		{RuleID: 2, Port: 11128, Protocol: "tcp", ForwardType: "iptables"},
+	})
+	if len(snapshot.Covered) != 1 || snapshot.Covered[0].Port != 11128 || len(snapshot.Listeners) != 1 {
+		t.Fatalf("byte limit retained part of an oversized port: %+v", snapshot)
+	}
+}
+
 func TestPortOccupancySnapshotIgnoresUnrelatedListeners(t *testing.T) {
 	listen := &runtimeListenSnapshot{tcpPorts: map[int][]string{}, udpPorts: map[int][]string{}, usable: true}
 	for port := 1; port <= 300; port++ {

@@ -38,6 +38,19 @@ test("invalid version and rejected snapshots cannot reactivate a cached listener
   assert.ok(MAX_PORT_OCCUPANCY_RECEIVE_BYTES >= agentLimit);
 });
 
+test("panel accepts more than 256 listeners across ports but rejects an oversized single port", () => {
+  const collectedAt = Date.now();
+  const listener = (port: number) => ({ port, protocol: "tcp", address: "127.0.0.1" });
+  const snapshot = { listeners: [...Array.from({ length: 255 }, () => listener(11127)), listener(11128), listener(11128)],
+    covered: [{ port: 11127, protocol: "tcp" }, { port: 11128, protocol: "tcp" }], collectedAt };
+  assert.ok(Buffer.byteLength(JSON.stringify(snapshot)) <= 16 * 1024);
+  assert.equal(receivePortOccupancy(9003, { schemaVersion: 2, signature: "a1", collected: true, snapshot }).verified, true);
+  assert.equal(getPortOccupancy(9003)?.listeners.length, 257);
+  const oversized = { ...snapshot, listeners: Array.from({ length: 257 }, () => listener(11127)) };
+  assert.equal(receivePortOccupancy(9004, { schemaVersion: 2, signature: "a2", collected: true, snapshot: oversized }).verified, false);
+  assert.equal(getPortOccupancy(9004), null);
+});
+
 test("agent heartbeat caches verified listeners and requests a changed snapshot", () => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), "forwardx-occupancy-heartbeat-"));
   const databasePath = path.join(directory, "heartbeat.db");
@@ -177,6 +190,26 @@ test("agent heartbeat caches verified listeners and requests a changed snapshot"
       const changedExit = await buildPortRuleManifest(2, exitManifest.portRuleManifestSignature);
       assert.ok(changedExit.portRuleManifestRevision > exitManifest.portRuleManifestRevision);
       assert.equal(changedExit.portRuleManifest.find((entry) => entry.ruleId === 604).port, 25002);
+      await insert("hosts", ["id", "name", "ip", "ipv4", "userId", "isOnline", "lastHeartbeat", "agentVersion", "portRangeStart", "portRangeEnd"],
+        [6, "sni-entry", "198.51.100.16", "198.51.100.16", 1, 1, Math.floor(Date.now() / 1000), "2.2.195", 18000, 19000]);
+      await insert("hosts", ["id", "name", "ip", "ipv4", "userId", "isOnline", "lastHeartbeat", "agentVersion", "portRangeStart", "portRangeEnd"],
+        [7, "sni-exit", "198.51.100.17", "198.51.100.17", 1, 1, Math.floor(Date.now() / 1000), "2.2.195", 24000, 24010]);
+      await insert("tunnels", ["id", "name", "entryHostId", "exitHostId", "mode", "listenPort", "userId", "isEnabled"],
+        [31, "sni-tunnel", 6, 7, "tls", 21000, 1, 1]);
+      for (const [id, sni] of [[606, "api.example.com"], [607, "web.example.com"]]) {
+        await insert("forward_rules", ["id", "hostId", "tunnelId", "tunnelExitPort", "name", "forwardType", "protocol", "sourcePort", "sni", "sniSplitterPort", "targetIp", "targetPort", "userId", "isEnabled", "isRunning"],
+          [id, 6, 31, 24005, sni, "gost", "tcp", 18443, sni, 24000, "203.0.113.5", 443, 1, 1, 0]);
+      }
+      const sniEntryManifest = await buildPortRuleManifest(6);
+      const sniExitManifest = await buildPortRuleManifest(7);
+      for (const ruleId of [606, 607]) {
+        assert.deepEqual(sniEntryManifest.portRuleManifest.filter((entry) => entry.ruleId === ruleId).map((entry) => entry.port), [18443]);
+        assert.deepEqual(sniExitManifest.portRuleManifest.filter((entry) => entry.ruleId === ruleId).map((entry) => entry.port), [24000, 24005]);
+      }
+      assert.ok(!sniExitManifest.portRuleManifest.some((entry) => entry.port === 21000));
+      const sniRule = (await runtime.queryRaw('SELECT * FROM "forward_rules" WHERE "id" = ?', [606]))[0];
+      const sniTunnel = (await runtime.queryRaw('SELECT * FROM "tunnels" WHERE "id" = ?', [31]))[0];
+      assert.deepEqual(effectiveRuleEntryPortsForHost(sniRule, 7, { tunnel: sniTunnel, primaryRuleId: 606 }), [24005, 24000]);
       await insert("hosts", ["id", "name", "ip", "ipv4", "userId", "isOnline", "lastHeartbeat", "portRangeStart", "portRangeEnd"],
         [3, "disabled-extra-exit", "198.51.100.7", "198.51.100.7", 1, 1, Math.floor(Date.now() / 1000), 24000, 26000]);
       await insert("tunnel_exit_nodes", ["id", "tunnelId", "seq", "hostId", "listenPort", "isEnabled"],
@@ -196,6 +229,92 @@ test("agent heartbeat caches verified listeners and requests a changed snapshot"
       assert.deepEqual((await buildPortRuleManifest(5)).portRuleManifest, []);
     } finally {
       if (server) await new Promise((resolve) => server.close(resolve));
+      await runtime.closeDatabase();
+    }
+  `;
+  const result = spawnSync(process.execPath, ["--import", "tsx", "--input-type=module", "-e", script], {
+    cwd: process.cwd(), env: { ...process.env, DATABASE_TYPE: "sqlite", FORWARDX_TEST_DB: databasePath },
+    encoding: "utf8", timeout: 60_000,
+  });
+  fs.rmSync(directory, { recursive: true, force: true });
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+});
+
+test("inactive rules release occupancy state without a current snapshot across group hosts", () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "forwardx-occupancy-cleanup-"));
+  const databasePath = path.join(directory, "cleanup.db");
+  const script = String.raw`
+    import assert from "node:assert/strict";
+    import path from "node:path";
+    import { pathToFileURL } from "node:url";
+    const moduleUrl = (file) => pathToFileURL(path.join(process.cwd(), file)).href;
+    const runtime = await import(moduleUrl("server/dbRuntime.ts"));
+    const schema = await import(moduleUrl("server/dbSchema.ts"));
+    const { rulesRouter } = await import(moduleUrl("server/routers/rules.ts"));
+    const { receivePortOccupancy, getPortOccupancy } = await import(moduleUrl("server/portOccupancy.ts"));
+    const { refreshRulePortWarningsForHost, getRulePortWarnings } = await import(moduleUrl("server/rulePortOccupancy.ts"));
+    const { portOccupancyNotificationTransition } = await import(moduleUrl("server/forwardRuleErrorNotifier.ts"));
+    const insert = async (table, columns, values) => runtime.executeRaw(
+      'INSERT INTO "' + table + '" (' + columns.map((column) => '"' + column + '"').join(',') + ') VALUES (' + values.map(() => '?').join(',') + ')', values);
+    try {
+      await runtime.connectDatabase({ type: "sqlite", sqlite: { path: process.env.FORWARDX_TEST_DB } });
+      await schema.ensureDatabaseSchema();
+      const now = Math.floor(Date.now() / 1000);
+      await insert("users", ["id", "username", "password", "role", "canAddRules"], [1, "admin", "x", "admin", 1]);
+      for (const [id, port] of [[1, 11000], [2, 22000]]) {
+        await insert("hosts", ["id", "name", "ip", "ipv4", "userId", "isOnline", "lastHeartbeat", "portRangeStart", "portRangeEnd"],
+          [id, "host-" + id, "198.51.100." + id, "198.51.100." + id, 1, 1, now, port, port + 999]);
+      }
+      await insert("forward_groups", ["id", "name", "groupType", "groupMode", "domain", "targetIp", "userId", "isEnabled"],
+        [10, "entry-group", "host", "entry", "", "0.0.0.0", 1, 1]);
+      for (const [id, hostId] of [[101, 1], [102, 2]]) {
+        await insert("forward_group_members", ["id", "groupId", "memberType", "hostId", "priority", "isEnabled"],
+          [id, 10, "host", hostId, id, 1]);
+      }
+      const columns = ["id", "hostId", "name", "forwardType", "protocol", "forwardGroupId", "forwardGroupRuleId",
+        "forwardGroupMemberId", "isForwardGroupTemplate", "sourcePort", "targetIp", "targetPort", "userId", "isEnabled", "isRunning"];
+      for (const [id, hostId, parent, member, template, port] of [
+        [501, 1, null, null, 0, 11127], [503, 2, null, null, 0, 22229], [504, 1, null, null, 0, 11130],
+        [600, 1, null, null, 1, 11128], [601, 1, 600, 101, 0, 11128], [602, 2, 600, 102, 0, 22228],
+      ]) {
+        await insert("forward_rules", columns, [id, hostId, "rule-" + id, "iptables", "tcp", parent ? 10 : template ? 10 : null,
+          parent, member, template, port, "203.0.113.5", 80, 1, 1, 1]);
+      }
+      const snapshot = (hostId, ports) => receivePortOccupancy(hostId, { schemaVersion: 2, signature: String(hostId),
+        collected: true, snapshot: { listeners: ports.map((port) => ({ port, protocol: "tcp", address: "127.0.0.1", process: "external" })),
+          covered: ports.map((port) => ({ port, protocol: "tcp" })), collectedAt: Date.now() } });
+      assert.equal(snapshot(1, [11127, 11128, 11130]).verified, true);
+      assert.equal(snapshot(2, [22228, 22229]).verified, true);
+      await refreshRulePortWarningsForHost(1);
+      await refreshRulePortWarningsForHost(2);
+      assert.equal(getRulePortWarnings(501, true).length, 1);
+      assert.equal(getRulePortWarnings(600, true).length, 2);
+      const time = Date.now() - 600_000;
+      const keys = ["501:1:11127:tcp", "503:2:22229:tcp", "504:1:11130:tcp", "600:1:11128:tcp", "600:2:22228:tcp"];
+      for (const key of keys) assert.equal(portOccupancyNotificationTransition(key, "owner", true, time), "occupied");
+      for (const hostId of [1, 2]) {
+        receivePortOccupancy(hostId, { schemaVersion: 2, collected: false });
+        assert.equal(getPortOccupancy(hostId), null);
+        await refreshRulePortWarningsForHost(hostId);
+      }
+      assert.equal(getRulePortWarnings(501, true).length, 1);
+      assert.equal(portOccupancyNotificationTransition(keys[0], "owner", true, time + 1), null);
+      assert.equal(portOccupancyNotificationTransition(keys[3], "owner", true, time + 1), null);
+      const caller = rulesRouter.createCaller({ req: { headers: {} }, res: { clearCookie() {} },
+        user: { id: 1, username: "admin", role: "admin", accountEnabled: true }, authSession: null, authFailureReason: null });
+      assert.deepEqual((await caller.getById({ id: 501 })).portOccupancyWarnings, []);
+      await caller.toggle({ id: 501, isEnabled: false });
+      assert.deepEqual(getRulePortWarnings(501, true), []);
+      assert.equal(portOccupancyNotificationTransition(keys[0], "owner", true, time + 2), "occupied");
+      await caller.delete({ id: 503 });
+      assert.deepEqual(getRulePortWarnings(503, true), []);
+      assert.equal(portOccupancyNotificationTransition(keys[1], "owner", true, time + 2), "occupied");
+      await caller.delete({ id: 600 });
+      assert.deepEqual(getRulePortWarnings(600, true), []);
+      assert.equal(portOccupancyNotificationTransition(keys[3], "owner", true, time + 2), "occupied");
+      assert.equal(portOccupancyNotificationTransition(keys[4], "owner", true, time + 2), "occupied");
+      assert.equal(portOccupancyNotificationTransition(keys[2], "owner", true, time + 2), null);
+    } finally {
       await runtime.closeDatabase();
     }
   `;

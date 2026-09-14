@@ -19,7 +19,6 @@ export function getRulePortWarnings(ruleId: number, admin: boolean) {
 
 export async function refreshRulePortWarningsForHost(hostId: number, manifestEntries?: PortRuleEntry[]) {
   const snapshot = getPortOccupancy(hostId);
-  if (!snapshot) return;
   const [rules, entries] = await Promise.all([
     db.getForwardRulesForAgent(hostId) as Promise<any[]>, manifestEntries ?? getPortRuleEntriesForHost(hostId),
   ]);
@@ -33,13 +32,15 @@ export async function refreshRulePortWarningsForHost(hostId: number, manifestEnt
   const activeKeys = new Set<string>();
   for (const rule of rules) {
     if (![true, 1, "1"].includes(rule.isEnabled) ||
+        [true, 1, "1"].includes(rule.pendingDelete) ||
         (rule.forwardType !== "iptables" && rule.forwardType !== "nftables")) continue;
     for (const port of portsByRule.get(Number(rule.id)) || []) {
-      const result = inspectPortOccupancy(snapshot, port, rule.protocol || "both",
-        (listener) => managedListenerMatchesRule(listener, rule));
       const ruleId = Number(rule.forwardGroupRuleId || rule.id);
       const key = `${ruleId}:${hostId}:${port}:${rule.protocol}`;
       activeKeys.add(key);
+      if (!snapshot) continue;
+      const result = inspectPortOccupancy(snapshot, port, rule.protocol || "both",
+        (listener) => managedListenerMatchesRule(listener, rule));
       if (result.status === "unverified") continue;
       if (result.status === "occupied") {
         const common = { status: "occupied" as const, hostId, port, collectedAt: result.collectedAt, verifiedAt: result.verifiedAt };

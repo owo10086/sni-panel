@@ -25,9 +25,12 @@ export function effectiveRuleEntryPortsForHost(rule: any, hostId: number, contex
   const mode = String(tunnel?.mode || "").toLowerCase();
   const hasExitListener = rule.forwardType === "gost" &&
     (["tls", "wss", "tcp", "mtls", "mwss", "mtcp", "nginx_stream"].includes(mode));
+  const hasSniSplitter = hasExitListener && !!String(rule.sni || "").trim() && Number(rule.sniSplitterPort) > 0;
   if (hasExitListener && Number(tunnel.exitHostId) === hostId) {
-    const port = Number(context.primaryRuleId === Number(rule.id) ? tunnel.listenPort : rule.tunnelExitPort);
+    const port = Number(!hasSniSplitter && context.primaryRuleId === Number(rule.id)
+      ? tunnel.listenPort : rule.tunnelExitPort);
     if (port > 0) ports.push(port);
+    if (hasSniSplitter) ports.push(Number(rule.sniSplitterPort));
   }
   if (hasExitListener) {
     for (const exit of context.extraExits || []) {
