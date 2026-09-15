@@ -5859,10 +5859,10 @@ function SystemInfoSection() {
           {!upgradeEnabled && (
             <Alert>
               <AlertTriangle className="h-4 w-4" />
-              <AlertTitle>{isDockerDeployment ? "Docker 部署请使用一键升级脚本" : "当前环境尚未启用一键升级"}</AlertTitle>
+              <AlertTitle>{isDockerDeployment ? "Docker 部署请在弹窗中选择升级方式" : "当前环境尚未启用一键升级"}</AlertTitle>
               <AlertDescription>
                 {isDockerDeployment
-                  ? "检查到新版本后可复制脚本到服务器执行，脚本会覆盖原有 ForwardX 容器。"
+                  ? "检查到新版本后可打开升级命令弹窗，在服务器终端执行一键脚本或手动 Compose 命令。"
                   : <>配置 <code>FORWARDX_UPGRADE_COMMAND</code> 后可一键升级。</>}
               </AlertDescription>
             </Alert>
@@ -5933,7 +5933,7 @@ function SystemInfoSection() {
               className="gap-2"
             >
               <Rocket className="h-4 w-4" />
-              {isDockerDeployment ? "查看升级脚本" : "升级并重启"}
+              {isDockerDeployment ? "查看升级命令" : "升级并重启"}
             </Button>
             <Button
               variant="outline"
