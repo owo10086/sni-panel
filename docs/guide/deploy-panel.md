@@ -40,6 +40,8 @@ curl -fsSL https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/ins
 docker logs -n 300 forwardx-panel
 ```
 
+如果 `docker-compose.yml` 和 `.env` 是自行维护的配置，请在面板升级弹窗中选择「手动升级」，保留原配置后执行 Compose 升级命令。上面的一键脚本会重新生成部署目录中的这两个文件，适合由该脚本管理的默认部署。
+
 默认部署目录通常是：
 
 ```text

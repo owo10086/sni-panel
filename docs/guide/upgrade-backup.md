@@ -42,7 +42,7 @@ curl -fsSL https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/ins
 curl -fsSL https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/install-panel-docker.sh | sudo env FORWARDX_TARGET_VERSION=vX.Y.Z bash -s -- upgrade
 ```
 
-升级会保留 `.env` 和部署目录中的 `forwardx-data`。旧版 Docker 数据卷会在首次升级时复制到该目录。如果 `latest` 镜像尚未构建到目标版本，脚本会提示稍后重试并保留旧容器运行。
+一键脚本会读取部分现有变量后重新生成 `.env` 和 `docker-compose.yml`，并保留部署目录中的 `forwardx-data`。旧版 Docker 数据卷会在首次升级时复制到该目录。如果 `latest` 镜像尚未构建到目标版本，脚本会提示稍后重试并保留旧容器运行。自行维护 Compose 配置时，请使用面板升级弹窗中的「手动升级」命令，或者参考 [Docker 手动部署](./deploy-panel.md#6-手动升级-docker-面板)。
 
 升级完成后不要只看镜像拉取提示，可核对运行容器实际使用的镜像和程序版本：
 

@@ -1,5 +1,6 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import DashboardLayout from "@/components/DashboardLayout";
+import { DockerUpgradeCommands } from "@/components/DockerUpgradeCommands";
 import { EmailSettingsContent } from "./EmailSettings";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -24,7 +25,7 @@ import { SlidingTabsList } from "@/components/ui/sliding-tabs";
 import DataSectionLoading from "@/components/DataSectionLoading";
 import { pollingInterval } from "@/lib/polling";
 import { trpc } from "@/lib/trpc";
-import { getPanelChangelogUrl, PANEL_UPGRADE_REFRESH_DELAY_SECONDS } from "@/lib/panelUpgrade";
+import { getDockerUpgradeCommand, getPanelChangelogUrl, PANEL_UPGRADE_REFRESH_DELAY_SECONDS, type DockerUpgradeMethod } from "@/lib/panelUpgrade";
 import { compressImageFile, imageDataUrlSize } from "@/lib/imageUpload";
 import { downloadTextFile, type TextDownloadFile } from "@/lib/fileDownload";
 import { applyPersonalizationTheme } from "@/lib/personalizationTheme";
@@ -4271,6 +4272,7 @@ function SystemInfoSection() {
   const [rollbackType, setRollbackType] = useState<"panel" | "agent">("panel");
   const [selectedRollbackVersion, setSelectedRollbackVersion] = useState("");
   const [showDockerUpgradeScript, setShowDockerUpgradeScript] = useState(false);
+  const [dockerUpgradeMethod, setDockerUpgradeMethod] = useState<DockerUpgradeMethod>("script");
   const previousUpgradeStatus = useRef<string | null>(null);
   const shownDockerUpgradeVersion = useRef<string | null>(null);
   const lastPanelUpdateCheck = useRef(0);
@@ -4861,6 +4863,7 @@ function SystemInfoSection() {
     upgradeStatus?.manualUpgradeCommand ||
     settings?.upgrade?.manualUpgradeCommand ||
     manualPanelUpgradeCommands[1].command;
+  const selectedDockerUpgradeCommand = getDockerUpgradeCommand(dockerUpgradeMethod, dockerPanelUpgradeCommand);
   const canShowDockerUpgradeScript =
     isDockerDeployment &&
     !!updateInfo?.latestVersion &&
@@ -6345,14 +6348,14 @@ function SystemInfoSection() {
       </Dialog>
 
       <Dialog open={showDockerUpgradeScript} onOpenChange={setShowDockerUpgradeScript}>
-        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-2xl">
+        <DialogContent className="max-w-[calc(100vw-2rem)] overflow-x-hidden overflow-y-auto sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Rocket className="h-5 w-5 text-primary" />
-              Docker 一键升级脚本
+              Docker 升级命令
             </DialogTitle>
             <DialogDescription>
-              检测到新版本 {updateInfo?.latestVersion || ""}，请在服务器执行以下命令升级 Docker 部署。
+              检测到新版本 {updateInfo?.latestVersion || ""}，Docker 部署通过服务器终端升级。
             </DialogDescription>
           </DialogHeader>
           {updateInfo?.pendingReason && !updateInfo.error && updateInfo.deployable === false && (
@@ -6362,23 +6365,18 @@ function SystemInfoSection() {
               <AlertDescription>{updateInfo.pendingReason}</AlertDescription>
             </Alert>
           )}
-          <Alert>
-            <AlertTriangle className="h-4 w-4" />
-            <AlertTitle>升级会重建原有 ForwardX 容器</AlertTitle>
-            <AlertDescription>
-              脚本会复用当前部署目录的 .env 配置，只重建容器，不删除 Docker 数据卷；原有数据库和 /data 数据会保留。
-            </AlertDescription>
-          </Alert>
-          <code className="block max-h-40 overflow-auto whitespace-pre-wrap break-all rounded-lg border bg-muted/30 p-3 font-mono text-xs leading-relaxed">
-            {dockerPanelUpgradeCommand}
-          </code>
+          <DockerUpgradeCommands
+            scriptCommand={dockerPanelUpgradeCommand}
+            method={dockerUpgradeMethod}
+            onMethodChange={setDockerUpgradeMethod}
+          />
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setShowDockerUpgradeScript(false)}>
               关闭
             </Button>
-            <Button className="gap-2" onClick={() => copyTextToClipboard(dockerPanelUpgradeCommand)}>
+            <Button className="gap-2" onClick={() => copyTextToClipboard(selectedDockerUpgradeCommand)}>
               <Copy className="h-4 w-4" />
-              复制脚本
+              {dockerUpgradeMethod === "manual" ? "复制手动升级命令" : "复制脚本"}
             </Button>
           </DialogFooter>
         </DialogContent>

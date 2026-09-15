@@ -76,10 +76,11 @@ import { renderMixedHtml } from "@/lib/htmlContent";
 import { mobileAuth } from "@/lib/mobileAuth";
 import { checkMobileAppUpdate, openMobileReleasePage, type MobileAppUpdateResult } from "@/lib/mobileNotifications";
 import { cn } from "@/lib/utils";
-import { getPanelChangelogUrl, PANEL_UPGRADE_REFRESH_DELAY_MS, PANEL_UPGRADE_REFRESH_DELAY_SECONDS } from "@/lib/panelUpgrade";
+import { getDockerUpgradeCommand, getPanelChangelogUrl, PANEL_UPGRADE_REFRESH_DELAY_MS, PANEL_UPGRADE_REFRESH_DELAY_SECONDS, type DockerUpgradeMethod } from "@/lib/panelUpgrade";
 import { copyTextToClipboard } from "@/lib/clipboard";
 import { AvatarPicker } from "@/components/AvatarPicker";
 import { UserAvatar } from "@/components/UserAvatar";
+import { DockerUpgradeCommands } from "@/components/DockerUpgradeCommands";
 import { normalizeSidebarMenuSettings, type SidebarMenuKey } from "@shared/sidebarMenu";
 import { buildPanelInstallerCommand } from "@shared/githubAccelerator";
 import { REPO_URL } from "@shared/repo";
@@ -474,6 +475,7 @@ function DashboardLayoutContent({
   const [upgradeAnnouncementCountdown, setUpgradeAnnouncementCountdown] = useState(UPGRADE_ANNOUNCEMENT_COUNTDOWN_SECONDS);
   const [showTelegramDialog, setShowTelegramDialog] = useState(false);
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
+  const [dockerUpgradeMethod, setDockerUpgradeMethod] = useState<DockerUpgradeMethod>("script");
   const [checkingMobileUpdate, setCheckingMobileUpdate] = useState(false);
   const [mobileUpdateInfo, setMobileUpdateInfo] = useState<MobileAppUpdateResult | null>(null);
   const [showMobileUpdateDialog, setShowMobileUpdateDialog] = useState(false);
@@ -1148,6 +1150,7 @@ function DashboardLayoutContent({
       ? upgradeStatus.githubAccelerator
       : null,
   });
+  const selectedDockerUpgradeCommand = getDockerUpgradeCommand(dockerUpgradeMethod, dockerUpgradeCommand);
   const upgradeRefreshText = upgradeRefreshCountdown !== null
     ? (upgradeRefreshCountdown > 0 ? `${upgradeRefreshCountdown} 秒后自动刷新` : "正在刷新页面")
     : "系统恢复后将自动刷新";
@@ -1667,7 +1670,7 @@ function DashboardLayoutContent({
       </SidebarInset>
 
       <Dialog open={showUpgradeDialog} onOpenChange={setShowUpgradeDialog}>
-        <DialogContent className="w-[calc(100vw-2rem)] max-w-[560px] overflow-x-hidden sm:max-w-xl">
+        <DialogContent className="w-[calc(100vw-2rem)] max-w-[560px] overflow-x-hidden overflow-y-auto sm:max-w-xl">
           <DialogTitle className="flex items-center gap-2">
             <Rocket className="h-5 w-5 text-primary" />
             {isPanelRollbackTask ? "面板版本回退" : "发现新版本"}
@@ -1675,7 +1678,7 @@ function DashboardLayoutContent({
           <DialogDescription>
             {isPanelRollbackTask
               ? "后台回退，完成后自动重启。"
-              : (isDockerDeployment ? "复制一键脚本后在服务器执行，脚本会重建 ForwardX 容器。" : "后台升级，完成后自动重启。")}
+              : (isDockerDeployment ? "Docker 部署通过服务器终端升级。" : "后台升级，完成后自动重启。")}
           </DialogDescription>
           {(() => {
             const job = displayUpgradeJob;
@@ -1701,20 +1704,22 @@ function DashboardLayoutContent({
 
                 {upgradeStatus?.upgradeEnabled === false && (
                   <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-700 dark:text-amber-300">
-                    {isDockerDeployment ? `Docker 部署请复制下方一键脚本到服务器执行${panelVersionActionLabel}。` : `当前环境未配置自动${panelVersionActionLabel}命令，无法在面板内一键${panelVersionActionLabel}。`}
+                    {isDockerDeployment ? `Docker 部署通过服务器终端执行${panelVersionActionLabel}。` : `当前环境未配置自动${panelVersionActionLabel}命令，无法在面板内一键${panelVersionActionLabel}。`}
                   </div>
                 )}
 
                 {isDockerDeployment && (
-                  <div className="space-y-3 rounded-lg border border-border/40 bg-background/60 p-3">
+                  <div className="min-w-0 space-y-3">
                     {updateInfo?.pendingReason && !updateInfo.error && (
                       <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs leading-5 text-amber-700 dark:text-amber-300">
                         {updateInfo.pendingReason}
                       </div>
                     )}
-                    <code className="block max-h-40 overflow-auto whitespace-pre-wrap break-all rounded-lg border bg-muted/30 p-3 font-mono text-xs leading-relaxed">
-                      {dockerUpgradeCommand}
-                    </code>
+                    <DockerUpgradeCommands
+                      scriptCommand={dockerUpgradeCommand}
+                      method={dockerUpgradeMethod}
+                      onMethodChange={setDockerUpgradeMethod}
+                    />
                   </div>
                 )}
 
@@ -1790,9 +1795,9 @@ function DashboardLayoutContent({
               {displayUpgradeJob?.status === "running" ? "后台执行" : "取消"}
             </Button>
             {isDockerDeployment ? (
-              <Button className="w-full gap-2 sm:w-auto" onClick={() => copyText(dockerUpgradeCommand)}>
+              <Button className="w-full gap-2 sm:w-auto" onClick={() => copyText(selectedDockerUpgradeCommand)}>
                 <Copy className="h-4 w-4" />
-                复制脚本
+                {dockerUpgradeMethod === "manual" ? "复制手动升级命令" : "复制脚本"}
               </Button>
             ) : (
               <Button
