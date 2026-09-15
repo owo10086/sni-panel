@@ -154,6 +154,17 @@ type ForwardGroupSniRuleRow = {
   sniSplitterPort: number | null;
 };
 
+const forwardGroupSniRuleSelection = {
+  id: forwardRules.id,
+  name: forwardRules.name,
+  hostId: forwardRules.hostId,
+  forwardGroupId: forwardRules.forwardGroupId,
+  forwardGroupRuleId: forwardRules.forwardGroupRuleId,
+  isForwardGroupTemplate: forwardRules.isForwardGroupTemplate,
+  sni: forwardRules.sni,
+  sniSplitterPort: forwardRules.sniSplitterPort,
+};
+
 function preferTemplateRule<T extends { isForwardGroupTemplate?: unknown }>(rows: T[]) {
   return rows.find((row) => dbBool(row?.isForwardGroupTemplate)) || rows[0] || null;
 }
@@ -197,34 +208,44 @@ export async function getForwardGroupSniEntryPortState(options: {
   if (excludedIds.length > 0) {
     conds.push(notInArray(forwardRules.id, excludedIds));
   }
-  const rows = await db.select({
-    id: forwardRules.id,
-    name: forwardRules.name,
-    hostId: forwardRules.hostId,
-    forwardGroupId: forwardRules.forwardGroupId,
-    forwardGroupRuleId: forwardRules.forwardGroupRuleId,
-    isForwardGroupTemplate: forwardRules.isForwardGroupTemplate,
-    sni: forwardRules.sni,
-    sniSplitterPort: forwardRules.sniSplitterPort,
-  }).from(forwardRules).where(and(...conds)) as ForwardGroupSniRuleRow[];
+  const rows = await db.select(forwardGroupSniRuleSelection)
+    .from(forwardRules)
+    .where(and(...conds)) as ForwardGroupSniRuleRow[];
 
   const normalizedSni = normalizeSniValue(options.sni);
-  const duplicateRows = normalizedSni
-    ? await db.select({
-      id: forwardRules.id,
-      name: forwardRules.name,
-      hostId: forwardRules.hostId,
-      forwardGroupId: forwardRules.forwardGroupId,
-      forwardGroupRuleId: forwardRules.forwardGroupRuleId,
-      isForwardGroupTemplate: forwardRules.isForwardGroupTemplate,
-      sni: forwardRules.sni,
-      sniSplitterPort: forwardRules.sniSplitterPort,
-    }).from(forwardRules).where(and(
-      inArray(forwardRules.hostId, entryHostIds),
-      eq(forwardRules.pendingDelete, false),
-      ...(excludedIds.length > 0 ? [notInArray(forwardRules.id, excludedIds)] : []),
-    )) as ForwardGroupSniRuleRow[]
-    : [];
+  let duplicateRows: ForwardGroupSniRuleRow[] = [];
+  if (normalizedSni) {
+    const entryGroupRows = await db.select({ groupId: forwardGroupMembers.groupId })
+      .from(forwardGroupMembers)
+      .innerJoin(forwardGroups, eq(forwardGroups.id, forwardGroupMembers.groupId))
+      .where(and(
+        eq(forwardGroups.groupMode, "entry"),
+        eq(forwardGroups.isEnabled, true),
+        eq(forwardGroupMembers.memberType, "host"),
+        eq(forwardGroupMembers.isEnabled, true),
+        inArray(forwardGroupMembers.hostId, entryHostIds),
+      ));
+    const entryGroupIds = normalizePositiveIds(entryGroupRows.map((row: { groupId: unknown }) => row.groupId));
+    const tunnelEntryConditions = [inArray(tunnels.entryHostId, entryHostIds)];
+    if (entryGroupIds.length > 0) tunnelEntryConditions.push(inArray(tunnels.entryGroupId, entryGroupIds));
+    const tunnelRows = await db.select({ id: tunnels.id })
+      .from(tunnels)
+      .where(or(...tunnelEntryConditions));
+    const directTunnelIds = normalizePositiveIds(tunnelRows.map((row: { id: unknown }) => row.id));
+    const duplicateScope = directTunnelIds.length > 0
+      ? or(
+          inArray(forwardRules.hostId, entryHostIds),
+          inArray(forwardRules.tunnelId, directTunnelIds),
+        )
+      : inArray(forwardRules.hostId, entryHostIds);
+    duplicateRows = await db.select(forwardGroupSniRuleSelection)
+      .from(forwardRules)
+      .where(and(
+        duplicateScope,
+        eq(forwardRules.pendingDelete, false),
+        ...(excludedIds.length > 0 ? [notInArray(forwardRules.id, excludedIds)] : []),
+      )) as ForwardGroupSniRuleRow[];
+  }
   const sniRows = rows.filter((row) => !!normalizeSniValue(row.sni));
   const plainRows = rows.filter((row) => !normalizeSniValue(row.sni));
   const sameGroupSniRows = sniRows.filter((row) => Number(row.forwardGroupId || 0) === groupId);

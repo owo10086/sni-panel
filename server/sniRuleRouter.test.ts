@@ -539,3 +539,120 @@ test("forward-chain SNI rules share one entry port and reject duplicate or mixed
   fs.rmSync(directory, { recursive: true, force: true });
   assert.equal(result.status, 0, result.stderr || result.stdout);
 });
+
+test("checkSni enforces domain-only validation, exclusions, and administrator access", () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "forwardx-sni-domain-check-"));
+  const databasePath = path.join(directory, "sni-domain-check.db");
+  const script = String.raw`
+    import assert from "node:assert/strict";
+    import path from "node:path";
+    import { pathToFileURL } from "node:url";
+
+    const moduleUrl = (file) => pathToFileURL(path.join(process.cwd(), file)).href;
+    const runtime = await import(moduleUrl("server/dbRuntime.ts"));
+    const schema = await import(moduleUrl("server/dbSchema.ts"));
+    const { rulesRouter } = await import(moduleUrl("server/routers/rules.ts"));
+    const q = (name) => '"' + name + '"';
+    const insert = async (table, columns, values) => {
+      await runtime.executeRaw(
+        "INSERT INTO " + q(table) + " (" + columns.map(q).join(", ") + ") VALUES (" + values.map(() => "?").join(", ") + ")",
+        values,
+      );
+    };
+    const callerContext = (user) => ({
+      req: { headers: {} },
+      res: { clearCookie() {} },
+      user,
+      authSession: null,
+      authFailureReason: null,
+    });
+    const createInput = (overrides = {}) => ({
+      forwardGroupId: 10,
+      name: "rule",
+      forwardType: "nftables",
+      protocol: "tcp",
+      sourcePort: 18443,
+      targetIp: "203.0.113.20",
+      targetPort: 443,
+      isEnabled: true,
+      ...overrides,
+    });
+
+    try {
+      await runtime.connectDatabase({ type: "sqlite", sqlite: { path: process.env.FORWARDX_TEST_DB } });
+      await schema.ensureDatabaseSchema();
+      const now = Math.floor(Date.now() / 1000);
+      await insert("users", ["id", "username", "password", "role", "canAddRules", "manualCanAddRules", "balanceCents"], [1, "admin", "x", "admin", 1, 1, 1000]);
+      await insert("users", ["id", "username", "password", "role", "canAddRules", "manualCanAddRules", "balanceCents"], [2, "ordinary", "x", "user", 1, 1, 1000]);
+      await insert("hosts", ["id", "name", "ip", "ipv4", "userId", "isOnline", "lastHeartbeat", "agentVersion", "portRangeStart", "portRangeEnd"], [1, "entry", "198.51.100.10", "198.51.100.10", 1, 1, now, "2.2.195", 18000, 19000]);
+      await insert("hosts", ["id", "name", "ip", "ipv4", "userId", "isOnline", "lastHeartbeat", "agentVersion", "portRangeStart", "portRangeEnd"], [2, "exit", "198.51.100.20", "198.51.100.20", 1, 1, now, "2.2.195", 24000, 24010]);
+      await insert("hosts", ["id", "name", "ip", "ipv4", "userId", "isOnline", "lastHeartbeat", "agentVersion", "portRangeStart", "portRangeEnd"], [3, "primary-entry", "198.51.100.30", "198.51.100.30", 1, 1, now, "2.2.195", 18000, 19000]);
+      await insert("forward_groups", ["id", "name", "groupType", "groupMode", "forwardType", "domain", "targetIp", "targetPort", "userId", "isEnabled"], [10, "chain", "host", "chain", "nftables", "", "0.0.0.0", 1, 1, 1]);
+      await insert("forward_group_members", ["id", "groupId", "memberType", "hostId", "priority", "isEnabled"], [101, 10, "host", 1, 10, 1]);
+      await insert("forward_group_members", ["id", "groupId", "memberType", "hostId", "priority", "isEnabled"], [102, 10, "host", 2, 20, 1]);
+      await insert("forward_groups", ["id", "name", "groupType", "groupMode", "forwardType", "domain", "targetIp", "targetPort", "userId", "isEnabled"], [20, "tunnel-entry", "host", "entry", "nftables", "", "0.0.0.0", 1, 1, 1]);
+      await insert("forward_group_members", ["id", "groupId", "memberType", "hostId", "priority", "isEnabled"], [201, 20, "host", 1, 10, 1]);
+      await insert("tunnels", ["id", "name", "entryGroupId", "entryHostId", "exitHostId", "mode", "listenPort", "userId", "isEnabled"], [30, "multi-entry", 20, 3, 2, "tls", 25000, 1, 1]);
+      await insert("forward_rules", ["id", "hostId", "name", "forwardType", "protocol", "tunnelId", "sourcePort", "sni", "targetIp", "targetPort", "userId", "isEnabled", "pendingDelete"], [900, 3, "tunnel-sni", "gost", "tcp", 30, 18500, "shared.example.com", "203.0.113.90", 443, 1, 1, 0]);
+      await insert("user_forward_group_permissions", ["userId", "forwardGroupId"], [2, 10]);
+
+      const admin = rulesRouter.createCaller(callerContext({ id: 1, username: "admin", role: "admin", accountEnabled: true }));
+      const ordinary = rulesRouter.createCaller(callerContext({ id: 2, username: "ordinary", role: "user", accountEnabled: true }));
+
+      // 一条普通规则占住 18443。端口被占用是端口维度的事实，域名预检不应该报告它。
+      await admin.create(createInput({ name: "plain", sourcePort: 18443 }));
+      assert.deepEqual(
+        await admin.checkSni({ forwardGroupId: 10, sourcePort: 18443, sni: "fresh.example.com" }),
+        { ok: true, reason: null },
+        "checkSni 把入口端口占用当成了域名冲突",
+      );
+      // 同一份占用在端口校验里必须照报不误。
+      const portCheck = await admin.checkPort({ forwardGroupId: 10, sourcePort: 18443, protocol: "tcp", forwardType: "nftables", sni: "fresh.example.com" });
+      assert.equal(portCheck.used, true);
+      assert.match(String(portCheck.reason || ""), /已被普通转发规则/);
+
+      const sniRule = await admin.create(createInput({ name: "sni", sourcePort: 18444, sni: "api.example.com" }));
+
+      // 换端口也算重复：域名唯一性以入口主机为范围。
+      const duplicate = await admin.checkSni({ forwardGroupId: 10, sourcePort: 18446, sni: "API.Example.COM." });
+      assert.equal(duplicate.ok, false);
+      assert.match(String(duplicate.reason || ""), /SNI 域名 api\.example\.com 与规则/);
+
+      // 直接隧道的主入口是 3，但入口组还让主机 1 接收入站；转发链同样从主机 1 入站。
+      // 两种资源在主机 1 上共享入口范围，因此相同域名仍然必须被识别。
+      const crossResourceDuplicate = await admin.checkSni({ forwardGroupId: 10, sourcePort: 18447, sni: "shared.example.com" });
+      assert.equal(crossResourceDuplicate.ok, false);
+      assert.match(String(crossResourceDuplicate.reason || ""), /SNI 域名 shared\.example\.com 与规则.*tunnel-sni/);
+      await assert.rejects(
+        () => admin.create(createInput({ name: "cross-resource-duplicate", sourcePort: 18447, sni: "shared.example.com" })),
+        /SNI 域名 shared\.example\.com 与规则.*tunnel-sni/,
+      );
+
+      // 编辑自己这条规则时不算与自己冲突。
+      assert.deepEqual(
+        await admin.checkSni({ forwardGroupId: 10, sourcePort: 18444, sni: "api.example.com", excludeRuleId: Number(sniRule.id) }),
+        { ok: true, reason: null },
+      );
+
+      // 另一个域名在同一个分流端口上是允许的，这正是共用入口端口的用法。
+      assert.deepEqual(
+        await admin.checkSni({ forwardGroupId: 10, sourcePort: 18444, sni: "files.example.com" }),
+        { ok: true, reason: null },
+      );
+
+      const forbidden = await ordinary.checkSni({ forwardGroupId: 10, sourcePort: 18444, sni: "files.example.com" });
+      assert.equal(forbidden.ok, false);
+      assert.match(String(forbidden.reason || ""), /仅管理员/);
+    } finally {
+      await runtime.closeDatabase();
+    }
+  `;
+  const result = spawnSync(process.execPath, ["--import", "tsx", "--input-type=module", "-e", script], {
+    cwd: process.cwd(),
+    env: { ...process.env, DATABASE_TYPE: "sqlite", FORWARDX_TEST_DB: databasePath },
+    encoding: "utf8",
+    timeout: 60_000,
+  });
+  fs.rmSync(directory, { recursive: true, force: true });
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+});

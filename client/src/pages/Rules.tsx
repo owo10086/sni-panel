@@ -139,6 +139,19 @@ import { useLocation, useSearch } from "wouter";
 import { TcpingDetailDialog } from "@/components/rules/TcpingDetailDialog";
 import { countryFeatureHasCode, normalizeCountryCode, type CountryFeatureLike } from "@/lib/countryFeatures";
 import {
+  SNI_DEFAULT_ENTRY_PORT,
+  applySniToggle,
+  clearSniFromForm,
+  closedSniToggleState,
+  isSniFormModeOn,
+  sniDomainFormatError,
+  sniRuleRouteModeForEdit,
+  sniToggleStateForRule,
+  sniToggleSupport,
+  type SniGroupModeForRule,
+  type SniToggleState,
+} from "@/lib/sniRuleForm";
+import {
   addHostNodeMeta,
   addNodeMetaAliases,
   findHostByAddress,
@@ -1080,7 +1093,7 @@ function formatAddressWithPort(address: string, port: number | string): string {
   return `${value}:${port}`;
 }
 
-function normalizeForwardGroupModeForRule(group: any | null | undefined) {
+function normalizeForwardGroupModeForRule(group: any | null | undefined): SniGroupModeForRule {
   const mode = String(group?.groupMode || "failover");
   return mode === "port" || mode === "chain" || mode === "entry" || mode === "exit" ? mode : "failover";
 }
@@ -2401,6 +2414,9 @@ function RulesContent() {
   const [portStatus, setPortStatus] = useState<"idle" | "checking" | "available" | "used">("idle");
   const [portRangeError, setPortRangeError] = useState<string | null>(null);
   const latestPortCheckRef = useRef(0);
+  const [sniToggle, setSniToggle] = useState<SniToggleState>(closedSniToggleState);
+  const [sniDomainConflict, setSniDomainConflict] = useState<string | null>(null);
+  const latestSniCheckRef = useRef(0);
   const [copyRuleIds, setCopyRuleIds] = useState<number[]>([]);
   const [copyRuleSearch, setCopyRuleSearch] = useState("");
   const [copyRuleCategory, setCopyRuleCategory] = useState<RuleCategory>("all");
@@ -2450,7 +2466,7 @@ function RulesContent() {
   const [importFileError, setImportFileError] = useState("");
   const [importFileInputKey, setImportFileInputKey] = useState(0);
   const [importManualText, setImportManualText] = useState("");
-  const [importSniSourcePort, setImportSniSourcePort] = useState(0);
+  const [importSniSourcePort, setImportSniSourcePort] = useState(SNI_DEFAULT_ENTRY_PORT);
   const [importingRules, setImportingRules] = useState(false);
   const importingRulesRef = useRef(false);
   const rulePageRequest = usePersistentPageRequest("forwardx.rules.page");
@@ -2756,6 +2772,9 @@ function RulesContent() {
     setEditingOriginalProtocol(null);
     setLegacyLocalRuleEditId(null);
     setPortStatus("idle");
+    setSniToggle(closedSniToggleState);
+    setSniDomainConflict(null);
+    latestSniCheckRef.current += 1;
   };
 
   const openCreate = (preferredRouteMode?: RuleRouteMode) => {
@@ -2864,12 +2883,20 @@ function RulesContent() {
     const editForwardGroup = rule.forwardGroupId
       ? (forwardGroups || []).find((group: any) => Number(group.id) === Number(rule.forwardGroupId))
       : null;
+    const editRouteMode = sniRuleRouteModeForEdit(
+      rule,
+      editForwardGroup ? normalizeForwardGroupModeForRule(editForwardGroup) : null,
+    );
+    if (!editRouteMode) {
+      toast.error("关联的转发资源尚未加载或已不可用，请刷新资源后再编辑");
+      return;
+    }
     const isLegacyLocalRule = !Number(rule.forwardGroupId || 0)
       && !(rule.forwardType === "gost" && Number(rule.tunnelId || 0) > 0);
     setForm({
       hostId: rule.hostId,
       name: rule.name,
-      routeMode: rule.forwardGroupId ? (normalizeForwardGroupModeForRule(editForwardGroup) === "port" ? "local" : isForwardChainGroup(editForwardGroup) ? "chain" : "group") : rule.forwardType === "gost" && rule.tunnelId ? "tunnel" : "local",
+      routeMode: editRouteMode,
       forwardType: rule.forwardType,
       protocol: rule.protocol,
       gostMode: "direct" as const,
@@ -2907,6 +2934,10 @@ function RulesContent() {
     setEditingOriginalProtocol(normalizeRuleProtocol(rule.protocol));
     setLegacyLocalRuleEditId(isLegacyLocalRule ? Number(rule.id) : null);
     setPortStatus("idle");
+    // 「锁 443」是拨动开关那一刻的动作：打开已有规则只锁住它自己的端口，不改写。
+    setSniToggle(sniToggleStateForRule(rule));
+    setSniDomainConflict(null);
+    latestSniCheckRef.current += 1;
     setShowDialog(true);
   };
 
@@ -3236,12 +3267,38 @@ function RulesContent() {
   const telegramBotReady = !!systemSettings?.telegram?.enabled && !!systemSettings?.telegram?.configured;
   const selectedForwardGroupIsChain = form.routeMode === "chain" || isForwardChainGroup(selectedForwardGroup);
   const selectedForwardGroupIsPort = normalizeForwardGroupModeForRule(selectedForwardGroup) === "port";
-  const canConfigureSni = user?.role === "admin" && (
-    selectedForwardGroupIsChain
-    || (form.routeMode === "local" && selectedForwardGroupIsPort)
-    || form.routeMode === "tunnel"
-  );
-  const sniProtocolLocked = canConfigureSni && form.sni.trim().length > 0;
+  const sniSupport = useMemo(() => sniToggleSupport({
+    isAdmin: user?.role === "admin",
+    routeMode: form.routeMode,
+    tunnel: form.routeMode === "tunnel" ? selectedTunnel : null,
+    group: selectedForwardGroup,
+    groupModeForRule: normalizeForwardGroupModeForRule(selectedForwardGroup),
+    tunnelId: form.tunnelId,
+    groupId: form.forwardGroupId,
+  }), [form.forwardGroupId, form.routeMode, form.tunnelId, selectedForwardGroup, selectedTunnel, user?.role]);
+  const canConfigureSni = sniSupport.visible && !sniSupport.reason;
+  // 表单是不是 SNI 分流形态，只看开关；规则是不是 SNI 分流规则，仍然只看域名非空。
+  const sniModeOn = isSniFormModeOn(sniToggle, sniSupport);
+  const sniProtocolLocked = sniModeOn;
+  const sniSourcePortLocked = sniModeOn && !sniToggle.portUnlocked;
+  const setSniModeEnabled = useCallback((enabled: boolean) => {
+    setSniDomainConflict(null);
+    latestSniCheckRef.current += 1;
+    latestPortCheckRef.current += 1;
+    setPortStatus("idle");
+    setPortRangeError(null);
+    const next = applySniToggle(form, sniToggle, enabled);
+    setForm(next.form);
+    setSniToggle(next.state);
+  }, [form, sniToggle]);
+  // 承载资源换成不支持分流的，把表单拖回普通转发形态，不留半个 SNI 表单。
+  useEffect(() => {
+    // 资源还没加载出来时「不支持」只是暂时结论，不能据此抹掉正在编辑的规则的域名。
+    if (canConfigureSni || sniSupport.pending || !sniToggle.enabled) return;
+    setSniToggle(closedSniToggleState);
+    setSniDomainConflict(null);
+    setForm((prev) => clearSniFromForm(prev));
+  }, [canConfigureSni, sniSupport.pending, sniToggle.enabled]);
   const effectiveFormProtocol = sniProtocolLocked ? "tcp" : form.protocol;
   const mainBackupForwardType = effectiveRouteForwardType;
   const mainBackupUsesTunnelRoute = form.routeMode === "tunnel" || (!selectedForwardGroupIsChain && selectedForwardGroup?.groupType === "tunnel");
@@ -3295,6 +3352,8 @@ function RulesContent() {
     const tunnelId = form.tunnelId;
     const sourcePort = form.sourcePort;
     if (!sourcePort || sourcePort < 1) return;
+    // SNI 分流组共用入口端口（ADR-0002），对它做端口占用探测只会误报。
+    if (sniModeOn) return;
     if (isForwardGroupRouteMode ? !forwardGroupId : !hostId) return;
     if (!isValidPort(sourcePort)) {
       setPortRangeError("端口必须在 1-65535 之间");
@@ -3317,7 +3376,7 @@ function RulesContent() {
         excludeRuleId: editingId || undefined,
         protocol: effectiveFormProtocol,
         forwardType: effectiveRouteForwardType,
-        sni: canConfigureSni ? form.sni.trim() || null : null,
+        sni: null,
       });
       if (latestPortCheckRef.current !== checkId) return;
       setPortRangeError(result.used ? ("reason" in result ? result.reason : null) ?? null : null);
@@ -3326,24 +3385,69 @@ function RulesContent() {
       if (latestPortCheckRef.current !== checkId) return;
       setPortStatus("idle");
     }
-  }, [form.forwardGroupId, form.hostId, form.sni, effectiveFormProtocol, effectiveRouteForwardType, form.routeMode, form.sourcePort, form.tunnelId, editingId, utils, selectedEntryPortPolicy, isForwardGroupRouteMode, canConfigureSni]);
+  }, [form.forwardGroupId, form.hostId, effectiveFormProtocol, effectiveRouteForwardType, form.routeMode, form.sourcePort, form.tunnelId, editingId, utils, selectedEntryPortPolicy, isForwardGroupRouteMode, sniModeOn]);
 
   // A response started for the previous route must not mark the new route occupied.
   useEffect(() => {
     latestPortCheckRef.current += 1;
     setPortStatus("idle");
-  }, [editingId, form.forwardGroupId, form.hostId, form.sni, effectiveFormProtocol, effectiveRouteForwardType, form.routeMode, form.sourcePort, form.tunnelId, isForwardGroupRouteMode]);
+  }, [editingId, form.forwardGroupId, form.hostId, effectiveFormProtocol, effectiveRouteForwardType, form.routeMode, form.sourcePort, form.tunnelId, isForwardGroupRouteMode, sniModeOn]);
 
   // 源端口变化时自动检测
   useEffect(() => {
     const hasTarget = isForwardGroupRouteMode ? !!form.forwardGroupId : !!form.hostId;
+    if (sniModeOn) {
+      setPortStatus("idle");
+      setPortRangeError(null);
+      return;
+    }
     if (form.sourcePort > 0 && hasTarget) {
       const timer = setTimeout(checkPort, 500);
       return () => clearTimeout(timer);
     } else {
       setPortStatus("idle");
     }
-  }, [form.sourcePort, form.forwardGroupId, form.hostId, form.sni, effectiveFormProtocol, form.routeMode, form.tunnelId, checkPort, isForwardGroupRouteMode]);
+  }, [form.sourcePort, form.forwardGroupId, form.hostId, effectiveFormProtocol, form.routeMode, form.tunnelId, checkPort, isForwardGroupRouteMode, sniModeOn]);
+
+  // SNI 分流不探端口，改探域名：同一台入口主机上完整域名唯一，跨端口、跨资源都算重复。
+  useEffect(() => {
+    if (!sniModeOn) {
+      setSniDomainConflict(null);
+      return;
+    }
+    const sni = form.sni.trim();
+    const formatError = sniDomainFormatError(sni);
+    if (!sni || formatError) {
+      latestSniCheckRef.current += 1;
+      setSniDomainConflict(formatError);
+      return;
+    }
+    const hasTarget = isForwardGroupRouteMode ? !!form.forwardGroupId : !!form.hostId;
+    if (!hasTarget || !form.sourcePort) {
+      setSniDomainConflict(null);
+      return;
+    }
+    const checkId = latestSniCheckRef.current + 1;
+    latestSniCheckRef.current = checkId;
+    const timer = setTimeout(async () => {
+      try {
+        const result = await utils.rules.checkSni.fetch({
+          ...(isForwardGroupRouteMode
+            ? { forwardGroupId: Number(form.forwardGroupId) }
+            : { hostId: Number(form.hostId), tunnelId: form.routeMode === "tunnel" ? form.tunnelId : null }),
+          sourcePort: form.sourcePort,
+          sni,
+          excludeRuleId: editingId || undefined,
+        });
+        if (latestSniCheckRef.current !== checkId) return;
+        setSniDomainConflict(result.ok ? null : result.reason || "该 SNI 域名不可用");
+      } catch {
+        if (latestSniCheckRef.current !== checkId) return;
+        setSniDomainConflict(null);
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [editingId, form.forwardGroupId, form.hostId, form.routeMode, form.sni, form.sourcePort, form.tunnelId, isForwardGroupRouteMode, sniModeOn, utils]);
 
   useEffect(() => {
     if (form.routeMode !== "local") return;
@@ -3770,12 +3874,10 @@ function RulesContent() {
 
   const handleSubmit = async () => {
     const submitForwardType = effectiveRouteForwardType;
-    const submitSni = canConfigureSni ? form.sni.trim() : "";
+    const submitSni = sniModeOn ? form.sni.trim() : "";
     const submitProtocol = submitSni ? "tcp" : effectiveFormProtocol;
     const submitSniPayload = user?.role === "admin"
-      ? canConfigureSni
-        ? submitSni || null
-        : null
+      ? submitSni || null
       : undefined;
     if (!form.name || !form.targetIp || !form.targetPort || (!isForwardGroupRouteMode && !form.hostId)) {
       toast.error("请填写所有必填字段（目标端口必须填写）");
@@ -3829,6 +3931,15 @@ function RulesContent() {
       toast.error("目标端口必须在 1-65535 之间");
       return;
     }
+    // 开关开着就必须有域名：没有域名的「SNI 规则」存下来只是一条占着入口端口的普通规则。
+    if (sniModeOn && !submitSni) {
+      toast.error("请填写 SNI 域名，或关闭 SNI 分流转发");
+      return;
+    }
+    if (sniModeOn && sniDomainFormatError(submitSni)) {
+      toast.error(sniDomainFormatError(submitSni) as string);
+      return;
+    }
     if (submitSni && (!Number.isInteger(form.rateLimitMbps) || form.rateLimitMbps < 0 || form.rateLimitMbps > 1_000_000)) {
       toast.error("规则限速必须是 0-1000000 之间的整数");
       return;
@@ -3877,11 +3988,12 @@ function RulesContent() {
       recoverSeconds: form.recoverSeconds || 120,
       autoFailback: form.autoFailback,
     };
-    if (!isForwardGroupRouteMode && portStatus === "used") {
+    // SNI 分流不做端口探测，因此这两道闸门在分流形态下没有可依据的状态。
+    if (!sniModeOn && !isForwardGroupRouteMode && portStatus === "used") {
       toast.error("源端口已被占用，请更换端口或使用随机分配");
       return;
     }
-    if (!editingId && !isForwardGroupRouteMode && form.sourcePort > 0 && portStatus !== "available") {
+    if (!sniModeOn && !editingId && !isForwardGroupRouteMode && form.sourcePort > 0 && portStatus !== "available") {
       toast.error("请等待端口可用后再保存");
       return;
     }
@@ -5533,7 +5645,7 @@ function RulesContent() {
     setImportFileError("");
     setImportFileInputKey((key) => key + 1);
     setImportManualText("");
-    setImportSniSourcePort(0);
+    setImportSniSourcePort(SNI_DEFAULT_ENTRY_PORT);
   };
 
   const openExportDialog = () => {
@@ -7858,22 +7970,28 @@ function RulesContent() {
               </div>
               <div className="space-y-2">
                 <Label>协议</Label>
-                <Select
-                  value={effectiveFormProtocol}
-                  onValueChange={(v) => setForm({
-                    ...form,
-                    protocol: v as any,
-                    failoverEnabled: v === "tcp" ? form.failoverEnabled : false,
-                  })}
-                  disabled={sniProtocolLocked}
-                >
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="tcp">TCP</SelectItem>
-                    <SelectItem value="udp">UDP</SelectItem>
-                    <SelectItem value="both">TCP+UDP</SelectItem>
-                  </SelectContent>
-                </Select>
+                {sniProtocolLocked ? (
+                  <div className="flex h-10 items-center justify-between gap-2 rounded-md border border-border/60 bg-muted/30 px-3 text-sm">
+                    <span className="truncate">TCP</span>
+                    <Badge variant="outline" className="shrink-0 text-[10px]">SNI 分流</Badge>
+                  </div>
+                ) : (
+                  <Select
+                    value={effectiveFormProtocol}
+                    onValueChange={(v) => setForm({
+                      ...form,
+                      protocol: v as any,
+                      failoverEnabled: v === "tcp" ? form.failoverEnabled : false,
+                    })}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="tcp">TCP</SelectItem>
+                      <SelectItem value="udp">UDP</SelectItem>
+                      <SelectItem value="both">TCP+UDP</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
               {!isForwardGroupRouteMode && form.routeMode === "local" && (
                 <div className="space-y-2">
@@ -7908,15 +8026,48 @@ function RulesContent() {
                 </div>
               )}
             </div>
+            {sniSupport.visible && (
+              <div className={`rounded-lg border px-3 py-2.5 transition-colors ${sniModeOn ? "border-primary/40 bg-primary/5" : "border-border/60 bg-muted/20"}`}>
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 text-sm font-medium">
+                      <Globe className={`h-4 w-4 shrink-0 ${sniModeOn ? "text-primary" : "text-muted-foreground"}`} />
+                      <span className="truncate">SNI 分流转发</span>
+                    </div>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {sniSupport.reason || "多条规则共用一个入口端口，由出口主机按 TLS 域名分流到各自目标。"}
+                    </p>
+                  </div>
+                  <Switch
+                    checked={sniModeOn}
+                    disabled={!!sniSupport.reason}
+                    onCheckedChange={setSniModeEnabled}
+                    aria-label="SNI 分流转发"
+                  />
+                </div>
+              </div>
+            )}
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-2">
                 <div className="flex items-center justify-between gap-2">
                 <Label>源端口</Label>
                   <span className="truncate text-xs text-muted-foreground" title={`允许端口范围: ${sourcePortRangeText}`}>
-                    {sourcePortRangeText}
+                    {sniSourcePortLocked ? "SNI 分流入口" : sourcePortRangeText}
                   </span>
                 </div>
                 <div className="flex gap-2">
+                  {sniSourcePortLocked ? (
+                    <div className="flex h-10 min-w-0 flex-1 items-center justify-between gap-2 rounded-md border border-border/60 bg-muted/30 px-3 text-sm">
+                      <span className="truncate">{form.sourcePort || SNI_DEFAULT_ENTRY_PORT}</span>
+                      <button
+                        type="button"
+                        className="shrink-0 text-[11px] text-muted-foreground underline-offset-2 transition-colors hover:text-foreground hover:underline"
+                        onClick={() => setSniToggle((prev) => ({ ...prev, portUnlocked: true }))}
+                      >
+                        修改入口端口
+                      </button>
+                    </div>
+                  ) : (
                   <div className="relative min-w-0 flex-1">
                     <Input
                       type="text"
@@ -7939,6 +8090,8 @@ function RulesContent() {
                       </div>
                     )}
                   </div>
+                  )}
+                  {!sniModeOn && (
                   <Button
                     type="button"
                     variant="outline"
@@ -7950,6 +8103,7 @@ function RulesContent() {
                   >
                     <Shuffle className="h-4 w-4" />
                   </Button>
+                  )}
                 </div>
               </div>
               <div className="space-y-2">
@@ -7960,24 +8114,18 @@ function RulesContent() {
                   onChange={(e) => setForm({ ...form, targetIp: e.target.value })}
                 />
               </div>
-              {canConfigureSni && (
+              {sniModeOn && (
                 <div className="space-y-2">
-                  <Label>SNI 域名</Label>
+                  <Label>SNI 域名 <span className="text-destructive">*</span></Label>
                   <Input
                     placeholder="api.example.com"
                     value={form.sni}
-                    onChange={(e) => {
-                      const nextSni = e.target.value;
-                      setForm({
-                        ...form,
-                        sni: nextSni,
-                        protocol: nextSni.trim() ? "tcp" : form.protocol,
-                        failoverEnabled: nextSni.trim() ? false : form.failoverEnabled,
-                        rateLimitMbps: nextSni.trim() ? form.rateLimitMbps : 0,
-                        maxConnections: nextSni.trim() ? form.maxConnections : 0,
-                      });
-                    }}
+                    onChange={(e) => setForm({ ...form, sni: e.target.value })}
+                    className={sniDomainConflict ? "border-destructive" : ""}
                   />
+                  {sniDomainConflict && (
+                    <p className="text-xs text-destructive">{sniDomainConflict}</p>
+                  )}
                 </div>
               )}
               {sniProtocolLocked && (
@@ -8365,7 +8513,7 @@ function RulesContent() {
                         onClick={() => {
                           setImportSourceMode("file");
                           setImportManualText("");
-                          setImportSniSourcePort(0);
+                          setImportSniSourcePort(SNI_DEFAULT_ENTRY_PORT);
                         }}
                         disabled={importingRules}
                       >
@@ -8382,7 +8530,7 @@ function RulesContent() {
                           setImportFileName("");
                           setImportFileError("");
                           setImportFileInputKey((key) => key + 1);
-                          setImportSniSourcePort(0);
+                          setImportSniSourcePort(SNI_DEFAULT_ENTRY_PORT);
                         }}
                         disabled={importingRules}
                       >

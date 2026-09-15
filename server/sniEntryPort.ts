@@ -1,6 +1,7 @@
 import * as db from "./db";
 import { normalizePositiveIds } from "./repositories/repositoryUtils";
 import { normalizeSniValue } from "@shared/sni";
+import type { Tunnel } from "../drizzle/schema";
 
 // SNI 分流规则共用一个入口端口（ADR-0002），所以「这个端口能不能用」不再是一次
 // 布尔查询。判定同时服务两条路径：创建/更新规则时（抛错），以及表单实时校验端口
@@ -37,7 +38,7 @@ export function forwardRuleConflictLabel(rule: ForwardRuleConflictTarget | null 
   return "已有规则";
 }
 
-export async function directTunnelSniEntryHostIds(tunnel: any) {
+export async function directTunnelSniEntryHostIds(tunnel: Tunnel) {
   const hostIds = new Set<number>();
   const primaryEntryHostId = Number(tunnel?.entryHostId || 0);
   if (primaryEntryHostId > 0) hostIds.add(primaryEntryHostId);
@@ -56,7 +57,7 @@ export async function directTunnelSniEntryHostIds(tunnel: any) {
 }
 
 export async function getDirectTunnelSniEntryPortState(options: {
-  tunnel: any;
+  tunnel: Tunnel;
   sourcePort: number;
   sni: string | null;
   excludeRuleIds?: number[];
@@ -118,9 +119,23 @@ export async function getDirectTunnelSniEntryPortState(options: {
   };
 }
 
+/**
+ * 域名维度的唯一性：同一台入口主机上完整域名唯一，跨端口、跨承载资源都算重复。
+ * 表单的实时预检只问这一件事——入口端口被谁占用是端口维度的判定，SNI 分流组
+ * 共用入口端口是设计本身（ADR-0002），放进预检只会让端口错误显示在域名框下。
+ */
+export function sniDomainDuplicateReason(
+  duplicateRule: ForwardRuleConflictTarget | null | undefined,
+  normalizedSni: string,
+) {
+  if (!duplicateRule) return null;
+  return `SNI 域名 ${normalizedSni} 与规则 ${forwardRuleConflictLabel(duplicateRule)} 冲突`;
+}
+
 export function assertSniEntryPortCanUseSni(state: SniEntryPortState, sourcePort: number, normalizedSni: string) {
-  if (state?.duplicateRule) {
-    throw new Error(`SNI 域名 ${normalizedSni} 与规则 ${forwardRuleConflictLabel(state.duplicateRule)} 冲突`);
+  const duplicateReason = sniDomainDuplicateReason(state?.duplicateRule, normalizedSni);
+  if (duplicateReason) {
+    throw new Error(duplicateReason);
   }
   if (state?.plainRule) {
     throw new Error(`入口端口 ${sourcePort} 已被普通转发规则 ${forwardRuleConflictLabel(state.plainRule)} 占用，无法创建 SNI 分流规则`);
@@ -142,8 +157,9 @@ export function assertDirectTunnelSniEntryPortUse(
   normalizedSni: string | null,
 ) {
   if (normalizedSni) {
-    if (state.duplicateRule) {
-      throw new Error(`SNI 域名 ${normalizedSni} 与规则 ${forwardRuleConflictLabel(state.duplicateRule)} 冲突`);
+    const duplicateReason = sniDomainDuplicateReason(state.duplicateRule, normalizedSni);
+    if (duplicateReason) {
+      throw new Error(duplicateReason);
     }
     if (state.plainRule) {
       throw new Error(`入口端口 ${sourcePort} 已被普通转发规则 ${forwardRuleConflictLabel(state.plainRule)} 占用，无法创建 SNI 分流规则`);
