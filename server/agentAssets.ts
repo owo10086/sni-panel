@@ -10,11 +10,8 @@ const fetchLocks = new Map<string, Promise<string | null>>();
 
 export const AGENT_ASSET_NAMES = [
   "forwardx-agent-linux-amd64",
-  "forwardx-agent-linux-arm64",
   "forwardx-fxp-linux-amd64",
-  "forwardx-fxp-linux-arm64",
   "forwardx-runtime-linux-amd64",
-  "forwardx-runtime-linux-arm64",
 ] as const;
 
 export const AGENT_ASSET_NAME_SET = new Set<string>(AGENT_ASSET_NAMES);
