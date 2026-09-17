@@ -18,6 +18,7 @@ import {
   sniEntryPortConflictReason,
   type ForwardRuleConflictTarget,
 } from "../sniEntryPort";
+import { assertSniEntryAgentVersions } from "../sniEntryPortOverview";
 
 const randomPortInputSchema = z.object({
   hostId: z.number().optional(),
@@ -234,6 +235,11 @@ export const portsRulesRouter = router({
       let lookup: SniEntryPortLookup | null = null;
       if (input.forwardGroupId) {
         await requireForwardGroupPortAccess(ctx, input.forwardGroupId);
+        try {
+          await assertSniEntryAgentVersions(await db.getForwardGroupRuleEntryHostIds(input.forwardGroupId));
+        } catch (error) {
+          return { ok: false, reason: error instanceof Error ? error.message : "入口 Agent 版本不足" };
+        }
         lookup = await loadSniEntryPortState({
           forwardGroupId: input.forwardGroupId,
           sourcePort: input.sourcePort,

@@ -83,6 +83,7 @@ import {
   getPresenceCapableHostLivenessSnapshot,
   primePresenceCapableHosts,
 } from "../agentFastLiveness";
+import { getForwardChainSniEntryRuleIds } from "./forwardChainSniEntryScope";
 
 async function settleAndMarkForwardGroupRulePendingDelete(
   rule: any,
@@ -150,6 +151,7 @@ type ForwardGroupSniRuleRow = {
   forwardGroupId: number | null;
   forwardGroupRuleId: number | null;
   isForwardGroupTemplate: unknown;
+  sourcePort: number;
   sni: string | null;
   sniSplitterPort: number | null;
 };
@@ -161,8 +163,18 @@ const forwardGroupSniRuleSelection = {
   forwardGroupId: forwardRules.forwardGroupId,
   forwardGroupRuleId: forwardRules.forwardGroupRuleId,
   isForwardGroupTemplate: forwardRules.isForwardGroupTemplate,
+  sourcePort: forwardRules.sourcePort,
   sni: forwardRules.sni,
   sniSplitterPort: forwardRules.sniSplitterPort,
+};
+
+type ForwardGroupSniDuplicateRuleRow = ForwardGroupSniRuleRow & {
+  forwardGroupMode: string | null;
+};
+
+const forwardGroupSniDuplicateRuleSelection = {
+  ...forwardGroupSniRuleSelection,
+  forwardGroupMode: forwardGroups.groupMode,
 };
 
 function preferTemplateRule<T extends { isForwardGroupTemplate?: unknown }>(rows: T[]) {
@@ -213,7 +225,7 @@ export async function getForwardGroupSniEntryPortState(options: {
     .where(and(...conds)) as ForwardGroupSniRuleRow[];
 
   const normalizedSni = normalizeSniValue(options.sni);
-  let duplicateRows: ForwardGroupSniRuleRow[] = [];
+  let duplicateRows: ForwardGroupSniDuplicateRuleRow[] = [];
   if (normalizedSni) {
     const entryGroupRows = await db.select({ groupId: forwardGroupMembers.groupId })
       .from(forwardGroupMembers)
@@ -238,19 +250,37 @@ export async function getForwardGroupSniEntryPortState(options: {
           inArray(forwardRules.tunnelId, directTunnelIds),
         )
       : inArray(forwardRules.hostId, entryHostIds);
-    duplicateRows = await db.select(forwardGroupSniRuleSelection)
+    duplicateRows = await db.select(forwardGroupSniDuplicateRuleSelection)
       .from(forwardRules)
+      .leftJoin(forwardGroups, eq(forwardGroups.id, forwardRules.forwardGroupId))
       .where(and(
         duplicateScope,
         eq(forwardRules.pendingDelete, false),
         ...(excludedIds.length > 0 ? [notInArray(forwardRules.id, excludedIds)] : []),
-      )) as ForwardGroupSniRuleRow[];
+      )) as ForwardGroupSniDuplicateRuleRow[];
   }
   const sniRows = rows.filter((row) => !!normalizeSniValue(row.sni));
   const plainRows = rows.filter((row) => !normalizeSniValue(row.sni));
   const sameGroupSniRows = sniRows.filter((row) => Number(row.forwardGroupId || 0) === groupId);
   const otherGroupSniRows = sniRows.filter((row) => Number(row.forwardGroupId || 0) !== groupId);
-  const matchingDuplicateRows = duplicateRows.filter((row) => normalizeSniValue(row.sni) === normalizedSni);
+  const [forwardChainEntryRuleIds, duplicateEntryRuleIds, currentGroupRows] = await Promise.all([
+    getForwardChainSniEntryRuleIds(sniRows),
+    getForwardChainSniEntryRuleIds(duplicateRows),
+    db.select({ groupMode: forwardGroups.groupMode })
+      .from(forwardGroups)
+      .where(eq(forwardGroups.id, groupId))
+      .limit(1),
+  ]);
+  const matchingDuplicateRows = duplicateRows.filter((row) => (
+    normalizeSniValue(row.sni) === normalizedSni
+    && (
+      String(row.forwardGroupMode || "") !== "chain"
+      || duplicateEntryRuleIds.has(Number(row.id))
+    )
+  ));
+  const shareableRows = String(currentGroupRows[0]?.groupMode || "") === "chain"
+    ? sniRows.filter((row) => forwardChainEntryRuleIds.has(Number(row.id)))
+    : sameGroupSniRows;
   const splitterPorts = Array.from(new Set(
     sameGroupSniRows
       .map((row) => Number(row.sniSplitterPort || 0))
@@ -258,7 +288,7 @@ export async function getForwardGroupSniEntryPortState(options: {
   )).sort((left, right) => left - right);
 
   return {
-    shareableRuleIds: normalizePositiveIds(sameGroupSniRows.map((row) => row.id)),
+    shareableRuleIds: normalizePositiveIds(shareableRows.map((row) => row.id)),
     splitterPort: splitterPorts[0] || null,
     duplicateRule: preferTemplateRule(matchingDuplicateRows),
     plainRule: preferTemplateRule(plainRows),

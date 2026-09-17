@@ -81,6 +81,7 @@ import { copyTextToClipboard } from "@/lib/clipboard";
 import { AvatarPicker } from "@/components/AvatarPicker";
 import { UserAvatar } from "@/components/UserAvatar";
 import { DockerUpgradeCommands } from "@/components/DockerUpgradeCommands";
+import { SniEntryVersionPreflight } from "@/components/SniEntryVersionPreflight";
 import { normalizeSidebarMenuSettings, type SidebarMenuKey } from "@shared/sidebarMenu";
 import { buildPanelInstallerCommand } from "@shared/githubAccelerator";
 import { REPO_URL } from "@shared/repo";
@@ -109,6 +110,7 @@ const lookingGlassMenuItem: SidebarNavItem = { icon: Globe2, label: "网络测�
 const pluginManagementMenuItem: SidebarNavItem = { icon: Puzzle, label: "插件管理", path: "/plugins", menuKey: "plugins" };
 
 const adminMenuItems: SidebarNavItem[] = [
+  { icon: Network, label: "SNI 入口", path: "/sni-entry-ports" },
   { icon: CreditCard, label: "支付对接", path: "/payments", menuKey: "payments" },
   { icon: WalletCards, label: "账单与兑换", path: "/billing", menuKey: "billing" },
   { icon: Package, label: "套餐管理", path: "/plans", menuKey: "plans" },
@@ -1701,6 +1703,8 @@ function DashboardLayoutContent({
                     <p className="mt-1 break-all font-mono">{String(targetVersion).startsWith("v") ? targetVersion : `v${targetVersion}`}</p>
                   </div>
                 </div>
+
+                <SniEntryVersionPreflight enabled={showUpgradeDialog && !isPanelRollbackTask} />
 
                 {upgradeStatus?.upgradeEnabled === false && (
                   <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-700 dark:text-amber-300">

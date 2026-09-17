@@ -1,6 +1,7 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import DashboardLayout from "@/components/DashboardLayout";
 import { DockerUpgradeCommands } from "@/components/DockerUpgradeCommands";
+import { SniEntryVersionPreflight } from "@/components/SniEntryVersionPreflight";
 import { EmailSettingsContent } from "./EmailSettings";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -6133,7 +6134,7 @@ function SystemInfoSection() {
       </div>
 
       <Dialog open={showUpgradeConfirm} onOpenChange={setShowUpgradeConfirm}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="overflow-y-auto sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Rocket className="h-5 w-5 text-primary" />
@@ -6153,6 +6154,7 @@ function SystemInfoSection() {
               <code>{updateInfo?.latestVersion}</code>
             </div>
           </div>
+          <SniEntryVersionPreflight enabled={showUpgradeConfirm} />
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setShowUpgradeConfirm(false)}>
               取消
@@ -6365,6 +6367,7 @@ function SystemInfoSection() {
               <AlertDescription>{updateInfo.pendingReason}</AlertDescription>
             </Alert>
           )}
+          <SniEntryVersionPreflight enabled={showDockerUpgradeScript} />
           <DockerUpgradeCommands
             scriptCommand={dockerPanelUpgradeCommand}
             method={dockerUpgradeMethod}

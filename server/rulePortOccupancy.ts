@@ -5,6 +5,7 @@ import { updateBoundedMapValueInPlace } from "./boundedCache";
 import { managedListenerMatchesRule } from "./rulePortValidation";
 import { clearPortOccupancyNotification } from "./forwardRuleErrorNotifier";
 import { getPortRuleEntriesForHost, type PortRuleEntry } from "./portRuleManifest";
+import { normalizeSniValue } from "@shared/sni";
 
 export type RulePortWarning = { status: "occupied"; message: string; hostId: number; port: number; collectedAt?: number; verifiedAt?: number };
 const warnings = new Map<string, { admin: RulePortWarning; user: RulePortWarning }>();
@@ -33,6 +34,7 @@ export async function refreshRulePortWarningsForHost(hostId: number, manifestEnt
   for (const rule of rules) {
     if (![true, 1, "1"].includes(rule.isEnabled) ||
         [true, 1, "1"].includes(rule.pendingDelete) ||
+        !!normalizeSniValue(rule.sni) ||
         (rule.forwardType !== "iptables" && rule.forwardType !== "nftables")) continue;
     for (const port of portsByRule.get(Number(rule.id)) || []) {
       const ruleId = Number(rule.forwardGroupRuleId || rule.id);

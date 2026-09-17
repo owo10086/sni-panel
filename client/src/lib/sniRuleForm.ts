@@ -196,3 +196,9 @@ export function sniDomainFormatError(value: string): string | null {
   if (isValidSniValue(normalized)) return null;
   return "SNI 域名格式不正确：只填写完整域名，不含 https://、端口、路径或通配符";
 }
+
+export function sniEntryPortCheckValue(enabled: boolean, value: string): string | null {
+  if (!enabled) return null;
+  const normalized = normalizeSniValue(value);
+  return normalized && isValidSniValue(normalized) ? normalized : null;
+}

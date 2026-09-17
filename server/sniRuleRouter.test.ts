@@ -197,6 +197,38 @@ test("SNI rule creation rejects ambiguous exit hosts and old exit agents", () =>
         () => caller.create(createInput()),
         /出口 Agent 版本不足.*2\.2\.195/,
       );
+      await runtime.executeRaw('UPDATE "hosts" SET "agentVersion" = ? WHERE "id" = ?', ["2.2.195", 2]);
+      await runtime.executeRaw('UPDATE "hosts" SET "agentVersion" = ? WHERE "id" = ?', ["2.2.194", 1]);
+      await assert.rejects(
+        () => caller.create(createInput()),
+        /入口 Agent.*entry.*2\.2\.195/,
+      );
+      await runtime.executeRaw('UPDATE "hosts" SET "agentVersion" = ? WHERE "id" = ?', ["2.2.195", 1]);
+      const created = await caller.create(createInput({ isEnabled: false }));
+      await runtime.executeRaw('UPDATE "hosts" SET "agentVersion" = ? WHERE "id" = ?', ["2.2.194", 1]);
+      await assert.rejects(
+        () => caller.update({ id: Number(created.id), name: "renamed-sni" }),
+        /入口 Agent.*entry.*2\.2\.195/,
+      );
+      await assert.rejects(
+        () => caller.toggle({ id: Number(created.id), isEnabled: true }),
+        /入口 Agent.*entry.*2\.2\.195/,
+      );
+      await assert.rejects(
+        () => caller.checkSniImport({
+          forwardGroupId: 20,
+          sourcePort: 18444,
+          rules: [{ lineNumber: 1, sni: "import.example.com" }],
+        }),
+        /入口 Agent.*entry.*2\.2\.195/,
+      );
+      const liveCheck = await caller.checkSni({
+        forwardGroupId: 20,
+        sourcePort: 18444,
+        sni: "live.example.com",
+      });
+      assert.equal(liveCheck.ok, false);
+      assert.match(String(liveCheck.reason || ""), /入口 Agent.*entry.*2\.2\.195/);
       await assert.rejects(
         () => caller.create(createInput({ forwardGroupId: 30, sourcePort: 18444 })),
         /SNI 分流当前只支持单出口/,
@@ -437,10 +469,14 @@ test("forward-chain SNI rules share one entry port and reject duplicate or mixed
       await insert("hosts", ["id", "name", "ip", "ipv4", "userId", "isOnline", "lastHeartbeat", "agentVersion", "portRangeStart", "portRangeEnd"], [1, "entry", "198.51.100.10", "198.51.100.10", 1, 1, now, "2.2.195", 18443, 18444]);
       await insert("hosts", ["id", "name", "ip", "ipv4", "userId", "isOnline", "lastHeartbeat", "agentVersion", "portRangeStart", "portRangeEnd"], [2, "exit", "198.51.100.20", "198.51.100.20", 1, 1, now, "2.2.195", 24000, 24010]);
       await insert("hosts", ["id", "name", "ip", "ipv4", "userId", "isOnline", "lastHeartbeat", "agentVersion", "portRangeStart", "portRangeEnd"], [3, "middle", "198.51.100.30", "198.51.100.30", 1, 1, now, "2.2.195", 22000, 22010]);
+      await insert("hosts", ["id", "name", "ip", "ipv4", "userId", "isOnline", "lastHeartbeat", "agentVersion", "portRangeStart", "portRangeEnd"], [4, "second-exit", "198.51.100.40", "198.51.100.40", 1, 1, now, "2.2.195", 24020, 24030]);
       await insert("forward_groups", ["id", "name", "groupType", "groupMode", "forwardType", "domain", "targetIp", "targetPort", "userId", "isEnabled"], [10, "chain", "host", "chain", "nftables", "", "0.0.0.0", 1, 1, 1]);
       await insert("forward_group_members", ["id", "groupId", "memberType", "hostId", "priority", "isEnabled"], [101, 10, "host", 1, 10, 1]);
       await insert("forward_group_members", ["id", "groupId", "memberType", "hostId", "priority", "isEnabled"], [102, 10, "host", 3, 20, 1]);
       await insert("forward_group_members", ["id", "groupId", "memberType", "hostId", "priority", "isEnabled"], [103, 10, "host", 2, 30, 1]);
+      await insert("forward_groups", ["id", "name", "groupType", "groupMode", "forwardType", "domain", "targetIp", "targetPort", "userId", "isEnabled"], [12, "second-chain", "host", "chain", "nftables", "", "0.0.0.0", 1, 1, 1]);
+      await insert("forward_group_members", ["id", "groupId", "memberType", "hostId", "priority", "isEnabled"], [121, 12, "host", 1, 10, 1]);
+      await insert("forward_group_members", ["id", "groupId", "memberType", "hostId", "priority", "isEnabled"], [122, 12, "host", 4, 20, 1]);
 
       const caller = rulesRouter.createCaller(callerContext({ id: 1, username: "admin", role: "admin", accountEnabled: true }));
       const first = await caller.create(createInput({ name: "sni-api", sni: "Api.Example.COM." }));
@@ -476,6 +512,82 @@ test("forward-chain SNI rules share one entry port and reject duplicate or mixed
       assert.deepEqual(Array.from(new Set(entryChildren.map((row) => Number(row.targetPort)))), middlePorts);
       assert.deepEqual(Array.from(new Set(middleChildren.map((row) => Number(row.targetPort)))), [splitterPorts[0]]);
       assert.deepEqual(Array.from(new Set(exitChildren.map((row) => Number(row.sourcePort)))), [splitterPorts[0]]);
+
+      await insert("forward_groups", ["id", "name", "groupType", "groupMode", "forwardType", "domain", "targetIp", "targetPort", "userId", "isEnabled"], [13, "relay-conflict-chain", "host", "chain", "nftables", "", "0.0.0.0", 1, 1, 1]);
+      await insert("forward_group_members", ["id", "groupId", "memberType", "hostId", "priority", "isEnabled"], [131, 13, "host", 3, 10, 1]);
+      await insert("forward_group_members", ["id", "groupId", "memberType", "hostId", "priority", "isEnabled"], [132, 13, "host", 1, 20, 1]);
+      await insert("forward_group_members", ["id", "groupId", "memberType", "hostId", "priority", "isEnabled"], [133, 13, "host", 2, 30, 1]);
+      await insert("forward_rules", ["id", "hostId", "name", "forwardType", "protocol", "forwardGroupId", "isForwardGroupTemplate", "sourcePort", "sni", "sniSplitterPort", "targetIp", "targetPort", "userId", "isEnabled", "pendingDelete"], [900, 3, "relay-conflict", "nftables", "tcp", 13, 1, 22000, "relay.example.com", 24009, "203.0.113.50", 443, 1, 1, 0]);
+      await insert("forward_rules", ["id", "hostId", "name", "forwardType", "protocol", "forwardGroupId", "forwardGroupRuleId", "forwardGroupMemberId", "isForwardGroupTemplate", "sourcePort", "sni", "sniSplitterPort", "targetIp", "targetPort", "userId", "isEnabled", "pendingDelete"], [901, 1, "relay-conflict-middle", "nftables", "tcp", 13, 900, 132, 0, 18443, "relay.example.com", 24009, "198.51.100.20", 24009, 1, 1, 0]);
+      const db = await import(moduleUrl("server/db.ts"));
+      const entryPortState = await db.getForwardGroupSniEntryPortState({
+        groupId: 12,
+        sourcePort: 18443,
+        entryHostIds: [1],
+        sni: "edge.example.com",
+      });
+      const expectedShareableIds = sharedRows
+        .filter((row) => Number(row.isForwardGroupTemplate) || Number(row.forwardGroupMemberId) === 101)
+        .map((row) => Number(row.id))
+        .sort((left, right) => left - right);
+      assert.deepEqual(
+        [...entryPortState.shareableRuleIds].sort((left, right) => left - right),
+        expectedShareableIds,
+      );
+      assert.equal(entryPortState.shareableRuleIds.includes(901), false);
+      assert.ok(entryPortState.otherGroupSniRule);
+      assert.deepEqual(
+        await caller.checkSni({ forwardGroupId: 12, sourcePort: 18443, sni: "relay.example.com" }),
+        { ok: true, reason: null },
+      );
+      const duplicateEntryDomain = await caller.checkSni({
+        forwardGroupId: 12,
+        sourcePort: 18443,
+        sni: "api.example.com",
+      });
+      assert.equal(duplicateEntryDomain.ok, false);
+      assert.match(String(duplicateEntryDomain.reason || ""), /SNI 域名 api\.example\.com 与规则.*sni-api/);
+      assert.deepEqual(
+        await caller.checkPort({ forwardGroupId: 12, sourcePort: 18443, protocol: "tcp", forwardType: "nftables", sni: "edge.example.com" }),
+        { used: true },
+      );
+      await db.repairConflictingProtocolPortRules();
+      assert.equal((await caller.getById({ id: 901 })).isEnabled, false);
+      assert.deepEqual(
+        await caller.checkPort({ forwardGroupId: 12, sourcePort: 18443, protocol: "tcp", forwardType: "nftables", sni: "edge.example.com" }),
+        { used: false },
+      );
+      const crossChain = await caller.create(createInput({
+        forwardGroupId: 12,
+        name: "sni-edge",
+        sni: "edge.example.com",
+        targetIp: "203.0.113.40",
+        targetPort: 9443,
+      }));
+      assert.equal(crossChain.sourcePort, 18443);
+      const crossChainRows = await runtime.queryRaw(
+        'SELECT "hostId", "forwardGroupRuleId", "isForwardGroupTemplate", "sourcePort", "sni", "targetIp", "targetPort" FROM "forward_rules" WHERE "forwardGroupId" = ? ORDER BY "id"',
+        [12],
+      );
+      assert.equal(crossChainRows.length, 3);
+      assert.deepEqual(Array.from(new Set(crossChainRows.map((row) => row.sni))), ["edge.example.com"]);
+      assert.equal(crossChainRows.filter((row) => !Number(row.isForwardGroupTemplate)).length, 2);
+      const crossChainTemplate = crossChainRows.find((row) => Number(row.isForwardGroupTemplate));
+      const crossChainExit = crossChainRows.find((row) => !Number(row.isForwardGroupTemplate) && Number(row.hostId) === 4);
+      assert.equal(crossChainTemplate.targetIp, "203.0.113.40");
+      assert.equal(Number(crossChainTemplate.targetPort), 9443);
+      assert.equal(crossChainExit.targetIp, "203.0.113.40");
+      assert.equal(Number(crossChainExit.targetPort), 9443);
+      assert.equal(crossChainRows.find((row) => !Number(row.isForwardGroupTemplate) && Number(row.hostId) === 1).targetIp, "198.51.100.40");
+      await db.repairConflictingProtocolPortRules();
+      const entryRowsAfterRepair = await runtime.queryRaw(
+        'SELECT "id" FROM "forward_rules" WHERE "hostId" = ? AND "sourcePort" = ? AND "isForwardGroupTemplate" = ? AND "isEnabled" = ? ORDER BY "id"',
+        [1, 18443, 0, 1],
+      );
+      assert.equal(entryRowsAfterRepair.length, 3);
+      for (const row of entryRowsAfterRepair) {
+        assert.equal((await caller.getById({ id: Number(row.id) })).isEnabled, true);
+      }
 
       await assert.rejects(
         () => caller.create(createInput({
@@ -643,6 +755,228 @@ test("checkSni enforces domain-only validation, exclusions, and administrator ac
       const forbidden = await ordinary.checkSni({ forwardGroupId: 10, sourcePort: 18444, sni: "files.example.com" });
       assert.equal(forbidden.ok, false);
       assert.match(String(forbidden.reason || ""), /仅管理员/);
+    } finally {
+      await runtime.closeDatabase();
+    }
+  `;
+  const result = spawnSync(process.execPath, ["--import", "tsx", "--input-type=module", "-e", script], {
+    cwd: process.cwd(),
+    env: { ...process.env, DATABASE_TYPE: "sqlite", FORWARDX_TEST_DB: databasePath },
+    encoding: "utf8",
+    timeout: 60_000,
+  });
+  fs.rmSync(directory, { recursive: true, force: true });
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+});
+
+test("SNI rule queries expose entry and exit runtime status and require both ends", () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "forwardx-sni-rule-runtime-"));
+  const databasePath = path.join(directory, "sni-runtime.db");
+  const script = String.raw`
+    import assert from "node:assert/strict";
+    import path from "node:path";
+    import { pathToFileURL } from "node:url";
+
+    const moduleUrl = (file) => pathToFileURL(path.join(process.cwd(), file)).href;
+    const runtime = await import(moduleUrl("server/dbRuntime.ts"));
+    const schema = await import(moduleUrl("server/dbSchema.ts"));
+    const { rulesRouter } = await import(moduleUrl("server/routers/rules.ts"));
+    const { recordSniRuntimeSnapshot } = await import(moduleUrl("server/sniRuntimeObservability.ts"));
+    const q = (name) => '"' + name + '"';
+    const insert = async (table, columns, values) => {
+      await runtime.executeRaw(
+        "INSERT INTO " + q(table) + " (" + columns.map(q).join(", ") + ") VALUES (" + values.map(() => "?").join(", ") + ")",
+        values,
+      );
+    };
+    const callerContext = (user) => ({ req: { headers: {} }, res: { clearCookie() {} }, user,
+      authSession: null, authFailureReason: null });
+
+    try {
+      await runtime.connectDatabase({ type: "sqlite", sqlite: { path: process.env.FORWARDX_TEST_DB } });
+      await schema.ensureDatabaseSchema();
+      const now = Math.floor(Date.now() / 1000);
+      await insert("users", ["id", "username", "password", "role", "canAddRules", "manualCanAddRules"], [1, "admin", "x", "admin", 1, 1]);
+      for (const [id, name, ip] of [[1, "entry", "198.51.100.10"], [2, "exit", "198.51.100.20"], [3, "second-entry", "198.51.100.30"]]) {
+        await insert("hosts", ["id", "name", "ip", "ipv4", "userId", "isOnline", "lastHeartbeat", "agentVersion"], [id, name, ip, ip, 1, 1, now, "2.2.195"]);
+      }
+      await insert("forward_groups", ["id", "name", "groupType", "groupMode", "forwardType", "domain", "targetIp", "targetPort", "userId", "isEnabled"], [10, "chain", "host", "chain", "nftables", "", "0.0.0.0", 1, 1, 1]);
+      await insert("forward_group_members", ["id", "groupId", "memberType", "hostId", "priority", "isEnabled"], [101, 10, "host", 1, 10, 1]);
+      await insert("forward_group_members", ["id", "groupId", "memberType", "hostId", "priority", "isEnabled"], [102, 10, "host", 2, 20, 1]);
+      await insert("forward_rules", ["id", "hostId", "name", "forwardType", "protocol", "forwardGroupId", "isForwardGroupTemplate", "sourcePort", "sni", "sniSplitterPort", "targetIp", "targetPort", "userId", "isEnabled"], [900, 1, "api", "nftables", "tcp", 10, 1, 18443, "api.example.com", 24000, "203.0.113.20", 443, 1, 1]);
+      const caller = rulesRouter.createCaller(callerContext({ id: 1, username: "admin", role: "admin", accountEnabled: true }));
+
+      recordSniRuntimeSnapshot(2, [{ port: 24000, ruleId: 900, sni: "api.example.com", sniRouteVersion: 7,
+        sniUnmatchedConnections: 3, sniLastConfigError: "exit rejected update", ready: true }], 2000);
+      const exitOnly = await caller.getById({ id: 900 });
+      assert.equal(exitOnly.sniRuntime.applied, false);
+      assert.equal(exitOnly.isRunning, false);
+      assert.deepEqual(exitOnly.sniRuntime.entries, [{ hostId: 1, port: 18443, observed: false, applied: false,
+        currentVersion: 0, unmatchedConnections: 0, lastConfigError: "", observedAt: 0 }]);
+      assert.deepEqual(exitOnly.sniRuntime.exit, { hostId: 2, port: 24000, observed: true, applied: true,
+        currentVersion: 7, unmatchedConnections: 3, lastConfigError: "exit rejected update", observedAt: 2000 });
+
+      recordSniRuntimeSnapshot(1, [{ port: 18443, ruleId: 900, sni: "api.example.com", sniRouteVersion: 8,
+        sniUnmatchedConnections: 11, ready: true }], 3000);
+      const bothEnds = await caller.getById({ id: 900 });
+      assert.equal(bothEnds.sniRuntime.applied, true);
+      assert.equal(bothEnds.isRunning, true);
+      assert.deepEqual(bothEnds.sniRuntime.entries, [{ hostId: 1, port: 18443, observed: true, applied: true,
+        currentVersion: 8, unmatchedConnections: 11, lastConfigError: "", observedAt: 3000 }]);
+      assert.equal((await caller.list({ scope: "all" }))[0].sniRuntime.applied, true);
+      assert.equal((await caller.listPage({ scope: "all", category: "chain" })).items[0].sniRuntime.applied, true);
+      assert.equal((await caller.mapItems({ scope: "all", category: "chain" })).items[0].sniRuntime.applied, true);
+      await runtime.executeRaw('UPDATE "hosts" SET "agentVersion" = ? WHERE "id" = ?', ["2.2.194", 1]);
+      const unsupportedEntryVersion = await caller.getById({ id: 900 });
+      assert.equal(unsupportedEntryVersion.sniRuntime.applied, true);
+      assert.equal(unsupportedEntryVersion.isRunning, false);
+      await runtime.executeRaw('UPDATE "hosts" SET "agentVersion" = ? WHERE "id" = ?', ["2.2.195", 1]);
+      await runtime.executeRaw('UPDATE "forward_rules" SET "isEnabled" = ? WHERE "id" = ?', [0, 900]);
+      const disabledRule = await caller.getById({ id: 900 });
+      assert.equal(disabledRule.sniRuntime.applied, true);
+      assert.equal(disabledRule.isRunning, false);
+      await runtime.executeRaw('UPDATE "forward_rules" SET "isEnabled" = ? WHERE "id" = ?', [1, 900]);
+      await runtime.executeRaw('UPDATE "forward_rules" SET "pendingDelete" = ? WHERE "id" = ?', [1, 900]);
+      const pendingRule = await caller.getById({ id: 900 });
+      assert.equal(pendingRule.sniRuntime.applied, true);
+      assert.equal(pendingRule.isRunning, false);
+      await runtime.executeRaw('UPDATE "forward_rules" SET "pendingDelete" = ? WHERE "id" = ?', [0, 900]);
+      await runtime.executeRaw('UPDATE "forward_groups" SET "isEnabled" = ? WHERE "id" = ?', [0, 10]);
+      const disabledGroupRule = await caller.getById({ id: 900 });
+      assert.equal(disabledGroupRule.sniRuntime.applied, true);
+      assert.equal(disabledGroupRule.isRunning, false);
+      await runtime.executeRaw('UPDATE "forward_groups" SET "isEnabled" = ? WHERE "id" = ?', [1, 10]);
+
+      await insert("forward_groups", ["id", "name", "groupType", "groupMode", "domain", "targetIp", "userId", "isEnabled"], [20, "entry-group", "host", "entry", "", "0.0.0.0", 1, 1]);
+      await insert("forward_group_members", ["id", "groupId", "memberType", "hostId", "priority", "isEnabled"], [201, 20, "host", 1, 10, 1]);
+      await insert("forward_group_members", ["id", "groupId", "memberType", "hostId", "priority", "isEnabled"], [202, 20, "host", 3, 20, 1]);
+      await runtime.executeRaw('UPDATE "forward_groups" SET "entryGroupId" = ? WHERE "id" = ?', [20, 10]);
+      const missingEntry = await caller.getById({ id: 900 });
+      assert.equal(missingEntry.sniRuntime.applied, false);
+      assert.deepEqual(missingEntry.sniRuntime.entries.map((entry) => [entry.hostId, entry.applied]), [[1, true], [3, false]]);
+      recordSniRuntimeSnapshot(3, [{ port: 18443, ruleId: 900, sni: "api.example.com", sniRouteVersion: 4, ready: true }], 4000);
+      assert.equal((await caller.getById({ id: 900 })).sniRuntime.applied, true);
+      recordSniRuntimeSnapshot(2, [], 5000);
+      assert.equal((await caller.getById({ id: 900 })).sniRuntime.applied, false);
+
+      await insert("tunnels", ["id", "name", "entryHostId", "exitHostId", "mode", "listenPort", "userId", "isEnabled"], [30, "sni-tunnel", 1, 2, "tls", 25001, 1, 1]);
+      await insert("forward_rules", ["id", "hostId", "name", "forwardType", "protocol", "tunnelId", "sourcePort", "sni", "sniSplitterPort", "targetIp", "targetPort", "userId", "isEnabled"], [901, 1, "tunnel-api", "gost", "tcp", 30, 19443, "tunnel.example.com", 25000, "203.0.113.30", 443, 1, 1]);
+      recordSniRuntimeSnapshot(2, [{ port: 25000, ruleId: 901, sni: "tunnel.example.com", sniRouteVersion: 9,
+        sniUnmatchedConnections: 5, ready: true }], 6000);
+      const tunnelRule = await caller.getById({ id: 901 });
+      assert.equal(tunnelRule.sniRuntime.applied, true);
+      assert.equal(tunnelRule.isRunning, true);
+      assert.deepEqual(tunnelRule.sniRuntime.entries, []);
+      assert.deepEqual(tunnelRule.sniRuntime.exit, { hostId: 2, port: 25000, observed: true, applied: true,
+        currentVersion: 9, unmatchedConnections: 5, lastConfigError: "", observedAt: 6000 });
+      await runtime.executeRaw('UPDATE "tunnels" SET "isEnabled" = ? WHERE "id" = ?', [0, 30]);
+      const disabledTunnelRule = await caller.getById({ id: 901 });
+      assert.equal(disabledTunnelRule.sniRuntime.applied, true);
+      assert.equal(disabledTunnelRule.isRunning, false);
+
+      await insert("forward_groups", ["id", "name", "groupType", "groupMode", "forwardType", "domain", "targetIp", "targetPort", "userId", "isEnabled"], [40, "sni-port", "host", "port", "nftables", "", "0.0.0.0", 1, 1, 1]);
+      await insert("forward_group_members", ["id", "groupId", "memberType", "hostId", "priority", "isEnabled"], [401, 40, "host", 2, 10, 1]);
+      await insert("forward_rules", ["id", "hostId", "name", "forwardType", "protocol", "forwardGroupId", "isForwardGroupTemplate", "sourcePort", "sni", "sniSplitterPort", "targetIp", "targetPort", "userId", "isEnabled"], [902, 2, "port-api", "nftables", "tcp", 40, 1, 26000, "port.example.com", 26000, "203.0.113.40", 443, 1, 1]);
+      recordSniRuntimeSnapshot(2, [{ port: 26000, ruleId: 902, sni: "port.example.com", sniRouteVersion: 10,
+        sniUnmatchedConnections: 7, ready: true }], 7000);
+      const portRule = await caller.getById({ id: 902 });
+      assert.equal(portRule.sniRuntime.applied, true);
+      assert.equal(portRule.isRunning, true);
+      assert.deepEqual(portRule.sniRuntime.entries, []);
+      assert.equal(portRule.sniRuntime.exit.hostId, 2);
+      await runtime.executeRaw('UPDATE "forward_groups" SET "isEnabled" = ? WHERE "id" = ?', [0, 40]);
+      assert.equal((await caller.getById({ id: 902 })).isRunning, false);
+    } finally {
+      await runtime.closeDatabase();
+    }
+  `;
+  const result = spawnSync(process.execPath, ["--import", "tsx", "--input-type=module", "-e", script], {
+    cwd: process.cwd(),
+    env: { ...process.env, DATABASE_TYPE: "sqlite", FORWARDX_TEST_DB: databasePath },
+    encoding: "utf8",
+    timeout: 60_000,
+  });
+  fs.rmSync(directory, { recursive: true, force: true });
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+});
+
+test("SNI entry port overview reports routes, entry differences, and agent support", () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "forwardx-sni-entry-overview-"));
+  const databasePath = path.join(directory, "sni-entry-overview.db");
+  const script = String.raw`
+    import assert from "node:assert/strict";
+    import path from "node:path";
+    import { pathToFileURL } from "node:url";
+
+    const moduleUrl = (file) => pathToFileURL(path.join(process.cwd(), file)).href;
+    const runtime = await import(moduleUrl("server/dbRuntime.ts"));
+    const schema = await import(moduleUrl("server/dbSchema.ts"));
+    const { rulesRouter } = await import(moduleUrl("server/routers/rules.ts"));
+    const q = (name) => '"' + name + '"';
+    const insert = async (table, columns, values) => {
+      await runtime.executeRaw(
+        "INSERT INTO " + q(table) + " (" + columns.map(q).join(", ") + ") VALUES (" + values.map(() => "?").join(", ") + ")",
+        values,
+      );
+    };
+    const callerContext = (user) => ({ req: { headers: {} }, res: { clearCookie() {} }, user,
+      authSession: null, authFailureReason: null });
+
+    try {
+      await runtime.connectDatabase({ type: "sqlite", sqlite: { path: process.env.FORWARDX_TEST_DB } });
+      await schema.ensureDatabaseSchema();
+      const now = Math.floor(Date.now() / 1000);
+      await insert("users", ["id", "username", "password", "role", "canAddRules", "manualCanAddRules"], [1, "admin", "x", "admin", 1, 1]);
+      await insert("users", ["id", "username", "password", "role", "canAddRules", "manualCanAddRules"], [2, "ordinary", "x", "user", 1, 1]);
+      await insert("hosts", ["id", "name", "ip", "ipv4", "userId", "isOnline", "lastHeartbeat", "agentVersion"], [1, "entry-a", "198.51.100.10", "198.51.100.10", 1, 1, now, "2.2.195"]);
+      await insert("hosts", ["id", "name", "ip", "ipv4", "userId", "isOnline", "lastHeartbeat", "agentVersion"], [2, "exit", "198.51.100.20", "198.51.100.20", 1, 1, now, "2.2.195"]);
+      await insert("hosts", ["id", "name", "ip", "ipv4", "userId", "isOnline", "lastHeartbeat", "agentVersion"], [3, "entry-b-old", "198.51.100.30", "198.51.100.30", 1, 1, now, "2.2.194"]);
+      await insert("hosts", ["id", "name", "ip", "ipv4", "userId", "isOnline", "lastHeartbeat", "agentVersion"], [4, "independent-entry", "198.51.100.40", "198.51.100.40", 1, 1, now, "2.2.195"]);
+      await insert("forward_groups", ["id", "name", "groupType", "groupMode", "forwardType", "domain", "targetIp", "targetPort", "userId", "isEnabled"], [20, "entry-group", "host", "entry", "nftables", "", "0.0.0.0", 1, 1, 1]);
+      await insert("forward_group_members", ["id", "groupId", "memberType", "hostId", "priority", "isEnabled"], [201, 20, "host", 1, 10, 1]);
+      await insert("forward_group_members", ["id", "groupId", "memberType", "hostId", "priority", "isEnabled"], [202, 20, "host", 3, 20, 1]);
+      await insert("forward_groups", ["id", "name", "groupType", "groupMode", "forwardType", "domain", "targetIp", "targetPort", "userId", "isEnabled"], [10, "shared-entry-chain", "host", "chain", "nftables", "", "0.0.0.0", 1, 1, 1]);
+      await runtime.executeRaw('UPDATE "forward_groups" SET "entryGroupId" = ? WHERE "id" = ?', [20, 10]);
+      await insert("forward_group_members", ["id", "groupId", "memberType", "hostId", "priority", "isEnabled"], [101, 10, "host", 2, 10, 1]);
+      await insert("forward_groups", ["id", "name", "groupType", "groupMode", "forwardType", "domain", "targetIp", "targetPort", "userId", "isEnabled"], [11, "single-entry-chain", "host", "chain", "nftables", "", "0.0.0.0", 1, 1, 1]);
+      await insert("forward_group_members", ["id", "groupId", "memberType", "hostId", "priority", "isEnabled"], [111, 11, "host", 1, 10, 1]);
+      await insert("forward_group_members", ["id", "groupId", "memberType", "hostId", "priority", "isEnabled"], [112, 11, "host", 2, 20, 1]);
+      await insert("forward_groups", ["id", "name", "groupType", "groupMode", "forwardType", "domain", "targetIp", "targetPort", "userId", "isEnabled"], [12, "independent-chain", "host", "chain", "nftables", "", "0.0.0.0", 1, 1, 1]);
+      await insert("forward_group_members", ["id", "groupId", "memberType", "hostId", "priority", "isEnabled"], [121, 12, "host", 4, 10, 1]);
+      await insert("forward_group_members", ["id", "groupId", "memberType", "hostId", "priority", "isEnabled"], [122, 12, "host", 2, 20, 1]);
+      await insert("forward_rules", ["id", "hostId", "name", "forwardType", "protocol", "forwardGroupId", "isForwardGroupTemplate", "sourcePort", "sni", "sniSplitterPort", "targetIp", "targetPort", "userId", "isEnabled", "pendingDelete"], [900, 2, "shared-domain", "nftables", "tcp", 10, 1, 18443, "shared.example.com", 24000, "203.0.113.10", 443, 1, 1, 0]);
+      await insert("forward_rules", ["id", "hostId", "name", "forwardType", "protocol", "forwardGroupId", "isForwardGroupTemplate", "sourcePort", "sni", "sniSplitterPort", "targetIp", "targetPort", "userId", "isEnabled", "pendingDelete"], [901, 1, "single-domain", "nftables", "tcp", 11, 1, 18443, "single.example.com", 24001, "target.example.net", 8443, 1, 1, 0]);
+      await insert("forward_rules", ["id", "hostId", "name", "forwardType", "protocol", "forwardGroupId", "isForwardGroupTemplate", "sourcePort", "sni", "sniSplitterPort", "targetIp", "targetPort", "userId", "isEnabled", "pendingDelete"], [902, 1, "deleted-domain", "nftables", "tcp", 11, 1, 18443, "deleted.example.com", 24001, "203.0.113.99", 9443, 1, 0, 1]);
+      await insert("forward_rules", ["id", "hostId", "name", "forwardType", "protocol", "forwardGroupId", "isForwardGroupTemplate", "sourcePort", "sni", "sniSplitterPort", "targetIp", "targetPort", "userId", "isEnabled", "pendingDelete"], [903, 4, "independent-domain", "nftables", "tcp", 12, 1, 18443, "independent.example.com", 24002, "203.0.113.40", 443, 1, 1, 0]);
+
+      const admin = rulesRouter.createCaller(callerContext({ id: 1, username: "admin", role: "admin", accountEnabled: true }));
+      const ordinary = rulesRouter.createCaller(callerContext({ id: 2, username: "ordinary", role: "user", accountEnabled: true }));
+      await assert.rejects(() => ordinary.sniEntryPortOverview(), (error) => error.code === "FORBIDDEN");
+      const overview = await admin.sniEntryPortOverview();
+      assert.equal(overview.minimumAgentVersion, "2.2.195");
+      assert.equal(overview.hasDomainDifferences, true);
+      assert.equal(overview.unsupportedEntryHostCount, 1);
+      assert.equal(overview.entries.length, 3);
+      assert.deepEqual(overview.entries.map((entry) => [entry.entryHost.id, entry.sourcePort]), [[1, 18443], [3, 18443], [4, 18443]]);
+      const first = overview.entries[0];
+      assert.deepEqual(first.entryHost, { id: 1, name: "entry-a", agentVersion: "2.2.195", versionSupported: true });
+      assert.equal(first.domainSetConsistent, false);
+      assert.deepEqual(first.missingDomains, []);
+      assert.deepEqual(first.routes, [
+        { ruleId: 900, ruleName: "shared-domain", sni: "shared.example.com", isEnabled: true,
+          forwardGroup: { id: 10, name: "shared-entry-chain" }, target: { address: "203.0.113.10", port: 443 } },
+        { ruleId: 901, ruleName: "single-domain", sni: "single.example.com", isEnabled: true,
+          forwardGroup: { id: 11, name: "single-entry-chain" }, target: { address: "target.example.net", port: 8443 } },
+      ]);
+      const second = overview.entries[1];
+      assert.deepEqual(second.entryHost, { id: 3, name: "entry-b-old", agentVersion: "2.2.194", versionSupported: false });
+      assert.equal(second.domainSetConsistent, false);
+      assert.deepEqual(second.missingDomains, ["single.example.com"]);
+      assert.deepEqual(second.routes.map((route) => route.sni), ["shared.example.com"]);
+      const independent = overview.entries[2];
+      assert.equal(independent.domainSetConsistent, true);
+      assert.deepEqual(independent.missingDomains, []);
+      assert.deepEqual(independent.routes.map((route) => route.sni), ["independent.example.com"]);
     } finally {
       await runtime.closeDatabase();
     }

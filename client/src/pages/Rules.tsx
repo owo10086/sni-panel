@@ -47,6 +47,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import DataSectionLoading from "@/components/DataSectionLoading";
+import { isAgentVersionBehind } from "@/components/hosts/hostDisplay";
 import { trpc } from "@/lib/trpc";
 import { pollingInterval } from "@/lib/polling";
 import { handoffManualTestResult } from "@/lib/manualTestCache";
@@ -130,7 +131,7 @@ import {
   type ForwardProtocolKey,
 } from "@shared/forwardTypes";
 import { ruleLatencyProbeMethodForRule } from "@shared/latencyProbe";
-import { getSniRuleGroupKey } from "@shared/sni";
+import { getSniRuleGroupKey, SNI_SPLITTER_MIN_AGENT_VERSION } from "@shared/sni";
 import { formatTrafficMultiplier } from "@shared/trafficMultiplier";
 import { Fragment, lazy, Suspense, useState, useMemo, useEffect, useCallback, useRef, type ReactNode } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
@@ -145,6 +146,7 @@ import {
   closedSniToggleState,
   isSniFormModeOn,
   sniDomainFormatError,
+  sniEntryPortCheckValue,
   sniRuleRouteModeForEdit,
   sniToggleStateForRule,
   sniToggleSupport,
@@ -416,9 +418,15 @@ type RuleDisplayItem =
   | { kind: "sni-group"; key: string; group: SniRuleDisplayGroup };
 type SniRuleGroupStatus = "running" | "error" | "pending" | "disabled";
 
+function isSniEntryAgentVersionUnsupported(host: any | null | undefined) {
+  if (!host) return false;
+  const agentVersion = String(host.agentVersion || "").trim();
+  return !agentVersion || isAgentVersionBehind(agentVersion, SNI_SPLITTER_MIN_AGENT_VERSION);
+}
+
 const SNI_RULE_GROUP_STATUS_CONFIG: Record<SniRuleGroupStatus, {
   dotClass: string;
-  text: (context: { activeRuleCount: number; appliedCount: number; exitOffline: boolean }) => string;
+  text: (context: { activeRuleCount: number; appliedCount: number; endpointOffline: boolean; entryVersionUnsupported: boolean }) => string;
 }> = {
   running: {
     dotClass: "bg-emerald-500 shadow-[0_0_0_3px_rgba(16,185,129,0.16)]",
@@ -426,7 +434,11 @@ const SNI_RULE_GROUP_STATUS_CONFIG: Record<SniRuleGroupStatus, {
   },
   error: {
     dotClass: "bg-rose-500 shadow-[0_0_0_3px_rgba(244,63,94,0.14)]",
-    text: ({ exitOffline }) => exitOffline ? "出口离线" : "配置应用失败",
+    text: ({ endpointOffline, entryVersionUnsupported }) => endpointOffline
+      ? "分流器主机离线"
+      : entryVersionUnsupported
+        ? "入口 Agent 版本不足"
+        : "配置应用失败",
   },
   pending: {
     dotClass: "bg-amber-400 shadow-[0_0_0_3px_rgba(251,191,36,0.14)]",
@@ -3352,8 +3364,6 @@ function RulesContent() {
     const tunnelId = form.tunnelId;
     const sourcePort = form.sourcePort;
     if (!sourcePort || sourcePort < 1) return;
-    // SNI 分流组共用入口端口（ADR-0002），对它做端口占用探测只会误报。
-    if (sniModeOn) return;
     if (isForwardGroupRouteMode ? !forwardGroupId : !hostId) return;
     if (!isValidPort(sourcePort)) {
       setPortRangeError("端口必须在 1-65535 之间");
@@ -3363,6 +3373,12 @@ function RulesContent() {
     if (!isForwardGroupRouteMode && !isPortAllowedByPolicy(sourcePort, selectedEntryPortPolicy)) {
       setPortRangeError(`端口必须在允许范围 ${describePortPolicy(selectedEntryPortPolicy)} 内`);
       setPortStatus("used");
+      return;
+    }
+    const sni = sniEntryPortCheckValue(sniModeOn, form.sni);
+    if (sniModeOn && !sni) {
+      setPortRangeError(null);
+      setPortStatus("idle");
       return;
     }
     setPortRangeError(null);
@@ -3376,7 +3392,7 @@ function RulesContent() {
         excludeRuleId: editingId || undefined,
         protocol: effectiveFormProtocol,
         forwardType: effectiveRouteForwardType,
-        sni: null,
+        sni,
       });
       if (latestPortCheckRef.current !== checkId) return;
       setPortRangeError(result.used ? ("reason" in result ? result.reason : null) ?? null : null);
@@ -3385,7 +3401,7 @@ function RulesContent() {
       if (latestPortCheckRef.current !== checkId) return;
       setPortStatus("idle");
     }
-  }, [form.forwardGroupId, form.hostId, effectiveFormProtocol, effectiveRouteForwardType, form.routeMode, form.sourcePort, form.tunnelId, editingId, utils, selectedEntryPortPolicy, isForwardGroupRouteMode, sniModeOn]);
+  }, [form.forwardGroupId, form.hostId, form.sni, effectiveFormProtocol, effectiveRouteForwardType, form.routeMode, form.sourcePort, form.tunnelId, editingId, utils, selectedEntryPortPolicy, isForwardGroupRouteMode, sniModeOn]);
 
   // A response started for the previous route must not mark the new route occupied.
   useEffect(() => {
@@ -3393,23 +3409,18 @@ function RulesContent() {
     setPortStatus("idle");
   }, [editingId, form.forwardGroupId, form.hostId, effectiveFormProtocol, effectiveRouteForwardType, form.routeMode, form.sourcePort, form.tunnelId, isForwardGroupRouteMode, sniModeOn]);
 
-  // 源端口变化时自动检测
+  // 源端口或 SNI 域名变化时自动检测。服务端负责排除合法的共享入口规则。
   useEffect(() => {
     const hasTarget = isForwardGroupRouteMode ? !!form.forwardGroupId : !!form.hostId;
-    if (sniModeOn) {
-      setPortStatus("idle");
-      setPortRangeError(null);
-      return;
-    }
     if (form.sourcePort > 0 && hasTarget) {
       const timer = setTimeout(checkPort, 500);
       return () => clearTimeout(timer);
     } else {
       setPortStatus("idle");
     }
-  }, [form.sourcePort, form.forwardGroupId, form.hostId, effectiveFormProtocol, form.routeMode, form.tunnelId, checkPort, isForwardGroupRouteMode, sniModeOn]);
+  }, [form.sourcePort, form.forwardGroupId, form.hostId, form.sni, effectiveFormProtocol, form.routeMode, form.tunnelId, checkPort, isForwardGroupRouteMode]);
 
-  // SNI 分流不探端口，改探域名：同一台入口主机上完整域名唯一，跨端口、跨资源都算重复。
+  // 域名预检只负责域名唯一性；端口占用由上面的端口预检单独显示。
   useEffect(() => {
     if (!sniModeOn) {
       setSniDomainConflict(null);
@@ -4831,19 +4842,62 @@ function RulesContent() {
     const sni = String(rule?.sni || "").trim();
     if (sni) {
       const group = rule.forwardGroupId ? forwardGroupById.get(Number(rule.forwardGroupId)) : null;
-      const exitHost = hostById.get(Number(rule?.sniRuntime?.exitHostId || 0));
+      const runtime = rule?.sniRuntime;
+      const entryRuntimes = Array.isArray(runtime?.entries) ? runtime.entries : [];
+      const exitRuntime = runtime?.exit;
+      const entryOfflineHost = entryRuntimes
+        .map((entry: any) => hostById.get(Number(entry?.hostId || 0)))
+        .find((host: any) => host && !host.isOnline);
+      const unsupportedEntryRuntime = entryRuntimes.find((entry: any) => {
+        const host = hostById.get(Number(entry?.hostId || 0));
+        return isSniEntryAgentVersionUnsupported(host);
+      });
+      const exitHost = hostById.get(Number(exitRuntime?.hostId || 0));
       if (rule.resourceAccessAllowed === false) return { state: "error", title: revokedResourceTitle };
       if (!rule.isEnabled || group?.isEnabled === false) return { state: "disabled", title: "规则已停用" };
-      if (exitHost && !exitHost.isOnline) return { state: "error", title: "出口主机离线，整组落地机不可达" };
-      if (rule?.sniRuntime?.applied) {
-        const version = Number(rule?.sniRuntime?.currentVersion || 0);
+      if (unsupportedEntryRuntime) {
+        const entryHost = hostById.get(Number(unsupportedEntryRuntime.hostId || 0));
+        const agentVersion = String(entryHost?.agentVersion || "").trim();
         return {
-          state: "running",
-          title: version > 0 ? `域名已在出口主机生效，配置版本 ${version}` : "域名已在出口主机生效",
+          state: "error",
+          title: `入口主机 ${getHostOptionName(entryHost || { id: unsupportedEntryRuntime.hostId })} 的 Agent ${agentVersion ? `v${agentVersion}` : "版本未上报"}，需要 ${SNI_SPLITTER_MIN_AGENT_VERSION} 或更高版本`,
         };
       }
-      const lastConfigError = String(rule?.sniRuntime?.lastConfigError || "").trim();
-      if (lastConfigError) return { state: "error", title: `配置应用失败：${lastConfigError}` };
+      if (entryOfflineHost) return { state: "error", title: `入口主机 ${getHostOptionName(entryOfflineHost)} 离线` };
+      if (exitHost && !exitHost.isOnline) return { state: "error", title: "出口主机离线，整组落地机不可达" };
+      if (runtime?.applied) {
+        const entryVersions = Array.from(new Set(entryRuntimes
+          .map((entry: any) => Number(entry?.currentVersion || 0))
+          .filter((version: number) => version > 0)));
+        const exitVersion = Number(exitRuntime?.currentVersion || 0);
+        const versionText = [
+          entryVersions.length > 0 ? `入口 ${entryVersions.join("、")}` : "",
+          exitVersion > 0 ? `出口 ${exitVersion}` : "",
+        ].filter(Boolean).join("，");
+        return {
+          state: "running",
+          title: versionText
+            ? `域名已${entryRuntimes.length > 0 ? "在入口与出口" : "在出口主机"}生效，配置版本：${versionText}`
+            : `域名已${entryRuntimes.length > 0 ? "在入口与出口" : "在出口主机"}生效`,
+        };
+      }
+      const entryConfigError = entryRuntimes.find((entry: any) => String(entry?.lastConfigError || "").trim());
+      const exitConfigError = String(exitRuntime?.lastConfigError || "").trim();
+      if (entryConfigError) {
+        const entryHost = hostById.get(Number(entryConfigError.hostId || 0));
+        return { state: "error", title: `入口 ${getHostOptionName(entryHost)} 配置应用失败：${String(entryConfigError.lastConfigError).trim()}` };
+      }
+      if (exitConfigError) return { state: "error", title: `出口配置应用失败：${exitConfigError}` };
+      if (entryRuntimes.some((entry: any) => !entry?.observed || !entry?.applied)) {
+        const pendingEntry = entryRuntimes.find((entry: any) => !entry?.observed || !entry?.applied);
+        const pendingHost = hostById.get(Number(pendingEntry?.hostId || 0));
+        return {
+          state: "pending",
+          title: pendingHost
+            ? `规则已启用但域名尚未在入口主机 ${getHostOptionName(pendingHost)} 生效`
+            : "规则已启用但域名尚未在入口主机生效",
+        };
+      }
       return { state: "pending", title: "规则已启用但域名尚未在出口主机生效" };
     }
     if (rule.forwardGroupId) {
@@ -6764,37 +6818,74 @@ function RulesContent() {
     const forwardGroup = forwardGroupById.get(Number(representative?.forwardGroupId || 0));
     const activeRules = group.rules.filter((rule: any) => rule?.isEnabled && forwardGroup?.isEnabled !== false);
     const appliedCount = activeRules.filter((rule: any) => rule?.sniRuntime?.applied).length;
-    const currentVersion = Math.max(0, ...group.rules.map((rule: any) => Number(rule?.sniRuntime?.currentVersion || 0)));
-    const unmatchedConnections = Math.max(0, ...group.rules.map((rule: any) => Number(rule?.sniRuntime?.unmatchedConnections || 0)));
-    const lastConfigError = group.rules
-      .map((rule: any) => String(rule?.sniRuntime?.lastConfigError || "").trim())
-      .find(Boolean) || "";
-    const exitHostId = group.rules
-      .map((rule: any) => Number(rule?.sniRuntime?.exitHostId || 0))
-      .find((hostId: number) => hostId > 0) || 0;
-    const exitHost = hostById.get(exitHostId);
-    const exitOffline = !!exitHost && !exitHost.isOnline;
-    const status: SniRuleGroupStatus = exitOffline || lastConfigError
-      ? "error"
-      : activeRules.length === 0
-        ? "disabled"
+    const mergeEndpoints = (endpoints: any[]) => {
+      const byHostPort = new Map<string, any>();
+      endpoints.forEach((endpoint) => {
+        const hostId = Number(endpoint?.hostId || 0);
+        const port = Number(endpoint?.port || 0);
+        if (hostId <= 0 || port <= 0) return;
+        const key = `${hostId}:${port}`;
+        const current = byHostPort.get(key);
+        if (!current) {
+          byHostPort.set(key, { ...endpoint, hostId, port });
+          return;
+        }
+        byHostPort.set(key, {
+          ...current,
+          observed: !!current.observed && !!endpoint?.observed,
+          applied: !!current.applied && !!endpoint?.applied,
+          currentVersion: Math.max(Number(current.currentVersion || 0), Number(endpoint?.currentVersion || 0)),
+          unmatchedConnections: Math.max(Number(current.unmatchedConnections || 0), Number(endpoint?.unmatchedConnections || 0)),
+          lastConfigError: String(current.lastConfigError || endpoint?.lastConfigError || "").trim(),
+          observedAt: Math.max(Number(current.observedAt || 0), Number(endpoint?.observedAt || 0)),
+        });
+      });
+      return Array.from(byHostPort.values()).sort((left, right) => (
+        Number(left.hostId) - Number(right.hostId) || Number(left.port) - Number(right.port)
+      ));
+    };
+    const runtimeRules = activeRules.length > 0 ? activeRules : group.rules;
+    const entryEndpoints = mergeEndpoints(runtimeRules.flatMap((rule: any) => (
+      Array.isArray(rule?.sniRuntime?.entries) ? rule.sniRuntime.entries : []
+    )));
+    const exitEndpoints = mergeEndpoints(runtimeRules
+      .map((rule: any) => rule?.sniRuntime?.exit)
+      .filter(Boolean));
+    const endpoints = [
+      ...entryEndpoints.map((endpoint) => ({ ...endpoint, side: "入口" as const })),
+      ...exitEndpoints.map((endpoint) => ({ ...endpoint, side: "出口" as const })),
+    ];
+    const offlineEndpoints = endpoints.filter((endpoint) => {
+      const host = hostById.get(Number(endpoint.hostId || 0));
+      return !!host && !host.isOnline;
+    });
+    const unsupportedEntryEndpoints = entryEndpoints.filter((endpoint) => {
+      const host = hostById.get(Number(endpoint.hostId || 0));
+      return isSniEntryAgentVersionUnsupported(host);
+    });
+    const configErrorEndpoints = endpoints.filter((endpoint) => String(endpoint?.lastConfigError || "").trim());
+    const status: SniRuleGroupStatus = activeRules.length === 0
+      ? "disabled"
+      : offlineEndpoints.length > 0 || unsupportedEntryEndpoints.length > 0 || configErrorEndpoints.length > 0
+        ? "error"
         : appliedCount === activeRules.length
           ? "running"
           : "pending";
     const statusText = SNI_RULE_GROUP_STATUS_CONFIG[status].text({
       activeRuleCount: activeRules.length,
       appliedCount,
-      exitOffline,
+      endpointOffline: offlineEndpoints.length > 0,
+      entryVersionUnsupported: unsupportedEntryEndpoints.length > 0,
     });
     return {
       representative,
       activeRuleCount: activeRules.length,
       appliedCount,
-      currentVersion,
-      unmatchedConnections,
-      lastConfigError,
-      exitHost,
-      exitOffline,
+      entryEndpoints,
+      exitEndpoints,
+      offlineEndpoints,
+      unsupportedEntryEndpoints,
+      configErrorEndpoints,
       status,
       statusText,
     };
@@ -6808,15 +6899,45 @@ function RulesContent() {
     const open = isSniRuleGroupOpen(group);
     const meta = getSniRuleGroupMeta(group);
     const statusDotClass = SNI_RULE_GROUP_STATUS_CONFIG[meta.status].dotClass;
-    const normalizedError = meta.lastConfigError.replace(/[。.!！]+$/, "");
-    const configErrorText = meta.lastConfigError
-      ? meta.currentVersion > 0
-        ? `配置应用失败：${normalizedError}。当前仍生效版本 ${meta.currentVersion}，业务继续使用上一版本。`
-        : `配置应用失败：${normalizedError}。当前尚无已生效版本。`
-      : "";
-    const exitOfflineText = meta.exitOffline
-      ? `${getHostOptionName(meta.exitHost)}离线，整组落地机不可达。`
-      : "";
+    const endpointLabel = (endpoint: any, side: "入口" | "出口") => {
+      const host = hostById.get(Number(endpoint.hostId || 0));
+      return `${side} ${getHostOptionName(host || { id: endpoint.hostId })}:${endpoint.port}`;
+    };
+    const configErrorText = meta.configErrorEndpoints.map((endpoint: any) => {
+      const normalizedError = String(endpoint.lastConfigError || "").trim().replace(/[。.!！]+$/, "");
+      const version = Number(endpoint.currentVersion || 0);
+      return version > 0
+        ? `${endpointLabel(endpoint, endpoint.side)} 配置应用失败：${normalizedError}。当前仍生效版本 ${version}，业务继续使用上一版本。`
+        : `${endpointLabel(endpoint, endpoint.side)} 配置应用失败：${normalizedError}。当前尚无生效版本。`;
+    });
+    const offlineText = meta.offlineEndpoints.map((endpoint: any) => `${endpointLabel(endpoint, endpoint.side)} 所在主机离线。`);
+    const unsupportedEntryText = meta.unsupportedEntryEndpoints.map((endpoint: any) => {
+      const host = hostById.get(Number(endpoint.hostId || 0));
+      const agentVersion = String(host?.agentVersion || "").trim();
+      return `${endpointLabel(endpoint, "入口")} 的 Agent ${agentVersion ? `v${agentVersion}` : "版本未上报"}，需要 ${SNI_SPLITTER_MIN_AGENT_VERSION} 或更高版本。`;
+    });
+    const renderEndpointRuntime = (endpoint: any, side: "入口" | "出口") => {
+      const host = hostById.get(Number(endpoint.hostId || 0));
+      const stateText = meta.activeRuleCount === 0
+        ? "规则已停用"
+        : side === "入口" && meta.unsupportedEntryEndpoints.some((entry) => entry.hostId === endpoint.hostId && entry.port === endpoint.port)
+          ? "Agent 版本不足"
+          : host && !host.isOnline
+            ? "主机离线"
+            : !endpoint.observed
+              ? "尚未观测到"
+              : endpoint.applied
+                ? "域名已生效"
+                : "域名尚未全部生效";
+      return (
+        <div key={`${endpoint.hostId}:${endpoint.port}`} className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-0.5">
+          <span className="min-w-0 break-words">{endpointLabel(endpoint, side)}</span>
+          <span className="text-muted-foreground">{stateText}</span>
+          <span className="text-muted-foreground">版本 {Number(endpoint.currentVersion || 0) || "-"}</span>
+          <span className="text-muted-foreground">未匹配连接 {Math.max(0, Number(endpoint.unmatchedConnections || 0)).toLocaleString()}</span>
+        </div>
+      );
+    };
     return (
       <div className={cn("group/sortable border-y border-border/50 bg-muted/20", compact ? "px-1" : "px-2")}>
         <div className="flex min-w-0 items-center">
@@ -6843,14 +6964,27 @@ function RulesContent() {
             <span className="shrink-0 text-xs font-medium">{meta.statusText}</span>
             <Badge variant="secondary" className="h-5 shrink-0 px-1.5 text-[10px]">{group.rules.length} 条规则</Badge>
             <span className="shrink-0 text-xs text-muted-foreground">入口端口 {meta.representative?.sourcePort || "-"}</span>
-            <span className="shrink-0 text-xs text-muted-foreground">当前生效版本 {meta.currentVersion || "-"}</span>
-            <span className="shrink-0 text-xs text-muted-foreground">未匹配连接 {meta.unmatchedConnections.toLocaleString()}</span>
           </button>
         </div>
-        {(exitOfflineText || configErrorText) && (
+        <div className={cn("grid gap-2 border-t border-border/40 px-7 py-2 text-xs leading-5", meta.entryEndpoints.length > 0 && "md:grid-cols-2")}>
+          {meta.entryEndpoints.length > 0 && (
+            <div className="min-w-0">
+              <p className="font-medium">入口分流器</p>
+              {meta.entryEndpoints.map((endpoint) => renderEndpointRuntime(endpoint, "入口"))}
+              <p className="text-muted-foreground">客户端使用了入口主机没有配置的域名，可能是域名拼写、DNS 指向或端口扫描。</p>
+            </div>
+          )}
+          <div className="min-w-0">
+            <p className="font-medium">出口分流器</p>
+            {meta.exitEndpoints.map((endpoint) => renderEndpointRuntime(endpoint, "出口"))}
+            <p className="text-muted-foreground">{meta.entryEndpoints.length > 0 ? "入口与出口配置可能尚未同步。" : "客户端使用的域名尚未配置在出口分流表中。"}</p>
+          </div>
+        </div>
+        {(offlineText.length > 0 || unsupportedEntryText.length > 0 || configErrorText.length > 0) && (
           <div className="space-y-1 border-t border-border/40 px-7 py-2 text-xs leading-5 text-destructive">
-            {exitOfflineText && <p>{exitOfflineText}</p>}
-            {configErrorText && <p>{configErrorText}</p>}
+            {offlineText.map((text) => <p key={text}>{text}</p>)}
+            {unsupportedEntryText.map((text) => <p key={text}>{text}</p>)}
+            {configErrorText.map((text) => <p key={text}>{text}</p>)}
           </div>
         )}
       </div>
@@ -8035,7 +8169,9 @@ function RulesContent() {
                       <span className="truncate">SNI 分流转发</span>
                     </div>
                     <p className="mt-0.5 text-xs text-muted-foreground">
-                      {sniSupport.reason || "多条规则共用一个入口端口，由出口主机按 TLS 域名分流到各自目标。"}
+                      {sniSupport.reason || (selectedForwardGroupIsChain
+                        ? "多条规则共用一个入口端口，入口按 TLS 域名选择转发链，出口再选择对应落地机。"
+                        : "多条规则共用一个入口端口，由出口主机按 TLS 域名分流到各自目标。")}
                     </p>
                   </div>
                   <Switch

@@ -301,17 +301,37 @@ async function applyAgentRuleStatus(host: any, payload: any): Promise<AgentStatu
   const sni = String((rule as any).sni || "").trim();
   const sniSplitterPort = Number((rule as any).sniSplitterPort || 0);
   if (sni) {
-    if (reportedRulePort > 0 && reportedRulePort === sniSplitterPort) {
+    const reportedForwardType = String(payload?.forwardType || "").trim().toLowerCase();
+    let reportedSniRuntimePort = reportedForwardType === "forwardx"
+      && reportedRulePort > 0
+      && reportedRulePort === sniSplitterPort
+      ? sniSplitterPort
+      : 0;
+    if (
+      !reportedSniRuntimePort
+      && reportedRulePort > 0
+      && reportedRulePort === currentRulePort
+      && reportedForwardType === "forwardx"
+      && Number((rule as any).forwardGroupId || 0) > 0
+    ) {
+      const forwardGroupId = Number((rule as any).forwardGroupId);
+      const forwardGroup = await db.getForwardGroupById(forwardGroupId) as any;
+      if (String(forwardGroup?.groupMode || "") === "chain") {
+        const entryHostIds = await db.getForwardGroupRuleEntryHostIds(forwardGroupId);
+        if (entryHostIds.includes(Number(host.id))) reportedSniRuntimePort = currentRulePort;
+      }
+    }
+    if (reportedSniRuntimePort > 0) {
       recordSniRuntimeApplyResult({
         hostId: Number(host.id),
-        splitterPort: sniSplitterPort,
+        splitterPort: reportedSniRuntimePort,
         success: !!isRunning,
         message,
       });
-      if (shouldLogStatus(`sni-runtime:${host.id}:${sniSplitterPort}`, `running=${!!isRunning}:version=${Number(payload?.sniRouteVersion || 0)}`, !isRunning || !!message)) {
+      if (shouldLogStatus(`sni-runtime:${host.id}:${reportedSniRuntimePort}`, `running=${!!isRunning}:version=${Number(payload?.sniRouteVersion || 0)}`, !isRunning || !!message)) {
         appendPanelLog(
           isRunning ? "info" : "warn",
-          `[SNI] config status ${hostLogText} splitterPort=${sniSplitterPort} version=${Number(payload?.sniRouteVersion || 0) || "-"} running=${!!isRunning}${logMessage !== "-" ? ` message=${logMessage}` : ""}`,
+          `[SNI] config status ${hostLogText} splitterPort=${reportedSniRuntimePort} version=${Number(payload?.sniRouteVersion || 0) || "-"} running=${!!isRunning}${logMessage !== "-" ? ` message=${logMessage}` : ""}`,
         );
       }
     }

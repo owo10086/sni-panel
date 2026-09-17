@@ -8,6 +8,7 @@ import {
   closedSniToggleState,
   isSniFormModeOn,
   sniDomainFormatError,
+  sniEntryPortCheckValue,
   sniRuleRouteModeForEdit,
   sniToggleStateForRule,
   sniToggleSupport,
@@ -155,6 +156,13 @@ test("域名格式错误有提示，空值和合法域名没有", () => {
   assert.equal(sniDomainFormatError("API.Example.COM."), null);
   assert.match(String(sniDomainFormatError("https://api.example.com")), /格式不正确/);
   assert.match(String(sniDomainFormatError("*.example.com")), /格式不正确/);
+});
+
+test("SNI 入口端口预检携带规范化域名以识别可共享端口", () => {
+  assert.equal(sniEntryPortCheckValue(false, "API.Example.COM."), null);
+  assert.equal(sniEntryPortCheckValue(true, "API.Example.COM."), "api.example.com");
+  assert.equal(sniEntryPortCheckValue(true, ""), null);
+  assert.equal(sniEntryPortCheckValue(true, "https://api.example.com"), null);
 });
 
 test("清空 SNI 字段时保持引用不变以免触发多余渲染", () => {

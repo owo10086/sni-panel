@@ -140,9 +140,6 @@ export function assertSniEntryPortCanUseSni(state: SniEntryPortState, sourcePort
   if (state?.plainRule) {
     throw new Error(`入口端口 ${sourcePort} 已被普通转发规则 ${forwardRuleConflictLabel(state.plainRule)} 占用，无法创建 SNI 分流规则`);
   }
-  if (state?.otherGroupSniRule) {
-    throw new Error(`入口端口 ${sourcePort} 已被其它转发链的 SNI 分流规则 ${forwardRuleConflictLabel(state.otherGroupSniRule)} 占用`);
-  }
 }
 
 export function assertSniEntryPortCanUsePlain(state: SniEntryPortState, sourcePort: number) {

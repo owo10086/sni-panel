@@ -28,6 +28,7 @@ import PlansPage from "@/pages/Plans";
 import PluginsPage from "@/pages/Plugins";
 import ProfilePage from "@/pages/Profile";
 import RulesPage from "@/pages/Rules";
+import SniEntryPortsPage from "@/pages/SniEntryPorts";
 import SettingsPage from "@/pages/Settings";
 import StorePage from "@/pages/Store";
 import SubscriptionsPage from "@/pages/Subscriptions";
@@ -98,6 +99,7 @@ function Router() {
       <Route path="/profile">{routeComponent(ProfilePage)}</Route>
       <Route path="/hosts">{() => <AdminRoute component={HostsPage} />}</Route>
       <Route path="/rules">{routeComponent(RulesPage)}</Route>
+      <Route path="/sni-entry-ports">{() => <AdminRoute component={SniEntryPortsPage} />}</Route>
       <Route path="/looking-glass" component={LookingGlassRoute} />
       <Route path="/forward-groups">{() => <AdminRoute component={ForwardGroupsPage} />}</Route>
       <Route path="/tunnels">{() => <AdminRoute component={TunnelsPage} />}</Route>

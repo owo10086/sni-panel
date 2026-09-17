@@ -353,6 +353,7 @@ export async function getHostStatusRows(input: Omit<HostListQuery, keyof PageReq
   const rows = await db
     .select({
       id: hosts.id,
+      name: hosts.name,
       isOnline: hosts.isOnline,
       lastHeartbeat: hosts.lastHeartbeat,
       agentVersion: hosts.agentVersion,

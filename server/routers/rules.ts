@@ -1,4 +1,4 @@
-import { protectedProcedure, router } from "../_core/trpc";
+import { adminProcedure, protectedProcedure, router } from "../_core/trpc";
 import { z } from "zod";
 import * as db from "../db";
 import { crudRulesRouter } from "./rules.crud";
@@ -14,15 +14,23 @@ import { getRulePortFailure } from "../rulePortFailure";
 import { isHostStatusOnline } from "../hostStatusNotifier";
 import { normalizeSniValue } from "@shared/sni";
 import type { ForwardRule } from "../../drizzle/schema";
+import { getSniEntryHostVersionStatuses, getSniEntryPortOverview } from "../sniEntryPortOverview";
 
-type SniRuntimeRuleStatus = {
+type SniRuntimeEndpointStatus = {
+  hostId: number;
+  port: number;
   observed: boolean;
   applied: boolean;
   currentVersion: number;
   unmatchedConnections: number;
   lastConfigError: string;
   observedAt: number;
-  exitHostId: number;
+};
+
+type SniRuntimeRuleStatus = {
+  applied: boolean;
+  entries: SniRuntimeEndpointStatus[];
+  exit: SniRuntimeEndpointStatus;
 };
 
 type ForwardRuleView = ForwardRule & {
@@ -39,6 +47,8 @@ type ForwardRuleViewOutput = ForwardRuleView | ForwardRuleView[] | ForwardRulePa
 
 type SniRuntimeForwardGroup = {
   id: unknown;
+  groupMode?: unknown;
+  isEnabled?: unknown;
   members?: Array<{
     hostId?: unknown;
     isEnabled?: unknown;
@@ -93,6 +103,27 @@ async function attachSniRuntimeStatus(value: ForwardRuleViewInput): Promise<Forw
   ]);
   const groupById = new Map(groups.map((group) => [Number(group.id), group]));
   const tunnelById = new Map(tunnels.filter(Boolean).map((tunnel: any) => [Number(tunnel.id), tunnel]));
+  const entryHostIdsByGroup = new Map(await Promise.all(groups
+    .filter((group) => String(group.groupMode || "") === "chain")
+    .map(async (group) => [Number(group.id), await db.getForwardGroupRuleEntryHostIds(Number(group.id))] as const)));
+  const entryHostIds = Array.from(new Set(Array.from(entryHostIdsByGroup.values()).flat()));
+  const entryVersionSupportedByHostId = new Map(
+    (await getSniEntryHostVersionStatuses(entryHostIds))
+      .map((status) => [status.id, status.versionSupported]),
+  );
+  const endpointStatus = (hostId: number, port: number, sni: string): SniRuntimeEndpointStatus => {
+    const runtime = getSniRuntimeGroupStatus(hostId, port);
+    return {
+      hostId,
+      port,
+      observed: !!runtime,
+      applied: !!runtime?.appliedDomains.includes(sni),
+      currentVersion: Number(runtime?.currentVersion || 0),
+      unmatchedConnections: Number(runtime?.unmatchedConnections || 0),
+      lastConfigError: String(runtime?.lastConfigError || ""),
+      observedAt: Number(runtime?.observedAt || 0),
+    };
+  };
   const decorate = (rule: ForwardRule): ForwardRuleView => {
     const sni = normalizeSniValue(rule.sni);
     const splitterPort = Number(rule.sniSplitterPort || 0);
@@ -109,17 +140,31 @@ async function attachSniRuntimeStatus(value: ForwardRuleViewInput): Promise<Forw
         ))
         .sort((left, right) => Number(left.priority) - Number(right.priority))
         .at(-1)?.hostId || 0);
-    const runtime = getSniRuntimeGroupStatus(exitHostId, splitterPort);
+    const exit = endpointStatus(exitHostId, splitterPort, sni);
+    const usesEntrySplitter = !tunnel && String(group?.groupMode || "") === "chain";
+    const entries = usesEntrySplitter
+      ? (entryHostIdsByGroup.get(Number(rule.forwardGroupId || 0)) || [])
+        .map((hostId) => endpointStatus(hostId, Number(rule.sourcePort || 0), sni))
+      : [];
+    const applied = exit.applied && (!usesEntrySplitter || (entries.length > 0 && entries.every((entry) => entry.applied)));
+    const resourceEnabled = tunnel
+      ? runtimeBool((tunnel as any).isEnabled, true)
+      : runtimeBool(group?.isEnabled, true);
+    const entryVersionsSupported = !usesEntrySplitter || entries.every((entry) => (
+      entryVersionSupportedByHostId.get(entry.hostId) === true
+    ));
+    const running = applied
+      && runtimeBool(rule.isEnabled)
+      && !runtimeBool(rule.pendingDelete)
+      && resourceEnabled
+      && entryVersionsSupported;
     return {
       ...rule,
+      isRunning: running,
       sniRuntime: {
-        observed: !!runtime,
-        applied: !!runtime?.appliedDomains.includes(sni),
-        currentVersion: Number(runtime?.currentVersion || 0),
-        unmatchedConnections: Number(runtime?.unmatchedConnections || 0),
-        lastConfigError: String(runtime?.lastConfigError || ""),
-        observedAt: Number(runtime?.observedAt || 0),
-        exitHostId,
+        applied,
+        entries,
+        exit,
       },
     };
   };
@@ -163,7 +208,8 @@ async function withRuleResourceAccess(
   const onlineHosts = new Map(await Promise.all(occupancyHostIds.map(async (id) =>
     [id, isHostStatusOnline(await db.getHostById(id))] as const)));
   const decorateOccupancy = (rule: ForwardRule): ForwardRuleView => {
-    const warnings = rule.isEnabled && (rule.forwardType === "iptables" || rule.forwardType === "nftables")
+    const warnings = rule.isEnabled && !normalizeSniValue(rule.sni)
+      && (rule.forwardType === "iptables" || rule.forwardType === "nftables")
       ? getRulePortWarnings(Number(rule.id), user.role === "admin")
         .filter((entry) => entry.port === Number(rule.sourcePort) && onlineHosts.get(entry.hostId) &&
           inspectPortOccupancy(getPortOccupancy(entry.hostId), entry.port,
@@ -225,6 +271,7 @@ async function getRuleListRepositoryInput(
 }
 
 export const rulesRouter = router({
+  sniEntryPortOverview: adminProcedure.query(() => getSniEntryPortOverview()),
   list: protectedProcedure
     .input(z.object({
       hostId: z.number().optional(),

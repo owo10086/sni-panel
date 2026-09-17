@@ -34,6 +34,7 @@ test("SNI forward-chain desired state sends entry traffic to the splitter and ro
       forceReconcile: true,
     };
     const entryHostIp = "198.51.100.10";
+    const relayHostIp = "198.51.100.15";
     const exitHostIp = "198.51.100.20";
     const finalTargetIp = "203.0.113.20";
     const scenarios = [
@@ -41,6 +42,7 @@ test("SNI forward-chain desired state sends entry traffic to the splitter and ro
       { forwardType: "gost", groupId: 20, templateId: 200, entryRuleId: 201, exitRuleId: 202, entryMemberId: 2001, exitMemberId: 2002, sourcePort: 18444, splitterPort: 24001, sni: "gost.example.com" },
       { forwardType: "nginx", groupId: 30, templateId: 300, entryRuleId: 301, exitRuleId: 302, entryMemberId: 3001, exitMemberId: 3002, sourcePort: 18445, splitterPort: 24002, sni: "nginx.example.com" },
     ];
+    const threeHop = { groupId: 40, templateId: 400, entryRuleId: 401, relayRuleId: 402, exitRuleId: 403, entryMemberId: 4001, relayMemberId: 4002, exitMemberId: 4003, sourcePort: 18446, relayPort: 23100, splitterPort: 24003, sni: "three-hop.example.com" };
     let server;
 
     async function postHeartbeat(baseUrl, token, body = {}) {
@@ -111,9 +113,30 @@ test("SNI forward-chain desired state sends entry traffic to the splitter and ro
       await insert("system_settings", ["key", "value"], ["forwardProtocols", JSON.stringify({ nginx: true })]);
       await insert("hosts", ["id", "name", "ip", "ipv4", "agentToken", "userId", "blockHttp", "isOnline", "lastHeartbeat", "agentVersion", "portRangeStart", "portRangeEnd"], [1, "entry", entryHostIp, entryHostIp, "entry-token", 1, 1, 1, now, "2.2.195", 18000, 19000]);
       await insert("hosts", ["id", "name", "ip", "ipv4", "agentToken", "userId", "isOnline", "lastHeartbeat", "agentVersion", "portRangeStart", "portRangeEnd"], [2, "exit", exitHostIp, exitHostIp, "exit-token", 1, 1, now, "2.2.195", 24000, 24010]);
+      await insert("hosts", ["id", "name", "ip", "ipv4", "agentToken", "userId", "isOnline", "lastHeartbeat", "agentVersion", "portRangeStart", "portRangeEnd"], [3, "relay", relayHostIp, relayHostIp, "relay-token", 1, 1, now, "2.2.195", 23000, 23999]);
       for (const scenario of scenarios) {
         await insertSniChain(scenario);
       }
+      await insert("forward_groups", ["id", "name", "groupType", "groupMode", "forwardType", "domain", "targetIp", "targetPort", "userId", "isEnabled"], [threeHop.groupId, "three-hop-chain", "host", "chain", "gost", "", "0.0.0.0", 1, 1, 1]);
+      await insert("forward_group_members", ["id", "groupId", "memberType", "hostId", "priority", "isEnabled"], [threeHop.entryMemberId, threeHop.groupId, "host", 1, 10, 1]);
+      await insert("forward_group_members", ["id", "groupId", "memberType", "hostId", "priority", "isEnabled"], [threeHop.relayMemberId, threeHop.groupId, "host", 3, 20, 1]);
+      await insert("forward_group_members", ["id", "groupId", "memberType", "hostId", "priority", "isEnabled"], [threeHop.exitMemberId, threeHop.groupId, "host", 2, 30, 1]);
+      await insert("forward_rules", [
+        "id", "hostId", "name", "forwardType", "protocol", "forwardGroupId", "isForwardGroupTemplate",
+        "sourcePort", "sni", "sniSplitterPort", "targetIp", "targetPort", "rateLimitMbps", "maxConnections", "userId", "isEnabled", "isRunning"
+      ], [threeHop.templateId, 1, "three-hop-template", "gost", "tcp", threeHop.groupId, 1, threeHop.sourcePort, threeHop.sni, threeHop.splitterPort, finalTargetIp, 443, 100, 7, 1, 1, 0]);
+      await insert("forward_rules", [
+        "id", "hostId", "name", "forwardType", "protocol", "forwardGroupId", "forwardGroupRuleId", "forwardGroupMemberId", "isForwardGroupTemplate",
+        "sourcePort", "sni", "sniSplitterPort", "targetIp", "targetPort", "rateLimitMbps", "maxConnections", "userId", "isEnabled", "isRunning"
+      ], [threeHop.entryRuleId, 1, "three-hop-entry", "gost", "tcp", threeHop.groupId, threeHop.templateId, threeHop.entryMemberId, 0, threeHop.sourcePort, threeHop.sni, threeHop.splitterPort, relayHostIp, threeHop.relayPort, 100, 7, 1, 1, 0]);
+      await insert("forward_rules", [
+        "id", "hostId", "name", "forwardType", "protocol", "forwardGroupId", "forwardGroupRuleId", "forwardGroupMemberId", "isForwardGroupTemplate",
+        "sourcePort", "sni", "sniSplitterPort", "targetIp", "targetPort", "rateLimitMbps", "maxConnections", "userId", "isEnabled", "isRunning"
+      ], [threeHop.relayRuleId, 3, "three-hop-relay", "gost", "tcp", threeHop.groupId, threeHop.templateId, threeHop.relayMemberId, 0, threeHop.relayPort, threeHop.sni, threeHop.splitterPort, exitHostIp, threeHop.splitterPort, 100, 7, 1, 1, 0]);
+      await insert("forward_rules", [
+        "id", "hostId", "name", "forwardType", "protocol", "forwardGroupId", "forwardGroupRuleId", "forwardGroupMemberId", "isForwardGroupTemplate",
+        "sourcePort", "sni", "sniSplitterPort", "targetIp", "targetPort", "rateLimitMbps", "maxConnections", "userId", "isEnabled", "isRunning"
+      ], [threeHop.exitRuleId, 2, "three-hop-exit", "gost", "tcp", threeHop.groupId, threeHop.templateId, threeHop.exitMemberId, 0, threeHop.splitterPort, threeHop.sni, threeHop.splitterPort, finalTargetIp, 443, 100, 7, 1, 1, 0]);
 
       const app = express();
       app.use(express.json());
@@ -141,34 +164,44 @@ test("SNI forward-chain desired state sends entry traffic to the splitter and ro
       assert.doesNotMatch(entryActionText, /203\.0\.113\.20/);
       assert.doesNotMatch(entryConfigText, /203\.0\.113\.20/);
 
-      for (const scenario of scenarios) {
-        const entryApply = entryActions.find((action) => action.op === "apply" && action.ruleId === scenario.entryRuleId);
-        assert.ok(entryApply, "missing entry apply action for " + scenario.forwardType);
+      const entrySplitters = entryActions
+        .filter((action) => action.op === "apply" && action.fxp?.role === "sni-splitter")
+        .sort((left, right) => Number(left.sourcePort) - Number(right.sourcePort));
+      assert.equal(entrySplitters.length, scenarios.length + 1);
+      for (const [index, scenario] of scenarios.entries()) {
+        const entryApply = entrySplitters[index];
+        assert.equal(entryApply.ruleId, scenario.entryRuleId);
+        assert.equal(entryApply.forwardType, "forwardx");
         assert.equal(entryApply.sourcePort, scenario.sourcePort);
-        assert.equal(entryApply.targetIp, exitHostIp);
-        assert.equal(entryApply.targetPort, scenario.splitterPort);
         assert.equal(entryApply.protocol, "tcp");
-        assert.equal(entryApply.fxp, undefined);
-        assert.doesNotMatch((entryApply.commands || []).join("\n"), /203\.0\.113\.20/);
-        if (scenario.forwardType === "nftables") {
-          assert.doesNotMatch((entryApply.commands || []).join("\n"), /fwx-stat-|forwardx_traffic/);
-          assert.doesNotMatch((entryApply.commands || []).join("\n"), /\bcounter\b/);
-        }
+        assert.equal(entryApply.fxp.listenPort, scenario.sourcePort);
+        assert.deepEqual(entryApply.fxp.sourceAllowIps, []);
+        assert.deepEqual(entryApply.fxp.sniRoutes, [{
+          sni: scenario.sni,
+          ruleId: scenario.entryRuleId,
+          targetIp: exitHostIp,
+          targetPort: scenario.splitterPort,
+        }]);
+        assert.doesNotMatch((entryApply.commands || []).join("\n"), /tcp dport \d+ drop/);
       }
+      const threeHopEntry = entrySplitters.at(-1);
+      assert.equal(threeHopEntry.sourcePort, threeHop.sourcePort);
+      assert.deepEqual(threeHopEntry.fxp.sniRoutes, [{
+        sni: threeHop.sni,
+        ruleId: threeHop.entryRuleId,
+        targetIp: relayHostIp,
+        targetPort: threeHop.relayPort,
+      }]);
 
-      const gostConfigText = findManagedConfig(entryActions, "/runtime/gost.json");
-      assert.ok(gostConfigText, "missing gost runtime config");
-      const gostConfig = JSON.parse(gostConfigText);
-      const gostService = gostConfig.services.find((service) => service.name === "fwx-201-tcp");
-      assert.ok(gostService);
-      assert.equal(gostService.addr, ":18444");
-      assert.equal(gostService.forwarder.nodes[0].addr, exitHostIp + ":24001");
-
-      const nginxConfigText = findManagedConfig(entryActions, "/nginx/nginx.conf");
-      assert.ok(nginxConfigText, "missing nginx runtime config");
-      assert.match(nginxConfigText, /listen \[::\]:18445\b/);
-      assert.match(nginxConfigText, /server 198\.51\.100\.20:24002\b/);
-      assert.doesNotMatch(nginxConfigText, /127\.0\.0\.1:43\d+/);
+      const relay = await postHeartbeat(baseUrl, "relay-token", { agentBootId: "boot-relay", agentProcessId: 2003 });
+      assert.equal(relay.status, 200);
+      const relayAction = relay.payload.desiredState.actions.find((action) => action.op === "apply" && action.ruleId === threeHop.relayRuleId);
+      assert.ok(relayAction, "missing three-hop relay action");
+      assert.equal(relayAction.forwardType, "gost");
+      assert.equal(relayAction.sourcePort, threeHop.relayPort);
+      assert.equal(relayAction.targetIp, exitHostIp);
+      assert.equal(relayAction.targetPort, threeHop.splitterPort);
+      assert.equal(relayAction.fxp, undefined);
 
       const exit = await postHeartbeat(baseUrl, "exit-token", { agentBootId: "boot-exit", agentProcessId: 2002 });
       assert.equal(exit.status, 200);
@@ -177,7 +210,7 @@ test("SNI forward-chain desired state sends entry traffic to the splitter and ro
       const splitterApplies = exitActions
         .filter((action) => action.op === "apply" && action.fxp?.role === "sni-splitter")
         .sort((left, right) => Number(left.sourcePort) - Number(right.sourcePort));
-      assert.equal(splitterApplies.length, scenarios.length);
+      assert.equal(splitterApplies.length, scenarios.length + 1);
       for (const [index, scenario] of scenarios.entries()) {
         const splitterApply = splitterApplies[index];
         assert.equal(splitterApply.sourcePort, scenario.splitterPort);
@@ -202,12 +235,41 @@ test("SNI forward-chain desired state sends entry traffic to the splitter and ro
           accessScope: "u1_h2",
         }]);
       }
+      const threeHopExit = splitterApplies.at(-1);
+      assert.deepEqual(threeHopExit.fxp.sourceAllowIps, [relayHostIp]);
+      assert.deepEqual(threeHopExit.fxp.sniRoutes, [{
+        sni: threeHop.sni,
+        ruleId: threeHop.exitRuleId,
+        targetIp: finalTargetIp,
+        targetPort: 443,
+        limitIn: 12_500_000,
+        limitOut: 12_500_000,
+        maxConnections: 7,
+        maxIPs: 0,
+        accessScope: "u1_h2",
+      }]);
 
+      const runtimeScenarios = [
+        ...scenarios.map((scenario) => ({
+          ...scenario,
+          sourceAllowIps: [entryHostIp],
+          limitIn: 0,
+          limitOut: 0,
+          maxConnections: 0,
+        })),
+        {
+          ...threeHop,
+          sourceAllowIps: [relayHostIp],
+          limitIn: 12_500_000,
+          limitOut: 12_500_000,
+          maxConnections: 7,
+        },
+      ];
       const runningSplitters = exit.payload.runningRules
-        .filter((rule) => rule.forwardType === "forwardx" && scenarios.some((scenario) => Number(scenario.splitterPort) === Number(rule.sourcePort)))
+        .filter((rule) => rule.forwardType === "forwardx" && runtimeScenarios.some((scenario) => Number(scenario.splitterPort) === Number(rule.sourcePort)))
         .sort((left, right) => Number(left.sourcePort) - Number(right.sourcePort));
-      assert.equal(runningSplitters.length, scenarios.length);
-      for (const scenario of scenarios) {
+      assert.equal(runningSplitters.length, runtimeScenarios.length);
+      for (const scenario of runtimeScenarios) {
         await runtime.executeRaw('UPDATE "forward_rules" SET "isRunning" = 1 WHERE "id" = ?', [scenario.exitRuleId]);
       }
       const exitWithoutDrift = await postHeartbeat(baseUrl, "exit-token", {
@@ -216,7 +278,7 @@ test("SNI forward-chain desired state sends entry traffic to the splitter and ro
         forceReconcile: true,
         localState: {
           rules: runningSplitters.map((rule) => {
-            const scenario = scenarios.find((item) => Number(item.splitterPort) === Number(rule.sourcePort));
+            const scenario = runtimeScenarios.find((item) => Number(item.splitterPort) === Number(rule.sourcePort));
             assert.ok(scenario);
             return {
               port: scenario.splitterPort,
@@ -225,10 +287,14 @@ test("SNI forward-chain desired state sends entry traffic to the splitter and ro
               sni: scenario.sni,
               targetIp: finalTargetIp,
               targetPort: 443,
+              limitIn: scenario.limitIn,
+              limitOut: scenario.limitOut,
+              maxConnections: scenario.maxConnections,
+              maxIPs: 0,
               accessScope: "u1_h2",
               protocol: "tcp",
               sniRouteVersion: 1,
-              sourceAllowIps: [entryHostIp],
+              sourceAllowIps: scenario.sourceAllowIps,
               ready: true,
             };
           }),
@@ -289,7 +355,7 @@ test("SNI forward-chain desired state sends entry traffic to the splitter and ro
   assert.equal(result.status, 0, result.stderr || result.stdout);
 });
 
-test("SNI forward-chain desired state shares one entry listener for multiple domains", () => {
+test("SNI forward chains share one entry splitter and keep per-chain next hops", () => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), "forwardx-sni-desired-state-shared-"));
   const databasePath = path.join(directory, "sni-desired-shared.db");
   const script = String.raw`
@@ -322,6 +388,21 @@ test("SNI forward-chain desired state shares one entry listener for multiple dom
     const refreshedEntryHostIp = "198.51.100.11";
     const exitHostIp = "198.51.100.20";
     const entryGroupHostIps = ["198.51.100.30", "198.51.100.40"];
+    const entryGroupRelayHostIp = "198.51.100.50";
+    const entryGroupThreeHop = {
+      groupId: 60,
+      templateId: 600,
+      entryARuleId: 601,
+      relayRuleId: 602,
+      entryBRuleId: 603,
+      exitRuleId: 604,
+      relayMemberId: 6001,
+      exitMemberId: 6002,
+      sourcePort: 18444,
+      relayPort: 23000,
+      splitterPort: 24004,
+      sni: "group-three-hop.example.com",
+    };
     const routes = [
       { templateId: 100, entryRuleId: 101, exitRuleId: 102, name: "api", sni: "api.example.com", targetIp: "203.0.113.20", targetPort: 443 },
       { templateId: 110, entryRuleId: 111, exitRuleId: 112, name: "web", sni: "web.example.com", targetIp: "203.0.113.21", targetPort: 8443 },
@@ -330,7 +411,7 @@ test("SNI forward-chain desired state shares one entry listener for multiple dom
       {
         groupId: 20,
         forwardType: "gost",
-        sourcePort: 18444,
+        sourcePort: 18443,
         splitterPort: 24001,
         entryMemberId: 2001,
         exitMemberId: 2002,
@@ -342,7 +423,7 @@ test("SNI forward-chain desired state shares one entry listener for multiple dom
       {
         groupId: 30,
         forwardType: "nginx",
-        sourcePort: 18445,
+        sourcePort: 18443,
         splitterPort: 24002,
         entryMemberId: 3001,
         exitMemberId: 3002,
@@ -416,6 +497,7 @@ test("SNI forward-chain desired state shares one entry listener for multiple dom
       await insert("hosts", ["id", "name", "ip", "ipv4", "agentToken", "userId", "isOnline", "lastHeartbeat", "agentVersion", "portRangeStart", "portRangeEnd"], [2, "exit", exitHostIp, exitHostIp, "exit-token", 1, 1, now, "2.2.195", 24000, 24010]);
       await insert("hosts", ["id", "name", "ip", "ipv4", "agentToken", "userId", "isOnline", "lastHeartbeat", "agentVersion", "portRangeStart", "portRangeEnd"], [3, "entry-a", entryGroupHostIps[0], entryGroupHostIps[0], "entry-a-token", 1, 1, now, "2.2.195", 18000, 19000]);
       await insert("hosts", ["id", "name", "ip", "ipv4", "agentToken", "userId", "isOnline", "lastHeartbeat", "agentVersion", "portRangeStart", "portRangeEnd"], [4, "entry-b", entryGroupHostIps[1], entryGroupHostIps[1], "entry-b-token", 1, 1, now, "2.2.195", 18000, 19000]);
+      await insert("hosts", ["id", "name", "ip", "ipv4", "agentToken", "userId", "isOnline", "lastHeartbeat", "agentVersion", "portRangeStart", "portRangeEnd"], [5, "entry-group-relay", entryGroupRelayHostIp, entryGroupRelayHostIp, "entry-group-relay-token", 1, 1, now, "2.2.195", 23000, 23999]);
       await insert("forward_groups", ["id", "name", "groupType", "groupMode", "forwardType", "domain", "targetIp", "targetPort", "userId", "isEnabled"], [10, "shared-chain", "host", "chain", "nftables", "", "0.0.0.0", 1, 1, 1]);
       await insert("forward_group_members", ["id", "groupId", "memberType", "hostId", "priority", "isEnabled"], [1001, 10, "host", 1, 10, 1]);
       await insert("forward_group_members", ["id", "groupId", "memberType", "hostId", "priority", "isEnabled"], [1002, 10, "host", 2, 20, 1]);
@@ -431,6 +513,30 @@ test("SNI forward-chain desired state shares one entry listener for multiple dom
         "id", "hostId", "name", "forwardType", "protocol", "forwardGroupId", "forwardGroupMemberId", "isForwardGroupTemplate",
         "sourcePort", "sni", "sniSplitterPort", "targetIp", "targetPort", "userId", "isEnabled", "isRunning"
       ], [502, 2, "entry-group-exit-child", "nftables", "tcp", 50, 5002, 0, 24003, "group.example.com", 24003, "203.0.113.50", 443, 1, 1, 0]);
+      await insert("forward_groups", ["id", "name", "groupType", "groupMode", "entryGroupId", "forwardType", "domain", "targetIp", "targetPort", "userId", "isEnabled"], [entryGroupThreeHop.groupId, "entry-group-three-hop-chain", "host", "chain", 40, "gost", "", "0.0.0.0", 1, 1, 1]);
+      await insert("forward_group_members", ["id", "groupId", "memberType", "hostId", "priority", "isEnabled"], [entryGroupThreeHop.relayMemberId, entryGroupThreeHop.groupId, "host", 5, 10, 1]);
+      await insert("forward_group_members", ["id", "groupId", "memberType", "hostId", "priority", "isEnabled"], [entryGroupThreeHop.exitMemberId, entryGroupThreeHop.groupId, "host", 2, 20, 1]);
+      await insert("forward_rules", [
+        "id", "hostId", "name", "forwardType", "protocol", "forwardGroupId", "isForwardGroupTemplate",
+        "sourcePort", "sni", "sniSplitterPort", "targetIp", "targetPort", "userId", "isEnabled", "isRunning"
+      ], [entryGroupThreeHop.templateId, 3, "entry-group-three-hop-template", "gost", "tcp", entryGroupThreeHop.groupId, 1, entryGroupThreeHop.sourcePort, entryGroupThreeHop.sni, entryGroupThreeHop.splitterPort, "203.0.113.60", 443, 1, 1, 0]);
+      for (const [id, hostId, name] of [
+        [entryGroupThreeHop.entryARuleId, 3, "entry-group-three-hop-entry-a"],
+        [entryGroupThreeHop.entryBRuleId, 4, "entry-group-three-hop-entry-b"],
+      ]) {
+        await insert("forward_rules", [
+          "id", "hostId", "name", "forwardType", "protocol", "forwardGroupId", "forwardGroupRuleId", "forwardGroupMemberId", "isForwardGroupTemplate",
+          "sourcePort", "sni", "sniSplitterPort", "targetIp", "targetPort", "userId", "isEnabled", "isRunning"
+        ], [id, hostId, name, "gost", "tcp", entryGroupThreeHop.groupId, entryGroupThreeHop.templateId, entryGroupThreeHop.relayMemberId, 0, entryGroupThreeHop.sourcePort, entryGroupThreeHop.sni, entryGroupThreeHop.splitterPort, entryGroupRelayHostIp, entryGroupThreeHop.relayPort, 1, 1, 0]);
+      }
+      await insert("forward_rules", [
+        "id", "hostId", "name", "forwardType", "protocol", "forwardGroupId", "forwardGroupRuleId", "forwardGroupMemberId", "isForwardGroupTemplate",
+        "sourcePort", "sni", "sniSplitterPort", "targetIp", "targetPort", "userId", "isEnabled", "isRunning"
+      ], [entryGroupThreeHop.relayRuleId, 5, "entry-group-three-hop-relay", "gost", "tcp", entryGroupThreeHop.groupId, entryGroupThreeHop.templateId, entryGroupThreeHop.relayMemberId, 0, entryGroupThreeHop.relayPort, entryGroupThreeHop.sni, entryGroupThreeHop.splitterPort, exitHostIp, entryGroupThreeHop.splitterPort, 1, 1, 0]);
+      await insert("forward_rules", [
+        "id", "hostId", "name", "forwardType", "protocol", "forwardGroupId", "forwardGroupRuleId", "forwardGroupMemberId", "isForwardGroupTemplate",
+        "sourcePort", "sni", "sniSplitterPort", "targetIp", "targetPort", "userId", "isEnabled", "isRunning"
+      ], [entryGroupThreeHop.exitRuleId, 2, "entry-group-three-hop-exit", "gost", "tcp", entryGroupThreeHop.groupId, entryGroupThreeHop.templateId, entryGroupThreeHop.exitMemberId, 0, entryGroupThreeHop.splitterPort, entryGroupThreeHop.sni, entryGroupThreeHop.splitterPort, "203.0.113.60", 443, 1, 1, 0]);
       for (const group of runtimeGroups) {
         await insert("forward_groups", ["id", "name", "groupType", "groupMode", "forwardType", "domain", "targetIp", "targetPort", "userId", "isEnabled"], [group.groupId, group.forwardType + "-shared-chain", "host", "chain", group.forwardType, "", "0.0.0.0", 1, 1, 1]);
         await insert("forward_group_members", ["id", "groupId", "memberType", "hostId", "priority", "isEnabled"], [group.entryMemberId, group.groupId, "host", 1, 10, 1]);
@@ -463,26 +569,59 @@ test("SNI forward-chain desired state shares one entry listener for multiple dom
       const entryActions = entry.payload.desiredState.actions;
       const entryApplies = entryActions.filter((action) => action.op === "apply" && action.sourcePort === 18443);
       assert.equal(entryApplies.length, 1);
-      assert.equal(entryApplies[0].targetIp, exitHostIp);
-      assert.equal(entryApplies[0].targetPort, 24000);
+      assert.equal(entryApplies[0].forwardType, "forwardx");
       assert.equal(entryApplies[0].protocol, "tcp");
+      assert.equal(entryApplies[0].fxp.role, "sni-splitter");
+      assert.equal(entryApplies[0].fxp.listenPort, 18443);
+      assert.deepEqual(entryApplies[0].fxp.sourceAllowIps, []);
+      assert.deepEqual(entryApplies[0].fxp.sniRoutes, [
+        { sni: "api.example.com", ruleId: 101, targetIp: exitHostIp, targetPort: 24000 },
+        { sni: "gost-api.example.com", ruleId: 201, targetIp: exitHostIp, targetPort: 24001 },
+        { sni: "gost-web.example.com", ruleId: 211, targetIp: exitHostIp, targetPort: 24001 },
+        { sni: "nginx-api.example.com", ruleId: 301, targetIp: exitHostIp, targetPort: 24002 },
+        { sni: "nginx-web.example.com", ruleId: 311, targetIp: exitHostIp, targetPort: 24002 },
+        { sni: "web.example.com", ruleId: 111, targetIp: exitHostIp, targetPort: 24000 },
+      ]);
       assert.doesNotMatch(JSON.stringify(entryActions), /203\.0\.113\./);
       assert.doesNotMatch(decodedManagedConfigText(entryActions), /203\.0\.113\./);
       assert.doesNotMatch((entryApplies[0].commands || []).join("\n"), /fwx-stat-|forwardx_traffic/);
       assert.doesNotMatch((entryApplies[0].commands || []).join("\n"), /\bcounter\b/);
 
       const gostConfigText = findManagedConfig(entryActions, "/runtime/gost.json");
-      assert.ok(gostConfigText, "missing gost runtime config");
-      const gostConfig = JSON.parse(gostConfigText);
-      const gostEntryServices = gostConfig.services.filter((service) => service.addr === ":18444");
-      assert.equal(gostEntryServices.length, 1);
-      assert.equal(gostEntryServices[0].name, "fwx-201-tcp");
-      assert.deepEqual(gostEntryServices[0].forwarder.nodes.map((node) => node.addr), [exitHostIp + ":24001"]);
+      if (gostConfigText) assert.equal(JSON.parse(gostConfigText).services.filter((service) => service.addr === ":18443").length, 0);
+      assert.doesNotMatch(findManagedConfig(entryActions, "/nginx/nginx.conf"), /listen \[::\]:18443\b/);
 
-      const nginxConfigText = findManagedConfig(entryActions, "/nginx/nginx.conf");
-      assert.ok(nginxConfigText, "missing nginx runtime config");
-      assert.equal((nginxConfigText.match(/listen \[::\]:18445\b/g) || []).length, 1);
-      assert.equal((nginxConfigText.match(/server 198\.51\.100\.20:24002\b/g) || []).length, 1);
+      for (const [token, ruleId, bootId, processId] of [
+        ["entry-a-token", entryGroupThreeHop.entryARuleId, "boot-entry-a", 2003],
+        ["entry-b-token", entryGroupThreeHop.entryBRuleId, "boot-entry-b", 2004],
+      ]) {
+        const entryGroupHeartbeat = await postHeartbeat(baseUrl, token, { agentBootId: bootId, agentProcessId: processId });
+        assert.equal(entryGroupHeartbeat.status, 200);
+        const entryGroupApply = entryGroupHeartbeat.payload.desiredState.actions.find(
+          (action) => action.op === "apply" && action.fxp?.role === "sni-splitter" && Number(action.sourcePort) === entryGroupThreeHop.sourcePort,
+        );
+        assert.ok(entryGroupApply, "missing entry-group public entry splitter");
+        assert.equal(entryGroupApply.ruleId, ruleId);
+        assert.deepEqual(entryGroupApply.fxp.sourceAllowIps, []);
+        assert.deepEqual(entryGroupApply.fxp.sniRoutes, [{
+          sni: entryGroupThreeHop.sni,
+          ruleId,
+          targetIp: entryGroupRelayHostIp,
+          targetPort: entryGroupThreeHop.relayPort,
+        }]);
+      }
+
+      const entryGroupRelay = await postHeartbeat(baseUrl, "entry-group-relay-token", { agentBootId: "boot-entry-group-relay", agentProcessId: 2005 });
+      assert.equal(entryGroupRelay.status, 200);
+      const entryGroupRelayApply = entryGroupRelay.payload.desiredState.actions.find(
+        (action) => action.op === "apply" && action.ruleId === entryGroupThreeHop.relayRuleId,
+      );
+      assert.ok(entryGroupRelayApply, "missing entry-group chain relay action");
+      assert.equal(entryGroupRelayApply.forwardType, "gost");
+      assert.equal(entryGroupRelayApply.sourcePort, entryGroupThreeHop.relayPort);
+      assert.equal(entryGroupRelayApply.targetIp, exitHostIp);
+      assert.equal(entryGroupRelayApply.targetPort, entryGroupThreeHop.splitterPort);
+      assert.equal(entryGroupRelayApply.fxp, undefined);
 
       const exit = await postHeartbeat(baseUrl, "exit-token", { agentBootId: "boot-exit-shared", agentProcessId: 2002 });
       assert.equal(exit.status, 200);
@@ -530,6 +669,95 @@ test("SNI forward-chain desired state shares one entry listener for multiple dom
         assert.match(entryGroupCommandText, new RegExp("ip saddr " + sourceIp.replace(/\./g, "\\.") + " tcp dport 24003 accept"));
       }
       assert.match(entryGroupCommandText, /tcp dport 24003 drop/);
+      const entryGroupThreeHopExit = exit.payload.desiredState.actions.find(
+        (action) => action.op === "apply" && action.fxp?.role === "sni-splitter" && Number(action.sourcePort) === entryGroupThreeHop.splitterPort,
+      );
+      assert.ok(entryGroupThreeHopExit, "missing entry-group three-hop exit splitter");
+      assert.deepEqual(entryGroupThreeHopExit.fxp.sourceAllowIps, [entryGroupRelayHostIp]);
+      assert.deepEqual(entryGroupThreeHopExit.fxp.sniRoutes, [{
+        sni: entryGroupThreeHop.sni,
+        ruleId: entryGroupThreeHop.exitRuleId,
+        targetIp: "203.0.113.60",
+        targetPort: 443,
+        limitIn: 0,
+        limitOut: 0,
+        maxConnections: 0,
+        maxIPs: 0,
+        accessScope: "u1_h2",
+      }]);
+
+      await postHeartbeat(baseUrl, "exit-token", {
+        agentBootId: "boot-exit-shared",
+        agentProcessId: 2002,
+        localState: {
+          rules: [{
+            port: entryGroupThreeHop.splitterPort,
+            ruleId: entryGroupThreeHop.exitRuleId,
+            forwardType: "forwardx",
+            sni: entryGroupThreeHop.sni,
+            targetIp: "203.0.113.60",
+            targetPort: 443,
+            protocol: "tcp",
+            sniRouteVersion: 1,
+            sourceAllowIps: [entryGroupRelayHostIp],
+            ready: true,
+          }],
+          tunnels: [],
+          services: [],
+        },
+      });
+      await postHeartbeat(baseUrl, "entry-a-token", {
+        agentBootId: "boot-entry-a",
+        agentProcessId: 2003,
+        localState: {
+          rules: [{
+            port: entryGroupThreeHop.sourcePort,
+            ruleId: entryGroupThreeHop.entryARuleId,
+            forwardType: "forwardx",
+            sni: entryGroupThreeHop.sni,
+            targetIp: entryGroupRelayHostIp,
+            targetPort: entryGroupThreeHop.relayPort,
+            protocol: "tcp",
+            sniRouteVersion: 1,
+            sourceAllowIps: [],
+            ready: true,
+          }],
+          tunnels: [],
+          services: [],
+        },
+      });
+      const partialEntryStates = await runtime.queryRaw(
+        'SELECT "id", "isRunning" FROM "forward_rules" WHERE "id" BETWEEN 600 AND 604 ORDER BY "id"',
+      );
+      assert.deepEqual(partialEntryStates.map((row) => [Number(row.id), Number(row.isRunning)]), [
+        [600, 0], [601, 0], [602, 0], [603, 0], [604, 0],
+      ]);
+      await postHeartbeat(baseUrl, "entry-b-token", {
+        agentBootId: "boot-entry-b",
+        agentProcessId: 2004,
+        localState: {
+          rules: [{
+            port: entryGroupThreeHop.sourcePort,
+            ruleId: entryGroupThreeHop.entryBRuleId,
+            forwardType: "forwardx",
+            sni: entryGroupThreeHop.sni,
+            targetIp: entryGroupRelayHostIp,
+            targetPort: entryGroupThreeHop.relayPort,
+            protocol: "tcp",
+            sniRouteVersion: 1,
+            sourceAllowIps: [],
+            ready: true,
+          }],
+          tunnels: [],
+          services: [],
+        },
+      });
+      const completeEntryStates = await runtime.queryRaw(
+        'SELECT "id", "isRunning" FROM "forward_rules" WHERE "id" BETWEEN 600 AND 604 ORDER BY "id"',
+      );
+      assert.deepEqual(completeEntryStates.map((row) => [Number(row.id), Number(row.isRunning)]), [
+        [600, 1], [601, 1], [602, 0], [603, 1], [604, 1],
+      ]);
 
       for (const route of routes) {
         await runtime.executeRaw('UPDATE "forward_rules" SET "isRunning" = 1 WHERE "id" = ?', [route.exitRuleId]);
@@ -752,6 +980,333 @@ test("SNI forward-chain desired state shares one entry listener for multiple dom
         maxIPs: 0,
         accessScope: "u1_h2",
       }]);
+
+      const entryAfterDelete = await postHeartbeat(baseUrl, "entry-token", { agentBootId: "boot-entry-shared", agentProcessId: 2001 });
+      const remainingEntryApply = entryAfterDelete.payload.desiredState.actions.find(
+        (action) => action.op === "apply" && action.fxp?.role === "sni-splitter" && Number(action.sourcePort) === 18443,
+      );
+      assert.ok(remainingEntryApply, "missing entry splitter after deleting the smallest rule");
+      const entryBaseConfig = ({ ruleId, sniRouteVersion, sniRoutes, ...config }) => config;
+      assert.deepEqual(entryBaseConfig(remainingEntryApply.fxp), entryBaseConfig(entryApplies[0].fxp));
+      assert.deepEqual(remainingEntryApply.fxp.sniRoutes, [
+        { sni: "gost-api.example.com", ruleId: 201, targetIp: exitHostIp, targetPort: 24001 },
+        { sni: "nginx-api.example.com", ruleId: 301, targetIp: exitHostIp, targetPort: 24002 },
+        { sni: "nginx-web.example.com", ruleId: 311, targetIp: exitHostIp, targetPort: 24002 },
+        { sni: "web.example.com", ruleId: 111, targetIp: exitHostIp, targetPort: 24000 },
+      ]);
+      const route = { templateId: 120, entryRuleId: 121, exitRuleId: 122, name: "new", sni: "new.example.com", targetIp: "203.0.113.22", targetPort: 443 };
+      await insertSniRule(route);
+      const entryAfterAdd = await postHeartbeat(baseUrl, "entry-token", { agentBootId: "boot-entry-shared", agentProcessId: 2001 });
+      const expandedEntryApply = entryAfterAdd.payload.desiredState.actions.find(
+        (action) => action.op === "apply" && action.fxp?.role === "sni-splitter" && Number(action.sourcePort) === 18443,
+      );
+      assert.ok(expandedEntryApply, "missing entry splitter after adding a domain");
+      assert.deepEqual(entryBaseConfig(expandedEntryApply.fxp), entryBaseConfig(remainingEntryApply.fxp));
+      assert.deepEqual(expandedEntryApply.fxp.sniRoutes.filter((route) => route.sni !== "new.example.com"), remainingEntryApply.fxp.sniRoutes);
+      assert.deepEqual(expandedEntryApply.fxp.sniRoutes.find((route) => route.sni === "new.example.com"), {
+        sni: "new.example.com", ruleId: 121, targetIp: exitHostIp, targetPort: 24000,
+      });
+    } finally {
+      if (server) await new Promise((resolve) => server.close(resolve));
+      await runtime.closeDatabase();
+    }
+  `;
+  const result = spawnSync(process.execPath, ["--import", "tsx", "--input-type=module", "-e", script], {
+    cwd: process.cwd(),
+    env: { ...process.env, DATABASE_TYPE: "sqlite", FORWARDX_TEST_DB: databasePath },
+    encoding: "utf8",
+    timeout: 60_000,
+  });
+  fs.rmSync(directory, { recursive: true, force: true });
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+});
+
+test("SNI chain running state waits for entry and exit snapshots", () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "forwardx-sni-running-state-"));
+  const databasePath = path.join(directory, "sni-running-state.db");
+  const script = String.raw`
+    import assert from "node:assert/strict";
+    import http from "node:http";
+    import path from "node:path";
+    import { pathToFileURL } from "node:url";
+    import express from "express";
+
+    const moduleUrl = (file) => pathToFileURL(path.join(process.cwd(), file)).href;
+    const runtime = await import(moduleUrl("server/dbRuntime.ts"));
+    const schema = await import(moduleUrl("server/dbSchema.ts"));
+    const heartbeat = await import(moduleUrl("server/agentHeartbeatRoute.ts"));
+    const q = (name) => '"' + name + '"';
+    const insert = async (table, columns, values) => {
+      await runtime.executeRaw(
+        "INSERT INTO " + q(table) + " (" + columns.map(q).join(", ") + ") VALUES (" + values.map(() => "?").join(", ") + ")",
+        values,
+      );
+    };
+    const entryHostIp = "198.51.100.10";
+    const exitHostIp = "198.51.100.20";
+    const sni = "status.example.com";
+    let server;
+
+    async function postHeartbeat(baseUrl, token, localRule, processId, agentVersion = "2.2.195") {
+      const response = await fetch(baseUrl + "/api/agent/heartbeat", {
+        method: "POST",
+        headers: { authorization: "Bearer " + token, "content-type": "application/json" },
+        body: JSON.stringify({
+          agentVersion,
+          agentBootId: "boot-" + token,
+          agentProcessId: processId,
+          agentProcessStartedAt: Math.floor(Date.now() / 1000),
+          forceReconcile: true,
+          ...(localRule === undefined ? {} : {
+            localState: { rules: localRule ? [localRule] : [], tunnels: [], services: [] },
+          }),
+        }),
+      });
+      const payload = await response.json();
+      assert.equal(response.status, 200);
+      assert.equal(payload.success, true);
+    }
+
+    async function runningStates() {
+      const rows = await runtime.queryRaw('SELECT "id", "isRunning" FROM "forward_rules" WHERE "id" IN (100, 101, 102) ORDER BY "id"');
+      return rows.map((row) => [Number(row.id), Number(row.isRunning)]);
+    }
+
+    try {
+      await runtime.connectDatabase({ type: "sqlite", sqlite: { path: process.env.FORWARDX_TEST_DB } });
+      await schema.ensureDatabaseSchema();
+      const now = Math.floor(Date.now() / 1000);
+      await insert("users", ["id", "username", "password", "role", "canAddRules", "manualCanAddRules"], [1, "admin", "x", "admin", 1, 1]);
+      await insert("hosts", ["id", "name", "ip", "ipv4", "agentToken", "userId", "isOnline", "lastHeartbeat", "agentVersion", "portRangeStart", "portRangeEnd"], [1, "entry", entryHostIp, entryHostIp, "entry-token", 1, 1, now, "2.2.195", 18000, 19000]);
+      await insert("hosts", ["id", "name", "ip", "ipv4", "agentToken", "userId", "isOnline", "lastHeartbeat", "agentVersion", "portRangeStart", "portRangeEnd"], [2, "exit", exitHostIp, exitHostIp, "exit-token", 1, 1, now, "2.2.195", 24000, 25000]);
+      await insert("forward_groups", ["id", "name", "groupType", "groupMode", "forwardType", "domain", "targetIp", "targetPort", "userId", "isEnabled"], [10, "status-chain", "host", "chain", "nftables", "", "0.0.0.0", 1, 1, 1]);
+      await insert("forward_group_members", ["id", "groupId", "memberType", "hostId", "priority", "isEnabled"], [1001, 10, "host", 1, 10, 1]);
+      await insert("forward_group_members", ["id", "groupId", "memberType", "hostId", "priority", "isEnabled"], [1002, 10, "host", 2, 20, 1]);
+      await insert("forward_rules", [
+        "id", "hostId", "name", "forwardType", "protocol", "forwardGroupId", "isForwardGroupTemplate",
+        "sourcePort", "sni", "sniSplitterPort", "targetIp", "targetPort", "userId", "isEnabled", "isRunning"
+      ], [100, 1, "status-template", "nftables", "tcp", 10, 1, 18443, sni, 24000, "203.0.113.20", 443, 1, 1, 0]);
+      await insert("forward_rules", [
+        "id", "hostId", "name", "forwardType", "protocol", "forwardGroupId", "forwardGroupRuleId", "forwardGroupMemberId", "isForwardGroupTemplate",
+        "sourcePort", "sni", "sniSplitterPort", "targetIp", "targetPort", "userId", "isEnabled", "isRunning"
+      ], [101, 1, "status-entry", "nftables", "tcp", 10, 100, 1001, 0, 18443, sni, 24000, exitHostIp, 24000, 1, 1, 0]);
+      await insert("forward_rules", [
+        "id", "hostId", "name", "forwardType", "protocol", "forwardGroupId", "forwardGroupRuleId", "forwardGroupMemberId", "isForwardGroupTemplate",
+        "sourcePort", "sni", "sniSplitterPort", "targetIp", "targetPort", "userId", "isEnabled", "isRunning"
+      ], [102, 2, "status-exit", "nftables", "tcp", 10, 100, 1002, 0, 24000, sni, 24000, "203.0.113.20", 443, 1, 1, 0]);
+
+      const app = express();
+      app.use(express.json());
+      app.use((req, _res, next) => {
+        const authorization = String(req.headers.authorization || "");
+        req.agentToken = authorization.startsWith("Bearer ") ? authorization.slice(7) : "";
+        next();
+      });
+      heartbeat.registerAgentHeartbeatRoute(app);
+      server = http.createServer(app);
+      await new Promise((resolve, reject) => {
+        server.once("error", reject);
+        server.listen(0, "127.0.0.1", resolve);
+      });
+      const address = server.address();
+      assert.ok(address && typeof address === "object");
+      const baseUrl = "http://127.0.0.1:" + address.port;
+
+      await postHeartbeat(baseUrl, "entry-token", {
+        port: 18443,
+        ruleId: 101,
+        forwardType: "forwardx",
+        sni,
+        targetIp: exitHostIp,
+        targetPort: 24000,
+        protocol: "tcp",
+        sniRouteVersion: 1,
+        sourceAllowIps: [],
+        ready: true,
+      }, 2001);
+      assert.deepEqual(await runningStates(), [[100, 0], [101, 0], [102, 0]]);
+
+      await postHeartbeat(baseUrl, "exit-token", {
+        port: 24000,
+        ruleId: 102,
+        forwardType: "forwardx",
+        sni,
+        targetIp: "203.0.113.20",
+        targetPort: 443,
+        protocol: "tcp",
+        sniRouteVersion: 1,
+        sourceAllowIps: [entryHostIp],
+        ready: true,
+      }, 2002);
+      assert.deepEqual(await runningStates(), [[100, 1], [101, 1], [102, 1]]);
+
+      await postHeartbeat(baseUrl, "entry-token", null, 2001);
+      assert.deepEqual(await runningStates(), [[100, 0], [101, 0], [102, 0]]);
+
+      await postHeartbeat(baseUrl, "entry-token", {
+        port: 18443,
+        ruleId: 101,
+        forwardType: "forwardx",
+        sni,
+        targetIp: exitHostIp,
+        targetPort: 24000,
+        protocol: "tcp",
+        sniRouteVersion: 2,
+        sourceAllowIps: [],
+        ready: true,
+      }, 2001);
+      assert.deepEqual(await runningStates(), [[100, 1], [101, 1], [102, 1]]);
+
+      await postHeartbeat(baseUrl, "entry-token", undefined, 2001, "2.2.194");
+      assert.deepEqual(await runningStates(), [[100, 0], [101, 0], [102, 0]]);
+      const enabledAfterOldEntryHeartbeat = await runtime.queryRaw(
+        'SELECT "id", "isEnabled" FROM "forward_rules" WHERE "id" IN (100, 101, 102) ORDER BY "id"',
+      );
+      assert.deepEqual(enabledAfterOldEntryHeartbeat.map((row) => [Number(row.id), Number(row.isEnabled)]), [
+        [100, 1], [101, 1], [102, 1],
+      ]);
+
+      await postHeartbeat(baseUrl, "entry-token", null, 2001);
+      assert.deepEqual(await runningStates(), [[100, 0], [101, 0], [102, 0]]);
+      await postHeartbeat(baseUrl, "exit-token", {
+        port: 24000,
+        ruleId: 102,
+        forwardType: "forwardx",
+        sni,
+        targetIp: "203.0.113.20",
+        targetPort: 443,
+        protocol: "tcp",
+        sniRouteVersion: 2,
+        sourceAllowIps: [entryHostIp],
+        ready: true,
+      }, 2002);
+      assert.deepEqual(await runningStates(), [[100, 0], [101, 0], [102, 0]]);
+      await postHeartbeat(baseUrl, "entry-token", {
+        port: 18443,
+        ruleId: 101,
+        forwardType: "forwardx",
+        sni,
+        targetIp: exitHostIp,
+        targetPort: 24000,
+        protocol: "tcp",
+        sniRouteVersion: 3,
+        sourceAllowIps: [],
+        ready: true,
+      }, 2001);
+      assert.deepEqual(await runningStates(), [[100, 1], [101, 1], [102, 1]]);
+    } finally {
+      if (server) await new Promise((resolve) => server.close(resolve));
+      await runtime.closeDatabase();
+    }
+  `;
+  const result = spawnSync(process.execPath, ["--import", "tsx", "--input-type=module", "-e", script], {
+    cwd: process.cwd(),
+    env: { ...process.env, DATABASE_TYPE: "sqlite", FORWARDX_TEST_DB: databasePath },
+    encoding: "utf8",
+    timeout: 60_000,
+  });
+  fs.rmSync(directory, { recursive: true, force: true });
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+});
+
+test("SNI chain relay status does not overwrite splitter observability when ports collide", () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "forwardx-sni-status-port-collision-"));
+  const databasePath = path.join(directory, "sni-status-port-collision.db");
+  const script = String.raw`
+    import assert from "node:assert/strict";
+    import http from "node:http";
+    import path from "node:path";
+    import { pathToFileURL } from "node:url";
+    import express from "express";
+
+    const moduleUrl = (file) => pathToFileURL(path.join(process.cwd(), file)).href;
+    const runtime = await import(moduleUrl("server/dbRuntime.ts"));
+    const schema = await import(moduleUrl("server/dbSchema.ts"));
+    const status = await import(moduleUrl("server/agentStatusRoutes.ts"));
+    const observability = await import(moduleUrl("server/sniRuntimeObservability.ts"));
+    const q = (name) => '"' + name + '"';
+    const insert = async (table, columns, values) => {
+      await runtime.executeRaw(
+        "INSERT INTO " + q(table) + " (" + columns.map(q).join(", ") + ") VALUES (" + values.map(() => "?").join(", ") + ")",
+        values,
+      );
+    };
+    let server;
+
+    async function postRuleStatus(baseUrl, token, body) {
+      const response = await fetch(baseUrl + "/api/agent/rule-status", {
+        method: "POST",
+        headers: { authorization: "Bearer " + token, "content-type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const payload = await response.json();
+      assert.equal(response.status, 200);
+      assert.equal(payload.success, true);
+    }
+
+    try {
+      await runtime.connectDatabase({ type: "sqlite", sqlite: { path: process.env.FORWARDX_TEST_DB } });
+      await schema.ensureDatabaseSchema();
+      const now = Math.floor(Date.now() / 1000);
+      await insert("users", ["id", "username", "password", "role", "canAddRules", "manualCanAddRules"], [1, "admin", "x", "admin", 1, 1]);
+      await insert("hosts", ["id", "name", "ip", "ipv4", "agentToken", "userId", "isOnline", "lastHeartbeat", "agentVersion"], [1, "entry", "198.51.100.10", "198.51.100.10", "entry-token", 1, 1, now, "2.2.195"]);
+      await insert("hosts", ["id", "name", "ip", "ipv4", "agentToken", "userId", "isOnline", "lastHeartbeat", "agentVersion"], [2, "relay", "198.51.100.15", "198.51.100.15", "relay-token", 1, 1, now, "2.2.195"]);
+      await insert("hosts", ["id", "name", "ip", "ipv4", "agentToken", "userId", "isOnline", "lastHeartbeat", "agentVersion"], [3, "exit", "198.51.100.20", "198.51.100.20", "exit-token", 1, 1, now, "2.2.195"]);
+      await insert("forward_groups", ["id", "name", "groupType", "groupMode", "forwardType", "domain", "targetIp", "targetPort", "userId", "isEnabled"], [10, "three-hop-chain", "host", "chain", "gost", "", "0.0.0.0", 1, 1, 1]);
+      await insert("forward_group_members", ["id", "groupId", "memberType", "hostId", "priority", "isEnabled"], [1001, 10, "host", 1, 10, 1]);
+      await insert("forward_group_members", ["id", "groupId", "memberType", "hostId", "priority", "isEnabled"], [1002, 10, "host", 2, 20, 1]);
+      await insert("forward_group_members", ["id", "groupId", "memberType", "hostId", "priority", "isEnabled"], [1003, 10, "host", 3, 30, 1]);
+      await insert("forward_rules", [
+        "id", "hostId", "name", "forwardType", "protocol", "forwardGroupId", "isForwardGroupTemplate",
+        "sourcePort", "sni", "sniSplitterPort", "targetIp", "targetPort", "userId", "isEnabled", "isRunning"
+      ], [100, 1, "three-hop-template", "gost", "tcp", 10, 1, 18443, "status.example.com", 24000, "203.0.113.20", 443, 1, 1, 0]);
+      await insert("forward_rules", [
+        "id", "hostId", "name", "forwardType", "protocol", "forwardGroupId", "forwardGroupRuleId", "forwardGroupMemberId", "isForwardGroupTemplate",
+        "sourcePort", "sni", "sniSplitterPort", "targetIp", "targetPort", "userId", "isEnabled", "isRunning"
+      ], [101, 1, "three-hop-entry", "gost", "tcp", 10, 100, 1001, 0, 18443, "status.example.com", 24000, "198.51.100.15", 24000, 1, 1, 0]);
+      await insert("forward_rules", [
+        "id", "hostId", "name", "forwardType", "protocol", "forwardGroupId", "forwardGroupRuleId", "forwardGroupMemberId", "isForwardGroupTemplate",
+        "sourcePort", "sni", "sniSplitterPort", "targetIp", "targetPort", "userId", "isEnabled", "isRunning"
+      ], [102, 2, "three-hop-relay", "gost", "tcp", 10, 100, 1002, 0, 24000, "status.example.com", 24000, "198.51.100.20", 24000, 1, 1, 0]);
+      await insert("forward_rules", [
+        "id", "hostId", "name", "forwardType", "protocol", "forwardGroupId", "forwardGroupRuleId", "forwardGroupMemberId", "isForwardGroupTemplate",
+        "sourcePort", "sni", "sniSplitterPort", "targetIp", "targetPort", "userId", "isEnabled", "isRunning"
+      ], [103, 3, "three-hop-exit", "gost", "tcp", 10, 100, 1003, 0, 24000, "status.example.com", 24000, "203.0.113.20", 443, 1, 1, 0]);
+
+      const app = express();
+      app.use(express.json());
+      app.use((req, _res, next) => {
+        const authorization = String(req.headers.authorization || "");
+        req.agentToken = authorization.startsWith("Bearer ") ? authorization.slice(7) : "";
+        next();
+      });
+      status.registerAgentStatusRoutes(app);
+      server = http.createServer(app);
+      await new Promise((resolve, reject) => {
+        server.once("error", reject);
+        server.listen(0, "127.0.0.1", resolve);
+      });
+      const address = server.address();
+      assert.ok(address && typeof address === "object");
+      const baseUrl = "http://127.0.0.1:" + address.port;
+
+      await postRuleStatus(baseUrl, "entry-token", {
+        ruleId: 101,
+        isRunning: false,
+        sourcePort: 18443,
+        forwardType: "forwardx",
+        message: "entry splitter failed",
+      });
+      assert.equal(observability.getSniRuntimeGroupStatus(1, 18443)?.lastConfigError, "entry splitter failed");
+
+      await postRuleStatus(baseUrl, "relay-token", {
+        ruleId: 102,
+        isRunning: false,
+        sourcePort: 24000,
+        forwardType: "gost",
+        message: "relay failed",
+      });
+      assert.equal(observability.getSniRuntimeGroupStatus(2, 24000), null);
     } finally {
       if (server) await new Promise((resolve) => server.close(resolve));
       await runtime.closeDatabase();

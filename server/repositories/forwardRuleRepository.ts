@@ -9,6 +9,7 @@ import { pageResult, pageWindowForTotal, type PageRequest } from "../../shared/p
 import { getSniRuleGroupKey } from "../../shared/sni";
 import { recordConfigAuditEvent, shouldAuditConfigPatch } from "../configAudit";
 import { withKeyedTaskLock } from "../keyedTaskLock";
+import { getForwardChainSniEntryRuleIds } from "./forwardChainSniEntryScope";
 
 // ==================== Forward Rule Queries ====================
 
@@ -1001,8 +1002,12 @@ export async function repairConflictingProtocolPortRules() {
     items.push(row);
     byPort.set(key, items);
   }
+  const forwardChainEntryRuleIds = await getForwardChainSniEntryRuleIds(rows as any[]);
   const repaired: Array<{ keptRuleId: number; disabledRuleId: number; hostId: number; sourcePort: number }> = [];
   const sniShareKey = (row: any) => {
+    if (forwardChainEntryRuleIds.has(Number(row.id))) {
+      return `chain-entry:${Number(row.hostId)}:${Number(row.sourcePort)}`;
+    }
     const groupKey = getSniRuleGroupKey(row);
     const splitterPort = Number(row.sniSplitterPort || 0);
     if (!groupKey || !splitterPort) return null;
