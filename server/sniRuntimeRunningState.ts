@@ -1,8 +1,7 @@
-import { SNI_SPLITTER_MIN_AGENT_VERSION, normalizeSniValue } from "@shared/sni";
+import { isSniEntryAgentVersionSupported, normalizeSniValue } from "@shared/sni";
 import { inArray, or } from "drizzle-orm";
 import { forwardGroupMembers, forwardGroups, forwardRules, hosts } from "../drizzle/schema";
 import * as db from "./db";
-import { isAgentVersionAtLeast } from "./agentRouteUtils";
 import { withKeyedTaskLock } from "./keyedTaskLock";
 import { getSniRuntimeGroupStatus } from "./sniRuntimeObservability";
 
@@ -142,7 +141,7 @@ export async function reconcileSniChainRunningStateForHost(hostIdValue: unknown)
         && templateEntryHostIds.every((entryHostId) => {
           const entryHost = entryHostById.get(entryHostId) as any;
           return !!entryHost
-            && isAgentVersionAtLeast(String(entryHost.agentVersion || ""), SNI_SPLITTER_MIN_AGENT_VERSION)
+            && isSniEntryAgentVersionSupported(entryHost.agentVersion)
             && runtimeHasDomain(entryHostId, entryPort, sni);
         });
       const exitApplied = exitHostId > 0 && runtimeHasDomain(exitHostId, exitPort, sni);

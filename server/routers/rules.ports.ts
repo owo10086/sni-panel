@@ -236,7 +236,7 @@ export const portsRulesRouter = router({
       if (input.forwardGroupId) {
         await requireForwardGroupPortAccess(ctx, input.forwardGroupId);
         try {
-          await assertSniEntryAgentVersions(await db.getForwardGroupRuleEntryHostIds(input.forwardGroupId));
+          await assertSniEntryAgentVersions(await db.getForwardGroupRuleEntryHostIds(input.forwardGroupId), input.forwardGroupId);
         } catch (error) {
           return { ok: false, reason: error instanceof Error ? error.message : "入口 Agent 版本不足" };
         }

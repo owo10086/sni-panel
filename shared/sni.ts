@@ -1,5 +1,17 @@
 export const SNI_SPLITTER_MIN_AGENT_VERSION = "2.2.195";
 
+export function isSniEntryAgentVersionSupported(value: unknown) {
+  const version = String(value || "").trim().replace(/^v/i, "");
+  if (!/^\d+\.\d+\.\d+$/.test(version)) return false;
+  const parts = version.split(".").map(Number);
+  if (!parts.every(Number.isSafeInteger)) return false;
+  const minimumParts = SNI_SPLITTER_MIN_AGENT_VERSION.split(".").map(Number);
+  for (let index = 0; index < parts.length; index++) {
+    if (parts[index] !== minimumParts[index]) return parts[index] > minimumParts[index];
+  }
+  return true;
+}
+
 export function normalizeSniValue(value: unknown) {
   return String(value || "").trim().toLowerCase().replace(/\.+$/, "");
 }

@@ -37,12 +37,21 @@ export function SniEntryVersionPreflight({ enabled = true }: { enabled?: boolean
   const unsupportedHosts = Array.from(new Map(overview.data.entries
     .filter((entry) => !entry.entryHost.versionSupported)
     .map((entry) => [entry.entryHost.id, entry.entryHost] as const)).values());
+  const migrationNotice = (
+    <div className="space-y-1 text-xs text-muted-foreground">
+      <p>升级面板后，现有转发链 SNI 入口监听统一切换为入口分流器，切换时现有连接会发生一次中断。</p>
+      <p>完成切换后，新增、修改和删除规则采用分流表热更新，仅实际变更规则的连接可能受到影响。</p>
+    </div>
+  );
 
   if (unsupportedHosts.length === 0) {
     return (
-      <div className="flex items-center gap-2 border-t border-border/50 pt-3 text-xs text-emerald-700 dark:text-emerald-300">
-        <CheckCircle2 className="h-4 w-4 shrink-0" />
-        <span>SNI 入口 Agent 均满足最低版本 {minimumVersion}</span>
+      <div className="space-y-2 border-t border-border/50 pt-3">
+        <div className="flex items-center gap-2 text-xs text-emerald-700 dark:text-emerald-300">
+          <CheckCircle2 className="h-4 w-4 shrink-0" />
+          <span>SNI 入口 Agent 均满足最低版本 {minimumVersion}</span>
+        </div>
+        {migrationNotice}
       </div>
     );
   }
@@ -53,11 +62,12 @@ export function SniEntryVersionPreflight({ enabled = true }: { enabled?: boolean
       <AlertTitle>SNI 入口 Agent 需要升级</AlertTitle>
       <AlertDescription className="min-w-0 space-y-2 text-xs">
         <p>以下入口主机需要 Agent {minimumVersion} 或更高版本；版本不足时，SNI 分流规则将停止运行。</p>
+        {migrationNotice}
         <div className="space-y-1">
           {unsupportedHosts.map((host) => (
             <div key={host.id} className="flex min-w-0 flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
               <span className="min-w-0 break-words font-medium">{host.name || `主机 #${host.id}`}</span>
-              <span className="shrink-0 font-mono text-muted-foreground">{host.agentVersion ? `v${host.agentVersion}` : "版本未上报"}</span>
+              <span className="min-w-0 max-w-full shrink-0 break-all font-mono text-muted-foreground">{host.agentVersion ? `v${host.agentVersion}` : "版本未上报"}</span>
             </div>
           ))}
         </div>

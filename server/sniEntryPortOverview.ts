@@ -1,7 +1,6 @@
 import * as db from "./db";
 import { isAgentVersionAtLeast } from "./agentRouteUtils";
-import { SNI_SPLITTER_MIN_AGENT_VERSION } from "@shared/sni";
-import { normalizeSniValue } from "@shared/sni";
+import { isSniEntryAgentVersionSupported, normalizeSniValue, SNI_SPLITTER_MIN_AGENT_VERSION } from "@shared/sni";
 
 export type SniEntryHostVersionStatus = {
   id: number;
@@ -53,14 +52,19 @@ export async function getSniEntryHostVersionStatuses(entryHostIds: number[]) {
       id: hostId,
       name: String(host?.name || `ID ${hostId}`).trim() || `ID ${hostId}`,
       agentVersion,
-      versionSupported: !!host && isAgentVersionAtLeast(agentVersion || "", SNI_SPLITTER_MIN_AGENT_VERSION),
+      versionSupported: !!host && isSniEntryAgentVersionSupported(agentVersion),
     };
   });
 }
 
-export async function assertSniEntryAgentVersions(entryHostIds: number[]) {
+export async function assertSniEntryAgentVersions(entryHostIds: number[], forwardGroupId: number) {
+  const group = await db.getForwardGroupById(forwardGroupId);
   const statuses = await getSniEntryHostVersionStatuses(entryHostIds);
-  const unsupported = statuses.find((status) => !status.versionSupported);
+  const unsupported = statuses.find((status) => (
+    String(group?.groupMode || "") === "chain"
+      ? !status.versionSupported
+      : !isAgentVersionAtLeast(status.agentVersion, SNI_SPLITTER_MIN_AGENT_VERSION)
+  ));
   if (!unsupported) return statuses;
   const currentVersion = unsupported.agentVersion || "未上报";
   throw new Error(

@@ -47,7 +47,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import DataSectionLoading from "@/components/DataSectionLoading";
-import { isAgentVersionBehind } from "@/components/hosts/hostDisplay";
 import { trpc } from "@/lib/trpc";
 import { pollingInterval } from "@/lib/polling";
 import { handoffManualTestResult } from "@/lib/manualTestCache";
@@ -131,7 +130,7 @@ import {
   type ForwardProtocolKey,
 } from "@shared/forwardTypes";
 import { ruleLatencyProbeMethodForRule } from "@shared/latencyProbe";
-import { getSniRuleGroupKey, SNI_SPLITTER_MIN_AGENT_VERSION } from "@shared/sni";
+import { getSniRuleGroupKey, isSniEntryAgentVersionSupported, SNI_SPLITTER_MIN_AGENT_VERSION } from "@shared/sni";
 import { formatTrafficMultiplier } from "@shared/trafficMultiplier";
 import { Fragment, lazy, Suspense, useState, useMemo, useEffect, useCallback, useRef, type ReactNode } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
@@ -420,8 +419,7 @@ type SniRuleGroupStatus = "running" | "error" | "pending" | "disabled";
 
 function isSniEntryAgentVersionUnsupported(host: any | null | undefined) {
   if (!host) return false;
-  const agentVersion = String(host.agentVersion || "").trim();
-  return !agentVersion || isAgentVersionBehind(agentVersion, SNI_SPLITTER_MIN_AGENT_VERSION);
+  return !isSniEntryAgentVersionSupported(host.agentVersion);
 }
 
 const SNI_RULE_GROUP_STATUS_CONFIG: Record<SniRuleGroupStatus, {

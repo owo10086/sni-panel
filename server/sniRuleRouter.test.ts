@@ -124,6 +124,16 @@ test("forward-chain SNI rule creation is admin-only and prepares splitter metada
         [maxCreated.id],
       );
       assert.equal(maxRows[0].sni, maxSni);
+
+      await insert("hosts", ["id", "name", "ip", "ipv4", "userId", "isOnline", "lastHeartbeat", "agentVersion", "portRangeStart", "portRangeEnd"], [3, "port-host", "198.51.100.30", "198.51.100.30", 1, 1, now, "2.2.999garbage", 26000, 26010]);
+      await insert("forward_groups", ["id", "name", "groupType", "groupMode", "forwardType", "domain", "targetIp", "targetPort", "userId", "isEnabled"], [40, "port-forward", "host", "port", "nftables", "", "0.0.0.0", 1, 1, 1]);
+      await insert("forward_group_members", ["id", "groupId", "memberType", "hostId", "priority", "isEnabled"], [401, 40, "host", 3, 10, 1]);
+      assert.deepEqual(
+        await adminCaller.checkSni({ forwardGroupId: 40, sourcePort: 26005, sni: "port.example.com" }),
+        { ok: true, reason: null },
+      );
+      const portSni = await adminCaller.create(createInput({ forwardGroupId: 40, sourcePort: 26005, sni: "port.example.com" }));
+      assert.equal((await adminCaller.getById({ id: Number(portSni.id) })).sni, "port.example.com");
     } finally {
       await runtime.closeDatabase();
     }
@@ -232,6 +242,66 @@ test("SNI rule creation rejects ambiguous exit hosts and old exit agents", () =>
       await assert.rejects(
         () => caller.create(createInput({ forwardGroupId: 30, sourcePort: 18444 })),
         /SNI 分流当前只支持单出口/,
+      );
+      await runtime.executeRaw('UPDATE "hosts" SET "agentVersion" = ? WHERE "id" = ?', ["2.2.999garbage", 1]);
+      await assert.rejects(
+        () => caller.create(createInput({ name: "invalid-entry-version", sni: "invalid.example.com" })),
+        /入口 Agent.*entry.*ID 1.*2\.2\.999garbage.*2\.2\.195/,
+      );
+      for (const version of [null, "999garbage", "2.2.999garbage", "2.2.195.unknown"]) {
+        await runtime.executeRaw('UPDATE "hosts" SET "agentVersion" = ? WHERE "id" = ?', [version, 1]);
+        await assert.rejects(
+          () => caller.create(createInput({ name: "invalid-entry-version", sni: "invalid.example.com" })),
+          /入口 Agent.*entry.*ID 1.*2\.2\.195/,
+        );
+        await assert.rejects(
+          () => caller.update({ id: Number(created.id), name: "invalid-version-update" }),
+          /入口 Agent.*entry.*ID 1.*2\.2\.195/,
+        );
+        await assert.rejects(
+          () => caller.toggle({ id: Number(created.id), isEnabled: true }),
+          /入口 Agent.*entry.*ID 1.*2\.2\.195/,
+        );
+        await assert.rejects(
+          () => caller.checkSniImport({ forwardGroupId: 20, sourcePort: 18444,
+            rules: [{ lineNumber: 1, sni: "import.example.com" }] }),
+          /入口 Agent.*entry.*ID 1.*2\.2\.195/,
+        );
+        const check = await caller.checkSni({ forwardGroupId: 20, sourcePort: 18444, sni: "live.example.com" });
+        assert.equal(check.ok, false);
+        assert.match(String(check.reason || ""), /入口 Agent.*entry.*ID 1.*2\.2\.195/);
+        const overview = await caller.sniEntryPortOverview();
+        assert.equal(overview.unsupportedEntryHostCount, 1);
+        assert.equal(overview.entries[0].entryHost.versionSupported, false);
+        const unchanged = await caller.getById({ id: Number(created.id) });
+        assert.equal(unchanged.name, "sni-rule");
+        assert.equal(unchanged.isEnabled, false);
+      }
+      for (const version of ["v2.2.195", " 2.2.195 ", "3.2.0"]) {
+        await runtime.executeRaw('UPDATE "hosts" SET "agentVersion" = ? WHERE "id" = ?', [version, 1]);
+        assert.deepEqual(
+          await caller.checkSni({ forwardGroupId: 20, sourcePort: 18444, sni: "live.example.com" }),
+          { ok: true, reason: null },
+        );
+        assert.equal((await caller.sniEntryPortOverview()).unsupportedEntryHostCount, 0);
+      }
+      await insert("hosts", ["id", "name", "ip", "ipv4", "userId", "isOnline", "lastHeartbeat", "agentVersion", "portRangeStart", "portRangeEnd"], [4, "entry-b", "198.51.100.40", "198.51.100.40", 1, 1, now, null, 18000, 19000]);
+      await insert("forward_groups", ["id", "name", "groupType", "groupMode", "forwardType", "domain", "targetIp", "targetPort", "userId", "isEnabled"], [50, "entries", "host", "entry", "nftables", "", "0.0.0.0", 1, 1, 1]);
+      await insert("forward_group_members", ["id", "groupId", "memberType", "hostId", "priority", "isEnabled"], [501, 50, "host", 1, 10, 1]);
+      await insert("forward_group_members", ["id", "groupId", "memberType", "hostId", "priority", "isEnabled"], [502, 50, "host", 4, 20, 1]);
+      await runtime.executeRaw('UPDATE "forward_groups" SET "entryGroupId" = ? WHERE "id" = ?', [50, 20]);
+      await assert.rejects(
+        () => caller.create(createInput({ name: "multi-entry-version", sni: "multi.example.com" })),
+        /入口 Agent.*entry-b.*ID 4.*未上报.*2\.2\.195/,
+      );
+      const multiEntryCheck = await caller.checkSni({ forwardGroupId: 20, sourcePort: 18444, sni: "multi.example.com" });
+      assert.equal(multiEntryCheck.ok, false);
+      assert.match(String(multiEntryCheck.reason || ""), /入口 Agent.*entry-b.*ID 4.*未上报.*2\.2\.195/);
+      assert.equal((await caller.sniEntryPortOverview()).unsupportedEntryHostCount, 1);
+      await runtime.executeRaw('UPDATE "forward_group_members" SET "isEnabled" = ? WHERE "id" = ?', [0, 502]);
+      assert.deepEqual(
+        await caller.checkSni({ forwardGroupId: 20, sourcePort: 18444, sni: "multi.example.com" }),
+        { ok: true, reason: null },
       );
     } finally {
       await runtime.closeDatabase();

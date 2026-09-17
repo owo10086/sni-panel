@@ -117,7 +117,7 @@ import { runAgentRuntimeRecovery } from "./agentRuntimeRecovery";
 import { observePresenceCapableHostActivity, registerPresenceCapableHost } from "./agentFastLiveness";
 import { recordAuthenticatedAgentActivity } from "./agentActivity";
 import { normalizeSniValue } from "./repositories/repositoryUtils";
-import { getSniRuleGroupKey } from "@shared/sni";
+import { getSniRuleGroupKey, isSniEntryAgentVersionSupported } from "@shared/sni";
 import { recordSniRuntimeSnapshot } from "./sniRuntimeObservability";
 import { reconcileSniChainRunningStateForHost } from "./sniRuntimeRunningState";
 
@@ -5700,6 +5700,41 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
       const rulesInGroup = group.rules.slice().sort((a, b) => Number(a.id) - Number(b.id));
       const representative = rulesInGroup[0];
       if (!representative) continue;
+      if (!isSniEntryAgentVersionSupported(effectiveAgentVersion)) {
+        const localEntryRules = reportedLocalRules.filter((local: AgentLocalRuntimeRuleState) => (
+          Number(local.port || 0) === group.sourcePort
+          && isForwardRuleProtocolTcpEnabled(local.protocol, "both")
+        ));
+        for (const local of localEntryRules) {
+          actions.push(buildGenericLocalRuleRemovalAction(local));
+        }
+        const splitterConfigPrefix = "/run/forwardx-agent/fxp-sni-splitter-0";
+        // Keep this port-level action out of the rule-action index so orphan cleanup remains available.
+        actions.push({
+          ruleId: 0,
+          op: "remove",
+          forwardType: "forwardx",
+          sourcePort: group.sourcePort,
+          targetIp: host.ip,
+          targetPort: group.sourcePort,
+          protocol: "tcp",
+          commands: [
+            ...buildSNISplitterSourceRestrictionCleanupCmds(group.sourcePort),
+            killByPatternCmd(`[f]orwardx-fxp.* ${splitterConfigPrefix}(-[0-9]+)?-${group.sourcePort}\\.json([[:space:]]|$)`),
+            `rm -f ${splitterConfigPrefix}-${group.sourcePort}.json ${splitterConfigPrefix}-${group.sourcePort}.sock ${splitterConfigPrefix}-[0-9]*-${group.sourcePort}.json ${splitterConfigPrefix}-[0-9]*-${group.sourcePort}.sock 2>/dev/null || true`,
+          ],
+          fxp: {
+            role: "sni-splitter",
+            ruleId: 0,
+            tunnelId: 0,
+            listenPort: group.sourcePort,
+            protocol: "tcp",
+            sniRouteVersion: Math.max(1, localSniRouteTableVersionFor(group.sourcePort)),
+            sniRoutes: [],
+          },
+        });
+        continue;
+      }
       for (const rule of rulesInGroup) {
         expectedRulePorts.add(runtimePortProtocolKey(group.sourcePort, "tcp"));
         expectedRuleIdentityKeys.add(ruleRuntimeIdentityKey(rule.id, group.sourcePort, "tcp"));

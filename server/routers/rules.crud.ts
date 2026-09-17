@@ -1164,7 +1164,7 @@ export async function toggleForwardRuleForActor(
             ...(childRules as any[]).map((child: any) => Number(child.id)),
           ]);
           const entryHostIds = await db.getForwardGroupRuleEntryHostIds(groupId);
-          if (ruleSni) await assertSniEntryAgentVersions(entryHostIds);
+          if (ruleSni) await assertSniEntryAgentVersions(entryHostIds, groupId);
           const sniEntryPortValidation = await validateSniEntryPortUse({
             groupId,
             sourcePort: Number(rule.sourcePort || 0),
@@ -1595,7 +1595,7 @@ export const crudRulesRouter = router({
         await inferForwardGroupSniExitHost(group as any);
         entryHostIds = await db.getForwardGroupRuleEntryHostIds(forwardGroupId);
         if (entryHostIds.length === 0) throw new Error("链路资源没有可用入口 Agent");
-        await assertSniEntryAgentVersions(entryHostIds);
+        await assertSniEntryAgentVersions(entryHostIds, forwardGroupId);
       }
 
       const seen = new Map<string, number>();
@@ -1709,7 +1709,7 @@ export const crudRulesRouter = router({
           await inferForwardGroupSniExitHost(sniGroup);
         }
         const entryHostIds = await db.getForwardGroupRuleEntryHostIds(forwardGroupId);
-        if (normalizedSni) await assertSniEntryAgentVersions(entryHostIds);
+        if (normalizedSni) await assertSniEntryAgentVersions(entryHostIds, forwardGroupId);
         let sniEntryPortValidation: SniEntryPortValidation | null = null;
         const reserveEntryPortFor = async (
           port: number,
@@ -2354,7 +2354,7 @@ export const crudRulesRouter = router({
         ]);
         const nextSourcePort = Number(input.sourcePort ?? (rule as any).sourcePort);
         const entryHostIds = await db.getForwardGroupRuleEntryHostIds(activeGroupId);
-        if (nextSni) await assertSniEntryAgentVersions(entryHostIds);
+        if (nextSni) await assertSniEntryAgentVersions(entryHostIds, activeGroupId);
         const sniEntryPortValidation = await validateSniEntryPortUse({
           groupId: activeGroupId,
           sourcePort: nextSourcePort,
@@ -2515,7 +2515,7 @@ export const crudRulesRouter = router({
         const nextProtocol = nextSni ? "tcp" : input.protocol ?? (rule as any).protocol;
         const ownRuleIds = normalizePositiveIds([Number(rule.id)]);
         const entryHostIds = await db.getForwardGroupRuleEntryHostIds(groupId);
-        if (nextSni) await assertSniEntryAgentVersions(entryHostIds);
+        if (nextSni) await assertSniEntryAgentVersions(entryHostIds, groupId);
         const sniEntryPortValidation = await validateSniEntryPortUse({
           groupId,
           sourcePort,
