@@ -137,6 +137,12 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { toast } from "sonner";
 import { useLocation, useSearch } from "wouter";
 import { TcpingDetailDialog } from "@/components/rules/TcpingDetailDialog";
+import { RuleBulkCheckbox } from "@/components/rules/RuleBulkCheckbox";
+import { RuleBulkActionBar } from "@/components/rules/RuleBulkActionBar";
+import { RuleBulkEditDialog } from "@/components/rules/RuleBulkEditDialog";
+import { useRuleBulkSelection } from "@/components/rules/useRuleBulkSelection";
+import { useRuleBulkActions } from "@/components/rules/useRuleBulkActions";
+import type { RuleBulkEditInput, RuleBulkOutcome } from "@/lib/ruleBulkSelection";
 import { countryFeatureHasCode, normalizeCountryCode, type CountryFeatureLike } from "@/lib/countryFeatures";
 import {
   SNI_DEFAULT_ENTRY_PORT,
@@ -2860,11 +2866,11 @@ function RulesContent() {
     }
     setShowDialog(true);
   };
-  const openCopyDialog = () => {
+  const openCopyDialog = (initialRuleIds?: number[]) => {
     setCopyManageMode(transferSourceRules.length ? "copy" : "import");
     setBatchEditForm(buildEmptyBatchEditForm());
-    setCopyRuleCategory(ruleCategory);
-    setCopyRuleSearch(ruleSearchQuery);
+    setCopyRuleCategory(initialRuleIds ? "all" : ruleCategory);
+    setCopyRuleSearch(initialRuleIds ? "" : ruleSearchQuery);
     const preferredCopyTargetScope: RuleTransferScopeType = canUseSavedLocalForward
       ? "local"
       : canUseGost
@@ -2874,7 +2880,7 @@ function RulesContent() {
           : "group";
     commitCopyTargetSelection(preferredCopyTargetScope, []);
     setCopyTargetSearch("");
-    setCopyRuleIds([]);
+    setCopyRuleIds(initialRuleIds || []);
     setCopyConflictStrategy("auto");
     const preferredImportType: RuleTransferScopeType = canUseSavedLocalForward
       ? "local"
@@ -3616,23 +3622,29 @@ function RulesContent() {
     };
   };
 
-  const buildBatchEditRulePayload = (rule: any, sourcePort: number) => {
+  const buildBatchEditRulePayload = (rule: any, sourcePort: number, override?: RuleBulkEditInput) => {
+    const editForm = override || batchEditForm;
+    const editTunnel = override ? tunnels?.find((t: any) => Number(t.id) === override.tunnelId) : selectedBatchEditTunnel;
+    const editGroup = override ? forwardGroupById.get(Number(override.forwardGroupId)) : selectedBatchEditForwardGroup;
+    const hasRouteSelection = override ? !!(editForm.routeMode === "tunnel" ? editTunnel : editGroup) : hasBatchEditRouteSelection;
+    const targetIp = override ? override.targetIp.trim() : batchEditTargetIp;
+    const targetPort = override ? override.targetPort : batchEditTargetPort;
     const payload: Record<string, any> = { id: Number(rule.id) };
-    if (hasBatchEditRouteSelection) {
-      if (batchEditForm.routeMode === "tunnel" && selectedBatchEditTunnel) {
+    if (hasRouteSelection) {
+      if (editForm.routeMode === "tunnel" && editTunnel) {
         payload.forwardType = "gost";
-        payload.tunnelId = Number(selectedBatchEditTunnel.id);
+        payload.tunnelId = Number(editTunnel.id);
         payload.forwardGroupId = null;
-        payload.hostId = Number(selectedBatchEditTunnel.entryHostId);
+        payload.hostId = Number(editTunnel.entryHostId);
         payload.sourcePort = sourcePort;
-      } else if (selectedBatchEditForwardGroup) {
-        payload.forwardGroupId = Number(selectedBatchEditForwardGroup.id);
-        payload.forwardType = getForwardGroupRuleForwardType(selectedBatchEditForwardGroup, rule.forwardType);
+      } else if (editGroup) {
+        payload.forwardGroupId = Number(editGroup.id);
+        payload.forwardType = getForwardGroupRuleForwardType(editGroup, rule.forwardType);
         payload.sourcePort = sourcePort;
       }
     }
-    if (hasBatchEditTargetIpChange) payload.targetIp = batchEditTargetIp;
-    if (hasBatchEditTargetPortChange) payload.targetPort = batchEditTargetPort;
+    if (override ? targetIp.length > 0 : hasBatchEditTargetIpChange) payload.targetIp = targetIp;
+    if (override ? isValidPort(targetPort) : hasBatchEditTargetPortChange) payload.targetPort = targetPort;
     return payload;
   };
 
@@ -3651,15 +3663,17 @@ function RulesContent() {
     }
   };
 
-  const updateBatchRuleTarget = async (rule: any) => {
+  const updateBatchRuleTarget = async (rule: any, override?: RuleBulkEditInput) => {
+    const conflictStrategy = override ? override.conflictStrategy : copyConflictStrategy;
+    const hasRouteSelection = override ? !!(override.routeMode === "tunnel" ? override.tunnelId : override.forwardGroupId) : hasBatchEditRouteSelection;
     const sourcePort = Number(rule.sourcePort || 0);
     try {
-      await batchUpdateMutation.mutateAsync(buildBatchEditRulePayload(rule, sourcePort) as any);
+      await batchUpdateMutation.mutateAsync(buildBatchEditRulePayload(rule, sourcePort, override) as any);
       return { updated: true, skipped: false };
     } catch (error: any) {
-      if (!hasBatchEditRouteSelection || copyConflictStrategy === "error" || !isBatchPortConflictError(error)) throw error;
-      if (copyConflictStrategy === "auto") {
-        await batchUpdateMutation.mutateAsync(buildBatchEditRulePayload(rule, 0) as any);
+      if (!hasRouteSelection || conflictStrategy === "error" || !isBatchPortConflictError(error)) throw error;
+      if (conflictStrategy === "auto") {
+        await batchUpdateMutation.mutateAsync(buildBatchEditRulePayload(rule, 0, override) as any);
         return { updated: true, skipped: false };
       }
       return { updated: false, skipped: true };
@@ -4675,6 +4689,21 @@ function RulesContent() {
     () => pagedRuleItems.flatMap((item) => item.kind === "rule" ? [item.rule] : item.group.rules),
     [pagedRuleItems],
   );
+  const bulkSelection = useRuleBulkSelection({ rules: pagedRules, isSupported: isRuleSupported,
+    scopeKey: JSON.stringify([user?.id, user?.role, rulePageRequest.page, filterUser, filterResource, ruleCategory, ruleSearchQuery, rulePageSize]),
+    ready: ruleListDataReady && !rulePageQuery.isPlaceholderData && !isRuleGlobeView,
+  });
+  const bulkActions = useRuleBulkActions({ selection: bulkSelection,
+    editRules: async (selectedRules, input) => (await runBatchOperations(selectedRules, 6, (rule) => updateBatchRuleTarget(rule, input)))
+      .map((result): RuleBulkOutcome => result.status === "rejected"
+        ? { ruleId: Number(result.item.id), outcome: "failed", error: batchOperationErrorMessage(result.reason) }
+        : { ruleId: Number(result.item.id), outcome: result.value.updated ? "updated" : "skipped" }),
+    deleteRules: (ids) => batchDeleteMutation.mutateAsync({ ids }),
+    onChanged: (ids) => { invalidateRuleProbeStatuses(ids); return Promise.all([
+      utils.rules.list.invalidate(), utils.rules.listPage.invalidate(), utils.rules.mapItems.invalidate(),
+      utils.rules.listSummary.invalidate(), utils.rules.trafficSummary.invalidate(),
+    ]); },
+  });
   const ruleSortingEnabled = ruleCategory !== "all"
     && effectiveViewMode !== "globe"
     && filterResource === "all"
@@ -6939,6 +6968,7 @@ function RulesContent() {
     return (
       <div className={cn("group/sortable border-y border-border/50 bg-muted/20", compact ? "px-1" : "px-2")}>
         <div className="flex min-w-0 items-center">
+          <RuleBulkCheckbox {...bulkSelection.getCheckboxProps(group.rules)} label="选择 SNI 组内全部可选规则" className="mx-1" />
           {sortable && (
             <SortableDragHandle
               dragHandleProps={sortable.handleProps}
@@ -7004,6 +7034,7 @@ function RulesContent() {
         )}
         title={!supported ? unsupportedProtocolTitle : undefined}
       >
+        <TableCell className="w-[44px] px-2 py-2 text-center"><RuleBulkCheckbox {...bulkSelection.getCheckboxProps([rule])} label={`选择规则 ${rule.name}`} /></TableCell>
         {(sortable || reserveSortColumn) && (
           <TableCell className="w-[44px] px-2 py-2">
             {sortable && (
@@ -7091,6 +7122,7 @@ function RulesContent() {
           <CardContent className="action-card-content space-y-2.5 p-3">
             <div className="flex min-w-0 items-start justify-between gap-2">
               <div className="flex min-w-0 items-start gap-2">
+                <RuleBulkCheckbox {...bulkSelection.getCheckboxProps([rule])} label={`选择规则 ${rule.name}`} compact className="mt-0.5" />
                 <div className="mt-1.5 flex h-3.5 min-w-3.5 shrink-0 items-center justify-center">
                   {supported ? renderStatusDot(rule) : <span className="h-2.5 w-2.5 rounded-full bg-destructive/60" />}
                 </div>
@@ -7177,6 +7209,7 @@ function RulesContent() {
         <CardContent className="action-card-content space-y-3 p-4">
           <div className="flex items-start justify-between gap-3">
             <div className="flex min-w-0 items-start gap-2">
+              <RuleBulkCheckbox {...bulkSelection.getCheckboxProps([rule])} label={`选择规则 ${rule.name}`} className="mt-0.5" />
               <div className="mt-2 flex h-4 min-w-4 flex-shrink-0 items-center justify-center">
                 {supported ? renderStatusDot(rule) : <span className="h-2.5 w-2.5 rounded-full bg-destructive/60" />}
               </div>
@@ -7287,7 +7320,7 @@ function RulesContent() {
     );
   };
 
-  const ruleTableColumnCount = (user?.role === "admin" ? 14 : 13) + (ruleSortingEnabled ? 1 : 0);
+  const ruleTableColumnCount = (user?.role === "admin" ? 15 : 14) + (ruleSortingEnabled ? 1 : 0);
   const renderSniRuleTableGroup = (group: SniRuleDisplayGroup, sortable?: RuleSortableRenderState) => {
     const open = isSniRuleGroupOpen(group);
     return (
@@ -7394,7 +7427,7 @@ function RulesContent() {
           </Button>
           <Button
             variant="outline"
-            onClick={openCopyDialog}
+            onClick={() => openCopyDialog()}
             className="gap-2"
             disabled={!transferSourceRules.length && !canAdd}
             title={!transferSourceRules.length && !canAdd ? "暂无可批量管理或导入的规则" : undefined}
@@ -7700,6 +7733,13 @@ function RulesContent() {
         </Card>
       </div>
 
+      {!isRuleGlobeView && <RuleBulkActionBar count={bulkSelection.selectedIds.size} disabled={bulkActions.disabled} busy={bulkSelection.busy}
+        onClear={bulkSelection.clear} onEdit={bulkActions.openDialog} onDelete={() => void bulkActions.remove()} onMore={() => openCopyDialog([...bulkSelection.selectedIds])} />}
+      <RuleBulkEditDialog open={bulkActions.dialogOpen} onOpenChange={bulkActions.onOpenChange} rules={bulkSelection.selectedRules}
+        getRouteMode={(rule) => getRuleCategory(rule, forwardGroupById)} disabled={bulkActions.disabled} busy={bulkSelection.busy} onApply={bulkActions.apply} isValidTargetHost={isValidTargetHost}
+        resources={{ local: { enabled: canUseSavedLocalForward, items: availablePortForwardGroups }, tunnel: { enabled: canUseGost, items: supportedTunnels }, chain: { enabled: canUseForwardChain, items: availableForwardChainGroups }, group: { enabled: canUseFailoverGroup, items: availableFailoverForwardGroups } }}
+        renderResource={(mode, resource) => mode === "tunnel" ? renderTunnelSelectLabel(resource) : renderForwardGroupSelectLabel(resource)}
+        getResourceText={(mode, resource) => mode === "tunnel" ? getTunnelSelectText(resource) : getForwardGroupSelectText(resource)} />
       <RuleContentTransition transitionKey={ruleContentTransitionKey}>
       {isLoading || (!ruleStatusSnapshotReady && !hasCachedRuleStatus) ? (
         <DataSectionLoading label={isLoading ? "正在加载转发规则" : "正在加载规则状态"} />
@@ -7773,8 +7813,9 @@ function RulesContent() {
               <Card className="hidden border-border/40 bg-card/60 backdrop-blur-md sm:block">
                 <CardContent className="p-0">
                   <div className="overflow-x-auto">
-                    <Table className={cn(ruleSortingEnabled ? (user?.role === "admin" ? "min-w-[1954px]" : "min-w-[1844px]") : (user?.role === "admin" ? "min-w-[1910px]" : "min-w-[1800px]"), "table-fixed")}>
+                    <Table className={cn(ruleSortingEnabled ? (user?.role === "admin" ? "min-w-[1998px]" : "min-w-[1888px]") : (user?.role === "admin" ? "min-w-[1954px]" : "min-w-[1844px]"), "table-fixed")}>
                       <colgroup>
+                        <col className="w-[44px]" />
                         {ruleSortingEnabled && <col className="w-[44px]" />}
                         <col className="w-[56px]" />
                         <col className="w-[110px]" />
@@ -7793,6 +7834,7 @@ function RulesContent() {
                       </colgroup>
                       <TableHeader>
                         <TableRow className="hover:bg-transparent">
+                          <TableHead className="w-[44px] px-2 text-center"><RuleBulkCheckbox {...bulkSelection.getCheckboxProps(pagedRules)} label="选择本页全部可选规则" /></TableHead>
                           {ruleSortingEnabled && <TableHead className="w-[44px] px-2" aria-label="排序" />}
                           <TableHead className="whitespace-nowrap text-center">状态</TableHead>
                           <TableHead>规则</TableHead>
@@ -7817,7 +7859,7 @@ function RulesContent() {
                             return (
                               <Fragment key={group.type}>
                                 <TableRow className="border-border/40 bg-muted/35 hover:bg-muted/50">
-                                  <TableCell colSpan={user?.role === "admin" ? 14 : 13} className="p-1">
+                                  <TableCell colSpan={user?.role === "admin" ? 15 : 14} className="p-1">
                                     {renderRuleGroupHeader(group, true)}
                                   </TableCell>
                                 </TableRow>
