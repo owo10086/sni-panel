@@ -1,6 +1,6 @@
 {
   "name": "forwardx",
-  "version": "3.2.3",
+  "version": "3.2.4",
   "description": "ForwardX 多主机端口转发与隧道管理面板",
   "license": "AGPL-3.0-only",
   "private": true,
