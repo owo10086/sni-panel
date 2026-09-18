@@ -6825,18 +6825,26 @@ function RulesContent() {
   const renderRuleGroupHeader = (group: { type: RuleGroupType; label: string; rules: any[] }, compact = false) => {
     const collapsed = !!ruleGroupCollapsed[group.type];
     return (
-      <button
-        type="button"
-        aria-expanded={!collapsed}
-        className="flex w-full min-w-0 items-center gap-2 rounded-md px-2 py-2 text-left transition-colors hover:bg-muted/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
-        onClick={() => toggleRuleGroupCollapsed(group.type)}
-      >
-        <ChevronRight className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 ${collapsed ? "" : "rotate-90"}`} />
-        {renderRuleGroupIcon(group.type, compact ? "h-3.5 w-3.5" : "h-4 w-4")}
-        <span className="truncate text-sm font-semibold">{group.label}</span>
-        <Badge variant="secondary" className="h-5 shrink-0 px-1.5 text-[10px]">{group.rules.length}</Badge>
-        {!compact && <span className="min-w-0 truncate text-xs text-muted-foreground">{ruleTypeDescriptions[group.type]}</span>}
-      </button>
+      <div className="flex w-full min-w-0 items-center">
+        <RuleBulkCheckbox
+          {...bulkSelection.getCheckboxProps(group.rules)}
+          label={`选择${group.label}本页全部可选规则`}
+          compact={compact}
+          className="mx-1"
+        />
+        <button
+          type="button"
+          aria-expanded={!collapsed}
+          className="flex min-w-0 flex-1 items-center gap-2 rounded-md px-2 py-2 text-left transition-colors hover:bg-muted/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+          onClick={() => toggleRuleGroupCollapsed(group.type)}
+        >
+          <ChevronRight className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 ${collapsed ? "" : "rotate-90"}`} />
+          {renderRuleGroupIcon(group.type, compact ? "h-3.5 w-3.5" : "h-4 w-4")}
+          <span className="truncate text-sm font-semibold">{group.label}</span>
+          <Badge variant="secondary" className="h-5 shrink-0 px-1.5 text-[10px]">{group.rules.length}</Badge>
+          {!compact && <span className="min-w-0 truncate text-xs text-muted-foreground">{ruleTypeDescriptions[group.type]}</span>}
+        </button>
+      </div>
     );
   };
 
@@ -7733,6 +7741,16 @@ function RulesContent() {
         </Card>
       </div>
 
+      {/* 表格视图的全选在表头里；卡片视图和表格视图的手机布局都没有表头，在这里补一个同语义的入口。 */}
+      {!isRuleGlobeView && pagedRules.length > 0 && (
+        <label className={cn(
+          "flex w-fit cursor-pointer items-center gap-1.5 px-1 text-xs text-muted-foreground",
+          effectiveViewMode === "table" && "sm:hidden",
+        )}>
+          <RuleBulkCheckbox {...bulkSelection.getCheckboxProps(pagedRules)} label="选择本页全部可选规则" />
+          全选本页
+        </label>
+      )}
       {!isRuleGlobeView && <RuleBulkActionBar count={bulkSelection.selectedIds.size} disabled={bulkActions.disabled} busy={bulkSelection.busy}
         onClear={bulkSelection.clear} onEdit={bulkActions.openDialog} onDelete={() => void bulkActions.remove()} onMore={() => openCopyDialog([...bulkSelection.selectedIds])} />}
       <RuleBulkEditDialog open={bulkActions.dialogOpen} onOpenChange={bulkActions.onOpenChange} rules={bulkSelection.selectedRules}
