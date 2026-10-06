@@ -38,6 +38,7 @@ import { receivePortOccupancy, prunePortOccupancy } from "./portOccupancy";
 import { refreshRulePortWarningsForHost } from "./rulePortOccupancy";
 import { formatPortRuleManifest, loadPortRuleManifestForHost } from "./portRuleManifest";
 import { mergeAgentReportedAddress } from "./agentAddressState";
+import { sniSourceCleanupAction } from "./sniSourceMigration";
 import {
   gostTunnelTransportType,
   planGostTunnelProbeListeners,
@@ -63,7 +64,6 @@ import {
   buildNftForwardCmds,
   buildNftTransitionCleanupCmds,
   buildSNISplitterSourceRestrictionCleanupCmds,
-  buildSNISplitterSourceRestrictionCmds,
   normalizeSourceAllowIps,
   killByPatternCmd,
   removeManagedServiceCmd,
@@ -1845,12 +1845,15 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
     }
 
     const reportedPluginInventoryForFastPath = getAgentPluginInventory(host.id);
+    const sourceCleanupAction = sniSourceCleanupAction(Number(host.id), JSON.stringify([
+      agentBootId, agentProcessId, agentProcessStartedAtSeconds, effectiveAgentVersion,
+    ]));
     const pluginInventorySignature = agentPluginInventorySignature(reportedPluginInventoryForFastPath);
     const mimicEnvironmentSignature = stableStateSignature(mimicEnvironment || null);
     const panelMigrationForFastPath = await getPanelMigrationAgentDirective(Number(host.id));
     const stablePlan = agentStableHeartbeatPlanCache.match(host.id, {
       forceReconcile,
-      hasBlockingWork: !!(host as any).agentUpgradeRequested
+      hasBlockingWork: !!sourceCleanupAction || !!(host as any).agentUpgradeRequested
         || !!panelMigrationForFastPath
         || hasHostTcpingRequest(host.id)
         || hasQueuedLookingGlassAgentTasks(host.id)
@@ -2533,19 +2536,6 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
       priority?: unknown;
       isEnabled?: unknown;
     };
-    type SniForwardChainHostLike = {
-      id?: unknown;
-      entryIp?: unknown;
-      ipv4?: unknown;
-      ipv6?: unknown;
-      ip?: unknown;
-    };
-    type SniForwardChainGroupLike = {
-      entryGroupId?: unknown;
-      groupMode?: unknown;
-      isEnabled?: unknown;
-      members?: SniForwardChainMemberLike[];
-    };
     type SniEntryGroup = {
       sourcePort: number;
       targetIp: string;
@@ -2569,47 +2559,6 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
       splitterPort: number;
       targetIp: string;
       targetPort: number;
-      sourceAllowIps: string[];
-      clearSourceRestrictions: boolean;
-    };
-    const sniSourceAllowIpsForMember = async (member: SniForwardChainMemberLike) => {
-      const memberHostId = Number(member?.hostId || 0);
-      const memberHost: SniForwardChainHostLike | null = memberHostId > 0 ? await getForwardChainHost(memberHostId) : null;
-      return normalizeSourceAllowIps([
-        member?.entryAddress,
-        member?.connectHost,
-        memberHost?.entryIp,
-        memberHost?.ipv4,
-        memberHost?.ipv6,
-        memberHost?.ip,
-      ]);
-    };
-    const resolveSniSplitterSourceAllowIps = async (
-      group: SniForwardChainGroupLike | null,
-      members: SniForwardChainMemberLike[],
-      memberIndex: number,
-    ) => {
-      const sourceIps = new Set<string>();
-      const addAll = (addresses: string[]) => {
-        for (const address of addresses) sourceIps.add(address);
-      };
-      if (memberIndex > 0) {
-        addAll(await sniSourceAllowIpsForMember(members[memberIndex - 1]));
-      } else {
-        const entryGroupId = Number(group?.entryGroupId || 0);
-        if (entryGroupId > 0) {
-          const entryGroup: SniForwardChainGroupLike | null = await getForwardChainGroup(entryGroupId);
-          if (entryGroup && runtimeBool(entryGroup.isEnabled) && String(entryGroup.groupMode || "") === "entry") {
-            const entryMembers = [...(entryGroup.members || [])]
-              .filter((member) => runtimeBool(member?.isEnabled, true) && String(member?.memberType || "") === "host")
-              .sort((a, b) => Number(a.priority) - Number(b.priority));
-            await mapWithConcurrency(entryMembers, 8, async (entryMember) => {
-              addAll(await sniSourceAllowIpsForMember(entryMember));
-            });
-          }
-        }
-      }
-      return Array.from(sourceIps).sort();
     };
     const directTunnelSniRepresentativeByGroup = new Map<string, number>();
     for (const rule of agentAllRules as SniRuntimeRuleLike[]) {
@@ -2641,9 +2590,6 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
         if (!exitHostId) return null;
         const isExitHost = Number(rule?.hostId || 0) === exitHostId && memberIndex === members.length - 1;
         if (isExitHost) {
-          const sourceAllowIps = groupMode === "chain"
-            ? await resolveSniSplitterSourceAllowIps(group, members, memberIndex)
-            : [];
           return {
             mode: "exit",
             resource: groupMode,
@@ -2652,8 +2598,6 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
             splitterPort: sniRoute.splitterPort,
             targetIp: processTarget(rule),
             targetPort: Number(rule?.targetPort || 0),
-            sourceAllowIps,
-            clearSourceRestrictions: groupMode === "port",
           };
         }
         if (groupMode !== "chain") return null;
@@ -2679,8 +2623,6 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
           splitterPort: sniRoute.splitterPort,
           targetIp: String(rule?.targetIp || "").trim(),
           targetPort,
-          sourceAllowIps: [],
-          clearSourceRestrictions: false,
         };
       }
       const tunnelId = Number(rule?.tunnelId || 0);
@@ -2699,8 +2641,6 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
           splitterPort: sniRoute.splitterPort,
           targetIp: processTarget(rule),
           targetPort: Number(rule?.targetPort || 0),
-          sourceAllowIps: ["127.0.0.1", "::1"],
-          clearSourceRestrictions: false,
         };
       }
       if (!isCurrentHostTunnelEntry(tunnel)) return null;
@@ -2712,8 +2652,6 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
         splitterPort: sniRoute.splitterPort,
         targetIp: "127.0.0.1",
         targetPort: sniRoute.splitterPort,
-        sourceAllowIps: [],
-        clearSourceRestrictions: false,
       };
     };
     const sniRuntimeByRuleId = new Map<number, SniRuntime>();
@@ -5207,7 +5145,6 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
       };
       const localSourceAllowIpsMatch = (candidate: AgentLocalRuntimeRuleState) => {
         if (!hasExpectedSourceAllowIps) return true;
-        if (expectedSourceAllowIps.length === 0) return false;
         const localSourceAllowIps = normalizeSourceAllowIps(candidate.sourceAllowIps || []);
         return stableStateSignature(localSourceAllowIps) === stableStateSignature(expectedSourceAllowIps);
       };
@@ -5639,8 +5576,6 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
       tunnelId: number;
       rules: SniRuntimeRuleLike[];
       routes: SniSplitterDesiredRoute[];
-      sourceAllowIps: Set<string>;
-      clearSourceRestrictions: boolean;
     }>();
     await mapWithConcurrency(agentAllRules as SniRuntimeRuleLike[], 16, async (rule) => {
       const sniRuntime = sniRuntimeForRule(rule);
@@ -5676,12 +5611,7 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
           tunnelId: Number(rule.tunnelId || 0),
           rules: [],
           routes: [],
-          sourceAllowIps: new Set<string>(),
-          clearSourceRestrictions: sniRuntime.clearSourceRestrictions,
         };
-        for (const sourceIp of sniRuntime.sourceAllowIps) {
-          group.sourceAllowIps.add(sourceIp);
-        }
         group.rules.push(rule);
         group.routes.push(route);
         sniExitGroups.set(sniRuntime.splitterPort, group);
@@ -5745,6 +5675,7 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
       const runtimeMatches = localSniRuntimeMatches(representative, "forwardx", group.sourcePort, String(host.ip || ""), group.sourcePort, {
         acceptedRuleIds: rulesInGroup.map((rule) => Number(rule.id)),
         acceptedRoutes: group.routes,
+        acceptedSourceAllowIps: [],
       });
       if (runtimeMatches && hasReportedRuntimeState) continue;
       const routes = group.routes.slice().sort((a, b) => String(a.sni).localeCompare(String(b.sni)));
@@ -5805,7 +5736,6 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
       if (group.routes.length === 0) continue;
       const rulesInGroup = group.rules.slice().sort((a, b) => Number(a.id) - Number(b.id));
       const firstRule = rulesInGroup[0];
-      const sourceAllowIps = Array.from(group.sourceAllowIps).sort();
       const runtimeMatches = !!firstRule && localSniRuntimeMatches(
         firstRule,
         "forwardx",
@@ -5815,7 +5745,7 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
         {
           acceptedRuleIds: rulesInGroup.map((rule) => Number(rule.id || 0)),
           acceptedRoutes: group.routes,
-          acceptedSourceAllowIps: sourceAllowIps,
+          acceptedSourceAllowIps: [],
         },
       );
       if (hasReportedRuntimeState) {
@@ -5867,16 +5797,14 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
         targetPort: group.splitterPort,
         protocol: "tcp",
         networkInterface: hostInterface,
-        commands: group.clearSourceRestrictions
-          ? buildSNISplitterSourceRestrictionCleanupCmds(group.splitterPort)
-          : buildSNISplitterSourceRestrictionCmds(group.splitterPort, sourceAllowIps),
+        commands: buildSNISplitterSourceRestrictionCleanupCmds(group.splitterPort),
         fxp: {
           role: "sni-splitter",
           ruleId: Number(firstRule?.id || 0),
           listenPort: group.splitterPort,
           protocol: "tcp",
           sniRouteVersion,
-          sourceAllowIps,
+          sourceAllowIps: [],
           sniRoutes: routes,
         },
       });
@@ -7398,6 +7326,7 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
       }
     }
 
+    if (sourceCleanupAction) actions.push(sourceCleanupAction);
     const effectiveActions = dropStalePortRemoveActions(actions, protectedRuleRemoveActionKeys);
     const actionBatchIssuedAt = resolveActionBatchIssuedAt(Number(host.id), effectiveActions, responseIssuedAt);
     const ruleByIdForDesired = new Map((rules as any[]).map((rule: any) => [Number(rule.id), rule]));

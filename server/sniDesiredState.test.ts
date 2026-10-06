@@ -11,14 +11,19 @@ test("SNI forward-chain desired state sends entry traffic to the splitter and ro
   const script = String.raw`
     import assert from "node:assert/strict";
     import http from "node:http";
+    import fs from "node:fs";
     import path from "node:path";
     import { pathToFileURL } from "node:url";
     import express from "express";
 
+    const realNow = Date.now;
+    let testNow = realNow();
+    Date.now = () => testNow;
     const moduleUrl = (file) => pathToFileURL(path.join(process.cwd(), file)).href;
     const runtime = await import(moduleUrl("server/dbRuntime.ts"));
     const schema = await import(moduleUrl("server/dbSchema.ts"));
     const heartbeat = await import(moduleUrl("server/agentHeartbeatRoute.ts"));
+    const status = await import(moduleUrl("server/agentStatusRoutes.ts"));
     const q = (name) => '"' + name + '"';
     const insert = async (table, columns, values) => {
       await runtime.executeRaw(
@@ -146,6 +151,7 @@ test("SNI forward-chain desired state sends entry traffic to the splitter and ro
         next();
       });
       heartbeat.registerAgentHeartbeatRoute(app);
+      status.registerAgentStatusRoutes(app);
       server = http.createServer(app);
       await new Promise((resolve, reject) => {
         server.once("error", reject);
@@ -207,6 +213,17 @@ test("SNI forward-chain desired state sends entry traffic to the splitter and ro
       assert.equal(exit.status, 200);
       assert.equal(exit.payload.success, true);
       const exitActions = exit.payload.desiredState.actions;
+      const sourceCleanup = exitActions.find((action) => action.forwardType === "sni-source-cleanup");
+      assert.ok(sourceCleanup, "first heartbeat must sweep retired ports even when local metadata is empty");
+      assert.equal(sourceCleanup.statusType, "runtime");
+      assert.equal(sourceCleanup.reportStatus, true);
+      assert.ok(sourceCleanup.commands.length > 0);
+      if (process.env.FORWARDX_SNI_VERIFY_OUTPUT) {
+        fs.mkdirSync(process.env.FORWARDX_SNI_VERIFY_OUTPUT, { recursive: true });
+        fs.writeFileSync(path.join(process.env.FORWARDX_SNI_VERIFY_OUTPUT, "desired.json"), JSON.stringify(exit.payload.desiredState));
+        await runtime.executeRaw("PRAGMA wal_checkpoint(TRUNCATE)");
+        fs.copyFileSync(process.env.FORWARDX_TEST_DB, path.join(process.env.FORWARDX_SNI_VERIFY_OUTPUT, "panel.db"));
+      }
       const splitterApplies = exitActions
         .filter((action) => action.op === "apply" && action.fxp?.role === "sni-splitter")
         .sort((left, right) => Number(left.sourcePort) - Number(right.sourcePort));
@@ -218,11 +235,11 @@ test("SNI forward-chain desired state sends entry traffic to the splitter and ro
         assert.equal(splitterApply.targetPort, scenario.splitterPort);
         assert.equal(splitterApply.fxp.listenPort, scenario.splitterPort);
         assert.equal(splitterApply.fxp.sniRouteVersion, 1);
-        assert.deepEqual(splitterApply.fxp.sourceAllowIps, [entryHostIp]);
+        assert.deepEqual(splitterApply.fxp.sourceAllowIps, []);
         const splitterCommands = (splitterApply.commands || []).join("\n");
         assert.match(splitterCommands, new RegExp("fwx-sni-splitter-" + scenario.splitterPort));
-        assert.match(splitterCommands, new RegExp("ip saddr " + entryHostIp.replace(/\./g, "\\.") + " tcp dport " + scenario.splitterPort + " accept"));
-        assert.match(splitterCommands, new RegExp("tcp dport " + scenario.splitterPort + " drop"));
+        assert.ok(splitterApply.commands.length > 0, "old Agents require actual cleanup commands");
+        assert.doesNotMatch(splitterCommands, /nft add rule|-[AI] INPUT/);
         assert.deepEqual(splitterApply.fxp.sniRoutes, [{
           sni: scenario.sni,
           ruleId: scenario.exitRuleId,
@@ -236,7 +253,7 @@ test("SNI forward-chain desired state sends entry traffic to the splitter and ro
         }]);
       }
       const threeHopExit = splitterApplies.at(-1);
-      assert.deepEqual(threeHopExit.fxp.sourceAllowIps, [relayHostIp]);
+      assert.deepEqual(threeHopExit.fxp.sourceAllowIps, []);
       assert.deepEqual(threeHopExit.fxp.sniRoutes, [{
         sni: threeHop.sni,
         ruleId: threeHop.exitRuleId,
@@ -252,14 +269,14 @@ test("SNI forward-chain desired state sends entry traffic to the splitter and ro
       const runtimeScenarios = [
         ...scenarios.map((scenario) => ({
           ...scenario,
-          sourceAllowIps: [entryHostIp],
+          sourceAllowIps: [],
           limitIn: 0,
           limitOut: 0,
           maxConnections: 0,
         })),
         {
           ...threeHop,
-          sourceAllowIps: [relayHostIp],
+          sourceAllowIps: [],
           limitIn: 12_500_000,
           limitOut: 12_500_000,
           maxConnections: 7,
@@ -308,6 +325,56 @@ test("SNI forward-chain desired state sends entry traffic to the splitter and ro
         .filter((action) => action.op === "apply" && action.fxp?.role === "sni-splitter");
       assert.equal(repeatedSplitterApplies.length, 0);
 
+      // 首次升级不能仅凭空/缺失的来源元数据判断防火墙已清理。
+      // 时间推进模拟正常心跳重试间隔，不需要人工刷新或修改规则。
+      const reportCleanup = async (isRunning, issuedAt = sourceCleanup.issuedAt) => {
+        const response = await fetch(baseUrl + "/api/agent/rule-status", {
+          method: "POST", headers: { authorization: "Bearer exit-token", "content-type": "application/json" },
+          body: JSON.stringify({ statusType: "runtime", forwardType: "sni-source-cleanup", isRunning, issuedAt }),
+        });
+        assert.equal(response.status, 200);
+      };
+      const migrationHeartbeat = async (sources, extra = {}) => {
+        testNow += 61_000;
+        return postHeartbeat(baseUrl, "exit-token", {
+          agentBootId: "boot-exit", agentProcessId: 2002, forceReconcile: false,
+          localState: { rules: runtimeScenarios.map((scenario) => ({
+            port: scenario.splitterPort, ruleId: scenario.exitRuleId, forwardType: "forwardx",
+            sni: scenario.sni, targetIp: finalTargetIp, targetPort: 443, protocol: "tcp",
+            limitIn: scenario.limitIn, limitOut: scenario.limitOut, maxConnections: scenario.maxConnections,
+            maxIPs: 0, accessScope: "u1_h2", sniRouteVersion: 1, ready: true,
+            ...(sources === undefined ? {} : { sourceAllowIps: sources }),
+          })), tunnels: [], services: [] }, ...extra,
+        });
+      };
+      await reportCleanup(false);
+      for (const sources of [[entryHostIp], undefined, []]) {
+        const pending = await migrationHeartbeat(sources);
+        const pendingActions = pending.payload.desiredState?.actions || [];
+        assert.ok(pendingActions.some((action) => action.forwardType === "sni-source-cleanup"), "failed or unconfirmed cleanup must retry on normal heartbeats");
+        if (sources?.length) {
+          const applies = pendingActions.filter((action) => action.fxp?.role === "sni-splitter" && action.op === "apply");
+          assert.equal(applies.length, runtimeScenarios.length, "legacy nonempty metadata must be cleared even when routes match");
+          for (const apply of applies) assert.deepEqual(apply.fxp.sourceAllowIps, []);
+        }
+      }
+      await reportCleanup(true, sourceCleanup.issuedAt - 1);
+      const unconfirmed = await migrationHeartbeat([]);
+      assert.ok(unconfirmed.payload.desiredState.actions.some((action) => action.forwardType === "sni-source-cleanup"));
+      await reportCleanup(true);
+      for (const sources of [[], undefined, []]) {
+        const stable = await migrationHeartbeat(sources);
+        assert.equal((stable.payload.desiredState?.actions || []).filter((action) => action.forwardType === "sni-source-cleanup" || action.fxp?.role === "sni-splitter" && action.op === "apply").length, 0);
+      }
+      const restarted = await migrationHeartbeat([], { agentBootId: "boot-exit-restarted", agentProcessId: 2102 });
+      const restartedCleanup = restarted.payload.desiredState.actions.find((action) => action.forwardType === "sni-source-cleanup");
+      assert.ok(restartedCleanup, "Agent restart must verify persisted firewall state again");
+      await reportCleanup(true); // 上一进程迟到的成功回报不能完成新一轮清理。
+      const restartPending = await migrationHeartbeat([], { agentBootId: "boot-exit-restarted", agentProcessId: 2102 });
+      assert.ok(restartPending.payload.desiredState.actions.some((action) => action.forwardType === "sni-source-cleanup"));
+      await reportCleanup(true, restartedCleanup.issuedAt);
+      Date.now = realNow;
+
       await runtime.executeRaw('UPDATE "forward_rules" SET "isEnabled" = 0, "isRunning" = 0 WHERE "id" = ?', [scenarios[0].exitRuleId]);
       const staleSplitterCleanup = await postHeartbeat(baseUrl, "exit-token", {
         agentBootId: "boot-exit",
@@ -324,7 +391,7 @@ test("SNI forward-chain desired state sends entry traffic to the splitter and ro
             accessScope: "u1_h2",
             protocol: "tcp",
             sniRouteVersion: 1,
-            sourceAllowIps: [entryHostIp],
+            sourceAllowIps: [],
             ready: true,
           }],
           tunnels: [],
@@ -631,11 +698,10 @@ test("SNI forward chains share one entry splitter and keep per-chain next hops",
       assert.equal(splitterApplies.length, 1);
       assert.equal(splitterApplies[0].sourcePort, 24000);
       assert.equal(splitterApplies[0].fxp.sniRouteVersion, 1);
-      assert.deepEqual(splitterApplies[0].fxp.sourceAllowIps, [entryHostIp]);
+      assert.deepEqual(splitterApplies[0].fxp.sourceAllowIps, []);
       const splitterCommandText = (splitterApplies[0].commands || []).join("\n");
       assert.match(splitterCommandText, /fwx-sni-splitter-24000/);
-      assert.match(splitterCommandText, /ip saddr 198\.51\.100\.10 tcp dport 24000 accept/);
-      assert.match(splitterCommandText, /tcp dport 24000 drop/);
+      assert.doesNotMatch(splitterCommandText, /nft add rule|-[AI] INPUT/);
       assert.deepEqual(splitterApplies[0].fxp.sniRoutes, [
         {
           sni: "api.example.com",
@@ -664,17 +730,14 @@ test("SNI forward chains share one entry splitter and keep per-chain next hops",
         (action) => action.op === "apply" && action.fxp?.role === "sni-splitter" && Number(action.sourcePort) === 24003,
       );
       assert.ok(entryGroupSplitterApply, "missing entry-group sni splitter apply");
-      assert.deepEqual(entryGroupSplitterApply.fxp.sourceAllowIps, entryGroupHostIps);
+      assert.deepEqual(entryGroupSplitterApply.fxp.sourceAllowIps, []);
       const entryGroupCommandText = (entryGroupSplitterApply.commands || []).join("\n");
-      for (const sourceIp of entryGroupHostIps) {
-        assert.match(entryGroupCommandText, new RegExp("ip saddr " + sourceIp.replace(/\./g, "\\.") + " tcp dport 24003 accept"));
-      }
-      assert.match(entryGroupCommandText, /tcp dport 24003 drop/);
+      assert.doesNotMatch(entryGroupCommandText, /nft add rule|-[AI] INPUT/);
       const entryGroupThreeHopExit = exit.payload.desiredState.actions.find(
         (action) => action.op === "apply" && action.fxp?.role === "sni-splitter" && Number(action.sourcePort) === entryGroupThreeHop.splitterPort,
       );
       assert.ok(entryGroupThreeHopExit, "missing entry-group three-hop exit splitter");
-      assert.deepEqual(entryGroupThreeHopExit.fxp.sourceAllowIps, [entryGroupRelayHostIp]);
+      assert.deepEqual(entryGroupThreeHopExit.fxp.sourceAllowIps, []);
       assert.deepEqual(entryGroupThreeHopExit.fxp.sniRoutes, [{
         sni: entryGroupThreeHop.sni,
         ruleId: entryGroupThreeHop.exitRuleId,
@@ -700,7 +763,7 @@ test("SNI forward chains share one entry splitter and keep per-chain next hops",
             targetPort: 443,
             protocol: "tcp",
             sniRouteVersion: 1,
-            sourceAllowIps: [entryGroupRelayHostIp],
+            sourceAllowIps: [],
             ready: true,
           }],
           tunnels: [],
@@ -778,7 +841,7 @@ test("SNI forward chains share one entry splitter and keep per-chain next hops",
               accessScope: "u1_h2",
               protocol: "tcp",
               sniRouteVersion: 1,
-              sourceAllowIps: [entryHostIp],
+              sourceAllowIps: [],
               ready: true,
             },
             {
@@ -791,7 +854,7 @@ test("SNI forward chains share one entry splitter and keep per-chain next hops",
               accessScope: "u1_h2",
               protocol: "tcp",
               sniRouteVersion: 1,
-              sourceAllowIps: [entryHostIp],
+              sourceAllowIps: [],
               ready: true,
             },
           ],
@@ -822,7 +885,7 @@ test("SNI forward chains share one entry splitter and keep per-chain next hops",
               accessScope: "u1_h2",
               protocol: "tcp",
               sniRouteVersion: 1,
-              sourceAllowIps: [entryHostIp],
+              sourceAllowIps: [],
               ready: true,
             },
             {
@@ -835,7 +898,7 @@ test("SNI forward chains share one entry splitter and keep per-chain next hops",
               accessScope: "u1_h2",
               protocol: "tcp",
               sniRouteVersion: 1,
-              sourceAllowIps: [entryHostIp],
+              sourceAllowIps: [],
               ready: true,
             },
           ],
@@ -845,14 +908,9 @@ test("SNI forward chains share one entry splitter and keep per-chain next hops",
       });
       assert.equal(exitAfterEntryAddressChange.status, 200);
       assert.equal(exitAfterEntryAddressChange.payload.success, true);
-      const refreshedSourceRestrictionApplies = exitAfterEntryAddressChange.payload.desiredState.actions
+      const refreshedSourceRestrictionApplies = (exitAfterEntryAddressChange.payload.desiredState?.actions || [])
         .filter((action) => action.op === "apply" && action.fxp?.role === "sni-splitter" && Number(action.sourcePort) === 24000);
-      assert.equal(refreshedSourceRestrictionApplies.length, 1);
-      assert.deepEqual(refreshedSourceRestrictionApplies[0].fxp.sourceAllowIps, [refreshedEntryHostIp]);
-      const refreshedCommandText = (refreshedSourceRestrictionApplies[0].commands || []).join("\n");
-      assert.match(refreshedCommandText, /fwx-sni-splitter-24000/);
-      assert.match(refreshedCommandText, /ip saddr 198\.51\.100\.11 tcp dport 24000 accept/);
-      assert.doesNotMatch(refreshedCommandText, /ip saddr 198\.51\.100\.10 tcp dport 24000 accept/);
+      assert.equal(refreshedSourceRestrictionApplies.length, 0, "entry IP changes do not rewrite source firewall rules");
       await runtime.executeRaw('UPDATE "hosts" SET "ip" = ?, "ipv4" = ? WHERE "id" = 1', [entryHostIp, entryHostIp]);
 
       const gostGroup = runtimeGroups[0];
@@ -881,7 +939,7 @@ test("SNI forward chains share one entry splitter and keep per-chain next hops",
               accessScope: "u1_h2",
               protocol: "tcp",
               sniRouteVersion: 9,
-              sourceAllowIps: [entryHostIp],
+              sourceAllowIps: [],
               ready: true,
             },
             {
@@ -894,7 +952,7 @@ test("SNI forward chains share one entry splitter and keep per-chain next hops",
               accessScope: "u1_h2",
               protocol: "tcp",
               sniRouteVersion: 9,
-              sourceAllowIps: [entryHostIp],
+              sourceAllowIps: [],
               ready: true,
             },
           ],
@@ -941,7 +999,7 @@ test("SNI forward chains share one entry splitter and keep per-chain next hops",
               accessScope: "u1_h2",
               protocol: "tcp",
               sniRouteVersion: 1,
-              sourceAllowIps: [entryHostIp],
+              sourceAllowIps: [],
               ready: true,
             },
             {
@@ -954,7 +1012,7 @@ test("SNI forward chains share one entry splitter and keep per-chain next hops",
               accessScope: "u1_h2",
               protocol: "tcp",
               sniRouteVersion: 1,
-              sourceAllowIps: [entryHostIp],
+              sourceAllowIps: [],
               ready: true,
             },
           ],
@@ -1368,7 +1426,7 @@ test("SNI chain running state waits for entry and exit snapshots", () => {
         targetPort: 443,
         protocol: "tcp",
         sniRouteVersion: 1,
-        sourceAllowIps: [entryHostIp],
+        sourceAllowIps: [],
         ready: true,
       }, 2002);
       assert.deepEqual(await runningStates(), [[100, 1], [101, 1], [102, 1]]);
@@ -1465,7 +1523,7 @@ test("SNI chain running state waits for entry and exit snapshots", () => {
         targetPort: 443,
         protocol: "tcp",
         sniRouteVersion: 2,
-        sourceAllowIps: [entryHostIp],
+        sourceAllowIps: [],
         ready: true,
       }, 2002);
       assert.deepEqual(await runningStates(), [[100, 0], [101, 0], [102, 0]]);
@@ -1707,6 +1765,10 @@ test("a tunnel SNI rule update reaches the very next heartbeat", () => {
 
       const initial = await postExitHeartbeat(baseUrl);
       const before = splitterRoutes(initial.desiredState.actions);
+      const tunnelSplitter = initial.desiredState.actions.find((action) => action.fxp?.role === "sni-splitter");
+      assert.deepEqual(tunnelSplitter.fxp.sourceAllowIps, []);
+      assert.ok(tunnelSplitter.commands.length > 0);
+      assert.doesNotMatch(tunnelSplitter.commands.join("\\n"), /nft add rule|-[AI] INPUT/);
       assert.ok(initial.runningRules.some((rule) => Number(rule.sourcePort) === tunnelExitPort && rule.forwardType === "gost-tunnel-exit"));
       assert.ok(!initial.runningRules.some((rule) => Number(rule.sourcePort) === 21000 && rule.forwardType === "gost-tunnel-exit"));
       const apiBefore = before.find((route) => route.sni === "api.example.com");

@@ -1,5 +1,4 @@
 import { forwardRuleProtocols, normalizeForwardRuleProtocol } from "@shared/forwardTypes";
-import { createHash } from "node:crypto";
 import { isIP } from "net";
 
 type IptablesBinary = "iptables" | "ip6tables";
@@ -216,85 +215,49 @@ export function normalizeSourceAllowIps(values: Iterable<unknown> | null | undef
   return Array.from(addresses).sort();
 }
 
-function sniSourceRestrictionVersion(allowIps: string[]) {
-  return `v${createHash("sha256").update(allowIps.join(","), "utf8").digest("hex").slice(0, 12)}`;
-}
-
 function nftProcessCountingCleanupCmd(port: number) {
   const marker = `fwx-stat-${port}:`;
   return `if command -v nft >/dev/null 2>&1 && nft list table inet ${nftProcessTrafficTable} >/dev/null 2>&1; then for c in ${nftProcessTrafficChains.join(" ")}; do for h in $(nft -a list chain inet ${nftProcessTrafficTable} "$c" 2>/dev/null | awk -v marker=${shellQuote(marker)} 'index($0, marker) {print $NF}'); do nft delete rule inet ${nftProcessTrafficTable} "$c" handle "$h" 2>/dev/null || true; done; done; fi; true`;
 }
 
-export function buildSNISplitterSourceRestrictionCleanupCmds(port: number): string[] {
-  const normalizedPort = Number(port || 0);
-  if (!Number.isInteger(normalizedPort) || normalizedPort <= 0 || normalizedPort > 65535) return [];
-  const marker = `fwx-sni-splitter-${normalizedPort}:`;
-  return buildSNISplitterSourceRestrictionCleanupCmdsByMarker(marker);
-}
-
-function buildSNISplitterSourceRestrictionCleanupCmdsByMarker(marker: string, keepMarker = ""): string[] {
-  const keepArg = keepMarker ? ` -v keep=${shellQuote(keepMarker)}` : "";
-  const keepFilter = keepMarker ? " && !index($0, keep)" : "";
-  return [
-    `if command -v nft >/dev/null 2>&1 && nft list table inet ${nftTable} >/dev/null 2>&1 && nft list chain inet ${nftTable} ${nftSniSourceRestrictionChain} >/dev/null 2>&1; then for h in $(nft -a list chain inet ${nftTable} ${nftSniSourceRestrictionChain} 2>/dev/null | awk -v marker=${shellQuote(marker)}${keepArg} 'index($0, marker)${keepFilter} {print $NF}'); do nft delete rule inet ${nftTable} ${nftSniSourceRestrictionChain} handle "$h" 2>/dev/null || true; done; fi; true`,
-    ...iptablesBinaries.map((binary) => iptablesDeleteByComment(binary, null, marker, keepMarker)),
-  ];
-}
-
-export function buildSNISplitterSourceRestrictionCmds(port: number, sourceAllowIps: Iterable<unknown>): string[] {
-  const normalizedPort = Number(port || 0);
-  if (!Number.isInteger(normalizedPort) || normalizedPort <= 0 || normalizedPort > 65535) return [];
-  const allowIps = normalizeSourceAllowIps(sourceAllowIps);
-  if (allowIps.length === 0) {
-    return [`echo "[sni-source] missing allowed source for port ${normalizedPort}"; exit 1`];
-  }
-  const portMarker = `fwx-sni-splitter-${normalizedPort}:`;
-  const version = sniSourceRestrictionVersion(allowIps);
-  const marker = `fwx-sni-splitter-${normalizedPort}:${version}:`;
-  const nftRuleExists = (comment: string) =>
-    `nft -a list chain inet ${nftTable} ${nftSniSourceRestrictionChain} 2>/dev/null | awk -v marker=${shellQuote(comment)} 'index($0, marker) {found=1} END {exit found ? 0 : 1}'`;
-  const nftEnsureRule = (rule: string, comment: string) => `if ${nftRuleExists(comment)}; then :; else ${rule}; fi`;
-  const nftAllowRules = allowIps.map((address) => {
-    const family = isIP(address) === 6 ? "ip6" : "ip";
-    const comment = `${marker}allow:${address}`;
-    return nftEnsureRule(
-      `nft add rule inet ${nftTable} ${nftSniSourceRestrictionChain} ${family} saddr ${address} tcp dport ${normalizedPort} accept comment ${nftCommentLiteral(comment)}`,
-      comment,
-    );
-  });
-  const nftDropComment = `${marker}drop`;
-  const nftDropRule = nftEnsureRule(
-    `nft add rule inet ${nftTable} ${nftSniSourceRestrictionChain} tcp dport ${normalizedPort} drop comment ${nftCommentLiteral(nftDropComment)}`,
-    nftDropComment,
-  );
-  const iptablesEnsureInputRule = (binary: IptablesBinary, rule: string) =>
-    `if ${binary} -C INPUT ${rule} 2>/dev/null; then :; else ${binary} -I INPUT 1 ${rule}; fi`;
-  const iptablesInstallRules = (binary: IptablesBinary) => {
-    const family = binary === "ip6tables" ? 6 : 4;
-    const scopedIps = allowIps.filter((address) => isIP(address) === family);
-    return [
-      iptablesEnsureInputRule(binary, `-p tcp --dport ${normalizedPort} -m comment --comment "${marker}drop" -j DROP`),
-      ...scopedIps.map((address) => iptablesEnsureInputRule(binary, `-p tcp -s ${address} --dport ${normalizedPort} -m comment --comment "${marker}allow:${address}" -j ACCEPT`)),
-    ];
-  };
-  return [
-    [
-      `set -e`,
-      `command -v nft >/dev/null 2>&1 || { command -v iptables >/dev/null 2>&1 && command -v ip6tables >/dev/null 2>&1; }`,
-      `if command -v nft >/dev/null 2>&1; then`,
-      `  nft add table inet ${nftTable} 2>/dev/null || true`,
-      `  nft add chain inet ${nftTable} ${nftSniSourceRestrictionChain} '{ type filter hook input priority -10; policy accept; }' 2>/dev/null || true`,
-      `  ${nftAllowRules.join("; ")}`,
-      `  ${nftDropRule}`,
-      `else`,
-      `  command -v iptables >/dev/null 2>&1`,
-      `  command -v ip6tables >/dev/null 2>&1`,
-      `  ${iptablesInstallRules("iptables").join("; ")}`,
-      `  ${iptablesInstallRules("ip6tables").join("; ")}`,
-      `fi`,
-      ...buildSNISplitterSourceRestrictionCleanupCmdsByMarker(portMarker, marker),
-    ].join("\n"),
-  ];
+// 空端口用于升级迁移：仅清理 SNI 专属标记，也覆盖已退役端口。
+// 每个后端先读取、再定向删除、最后核实；不能把读取失败当作规则不存在。
+export function buildSNISplitterSourceRestrictionCleanupCmds(port?: number): string[] {
+  if (port !== undefined && (!Number.isInteger(port) || port <= 0 || port > 65535)) return [];
+  const portPattern = port === undefined ? "[0-9]+" : String(port);
+  const nftMarker = `comment "fwx-sni-splitter-${portPattern}:`;
+  const iptablesMarker = `--comment "?fwx-sni-splitter-${portPattern}:`;
+  // alternatives 切换不会迁移旧内核表，显式入口也要核实，防止 legacy 残留。
+  const cleanupBinaries = ["iptables", "ip6tables", "iptables-legacy", "ip6tables-legacy", "iptables-nft", "ip6tables-nft"];
+  return [[
+    `sni_cleanup_nft() {`,
+    `  sni_tables=$(nft list tables) || return 1`,
+    `  printf '%s\\n' "$sni_tables" | grep -q '^table inet ${nftTable}$' || return 0`,
+    `  sni_rules=$(nft -a list table inet ${nftTable}) || return 1`,
+    `  sni_handles=$(printf '%s\\n' "$sni_rules" | awk -v marker=${shellQuote(nftMarker)} '/^[[:space:]]*chain / {chain=$2} chain == "${nftSniSourceRestrictionChain}" && $0 ~ marker {if ($NF !~ /^[0-9]+$/) exit 1; print $NF}') || return 1`,
+    `  for sni_handle in $sni_handles; do nft delete rule inet ${nftTable} ${nftSniSourceRestrictionChain} handle "$sni_handle" || :; done`,
+    `  sni_rules=$(nft -a list table inet ${nftTable}) || return 1`,
+    `  printf '%s\\n' "$sni_rules" | awk -v marker=${shellQuote(nftMarker)} '/^[[:space:]]*chain / {chain=$2} chain == "${nftSniSourceRestrictionChain}" && $0 ~ marker {found=1} END {exit found ? 1 : 0}'`,
+    `}`,
+    `sni_cleanup_iptables() {`,
+    `  sni_binary=$1`,
+    `  sni_rules=$("$sni_binary" -w 5 -S) || return 1`,
+    `  sni_deletions=$(printf '%s\\n' "$sni_rules" | awk -v marker=${shellQuote(iptablesMarker)} '/^-A / && $0 ~ marker {sub(/^-A /, "-D "); print}') || return 1`,
+    `  if [ -n "$sni_deletions" ]; then`,
+    // restore 自己解析引号并持有 xtables 锁，避免按行号删除误伤并发新增的其他规则。
+    `    command -v "$sni_binary-restore" >/dev/null 2>&1 || return 1`,
+    `    printf '*filter\\n%s\\nCOMMIT\\n' "$sni_deletions" | "$sni_binary-restore" --noflush --wait 5 || :`,
+    `  fi`,
+    `  sni_rules=$("$sni_binary" -w 5 -S) || return 1`,
+    `  printf '%s\\n' "$sni_rules" | awk -v marker=${shellQuote(iptablesMarker)} '/^-A / && $0 ~ marker {found=1} END {exit found ? 1 : 0}'`,
+    `}`,
+    `sni_cleanup_status=0`,
+    `sni_cleanup_backends=0`,
+    `if command -v nft >/dev/null 2>&1; then sni_cleanup_backends=1; sni_cleanup_nft || sni_cleanup_status=1; fi`,
+    ...cleanupBinaries.map((binary) => `if command -v ${binary} >/dev/null 2>&1; then sni_cleanup_backends=1; sni_cleanup_iptables ${binary} || sni_cleanup_status=1; fi`),
+    `if [ "$sni_cleanup_backends" = 0 ] || [ "$sni_cleanup_status" != 0 ]; then echo '[sni-source] cleanup failed or could not verify firewall state' >&2; exit 1; fi`,
+    `echo '[sni-source] verified source restrictions removed'`,
+  ].join("\n")];
 }
 
 function nftOptional(command: string) {

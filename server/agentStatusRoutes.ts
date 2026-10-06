@@ -16,6 +16,7 @@ import { withKeyedTaskLock } from "./keyedTaskLock";
 import { agentStatusOrderGuard, agentStatusOrderingKey } from "./agentStatusOrdering";
 import { pruneMapEntries, setBoundedMapValue } from "./boundedCache";
 import { recordSniRuntimeApplyResult } from "./sniRuntimeObservability";
+import { recordSniSourceCleanupResult, SNI_SOURCE_CLEANUP_RUNTIME } from "./sniSourceMigration";
 
 function isForwardXTunnel(tunnel: any) {
   return String(tunnel?.mode || "").toLowerCase() === "forwardx";
@@ -160,6 +161,9 @@ async function applyAgentRuleStatus(host: any, payload: any): Promise<AgentStatu
   }
   if (statusType === "runtime") {
     const runtimeType = String(payload?.forwardType || "runtime").trim() || "runtime";
+    if (runtimeType === SNI_SOURCE_CLEANUP_RUNTIME) {
+      recordSniSourceCleanupResult(Number(host.id), payload?.issuedAt, isRunning === true);
+    }
     // Error details can contain dynamic errno/addresses. Use the runtime state
     // as the throttling signature so changing diagnostics do not bypass the
     // five-minute warning interval; the latest message is still included when

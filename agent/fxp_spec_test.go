@@ -183,7 +183,7 @@ func TestFXPSNISplitterReadyForRouteTableUpdateAllowsRepresentativeChange(t *tes
 	}
 }
 
-func TestStartFXPRefreshesSNISplitterSourceAllowIPsWithoutRestart(t *testing.T) {
+func TestStartFXPClearsSNISplitterSourceAllowIPsWithoutRestart(t *testing.T) {
 	usePersistentRuntimeTestDirs(t)
 	executablePath := filepath.Join(t.TempDir(), "forwardx-fxp")
 	if err := os.WriteFile(executablePath, []byte("runtime"), 0700); err != nil {
@@ -223,7 +223,7 @@ func TestStartFXPRefreshesSNISplitterSourceAllowIPsWithoutRestart(t *testing.T) 
 		},
 	})
 	changed := base
-	changed.SourceAllowIPs = []string{"198.51.100.11", "2001:db8::10"}
+	changed.SourceAllowIPs = []string{}
 	withTestFXPServers(t, map[string]*fxpProcess{
 		fxpServerID(base): {
 			signature:             fxpServerSignature(base),
