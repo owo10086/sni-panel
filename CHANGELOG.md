@@ -19,6 +19,7 @@
 
 - 面板与 APK Release `3.2.5`，Agent `3.2.0`，ForwardX FXP runtime `3.2.0`，Android APP `2.3.98`。
 - 此次只需升级面板，现有 3.2.0 Agent/FXP 继续兼容。
+- Android APP 源码版本已更新为 `2.3.98`；本次正式 APK 因缺少原应用签名配置暂未产出，面板与 amd64 运行资产已发布。
 
 ## [3.2.4] - 2026-09-18
 
