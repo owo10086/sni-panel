@@ -326,13 +326,13 @@ export const portsRulesRouter = router({
       const actor = ctx.user;
       const ownerContext = { ...ctx, user: await resolveRuleOperationOwner(actor, input.userId) };
       if (input.excludeRuleId) {
-        await requireRuleAccess(ctx, input.excludeRuleId);
+        await requireRuleAccess(ownerContext, input.excludeRuleId);
       }
       if (input.forwardGroupId) {
         let planRange: Awaited<ReturnType<typeof db.getUserForwardGroupPlanPortRange>> = null;
-        if (ctx.user.role !== "admin") {
-          await requireForwardGroupPortAccess(ctx, input.forwardGroupId);
-          planRange = await db.getUserForwardGroupPlanPortRange(ctx.user.id, input.forwardGroupId);
+        if (ownerContext.user.role !== "admin") {
+          await requireForwardGroupPortAccess(ownerContext, input.forwardGroupId);
+          planRange = await db.getUserForwardGroupPlanPortRange(ownerContext.user.id, input.forwardGroupId);
         }
         const port = await db.findAvailableForwardGroupPort(input.forwardGroupId, input.excludeRuleId, planRange, input.protocol);
         if (!port) throw new Error("转发组入口端口区间内已无可用端口");
@@ -343,15 +343,15 @@ export const portsRulesRouter = router({
       let rangeEnd: number | null | undefined;
       let planRange: Awaited<ReturnType<typeof db.getUserPlanPortRange>> = null;
       if (input.tunnelId) {
-        const { tunnel } = await requireTunnelUseOrTrafficBillingAccess(ctx, input.tunnelId);
+        const { tunnel } = await requireTunnelUseOrTrafficBillingAccess(ownerContext, input.tunnelId);
         if (tunnel.entryHostId !== input.hostId) throw new Error("隧道入口主机与规则主机不一致");
         rangeStart = (tunnel as any).portRangeStart;
         rangeEnd = (tunnel as any).portRangeEnd;
       } else {
-        await requireHostUseAccess(ctx, input.hostId);
+        await requireHostUseAccess(ownerContext, input.hostId);
       }
-      if (ctx.user.role !== "admin") {
-        planRange = await db.getUserPlanPortRange(ctx.user.id, input.hostId, input.tunnelId ?? undefined);
+      if (ownerContext.user.role !== "admin") {
+        planRange = await db.getUserPlanPortRange(ownerContext.user.id, input.hostId, input.tunnelId ?? undefined);
         // Keep the subscription's disjoint ranges intact. The repository
         // intersects them with the host/tunnel policy when selecting a port.
       }

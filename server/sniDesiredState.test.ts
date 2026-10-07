@@ -1281,10 +1281,17 @@ test("SNI forward chains share one entry splitter and keep per-chain next hops",
       assert.match(kernelCleanupCommands, /-v proto='tcp'/);
       assert.match(kernelCleanupCommands, /-v proto='udp'/);
       const excludeTraffic = (id, value) => runtime.executeRaw('UPDATE "hosts" SET "trafficLimit"=1000,"trafficFailoverEnabled"=1,"trafficFailoverExcluded"=? WHERE "id"=?', [value, id]);
-      const routesOn = async (token, port) => {
+      const routesOn = async (token, port, exportName) => {
         const result = await postHeartbeat(baseUrl, token);
         assert.equal(result.status, 200);
-        return result.payload.desiredState.actions.filter(a => a.op === "apply" && a.fxp?.role === "sni-splitter" && Number(a.sourcePort) === port).flatMap(a => a.fxp.sniRoutes);
+        const actions = result.payload.desiredState.actions.filter(a => a.op === "apply" && a.fxp?.role === "sni-splitter" && Number(a.sourcePort) === port);
+        if (exportName && process.env.FORWARDX_SNI_TRAFFIC_VERIFY_OUTPUT) {
+          const directory = process.env.FORWARDX_SNI_TRAFFIC_VERIFY_OUTPUT;
+          fs.mkdirSync(directory, { recursive: true });
+          assert.equal(actions.length, 1);
+          fs.writeFileSync(path.join(directory, exportName + ".json"), JSON.stringify(actions[0].fxp));
+        }
+        return actions.flatMap(a => a.fxp.sniRoutes);
       };
       await excludeTraffic(3, 1);
       assert.deepEqual(await routesOn("entry-a-token", entryGroupThreeHop.sourcePort), []);
@@ -1302,14 +1309,15 @@ test("SNI forward chains share one entry splitter and keep per-chain next hops",
       await insert("hosts", ["id","name","ip","ipv4","agentToken","userId","isOnline","lastHeartbeat","agentVersion","portRangeStart","portRangeEnd"], [6,"独立出口","198.51.100.66","198.51.100.66","other-exit-token",1,1,now,"3.2.0",24000,24010]);
       await runtime.executeRaw('UPDATE "forward_group_members" SET "hostId"=6 WHERE "id"=3002');
       await runtime.executeRaw('UPDATE "forward_rules" SET "hostId"=6 WHERE "forwardGroupId"=30 AND "forwardGroupMemberId"=3002');
+      await routesOn("entry-token", 18443, "before");
       await excludeTraffic(6, 1);
-      const healthyRoutes = await routesOn("entry-token", 18443);
+      const healthyRoutes = await routesOn("entry-token", 18443, "excluded");
       assert.ok(healthyRoutes.some(r => r.sni === "gost-api.example.com"));
       assert.ok(!healthyRoutes.some(r => r.sni === "nginx-api.example.com"));
       const saved = await runtime.queryRaw('SELECT "sourcePort","isEnabled" FROM "forward_rules" WHERE "id"=300');
       assert.deepEqual(saved, [{ sourcePort: 18443, isEnabled: 1 }]);
       await excludeTraffic(6, 0);
-      assert.ok((await routesOn("entry-token", 18443)).some(r => r.sni === "nginx-api.example.com"));
+      assert.ok((await routesOn("entry-token", 18443, "restored")).some(r => r.sni === "nginx-api.example.com"));
       await runtime.executeRaw('UPDATE "forward_group_members" SET "hostId"=2 WHERE "id"=3002');
       await runtime.executeRaw('UPDATE "forward_rules" SET "hostId"=2 WHERE "forwardGroupId"=30 AND "forwardGroupMemberId"=3002');
     } finally {
