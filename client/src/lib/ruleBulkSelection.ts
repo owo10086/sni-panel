@@ -1,4 +1,4 @@
-// 行内批量选择的判断与结果归纳，规格见 .scratch/rule-bulk-select/spec.md。
+// 行内批量选择的判断与结果归纳，规格见 .scratch/2026-09-18_规则批量选择/spec.md。
 export type RuleBulkRule = {
   id: number;
   forwardGroupRuleId?: unknown;

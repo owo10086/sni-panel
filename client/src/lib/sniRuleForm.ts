@@ -1,6 +1,6 @@
 import { isValidSniValue, normalizeSniValue } from "@shared/sni";
 
-// SNI 分流规则的真值来源始终是 sni 字段非空（见 .scratch/sni-toggle/spec.md）。
+// SNI 分流规则的真值来源始终是 sni 字段非空（见 .scratch/2026-09-15_SNI分流开关/spec.md）。
 // 这里的开关只是表单状态：它决定表单长什么样，不决定规则是什么。
 
 export const SNI_DEFAULT_ENTRY_PORT = 443;

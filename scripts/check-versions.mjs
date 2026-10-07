@@ -71,7 +71,7 @@ if (!fxpRuntimeVersion) {
 } else if (!semverPattern.test(fxpRuntimeVersion)) {
   errors.push(`FXP runtime version ${fxpRuntimeVersion} must use x.y.z format`);
 }
-// 版本线不变式（见 .scratch/release-rebrand/spec.md）：
+// 版本线不变式（见 .scratch/2026-09-13_发布与品牌更名/spec.md）：
 // - 面板与 Agent 的 major.minor 恒等：只改面板时面板推补丁位，Agent 不动；
 //   改动涉及 Agent 时两者一起推小版本位并把补丁位归零。
 // - Agent 与 FXP runtime 版本恒等：两者是同一批资产、同一条升级命令装上去的。

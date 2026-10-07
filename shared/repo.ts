@@ -5,7 +5,7 @@
  * 历史上这些地址散落在五个独立常量、三个 shell 脚本和一段生成代码里，
  * 漏改的表现是「装上了另一个仓库的版本」——不报错，只是修复看起来没生效。
  *
- * 注意：Go module 路径与插件商店元数据不由此处派生，见 .scratch/release-rebrand/spec.md。
+ * 注意：Go module 路径与插件商店元数据不由此处派生，见 .scratch/2026-09-13_发布与品牌更名/spec.md。
  */
 export const GITHUB_OWNER = "owo10086";
 export const GITHUB_REPO = "sni-panel";

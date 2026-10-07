@@ -73,7 +73,7 @@ build_one() {
   )
 }
 
-# 当前只发布 linux/amd64，arm64 主机无法安装 Agent（见 .scratch/release-rebrand/spec.md）。
+# 当前只发布 linux/amd64，arm64 主机无法安装 Agent（见 .scratch/2026-09-13_发布与品牌更名/spec.md）。
 build_one amd64 forwardx-agent-linux-amd64
 
 build_fxp() {
