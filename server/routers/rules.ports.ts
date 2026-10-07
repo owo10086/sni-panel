@@ -1,5 +1,6 @@
 import { protectedProcedure, router } from "../_core/trpc";
 import { z } from "zod";
+import { resolveRuleOperationOwner } from "../ruleOperationOwner";
 import * as db from "../db";
 import type { Tunnel } from "../../drizzle/schema";
 import {
@@ -8,7 +9,7 @@ import {
   requireTrafficBillingAccessIfConfigured,
   requireTunnelUseOrTrafficBillingAccess,
 } from "./helpers";
-import { combineHostPortPolicyWithRange, combinePortPolicies, isPortAllowedByPolicy, portPolicyErrorMessage, portPolicyFrom } from "../portPolicy";
+import { combineHostPortPolicyWithRange, combinePortPolicies, describePortPolicy, isPortAllowedByPolicy, portPolicyErrorMessage, portPolicyFrom } from "../portPolicy";
 import { isValidSniValue, normalizeSniValue } from "@shared/sni";
 import {
   assertDirectTunnelSniEntryPortUse,
@@ -21,6 +22,7 @@ import {
 import { assertSniEntryAgentVersions } from "../sniEntryPortOverview";
 
 const randomPortInputSchema = z.object({
+  userId: z.number().int().positive().optional(),
   hostId: z.number().optional(),
   tunnelId: z.number().nullable().optional(),
   forwardGroupId: z.number().optional(),
@@ -96,8 +98,56 @@ async function loadSniEntryPortState(options: {
 }
 
 export const portsRulesRouter = router({
+  effectivePortPolicy: protectedProcedure
+    .input(z.object({
+      userId: z.number().int().positive().optional(),
+      hostId: z.number().int().positive().optional(),
+      forwardGroupId: z.number().int().positive().optional(),
+      tunnelId: z.number().int().positive().nullable().optional(),
+    }).refine(
+      (input) => !!input.hostId !== !!input.forwardGroupId,
+      { message: "请选择一个主机、隧道或转发组" },
+    ))
+    .query(async ({ input, ctx }) => {
+      const actor = ctx.user;
+      const ownerContext = { ...ctx, user: await resolveRuleOperationOwner(actor, input.userId) };
+      let policy;
+      if (input.forwardGroupId) {
+        await requireForwardGroupPortAccess(ownerContext, input.forwardGroupId);
+        policy = await db.getForwardGroupEntryPortPolicy(input.forwardGroupId);
+        if (ownerContext.user.role !== "admin") {
+          const planRange = await db.getUserForwardGroupPlanPortRange(ownerContext.user.id, input.forwardGroupId);
+          if (planRange) {
+            policy = combinePortPolicies(policy, portPolicyFrom({ portRanges: planRange.ranges }));
+          }
+        }
+      } else {
+        const hostId = Number(input.hostId);
+        if (input.tunnelId) {
+          const { tunnel } = await requireTunnelUseOrTrafficBillingAccess(ownerContext, input.tunnelId);
+          if (tunnel.entryHostId !== hostId) throw new Error("隧道入口主机与规则主机不一致");
+          const host = await db.getHostById(hostId);
+          policy = combineHostPortPolicyWithRange(
+            host as any,
+            (tunnel as any).portRangeStart,
+            (tunnel as any).portRangeEnd,
+          );
+        } else {
+          const { host } = await requireHostUseAccess(ownerContext, hostId);
+          policy = portPolicyFrom(host as any);
+        }
+        if (ownerContext.user.role !== "admin") {
+          const planRange = await db.getUserPlanPortRange(ownerContext.user.id, hostId, input.tunnelId ?? undefined);
+          if (planRange) {
+            policy = combinePortPolicies(policy, portPolicyFrom({ portRanges: planRange.ranges }));
+          }
+        }
+      }
+      return { rangeText: describePortPolicy(policy) };
+    }),
   checkPort: protectedProcedure
     .input(z.object({
+      userId: z.number().int().positive().optional(),
       hostId: z.number().int().positive().optional(),
       forwardGroupId: z.number().int().positive().optional(),
       tunnelId: z.number().nullable().optional(),
@@ -111,18 +161,20 @@ export const portsRulesRouter = router({
       { message: "请选择一个主机、隧道或转发组" },
     ))
     .query(async ({ input, ctx }) => {
+      const actor = ctx.user;
+      const ownerContext = { ...ctx, user: await resolveRuleOperationOwner(actor, input.userId) };
       if (input.excludeRuleId) {
-        await requireRuleAccess(ctx, input.excludeRuleId);
+        await requireRuleAccess(ownerContext, input.excludeRuleId);
       }
       const normalizedSni = normalizeSniValue(input.sni);
-      if (normalizedSni && (!isValidSniValue(normalizedSni) || ctx.user.role !== "admin")) {
+      if (normalizedSni && (!isValidSniValue(normalizedSni) || actor.role !== "admin")) {
         return { used: true, reason: "SNI 域名格式不正确或当前账号无权配置" };
       }
       const excludeRuleIds = await resolveExcludeRuleIds(input.excludeRuleId);
       if (input.forwardGroupId) {
-        if (ctx.user.role !== "admin") {
-          await requireForwardGroupPortAccess(ctx, input.forwardGroupId);
-          const planRange = await db.getUserForwardGroupPlanPortRange(ctx.user.id, input.forwardGroupId);
+        if (ownerContext.user.role !== "admin") {
+          await requireForwardGroupPortAccess(ownerContext, input.forwardGroupId);
+          const planRange = await db.getUserForwardGroupPlanPortRange(ownerContext.user.id, input.forwardGroupId);
           if (planRange && !db.isPortAllowedByUserPlanRange(input.sourcePort, planRange)) {
             const ranges = planRange.ranges.map((range) => `${range.start}-${range.end}`).join(",");
             return { used: true, reason: `套餐端口必须在 ${ranges} 范围内` };
@@ -164,7 +216,7 @@ export const portsRulesRouter = router({
       let policy = portPolicyFrom(null);
       let selectedTunnel: Tunnel | null = null;
       if (input.tunnelId) {
-        const { tunnel } = await requireTunnelUseOrTrafficBillingAccess(ctx, input.tunnelId);
+        const { tunnel } = await requireTunnelUseOrTrafficBillingAccess(ownerContext, input.tunnelId);
         selectedTunnel = tunnel;
         if (tunnel.entryHostId !== hostId) throw new Error("隧道入口主机与规则主机不一致");
         const host = await db.getHostById(hostId);
@@ -174,14 +226,14 @@ export const portsRulesRouter = router({
           (tunnel as any).portRangeEnd,
         );
       } else {
-        const { host } = await requireHostUseAccess(ctx, hostId);
+        const { host } = await requireHostUseAccess(ownerContext, hostId);
         policy = portPolicyFrom(host as any);
       }
       if (!isPortAllowedByPolicy(input.sourcePort, policy)) {
         return { used: true, reason: portPolicyErrorMessage(policy) };
       }
-      if (ctx.user.role !== "admin") {
-        const planRange = await db.getUserPlanPortRange(ctx.user.id, hostId, input.tunnelId ?? undefined);
+      if (ownerContext.user.role !== "admin") {
+        const planRange = await db.getUserPlanPortRange(ownerContext.user.id, hostId, input.tunnelId ?? undefined);
         if (planRange) {
           policy = combinePortPolicies(policy, portPolicyFrom({
             portRanges: planRange.ranges,
@@ -213,6 +265,7 @@ export const portsRulesRouter = router({
   // 需要前置反馈的只有域名维度：同一台入口主机上完整域名唯一，跨端口、跨承载资源都算重复。
   checkSni: protectedProcedure
     .input(z.object({
+      userId: z.number().int().positive().optional(),
       hostId: z.number().int().positive().optional(),
       forwardGroupId: z.number().int().positive().optional(),
       tunnelId: z.number().nullable().optional(),
@@ -225,6 +278,10 @@ export const portsRulesRouter = router({
     ))
     .query(async ({ input, ctx }) => {
       if (ctx.user.role !== "admin") return { ok: false, reason: "SNI 分流仅管理员可配置" };
+      const ownerContext = { ...ctx, user: await resolveRuleOperationOwner(ctx.user, input.userId) };
+      if (input.forwardGroupId) await requireForwardGroupPortAccess(ownerContext, input.forwardGroupId);
+      else if (input.tunnelId) await requireTunnelUseOrTrafficBillingAccess(ownerContext, input.tunnelId);
+      else await requireHostUseAccess(ownerContext, Number(input.hostId));
       const normalizedSni = normalizeSniValue(input.sni);
       if (!normalizedSni) return { ok: true, reason: null };
       if (!isValidSniValue(normalizedSni)) return { ok: false, reason: "SNI 域名格式不正确" };
@@ -266,6 +323,8 @@ export const portsRulesRouter = router({
   randomPort: protectedProcedure
     .input(randomPortInputSchema)
     .query(async ({ input, ctx }) => {
+      const actor = ctx.user;
+      const ownerContext = { ...ctx, user: await resolveRuleOperationOwner(actor, input.userId) };
       if (input.excludeRuleId) {
         await requireRuleAccess(ctx, input.excludeRuleId);
       }

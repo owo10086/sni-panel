@@ -1,9 +1,10 @@
 import { MoreHorizontal, Pencil, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-export function RuleBulkActionBar({ count, disabled, busy, onClear, onEdit, onDelete, onMore }: {
+export function RuleBulkActionBar({ count, disabled, editDisabled = false, busy, onClear, onEdit, onDelete, onMore }: {
   count: number;
   disabled: boolean;
+  editDisabled?: boolean;
   busy: boolean;
   onClear: () => void;
   onEdit: () => void;
@@ -18,7 +19,7 @@ export function RuleBulkActionBar({ count, disabled, busy, onClear, onEdit, onDe
         <X className="h-3.5 w-3.5" />清空
       </Button>
       <div className="flex min-w-0 flex-wrap items-center gap-2 sm:ml-auto">
-        <Button type="button" size="sm" disabled={disabled} className="gap-1.5" onClick={onEdit}>
+        <Button type="button" size="sm" disabled={disabled || editDisabled} className="gap-1.5" onClick={onEdit}>
           <Pencil className="h-3.5 w-3.5" />批量编辑
         </Button>
         <Button type="button" variant="outline" size="sm" disabled={disabled} className="gap-1.5 border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={onDelete}>

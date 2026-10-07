@@ -1,4 +1,5 @@
 # Dependencies
+node_modules
 node_modules/
 
 # Build output
@@ -71,3 +72,7 @@ ios/build/
 ios/App/build/
 ios/App/Pods/
 ios/App/Podfile.lock
+
+# Validated TLS cache can contain the panel private key
+panel-ssl-runtime.json
+panel-ssl-runtime.json.*.tmp

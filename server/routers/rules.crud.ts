@@ -46,6 +46,8 @@ import {
 } from "../sniEntryPort";
 import { assertSniEntryAgentVersions } from "../sniEntryPortOverview";
 
+import { resolveRuleOperationOwner } from "../ruleOperationOwner";
+
 const targetHostSchema = z.string().min(1).max(253).refine(
   (v) => /^[a-zA-Z0-9]([a-zA-Z0-9\-_.]*[a-zA-Z0-9])?$|^[a-fA-F0-9:.]+$/.test(v.trim()),
   "请输入有效的 IP 地址或域名"
@@ -965,6 +967,13 @@ async function assertForwardGroupPortWithinUserPlanRange(options: {
   }
 }
 
+async function assertExistingRuleWithinQuota(owner: { id: number; maxRules: number; maxPorts: number }) {
+  const [rules, ports] = await Promise.all([db.getUserRuleCount(owner.id), db.getUserPortCount(owner.id)]);
+  // 已有规则（包括停用规则）已经计入额度，启用时只能检查是否超额，不能再加一。
+  if (owner.maxRules > 0 && rules > owner.maxRules) throw new Error(`您已超过最大规则数量限制（${owner.maxRules} 条）`);
+  if (owner.maxPorts > 0 && ports > owner.maxPorts) throw new Error(`您已超过最大端口数量限制（${owner.maxPorts} 个）`);
+}
+
 async function settleTrafficBillingForDeletedRule(rule: any) {
   const billed = await withKeyedTaskLock(trafficBillingUserLockKey(rule.userId), async () => {
     const billingResource = await db.findTrafficBillingResourceForRule(rule);
@@ -1146,6 +1155,7 @@ export async function toggleForwardRuleForActor(
             if (owner.expiresAt && new Date(owner.expiresAt) <= new Date()) {
               throw new Error("套餐已到期，请续费后再启用规则");
             }
+            await assertExistingRuleWithinQuota(owner);
             await assertForwardGroupPortWithinUserPlanRange({
               userId: actor.id,
               forwardGroupId: groupId,
@@ -1229,7 +1239,7 @@ export async function toggleForwardRuleForActor(
 
       const directRuleSni = normalizeSniInput((rule as any).sni);
       const directRuleProtocol = directRuleSni ? "tcp" : (rule as any).protocol;
-      await requireRuleProtocolEnabled({ ...rule, protocol: directRuleProtocol });
+      if (isEnabled) await requireRuleProtocolEnabled({ ...rule, protocol: directRuleProtocol });
       let toggleTunnelForRule: any = null;
       const reasonPrefix = String(options.reasonPrefix || "forward-rule").trim() || "forward-rule";
       if ((rule as any).tunnelId) {
@@ -1240,7 +1250,6 @@ export async function toggleForwardRuleForActor(
         let directTunnelSniState: DirectTunnelSniEntryPortState | null = null;
         let directTunnelSniPorts: Awaited<ReturnType<typeof reserveDirectTunnelSniRuntimePorts>> | null = null;
         if (directRuleSni) {
-          assertSniRuleAdmin(actor, directRuleSni);
           if (!toggleTunnelForRule) throw new Error("SNI 分流仅支持端口转发、隧道或转发链");
           directTunnelSniState = await getDirectTunnelSniEntryPortState({
             tunnel: toggleTunnelForRule,
@@ -1285,6 +1294,7 @@ export async function toggleForwardRuleForActor(
             : await requireHostUseAccess(actorContext, rule.hostId);
           const owner = await requireForwardAccessReady(actor.id, { allowTrafficBillingRecovery: !!resourceAccess.isTrafficBillingResource });
           await requireTrafficBillingBalanceForRule(actor.id, !!resourceAccess.isTrafficBillingResource);
+          await assertExistingRuleWithinQuota(owner);
           if (owner.expiresAt && new Date(owner.expiresAt) <= new Date()) {
             throw new Error("套餐已到期，请续费后再启用规则");
           }
@@ -1339,11 +1349,11 @@ export async function toggleForwardRuleForActor(
 export async function createDirectForwardRuleForActor(
   actor: { id: number; role: string; allowedForwardTypes?: string | null },
   input: any,
-  options: { reasonPrefix?: string } = {},
+  options: { reasonPrefix?: string; operationActor?: { id: number; role: string } } = {},
 ) {
   await requireRuleTelegramNotifyReady(!!input.telegramErrorNotifyEnabled);
   const normalizedSni = normalizeSniInput(input.sni);
-  assertSniRuleAdmin(actor, normalizedSni);
+  assertSniRuleAdmin(options.operationActor ?? actor, normalizedSni);
   const ruleProtocol = normalizedSni ? "tcp" : input.protocol;
   const ruleInput = {
     ...input,
@@ -1368,7 +1378,7 @@ export async function createDirectForwardRuleForActor(
     forwardType: ruleInput.forwardType,
     tunnelId,
     tunnelMode: selectedTunnelForRule?.mode,
-    isAdmin: actor.role === "admin",
+    isAdmin: (options.operationActor ?? actor).role === "admin",
   });
   await requireRuleProtocolEnabled({ forwardType: ruleInput.forwardType, tunnelId }, selectedTunnelForRule);
   if (!isTrafficBillingRule && Number((currentUser as any)?.trafficLimit || 0) > 0 && Number((currentUser as any)?.trafficUsed || 0) >= Number((currentUser as any)?.trafficLimit || 0)) {
@@ -1450,6 +1460,8 @@ export async function createDirectForwardRuleForActor(
       maxPorts: Number(currentUser?.maxPorts || 0),
       getRuleCount: () => db.getUserRuleCount(actor.id),
       getPortCount: () => db.getUserPortCount(actor.id),
+      sourcePort,
+      hasSourcePort: () => db.userHasRuleSourcePort(actor.id, sourcePort),
     });
     let tunnelExitPort: number | null = null;
     let sniSplitterPort: number | null = null;
@@ -1567,6 +1579,7 @@ export async function createDirectForwardRuleForActor(
 export const crudRulesRouter = router({
   checkSniImport: protectedProcedure
     .input(z.object({
+      userId: z.number().int().positive().optional(),
       forwardGroupId: z.number().int().positive().nullable().optional(),
       tunnelId: z.number().int().positive().nullable().optional(),
       sourcePort: z.number().int().min(1).max(65535),
@@ -1581,6 +1594,11 @@ export const crudRulesRouter = router({
     .mutation(async ({ input, ctx }) => {
       if (ctx.user.role !== "admin") {
         throw new Error("SNI 分流仅管理员可创建");
+      }
+      const owner = await resolveRuleOperationOwner(ctx.user, input.userId);
+      if (owner.role !== "admin") {
+        if (input.tunnelId) await requireTunnelUseOrTrafficBillingAccess({ user: owner }, input.tunnelId);
+        else await requireForwardGroupUseAccess({ user: owner }, Number(input.forwardGroupId));
       }
       const tunnelId = Number(input.tunnelId || 0);
       const forwardGroupId = Number(input.forwardGroupId || 0);
@@ -1648,6 +1666,7 @@ export const crudRulesRouter = router({
     }),
   create: protectedProcedure
     .input(z.object({
+      userId: z.number().int().positive().optional(),
       hostId: z.number().optional(),
       name: z.string().min(1).max(128),
       forwardType: forwardTypeSchema.default("iptables"),
@@ -1675,9 +1694,10 @@ export const crudRulesRouter = router({
       ...sniRuleLimitInputShape,
     }))
     .mutation(async ({ input, ctx }) => {
+      const ownerContext = { ...ctx, user: await resolveRuleOperationOwner(ctx.user, input.userId) };
       await requireRuleTelegramNotifyReady(input.telegramErrorNotifyEnabled);
       // 权限检查：管理员或有 canAddRules 权限的用户
-      let currentUser = await db.getUserById(ctx.user.id);
+      let currentUser = await db.getUserById(ownerContext.user.id);
       const normalizedSni = normalizeSniInput(input.sni);
       assertSniRuleAdmin(ctx.user, normalizedSni);
       if (input.forwardGroupId) {
@@ -1691,13 +1711,13 @@ export const crudRulesRouter = router({
         const ruleProtocol = normalizedSni ? "tcp" : input.protocol;
         let planRange: Awaited<ReturnType<typeof db.getUserForwardGroupPlanPortRange>> = null;
         let groupAccess = { isTrafficBillingResource: false };
-        if (ctx.user.role !== "admin") {
-          groupAccess = await requireForwardGroupUseAccess(ctx, forwardGroupId);
-          currentUser = await requireForwardAccessReady(ctx.user.id, { allowTrafficBillingRecovery: groupAccess.isTrafficBillingResource });
+        if (ownerContext.user.role !== "admin") {
+          groupAccess = await requireForwardGroupUseAccess(ownerContext, forwardGroupId);
+          currentUser = await requireForwardAccessReady(ownerContext.user.id, { allowTrafficBillingRecovery: groupAccess.isTrafficBillingResource });
           if (currentUser?.expiresAt && new Date(currentUser.expiresAt) <= new Date()) {
             throw new Error("您的账户已到期，无法添加规则");
           }
-          planRange = await db.getUserForwardGroupPlanPortRange(ctx.user.id, forwardGroupId);
+          planRange = await db.getUserForwardGroupPlanPortRange(ownerContext.user.id, forwardGroupId);
           if (sourcePort > 0 && planRange && !db.isPortAllowedByUserPlanRange(sourcePort, planRange)) {
             const ranges = planRange.ranges.map((range) => `${range.start}-${range.end}`).join(",");
             throw new Error(`套餐端口必须在 ${ranges} 内`);
@@ -1794,12 +1814,12 @@ export const crudRulesRouter = router({
           reservations: groupReservations,
         });
         const { group, isForwardChain, isPortGroup, sniSplitterPort } = preparedGroupRuntime;
-        if (ctx.user.role !== "admin") {
-          await requireTrafficBillingBalanceForRule(ctx.user.id, groupAccess.isTrafficBillingResource);
+        if (ownerContext.user.role !== "admin") {
+          await requireTrafficBillingBalanceForRule(ownerContext.user.id, groupAccess.isTrafficBillingResource);
         }
         const hostId = await db.getForwardGroupDefaultHostId(forwardGroupId);
         const forwardType = lockedForwardTypeForGroup(group, input.forwardType);
-        requireForwardTypeAllowedForActor(ctx.user, forwardType);
+        requireForwardTypeAllowedForActor(ownerContext.user, forwardType);
         const groupIsTunnel = !isForwardChain && group.groupType === "tunnel";
         if (!isForwardChain && !groupIsTunnel) {
           const host = await db.getHostById(hostId);
@@ -1822,13 +1842,15 @@ export const crudRulesRouter = router({
           isPortForwardGroup: isPortGroup,
           isAdmin: ctx.user.role === "admin",
         });
-        if (ctx.user.role !== "admin") {
+        if (ownerContext.user.role !== "admin") {
           quotaReservation = await reserveRuleCreateQuota({
-            userId: ctx.user.id,
+            userId: ownerContext.user.id,
             maxRules: Number(currentUser?.maxRules || 0),
             maxPorts: Number(currentUser?.maxPorts || 0),
-            getRuleCount: () => db.getUserRuleCount(ctx.user.id),
-            getPortCount: () => db.getUserPortCount(ctx.user.id),
+            getRuleCount: () => db.getUserRuleCount(ownerContext.user.id),
+            getPortCount: () => db.getUserPortCount(ownerContext.user.id),
+            sourcePort,
+            hasSourcePort: () => db.userHasRuleSourcePort(ownerContext.user.id, sourcePort),
           });
         }
         await requireRuleProtocolEnabled({ forwardType, tunnelId: null });
@@ -1877,7 +1899,7 @@ export const crudRulesRouter = router({
             failoverTargets: createFailoverEnabled ? input.failoverTargets : [],
           }, ruleProtocol),
           isRunning: false,
-          userId: ctx.user.id,
+          userId: ownerContext.user.id,
         } as any);
         let id = 0;
         if (isForwardChain) {
@@ -1902,10 +1924,10 @@ export const crudRulesRouter = router({
         const tunnelId = input.forwardType === "gost" ? Number(input.tunnelId || 0) : 0;
         if (!tunnelId) throw new Error("SNI 分流仅支持端口转发、隧道或转发链");
         return withKeyedTaskLock(`tunnel-sni:${tunnelId}:${Number(input.sourcePort || 0)}`, () => (
-          createDirectForwardRuleForActor(ctx.user, { ...input, protocol: "tcp", sni: normalizedSni })
+          createDirectForwardRuleForActor(ownerContext.user, { ...input, protocol: "tcp", sni: normalizedSni }, { operationActor: ctx.user })
         ));
       }
-      return createDirectForwardRuleForActor(ctx.user, input);
+      return createDirectForwardRuleForActor(ownerContext.user, input, { operationActor: ctx.user });
     }),
   update: protectedProcedure
     .input(z.object({

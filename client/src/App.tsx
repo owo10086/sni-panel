@@ -36,6 +36,7 @@ import TrafficBillingPage from "@/pages/TrafficBilling";
 import TunnelsPage from "@/pages/Tunnels";
 import UsersPage from "@/pages/Users";
 import WalletPage from "@/pages/Wallet";
+import DatabaseHealthGate from "./components/DatabaseHealthGate";
 
 type RoutableComponent = ComponentType<any>;
 
@@ -177,10 +178,12 @@ function App() {
       <ThemeProvider defaultTheme="light">
         <TooltipProvider>
           <ConfirmDialogProvider>
-            <PersonalizationLayer />
-            <Live2DWidgetHost />
-            <Toaster />
-            <SetupGate />
+            <DatabaseHealthGate>
+              <PersonalizationLayer />
+              <Live2DWidgetHost />
+              <Toaster />
+              <SetupGate />
+            </DatabaseHealthGate>
           </ConfirmDialogProvider>
         </TooltipProvider>
       </ThemeProvider>

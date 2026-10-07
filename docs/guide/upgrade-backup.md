@@ -184,3 +184,5 @@ curl -fsSL https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/mig
 ## 卸载
 
 如果需要卸载面板或 Agent，请先确认是否需要保留数据库、配置和转发规则，再参考 [卸载 ForwardX](./uninstall.md)。
+
+数据库配置目录中的 `panel-ssl-runtime.json` 也应备份，它用于数据库不可用时恢复面板 HTTPS。该文件可能包含私钥，应保持权限 `0600`，存放在受限备份目录中。

@@ -1,3 +1,4 @@
+import { databaseHealth } from "./databaseHealthState";
 import * as db from "./db";
 import { createDirectForwardRuleForActor, deleteForwardRuleForActor, toggleForwardRuleForActor } from "./routers/rules.crud";
 import { ENV } from "./env";
@@ -5421,6 +5422,10 @@ async function processTelegramUpdate(update: TelegramUpdate) {
 }
 
 async function pollOnce() {
+  if (databaseHealth.snapshot().state === "unavailable") {
+    await new Promise((resolve) => setTimeout(resolve, 15000));
+    return;
+  }
   const settings = await getTelegramSettings();
   if (!settings.enabled || !settings.token) {
     await new Promise((resolve) => setTimeout(resolve, 30000));

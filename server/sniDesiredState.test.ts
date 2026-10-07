@@ -655,6 +655,7 @@ test("SNI forward chains share one entry splitter and keep per-chain next hops",
       assert.doesNotMatch((entryApplies[0].commands || []).join("\n"), /fwx-stat-|forwardx_traffic/);
       assert.doesNotMatch((entryApplies[0].commands || []).join("\n"), /\bcounter\b/);
 
+
       const gostConfigText = findManagedConfig(entryActions, "/runtime/gost.json");
       if (gostConfigText) assert.equal(JSON.parse(gostConfigText).services.filter((service) => service.addr === ":18443").length, 0);
       assert.doesNotMatch(findManagedConfig(entryActions, "/nginx/nginx.conf"), /listen \[::\]:18443\b/);
@@ -1279,6 +1280,38 @@ test("SNI forward chains share one entry splitter and keep per-chain next hops",
       assert.match(kernelCleanupCommands, / -p udp /);
       assert.match(kernelCleanupCommands, /-v proto='tcp'/);
       assert.match(kernelCleanupCommands, /-v proto='udp'/);
+      const excludeTraffic = (id, value) => runtime.executeRaw('UPDATE "hosts" SET "trafficLimit"=1000,"trafficFailoverEnabled"=1,"trafficFailoverExcluded"=? WHERE "id"=?', [value, id]);
+      const routesOn = async (token, port) => {
+        const result = await postHeartbeat(baseUrl, token);
+        assert.equal(result.status, 200);
+        return result.payload.desiredState.actions.filter(a => a.op === "apply" && a.fxp?.role === "sni-splitter" && Number(a.sourcePort) === port).flatMap(a => a.fxp.sniRoutes);
+      };
+      await excludeTraffic(3, 1);
+      assert.deepEqual(await routesOn("entry-a-token", entryGroupThreeHop.sourcePort), []);
+      assert.ok((await routesOn("entry-b-token", entryGroupThreeHop.sourcePort)).some(r => r.sni === entryGroupThreeHop.sni), "healthy entry must retain its shared chain");
+      assert.ok((await routesOn("exit-token", entryGroupThreeHop.splitterPort)).some(r => r.sni === entryGroupThreeHop.sni), "excluding only entry A must not remove the common exit");
+      await excludeTraffic(3, 0);
+      assert.ok((await routesOn("entry-a-token", entryGroupThreeHop.sourcePort)).some(r => r.sni === entryGroupThreeHop.sni));
+      await excludeTraffic(5, 1);
+      assert.deepEqual(await routesOn("entry-a-token", entryGroupThreeHop.sourcePort), []);
+      assert.deepEqual(await routesOn("entry-b-token", entryGroupThreeHop.sourcePort), []);
+      assert.ok((await routesOn("entry-token", 18443)).some(r => r.sni === "gost-api.example.com"));
+      await excludeTraffic(5, 0);
+      assert.ok((await routesOn("entry-b-token", entryGroupThreeHop.sourcePort)).some(r => r.sni === entryGroupThreeHop.sni));
+      // 把一条共享端口的链改用独立出口：只有该出口超量时撤除该链的域名。
+      await insert("hosts", ["id","name","ip","ipv4","agentToken","userId","isOnline","lastHeartbeat","agentVersion","portRangeStart","portRangeEnd"], [6,"独立出口","198.51.100.66","198.51.100.66","other-exit-token",1,1,now,"3.2.0",24000,24010]);
+      await runtime.executeRaw('UPDATE "forward_group_members" SET "hostId"=6 WHERE "id"=3002');
+      await runtime.executeRaw('UPDATE "forward_rules" SET "hostId"=6 WHERE "forwardGroupId"=30 AND "forwardGroupMemberId"=3002');
+      await excludeTraffic(6, 1);
+      const healthyRoutes = await routesOn("entry-token", 18443);
+      assert.ok(healthyRoutes.some(r => r.sni === "gost-api.example.com"));
+      assert.ok(!healthyRoutes.some(r => r.sni === "nginx-api.example.com"));
+      const saved = await runtime.queryRaw('SELECT "sourcePort","isEnabled" FROM "forward_rules" WHERE "id"=300');
+      assert.deepEqual(saved, [{ sourcePort: 18443, isEnabled: 1 }]);
+      await excludeTraffic(6, 0);
+      assert.ok((await routesOn("entry-token", 18443)).some(r => r.sni === "nginx-api.example.com"));
+      await runtime.executeRaw('UPDATE "forward_group_members" SET "hostId"=2 WHERE "id"=3002');
+      await runtime.executeRaw('UPDATE "forward_rules" SET "hostId"=2 WHERE "forwardGroupId"=30 AND "forwardGroupMemberId"=3002');
     } finally {
       if (server) await new Promise((resolve) => server.close(resolve));
       await runtime.closeDatabase();

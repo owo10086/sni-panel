@@ -201,84 +201,6 @@ function clearRuleTrafficStatCaches() {
   }
 }
 
-type PortPolicy = {
-  rangeStart: number | null;
-  rangeEnd: number | null;
-  allowlist: number[];
-  denyAll?: boolean;
-};
-
-function parsePortAllowlist(value: unknown) {
-  const text = String(value || "").trim();
-  if (!text) return [];
-  return Array.from(new Set(text
-    .split(",")
-    .map((item) => Number(String(item).trim()))
-    .filter((port) => Number.isInteger(port) && port >= 1 && port <= 65535)))
-    .sort((a, b) => a - b);
-}
-
-function portPolicyFrom(source: any): PortPolicy {
-  const start = source?.portRangeStart != null ? Number(source.portRangeStart) : null;
-  const end = source?.portRangeEnd != null ? Number(source.portRangeEnd) : null;
-  const hasRange = start != null && end != null && start >= 1 && end <= 65535 && start <= end;
-  return {
-    rangeStart: hasRange ? start : null,
-    rangeEnd: hasRange ? end : null,
-    allowlist: parsePortAllowlist(source?.portAllowlist),
-  };
-}
-
-function hasPortRestriction(policy: PortPolicy) {
-  return !!policy.denyAll || (policy.rangeStart !== null && policy.rangeEnd !== null) || policy.allowlist.length > 0;
-}
-
-function isPortAllowedByPolicy(port: number, policy: PortPolicy) {
-  if (!Number.isInteger(port) || port < 1 || port > 65535) return false;
-  if (policy.denyAll) return false;
-  if (!hasPortRestriction(policy)) return true;
-  const inRange = policy.rangeStart !== null && policy.rangeEnd !== null && port >= policy.rangeStart && port <= policy.rangeEnd;
-  return inRange || policy.allowlist.includes(port);
-}
-
-function describePortPolicy(policy: PortPolicy) {
-  if (policy.denyAll) return "无可用端口";
-  const parts: string[] = [];
-  if (policy.rangeStart !== null && policy.rangeEnd !== null) parts.push(`${policy.rangeStart}-${policy.rangeEnd}`);
-  if (policy.allowlist.length > 0) parts.push(policy.allowlist.join(","));
-  return parts.length > 0 ? parts.join(" + ") : "1-65535";
-}
-
-function combinePortPolicies(...policies: PortPolicy[]): PortPolicy {
-  const restricted = policies.filter(hasPortRestriction);
-  if (restricted.length === 0) return portPolicyFrom(null);
-  const allowed: number[] = [];
-  for (let port = 1; port <= 65535; port++) {
-    if (restricted.every((policy) => isPortAllowedByPolicy(port, policy))) allowed.push(port);
-  }
-  if (allowed.length === 0) return { rangeStart: null, rangeEnd: null, allowlist: [], denyAll: true };
-  const ranges: Array<{ start: number; end: number }> = [];
-  let start = allowed[0];
-  let previous = allowed[0];
-  for (let i = 1; i <= allowed.length; i++) {
-    const current = allowed[i];
-    if (current === previous + 1) {
-      previous = current;
-      continue;
-    }
-    ranges.push({ start, end: previous });
-    start = current;
-    previous = current;
-  }
-  const best = ranges.reduce((acc, range) => (range.end - range.start > acc.end - acc.start ? range : acc), ranges[0]);
-  const useRange = best.end > best.start;
-  return {
-    rangeStart: useRange ? best.start : null,
-    rangeEnd: useRange ? best.end : null,
-    allowlist: allowed.filter((port) => !useRange || port < best.start || port > best.end),
-  };
-}
-
 type RuleProtocol = "tcp" | "udp" | "both";
 type RuleRouteMode = "local" | "tunnel" | "chain" | "group";
 
@@ -2426,6 +2348,9 @@ function RulesContent() {
     return Object.keys(input).length ? input : undefined;
   }, [filterUser, user?.id, user?.role]);
   const effectiveRulesQuery = selectedRulesQuery || undefined;
+  const createOwnerUserId = user?.role === "admin" && filterUser !== "self" && filterUser !== "all"
+    ? Number(filterUser)
+    : undefined;
   const selectedScopeQueryEnabled = false as boolean;
   const [portStatus, setPortStatus] = useState<"idle" | "checking" | "available" | "used">("idle");
   const [portRangeError, setPortRangeError] = useState<string | null>(null);
@@ -2762,9 +2687,10 @@ function RulesContent() {
   const renderRuleEnabledSwitch = (rule: any) => {
     const supported = isRuleSupported(rule);
     const resourceAccessAllowed = rule.resourceAccessAllowed !== false;
-    const enabled = resourceAccessAllowed && !!rule.isEnabled;
+    const enabled = !!rule.isEnabled;
+    const canToggle = enabled || (supported && resourceAccessAllowed);
     const title = enabled ? "关闭后该转发规则将停止下发和转发" : "开启后该转发规则将重新下发并恢复转发";
-    const content = supported && resourceAccessAllowed ? (
+    const content = canToggle ? (
       <OptimisticSwitch
         checked={enabled}
         onCheckedChangeAsync={(checked) => toggleRuleEnabled(rule, checked)}
@@ -2779,7 +2705,7 @@ function RulesContent() {
         <Switch checked={false} disabled className="scale-75" aria-label={resourceAccessAllowed ? "当前协议不支持，规则已停用" : "资源授权已失效，规则已停用"} />
       </span>
     );
-    return supported && resourceAccessAllowed ? content : renderUnsupportedHint(content, resourceAccessAllowed ? unsupportedProtocolTitle : revokedResourceTitle);
+    return canToggle ? content : renderUnsupportedHint(content, resourceAccessAllowed ? unsupportedProtocolTitle : revokedResourceTitle);
   };
 
   const resetForm = () => {
@@ -2895,7 +2821,9 @@ function RulesContent() {
     setShowCopyDialog(true);
   };
 
+  const canEditRuleConfig = (rule: any) => user?.role === "admin" || !String(rule.sni || "").trim();
   const openEdit = (rule: any) => {
+    if (!canEditRuleConfig(rule)) { toast.error("SNI 分流规则的配置由管理员修改，你可以启停或删除自己的规则"); return; }
     const editForwardGroup = rule.forwardGroupId
       ? (forwardGroups || []).find((group: any) => Number(group.id) === Number(rule.forwardGroupId))
       : null;
@@ -3014,21 +2942,20 @@ function RulesContent() {
     if (!form.tunnelId || !tunnels) return null;
     return tunnels.find((t: any) => t.id === form.tunnelId) || null;
   }, [form.tunnelId, tunnels]);
-  const selectedEntryPortPolicy = useMemo(() => {
-    if (!selectedHost) return portPolicyFrom(null);
-    let policy = portPolicyFrom(selectedHost);
-    if (form.routeMode === "tunnel" && selectedTunnel) {
-      policy = combinePortPolicies(
-        policy,
-        portPolicyFrom({
-          portRangeStart: (selectedTunnel as any).portRangeStart,
-          portRangeEnd: (selectedTunnel as any).portRangeEnd,
-        }),
-      );
-    }
-    return policy;
-  }, [form.routeMode, selectedHost, selectedTunnel]);
-  const sourcePortRangeText = useMemo(() => describePortPolicy(selectedEntryPortPolicy), [selectedEntryPortPolicy]);
+  const isPortPolicyForwardGroupRouteMode = isForwardGroupBackedRouteModeValue(form.routeMode, form.forwardGroupId);
+  const hasSelectedPortResource = isPortPolicyForwardGroupRouteMode ? !!form.forwardGroupId : !!form.hostId;
+  const portPolicyResourceInput = isPortPolicyForwardGroupRouteMode && form.forwardGroupId
+    ? { forwardGroupId: Number(form.forwardGroupId) }
+    : { hostId: Number(form.hostId || 1), tunnelId: form.routeMode === "tunnel" ? form.tunnelId : null };
+  const portPolicyInput = { ...portPolicyResourceInput, userId: editingId ? undefined : createOwnerUserId };
+  const { data: effectivePortPolicy, isLoading: effectivePortPolicyLoading, isError: effectivePortPolicyError } = trpc.rules.effectivePortPolicy.useQuery(portPolicyInput, {
+    enabled: showDialog && hasSelectedPortResource,
+    staleTime: 30000,
+    refetchOnWindowFocus: false,
+  });
+  const sourcePortRangeText = hasSelectedPortResource
+    ? effectivePortPolicy?.rangeText || (effectivePortPolicyLoading ? "读取中..." : effectivePortPolicyError ? "暂不可用" : "读取中...")
+    : "请选择链路";
   const portStatusHint = useMemo(() => {
     if (portStatus === "used") {
       return {
@@ -3062,6 +2989,8 @@ function RulesContent() {
     (users || []).forEach((item: any) => map.set(Number(item.id), item));
     return map;
   }, [users]);
+  const ruleOperationOwner = createOwnerUserId ? userById.get(createOwnerUserId) : user;
+  const ruleOperationOwnerLabel = ruleOperationOwner?.name || ruleOperationOwner?.username || `用户 #${createOwnerUserId || user?.id}`;
   const forwardGroupById = useMemo(() => {
     const map = new Map<number, any>();
     (forwardGroups || []).forEach((group: any) => map.set(Number(group.id), group));
@@ -3374,11 +3303,7 @@ function RulesContent() {
       setPortStatus("used");
       return;
     }
-    if (!isForwardGroupRouteMode && !isPortAllowedByPolicy(sourcePort, selectedEntryPortPolicy)) {
-      setPortRangeError(`端口必须在允许范围 ${describePortPolicy(selectedEntryPortPolicy)} 内`);
-      setPortStatus("used");
-      return;
-    }
+
     const sni = sniEntryPortCheckValue(sniModeOn, form.sni);
     if (sniModeOn && !sni) {
       setPortRangeError(null);
@@ -3389,6 +3314,7 @@ function RulesContent() {
     setPortStatus("checking");
     try {
       const result = await utils.rules.checkPort.fetch({
+        userId: editingId ? undefined : createOwnerUserId,
         ...(isForwardGroupRouteMode
           ? { forwardGroupId: Number(forwardGroupId) }
           : { hostId: Number(hostId), tunnelId: routeMode === "tunnel" ? tunnelId : null }),
@@ -3405,13 +3331,13 @@ function RulesContent() {
       if (latestPortCheckRef.current !== checkId) return;
       setPortStatus("idle");
     }
-  }, [form.forwardGroupId, form.hostId, form.sni, effectiveFormProtocol, effectiveRouteForwardType, form.routeMode, form.sourcePort, form.tunnelId, editingId, utils, selectedEntryPortPolicy, isForwardGroupRouteMode, sniModeOn]);
+  }, [form.forwardGroupId, form.hostId, form.sni, effectiveFormProtocol, effectiveRouteForwardType, form.routeMode, form.sourcePort, form.tunnelId, editingId, utils, createOwnerUserId, isForwardGroupRouteMode, sniModeOn]);
 
   // A response started for the previous route must not mark the new route occupied.
   useEffect(() => {
     latestPortCheckRef.current += 1;
     setPortStatus("idle");
-  }, [editingId, form.forwardGroupId, form.hostId, effectiveFormProtocol, effectiveRouteForwardType, form.routeMode, form.sourcePort, form.tunnelId, isForwardGroupRouteMode, sniModeOn]);
+  }, [editingId, form.forwardGroupId, form.hostId, effectiveFormProtocol, effectiveRouteForwardType, form.routeMode, form.sourcePort, form.tunnelId, createOwnerUserId, isForwardGroupRouteMode, sniModeOn]);
 
   // 源端口或 SNI 域名变化时自动检测。服务端负责排除合法的共享入口规则。
   useEffect(() => {
@@ -3447,6 +3373,7 @@ function RulesContent() {
     const timer = setTimeout(async () => {
       try {
         const result = await utils.rules.checkSni.fetch({
+          userId: editingId ? undefined : createOwnerUserId,
           ...(isForwardGroupRouteMode
             ? { forwardGroupId: Number(form.forwardGroupId) }
             : { hostId: Number(form.hostId), tunnelId: form.routeMode === "tunnel" ? form.tunnelId : null }),
@@ -3522,7 +3449,7 @@ function RulesContent() {
       const randomPortInput = isForwardGroupRouteMode
         ? { forwardGroupId: Number(form.forwardGroupId), excludeRuleId: editingId || undefined, protocol: effectiveFormProtocol }
         : { hostId: Number(form.hostId), tunnelId: form.routeMode === "tunnel" ? form.tunnelId : null, excludeRuleId: editingId || undefined, protocol: effectiveFormProtocol };
-      const result = await utils.rules.randomPort.fetch(randomPortInput);
+      const result = await utils.rules.randomPort.fetch({ ...randomPortInput, userId: editingId ? undefined : createOwnerUserId });
       setForm({ ...form, sourcePort: result.port });
       setPortStatus("idle");
       toast.success(`已分配随机端口: ${result.port}`);
@@ -3592,6 +3519,7 @@ function RulesContent() {
     const keepFailover = targetType === "group" && !!rule.failoverEnabled;
     return {
       hostId: isTunnelTarget ? Number(resource.entryHostId) : undefined,
+      userId: createOwnerUserId,
       name: String(rule.name || "复制规则").trim().slice(0, 128) || "复制规则",
       forwardType,
       protocol: normalizeRuleProtocol(rule.protocol),
@@ -3601,6 +3529,9 @@ function RulesContent() {
       tunnelId: isTunnelTarget ? Number(resource.id) : null,
       forwardGroupId: isForwardGroupTarget ? Number(resource.id) : null,
       sourcePort,
+      sni: String(rule.sni || "").trim() || null,
+      rateLimitMbps: Number(rule.rateLimitMbps || 0),
+      maxConnections: Number(rule.maxConnections || 0),
       targetIp: String(rule.targetIp || ""),
       targetPort: Number(rule.targetPort || 0),
       telegramErrorNotifyEnabled: telegramBotReady && !!rule.telegramErrorNotifyEnabled,
@@ -3649,6 +3580,7 @@ function RulesContent() {
   };
 
   const createBatchCopyRule = async (rule: any, targetType: RuleTransferScopeType, resource: any) => {
+    if (!canEditRuleConfig(rule)) throw new Error("SNI 分流规则仅管理员可复制");
     const sourcePort = Number(rule.sourcePort || 0);
     try {
       await batchCreateMutation.mutateAsync(buildBatchCopyRulePayload(rule, targetType, resource, sourcePort) as any);
@@ -3664,6 +3596,7 @@ function RulesContent() {
   };
 
   const updateBatchRuleTarget = async (rule: any, override?: RuleBulkEditInput) => {
+    if (!canEditRuleConfig(rule)) throw new Error("SNI 分流规则仅管理员可修改");
     const conflictStrategy = override ? override.conflictStrategy : copyConflictStrategy;
     const hasRouteSelection = override ? !!(override.routeMode === "tunnel" ? override.tunnelId : override.forwardGroupId) : hasBatchEditRouteSelection;
     const sourcePort = Number(rule.sourcePort || 0);
@@ -3891,7 +3824,9 @@ function RulesContent() {
     }
     resetTrafficMutation.mutate({
       scope: "all",
-      ruleIds: visibleRuleIdsForMetrics,
+      userId: user?.role === "admin" && filterUser === "all"
+        ? undefined
+        : createOwnerUserId ?? Number(user?.id),
     });
   };
 
@@ -4055,6 +3990,7 @@ function RulesContent() {
       });
     } else {
       createMutation.mutate({
+        userId: createOwnerUserId,
         hostId: isForwardGroupRouteMode ? undefined : form.hostId!,
         name: form.name,
         forwardType: submitForwardType,
@@ -4318,7 +4254,7 @@ function RulesContent() {
   const hasBatchEditTargetIpChange = batchEditTargetIp.length > 0;
   const hasBatchEditTargetPortChange = isValidPort(batchEditTargetPort);
   const hasBatchEditChanges = hasBatchEditRouteSelection || hasBatchEditTargetIpChange || hasBatchEditTargetPortChange;
-  const batchCopyDisabled = !canAdd || copyActionPending || selectedBatchRuleCount === 0 || selectedBatchTargetCount === 0;
+  const batchCopyDisabled = !canAdd || !copySelectedRules.some(canEditRuleConfig) || copyActionPending || selectedBatchRuleCount === 0 || selectedBatchTargetCount === 0;
   const batchEditDisabled = copyActionPending || selectedBatchRuleCount === 0 || !hasBatchEditChanges;
   const ruleFilterCacheScope = user?.role === "admin"
     ? `admin-${user?.id || "self"}-${filterUser}`
@@ -5804,6 +5740,7 @@ function RulesContent() {
       : getForwardGroupRuleForwardType(selectedGroup, rule.forwardType);
     return {
       hostId: importScopeType === "tunnel" ? Number(selectedTunnel?.entryHostId || 0) : undefined,
+      userId: createOwnerUserId,
       name: rule.name,
       forwardType: payloadForwardType,
       protocol: sni ? "tcp" : rule.protocol,
@@ -5849,6 +5786,7 @@ function RulesContent() {
     try {
       if (importSourceMode === "sni") {
         await checkSniImportMutation.mutateAsync({
+          userId: createOwnerUserId,
           forwardGroupId: importScopeType === "tunnel" ? null : Number(importResourceId),
           tunnelId: importScopeType === "tunnel" ? Number(importResourceId) : null,
           sourcePort: Number(importSniSourcePort),
@@ -6635,6 +6573,7 @@ function RulesContent() {
             variant="ghost"
             size="icon"
             className="h-8 w-8"
+            disabled={!canEditRuleConfig(rule)}
             onClick={() => openEdit(rule)}
             title="编辑并切换到可用转发资源"
           >
@@ -6691,6 +6630,7 @@ function RulesContent() {
           variant="ghost"
           size="icon"
           className="h-8 w-8"
+          disabled={!canEditRuleConfig(rule)}
           onClick={() => openEdit(rule)}
         >
           <Pencil className="h-3.5 w-3.5" />
@@ -6744,6 +6684,10 @@ function RulesContent() {
   };
 
   const handleFilterUserChange = (value: string) => {
+    setCopyRuleIds([]);
+    setShowCopyDialog(false);
+    setShowDialog(false);
+    setResetTrafficTarget(null);
     setFilterUser(value);
     storeString(filterUserStorageKey, value);
   };
@@ -7426,7 +7370,7 @@ function RulesContent() {
             variant="outline"
             onClick={() => setResetTrafficTarget({ scope: "all" })}
             className="gap-2"
-            disabled={visibleRuleIdsForMetrics.length === 0 || resetTrafficMutation.isPending}
+            disabled={ruleScopeTotal === 0 || resetTrafficMutation.isPending}
           >
             {resetTrafficMutation.isPending && resetTrafficTarget?.scope === "all"
               ? <Loader2 className="h-4 w-4 animate-spin" />
@@ -7752,6 +7696,7 @@ function RulesContent() {
         </label>
       )}
       {!isRuleGlobeView && <RuleBulkActionBar count={bulkSelection.selectedIds.size} disabled={bulkActions.disabled} busy={bulkSelection.busy}
+        editDisabled={!bulkSelection.selectedRules.some(canEditRuleConfig)}
         onClear={bulkSelection.clear} onEdit={bulkActions.openDialog} onDelete={() => void bulkActions.remove()} onMore={() => openCopyDialog([...bulkSelection.selectedIds])} />}
       <RuleBulkEditDialog open={bulkActions.dialogOpen} onOpenChange={bulkActions.onOpenChange} rules={bulkSelection.selectedRules}
         getRouteMode={(rule) => getRuleCategory(rule, forwardGroupById)} disabled={bulkActions.disabled} busy={bulkSelection.busy} onApply={bulkActions.apply} isValidTargetHost={isValidTargetHost}
@@ -7976,6 +7921,7 @@ function RulesContent() {
         <DialogContent className="flex max-h-[96svh] w-[calc(100vw-1rem)] flex-col gap-3 overflow-hidden p-4 sm:max-w-2xl sm:p-5">
           <DialogHeader>
             <DialogTitle>{editingId ? "编辑规则" : "添加转发规则"}</DialogTitle>
+            {!editingId && user?.role === "admin" && <DialogDescription>新增规则归属：{ruleOperationOwnerLabel}</DialogDescription>}
           </DialogHeader>
           <div className="min-h-0 flex-1 scroll-pb-28 space-y-3 overflow-y-auto pb-5 pr-1">
             <Tabs
@@ -8632,7 +8578,7 @@ function RulesContent() {
               <ClipboardCopy className="h-5 w-5" />
               批量管理转发规则
             </DialogTitle>
-            <DialogDescription>筛选并选择规则后，可批量复制、编辑、导出或删除。</DialogDescription>
+            <DialogDescription>管理当前用户筛选范围内的规则；复制或导入的新规则归属：{ruleOperationOwnerLabel}。编辑不会改变规则归属。</DialogDescription>
           </DialogHeader>
           <div className="max-h-[72vh] space-y-4 overflow-y-auto pr-1">
             <div className={segmentedControlClassName}>
@@ -9352,7 +9298,7 @@ function RulesContent() {
             <DialogTitle>{resetTrafficTarget?.scope === "all" ? "重置全部规则数据" : "重置规则数据"}</DialogTitle>
             <DialogDescription>
               {resetTrafficTarget?.scope === "all"
-                ? `确认重置当前列表中 ${visibleRuleIdsForMetrics.length} 条规则的所有统计数据？`
+                ? `确认重置${filterUser === "all" ? "所有用户" : filterUser === "self" ? "我的规则" : "所选用户"}的全部规则统计数据？此操作包含其他分页中的规则，不受链路和搜索筛选影响。`
                 : `确认重置规则 "${resetTrafficTarget?.rule?.name || ""}" 的所有统计数据？`}
             </DialogDescription>
           </DialogHeader>
@@ -9370,7 +9316,7 @@ function RulesContent() {
             <Button
               variant="destructive"
               onClick={handleConfirmResetTraffic}
-              disabled={!resetTrafficTarget || resetTrafficMutation.isPending || (resetTrafficTarget.scope === "all" && visibleRuleIdsForMetrics.length === 0)}
+              disabled={!resetTrafficTarget || resetTrafficMutation.isPending || (resetTrafficTarget.scope === "all" && ruleScopeTotal === 0)}
               className="gap-2"
             >
               {resetTrafficMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}

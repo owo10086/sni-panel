@@ -153,6 +153,19 @@ export async function getUserRuleCount(userId: number): Promise<number> {
   return Number(r[0]?.count) || 0;
 }
 
+/** 停用规则仍占额度；系统子规则不重复计算。 */
+export async function userHasRuleSourcePort(userId: number, sourcePort: number): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+  const rows = await db.select({ id: forwardRules.id }).from(forwardRules).where(and(
+    eq(forwardRules.userId, userId),
+    eq(forwardRules.sourcePort, sourcePort),
+    eq(forwardRules.pendingDelete, false),
+    sql`${forwardRules.forwardGroupRuleId} IS NULL`,
+  )).limit(1);
+  return rows.length > 0;
+}
+
 /** 获取某用户使用的端口数量（去重） */
 export async function getUserPortCount(userId: number): Promise<number> {
   const db = await getDb();

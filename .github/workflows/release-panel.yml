@@ -60,6 +60,9 @@ jobs:
       - name: Type check
         run: pnpm exec tsc --noEmit
 
+      - name: Build panel assets
+        run: pnpm build
+
       - name: Run panel tests
         run: pnpm test:server
 
@@ -72,9 +75,6 @@ jobs:
       - name: Prepare release notes
         shell: bash
         run: node scripts/extract-release-notes.mjs "${{ steps.release.outputs.version_no_v }}" > RELEASE_NOTES.md
-
-      - name: Build panel assets
-        run: pnpm build
 
       - name: Build bundled Agent assets
         run: bash scripts/build-agent-release.sh
