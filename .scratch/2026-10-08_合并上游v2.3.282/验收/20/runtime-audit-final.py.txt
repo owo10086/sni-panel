@@ -1,0 +1,33 @@
+import os,pathlib,json,subprocess,hashlib,re,datetime
+os.umask(0o077);p=pathlib.Path('/root/forwardx-acceptance/20261010-upstream282-ed9be4f')
+listeners=subprocess.check_output(['ss','-lntup'],text=True);retired=bool(re.search(r':56392\b',listeners));assert not retired
+processes=[]
+for f in pathlib.Path('/proc').iterdir():
+ try:
+  if not f.name.isdigit() or (f/'comm').read_text().strip()!='forwardx-fxp':continue
+  args=(f/'cmdline').read_bytes().split(b'\0');config=next((args[i+1].decode() for i,x in enumerate(args[:-1]) if x in [b'--config',b'-config']),None)
+  d=json.loads(pathlib.Path(config).read_text()) if config else {}
+  processes.append({'pid':int(f.name),'role':d.get('role'),'listenPort':d.get('listenPort'),'routeCount':len(d.get('sniRoutes',[])),'executableSha256':hashlib.sha256((f/'exe').read_bytes()).hexdigest()})
+ except (FileNotFoundError,PermissionError,StopIteration):continue
+snapshots=[]
+for base in ['/var/lib/forwardx-agent','/run/forwardx-agent']:
+ for f in pathlib.Path(base).rglob('*.json'):
+  try:d=json.loads(f.read_text())
+  except:continue
+  if (d.get('role')=='sni-splitter' or 'sni-splitter' in f.name) and (d.get('listenPort')==56392 or '56392' in f.name):snapshots.append({'path':str(f),'sha256':hashlib.sha256(f.read_bytes()).hexdigest()})
+firewall=[]
+for binary in ['nft','iptables','ip6tables','iptables-legacy','ip6tables-legacy','iptables-nft','ip6tables-nft']:
+ if not __import__('shutil').which(binary):firewall.append({'backend':binary,'available':False});continue
+ r=subprocess.run([binary,'list','ruleset'] if binary=='nft' else [binary,'-w','5','-S'],capture_output=True,text=True);(p/(binary+'-candidate.txt')).write_text(r.stdout+r.stderr)
+ if binary=='nft':
+  inchain=False;marked=[]
+  for line in r.stdout.splitlines():
+   if 'chain ' in line:inchain=bool(re.search(r'chain sni_input\b',line))
+   if inchain and 'fwx-sni-splitter-' in line:marked.append(line)
+ else:marked=[line for line in r.stdout.splitlines() if re.search(r'--comment "?fwx-sni-splitter-\d+:',line)]
+ firewall.append({'backend':binary,'available':True,'readExitCode':r.returncode,'remainingSniSourceRestrictionRules':len(marked)})
+result={'at':datetime.datetime.now(datetime.timezone.utc).isoformat(),'retiredPort':56392,'retiredListening':retired,'remainingRetiredSnapshots':snapshots,'runningFxpProcesses':processes,'sourceFirewall':firewall}
+(p/('runtime-'+os.environ.get('AUDIT_STAGE','candidate')+'-audit.json')).write_text(json.dumps(result,indent=2));print(json.dumps(result))
+expected=json.loads((p/'official-agent-hashes.json').read_text())['forwardx-fxp'] if os.environ.get('AUDIT_STAGE')=='official' else 'da88721e746d446a80edeb38a6ea44c7c035ce02cbc98cb34177fb1819d67dc7'
+assert processes and all(x['executableSha256']==expected for x in processes)
+assert all(x.get('readExitCode',0)==0 and x.get('remainingSniSourceRestrictionRules',0)==0 for x in firewall)

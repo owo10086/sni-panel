@@ -1,0 +1,7 @@
+{
+  "at": "2026-10-10T09:16:13.287972+00:00",
+  "service": "forwardx-agent",
+  "mainPid": 490014,
+  "runningExecutableSha256": "50a8d57f01306c8e4a3d51b507a503078c0fcfa28d18dba0696cbaffd7451ebc",
+  "matchesOfficialRelease": true
+}

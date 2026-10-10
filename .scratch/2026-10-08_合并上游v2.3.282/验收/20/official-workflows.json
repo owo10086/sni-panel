@@ -1,0 +1,34 @@
+[
+  {
+    "conclusion": "success",
+    "databaseId": 38039019720,
+    "headSha": "a48addb8e380d59fa179be6ed84744a690afe0e2",
+    "name": "Release Panel",
+    "status": "completed",
+    "url": "https://github.com/owo10086/sni-panel/actions/runs/38039019720"
+  },
+  {
+    "conclusion": "success",
+    "databaseId": 38039019782,
+    "headSha": "a48addb8e380d59fa179be6ed84744a690afe0e2",
+    "name": "Docs",
+    "status": "completed",
+    "url": "https://github.com/owo10086/sni-panel/actions/runs/38039019782"
+  },
+  {
+    "conclusion": "success",
+    "databaseId": 38039019723,
+    "headSha": "a48addb8e380d59fa179be6ed84744a690afe0e2",
+    "name": "CI",
+    "status": "completed",
+    "url": "https://github.com/owo10086/sni-panel/actions/runs/38039019723"
+  },
+  {
+    "conclusion": "success",
+    "databaseId": 38039019722,
+    "headSha": "a48addb8e380d59fa179be6ed84744a690afe0e2",
+    "name": "Release Agent",
+    "status": "completed",
+    "url": "https://github.com/owo10086/sni-panel/actions/runs/38039019722"
+  }
+]

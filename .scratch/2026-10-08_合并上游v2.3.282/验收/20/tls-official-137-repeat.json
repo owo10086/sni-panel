@@ -1,0 +1,25 @@
+{
+  "results": [
+    {
+      "name": "alternate-137-target",
+      "at": "2026-10-10T09:14:00.665908+00:00",
+      "ok": true,
+      "tls": "TLSv1.3",
+      "elapsedMs": 26
+    },
+    {
+      "name": "alternate-137-exit",
+      "at": "2026-10-10T09:14:00.692301+00:00",
+      "ok": false,
+      "error": "_ssl.c:975: The handshake operation timed out",
+      "elapsedMs": 10173
+    },
+    {
+      "name": "alternate-137-entry",
+      "at": "2026-10-10T09:14:10.865272+00:00",
+      "ok": true,
+      "tls": "TLSv1.3",
+      "elapsedMs": 622
+    }
+  ]
+}

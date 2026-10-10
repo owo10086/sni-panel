@@ -1,0 +1,29 @@
+import os,json,pathlib,subprocess,time,datetime
+os.umask(0o077);p=pathlib.Path('/root/forwardx-acceptance/20261010-upstream282-ed9be4f');deploy=pathlib.Path('/root/docker_data/forwardx')
+run=lambda a:subprocess.check_output(a,text=True)
+ref='ghcr.io/owo10086/sni-panel:v3.3.0';subprocess.run(['docker','pull',ref],check=True)
+image=json.loads(run(['docker','image','inspect',ref]))[0]
+assert image['Architecture']=='amd64' and image['Config']['Labels']['org.opencontainers.image.version']=='3.3.0' and image['RepoDigests']
+fixed=image['RepoDigests'][0];override=p/'official-image.yml';override.write_text('services:\n  forwardx:\n    image: '+fixed+'\n')
+assert json.loads(run(['docker','inspect','forwardx-panel']))[0]['Image']=='sha256:68b7b297dd8f2875285e18a5cd979ef85b7489486f95ffede1c2ea344a3d4e56'
+command=['docker','compose','-p','forwardx','--project-directory',str(deploy),'--env-file',str(p/'.env'),'-f',str(p/'docker-compose.yml'),'-f',str(override),'up','-d','--force-recreate','--pull','never','forwardx']
+try:
+ subprocess.run(command,check=True);healthy=False
+ for attempt in range(45):
+  check=subprocess.run(['curl','-ksS','--max-time','2','https://127.0.0.1/api/database-health'],capture_output=True,text=True)
+  try:healthy=check.returncode==0 and json.loads(check.stdout).get('state')=='healthy'
+  except:healthy=False
+  if healthy:break
+  time.sleep(1)
+ assert healthy,'official health failed'
+ container=json.loads(run(['docker','inspect','forwardx-panel']))[0];assert container['Image']==image['Id']
+ version=run(['docker','exec','forwardx-panel','node','-p','require("./package.json").version']).strip();assert version=='3.3.0'
+ assets=json.loads(run(['docker','exec','forwardx-panel','node','-e',"const fs=require('fs'),c=require('crypto');console.log(JSON.stringify(Object.fromEntries(['forwardx-agent-linux-amd64','forwardx-fxp-linux-amd64','forwardx-runtime-linux-amd64'].map(n=>[n,c.createHash('sha256').update(fs.readFileSync('/app/dist/agent/'+n)).digest('hex')]))))"]))
+ result={'at':datetime.datetime.now(datetime.timezone.utc).isoformat(),'version':version,'imageId':image['Id'],'repoDigest':fixed,'architecture':image['Architecture'],'health':json.loads(check.stdout),'imageBundledAssetHashes':assets,'indexHash':run(['docker','exec','forwardx-panel','sha256sum','/app/dist/index.js']).split()[0]}
+ (p/'official-deployment.json').write_text(json.dumps(result,indent=2));print(json.dumps(result))
+ # Persist the chosen fixed official digest for later normal compose up operations.
+ shutil=__import__('shutil');shutil.copy2(deploy/'docker-compose.yml',p/'docker-compose-before-pin.yml')
+ compose=(deploy/'docker-compose.yml').read_text();assert '    image: ${FORWARDX_IMAGE:-ghcr.io/owo10086/sni-panel:latest}' in compose
+ (deploy/'docker-compose.yml').write_text(compose.replace('    image: ${FORWARDX_IMAGE:-ghcr.io/owo10086/sni-panel:latest}','    image: '+fixed))
+except Exception:
+ subprocess.run([str(p/'rollback.sh')],check=True);raise

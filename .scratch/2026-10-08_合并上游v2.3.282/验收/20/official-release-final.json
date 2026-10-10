@@ -1,0 +1,16 @@
+{
+  "tag": "v3.3.0",
+  "url": "https://github.com/owo10086/sni-panel/releases/tag/v3.3.0",
+  "draft": false,
+  "prerelease": false,
+  "publishedAt": "2026-10-10T08:52:25Z",
+  "targetCommitish": "a48addb8e380d59fa179be6ed84744a690afe0e2",
+  "assetNames": [
+    "forwardx-agent-linux-amd64",
+    "forwardx-fxp-linux-amd64",
+    "forwardx-panel-v3.3.0.tar.gz",
+    "forwardx-runtime-linux-amd64",
+    "SHA256SUMS",
+    "THIRD_PARTY_NOTICES.md"
+  ]
+}

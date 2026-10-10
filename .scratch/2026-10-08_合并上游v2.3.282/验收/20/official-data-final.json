@@ -1,0 +1,84 @@
+{
+  "at": "2026-10-10T09:14:00.615013+00:00",
+  "quickCheck": "ok",
+  "missingOldTablesOrColumns": [],
+  "addedColumns": [
+    "users.googleEmail",
+    "users.discordAnnouncementSubscribed",
+    "users.discordBindCode",
+    "users.discordLoginCode",
+    "users.googleSubject",
+    "users.discordLastSeenAt",
+    "users.discordId",
+    "users.googleLinkedAt",
+    "users.discordLoginCodeExpiresAt",
+    "users.discordUsername",
+    "users.discordBindCodeExpiresAt",
+    "users.discordLinkedAt",
+    "forward_rules.quotaUsedIn",
+    "forward_rules.quotaUsedOut",
+    "forward_rules.trafficLimit",
+    "forward_rules.expiresAt",
+    "forward_rules.adminManaged",
+    "forward_rules.trafficMode",
+    "forward_rules.ruleLimitReason",
+    "forward_tests.batchSettled",
+    "forward_tests.requestMessage",
+    "forward_tests.firstDispatchedAt",
+    "forward_tests.batchId"
+  ],
+  "addedTables": [
+    "ai_bot_workflows",
+    "probe_counter_heads",
+    "probe_counter_snapshots"
+  ],
+  "businessConfigurationChanges": [],
+  "counts": {
+    "hosts": 5,
+    "forward_rules": 235,
+    "tunnels": 0,
+    "forward_groups": 7,
+    "forward_group_members": 12,
+    "system_settings": 74
+  },
+  "hosts": [
+    {
+      "id": 2,
+      "isOnline": 1,
+      "agentVersion": "3.3.0",
+      "agentLastReceivedRevision": 3073,
+      "agentLastAppliedRevision": 3073
+    },
+    {
+      "id": 3,
+      "isOnline": 1,
+      "agentVersion": "3.2.0",
+      "agentLastReceivedRevision": 3066,
+      "agentLastAppliedRevision": 3066
+    },
+    {
+      "id": 4,
+      "isOnline": 1,
+      "agentVersion": "3.3.0",
+      "agentLastReceivedRevision": 3066,
+      "agentLastAppliedRevision": 3066
+    },
+    {
+      "id": 5,
+      "isOnline": 1,
+      "agentVersion": "3.2.0",
+      "agentLastReceivedRevision": 3066,
+      "agentLastAppliedRevision": 3066
+    },
+    {
+      "id": 12,
+      "isOnline": 1,
+      "agentVersion": "3.2.0",
+      "agentLastReceivedRevision": 3066,
+      "agentLastAppliedRevision": 3066
+    }
+  ],
+  "googleLoginEnabled": "false",
+  "notificationProvider": "telegram",
+  "seamlessStateFileExists": false
+}

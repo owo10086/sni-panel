@@ -1,0 +1,25 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+import { createRequire } from 'node:module';
+const require = createRequire('/app/package.json');
+const db = new (require('better-sqlite3'))('/data/forwardx.db', { readonly: true });
+const { prefix, ids } = JSON.parse(fs.readFileSync('/tmp/ticket20-ui-private.json', 'utf8'));
+const remaining = [];
+for (const { name } of db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'").all()) {
+  const columns = new Set(db.prepare('PRAGMA table_info("' + name + '")').all().map(row => row.name));
+  for (const [column, values] of [['ruleId', ids.rules], ['parentRuleId', ids.rules], ['hostId', ids.hosts], ['userId', ids.users], ['forwardGroupId', ids.groups]]) {
+    if (!columns.has(column) || !values.length) continue;
+    const count = db.prepare('SELECT count(*) AS n FROM "' + name + '" WHERE "' + column + '" IN (' + values.map(() => '?').join(',') + ')').get(...values).n;
+    if (count) remaining.push({ table: name, column, count });
+  }
+}
+for (const [table, column] of [['users', 'username'], ['hosts', 'name'], ['forward_groups', 'name'], ['forward_rules', 'name']]) {
+  const count = db.prepare('SELECT count(*) AS n FROM "' + table + '" WHERE "' + column + '" LIKE ?').get(prefix + '%').n;
+  if (count) remaining.push({ table, column, count });
+}
+assert.equal(remaining.length, 0);
+db.close();
+for (const filename of ['/tmp/ticket20-ui-private.json', '/tmp/ordinary-private.json', '/tmp/ordinary-id.json', '/tmp/official-smoke.mjs', '/tmp/ordinary-network.mjs', '/tmp/cleanup-smoke.mjs']) {
+  fs.rmSync(filename, { force: true });
+}
+console.log(JSON.stringify({ at: new Date().toISOString(), temporaryRecordsAndSessionsRemoved: true, remainingReferences: remaining, containerPrivateFixtureFilesRemoved: true }));

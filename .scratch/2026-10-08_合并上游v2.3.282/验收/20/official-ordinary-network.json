@@ -1,0 +1,22 @@
+{
+  "create": {
+    "ordinaryRuleCreated": true,
+    "sourcePort": 28444,
+    "id": 907
+  },
+  "probe": {
+    "at": "2026-10-10T09:10:03.326436+00:00",
+    "ordinarySourcePort": 28444,
+    "tls": "TLSv1.3",
+    "passed": true
+  },
+  "delete": {
+    "temporaryOrdinaryRuleRemoved": true
+  },
+  "kernel": {
+    "at": "2026-10-10T09:13:10.428326+00:00",
+    "ordinarySourcePort": 28444,
+    "remainingKernelPortReferences": 0,
+    "remainingTemporaryRuleMarkers": 0
+  }
+}

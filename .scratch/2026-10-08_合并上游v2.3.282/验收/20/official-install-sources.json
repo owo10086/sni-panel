@@ -1,0 +1,38 @@
+{
+  "hosts": [
+    {
+      "host": "in",
+      "attempts": [
+        {
+          "source": "GitHub official Release",
+          "asset": "forwardx-agent-linux-amd64"
+        },
+        {
+          "source": "GitHub official Release",
+          "asset": "forwardx-fxp-linux-amd64"
+        }
+      ],
+      "goAgentInstallCompleted": true,
+      "fxpInstallCompleted": true,
+      "downloadFailures": 0,
+      "gostSameVersionPreserved": true
+    },
+    {
+      "host": "out",
+      "attempts": [
+        {
+          "source": "GitHub official Release",
+          "asset": "forwardx-agent-linux-amd64"
+        },
+        {
+          "source": "GitHub official Release",
+          "asset": "forwardx-fxp-linux-amd64"
+        }
+      ],
+      "goAgentInstallCompleted": true,
+      "fxpInstallCompleted": true,
+      "downloadFailures": 0,
+      "gostSameVersionPreserved": true
+    }
+  ]
+}

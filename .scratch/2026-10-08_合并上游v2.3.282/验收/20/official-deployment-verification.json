@@ -1,0 +1,15 @@
+{
+  "at": "2026-10-10T09:16:37.796091+00:00",
+  "imageId": "sha256:e290da0de8c3c952616e8ee94afae2ab3b58e5156c690ffd44e5031f80e4bebe",
+  "version": "3.3.0",
+  "revision": null,
+  "fixedDigestPersisted": true,
+  "health": {
+    "state": "healthy",
+    "databaseType": "sqlite",
+    "checkedAt": "2026-10-10T09:16:26.206Z",
+    "unavailableSince": null,
+    "reason": null,
+    "restartRequired": false
+  }
+}

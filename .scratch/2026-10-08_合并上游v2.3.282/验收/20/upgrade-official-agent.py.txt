@@ -1,0 +1,15 @@
+import os,json,pathlib,subprocess,hashlib,datetime,re,shutil
+os.umask(0o077);p=pathlib.Path('/root/forwardx-acceptance/20261010-upstream282-ed9be4f')
+config=pathlib.Path('/etc/forwardx/agent/config.json');before=json.loads(config.read_text());assert before['token']
+url=before['panelUrl'].rstrip('/')+'/api/agent/install.sh'
+installer=p/'official-install.sh';subprocess.run(['curl','-fsSL','--connect-timeout','15','--max-time','90',url,'-o',str(installer)],check=True);installer.chmod(0o700)
+assert '3.3.0' in installer.read_text()
+env=os.environ.copy();env.update(PANEL_URL=before['panelUrl'],FORWARDX_AGENT_PANEL_FIRST='false',GITHUB_ACCELERATOR_ENABLED='false',GITHUB_ACCELERATOR_URL='',FORWARDX_INSTALL_MIMIC='false',FORWARDX_INSTALL_NGINX='true' if pathlib.Path('/usr/local/bin/forwardx-nginx').exists() else 'false')
+with (p/'official-upgrade.log').open('w') as log:r=subprocess.run(['bash',str(installer),'upgrade'],env=env,stdout=log,stderr=subprocess.STDOUT)
+assert r.returncode==0,'Installer failed; inspect private log and restore prepared backup'
+after=json.loads(config.read_text());assert after['token']==before['token'] and after['panelUrl']==before['panelUrl']
+expected=json.loads((p/'official-agent-hashes.json').read_text())
+hashes={n:hashlib.sha256(pathlib.Path('/usr/local/bin/'+n).read_bytes()).hexdigest() for n in expected};assert hashes==expected
+listeners=subprocess.check_output(['ss','-lntup'],text=True);(p/'listeners-candidate.txt').write_text(listeners);assert not re.search(r':56392\b',listeners)
+result={'at':datetime.datetime.now(datetime.timezone.utc).isoformat(),'installerSha256':hashlib.sha256(installer.read_bytes()).hexdigest(),'mode':'panel installer upgrade, GitHub first (actual source audited)','exitCode':r.returncode,'installedHashes':hashes,'configurationTokenAndPanelPreserved':True,'retiredPort':56392,'retiredListeningAfter':False,'serviceActive':subprocess.check_output(['systemctl','is-active','forwardx-agent'],text=True).strip()}
+(p/'official-upgrade.json').write_text(json.dumps(result,indent=2));print(json.dumps(result))

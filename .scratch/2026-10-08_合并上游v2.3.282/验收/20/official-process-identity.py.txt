@@ -1,0 +1,11 @@
+import datetime, hashlib, json, pathlib, subprocess
+
+root = pathlib.Path('/root/forwardx-acceptance/20261010-upstream282-ed9be4f')
+expected = json.loads((root / 'official-agent-hashes.json').read_text())
+pid = int(subprocess.check_output(['systemctl', 'show', 'forwardx-agent', '--property=MainPID', '--value'], text=True).strip())
+assert pid > 0
+actual = hashlib.sha256(pathlib.Path(f'/proc/{pid}/exe').read_bytes()).hexdigest()
+assert actual == expected['forwardx-agent']
+result = {'at': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'service': 'forwardx-agent', 'mainPid': pid, 'runningExecutableSha256': actual, 'matchesOfficialRelease': True}
+print(json.dumps(result))
+(root / 'official-agent-process.json').write_text(json.dumps(result, indent=2))

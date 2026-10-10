@@ -1,0 +1,62 @@
+{
+  "tag": "v3.3.0",
+  "commit": "a48addb8e380d59fa179be6ed84744a690afe0e2",
+  "url": "https://github.com/owo10086/sni-panel/releases/tag/v3.3.0",
+  "assets": [
+    {
+      "name": "forwardx-agent-linux-amd64",
+      "size": 10948760,
+      "url": "https://github.com/owo10086/sni-panel/releases/download/v3.3.0/forwardx-agent-linux-amd64",
+      "digest": "sha256:50a8d57f01306c8e4a3d51b507a503078c0fcfa28d18dba0696cbaffd7451ebc"
+    },
+    {
+      "name": "forwardx-fxp-linux-amd64",
+      "size": 6168728,
+      "url": "https://github.com/owo10086/sni-panel/releases/download/v3.3.0/forwardx-fxp-linux-amd64",
+      "digest": "sha256:292b0b41620efbc5e5c10fbb4562ff1e232d8d463864dcefa09520c5ed8911ec"
+    },
+    {
+      "name": "forwardx-panel-v3.3.0.tar.gz",
+      "size": 35629870,
+      "url": "https://github.com/owo10086/sni-panel/releases/download/v3.3.0/forwardx-panel-v3.3.0.tar.gz",
+      "digest": "sha256:d078dfc9fe664b5b41eb40be728db0bbf0da208e06f95038d154511a0ccbed70"
+    },
+    {
+      "name": "forwardx-runtime-linux-amd64",
+      "size": 9673064,
+      "url": "https://github.com/owo10086/sni-panel/releases/download/v3.3.0/forwardx-runtime-linux-amd64",
+      "digest": "sha256:a2aea24efb4597b5f57b35b8e1bbcc59f439b80723854d4371f6828b46682ffb"
+    },
+    {
+      "name": "SHA256SUMS",
+      "size": 426,
+      "url": "https://github.com/owo10086/sni-panel/releases/download/v3.3.0/SHA256SUMS",
+      "digest": "sha256:03c6a495a231265d98485aab9f8cd8d17d2497dcbc0bf51df4df7875fc57b600"
+    },
+    {
+      "name": "THIRD_PARTY_NOTICES.md",
+      "size": 1472,
+      "url": "https://github.com/owo10086/sni-panel/releases/download/v3.3.0/THIRD_PARTY_NOTICES.md",
+      "digest": "sha256:d3572e3ddda1ee140458bcceee17babef7876a859738cd7892b50f97ca21fe72"
+    }
+  ],
+  "downloadedAssetHashes": {
+    "SHA256SUMS": "03c6a495a231265d98485aab9f8cd8d17d2497dcbc0bf51df4df7875fc57b600",
+    "THIRD_PARTY_NOTICES.md": "d3572e3ddda1ee140458bcceee17babef7876a859738cd7892b50f97ca21fe72",
+    "forwardx-agent-linux-amd64": "50a8d57f01306c8e4a3d51b507a503078c0fcfa28d18dba0696cbaffd7451ebc",
+    "forwardx-fxp-linux-amd64": "292b0b41620efbc5e5c10fbb4562ff1e232d8d463864dcefa09520c5ed8911ec",
+    "forwardx-panel-v3.3.0.tar.gz": "d078dfc9fe664b5b41eb40be728db0bbf0da208e06f95038d154511a0ccbed70",
+    "forwardx-runtime-linux-amd64": "a2aea24efb4597b5f57b35b8e1bbcc59f439b80723854d4371f6828b46682ffb"
+  },
+  "publishedChecksumsVerified": {
+    "forwardx-agent-linux-amd64": "50a8d57f01306c8e4a3d51b507a503078c0fcfa28d18dba0696cbaffd7451ebc",
+    "forwardx-fxp-linux-amd64": "292b0b41620efbc5e5c10fbb4562ff1e232d8d463864dcefa09520c5ed8911ec",
+    "forwardx-runtime-linux-amd64": "a2aea24efb4597b5f57b35b8e1bbcc59f439b80723854d4371f6828b46682ffb"
+  },
+  "linuxArchitecture": "amd64",
+  "panelBundleVersion": "3.3.0",
+  "bundleAgentAssetsMatchIndependentAgentWorkflow": false,
+  "bundleAgentAssetsExecutableCodeMatchesIndependentAgentWorkflow": true,
+  "bilingualNotesMatchGeneratedNotes": true,
+  "mobileAssetsPresent": false
+}

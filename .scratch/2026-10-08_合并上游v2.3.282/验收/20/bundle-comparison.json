@@ -1,0 +1,32 @@
+[
+  {
+    "binary": "forwardx-agent",
+    "releaseSha256": "50a8d57f01306c8e4a3d51b507a503078c0fcfa28d18dba0696cbaffd7451ebc",
+    "panelBundleSha256": "feb73ff45ac88bd20258d3481997156caa65f48f88e19c1e02ab34ab9a668821",
+    "sameExecutableCode": true,
+    "allDifferencesConfinedToBuildMetadata": true,
+    "differentSections": [
+      ".rodata",
+      ".go.buildinfo",
+      ".data",
+      ".note.go.buildid"
+    ],
+    "metadataDifference": "vcs.modified=false vs true; string length and generated Go build ID",
+    "revision": "a48addb8e380d59fa179be6ed84744a690afe0e2"
+  },
+  {
+    "binary": "forwardx-fxp",
+    "releaseSha256": "292b0b41620efbc5e5c10fbb4562ff1e232d8d463864dcefa09520c5ed8911ec",
+    "panelBundleSha256": "75da4918766ebf2a354524f488d7301c76a92eb77117a78a95f36f2830dd56f7",
+    "sameExecutableCode": true,
+    "allDifferencesConfinedToBuildMetadata": true,
+    "differentSections": [
+      ".rodata",
+      ".go.buildinfo",
+      ".data",
+      ".note.go.buildid"
+    ],
+    "metadataDifference": "vcs.modified=false vs true; string length and generated Go build ID",
+    "revision": "a48addb8e380d59fa179be6ed84744a690afe0e2"
+  }
+]
