@@ -7,6 +7,7 @@ import { describePortPolicy, isPortAllowedByPolicy, portPolicyFrom, portPolicyHa
 import { normalizePositiveIds, normalizeSniValue, sqlBool } from "./repositoryUtils";
 import { pageResult, pageWindowForTotal, type PageRequest } from "../../shared/pagination";
 import { getSniRuleGroupKey } from "../../shared/sni";
+import { assertRuleWritable } from "../../shared/ruleLimits";
 import { recordConfigAuditEvent, shouldAuditConfigPatch } from "../configAudit";
 import { withKeyedTaskLock } from "../keyedTaskLock";
 import { getForwardChainSniEntryRuleIds } from "./forwardChainSniEntryScope";
@@ -621,6 +622,12 @@ export async function getForwardRuleTrafficContextsByIds(ruleIds: number[]) {
         isEnabled: forwardRules.isEnabled,
         isRunning: forwardRules.isRunning,
         pendingDelete: forwardRules.pendingDelete,
+        trafficLimit: forwardRules.trafficLimit,
+        quotaUsedIn: forwardRules.quotaUsedIn,
+        adminManaged: forwardRules.adminManaged,
+        rateLimitMbps: forwardRules.rateLimitMbps,
+        expiresAt: forwardRules.expiresAt,
+        ruleLimitReason: forwardRules.ruleLimitReason,
         trafficTunnelId: tunnels.id,
         trafficTunnelEntryHostId: tunnels.entryHostId,
         trafficTunnelEntryGroupId: tunnels.entryGroupId,
@@ -713,6 +720,12 @@ export async function getForwardRuleTrafficContextsByIds(ruleIds: number[]) {
         isEnabled: row.isEnabled,
         isRunning: row.isRunning,
         pendingDelete: row.pendingDelete,
+        trafficLimit: row.trafficLimit,
+        quotaUsedIn: row.quotaUsedIn,
+        adminManaged: row.adminManaged,
+        rateLimitMbps: row.rateLimitMbps,
+        expiresAt: row.expiresAt,
+        ruleLimitReason: row.ruleLimitReason,
       },
       tunnel: Number(row.trafficTunnelId || 0) > 0 ? {
         id: row.trafficTunnelId,
@@ -765,6 +778,11 @@ type ForwardRuleReorderSelectionRow = Pick<
   "id" | "userId" | "tunnelId" | "forwardGroupId" | "groupMode"
 >;
 
+type ForwardRuleReorderScopeRow = ForwardRuleSortRow & Pick<
+  InsertForwardRule,
+  "adminManaged" | "rateLimitMbps" | "trafficLimit" | "expiresAt"
+>;
+
 type ForwardRuleDisplayUnit = {
   ruleIds: number[];
 };
@@ -802,14 +820,20 @@ export async function getForwardRulesPage(input: ForwardRuleListQuery) {
       ruleTotalItems: 0,
       ruleStartIndex: 0,
       categoryCounts: emptyForwardRuleCategoryCounts(),
+      hasAdminManagedRules: false,
     };
   }
   const scopeFilter = buildForwardRuleSqlFilter(input, {
     includeEntryHost: false,
     includeSearch: false,
     includeCategory: false,
+    // Reset-all operates on the owner scope even when the selected link is empty.
+    includeResource: false,
   });
-  const categoryFilter = buildForwardRuleSqlFilter(input, { includeCategory: false });
+  // Tab badges describe the full owner/search scope, not the currently
+  // selected route. The two-level picker also applies a category predicate
+  // through resourceType, so excluding only input.category is insufficient.
+  const categoryFilter = buildForwardRuleSqlFilter(input, { includeCategory: false, includeResource: false });
   const filtered = buildForwardRuleSqlFilter(input);
   const categoryOrder = input.category === "all" ? filtered.categorySql + " ASC, " : "";
   const [scopeRows, totalRows, categoryRows, orderedRows] = await Promise.all([
@@ -818,10 +842,15 @@ export async function getForwardRulesPage(input: ForwardRuleListQuery) {
         + scopeFilter.fromSql + "\nWHERE " + scopeFilter.whereSql,
       scopeFilter.params,
     ),
-    queryRaw<{ totalItems: number; activeItems: number }>(
+    queryRaw<{ totalItems: number; activeItems: number; managedItems: number }>(
       "SELECT COUNT(*) AS " + quoteIdentifier("totalItems")
         + ", COALESCE(SUM(CASE WHEN " + ruleColumn("r", "isEnabled") + " = " + boolLiteral(true)
         + " THEN 1 ELSE 0 END), 0) AS " + quoteIdentifier("activeItems") + "\n"
+        + ", COALESCE(SUM(CASE WHEN " + ruleColumn("r", "adminManaged") + " = " + boolLiteral(true)
+        + " OR " + ruleColumn("r", "rateLimitMbps") + " > 0"
+        + " OR " + ruleColumn("r", "trafficLimit") + " > 0"
+        + " OR " + ruleColumn("r", "expiresAt") + " IS NOT NULL"
+        + " THEN 1 ELSE 0 END), 0) AS " + quoteIdentifier("managedItems") + "\n"
         + filtered.fromSql + "\nWHERE " + filtered.whereSql,
       filtered.params,
     ),
@@ -870,6 +899,7 @@ export async function getForwardRulesPage(input: ForwardRuleListQuery) {
     ruleTotalItems,
     ruleStartIndex,
     categoryCounts,
+    hasAdminManagedRules: Number(totalRows[0]?.managedItems || 0) > 0,
   };
 }
 
@@ -1170,7 +1200,7 @@ export async function reorderForwardRules(category: ForwardRuleSortCategory, ids
   const ownerIds = new Set(rows.map((row) => Number(row.userId || 0)));
   if (ownerIds.size !== 1 || ownerIds.has(0)) throw new Error("排序规则所属用户不一致");
   const ownerUserId = Array.from(ownerIds)[0];
-  const allRows = await queryRaw<ForwardRuleSortRow>(
+  const allRows = await queryRaw<ForwardRuleReorderScopeRow>(
     `SELECT
         r.${q("id")} AS ${q("id")},
         r.${q("userId")} AS ${q("userId")},
@@ -1179,6 +1209,10 @@ export async function reorderForwardRules(category: ForwardRuleSortCategory, ids
         r.${q("sourcePort")} AS ${q("sourcePort")},
         r.${q("sni")} AS ${q("sni")},
         r.${q("sortOrder")} AS ${q("sortOrder")},
+        r.${q("adminManaged")} AS ${q("adminManaged")},
+        r.${q("rateLimitMbps")} AS ${q("rateLimitMbps")},
+        r.${q("trafficLimit")} AS ${q("trafficLimit")},
+        r.${q("expiresAt")} AS ${q("expiresAt")},
         g.${q("groupMode")} AS ${q("groupMode")}
        FROM ${q("forward_rules")} r
        LEFT JOIN ${q("forward_groups")} g ON g.${q("id")} = r.${q("forwardGroupId")}
@@ -1192,6 +1226,11 @@ export async function reorderForwardRules(category: ForwardRuleSortCategory, ids
       ORDER BY r.${q("sortOrder")} ASC, r.${q("createdAt")} DESC, r.${q("id")} DESC`,
     [ownerUserId, boolValue(false), category],
   );
+  if (userId !== undefined) {
+    // Reordering renumbers the whole owner/category, including omitted rows
+    // and other pages. Check that entire scope before making the first write.
+    for (const row of allRows) assertRuleWritable({ id: userId, role: "user" }, row);
+  }
   const selectedIds = new Set(orderedIds);
   const currentIds = buildForwardRuleDisplayUnits(allRows).flatMap((unit) => unit.ruleIds);
   const remainingIds = currentIds.filter((id) => !selectedIds.has(id));

@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { getLanguagePreference, initializeLanguage, setLanguagePreference } from "../i18n";
 import { getRuleBulkCheckboxState, getRuleBulkRoutePreset, getRuleBulkSelectability, pruneRuleBulkSelection, summarizeRuleBulkDeleteResult, summarizeRuleBulkResult, toggleRuleBulkSelection } from "./ruleBulkSelection";
 
 test("仅普通且受支持的规则可以参与行内批量操作", () => {
@@ -112,4 +113,33 @@ test("删除结果移除成功项，保留失败项并显示首条错误", () =>
   assert.equal(partial.message, "成功 1 条，失败 1 条：删除失败");
   assert.equal(partial.tone, "error");
   assert.deepEqual(partial.keepSelectedIds, [2]);
+});
+
+test("批量结果跟随当前语言，计数与原始诊断保持不变", async () => {
+  const previous = getLanguagePreference();
+  const diagnostic = "Agent stderr: 原始诊断 {0} <&>";
+  const outcomes = [
+    { ruleId: 1, outcome: "updated" },
+    { ruleId: 2, outcome: "skipped" },
+    { ruleId: 3, outcome: "failed", error: diagnostic },
+  ] as const;
+  try {
+    setLanguagePreference("en");
+    await initializeLanguage();
+    const english = summarizeRuleBulkResult(outcomes);
+    assert.equal(english.message, `Succeeded: 1; skipped: 1; failed: 1: ${diagnostic}`);
+    assert.deepEqual(english.keepSelectedIds, [2, 3]);
+    assert.equal(summarizeRuleBulkResult([{ ruleId: 1, outcome: "failed", error: "连接失败" }]).message, "Failed: 1: 连接失败");
+    assert.equal(summarizeRuleBulkDeleteResult([{ ruleId: 1, outcome: "failed", error: "删除失败" }]).message, "Succeeded: 0; failed: 1: 删除失败");
+    assert.equal(summarizeRuleBulkResult([{ ruleId: 1, outcome: "failed" }]).message, "Failed: 1: Unknown error");
+    assert.equal(summarizeRuleBulkDeleteResult([{ ruleId: 1, outcome: "updated" }]).message, "Deleted 1 rules");
+    setLanguagePreference("zh-CN");
+    await initializeLanguage();
+    const chinese = summarizeRuleBulkResult(outcomes);
+    assert.equal(chinese.message, `成功 1 条，跳过 1 条，失败 1 条：${diagnostic}`);
+    assert.deepEqual(chinese.keepSelectedIds, english.keepSelectedIds);
+  } finally {
+    setLanguagePreference(previous);
+    await initializeLanguage();
+  }
 });

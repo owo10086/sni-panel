@@ -1,0 +1,12 @@
+## Latest page snapshot
+uid=61_0 RootWebArea "ForwardX" url="http://127.0.0.1:18822/rules?tab=all"
+  uid=61_72 region "Notifications alt+T" live="polite" relevant="additions text"
+  uid=62_0 dialog "Reset All Rules Data" description="Reset statistics for all rules in the All Users scope? This covers every page, regardless of search, link, category or selected rules."
+    uid=62_1 heading "Reset All Rules Data" level="2"
+    uid=62_2 StaticText "Reset statistics for all rules in the All Users scope? This covers every page, regardless of search, link, category or selected rules."
+    uid=62_3 StaticText "Resetting statistics also clears the traffic counted against each rule’s quota. Rules paused because their quota is exhausted may resume if account and other runtime conditions allow; expired rules remain paused."
+    uid=62_4 StaticText "This does not reset account plan traffic usage, balances or usage billing records, or change rule expiry dates."
+    uid=62_5 button "Cancel" focusable focused
+    uid=62_6 button "Confirm Reset"
+    uid=62_7 button "Close"
+

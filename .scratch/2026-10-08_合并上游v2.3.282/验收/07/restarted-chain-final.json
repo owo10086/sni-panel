@@ -1,0 +1,26 @@
+{
+  "syntheticReport": true,
+  "productionEncryptedRoute": true,
+  "response": {
+    "success": true,
+    "ignored": false
+  },
+  "result": {
+    "id": 4,
+    "ruleId": 102,
+    "hostId": 2,
+    "userId": 1,
+    "status": "success",
+    "listenOk": 1,
+    "targetReachable": 1,
+    "forwardOk": 1,
+    "latencyMs": 24,
+    "message": "{\"kind\":\"forward-chain-hop-summary\",\"groupId\":10,\"generatedAt\":\"2026-10-09T16:37:14.859Z\",\"message\":\"转发链逐跳测试成功，总延迟 24ms（2 跳）\",\"details\":[{\"success\":true,\"latencyMs\":11,\"message\":\"TCP success\",\"hopLabel\":\"1/2 1->2\",\"routeLabel\":\"验收主机1 -> 验收主机2\",\"method\":\"tcp\"},{\"success\":true,\"latencyMs\":13,\"message\":\"fixture: completed after panel process restart\",\"hopLabel\":\"2/2 2->3\",\"routeLabel\":\"验收主机2 -> 验收主机3\",\"method\":\"tcp\"}],\"totalLatencyMs\":24}",
+    "requestMessage": "{\"kind\":\"forward-chain\",\"groupId\":10,\"ruleId\":102,\"method\":\"tcp\",\"fromHostId\":2,\"toHostId\":3,\"targetIp\":\"127.0.0.3\",\"targetPort\":31003,\"hopIndex\":1,\"hopCount\":2,\"pathKeys\":[\"main\"],\"routeLabel\":\"验收主机2 -> 验收主机3\",\"hopLabel\":\"2/2 2->3\"}",
+    "batchId": "fc-live-restart",
+    "batchSettled": 1,
+    "firstDispatchedAt": null,
+    "createdAt": 1791562367,
+    "updatedAt": 1791563834
+  }
+}

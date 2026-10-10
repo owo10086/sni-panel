@@ -1,0 +1,29 @@
+{
+  "before": {
+    "hostId": 1,
+    "tunnelId": 7,
+    "sourcePort": 18443,
+    "sni": "api.example.com",
+    "sniSplitterPort": 24000,
+    "tunnelExitPort": 21000,
+    "targetIp": "203.0.113.99",
+    "targetPort": 8443,
+    "isEnabled": true,
+    "rateLimitMbps": 50,
+    "maxConnections": 7
+  },
+  "after": {
+    "hostId": 1,
+    "tunnelId": 7,
+    "sourcePort": 18443,
+    "sni": "api.example.com",
+    "sniSplitterPort": 24000,
+    "tunnelExitPort": 21000,
+    "targetIp": "203.0.113.99",
+    "targetPort": 8443,
+    "isEnabled": true,
+    "rateLimitMbps": 50,
+    "maxConnections": 7
+  },
+  "quotaUsedIn": 600
+}

@@ -1,0 +1,45 @@
+Browser tab: 1, Title: "sni-panel 迁移验收", URL: "http://127.0.0.1:18851/login".
+1 AXWebArea sni-panel 迁移验收, URL: 127.0.0.1:18851/login
+	2 container
+		3 container root
+			4 container
+				5 heading 无缝迁移验证中, Value: 1
+					6 text 无缝迁移验证中
+				7 text 迁移不会要求重启 Agent 或现有转发进程。旧面板数据库不会自动删除。 迁移等待恢复与继续验证 75% 待验证： 2  台主机 /  4  条规则 /  1  条隧道 fetch failed 旧地址  http://127.0.0.1:18859  必须持续可访问。中断后请使用迁移前的管理员账号登录新面板，继续验证；不要重新启用旧数据库写入。
+				8 link Description: 登录管理员, Value: 127.0.0.1:18851/login
+				9 button 继续验证并接管
+			10 container
+				11 container
+					12 text 语言
+					13 pop up button (collapsed, settable) Description: 语言, Value: 简体中文, Secondary Actions: Expand
+						14 menu
+							15 自动（浏览器 / IP）
+							16 (selected) 简体中文
+							17 English
+				18 button Description: 切换主题, Help: 切换到黑夜模式
+					19 image
+				20 container
+					21 image ForwardX
+					22 text ForwardX 欢迎回来 登录账号以继续
+					23 text 用户名或邮箱
+					24 text field (settable) 用户名或邮箱
+					25 text 密码
+					26 container
+						27 text field (settable) 密码
+						28 button
+							29 image
+					30 button 登录
+						31 image
+						32 text 登录
+					33 container
+						34 text 或
+					35 image
+					36 text Telegram 快捷登录
+					37 button 打开 Telegram 登录
+						38 image
+						39 text 打开 Telegram 登录
+					40 text 已绑定账户可用，点击后再连接后端校验。
+					41 button 没有账号？点击注册
+		42 container Notifications alt+T
+
+The focused UI element is 24 text field (settable) 用户名或邮箱

@@ -1,0 +1,23 @@
+[
+  {
+    "path": "/private/tmp/forwardx-282-ticket07/forwardx-agent",
+    "sha256": "529b5b00626c62c8b02f6ee1337a06687e0337c86fc6b374ea1aae3882e93ecf",
+    "说明": "第07单最后候选，不使用06旧候选",
+    "architecture": "Linux arm64",
+    "范围": "隔离网络验收；不作为正式amd64发布文件"
+  },
+  {
+    "path": "/private/tmp/forwardx-282-ticket04/forwardx-fxp-rebuilt",
+    "sha256": "9bd10091c929869bfe01fb29d829e8b8778203ce97f3c6de81ee2f59d7c89dc2",
+    "说明": "第04单重建FXP",
+    "architecture": "Linux arm64",
+    "范围": "隔离网络验收；不作为正式amd64发布文件"
+  },
+  {
+    "path": "/private/tmp/forwardx-282-ticket05/gost",
+    "sha256": "343c3e003996ca0437b9cc47dd1500cd0475ba09f5a5f17e50851854e06a1ca7",
+    "说明": "真实GOST3.2.6",
+    "architecture": "Linux arm64",
+    "范围": "隔离网络验收；不作为正式amd64发布文件"
+  }
+]

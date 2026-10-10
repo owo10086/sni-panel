@@ -1,0 +1,20 @@
+[
+  ".github/workflows/android-apk.yml",
+  ".github/workflows/ci.yml",
+  ".gitignore",
+  "CHANGELOG.en.md",
+  "CHANGELOG.md",
+  "android/app/src/main/res/values/strings.xml",
+  "capacitor.config.ts",
+  "client/src/components/DashboardLayout.tsx",
+  "client/src/components/MobileAppSettings.tsx",
+  "client/src/i18n/en.json",
+  "client/src/lib/mobileAppUpdate.test.ts",
+  "client/src/lib/mobileAppUpdate.ts",
+  "client/src/lib/mobileNotifications.ts",
+  "client/src/pages/Settings.tsx",
+  "docs/guide/mobile-app.md",
+  "package.json",
+  "scripts/android-build.test.mjs",
+  "server/_core/systemRouter.ts"
+]

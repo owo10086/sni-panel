@@ -1,0 +1,52 @@
+{
+  "quota": {
+    "exitCode": 0,
+    "command": [
+      "docker",
+      "run",
+      "--rm",
+      "--network",
+      "none",
+      "--cap-add",
+      "NET_ADMIN",
+      "--name",
+      "forwardx-ticket03-double-quota",
+      "-v",
+      "/private/tmp/forwardx-282-ticket03-network:/verification:ro",
+      "--entrypoint",
+      "node",
+      "forwardx-sni-test:20261006",
+      "/verification/verify-double-splitter.mjs",
+      "/verification/chain-configs",
+      "before",
+      "excluded",
+      "restored"
+    ],
+    "output": "PASS: real HTTP configs drive entry 18443 and exit 24001; before -> excluded -> restored stops and restores only the affected domain; both FXP listeners and healthy end-to-end TLS connection survive"
+  },
+  "expiry": {
+    "exitCode": 0,
+    "command": [
+      "docker",
+      "run",
+      "--rm",
+      "--network",
+      "none",
+      "--cap-add",
+      "NET_ADMIN",
+      "--name",
+      "forwardx-ticket03-double-expiry",
+      "-v",
+      "/private/tmp/forwardx-282-ticket03-network:/verification:ro",
+      "--entrypoint",
+      "node",
+      "forwardx-sni-test:20261006",
+      "/verification/verify-double-splitter.mjs",
+      "/verification/chain-configs",
+      "restored",
+      "expired",
+      "extended"
+    ],
+    "output": "PASS: real HTTP configs drive entry 18443 and exit 24001; restored -> expired -> extended stops and restores only the affected domain; both FXP listeners and healthy end-to-end TLS connection survive"
+  }
+}

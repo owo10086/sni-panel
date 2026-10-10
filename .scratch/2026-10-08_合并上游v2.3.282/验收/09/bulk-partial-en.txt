@@ -1,0 +1,286 @@
+Browser tab: 3, Title: "sni-panel 09验收", URL: "http://127.0.0.1:18829/rules".
+1 AXWebArea sni-panel 09验收, URL: 127.0.0.1:18829/rules
+	2 container
+		3 container root
+			4 container
+				5 image sni-panel 09验收
+				6 text sni-panel 09验收
+				7 button Description: Toggle theme, Help: Switch to Dark Mode
+					8 image
+				9 button Toggle navigation
+					10 image
+				11 container
+					12 text MAIN MENU
+					13 content list
+						14 button Dashboard
+							15 image
+							16 text Dashboard
+						17 button Hosts
+							18 image
+							19 text Hosts
+						20 button Links
+							21 image
+							22 text Links
+						23 button Forwarding Rules
+							24 image
+							25 text Forwarding Rules
+						26 button Announcements
+							27 image
+							28 text Announcements
+				29 container
+					30 text MANAGEMENT
+					31 content list
+						32 button Profile
+							33 image
+							34 text Profile
+						35 button SNI entry ports
+							36 image
+							37 text SNI entry ports
+						38 button Payment Integrations
+							39 image
+							40 text Payment Integrations
+						41 button Billing & Redemption
+							42 image
+							43 text Billing & Redemption
+						44 button Plans
+							45 image
+							46 text Plans
+						47 button Users
+							48 image
+							49 text Users
+						50 button Network Tests
+							51 image
+							52 text Network Tests
+						53 button Settings
+							54 image
+							55 text Settings
+				56 pop up button (collapsed) 中文管理员 <&> English Admin · Telegram Not Linked, Help: 中文管理员 <&> English, ID: radix-_r_g_, Secondary Actions: Expand
+					57 image Created with getavataaars.com
+					58 text 中文管理员 <&> English
+					59 container
+						60 text Admin  ·  Telegram Not Linked
+			61 container
+				62 heading Forwarding Rules, Value: 1
+					63 text Forwarding Rules
+				64 text Manage forwarding rules and operational status
+				65 image
+				66 text 3 / 3 enabled
+				67 button Compact Cards
+					68 image
+				69 button Standard Card
+					70 image
+				71 button List
+					72 image
+				73 button 3D Traffic Map
+					74 image
+				75 button Reset Data
+					76 image
+					77 text Reset Data
+				78 button Bulk Actions
+					79 image
+					80 text Bulk Actions
+				81 button Add Rule
+					82 image
+					83 text Add Rule
+				84 image
+				85 text Filter:
+				86 container
+					87 image
+					88 text field (settable)
+				89 combo box (collapsed) Value: My Rules, Secondary Actions: Expand
+					90 text My Rules
+				91 pop up button (collapsed) All links, ID: radix-_r_j_, Secondary Actions: Expand
+					92 text All links
+					93 image
+				94 combo box (collapsed) Value: Per page12 items, Secondary Actions: Expand
+					95 container
+						96 text Per page 12 items
+				97 tab group forwarding rule classification
+					98 tab (selected, settable, boolean) All 3, ID: radix-_r_m_-trigger-all, Value: 1
+All
+3
+					99 tab (selectable, settable, boolean) Port Forwarding 1, ID: radix-_r_m_-trigger-local, Value: 0
+Port Forwarding
+1
+					100 tab (selectable, settable, boolean) Tunnel Forwarding 0, ID: radix-_r_m_-trigger-tunnel, Value: 0
+Tunnel Forwarding
+0
+					101 tab (selectable, settable, boolean) Forwarding Chain 1, ID: radix-_r_m_-trigger-chain, Value: 0
+Forwarding Chain
+1
+					102 tab (selectable, settable, boolean) Forwarding Group 1, ID: radix-_r_m_-trigger-group, Value: 0
+Forwarding Group
+1
+				103 container
+					104 text Inbound Traffic
+					105 text TOTAL 0 B 24H 0 B
+					106 image
+				107 container
+					108 text Outbound Traffic
+					109 text TOTAL 0 B 24H 0 B
+					110 image
+				111 container
+					112 text Connection Count
+					113 text TOTAL 0 24H 0
+					114 image
+				115 container
+					116 checkbox (settable, integer) Description: Select all available rules on this page, Value: 2
+					117 text Select this page
+				118 container Bulk actions for selected rules
+					119 text Selected 1 (on this page)
+					120 button Clear
+						121 image
+						122 text Clear
+					123 button Batch Edit
+						124 image
+						125 text Batch Edit
+					126 button Delete Selected
+						127 image
+						128 text Delete Selected
+					129 button More bulk actions
+						130 image
+						131 text More bulk actions
+				132 container
+					133 checkbox (settable, integer) Description: Select all available Port Forwarding rules on this page, Value: 0
+					134 button (expanded) Port Forwarding 1 Use saved port forwarding, Secondary Actions: Collapse
+						135 image
+						136 image
+						137 text Port Forwarding
+						138 text 1
+						139 text Use saved port forwarding
+					140 container
+						141 checkbox (settable, integer) Description: Select rule 用户规则 A <&> unchanged, Value: 0
+						142 text 用户规则 A <&> unchanged
+						143 container
+							144 text User:  中文管理员 <&> English
+						145 text 用户端口 / Long port resource unchanged
+						146 switch Description: Disable forwarding rule 用户规则 A <&> unchanged, Help: Disable this rule to stop deployment and forwarding, Value: 1
+						147 text Entry
+						148 button 192.0.2.1:18501, Help: Copy Port Forwarding entry: 192.0.2.1:18501
+							149 text 192.0.2.1:18501
+							150 image
+						151 image
+						152 text Exit
+						153 text 203.0.113.10:443
+						154 text Link
+						155 image
+						156 text Port Forwarding
+						157 container Forwarding tool: nftables
+							158 image
+							159 text nftables
+						160 text Protocol
+						161 text TCP
+						162 text 24H Inbound
+						163 text —
+						164 text 24H Outbound
+						165 text —
+						166 text Total Traffic
+						167 text —
+						168 text Latency
+						169 text Not tested
+						170 button View TCPing Delay
+							171 image
+						172 button Forwarding Link Test
+							173 image
+						174 button Reset rule data
+							175 image
+						176 button
+							177 image
+						178 button
+							179 image
+						180 checkbox (settable, integer) Description: Select rule 用户规则 B unchanged, Value: 0
+						181 text 用户规则 B unchanged
+						182 container
+							183 text User:  中文管理员 <&> English
+						184 text 用户端口 / Long port resource unchanged
+						185 switch Description: Disable forwarding rule 用户规则 B unchanged, Help: Disable this rule to stop deployment and forwarding, Value: 1
+						186 text Entry
+						187 button 192.0.2.1:18502, Help: Copy Port Forwarding entry: 192.0.2.1:18502
+							188 text 192.0.2.1:18502
+							189 image
+						190 image
+						191 text Exit
+						192 text 203.0.113.10:443
+						193 text Link
+						194 image
+						195 text Port Forwarding
+						196 container Forwarding tool: nftables
+							197 image
+							198 text nftables
+						199 text Protocol
+						200 text TCP
+						201 text 24H Inbound
+						202 text —
+						203 text 24H Outbound
+						204 text —
+						205 text Total Traffic
+						206 text —
+						207 text Latency
+						208 text Not tested
+						209 button View TCPing Delay
+							210 image
+						211 button Forwarding Link Test
+							212 image
+						213 button Reset rule data
+							214 image
+						215 button
+							216 image
+						217 button
+							218 image
+					219 checkbox (settable, integer) Description: Select all available Forwarding Chain rules on this page, Value: 1
+					220 button (expanded) Forwarding Chain 1 Follow the forwarding chain, Secondary Actions: Collapse
+						221 image
+						222 image
+						223 text Forwarding Chain
+						224 text 1
+						225 text Follow the forwarding chain
+					226 container
+						227 checkbox (settable, integer) Description: Select all available rules in this SNI group, Value: 1
+						228 button (collapsed) Secondary Actions: Expand, 用户转发链 / Long chain resource unchanged · SNI splitting Pending entry into force 1 rules Entry Port18510
+							229 image
+							230 image
+							231 container 用户转发链 / Long chain resource unchanged
+								232 text 用户转发链 / Long chain resource unchanged · SNI splitting
+							233 text Pending entry into force
+							234 text 1
+							235 text rules
+							236 text Entry Port
+							237 text 18510
+						238 text Entry splitter Entry 用户主机 1 Long host name unchanged:18510 Not observed yet Version - Unmatched connections 0 The client used a domain not configured on the entry host. Check spelling and DNS; the request may also be a port scan. Exit splitter Exit 用户主机 2 Long host name unchanged:20859 Not observed yet Version - Unmatched connections 0 Entry and exit configurations may not have synchronized yet.
+					239 checkbox 0
+					240 button (expanded) Secondary Actions: Collapse
+						241 image
+						242 image
+					243 container
+						244 checkbox 0
+						245 switch 1
+						246 button
+							247 image
+						248 image
+						249 image
+						250 image
+						251 button
+							252 image
+						253 button
+							254 image
+						255 button
+							256 image
+						257 button
+							258 image
+						259 button
+							260 image
+				261 link Description: Project Address, Value: github.com/owo10086/sni-panel
+				262 text |
+				263 link Description: Documentation, Value: owo10086.github.io/sni-panel/
+				264 text |
+				265 link Description: Contact via Telegram, Value: t.me/miyin_private_bot
+				266 text |
+				267 link Description: Telegram Group, Value: t.me/ForwardX_panel
+		268 container forwardx-overlay-root
+			269 container Notifications alt+T
+				270 content list
+					271 container
+						272 image
+						273 text Succeeded: 1; skipped: 0; failed: 1: SNI 分流仅支持端口转发、隧道或转发链
+
+The focused UI element is 1 AXWebArea sni-panel 09验收, URL: 127.0.0.1:18829/rules

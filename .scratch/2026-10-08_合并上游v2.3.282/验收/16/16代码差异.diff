@@ -1,0 +1,432 @@
+--- a/.github/workflows/android-apk.yml
++++ b/.github/workflows/android-apk.yml
+@@ -128,7 +128,7 @@
+ 
+       - name: Prepare release signing
+         id: signing
+-        if: steps.existing_apk.outputs.exists != 'true'
++        if: steps.existing_apk.outputs.exists != 'true' && steps.release.outputs.build_type == 'release'
+         shell: bash
+         env:
+           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+@@ -136,29 +136,25 @@
+           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+         run: |
++          set -euo pipefail
++          umask 077
+           if [[ -n "$ANDROID_KEYSTORE_BASE64" && -n "$ANDROID_KEYSTORE_PASSWORD" && -n "$ANDROID_KEY_ALIAS" && -n "$ANDROID_KEY_PASSWORD" ]]; then
+             mkdir -p android/app/keystore
+-            echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > android/app/keystore/release.jks
++            printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 -d > android/app/keystore/release.jks
++            chmod 600 android/app/keystore/release.jks
+             echo "signed=true" >> "$GITHUB_OUTPUT"
+             echo "source=secrets" >> "$GITHUB_OUTPUT"
+             echo "keystore_file=keystore/release.jks" >> "$GITHUB_OUTPUT"
+             echo "keystore_type=" >> "$GITHUB_OUTPUT"
+           else
+-            FALLBACK_ALIAS="$(keytool -list -storetype PKCS12 -keystore android/app/keystore/community-release.p12 -storepass forwardx-community-release 2>/dev/null | awk -F, '/PrivateKeyEntry/ { gsub(/^[[:space:]]+|[[:space:]]+$/, "", $1); print $1; exit }')"
+-            if [[ -z "$FALLBACK_ALIAS" ]]; then
+-              FALLBACK_ALIAS=1
+-            fi
+-            echo "signed=true" >> "$GITHUB_OUTPUT"
+-            echo "source=fallback" >> "$GITHUB_OUTPUT"
+-            echo "keystore_file=keystore/community-release.p12" >> "$GITHUB_OUTPUT"
+-            echo "keystore_type=pkcs12" >> "$GITHUB_OUTPUT"
+-            echo "key_alias=$FALLBACK_ALIAS" >> "$GITHUB_OUTPUT"
++            echo "signed=false" >> "$GITHUB_OUTPUT"
+             cat >> "$GITHUB_STEP_SUMMARY" <<'EOF'
+-          ### Android signing
++          ### Android signing unavailable
+ 
+-          Release signing secrets are not configured. This build uses the existing community fallback keystore so installed community APKs can upgrade in place.
+-          Configure `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, and `ANDROID_KEY_PASSWORD`
+-          to publish APKs signed with your own private release key.
++          The original signing configuration is missing. A release APK is not produced.
++          Add all four original signing secrets: `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`,
++          `ANDROID_KEY_ALIAS`, and `ANDROID_KEY_PASSWORD`. No fallback or replacement key is used.
++          Debug APKs are for local testing only and cannot replace an installed release APK.
+           EOF
+           fi
+ 
+@@ -170,17 +166,6 @@
+           echo "Use a workflow_dispatch debug build only for local testing."
+           exit 1
+ 
+-      - name: Build release APK with repository fallback signing
+-        if: steps.existing_apk.outputs.exists != 'true' && steps.release.outputs.build_type == 'release' && steps.signing.outputs.source == 'fallback'
+-        working-directory: android
+-        env:
+-          ANDROID_KEYSTORE_FILE: ${{ steps.signing.outputs.keystore_file }}
+-          ANDROID_KEYSTORE_TYPE: ${{ steps.signing.outputs.keystore_type }}
+-          ANDROID_KEYSTORE_PASSWORD: forwardx-community-release
+-          ANDROID_KEY_ALIAS: ${{ steps.signing.outputs.key_alias }}
+-          ANDROID_KEY_PASSWORD: forwardx-community-release
+-        run: ./gradlew assembleRelease
+-
+       - name: Build release APK with secret signing
+         if: steps.existing_apk.outputs.exists != 'true' && steps.release.outputs.build_type == 'release' && steps.signing.outputs.source == 'secrets'
+         working-directory: android
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -47,6 +47,7 @@
+         run: |
+           pnpm check:versions
+           pnpm test:release-notes
++          pnpm test:android
+           pnpm test:ios
+           pnpm test:i18n
+           pnpm test:google-auth
+--- a/.gitignore
++++ b/.gitignore
+@@ -76,3 +76,9 @@
+ # Validated TLS cache can contain the panel private key
+ panel-ssl-runtime.json
+ panel-ssl-runtime.json.*.tmp
++
++# Private mobile signing input
++*.jks
++*.keystore
++*.p12
++*.pfx
+--- a/CHANGELOG.en.md
++++ b/CHANGELOG.en.md
+@@ -47,6 +47,8 @@
+ - Back up databases and custom deployment configuration before upgrading. Google sign-in is disabled by default; Telegram remains the default bot channel. Seamless migration requires the old URL and forwarding service to stay running.
+ - Upgrade Agents to use incremental GOST additions. Initial API activation restarts the shared runtime once; subsequent additions can retain unchanged listeners. Edits, deletions and recovery may still rebuild runtimes.
+ - The IPA is unsigned and requires user-provided signing/installation. Platform packages and Docker images build in independent GitHub Actions and may become available after the code push.
++
++- Android source is `2.4.0`. The four original signing settings are still missing, so no release APK has been produced. The existing application identifier is retained; no upstream fallback or replacement key is used.
+ 
+ ## [2.3.281] - 2026-10-02
+ 
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -63,6 +63,8 @@
+ - 升级前备份数据库与自定义部署配置。Google 登录默认关闭；通知渠道默认 Telegram；无缝迁移必须持续保留旧接入地址和转交服务。
+ - GOST 增量新增需升级 Agent，首次启用局部更新接口会重启一次共享运行服务；仅新增的未变化监听随后可保持运行，配置修改、删除及故障恢复仍可能重建运行时。
+ - iOS IPA 未签名，需用户自行签名与安装；各平台安装包和 Docker 镜像由独立 GitHub Actions 生成，不一定与代码推送同时完成。
++
++- 本次 Android APP 源码为 `2.4.0`，原签名四项配置仍缺失，正式 APK 未产出；保留原应用标识，不恢复上游备用签名或生成替代密钥。
+ 
+ ## [3.2.5] - 2026-10-07
+ 
+--- a/android/app/src/main/res/values/strings.xml
++++ b/android/app/src/main/res/values/strings.xml
+@@ -1,7 +1,7 @@
+ <?xml version='1.0' encoding='utf-8'?>
+ <resources>
+-    <string name="app_name">ForwardX</string>
+-    <string name="title_activity_main">ForwardX</string>
++    <string name="app_name">sni-panel</string>
++    <string name="title_activity_main">sni-panel</string>
+     <string name="package_name">com.forwardx.app</string>
+     <string name="custom_url_scheme">com.forwardx.app</string>
+ </resources>
+--- a/capacitor.config.ts
++++ b/capacitor.config.ts
+@@ -2,7 +2,7 @@
+ 
+ const config: CapacitorConfig = {
+   appId: 'com.forwardx.app',
+-  appName: 'ForwardX',
++  appName: 'sni-panel',
+   webDir: 'client/dist',
+   server: {
+     androidScheme: 'http',
+--- a/client/src/components/DashboardLayout.tsx
++++ b/client/src/components/DashboardLayout.tsx
+@@ -1831,7 +1831,7 @@
+           <div className="border-b border-border/40 bg-primary/10 px-5 py-4">
+             <DialogTitle className="flex items-center gap-2 text-base">
+               <Download className="h-5 w-5 text-primary" />{translateText("发现 APP 新版本")}</DialogTitle>
+-            <DialogDescription className="mt-1 text-xs">{translateText("前往下载新版 ")}{mobileUpdateInfo?.packageLabel || translateText("安装包")}。
++            <DialogDescription className="mt-1 text-xs">{translateText("前往下载新版 {0}。", [mobileUpdateInfo?.packageLabel || translateText("安装包")])}
+             </DialogDescription>
+           </div>
+           <div className="space-y-3 px-5 py-4">
+--- a/client/src/components/MobileAppSettings.tsx
++++ b/client/src/components/MobileAppSettings.tsx
+@@ -50,7 +50,7 @@
+     saveMobileNotificationSettings(next);
+     try {
+       await scheduleMobileReminders(next, normalizedSnapshot);
+-      toast.success(translateText("安卓通知设置已保存"));
++      toast.success(translateText("APP 通知设置已保存"));
+     } catch (error: any) {
+       toast.error(error?.message || translateText("通知设置保存失败"));
+     }
+--- a/client/src/i18n/en.json
++++ b/client/src/i18n/en.json
+@@ -354,7 +354,7 @@
+   "安装命令": "Install command",
+   "安装命令已生成": "Install command generated",
+   "安装失败": "Installation Failed",
+-  "安卓通知设置已保存": "Anzor Notification Settings Saved",
++  "APP 通知设置已保存": "App notification settings saved",
+   "按 GB 计费，可单独要求授权。": "Charge per GB, with optional resource permissions.",
+   "按步骤完成数据库初始化、旧面板迁移和管理员配置。": "Set up your database, optionally migrate an existing panel, and configure your administrator account.",
+   "按出口组顺序使用成员，首个成员为主出口。": "Members are used in the order in which they are exported, with the first member being the main exit.",
+@@ -719,7 +719,7 @@
+   "当前": "Current",
+   "当前 Agent": "Current Argentina",
+   "当前 Agent 目标版本": "Current Agent destination version",
+-  "当前 APP 已是最新版本": "Current APP is the latest version",
++  "当前 APP 已是最新版本": "Your app is up to date",
+   "当前 iperf3 服务端正在运行，请先切换到 iperf3 服务端并停止后再执行其他测试。": "The current iperf3 service is running, switch to the iperf3 service and stop before other tests are performed.",
+   "当前 Telegram 未绑定面板账号，请先使用账号密码登录并在面板完成绑定。": "At present Telegram does not bind the panel account number, please log in with the account password and complete the binding on the panel.",
+   "当前安装地址是本机回环地址": "The current installation address is the return ring address.",
+@@ -988,7 +988,7 @@
+   "发送中...": "Sending...",
+   "发现 {0} 个插件新版本": "Updates found for {0} plugins",
+   "发现 {0} 台 Agent 有新版本": "Found{0}Agent has a new version.",
+-  "发现 APP 新版本": "Found a new version of APP",
++  "发现 APP 新版本": "App update available",
+   "发现 APP 新版本 v{0}": "App update available: v{0}",
+   "发现新版本": "New version found",
+   "发现新版本 ": "New version found ",
+@@ -1848,7 +1848,8 @@
+   "迁移状态暂时无法读取": "Migration status is temporarily unreadable",
+   "前": "Front",
+   "前往下载": "Go to Download",
+-  "前往下载新版 ": "Go to download new editions ",
++  "前往下载新版 ": "Download the latest ",
++  "前往下载新版 {0}。": "Download the latest {0}.",
+   "嵌入": "Embedded",
+   "强制邮箱验证码注册": "Force email Authentication Code Registration",
+   "切换{0}状态失败": "Failed to toggle {0} status",
+@@ -2256,7 +2257,7 @@
+   "尚未选择复制目标": "No copying target selected",
+   "尚未选择生效主机": "Host not selected",
+   "尚未运行探测": "Not run for detection",
+-  "稍后再说": "We'll talk later.",
++  "稍后再说": "Later",
+   "设备名称": "Device Name",
+   "设置": "Settings",
+   "设置 \"": "Settings \"",
+@@ -2303,7 +2304,7 @@
+   "剩余 {0} 天": "{0} days remaining",
+   "剩余{0}天": "{0} days remaining",
+   "剩余流量": "Remaining Traffic",
+-  "剩余流量阈值 (%)": "Residual traffic threshold (%)",
++  "剩余流量阈值 (%)": "Remaining traffic threshold (%)",
+   "剩余阈值（%）": "Remaining threshold (%)",
+   "失败": "Failed",
+   "失效日期": "Expiry date",
+@@ -2524,7 +2525,7 @@
+   "腾讯云 DNSPod": "DNSPod",
+   "腾讯云 SecretId": "ScretID",
+   "提供商": "Provider",
+-  "提前提醒天数": "Days of advance reminder",
++  "提前提醒天数": "Days before expiry",
+   "提醒时间": "Reminder Time",
+   "替换目标地址": "Replace Target Address",
+   "替换入口资源": "Replace Entry Resources",
+@@ -3688,7 +3689,7 @@
+   "Android APK 下载": "Android APK Download",
+   "API 下单": "Create Order via API",
+   "APIv3 密钥": "APIv3 Key",
+-  "APP 更新检查失败": "APP Update Check Failed",
++  "APP 更新检查失败": "App update check failed",
+   "APP 将连接这个面板地址。": "APP will connect to this panel address.",
+   "APP 设置": "APP Settings",
+   "CPU 使用率 {0}%": "CPU Usage {0}%",
+@@ -3704,9 +3705,9 @@
+   "Docker 一键升级脚本": "Docker Upgrade Script",
+   "example.com 或 1.1.1.1": "example.com or 1.1.1.1",
+   "ForwardX 加密隧道": "ForwardX Encrypted Tunnel",
+-  "ForwardX 流量提醒": "ForwardX traffic alarm",
++  "sni-panel 流量提醒": "sni-panel traffic reminder",
+   "ForwardX 首次部署": "ForwardX Initial Setup",
+-  "ForwardX 套餐到期提醒": "ForwardX plan due reminder",
++  "sni-panel 套餐到期提醒": "sni-panel plan expiry reminder",
+   "ForwardX UDP 外观混淆": "ForwardX UDP Obfuscation",
+   "FXP 认证加密传输，兼容现有链路": "FXP authentication of encrypted transmissions, compatible with existing links",
+   "GIF 超过 50K，无法自动压缩": "GIF over 50K cannot automatically compress",
+@@ -4248,5 +4249,6 @@
+   "原样导入并校验 ID、端口和运行状态": "Importing original data and verifying IDs, ports and runtime status",
+   "数据校验通过，准备接管": "Data verified; preparing to take over",
+   "无缝迁移未完成": "Seamless migration is incomplete",
+-  "迁移验证正在执行": "Migration verification is already running"
++  "迁移验证正在执行": "Migration verification is already running",
++  "Android 发布页（以实际附件为准）": "Android release page (check available assets)"
+ }
+--- a/client/src/lib/mobileAppUpdate.test.ts
++++ b/client/src/lib/mobileAppUpdate.test.ts
+@@ -22,6 +22,12 @@
+   assert.ok(compareMobileVersions(latest!.version, "2.3.99") > 0);
+ });
+ 
++test("Android download destinations always stay on sni-panel, including mismatched API links", () => {
++  const result = latestMobilePackage([{ tag_name: "v3.3.0", html_url: "https://github.com/poouo/Forwardx/releases/tag/v2.3.282", assets: [{ name: "forwardx-android-v2.4.0.apk" }] }], "android");
++  assert.equal(result?.releaseUrl, "https://github.com/owo10086/sni-panel/releases/tag/v3.3.0");
++  assert.equal(latestMobilePackage([{ html_url: "https://example.test/foreign", assets: [{ name: "forwardx-android-v2.4.0.apk" }] }], "android")?.releaseUrl, "https://github.com/owo10086/sni-panel/releases/latest");
++});
++
+ test("IPA update version is independent of panel/APK versions and excludes prereleases", () => {
+   const releases = [
+     { html_url: "https://github.com/poouo/Forwardx/releases/tag/v2.3.283", assets: [{ name: "forwardx-ios-v1.0.2-unsigned.ipa" }] },
+--- a/client/src/lib/mobileAppUpdate.ts
++++ b/client/src/lib/mobileAppUpdate.ts
+@@ -25,7 +25,8 @@
+     for (const asset of release.assets) {
+       const version = extractMobilePackageVersion(String(asset?.name || ""), platform);
+       if (!version) continue;
+-      candidates.push({ version, releaseUrl: release.html_url || `${REPO_RELEASES_URL}/latest` });
++      const tag = typeof release.tag_name === "string" ? release.tag_name.trim() : "";
++      candidates.push({ version, releaseUrl: tag ? `${REPO_RELEASES_URL}/tag/${encodeURIComponent(tag)}` : `${REPO_RELEASES_URL}/latest` });
+     }
+   }
+   return candidates.sort((a, b) => compareMobileVersions(b.version, a.version))[0];
+--- a/client/src/lib/mobileNotifications.ts
++++ b/client/src/lib/mobileNotifications.ts
+@@ -124,7 +124,7 @@
+     if (remainingPercent <= normalized.trafficThresholdPercent) {
+       notifications.push({
+         id: 40101,
+-        title: translateText("ForwardX 流量提醒"),
++        title: translateText("sni-panel 流量提醒"),
+         body: translateText("套餐流量剩余约 {0}%，请及时关注。", [remainingPercent]),
+         schedule: { at: nextReminderDate(normalized.reminderTime) },
+       });
+@@ -139,7 +139,7 @@
+       if (notifyAt <= expiresAt) {
+         notifications.push({
+           id: 40102,
+-          title: translateText("ForwardX 套餐到期提醒"),
++          title: translateText("sni-panel 套餐到期提醒"),
+           body: translateText("套餐将在 {0} 天内到期，请及时续费或联系管理员。", [normalized.expiryDaysBefore]),
+           schedule: { at: new Date(notifyAt) },
+         });
+--- a/client/src/pages/Settings.tsx
++++ b/client/src/pages/Settings.tsx
+@@ -4558,7 +4558,7 @@
+       iconClassName: "text-primary",
+     },
+     ...(androidApkDownloadUrl ? [{
+-      label: translateText("Android APK 下载"),
++      label: translateText("Android 发布页（以实际附件为准）"),
+       url: androidApkDownloadUrl,
+       icon: Download,
+       iconClassName: "text-emerald-600",
+--- a/docs/guide/mobile-app.md
++++ b/docs/guide/mobile-app.md
+@@ -4,7 +4,7 @@
+ 
+ ## 下载与安装
+ 
+-- Android：从 [GitHub Releases](https://github.com/owo10086/sni-panel/releases/latest) 下载 APK 并安装。
++- Android：从 [GitHub Releases](https://github.com/owo10086/sni-panel/releases/latest) 查看实际 APK 附件。面板 3.3.0 对应 Android APP 2.4.0；当前原签名配置仍缺失，正式 APK 尚未产出，请不要把源码版本或调试包当作可覆盖升级的正式包。
+ - iOS / iPadOS 15 及以上：下载 `forwardx-ios-v版本-unsigned.ipa`，自行签名后安装。未签名 IPA 不能直接在普通 iPhone / iPad 上安装，需自备签名证书、描述文件或适用的侧载工具。本项目不提供签名服务，也不发布到 App Store / TestFlight。
+ 
+ IPA 旁提供 `.sha256` 校验文件和签名说明。更换签名身份或 Bundle ID 可能影响覆盖安装、数据保留和本地通知，请遵循所用签名工具的要求。应用内更新检查仅跳转下载页面，不会绕过系统安装或签名限制。
+@@ -15,6 +15,12 @@
+ 
+ 已有面板服务端支持 `capacitor://localhost` 的跨域请求和移动端 Token 登录，不需要为 iOS 放宽到任意跨域来源。首次开启流量/到期本地提醒时需允许通知权限；未授权不影响基础管理功能。
+ 
++## Android 原签名
++
++覆盖升级必须使用原应用的密钥，应用标识继续为 `com.forwardx.app`，显示名称为 sni-panel。原签名密钥和密码只配置在 GitHub Actions Secrets：`ANDROID_KEYSTORE_BASE64`、`ANDROID_KEYSTORE_PASSWORD`、`ANDROID_KEY_ALIAS`、`ANDROID_KEY_PASSWORD`。四项缺一会停止正式构建；不恢复上游备用密钥，也不生成替代密钥。不要将这些值、密钥文件或完整构建环境输出提交到仓库。
++
++Android APK 工作流可独立手动运行。正式包随面板发布版本上传，应用自身版本为 2.4.0；调试构建只提供测试附件，不能覆盖原正式应用，不上传到正式 Release。下载入口指向本项目发布页，以实际附件为准；应用检查只根据实际存在的 APK 判断更新。
++
+ ## GitHub 自动构建
+ 
+ 仓库提供独立的 **iOS IPA** 工作流：
+--- a/package.json
++++ b/package.json
+@@ -41,7 +41,8 @@
+     "start": "NODE_ENV=production node dist/index.js",
+     "db:generate": "drizzle-kit generate",
+     "db:migrate": "drizzle-kit migrate",
+-    "db:push": "drizzle-kit push"
++    "db:push": "drizzle-kit push",
++    "test:android": "node --test scripts/android-build.test.mjs && node --import tsx --test client/src/lib/mobileAppUpdate.test.ts"
+   },
+   "dependencies": {
+     "@cap.js/server": "^4.0.5",
+--- a/scripts/android-build.test.mjs
++++ b/scripts/android-build.test.mjs
+@@ -0,0 +1,71 @@
++import assert from "node:assert/strict";
++import fs from "node:fs";
++import os from "node:os";
++import path from "node:path";
++import { spawnSync } from "node:child_process";
++import test from "node:test";
++
++const workflow = fs.readFileSync(new URL("../.github/workflows/android-apk.yml", import.meta.url), "utf8");
++const signingKeys = ["ANDROID_KEYSTORE_BASE64", "ANDROID_KEYSTORE_PASSWORD", "ANDROID_KEY_ALIAS", "ANDROID_KEY_PASSWORD"];
++
++function workflowScript(name) {
++  const step = workflow.split("      - name: ").find(value => value.startsWith(`${name}\n`));
++  assert.ok(step, `Workflow step ${name} exists`);
++  const script = step.split("        run: |\n")[1];
++  assert.ok(script, `Workflow step ${name} exposes its shell entry point`);
++  return script.split("\n").map(line => line.replace(/^ {10}/, "")).join("\n");
++}
++
++function runSigning(values, check) {
++  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "forwardx-android-signing-"));
++  const output = path.join(directory, "output");
++  const summary = path.join(directory, "summary");
++  fs.writeFileSync(output, "");
++  fs.writeFileSync(summary, "");
++  const environment = { ...process.env, GITHUB_OUTPUT: output, GITHUB_STEP_SUMMARY: summary };
++  for (const key of signingKeys) environment[key] = values[key] || "";
++  try {
++    const result = spawnSync("bash", ["-c", workflowScript("Prepare release signing")], { cwd: directory, env: environment, encoding: "utf8", timeout: 10000 });
++    check({ result, directory, output: fs.readFileSync(output, "utf8"), summary: fs.readFileSync(summary, "utf8") });
++  } finally {
++    fs.rmSync(directory, { recursive: true, force: true });
++  }
++}
++
++test("missing original Android signing never declares a signed release or creates a replacement key", () => {
++  runSigning({}, ({ result, directory, output, summary }) => {
++    assert.equal(result.status, 0, result.stderr);
++    assert.match(output, /^signed=false$/m);
++    assert.doesNotMatch(output, /^signed=true$/m);
++    assert.equal(fs.existsSync(path.join(directory, "android/app/keystore")), false);
++    assert.match(summary, /ANDROID_KEYSTORE_BASE64/);
++    assert.match(summary, /not (?:generated|produced)/i);
++  });
++});
++
++test("invalid supplied key encoding fails before announcing signing readiness", () => {
++  runSigning({ ANDROID_KEYSTORE_BASE64: "%%%invalid", ANDROID_KEYSTORE_PASSWORD: "test-store-password", ANDROID_KEY_ALIAS: "test-alias", ANDROID_KEY_PASSWORD: "test-key-password" }, ({ result, output }) => {
++    assert.notEqual(result.status, 0);
++    assert.doesNotMatch(output, /^signed=true$/m);
++    assert.doesNotMatch(result.stdout + result.stderr, /test-store-password|test-key-password|%%%invalid/);
++  });
++});
++
++test("complete supplied signing stays private, and any missing original value disables release signing", () => {
++  const keyBytes = Buffer.from("synthetic signing input; not a real keystore");
++  const supplied = { ANDROID_KEYSTORE_BASE64: keyBytes.toString("base64"), ANDROID_KEYSTORE_PASSWORD: "test-store-password", ANDROID_KEY_ALIAS: "test-alias", ANDROID_KEY_PASSWORD: "test-key-password" };
++  runSigning(supplied, ({ result, directory, output }) => {
++    assert.equal(result.status, 0, result.stderr);
++    assert.match(output, /^signed=true$/m);
++    assert.match(output, /^source=secrets$/m);
++    const keyFile = path.join(directory, "android/app/keystore/release.jks");
++    assert.deepEqual(fs.readFileSync(keyFile), keyBytes);
++    assert.equal(fs.statSync(keyFile).mode & 0o777, 0o600);
++    for (const value of Object.values(supplied)) assert.ok(!(result.stdout + result.stderr + output).includes(value));
++  });
++  for (const missing of signingKeys) runSigning({ ...supplied, [missing]: "" }, ({ result, output, directory }) => {
++    assert.equal(result.status, 0, `${missing}: ${result.stderr}`);
++    assert.match(output, /^signed=false$/m);
++    assert.equal(fs.existsSync(path.join(directory, "android/app/keystore")), false);
++  });
++});
+--- a/server/_core/systemRouter.ts
++++ b/server/_core/systemRouter.ts
+@@ -125,7 +125,7 @@
+ /** Telegram 双向消息机器人：用户可通过此反馈问题、接收补充信息 */
+ export const TELEGRAM_BOT_URL = "https://t.me/miyin_private_bot";
+ const ANDROID_APK_DOWNLOAD_URL =
+-  `${REPO_URL}/releases/download/v${ANDROID_APK_RELEASE_VERSION}/forwardx-android-v${ANDROID_APP_VERSION}.apk`;
++  `${REPO_URL}/releases/tag/v${ANDROID_APK_RELEASE_VERSION}`;
+ const IOS_IPA_DOWNLOAD_URL =
+   `${REPO_URL}/releases/download/v${APP_VERSION}/forwardx-ios-v${IOS_APP_VERSION}-unsigned.ipa`;
+ const UPDATE_CHECK_COOLDOWN_MS = 60 * 1000;

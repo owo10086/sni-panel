@@ -1,0 +1,18 @@
+{
+  "reset-quota": {
+    "exitCode": 0,
+    "output": "PASS: heartbeat configs exclude and restore the affected SNI route; shared listener and existing healthy TLS connection remain available"
+  },
+  "raise-quota": {
+    "exitCode": 0,
+    "output": "PASS: heartbeat configs exclude and restore the affected SNI route; shared listener and existing healthy TLS connection remain available"
+  },
+  "extend-expiry": {
+    "exitCode": 0,
+    "output": "PASS: heartbeat configs exclude and restore the affected SNI route; shared listener and existing healthy TLS connection remain available"
+  },
+  "clear-expiry": {
+    "exitCode": 0,
+    "output": "PASS: heartbeat configs exclude and restore the affected SNI route; shared listener and existing healthy TLS connection remain available"
+  }
+}

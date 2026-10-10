@@ -1,0 +1,58 @@
+{
+  "reset-quota": {
+    "sourceDirectory": "configs",
+    "sourceFiles": [
+      "before",
+      "excluded",
+      "restored"
+    ],
+    "versions": [
+      5,
+      6,
+      7
+    ],
+    "binarySha256": "9bd10091c929869bfe01fb29d829e8b8778203ce97f3c6de81ee2f59d7c89dc2"
+  },
+  "raise-quota": {
+    "sourceDirectory": "pure-recovery-configs",
+    "sourceFiles": [
+      "restored",
+      "excluded-before-raise",
+      "raised"
+    ],
+    "versions": [
+      7,
+      8,
+      10
+    ],
+    "binarySha256": "9bd10091c929869bfe01fb29d829e8b8778203ce97f3c6de81ee2f59d7c89dc2"
+  },
+  "extend-expiry": {
+    "sourceDirectory": "pure-recovery-configs",
+    "sourceFiles": [
+      "raised",
+      "expired",
+      "extended"
+    ],
+    "versions": [
+      10,
+      12,
+      14
+    ],
+    "binarySha256": "9bd10091c929869bfe01fb29d829e8b8778203ce97f3c6de81ee2f59d7c89dc2"
+  },
+  "clear-expiry": {
+    "sourceDirectory": "pure-recovery-configs",
+    "sourceFiles": [
+      "extended",
+      "expired-before-pure-clear",
+      "pure-cleared-expiry"
+    ],
+    "versions": [
+      14,
+      22,
+      24
+    ],
+    "binarySha256": "9bd10091c929869bfe01fb29d829e8b8778203ce97f3c6de81ee2f59d7c89dc2"
+  }
+}

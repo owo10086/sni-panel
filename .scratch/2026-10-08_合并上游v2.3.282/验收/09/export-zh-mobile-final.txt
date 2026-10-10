@@ -1,0 +1,25 @@
+Browser tab: 3, Title: "sni-panel 09验收", URL: "http://127.0.0.1:18829/rules".
+1 AXWebArea sni-panel 09验收, URL: 127.0.0.1:18829/rules
+	2 container forwardx-overlay-root
+		3 container Notifications alt+T
+			4 content list
+				5 container
+					6 image
+					7 text 已生成 504 条规则，共 2 个文件，请逐个下载
+		8 container 下载规则文件, ID: radix-_r_15_
+			9 heading 下载规则文件, Value: 2, ID: radix-_r_16_
+				10 text 下载规则文件
+			11 text 规则已拆分为 2 个文件，请逐个点击下载，避免浏览器拦截连续下载。
+			12 container
+				13 button 下载第 1/2 个文件（500 条规则）
+					14 image
+					15 text 下载第 1/2 个文件（500 条规则）
+				16 button 下载第 2/2 个文件（4 条规则）
+					17 image
+					18 text 下载第 2/2 个文件（4 条规则）
+			19 button 关闭
+			20 button Close
+				21 image
+				22 text Close
+
+The focused UI element is 13 button 下载第 1/2 个文件（500 条规则）

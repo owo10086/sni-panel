@@ -1,0 +1,57 @@
+import assert from 'node:assert/strict';
+import path from 'node:path';
+import { pathToFileURL } from 'node:url';
+const repo = process.cwd();
+process.env.DATABASE_TYPE = process.argv[2];
+const fromRepo = file => import(pathToFileURL(path.join(repo, file)).href);
+const runtime = await fromRepo('server/dbRuntime.ts');
+const { ensureDatabaseSchema } = await fromRepo('server/dbSchema.ts');
+const counters = await fromRepo('server/repositories/probeCounterRepository.ts');
+const { quoteIdentifier: q } = await fromRepo('server/dbCompat.ts');
+const kind = process.argv[2];
+const port = Number(process.argv[3]);
+const config = kind === 'sqlite' ? {type: kind, sqlite: {path: '/private/tmp/forwardx-282-ticket06/upgrade.db'}}
+  : {[kind]: {host: '127.0.0.1', port, database: 'probe', user: 'probe', password: 'isolated-probe-password'}, type: kind};
+await runtime.connectDatabase(config);
+const since = new Date(Date.now() - 3600_000);
+const idColumn = kind === 'mysql' ? 'INT AUTO_INCREMENT PRIMARY KEY' : kind === 'postgresql' ? 'SERIAL PRIMARY KEY' : 'INTEGER PRIMARY KEY AUTOINCREMENT';
+await runtime.executeRaw(`CREATE TABLE ${q('probe_counter_snapshots')} (${q('id')} ${idColumn},
+  ${['kind','probeKey','epoch'].map(name => `${q(name)} VARCHAR(64) NOT NULL`).join(', ')},
+  ${['refId','hostId','totalCount','totalSuccesses','batchCount','batchSuccesses','recordedAt'].map(name => `${q(name)} INTEGER NOT NULL`).join(', ')})`);
+await runtime.executeRaw(`INSERT INTO ${q('probe_counter_snapshots')} (${['kind','probeKey','epoch','refId','hostId','totalCount','totalSuccesses','batchCount','batchSuccesses','recordedAt'].map(q).join(',')}) VALUES ('rule','legacy','old',1,1,100,90,3,3,?)`, [Math.floor(Date.now()/1000)]);
+await ensureDatabaseSchema();
+await ensureDatabaseSchema();
+assert.equal((await counters.getProbeCounterStatistics('rule',1,since)).available, false, 'old rows must not become accurate counts by schema defaults');
+const report = (count, successes=count, epoch='new', stamp=1000, batchSuccesses=3) => counters.probeCounterSnapshot('rule',1,1,
+  {probeCounterEpoch: epoch, probeCounterStartedAt: stamp, probeTotalCount: count, probeTotalSuccesses: successes,
+    probeCount:3,probeSuccesses:batchSuccesses,method:'tcping',latencyMs:8,targetIp:'127.0.0.1',targetPort:31001});
+const save = rows => counters.insertProbeCounterSnapshots(rows);
+await save([report(3),report(3)]);
+await save([report(6)]);
+await save([report(3)]);
+await save([report(3,2,'restarted',2000,2)]);
+await save([report(900)]);
+let stats = await counters.getProbeCounterStatistics('rule',1,since);
+assert.equal(stats.total,9); assert.equal(stats.successes,8);
+await Promise.all([save([report(9,8,'restarted',2000)]),save([report(6,5,'restarted',2000)])]);
+stats = await counters.getProbeCounterStatistics('rule',1,since);
+assert.equal(stats.total,15); assert.equal(stats.successes,14);
+await assert.rejects(runtime.withDatabaseTransaction(async () => { await save([report(12,11,'restarted',2000)]); throw new Error('rollback'); }), /rollback/);
+assert.equal((await counters.getProbeCounterStatistics('rule',1,since)).total,15);
+await runtime.closeDatabase(); await runtime.connectDatabase(config);
+await save([report(15), report(9,8,'restarted',2000)]);
+assert.equal((await counters.getProbeCounterStatistics('rule',1,since)).total,15, 'heads must survive reconnects');
+await save([report(12,11,'restarted',2000)]);
+stats = await counters.getProbeCounterStatistics('rule',1,since);
+assert.equal(stats.total,18); assert.equal(stats.successes,17);
+assert.ok(stats.latencySamples.length > 0);
+const data = Array.from({length:3000},(_,index) => counters.probeCounterSnapshot('rule',2,1,{probeCounterEpoch:'large',probeCounterStartedAt:3000,
+  probeTotalCount:(index+1)*3,probeTotalSuccesses:(index+1)*3,probeCount:3,probeSuccesses:3,latencyMs:8,method:'tcping'}));
+await counters.insertProbeCounterSnapshots(data);
+const large = await counters.getProbeCounterStatistics('rule',2,since);
+assert.equal(large.total,9000); assert.equal(large.successes,9000);
+assert.equal(large.latencySamples.length,2880); assert.equal(large.latencySamplesTruncated,true);
+const summary = {kind, upgradedExistingSchema:true, duplicateAndOutOfOrder:true, oldEpochAndReconnect:true, concurrentReports:true,
+  transactionRollback:true, total:stats.total,successes:stats.successes,largeTotal:large.total,latencyBatches:large.latencySamples.length};
+console.log(JSON.stringify(summary));
+await runtime.closeDatabase();

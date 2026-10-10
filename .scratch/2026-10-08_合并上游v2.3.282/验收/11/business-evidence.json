@@ -1,0 +1,28 @@
+{
+  "checks": [
+    {
+      "name": "telegram recipients exclude disabled administrators and preserve subscriber permissions",
+      "passed": true
+    },
+    {
+      "name": "telegram six real notification entry points send only to the selected-channel administrator",
+      "passed": true
+    },
+    {
+      "name": "telegram public announcement create delivers only to subscribed enabled users",
+      "passed": true
+    },
+    {
+      "name": "discord recipients exclude disabled administrators and preserve subscriber permissions",
+      "passed": true
+    },
+    {
+      "name": "discord six real notification entry points send only to the selected-channel administrator",
+      "passed": true
+    },
+    {
+      "name": "discord public announcement create delivers only to subscribed enabled users",
+      "passed": true
+    }
+  ]
+}

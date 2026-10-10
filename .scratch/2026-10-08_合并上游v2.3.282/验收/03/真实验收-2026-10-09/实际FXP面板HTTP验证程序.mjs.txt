@@ -1,0 +1,176 @@
+
+    import assert from "node:assert/strict";
+    import http from "node:http";
+    import fs from "node:fs";
+    import path from "node:path";
+    import { pathToFileURL } from "node:url";
+    import express from "/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx/node_modules/.pnpm/express@4.22.1/node_modules/express/index.js";
+    import { spawn } from "node:child_process";
+
+    const moduleUrl = (file) => pathToFileURL(path.join(process.cwd(), file)).href;
+    const runtime = await import(moduleUrl("server/dbRuntime.ts"));
+    const schema = await import(moduleUrl("server/dbSchema.ts"));
+    const heartbeat = await import(moduleUrl("server/agentHeartbeatRoute.ts"));
+    const { registerAgentReportRoutes } = await import(moduleUrl("server/agentReportRoutes.ts"));
+    const { rulesRouter } = await import(moduleUrl("server/routers/rules.ts"));
+    const { agentEncryptionMiddleware } = await import(moduleUrl("server/agentEncryptionMiddleware.ts"));
+    const { agentRouter } = await import(moduleUrl("server/agentRoutes.ts"));
+    const q = (name) => '"' + name + '"';
+    const insert = async (table, columns, values) => {
+      await runtime.executeRaw(
+        "INSERT INTO " + q(table) + " (" + columns.map(q).join(", ") + ") VALUES (" + values.map(() => "?").join(", ") + ")",
+        values,
+      );
+    };
+    const entryHostIp = "198.51.100.10";
+    const exitHostIp = "198.51.100.20";
+    const sourcePort = 18443;
+    const splitterPort = 24000;
+    const tunnelExitPort = 24005;
+    const callerContext = (user) => ({
+      req: { headers: {} },
+      res: { clearCookie() {} },
+      user,
+      authSession: null,
+      authFailureReason: null,
+    });
+    let server;
+    let lastExitDesiredState;
+
+    const fixedProcessStartedAt = Math.floor(Date.now()/1000);
+    async function postExitHeartbeat(baseUrl, localState) {
+      const response = await fetch(baseUrl + "/api/agent/heartbeat", {
+        method: "POST",
+        headers: { authorization: "Bearer exit-token", "content-type": "application/json" },
+        body: JSON.stringify({
+          agentVersion: "2.2.195",
+          agentBootId: "boot-exit",
+          agentProcessId: 2002,
+          agentProcessStartedAt: fixedProcessStartedAt,
+          ...(localState ? { localState } : {}),
+          forceReconcile: true,
+        }),
+      });
+      const payload = await response.json();
+      assert.equal(response.status, 200);
+      assert.equal(payload.success, true);
+      if (payload.desiredState) lastExitDesiredState = payload.desiredState;
+      else payload.desiredState = lastExitDesiredState;
+      return payload;
+    }
+
+    function splitterRoutes(actions) {
+      const apply = actions.find(
+        (action) => action.op === "apply" && action.fxp?.role === "sni-splitter" && Number(action.sourcePort) === splitterPort,
+      );
+      assert.ok(apply, "missing sni splitter apply action");
+      return apply.fxp.sniRoutes;
+    }
+
+    try {
+      await runtime.connectDatabase({ type: "sqlite", sqlite: { path: process.env.FORWARDX_TEST_DB } });
+      await schema.ensureDatabaseSchema();
+      const now = Math.floor(Date.now() / 1000);
+      await insert("users", ["id", "username", "password", "role", "canAddRules", "manualCanAddRules"], [1, "admin", "x", "admin", 1, 1]);
+      await insert("hosts", ["id", "name", "ip", "ipv4", "agentToken", "userId", "isOnline", "lastHeartbeat", "agentVersion", "portRangeStart", "portRangeEnd"], [1, "entry", entryHostIp, entryHostIp, "entry-token", 1, 1, now, "2.2.195", 18000, 19000]);
+      await insert("hosts", ["id", "name", "ip", "ipv4", "agentToken", "userId", "isOnline", "lastHeartbeat", "agentVersion", "portRangeStart", "portRangeEnd"], [2, "exit", exitHostIp, exitHostIp, "exit-token", 1, 1, now, "2.2.195", 24000, 24010]);
+      await insert("tunnels", ["id", "name", "entryHostId", "exitHostId", "mode", "listenPort", "userId", "isEnabled"], [7, "kr-hk", 1, 2, "tls", 21000, 1, 1]);
+      for (const route of [
+        { id: 101, name: "api", sni: "api.example.com", targetIp: "203.0.113.20", targetPort: 443 },
+        { id: 102, name: "web", sni: "web.example.com", targetIp: "203.0.113.21", targetPort: 8443 },
+      ]) {
+        await insert("forward_rules", [
+          "id", "hostId", "name", "forwardType", "protocol", "tunnelId", "sourcePort", "sni", "sniSplitterPort",
+          "tunnelExitPort", "targetIp", "targetPort", "rateLimitMbps", "maxConnections", "userId", "isEnabled", "isRunning",
+        ], [route.id, 1, route.name, "gost", "tcp", 7, sourcePort, route.sni, splitterPort, tunnelExitPort, route.targetIp, route.targetPort, 0, 0, 1, 1, 0]);
+      }
+
+      const app = express();
+      app.use(express.json());
+      app.use((req, _res, next) => {
+        const authorization = String(req.headers.authorization || "");
+        if (req.headers["x-agent-encrypted"] !== "1") req.agentToken = authorization.startsWith("Bearer ") ? authorization.slice(7) : "";
+        next();
+      });
+      app.use("/api/agent", (req, res, next) => req.headers["x-agent-encrypted"] === "1" ? agentEncryptionMiddleware(req, res, next) : next());
+      const actualReports = [];
+      app.use((req, _res, next) => { if (req.path === "/api/agent/traffic" && req.agentToken === "exit-token") actualReports.push(JSON.parse(JSON.stringify(req.body))); next(); });
+      heartbeat.registerAgentHeartbeatRoute(app);
+      registerAgentReportRoutes(app);
+      app.use(agentRouter);
+      server = http.createServer(app);
+      await new Promise((resolve, reject) => {
+        server.once("error", reject);
+        server.listen(0, "0.0.0.0", resolve);
+      });
+      const baseUrl = "http://127.0.0.1:" + server.address().port;
+
+
+      const caller = rulesRouter.createCaller(callerContext({ id: 1, username: "admin", role: "admin", accountEnabled: true }));
+      await caller.update({ id: 101, targetIp: "203.0.113.99", targetPort: 8443, rateLimitMbps: 50, maxConnections: 7, trafficLimit: 0 });
+      const business = rule => ({ hostId: rule.hostId, tunnelId: rule.tunnelId, sourcePort: rule.sourcePort, sni: rule.sni, sniSplitterPort: rule.sniSplitterPort, tunnelExitPort: rule.tunnelExitPort, targetIp: rule.targetIp, targetPort: rule.targetPort, isEnabled: rule.isEnabled, rateLimitMbps: rule.rateLimitMbps, maxConnections: rule.maxConnections });
+      const usage = rule => ({ quotaUsedIn: rule.quotaUsedIn, quotaUsedOut: rule.quotaUsedOut, ruleLimitReason: rule.ruleLimitReason });
+      const getState = async () => {
+        const [totals] = await runtime.queryRaw('SELECT COALESCE(SUM("bytesIn"),0) AS "bytesIn", COALESCE(SUM("bytesOut"),0) AS "bytesOut" FROM "traffic_stats" WHERE "ruleId" = ?', [102]);
+        return { api: usage(await caller.getById({ id: 101 })), web: { ...usage(await caller.getById({ id: 102 })), trafficBytesIn: Number(totals.bytesIn), trafficBytesOut: Number(totals.bytesOut) }, actualReportCount: actualReports.length };
+      };
+      let lastDeliveredSplitterConfig;
+      async function configSnapshot(localState) {
+        const heartbeat = await postExitHeartbeat(baseUrl, localState);
+        const apply = heartbeat.desiredState.actions.find(action => action.op === "apply" && action.fxp?.role === "sni-splitter" && Number(action.sourcePort) === splitterPort);
+        if (apply) lastDeliveredSplitterConfig = apply.fxp;
+        assert.ok(lastDeliveredSplitterConfig,"initial splitter configuration must be delivered");
+        return { config: lastDeliveredSplitterConfig, ...(await getState()) };
+      }
+      const snapshots = {};
+      const wrap = fn => async (req, res) => { try { res.json(await fn(req.body)); } catch(error) { console.error(error); res.status(500).json({ error: error.message }); } };
+      app.post('/verification/state',wrap(getState));
+      app.post('/verification/snapshot',wrap(body => configSnapshot(body.localState)));
+      app.post('/verification/duplicate',wrap(async () => {
+        const report = actualReports.findLast(value => value.stats.some(stat => stat.ruleId === 101 && stat.bytesIn > 0));
+        assert.ok(report,'actual FXP report received');
+        const before = usage(await caller.getById({ id: 101 }));
+        const response = await fetch(baseUrl+'/api/agent/traffic',{method:'POST',headers:{authorization:'Bearer exit-token','content-type':'application/json'},body:JSON.stringify(report)});
+        const result = await response.json();
+        return { duplicate: result.duplicate, before, after: usage(await caller.getById({ id: 101 })), reportId: report.reportId };
+      }));
+      app.post('/verification/entry-report',wrap(async () => {
+        const before = usage(await caller.getById({ id: 101 }));
+        const response = await fetch(baseUrl+'/api/agent/traffic',{method:'POST',headers:{authorization:'Bearer entry-token','content-type':'application/json'},body:JSON.stringify({ reportId:'live-entry-ignored', reportProducerId:'live-entry-fixture', stats:[{ruleId:101,bytesIn:9999999,bytesOut:9999999,connections:1}] })});
+        assert.equal(response.status,200);
+        return { before, after: usage(await caller.getById({ id: 101 })) };
+      }));
+      let savedBusiness;
+      app.post('/verification/arm-quota',wrap(async () => {
+        const rule = await caller.getById({ id: 101 });
+        savedBusiness = business(rule);
+        const limit = rule.quotaUsedIn + rule.quotaUsedOut + 65536;
+        await caller.update({ id: 101, trafficLimit: limit, trafficMode: 'both' });
+        const snapshot = await configSnapshot();
+        snapshots.beforeQuota = snapshot;
+        return { ...snapshot, limit };
+      }));
+      app.post('/verification/reset-quota',wrap(async (body) => {
+        snapshots.blocked = await configSnapshot(body.localState);
+        await caller.resetTraffic({ scope:'rule', ruleId:101 });
+        const rule = await caller.getById({ id:101 });
+        const snapshot = await configSnapshot(body.localState);
+        snapshots.restored = snapshot;
+        return { ...snapshot, businessBefore:savedBusiness, businessAfter:business(rule) };
+      }));
+      const args = ['run','--rm','--init','--cap-add','NET_ADMIN','--name','forwardx-ticket03-live-panel','-v',process.env.FORWARDX_LIVE_NETWORK_DIR+':/verification:ro','-e','VERIFY_PANEL_URL=http://host.docker.internal:'+server.address().port,'--entrypoint','timeout','forwardx-sni-test:20261006','75s','node','/verification/live-fxp-verification.mjs'];
+      const docker = spawn('docker',args,{stdio:['ignore','pipe','pipe']});
+      let output = '';
+      docker.stdout.on('data',data => { output += data; process.stdout.write(data); });
+      docker.stderr.on('data',data => process.stderr.write(data));
+      const code = await new Promise((resolve,reject) => { docker.once('error',reject); docker.once('exit',resolve); });
+      fs.writeFileSync(process.env.FORWARDX_LIVE_NETWORK_DIR+'/实际FXP报告.json',JSON.stringify(actualReports,null,2));
+      fs.writeFileSync(process.env.FORWARDX_LIVE_NETWORK_DIR+'/实际FXP心跳快照.json',JSON.stringify(snapshots,null,2));
+      assert.equal(code,0,'actual Linux FXP verification failed');
+      const resultLine = output.split('\n').find(line => line.startsWith('RESULT '));
+      assert.ok(resultLine,'actual Linux metrics emitted');
+      fs.writeFileSync(process.env.FORWARDX_LIVE_NETWORK_DIR+'/实际FXP限额计量结果.json',JSON.stringify(JSON.parse(resultLine.slice(7)),null,2));
+    } finally {
+      if (server) await new Promise((resolve) => server.close(resolve));
+      await runtime.closeDatabase();
+    }

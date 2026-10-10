@@ -1,0 +1,32 @@
+import assert from 'node:assert/strict';
+import path from 'node:path';
+import {pathToFileURL} from 'node:url';
+const kind=process.argv[2]; process.env.DATABASE_TYPE=kind;
+const source=name=>import(pathToFileURL(path.join(process.cwd(),name)).href);
+const r=await source('server/dbRuntime.ts'); const {quoteIdentifier:q}=await source('server/dbCompat.ts');
+const config=kind==='sqlite'?{type:kind,sqlite:{path:'/private/tmp/forwardx-282-ticket07/upgrade.db'}}:{type:kind,[kind]:{host:'127.0.0.1',port:kind==='mysql'?33317:35438,database:'probe',user:'probe',password:'isolated-probe-password'}};
+await r.connectDatabase(config);
+const tests=await source('server/repositories/forwardTestRepository.ts');const chain=await source('server/forwardChainManualProbe.ts');const metrics=await source('server/repositories/metricsRepository.ts');
+try {
+ await r.insertAndGetId('forward_groups',{id:9,name:'chain',groupType:'host',groupMode:'chain',forwardType:'nftables',domain:'',targetIp:'0.0.0.0',targetPort:1,userId:1,isEnabled:true});
+ await r.insertAndGetId('forward_rules',{id:19,hostId:1,name:'chain',sourcePort:24019,targetIp:'192.0.2.99',targetPort:443,userId:1,forwardGroupId:9,isForwardGroupTemplate:true});
+ await r.insertAndGetId('forward_rules',{id:20,hostId:1,name:'chain-member',sourcePort:24020,targetIp:'192.0.2.99',targetPort:443,userId:1,forwardGroupId:9,forwardGroupRuleId:19});
+ const createBatch=async batchId=>{
+  const ids=[];for(let hop=0;hop<2;hop++)ids.push(await tests.createForwardTest({ruleId:19,hostId:hop+1,userId:1,batchId,message:JSON.stringify({kind:'forward-chain',groupId:9,hopLabel:String(hop),routeLabel:hop?'B -> C':'A -> B',method:'tcp'})}));return ids;
+ };
+ const old=await createBatch('fc-old'),current=await createBatch('fc-current');
+ for(const id of current)await tests.completeForwardTestIfActive(id,{status:'success',latencyMs:7});
+ await chain.settleManualForwardChainBatch('fc-current');
+ for(const id of old)await tests.completeForwardTestIfActive(id,{status:'failed',message:'old failure'});
+ await r.executeRaw(`UPDATE ${q('forward_tests')} SET ${q('updatedAt')}=? WHERE ${q('batchId')}=?`,[Math.floor(Date.now()/1000)+5,'fc-old']);
+ await chain.settleManualForwardChainBatch('fc-old');
+ assert.equal((await tests.getLatestForwardTest(19)).batchId,'fc-current');
+ assert.equal((await metrics.getTrafficSummaryByRule({ruleIds:[19]}))[0].latestLatencyMs,14);
+ const partial=await createBatch('fc-partial');await tests.completeForwardTestIfActive(partial[0],{status:'success',latencyMs:9});
+ await r.closeDatabase();await r.connectDatabase(config);
+ const progress=await tests.getLatestForwardTest(19);assert.equal(progress.status,'pending');
+ const details=JSON.parse(progress.message).details;assert.equal(details.length,2);assert.equal(details[0].latencyMs,9);assert.equal(details[0].pending,false);assert.equal(details[1].pending,true);
+ assert.equal((await tests.getLatestForwardTest(19,{includeActive:false})).batchId,'fc-current');
+ assert.equal((await metrics.getTrafficSummaryByRule({ruleIds:[19]}))[0].latestLatencyMs,14);
+ console.log(JSON.stringify({kind,newestBatchInDialog:true,newestBatchInRuleList:true,incompleteSegmentNotPublished:true,durablePartialProgress:true}));
+}finally{await r.closeDatabase();}

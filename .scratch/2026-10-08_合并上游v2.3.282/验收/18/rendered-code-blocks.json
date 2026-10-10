@@ -1,0 +1,12 @@
+[
+  "curl -fsSL https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/install-panel-docker.sh | bash -s -- install --language zh-CN",
+  "docker inspect forwardx-panel --format '{{range .Mounts}}{{println .Type .Name .Source .Destination}}{{end}}'",
+  "docker ps --filter name=forwardx-panel\ndocker logs --tail 300 forwardx-panel\ndocker restart forwardx-panel",
+  "curl -fsSL https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/install-panel-docker.sh | bash -s -- upgrade",
+  "sudo mkdir -p /opt/forwardx-compose\ncd /opt/forwardx-compose\nsudo curl -fsSL https://raw.githubusercontent.com/owo10086/sni-panel/main/docker-compose.yml -o docker-compose.yml\nopenssl rand -hex 32",
+  "COMPOSE_PROJECT_NAME=forwardx\nFORWARDX_CONTAINER_NAME=forwardx-panel\nFORWARDX_IMAGE=ghcr.io/owo10086/sni-panel:latest\nPORT=9810\nFORWARDX_SETUP_LANGUAGE=zh-CN\nJWT_SECRET=替换为随机密钥",
+  "sudo chmod 600 .env\nsudo docker compose up -d forwardx\nsudo docker compose logs --tail 300 forwardx",
+  "cd /opt/forwardx-docker\ndocker compose --env-file .env -p forwardx pull forwardx\ndocker compose --env-file .env -p forwardx up -d --remove-orphans forwardx\nCURRENT_IMAGE_ID=\"$(docker inspect --format '{{.Image}}' forwardx-panel)\"\ndocker image ls --no-trunc --format '{{.Repository}} {{.Tag}} {{.ID}}' ghcr.io/owo10086/sni-panel \\\n  | awk -v current=\"$CURRENT_IMAGE_ID\" '$1 == \"ghcr.io/owo10086/sni-panel\" && $2 != \"<none>\" && $3 != current { print $1 \":\" $2 }' \\\n  | xargs -r docker image rm",
+  "docker compose --env-file .env -p forwardx logs --tail 300 forwardx\ndocker exec forwardx-panel node -p \"require('./package.json').version\"",
+  "curl -fsSL \"https://mirror.example.com/https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/install-panel-docker.sh\" \\\n  | bash -s -- install --language zh-CN --github-accelerator \"https://mirror.example.com\""
+]

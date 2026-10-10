@@ -1,0 +1,14 @@
+- text: APP Settings
+- text: Traffic Alerts
+- generic: Reminds when below the threshold.
+- switch "Traffic Alerts Reminds when below the threshold." [checked]
+- text: Remaining traffic threshold (%)
+- spinbutton: "25"
+- text: Expiry Reminder
+- generic: Send a reminder before expiry.
+- switch "Expiry Reminder Send a reminder before expiry." [checked]
+- text: Days before expiry
+- spinbutton: "3"
+- text: Reminder Time
+- textbox: 09:00
+- region "Notifications alt+T"

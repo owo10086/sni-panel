@@ -1,0 +1,47 @@
+import crypto from 'node:crypto';
+import fs from 'node:fs';
+import path from 'node:path';
+import {createRequire} from 'node:module';
+import {pathToFileURL} from 'node:url';
+const dir='/private/tmp/forwardx-282-ticket09', root=process.cwd();
+process.env.DATABASE_TYPE='sqlite';
+const secret=path.join(dir,'jwt.txt');if(!fs.existsSync(secret))fs.writeFileSync(secret,crypto.randomBytes(32).toString('hex'),{mode:0o600});process.env.JWT_SECRET=fs.readFileSync(secret,'utf8');
+const require=createRequire(path.join(root,'package.json'));
+const express=require('express'),cookieParser=require('cookie-parser');
+const {createExpressMiddleware}=require('@trpc/server/adapters/express');
+const {createServer}=await import(pathToFileURL(require.resolve('vite')).href);
+const source=file=>import(pathToFileURL(path.join(root,file)).href);
+const runtime=await source('server/dbRuntime.ts'),db=await source('server/db.ts');
+const {ensureDatabaseSchema}=await source('server/dbSchema.ts'),{appRouter}=await source('server/routers.ts');
+const {createContext}=await source('server/_core/context.ts'),{issueLoginSession}=await source('server/routers/auth.ts');
+const {registerDatabaseHealthRoutes}=await source('server/databaseHealthRoutes.ts'),{registerLocaleHintRoute}=await source('server/localeHint.ts');
+await runtime.connectDatabase({type:'sqlite',sqlite:{path:path.join(dir,'panel.db')}});await ensureDatabaseSchema();
+const insert=(table,row)=>runtime.insertAndGetId(table,row);
+if(!(await db.getUserById(1))){
+ await insert('users',{id:1,username:'i18n-admin',password:'unused',name:'中文管理员 <&> English',role:'admin',balanceCents:123456});
+ for(const id of [1,2])await insert('hosts',{id,name:'用户主机 '+id+' Long host name unchanged',ip:'192.0.2.'+id,ipv4:'192.0.2.'+id,userId:1,isOnline:true,lastHeartbeat:Math.floor(Date.now()/1000),agentVersion:'3.3.0',portRangeStart:18000,portRangeEnd:26000});
+ for(const [id,mode,members,name] of [[10,'port',[1],'用户端口 / Long port resource unchanged'],[20,'chain',[1,2],'用户转发链 / Long chain resource unchanged']]){
+  await insert('forward_groups',{id,name,groupType:'host',groupMode:mode,forwardType:'nftables',domain:'',targetIp:'0.0.0.0',targetPort:1,userId:1,isEnabled:true});
+  for(const [index,hostId]of members.entries())await insert('forward_group_members',{id:id*10+index,groupId:id,memberType:'host',hostId,priority:(index+1)*10,isEnabled:true});
+  await db.upsertTrafficBillingConfig({resourceType:'forward_group',resourceId:id,pricePerGbMilliCents:1234,enabled:true,requiresPermission:false,description:'用户说明 <&> unchanged #'+id});
+ }
+ await db.setSettings({trafficBillingEnabled:'true',siteTitle:'sni-panel 09验收'});
+ const caller=appRouter.createCaller({req:{headers:{}},res:{clearCookie(){}},user:await db.getUserById(1),authSession:null,authFailureReason:null});
+ const base={forwardGroupId:10,forwardType:'nftables',protocol:'tcp',targetIp:'203.0.113.10',targetPort:443};
+ await caller.rules.create({...base,name:'用户规则 A <&> unchanged',sourcePort:18501});
+ await caller.rules.create({...base,name:'用户规则 B unchanged',sourcePort:18502});
+ await caller.rules.create({...base,name:'用户 SNI 规则 unchanged',forwardGroupId:20,sourcePort:18510,sni:'api.example.test'});
+}
+const app=express();app.use(express.json({limit:'10mb'}));app.use(cookieParser());registerDatabaseHealthRoutes(app);registerLocaleHintRoute(app);
+app.get('/__ticket09/login',async(req,res,next)=>{try{await issueLoginSession({req,res},await db.getUserById(1),'browser');res.redirect('/traffic-billing');}catch(e){next(e);}});
+app.use('/api/trpc',async(req,res,next)=>{
+ fs.appendFileSync(path.join(dir,'requests.jsonl'),JSON.stringify({at:new Date().toISOString(),path:req.path,body:req.body,query:req.query})+'\n');
+ const control=JSON.parse(fs.readFileSync(path.join(dir,'control.json'),'utf8'));
+ if(req.path.includes('forwardGroups.options')&&control.optionDelay)await new Promise(r=>setTimeout(r,control.optionDelay));
+ next();
+});
+app.use('/api/trpc',createExpressMiddleware({router:appRouter,createContext}));
+const vite=await createServer({configFile:path.join(root,'vite.config.ts'),root,server:{middlewareMode:true},appType:'spa'});app.use(vite.middlewares);
+const server=app.listen(18829,'127.0.0.1',()=>console.log('Ticket09 ready http://127.0.0.1:18829/__ticket09/login'));
+const timer=setInterval(()=>void runtime.executeRaw('UPDATE hosts SET "isOnline"=1,"lastHeartbeat"=?',[Math.floor(Date.now()/1000)]),10000);
+let closing=false;const stop=async()=>{if(closing)return;closing=true;clearInterval(timer);server.closeAllConnections();await new Promise(r=>server.close(r));await vite.close();await runtime.closeDatabase();process.exit(0);};process.on('SIGINT',stop);process.on('SIGTERM',stop);

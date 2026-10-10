@@ -1,0 +1,10 @@
+Browser tab: 1, Title: "sni-panel 迁移验收", URL: "http://127.0.0.1:18851/login".
+1 AXWebArea sni-panel 迁移验收, URL: 127.0.0.1:18851/login
+	2 container
+		3 container
+			4 heading Panel migrated; old data is retained, Value: 1
+				5 text Panel migrated; old data is retained
+			6 text Migration does not require restarting the Agent or existing forwarding processes. The old panel database is retained. This address continues forwarding Agent requests and payment callbacks. Keep the old panel running and installed.
+			7 link Description: Open new panel, Value: 127.0.0.1:18851/
+
+The focused UI element is 1 AXWebArea sni-panel 迁移验收, URL: 127.0.0.1:18851/login

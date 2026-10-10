@@ -1,0 +1,2892 @@
+{
+  "upstreamBase": "63fd45b3910df094fbfcab6f865830bb7a6877a8",
+  "upstreamFinal": "fb7e959bf19c80f417c9ff0e01e3d801478553cf",
+  "localBase": "b258398e55ab1bee06eedcc1475a96bd7a79ff83",
+  "counts": {
+    "直接合入": 122,
+    "本地适配": 134,
+    "按用户决定排除": 32
+  },
+  "files": [
+    {
+      "path": ".github/workflows/android-apk.yml",
+      "处理": "按用户决定排除",
+      "依据工单": "16、17",
+      "说明": "第16、17单取消；新增文件不交付，已有文件保持本地基线。",
+      "upstreamBaseSHA256": "5042d607b286634c1e7fbfcecca9e15a3da0148dd54bc933c03a46f95e4908a4",
+      "upstreamFinalSHA256": "e41f17dc38b920dcb280bb1e5561b5a90e49bdf0a5d31c4f133cf5784e73d411",
+      "localBaseSHA256": "52449a1cde372254b5d9f547c39cbe43eaec0e0cdd36a68dc4be6422a357de5d",
+      "finalSHA256": "52449a1cde372254b5d9f547c39cbe43eaec0e0cdd36a68dc4be6422a357de5d"
+    },
+    {
+      "path": ".github/workflows/ci.yml",
+      "处理": "本地适配",
+      "依据工单": "19",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。其中两平台专属新增字段、入口、测试、版本要求已排除，共用网页行为保留。",
+      "upstreamBaseSHA256": "476d5821358ba625433c439be0897c1dc465cd72e6c2967e77a1b3bc8cdd5fd1",
+      "upstreamFinalSHA256": "ae5d3b77339dd1941324f54b4cc33e4ead2f1a04d29ba5266dd32fb72bbf933b",
+      "localBaseSHA256": "f45d2b070473db2b0d75925fb793f3977591861f95e26d14776665ad47466084",
+      "finalSHA256": "562c80b45f3f556b93c63498c8b5b4b589ae6d3846d61ee5b4a57d23f7e02859"
+    },
+    {
+      "path": ".github/workflows/ios-ipa.yml",
+      "处理": "按用户决定排除",
+      "依据工单": "16、17",
+      "说明": "第16、17单取消；新增文件不交付，已有文件保持本地基线。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "7c226b35581a99e91ea53a20d701b2fba13f7321a2b2899ea6a72cbab4d0b3ff",
+      "localBaseSHA256": null,
+      "finalSHA256": null
+    },
+    {
+      "path": ".github/workflows/release-panel.yml",
+      "处理": "本地适配",
+      "依据工单": "19",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "0206948c90fb0218bb4a2537655aa99f2518cf0c331c636cc472df9c73133e5a",
+      "upstreamFinalSHA256": "a3d95e7ef7a15a55dc893b3ff8a8082063d76280970d1711a72fe526a6e7e4cf",
+      "localBaseSHA256": "8dbc8effd0b5431e23e4f331ee4ec509c0f3c2e73458826c37c1fef7d160439a",
+      "finalSHA256": "a54332f0da43e4cf0ae993e23aefbe11fca233d965ce27e5df4e1ed5e176f31b"
+    },
+    {
+      "path": "CHANGELOG.en.md",
+      "处理": "本地适配",
+      "依据工单": "18",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "00482d7a2e30a8be6ca429d1df04f8db6cea8c2068c69d826373b285f26d432a",
+      "localBaseSHA256": null,
+      "finalSHA256": "b0b5b95915c6a3af927503a852e6e724b5386bc19063a263d01ae97f01484331"
+    },
+    {
+      "path": "CHANGELOG.md",
+      "处理": "本地适配",
+      "依据工单": "18",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "716f863d87eb6a39b5566ad3b859b328090f6b4b6cb43a161552374e1ac19434",
+      "upstreamFinalSHA256": "1477e802f6690b73ddae61b70f9e918671b44cfaeb1c336addb1f913a86acc61",
+      "localBaseSHA256": "876cd033990fe9be20c68c0bc7f690d4936b1d7200a95ddf6c3b1bf24b02aa76",
+      "finalSHA256": "06099911930e4cbdcdda95579ad7f58b7cd4f9ad99592f89807292539a100b59"
+    },
+    {
+      "path": "README.en.md",
+      "处理": "本地适配",
+      "依据工单": "18",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "8b087781bb05cefdb8f7cb8c7f6f8d57a0be8cf6fb58a983aca09429103fc137",
+      "localBaseSHA256": null,
+      "finalSHA256": "99c6820d6327de113ad90ba06a660e888c458c62f2df669f3b205f630a990770"
+    },
+    {
+      "path": "README.md",
+      "处理": "本地适配",
+      "依据工单": "18",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "79953b8a1faca230ffb4f2036904da5214eb65c82e23efb82dad5bb1cdc13aed",
+      "upstreamFinalSHA256": "63f022f4f0983203c2122bbe74ced5c64aa36d2169e9b1d265ea4e02dc27a322",
+      "localBaseSHA256": "040dd1cd6a6368942b42efd820f83d4cf9ca0efa726a39da3326ba5625867354",
+      "finalSHA256": "a1cc898666988b347a8c944c28a33db2e9fe7402a82d44f7d075aa76581c6ab9"
+    },
+    {
+      "path": "agent/actions.go",
+      "处理": "本地适配",
+      "依据工单": "04、05、06、07",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "c9e156bacb8adeacb9bdfe95946d3761cfea05d0178f163925f287ca3dfe5fcc",
+      "upstreamFinalSHA256": "771f07892b01fcb214fd66ad0d2710b805947c54bc6facfe2d8f9520f8705cc4",
+      "localBaseSHA256": "beaac7bbd40bcef8fad24da2dec6ef7f6bb4c7b847216a54d0112055270a488b",
+      "finalSHA256": "a8ab2c3aecad7c77ed3d249757fc9daf9b7f3b4b323094df1a9b4855c7836102"
+    },
+    {
+      "path": "agent/gost_additive_sync.go",
+      "处理": "本地适配",
+      "依据工单": "05",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "a6f6b8262b0fc1b987bd181cf0826ea34ecab9b102c57cc443dbc4fd8ba31d8a",
+      "localBaseSHA256": null,
+      "finalSHA256": "47a9f8353b732d03c24d42f280cd33908a314324604ee1fccfa3e8f63f738ae2"
+    },
+    {
+      "path": "agent/gost_additive_sync_test.go",
+      "处理": "直接合入",
+      "依据工单": "05",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "fff7f08976e9db5c42d916a8f54a74f153c39d7876f65953956b80e38a7b0c3d",
+      "localBaseSHA256": null,
+      "finalSHA256": "fff7f08976e9db5c42d916a8f54a74f153c39d7876f65953956b80e38a7b0c3d"
+    },
+    {
+      "path": "agent/main.go",
+      "处理": "本地适配",
+      "依据工单": "04、05、06、07",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "3ae605f9fd4f09672549ceec032eefa2c583c3f2f050148b9091b30348e0cf01",
+      "upstreamFinalSHA256": "564648dd267d077f571c2685149a14d58d1e376c2f771cc1521b871123d038e2",
+      "localBaseSHA256": "e6d7a2f949d50d41a6d1a33cb6a3adca56fead5f0e23b5ebee5dcb6d7ce78867",
+      "finalSHA256": "edc076f771799069dd09be905ea40181b6f0888ad85182cfc6b1af410c048f27"
+    },
+    {
+      "path": "agent/managed_configs.go",
+      "处理": "本地适配",
+      "依据工单": "05",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "bd28d24c3afe0c2a49adf522c1abb05372df30f4116b9d03284413c9fe3f2242",
+      "upstreamFinalSHA256": "86703e144a8dd11b9883435c4566bb307df62fe007008fa25b61abc6dcfbc635",
+      "localBaseSHA256": "bd28d24c3afe0c2a49adf522c1abb05372df30f4116b9d03284413c9fe3f2242",
+      "finalSHA256": "8a5243c3ea91763d60989ead7bafc03c3aff80d522fda8abf413ea5b6c3fbb02"
+    },
+    {
+      "path": "agent/tcping_report_gate.go",
+      "处理": "本地适配",
+      "依据工单": "06、07",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "edf67990c035915d451ebfafedb21161ac606c91a739df8f3c6f8ad22aea7dda",
+      "upstreamFinalSHA256": "ecccdf4c32c385b6f7672ef9bd5197fc3548c3fa1863b54511cc528b5523ef28",
+      "localBaseSHA256": "edf67990c035915d451ebfafedb21161ac606c91a739df8f3c6f8ad22aea7dda",
+      "finalSHA256": "42e7c649c765c571a4495714f100fbdba7ffd3a7ce7f3fc96a8a31bbac17476a"
+    },
+    {
+      "path": "agent/tcping_report_gate_test.go",
+      "处理": "直接合入",
+      "依据工单": "06、07",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": "1838142a96b2518afa48e2b15515b011d9bfe9044a36303b483e42baaeeaaa72",
+      "upstreamFinalSHA256": "72946ef2d226fd6ee0f1b9eb1ca24c2d5aa2cfa9ecf4deeb9db479c5ae5ebac3",
+      "localBaseSHA256": "1838142a96b2518afa48e2b15515b011d9bfe9044a36303b483e42baaeeaaa72",
+      "finalSHA256": "72946ef2d226fd6ee0f1b9eb1ca24c2d5aa2cfa9ecf4deeb9db479c5ae5ebac3"
+    },
+    {
+      "path": "capacitor.config.ts",
+      "处理": "按用户决定排除",
+      "依据工单": "16、17",
+      "说明": "第16、17单取消；新增文件不交付，已有文件保持本地基线。",
+      "upstreamBaseSHA256": "f9a2b492fde113d44477de72924d087f993f94831f4acf6aad5230351a96a87a",
+      "upstreamFinalSHA256": "5b1448daaeb6f08fd1cd4bf31ed8163b141683bcfe74fe3298574ca1e8298120",
+      "localBaseSHA256": "f9a2b492fde113d44477de72924d087f993f94831f4acf6aad5230351a96a87a",
+      "finalSHA256": "f9a2b492fde113d44477de72924d087f993f94831f4acf6aad5230351a96a87a"
+    },
+    {
+      "path": "client/src/App.tsx",
+      "处理": "本地适配",
+      "依据工单": "01、02、09",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "a81ea4ef06e530d0e13fbb55e27f98eefcefe34b3a57ec0dba6a3c94cfc5a35e",
+      "upstreamFinalSHA256": "dc94250e676959b1bdfcb46521b085bee86ff5985befa71e8f0b8df077cf9b60",
+      "localBaseSHA256": "563abc5e831ab13589e4f07687e70c2b31f491f75965e1dad03fb7b398766898",
+      "finalSHA256": "c20c1fd64d788597de8392ac4bd9b8d6b6927237421cf552945eda5aa482667b"
+    },
+    {
+      "path": "client/src/components/AgentTokenManager.tsx",
+      "处理": "本地适配",
+      "依据工单": "01、02、09",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "54402282c505f8aa3f7c8c6215549b83b4c059422a088a9b0a8332be1feae7c0",
+      "upstreamFinalSHA256": "032714500ab63b7e7acbcb9d2d40ea911d7c320250243dd185021dd54dff1560",
+      "localBaseSHA256": "75fb0d03804ea4be28f3d609c330c84149cbdd6e393cfd1b1ec1cf42ba92891b",
+      "finalSHA256": "f55c466eaa1a5f75371e48decd8edb8d7ddff80ba939582f7f51d90a8886c627"
+    },
+    {
+      "path": "client/src/components/AnimatedStatValue.tsx",
+      "处理": "直接合入",
+      "依据工单": "01、02、09",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": "5d5ff347f573699405772e2eb946c230d51449432bd93f6eb869eda8a677e04a",
+      "upstreamFinalSHA256": "a92134559a9d127b7c603fc46aa233369bcabcd6b75df451c9c47db40286c7e5",
+      "localBaseSHA256": "5d5ff347f573699405772e2eb946c230d51449432bd93f6eb869eda8a677e04a",
+      "finalSHA256": "a92134559a9d127b7c603fc46aa233369bcabcd6b75df451c9c47db40286c7e5"
+    },
+    {
+      "path": "client/src/components/AvatarPicker.tsx",
+      "处理": "本地适配",
+      "依据工单": "01、02、09",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "35a09631b364cdacf0f976e276566000e40aa46dadea7e33b12a22b112e04c27",
+      "upstreamFinalSHA256": "e62e3a717a8ed3246b60a0b92c231534e2cc811762d4597f036f55cf47a963d5",
+      "localBaseSHA256": "35a09631b364cdacf0f976e276566000e40aa46dadea7e33b12a22b112e04c27",
+      "finalSHA256": "04dd12afb56600bb293019c7250e0bc93f9421691bf54a8fd8281e56df3a5d1c"
+    },
+    {
+      "path": "client/src/components/DashboardLayout.tsx",
+      "处理": "本地适配",
+      "依据工单": "01、02、09",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。其中两平台专属新增字段、入口、测试、版本要求已排除，共用网页行为保留。",
+      "upstreamBaseSHA256": "5f1c09fbe872b8fb7dc9df45cffc6669aef7f10b8a59c42170366eb0892a37f7",
+      "upstreamFinalSHA256": "b21e967690c397e48e2ba1241ca7dee60d121f98af0b03655a2c45157c99057c",
+      "localBaseSHA256": "177b2616266c104e9c5a77e94373d738a34fadf00f2b4799266305989330a2f3",
+      "finalSHA256": "0311c2a713b758b91b8d2b781a81a02dc312bad685deae63715b9649b8ff3e94"
+    },
+    {
+      "path": "client/src/components/DataSectionLoading.tsx",
+      "处理": "直接合入",
+      "依据工单": "01、02、09",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": "9a44839e3151487078a169367e38595236c3ededac136d9495580b606c27ca87",
+      "upstreamFinalSHA256": "25ba6e892e4589433d72da3e90e3492f48412212234fb41a4a529dc585730af9",
+      "localBaseSHA256": "9a44839e3151487078a169367e38595236c3ededac136d9495580b606c27ca87",
+      "finalSHA256": "25ba6e892e4589433d72da3e90e3492f48412212234fb41a4a529dc585730af9"
+    },
+    {
+      "path": "client/src/components/DatabaseHealthGate.tsx",
+      "处理": "直接合入",
+      "依据工单": "14、15",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": "34653b483ed60c23a160eb158bee3e4a59eed6ab75a14be2a268d7cc469be0a5",
+      "upstreamFinalSHA256": "026d82a328a33adc6b5902e0ea0d7f95d01d8bb38465bcd63f304e049d140922",
+      "localBaseSHA256": "34653b483ed60c23a160eb158bee3e4a59eed6ab75a14be2a268d7cc469be0a5",
+      "finalSHA256": "026d82a328a33adc6b5902e0ea0d7f95d01d8bb38465bcd63f304e049d140922"
+    },
+    {
+      "path": "client/src/components/DatePickerInput.tsx",
+      "处理": "直接合入",
+      "依据工单": "01、02、09",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": "466ddeaa135bf7005a0919e3cca693a990d8f4681729b77fcbcbf255402b961c",
+      "upstreamFinalSHA256": "33dc3317888491f1277a561f2ca49ff834836c0dac52138ae704b90dbad8acd9",
+      "localBaseSHA256": "466ddeaa135bf7005a0919e3cca693a990d8f4681729b77fcbcbf255402b961c",
+      "finalSHA256": "33dc3317888491f1277a561f2ca49ff834836c0dac52138ae704b90dbad8acd9"
+    },
+    {
+      "path": "client/src/components/DiscordAccountCard.tsx",
+      "处理": "本地适配",
+      "依据工单": "11",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "a1925f99951fbce97e41013101d6f407517595ca9de97a62ea8dfed6a8dacbec",
+      "localBaseSHA256": null,
+      "finalSHA256": "3f01e4b4847eb1b2c653503b9e6efc0c79b78e228ec0f45c311a46cc6cf4dbe1"
+    },
+    {
+      "path": "client/src/components/ErrorBoundary.tsx",
+      "处理": "直接合入",
+      "依据工单": "01、02、09",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": "bdcc46c055a75fb6206ae81663404dd6dbc5cf5093aa0b15f24c2ee4a5c73115",
+      "upstreamFinalSHA256": "acd6cd94ed9504f61dca09224dbe93888232479ac07abba5f146fbfb7d26a3f3",
+      "localBaseSHA256": "bdcc46c055a75fb6206ae81663404dd6dbc5cf5093aa0b15f24c2ee4a5c73115",
+      "finalSHA256": "acd6cd94ed9504f61dca09224dbe93888232479ac07abba5f146fbfb7d26a3f3"
+    },
+    {
+      "path": "client/src/components/GoogleAccountCard.tsx",
+      "处理": "本地适配",
+      "依据工单": "10",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "951b91e2691d5c613454fbbc3016d23f1d324280acd1daae55f6dafcbfe64da0",
+      "localBaseSHA256": null,
+      "finalSHA256": "a3103a6c2949239aeef6c47db3251edfa89311880a82e02f5005785fd65af0eb"
+    },
+    {
+      "path": "client/src/components/GoogleLoginButton.tsx",
+      "处理": "直接合入",
+      "依据工单": "10",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "51a64dad189040abdc2e9900a517f16ffbbe093cbdb21106088625d74b769f78",
+      "localBaseSHA256": null,
+      "finalSHA256": "51a64dad189040abdc2e9900a517f16ffbbe093cbdb21106088625d74b769f78"
+    },
+    {
+      "path": "client/src/components/GoogleLoginSettingsCard.tsx",
+      "处理": "直接合入",
+      "依据工单": "10",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "1e640a2e8d6be3166983c0485b69f0ba7a268358a14951a73285120b04f5a579",
+      "localBaseSHA256": null,
+      "finalSHA256": "1e640a2e8d6be3166983c0485b69f0ba7a268358a14951a73285120b04f5a579"
+    },
+    {
+      "path": "client/src/components/HostFlatMap.tsx",
+      "处理": "本地适配",
+      "依据工单": "01、02、09",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "2c90afacf9738a6709c0dbe620e3c652e2419b4d3d00aaa6531b6570340f708b",
+      "upstreamFinalSHA256": "e1ccd10a326230315df222ffe7404ea30ca3840246d103b6dde24804abad41eb",
+      "localBaseSHA256": "2c90afacf9738a6709c0dbe620e3c652e2419b4d3d00aaa6531b6570340f708b",
+      "finalSHA256": "1800fff18b7977f77a9a6e86d646852c26336a78f2ca4140b92cd8efe1d3e3f6"
+    },
+    {
+      "path": "client/src/components/LanguageSelector.tsx",
+      "处理": "本地适配",
+      "依据工单": "01、02、09",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "4a2dee0b0b5f79d9948faad43eb846227f440a4a94b5fc125804a5c2706157ed",
+      "localBaseSHA256": null,
+      "finalSHA256": "49adf45fb78a2f31dbcc3ff13c175b59d5ca86f45b2fcfd0923490b6b31dd454"
+    },
+    {
+      "path": "client/src/components/LatencyPeakCutToggle.tsx",
+      "处理": "直接合入",
+      "依据工单": "06、07",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": "96e9eaa240b545d144cf9344944e27c44be696c8ff18fd69e2c14b3083672a43",
+      "upstreamFinalSHA256": "959485b80cbf826ccd1e771e8588d14765e7e7777e726cb7ba9ce6643e10617a",
+      "localBaseSHA256": "96e9eaa240b545d144cf9344944e27c44be696c8ff18fd69e2c14b3083672a43",
+      "finalSHA256": "959485b80cbf826ccd1e771e8588d14765e7e7777e726cb7ba9ce6643e10617a"
+    },
+    {
+      "path": "client/src/components/LatencyRating.tsx",
+      "处理": "本地适配",
+      "依据工单": "06、07",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "e4b36a21c44f700511723a3bb219a57030d3f20715dac9db783ef946680c07ae",
+      "upstreamFinalSHA256": "408409db1fd4147d48555f266cec3e7a41c4af38e515d09fb07c7ed909472855",
+      "localBaseSHA256": "e4b36a21c44f700511723a3bb219a57030d3f20715dac9db783ef946680c07ae",
+      "finalSHA256": "817c872f63001e291b1960be545a4f815effc941acc7614758ef83fe0246941c"
+    },
+    {
+      "path": "client/src/components/LatencyStabilityStats.test.tsx",
+      "处理": "本地适配",
+      "依据工单": "06、07",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "273d6521a0101dd5c7453c610857fae52900a06be190512708f5cf1b53ba3c31",
+      "localBaseSHA256": null,
+      "finalSHA256": "1ac751608d76ab5f60191ec58a6d4dfaf0caffcc05393fee6266fa15d0cbbaf4"
+    },
+    {
+      "path": "client/src/components/LatencyStabilityStats.tsx",
+      "处理": "本地适配",
+      "依据工单": "06、07",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "dda82f68d29ff258ee72eeb4ab7f078dc3ceebb81c693883cf0b3268d694fa16",
+      "upstreamFinalSHA256": "eef2c3b6e175914118e7e277b25531edcb293ce1d082c4f84d1cf64876766ab9",
+      "localBaseSHA256": "dda82f68d29ff258ee72eeb4ab7f078dc3ceebb81c693883cf0b3268d694fa16",
+      "finalSHA256": "b408eac1db5d35c00adde2ff84c033fd09046d341c6fca38f925cf7aea218639"
+    },
+    {
+      "path": "client/src/components/LinkCreateTypeSelector.tsx",
+      "处理": "直接合入",
+      "依据工单": "01、02、09",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": "521b6d95edd249d2177029fa0426a4653cb6c3164fd361b2f2e3eb484f0c0bc9",
+      "upstreamFinalSHA256": "9a85314affaf2133edb4f753567d51ebf3056dbcdff4449394a9879411248cde",
+      "localBaseSHA256": "521b6d95edd249d2177029fa0426a4653cb6c3164fd361b2f2e3eb484f0c0bc9",
+      "finalSHA256": "9a85314affaf2133edb4f753567d51ebf3056dbcdff4449394a9879411248cde"
+    },
+    {
+      "path": "client/src/components/LinkTestLatencySummary.test.tsx",
+      "处理": "直接合入",
+      "依据工单": "07",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": "d93a0639ae2a31d697c6a1ac7bc5814e694b30c5be94cadfe0c406bd20d28299",
+      "upstreamFinalSHA256": "c60e994d57a476511e947db6240958b29b4ce4018e0e545c8584a856fd6632e6",
+      "localBaseSHA256": "d93a0639ae2a31d697c6a1ac7bc5814e694b30c5be94cadfe0c406bd20d28299",
+      "finalSHA256": "c60e994d57a476511e947db6240958b29b4ce4018e0e545c8584a856fd6632e6"
+    },
+    {
+      "path": "client/src/components/LinkTestLatencySummary.tsx",
+      "处理": "本地适配",
+      "依据工单": "07",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "9b5bdcac63e2c3605e181150786f353961d914d140f040308e01262b72c1a6b0",
+      "upstreamFinalSHA256": "ac418ed56652c81f8c99ad4999a899489a4369315435175e0a85306fda3bf799",
+      "localBaseSHA256": "9b5bdcac63e2c3605e181150786f353961d914d140f040308e01262b72c1a6b0",
+      "finalSHA256": "2509a387c66a4dffdbdcd5bd4b799f671d0cf7146ceb32484315dab4f84214c8"
+    },
+    {
+      "path": "client/src/components/MobileAppSettings.tsx",
+      "处理": "按用户决定排除",
+      "依据工单": "16、17",
+      "说明": "第16、17单取消；新增文件不交付，已有文件保持本地基线。",
+      "upstreamBaseSHA256": "37bfddb646c4a422b7a39f038e6a61a0aff6df92a2eb0f4f3dd724a0e05845f0",
+      "upstreamFinalSHA256": "5f52a7ddc9b05f52c9aaf5994efd4b06a0539348d2c4fd24971c3971154a70c5",
+      "localBaseSHA256": "37bfddb646c4a422b7a39f038e6a61a0aff6df92a2eb0f4f3dd724a0e05845f0",
+      "finalSHA256": "37bfddb646c4a422b7a39f038e6a61a0aff6df92a2eb0f4f3dd724a0e05845f0"
+    },
+    {
+      "path": "client/src/components/MultiHopEditor.tsx",
+      "处理": "本地适配",
+      "依据工单": "01、02、09",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "8c55da930ac4050528638c3176de6268ca7328dd1e41b825a042d8a81b9ac9c9",
+      "upstreamFinalSHA256": "2d50fa57d5b51469417566f992f0c4d9210cd49021c20e7d3ea4c119eb88b623",
+      "localBaseSHA256": "8c55da930ac4050528638c3176de6268ca7328dd1e41b825a042d8a81b9ac9c9",
+      "finalSHA256": "bb33c200133c1fdce910ef60feb3b7eb79d894bcde542c2f53655c600964a0b2"
+    },
+    {
+      "path": "client/src/components/NotificationSettingsCard.tsx",
+      "处理": "直接合入",
+      "依据工单": "11",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "368b675e42939a6dac88c2cea4b19008d79d33a0e0ce51cb486f27104bc173dd",
+      "localBaseSHA256": null,
+      "finalSHA256": "368b675e42939a6dac88c2cea4b19008d79d33a0e0ce51cb486f27104bc173dd"
+    },
+    {
+      "path": "client/src/components/PersistentPagination.tsx",
+      "处理": "本地适配",
+      "依据工单": "01、02、09",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "3e448bc423b47a405f084a27e7f2d731d5ffa20b22c1c440d657363a5d3534ff",
+      "upstreamFinalSHA256": "86fb8f31c8b9ec2ebca4e205ce5f360dd5a3040c8f9971176c45b51d48431516",
+      "localBaseSHA256": "3e448bc423b47a405f084a27e7f2d731d5ffa20b22c1c440d657363a5d3534ff",
+      "finalSHA256": "98ba3115a6101ca84d143f9511a106228959fda57f2f0014d56f8d7a8e2c76e9"
+    },
+    {
+      "path": "client/src/components/SeamlessMigrationGate.tsx",
+      "处理": "本地适配",
+      "依据工单": "14、15",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "de5384c1f613866db1b41c233ff48394cc1c7340e97ccd6b8edf2db41e804255",
+      "localBaseSHA256": null,
+      "finalSHA256": "a73ba25567d6a0a76c7bb9ad66cb2d21d6dc430b1b33f5d12acb9c20f58be71e"
+    },
+    {
+      "path": "client/src/components/SortableDragHandle.tsx",
+      "处理": "直接合入",
+      "依据工单": "01、02、09",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": "d39fdc906808c3c5bb9abeede13cf159f4798a8b943a4667b9facef5b15b732e",
+      "upstreamFinalSHA256": "d77cc15cf3588020e024b1915910844bb4e9768a4008751f9e85baacff5ee789",
+      "localBaseSHA256": "d39fdc906808c3c5bb9abeede13cf159f4798a8b943a4667b9facef5b15b732e",
+      "finalSHA256": "d77cc15cf3588020e024b1915910844bb4e9768a4008751f9e85baacff5ee789"
+    },
+    {
+      "path": "client/src/components/TrafficBillingConfigManager.tsx",
+      "处理": "本地适配",
+      "依据工单": "01、02、09",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "111a9b14888734207baa98f11762d92185a1e5df26df1092e38bae296471766a",
+      "upstreamFinalSHA256": "82581532afa9389fc8c7441a42a44c68e27a4442fc45ee13d762244a5e95d77e",
+      "localBaseSHA256": "111a9b14888734207baa98f11762d92185a1e5df26df1092e38bae296471766a",
+      "finalSHA256": "3d69f74799224851a8cfe7273206a8c8a50d56db181f838b2f8d7a1ac4007abe"
+    },
+    {
+      "path": "client/src/components/hosts/HostCard.tsx",
+      "处理": "本地适配",
+      "依据工单": "01、02、09",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "7f4c9c89a3aecadfbc3e1191dfc53c580c32e950aa843e01feba71c985ff4fea",
+      "upstreamFinalSHA256": "15a753ddb5573cb4f3040c99c98d977fe3b2cad12c3613d8083fb4c1329a36de",
+      "localBaseSHA256": "7f4c9c89a3aecadfbc3e1191dfc53c580c32e950aa843e01feba71c985ff4fea",
+      "finalSHA256": "4d49f596201e0959d854e85b777d59be31638f6d55175de534cbc0c2c6be5ae3"
+    },
+    {
+      "path": "client/src/components/hosts/HostGroupManager.tsx",
+      "处理": "本地适配",
+      "依据工单": "01、02、09",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "a3f3709962413043f26cd8247379378116966f277e8cea011f277022406c3a45",
+      "upstreamFinalSHA256": "059cd5408437bb07d592d07201477c09ac90b1374bdd4c90b337761929a8f8be",
+      "localBaseSHA256": "a3f3709962413043f26cd8247379378116966f277e8cea011f277022406c3a45",
+      "finalSHA256": "26a67d7b9006fd5900c997d62b5b5a578840dc95eee2d448f6e6bba97cb6b22a"
+    },
+    {
+      "path": "client/src/components/hosts/HostProbeServiceLatencyDialog.tsx",
+      "处理": "直接合入",
+      "依据工单": "06、07",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": "7f6a5351720732d001cd629e94e3771396321b86ab6d7b981611bf9f983008dc",
+      "upstreamFinalSHA256": "1b989d666ef8c38b588c2ef0d2dc932ef47ae5767f12b209dc324f028d2fc269",
+      "localBaseSHA256": "7f6a5351720732d001cd629e94e3771396321b86ab6d7b981611bf9f983008dc",
+      "finalSHA256": "1b989d666ef8c38b588c2ef0d2dc932ef47ae5767f12b209dc324f028d2fc269"
+    },
+    {
+      "path": "client/src/components/hosts/HostProbeServiceManager.tsx",
+      "处理": "本地适配",
+      "依据工单": "06、07",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "7cdb77126f36275ae202f730b3567d7a475533c15cfe02b2845219d5a9d021ee",
+      "upstreamFinalSHA256": "1845027687cafd9699ffee139ff86f558d1f74959ef3744eb56638a6b4ea243a",
+      "localBaseSHA256": "7cdb77126f36275ae202f730b3567d7a475533c15cfe02b2845219d5a9d021ee",
+      "finalSHA256": "01528b621994a8e951ec74feabd747697ad25211e2b9ef278eb0e8622244979c"
+    },
+    {
+      "path": "client/src/components/hosts/hostDisplay.tsx",
+      "处理": "本地适配",
+      "依据工单": "01、02、09",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "da79cdb56456828d59d067c093dc50b34f5c407bb4acac9c952d980cdb42ea7c",
+      "upstreamFinalSHA256": "84202a9dd283909e4815157ff7ee1d65734a8ce8e44e2cb4c54f59691ea9338c",
+      "localBaseSHA256": "da79cdb56456828d59d067c093dc50b34f5c407bb4acac9c952d980cdb42ea7c",
+      "finalSHA256": "b70f3455057c8fc8a9cac1b433db71eab1540958dbde16364f7562d3d6f9eba9"
+    },
+    {
+      "path": "client/src/components/plugins/AgentResourceManager.tsx",
+      "处理": "本地适配",
+      "依据工单": "01、02、09",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "c26e0c3151937ec406bb1cd604850df16c8f16ced9cb2dca49c61a5d4c3dc26d",
+      "upstreamFinalSHA256": "d02ab3f074a1c6f7a69896762a949515e84c252eaa6888034c7c86975b9c9399",
+      "localBaseSHA256": "c26e0c3151937ec406bb1cd604850df16c8f16ced9cb2dca49c61a5d4c3dc26d",
+      "finalSHA256": "75a138f1f351f29c2d277a40dec40f0ae7f1bb90bf4e3cbc876213ec6ced9d69"
+    },
+    {
+      "path": "client/src/components/plugins/PluginResultRenderer.tsx",
+      "处理": "直接合入",
+      "依据工单": "01、02、09",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": "1012efd100fcadbf0f96fa92cebfb03afa6a6f06f398baf2701af8a161a47746",
+      "upstreamFinalSHA256": "1e80446835b2f4cc23d879f8d7faae036e16d60fb80aff13950ad9e6fd4baaa0",
+      "localBaseSHA256": "1012efd100fcadbf0f96fa92cebfb03afa6a6f06f398baf2701af8a161a47746",
+      "finalSHA256": "1e80446835b2f4cc23d879f8d7faae036e16d60fb80aff13950ad9e6fd4baaa0"
+    },
+    {
+      "path": "client/src/components/rules/RuleLimitsForm.test.tsx",
+      "处理": "直接合入",
+      "依据工单": "01、02、09",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "c12674e92e6faf78b6e8a3b4a7dba179fe1b25d75f8696d2efa1d3d9757e9704",
+      "localBaseSHA256": null,
+      "finalSHA256": "c12674e92e6faf78b6e8a3b4a7dba179fe1b25d75f8696d2efa1d3d9757e9704"
+    },
+    {
+      "path": "client/src/components/rules/RuleLimitsForm.tsx",
+      "处理": "本地适配",
+      "依据工单": "01、02、09",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "9cd0eba6233208318b86fb8fd9df539e640106c74286d75d375d3f23b2a03e5d",
+      "localBaseSHA256": null,
+      "finalSHA256": "953a29e3e4728436508dd47b7a4ceabc95bc89465108fb6c435387237fd83997"
+    },
+    {
+      "path": "client/src/components/rules/RuleUsageSummary.tsx",
+      "处理": "本地适配",
+      "依据工单": "01、02、09",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "3bdd3aa901dcb9ddb3eecf9af24728e7dcee1829114335ed5b188935d0bd732d",
+      "localBaseSHA256": null,
+      "finalSHA256": "c1ebc5c2f1b54502a35ddf3a66d2845725e7839ef1c48ab5d2cd37d09cd0d1b3"
+    },
+    {
+      "path": "client/src/components/rules/TcpingDetailDialog.tsx",
+      "处理": "本地适配",
+      "依据工单": "06、07",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "7b143c7d2e58272b7a2dc361530684e676f055430f15e2ec692e13d4da78b4ba",
+      "upstreamFinalSHA256": "502288ad9311f4a422bca70a53742b7d18d4ce0c4eb43d92a2dbe2627cad04e5",
+      "localBaseSHA256": "7b143c7d2e58272b7a2dc361530684e676f055430f15e2ec692e13d4da78b4ba",
+      "finalSHA256": "88975afa58bc44780b76c144a70c0ff1aa4e41ea7555d1aa8dd05ed6a29035cd"
+    },
+    {
+      "path": "client/src/components/ui/button.tsx",
+      "处理": "直接合入",
+      "依据工单": "01、02、09",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": "32f173898fec3328b2f02431728bf2d1d749748a89a004038deb046fa265afa5",
+      "upstreamFinalSHA256": "e42cc72d526c1217f813bdbb4f141f11b6633ee7410345fead89c4deb6a24df9",
+      "localBaseSHA256": "32f173898fec3328b2f02431728bf2d1d749748a89a004038deb046fa265afa5",
+      "finalSHA256": "e42cc72d526c1217f813bdbb4f141f11b6633ee7410345fead89c4deb6a24df9"
+    },
+    {
+      "path": "client/src/components/ui/card.tsx",
+      "处理": "直接合入",
+      "依据工单": "01、02、09",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": "0eb261d434d760670cd878737eb3bb3763fedb1635f3e82233f058bd34a11098",
+      "upstreamFinalSHA256": "3fce39eeea0c8c0facce5b6b380a9d8c03894be25747748c9a42bbdc0ca6da56",
+      "localBaseSHA256": "0eb261d434d760670cd878737eb3bb3763fedb1635f3e82233f058bd34a11098",
+      "finalSHA256": "3fce39eeea0c8c0facce5b6b380a9d8c03894be25747748c9a42bbdc0ca6da56"
+    },
+    {
+      "path": "client/src/components/ui/confirm-dialog.tsx",
+      "处理": "本地适配",
+      "依据工单": "01、02、09",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "746fc2766bf00a098a8ce5bed17b4bde7a0c690d672968d38b632a8b1467e666",
+      "upstreamFinalSHA256": "4979ce142148fc3eb6eb37fd7f134ae1e62c7e3d61333a3457c4cb953333e885",
+      "localBaseSHA256": "746fc2766bf00a098a8ce5bed17b4bde7a0c690d672968d38b632a8b1467e666",
+      "finalSHA256": "63de7cd6700e8b514e6bba74bdfe22cba85b9d1e7718da87866c7e4e76d2e8bb"
+    },
+    {
+      "path": "client/src/components/ui/dialog.tsx",
+      "处理": "直接合入",
+      "依据工单": "01、02、09",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": "e5ff8cf10a0d57d022dbd84a4f16386e524f17b3357d6440fd9472045b154e09",
+      "upstreamFinalSHA256": "f41104f1230f24992b1de671ad6e6f256e5a05f0fadc9c8b622b5eca522ba5a9",
+      "localBaseSHA256": "e5ff8cf10a0d57d022dbd84a4f16386e524f17b3357d6440fd9472045b154e09",
+      "finalSHA256": "f41104f1230f24992b1de671ad6e6f256e5a05f0fadc9c8b622b5eca522ba5a9"
+    },
+    {
+      "path": "client/src/components/ui/select.tsx",
+      "处理": "直接合入",
+      "依据工单": "01、02、09",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": "2a7c59d5143455353f86c2e8717f29f6ef389b94b62333ba3c1133a10faedc2c",
+      "upstreamFinalSHA256": "a99018ea7ca10437b67c9f64793ccdd69a6d2aff353a7717b52f9825a789ab68",
+      "localBaseSHA256": "2a7c59d5143455353f86c2e8717f29f6ef389b94b62333ba3c1133a10faedc2c",
+      "finalSHA256": "a99018ea7ca10437b67c9f64793ccdd69a6d2aff353a7717b52f9825a789ab68"
+    },
+    {
+      "path": "client/src/components/ui/sliding-tabs.test.tsx",
+      "处理": "直接合入",
+      "依据工单": "01、02、09",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "b55cfadcdba5b23de0d33e521f7d6e660adc069dfb6d245821d433653d9f0486",
+      "localBaseSHA256": null,
+      "finalSHA256": "b55cfadcdba5b23de0d33e521f7d6e660adc069dfb6d245821d433653d9f0486"
+    },
+    {
+      "path": "client/src/components/ui/sliding-tabs.tsx",
+      "处理": "直接合入",
+      "依据工单": "01、02、09",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": "4032515775c99261a66b3ea50c2ee44adf7692a4c4459150eee91753ca3a6c88",
+      "upstreamFinalSHA256": "7c842b1cdc9b0b8f45b931fdd5b05c34a86cde4d9c5addbef6b12663ef84f08b",
+      "localBaseSHA256": "4032515775c99261a66b3ea50c2ee44adf7692a4c4459150eee91753ca3a6c88",
+      "finalSHA256": "7c842b1cdc9b0b8f45b931fdd5b05c34a86cde4d9c5addbef6b12663ef84f08b"
+    },
+    {
+      "path": "client/src/components/ui/tabs.tsx",
+      "处理": "直接合入",
+      "依据工单": "01、02、09",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": "e61fd57b50a33028f3fd7650fb7fe3fcde5b6e68c3f3e7efe4d6678503cc5685",
+      "upstreamFinalSHA256": "c2f869b9ea7c531b8f142dc1c1a4b23bbf48b741546449bde9a53e9de9994953",
+      "localBaseSHA256": "e61fd57b50a33028f3fd7650fb7fe3fcde5b6e68c3f3e7efe4d6678503cc5685",
+      "finalSHA256": "c2f869b9ea7c531b8f142dc1c1a4b23bbf48b741546449bde9a53e9de9994953"
+    },
+    {
+      "path": "client/src/i18n/en.json",
+      "处理": "本地适配",
+      "依据工单": "01、02、09",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。其中两平台专属新增字段、入口、测试、版本要求已排除，共用网页行为保留。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "509fd7de65693da428869032da8432f1ed3037e24280d5ae7a291a17bcaa0392",
+      "localBaseSHA256": null,
+      "finalSHA256": "83e59b91e9521edaf517f6cc17e4bcff5d44872e492c3bee5461878896c5ba48"
+    },
+    {
+      "path": "client/src/i18n/index.ts",
+      "处理": "直接合入",
+      "依据工单": "01、02、09",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "6923b6b4a52e0de833cb7a8e04259414db0279ff0189837341008edfa5a1248e",
+      "localBaseSHA256": null,
+      "finalSHA256": "6923b6b4a52e0de833cb7a8e04259414db0279ff0189837341008edfa5a1248e"
+    },
+    {
+      "path": "client/src/i18n/language.test.ts",
+      "处理": "直接合入",
+      "依据工单": "01、02、09",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "a7ccde95792bf8ec51d61a452465fd395756c04bd2b0c4f58c43e5ad5e0e624f",
+      "localBaseSHA256": null,
+      "finalSHA256": "a7ccde95792bf8ec51d61a452465fd395756c04bd2b0c4f58c43e5ad5e0e624f"
+    },
+    {
+      "path": "client/src/i18n/language.ts",
+      "处理": "直接合入",
+      "依据工单": "01、02、09",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "b7a28499753a91aa69aa9c6f7905ef9946a9fdd603f24d893a94737dcf5f2874",
+      "localBaseSHA256": null,
+      "finalSHA256": "b7a28499753a91aa69aa9c6f7905ef9946a9fdd603f24d893a94737dcf5f2874"
+    },
+    {
+      "path": "client/src/i18n/messages.ts",
+      "处理": "本地适配",
+      "依据工单": "01、02、09",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "46eda68e5f81d13f9317747d1f43819b36062d9d7f29d3f7a9ba17d0a347f78d",
+      "localBaseSHA256": null,
+      "finalSHA256": "a0b36dfbf26fc144603a22418506e1f2cdac0fcfd88fb0cb44801064ccd5bd2d"
+    },
+    {
+      "path": "client/src/i18n/runtime.test.ts",
+      "处理": "本地适配",
+      "依据工单": "01、02、09",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "0cd8a43a6738965c1991ad589506f6f5bf2e1193dbd1ef39188035128225c3d2",
+      "localBaseSHA256": null,
+      "finalSHA256": "6f03fc5f2891aa55bc1d616de45ad2cf783046f14f176853f716b297497d4a61"
+    },
+    {
+      "path": "client/src/index.css",
+      "处理": "本地适配",
+      "依据工单": "01、02、09",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "87b3758bf2acf2c94bbd95f3505d31594ce3afacb0a0e5f7f4f1333dca38cd86",
+      "upstreamFinalSHA256": "441bab0f15eba11ee2cb4ef52b9d0e4770934ac44dc7f7aaf42cdd121fe75a5b",
+      "localBaseSHA256": "87b3758bf2acf2c94bbd95f3505d31594ce3afacb0a0e5f7f4f1333dca38cd86",
+      "finalSHA256": "2d932ab532482d5da10836e798525209ef7f06d0e1ed9bb29ee8d3108c5abc67"
+    },
+    {
+      "path": "client/src/lib/avatar.ts",
+      "处理": "直接合入",
+      "依据工单": "01、02、09",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": "bcde8a072eb3161b9fc25194bcebc2469526ece29e295c293d7a316bfb0186c4",
+      "upstreamFinalSHA256": "b730ba35441d7b9c3e0b8a7ed33cd86997d2a9834e9047a748ca3ad7900abf9a",
+      "localBaseSHA256": "bcde8a072eb3161b9fc25194bcebc2469526ece29e295c293d7a316bfb0186c4",
+      "finalSHA256": "b730ba35441d7b9c3e0b8a7ed33cd86997d2a9834e9047a748ca3ad7900abf9a"
+    },
+    {
+      "path": "client/src/lib/fileDownload.ts",
+      "处理": "直接合入",
+      "依据工单": "01、02、09",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": "89fed61646081565b9f0c0c644ef44f65e9a813206049861e440c71fa00be0d8",
+      "upstreamFinalSHA256": "0a9ffc886172ae5a5cca7d12d3ecbf8164536d363ae960edfd37e3a093987d17",
+      "localBaseSHA256": "89fed61646081565b9f0c0c644ef44f65e9a813206049861e440c71fa00be0d8",
+      "finalSHA256": "0a9ffc886172ae5a5cca7d12d3ecbf8164536d363ae960edfd37e3a093987d17"
+    },
+    {
+      "path": "client/src/lib/forwardRuleStatus.ts",
+      "处理": "直接合入",
+      "依据工单": "01、02、09",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": "37b90279a08bd85d99e819a4144d93b6d0fa3508bb65e73caf405760abdd4ded",
+      "upstreamFinalSHA256": "ae3e1352ba3a3b68fe7235b742ebb52a0f51007f3ccbe865a254f1d01de3b864",
+      "localBaseSHA256": "37b90279a08bd85d99e819a4144d93b6d0fa3508bb65e73caf405760abdd4ded",
+      "finalSHA256": "ae3e1352ba3a3b68fe7235b742ebb52a0f51007f3ccbe865a254f1d01de3b864"
+    },
+    {
+      "path": "client/src/lib/htmlContent.ts",
+      "处理": "直接合入",
+      "依据工单": "01、02、09",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": "8476d20e6ae0c08dee4153380e0e8c84dc02a9322d5afcc43a7bb1812e949a84",
+      "upstreamFinalSHA256": "1555c367651c7ef106e321638d1ef80a0bc00bcbeef479bed9517d438700513e",
+      "localBaseSHA256": "8476d20e6ae0c08dee4153380e0e8c84dc02a9322d5afcc43a7bb1812e949a84",
+      "finalSHA256": "1555c367651c7ef106e321638d1ef80a0bc00bcbeef479bed9517d438700513e"
+    },
+    {
+      "path": "client/src/lib/imageUpload.ts",
+      "处理": "直接合入",
+      "依据工单": "01、02、09",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": "225c7d6b7e56cf531e1364869ce904914aa75b94840b2310a8f587e69a08e11e",
+      "upstreamFinalSHA256": "b3d16c08b7adae7216e57a151f36c9720deeff8e1c64237924db9829b3ce9d4e",
+      "localBaseSHA256": "225c7d6b7e56cf531e1364869ce904914aa75b94840b2310a8f587e69a08e11e",
+      "finalSHA256": "b3d16c08b7adae7216e57a151f36c9720deeff8e1c64237924db9829b3ce9d4e"
+    },
+    {
+      "path": "client/src/lib/latencyChart.test.ts",
+      "处理": "本地适配",
+      "依据工单": "06、07",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "b872f081fe71714e78fa9af496010c2880f7b88711071ca4cfca9874077678d8",
+      "upstreamFinalSHA256": "7e607c37427c65d6c806c4274f6909ffbd12ab47d7100af618afcd2b3d529cb4",
+      "localBaseSHA256": "b872f081fe71714e78fa9af496010c2880f7b88711071ca4cfca9874077678d8",
+      "finalSHA256": "c4a2989d0681183b403199cabfb1749f140c60097fe070b7abc1617499c46b38"
+    },
+    {
+      "path": "client/src/lib/latencyChart.ts",
+      "处理": "本地适配",
+      "依据工单": "06、07",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "d50d8299301fe3f86a7e45b0baf337117eb441b8989a129399b4c58059f736a3",
+      "upstreamFinalSHA256": "d3ce7bd508cc25baf308e0ecfaf2b1dc73300a904f793ead7d03a3ce33a525a6",
+      "localBaseSHA256": "d50d8299301fe3f86a7e45b0baf337117eb441b8989a129399b4c58059f736a3",
+      "finalSHA256": "c98b27f011d89e1d0a42bfb4c96a2dbd1a68273fb2869f183bc9325d84c8e0d7"
+    },
+    {
+      "path": "client/src/lib/linkAvailability.ts",
+      "处理": "本地适配",
+      "依据工单": "01、02、09",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "e919ba8d422571902cd6edf5f3bb5e4c3010975722504b014958bd84cac5ea05",
+      "upstreamFinalSHA256": "f95e3474615af7e71213f8921ad6e09be6236b5a5ef30c3d33d821537e298df0",
+      "localBaseSHA256": "e919ba8d422571902cd6edf5f3bb5e4c3010975722504b014958bd84cac5ea05",
+      "finalSHA256": "614b8f6b75874df4072ae01673efbdd44baef33d9ac0ff1690bc83c0cadc51a7"
+    },
+    {
+      "path": "client/src/lib/localizedToast.ts",
+      "处理": "直接合入",
+      "依据工单": "01、02、09",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "8fe804baedcd652fd3e924a1b478703f39018b31106446bb876e06997d9b4b8e",
+      "localBaseSHA256": null,
+      "finalSHA256": "8fe804baedcd652fd3e924a1b478703f39018b31106446bb876e06997d9b4b8e"
+    },
+    {
+      "path": "client/src/lib/manualProbe.test.ts",
+      "处理": "直接合入",
+      "依据工单": "07",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "867934eb34df854d7b862bd4ecb41962816326d35a1a64308bcb288acb6d2176",
+      "localBaseSHA256": null,
+      "finalSHA256": "867934eb34df854d7b862bd4ecb41962816326d35a1a64308bcb288acb6d2176"
+    },
+    {
+      "path": "client/src/lib/manualProbe.ts",
+      "处理": "直接合入",
+      "依据工单": "07",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "81fa042b49415811c09466553e40cb367f33ac81e5e3f9bf00b4944388317ded",
+      "localBaseSHA256": null,
+      "finalSHA256": "81fa042b49415811c09466553e40cb367f33ac81e5e3f9bf00b4944388317ded"
+    },
+    {
+      "path": "client/src/lib/mobileAppUpdate.test.ts",
+      "处理": "按用户决定排除",
+      "依据工单": "16、17",
+      "说明": "第16、17单取消；新增文件不交付，已有文件保持本地基线。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "2a515d3b368c3c3457e9c77e899bf27f721c6adf6b7492ba9ab44aa47f2f34f1",
+      "localBaseSHA256": null,
+      "finalSHA256": null
+    },
+    {
+      "path": "client/src/lib/mobileAppUpdate.ts",
+      "处理": "按用户决定排除",
+      "依据工单": "16、17",
+      "说明": "第16、17单取消；新增文件不交付，已有文件保持本地基线。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "15f3e1b8043275eff30aae65a32a34839f739e92f9ba7d6b1beb9e4445f63b50",
+      "localBaseSHA256": null,
+      "finalSHA256": null
+    },
+    {
+      "path": "client/src/lib/mobileNotifications.ts",
+      "处理": "按用户决定排除",
+      "依据工单": "16、17",
+      "说明": "第16、17单取消；新增文件不交付，已有文件保持本地基线。",
+      "upstreamBaseSHA256": "3912bf36faea5a116b65dbdd73635686c26a65688f576a7fff4c8f821953a131",
+      "upstreamFinalSHA256": "b11597088dbf9f83b7305a475c4fc0c4ede6a815e85771940c96c710f014bd8b",
+      "localBaseSHA256": "9cdd388744c1fedbf02a865d67a934baaa36625079f0f5f2ad28f77ae4a7a8c1",
+      "finalSHA256": "9cdd388744c1fedbf02a865d67a934baaa36625079f0f5f2ad28f77ae4a7a8c1"
+    },
+    {
+      "path": "client/src/lib/nginxPemFiles.ts",
+      "处理": "本地适配",
+      "依据工单": "01、02、09",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "7208cbe26433ff333528f412dba97edbe1dfb98e27ea55d08f0f864b350665d2",
+      "upstreamFinalSHA256": "0662a84a89b1ac30e2447aae5a043bb44d511ab67014d9ff7a4c2e3a9f7e099a",
+      "localBaseSHA256": "7208cbe26433ff333528f412dba97edbe1dfb98e27ea55d08f0f864b350665d2",
+      "finalSHA256": "4ce39122094517e4ed571f3e1f9aa22e20dd4bf6232f53cf1c2790e3d2fd1877"
+    },
+    {
+      "path": "client/src/lib/planDisplay.ts",
+      "处理": "直接合入",
+      "依据工单": "01、02、09",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": "1902294a7862040e1717996d7b416284ac9565d45828ffa7f1ac01e660167068",
+      "upstreamFinalSHA256": "08bca0cad0451822f1383e6b93e627eeee215c7c48f4eff29a7345c3f94c399d",
+      "localBaseSHA256": "1902294a7862040e1717996d7b416284ac9565d45828ffa7f1ac01e660167068",
+      "finalSHA256": "08bca0cad0451822f1383e6b93e627eeee215c7c48f4eff29a7345c3f94c399d"
+    },
+    {
+      "path": "client/src/lib/publicMonitor.test.ts",
+      "处理": "本地适配",
+      "依据工单": "08",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "5ac3250a73ccea3856035867453ea539ccf79bd140cf7702b855affe8291ba49",
+      "localBaseSHA256": null,
+      "finalSHA256": "300e9f8aca0aeec6aaa224d35ce6d15f2b538edfa104aad1ed47e3be0e3dd09b"
+    },
+    {
+      "path": "client/src/lib/publicMonitor.ts",
+      "处理": "本地适配",
+      "依据工单": "08",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "20631f56674c38a179514be84805f18c8df8c5e0bff4e68bbc6d0b80895c9f9a",
+      "localBaseSHA256": null,
+      "finalSHA256": "8115e49cfc145b79bd04dd7b8b3c129ea24eaa723531e1539e5fba73b326362d"
+    },
+    {
+      "path": "client/src/lib/ruleTransfer.ts",
+      "处理": "本地适配",
+      "依据工单": "01、02、09",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "11d5cedcfef933ee66411bdc76488f01822a8b8c5fd95264dee0a97c0717855a",
+      "upstreamFinalSHA256": "881b7e448652c9241005307b43ef0d42fb9c1832f69e69536193641654af7f9d",
+      "localBaseSHA256": "9b176d6382b5bebd5012d6d771a57efd80bc90f9cf50634fdad814938f7c9f54",
+      "finalSHA256": "21638e876a941e83e8854894883682f4c3f23aa1d685bbbc927556a4bd4b2d6b"
+    },
+    {
+      "path": "client/src/lib/tunnelDisplay.ts",
+      "处理": "直接合入",
+      "依据工单": "01、02、09",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": "fce096a71b27975e0702d234427cbd69df932eb6862442ccd834a41caebb2d5c",
+      "upstreamFinalSHA256": "43d7496acceb57ee4637c381176d383d5cb1fbad90f91e8a610ecb8ce04c421e",
+      "localBaseSHA256": "fce096a71b27975e0702d234427cbd69df932eb6862442ccd834a41caebb2d5c",
+      "finalSHA256": "43d7496acceb57ee4637c381176d383d5cb1fbad90f91e8a610ecb8ce04c421e"
+    },
+    {
+      "path": "client/src/main.tsx",
+      "处理": "本地适配",
+      "依据工单": "01、02、09",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "39778ae912c2116662fde8ce4617ce24d7f3a1298d8f687a9f3110991a62e631",
+      "upstreamFinalSHA256": "96114559a414e5eaa2ec121a21ba6e95a9ced8b8fb44cdf3eb9774f54bd07157",
+      "localBaseSHA256": "39778ae912c2116662fde8ce4617ce24d7f3a1298d8f687a9f3110991a62e631",
+      "finalSHA256": "f0768d08e42ceece140df0e9f2703cb3140c1128af6db0b437131e46824ec56b"
+    },
+    {
+      "path": "client/src/pages/Announcements.tsx",
+      "处理": "本地适配",
+      "依据工单": "01、02、09",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "b324ff5295a634de02042e765084e0148b3a0469a186f4765981b389effe7194",
+      "upstreamFinalSHA256": "8f6b8083ee7061b214d95088bfcddecfd582fa9e51df2e48e9527cc5552f21ea",
+      "localBaseSHA256": "b324ff5295a634de02042e765084e0148b3a0469a186f4765981b389effe7194",
+      "finalSHA256": "3b5d6bf82854938f79083023e9c58cfd3ee1f49f6dffe4f0c2b6bf74532ab85a"
+    },
+    {
+      "path": "client/src/pages/Billing.tsx",
+      "处理": "本地适配",
+      "依据工单": "01、02、09",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "65cfca98c141c002b03d54e23eb571ae2d2a053b3b0a362f14ea5405cce3eb0a",
+      "upstreamFinalSHA256": "2e4eb6e841e090dc58dc632440d39f12900024bd648c41d4bf4094684bba1401",
+      "localBaseSHA256": "65cfca98c141c002b03d54e23eb571ae2d2a053b3b0a362f14ea5405cce3eb0a",
+      "finalSHA256": "c224299403010259a7e022959dbac98b6855561a535ab3f60b6308616a2677c5"
+    },
+    {
+      "path": "client/src/pages/CustomSidebarPage.tsx",
+      "处理": "直接合入",
+      "依据工单": "01、02、09",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": "7ca1c26d6a3c10d98d135a7a94bebeb67f425c86059386d78b2f1ceb2021065c",
+      "upstreamFinalSHA256": "c8034ea36c4b2c4e67a4644b312f95e4efc44e43b8d9a68099ab005642640221",
+      "localBaseSHA256": "7ca1c26d6a3c10d98d135a7a94bebeb67f425c86059386d78b2f1ceb2021065c",
+      "finalSHA256": "c8034ea36c4b2c4e67a4644b312f95e4efc44e43b8d9a68099ab005642640221"
+    },
+    {
+      "path": "client/src/pages/EmailSettings.tsx",
+      "处理": "本地适配",
+      "依据工单": "01、02、09",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "24c7c466afcb0095fd2227c41f42fa7103b4df0c3bb5c1dc8f3375aace9d9534",
+      "upstreamFinalSHA256": "5b3d1a01e3bc55ca351f5be960d2ebec69324fee9dba9d053481ead6b4198e4f",
+      "localBaseSHA256": "24c7c466afcb0095fd2227c41f42fa7103b4df0c3bb5c1dc8f3375aace9d9534",
+      "finalSHA256": "9a3bcd509936423e3803f65d3b7a4295a1013d1272c528ba900d21ed0d19065e"
+    },
+    {
+      "path": "client/src/pages/ForwardGroups.tsx",
+      "处理": "本地适配",
+      "依据工单": "01、02、09",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "3509a4ed7e3373a81ae429a8717ff3285569fcaacf412321fbb08cc5fda16daf",
+      "upstreamFinalSHA256": "965fc2a6a8d22789c6a66524bb6b9caf0bbab570aee301976d7fe6bd7d80ef22",
+      "localBaseSHA256": "3509a4ed7e3373a81ae429a8717ff3285569fcaacf412321fbb08cc5fda16daf",
+      "finalSHA256": "48536c06a3fb3cc6cc3629eccc9ca8176cd83270464239293d2a8ea67c0e5100"
+    },
+    {
+      "path": "client/src/pages/Home.tsx",
+      "处理": "直接合入",
+      "依据工单": "01、02、09",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": "670f8a36e9f3c4339d9df00e8ebab9cfbf9112340bff7cf415f915c8ef5eeed3",
+      "upstreamFinalSHA256": "aadd6e39f73474bc60353a674d99942517587afde0f6043451433ace56b0e5b4",
+      "localBaseSHA256": "670f8a36e9f3c4339d9df00e8ebab9cfbf9112340bff7cf415f915c8ef5eeed3",
+      "finalSHA256": "aadd6e39f73474bc60353a674d99942517587afde0f6043451433ace56b0e5b4"
+    },
+    {
+      "path": "client/src/pages/HomepagePreview.tsx",
+      "处理": "本地适配",
+      "依据工单": "01、02、09",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "774ff86c66ad5f0dff8316288d32cdaf21dad3ad790731d3c2c3bd3fa1fa0031",
+      "upstreamFinalSHA256": "3f337ab5eaa4a050bf4188b66b82d0adc72289d6aeff82e7e5b497798755adce",
+      "localBaseSHA256": "774ff86c66ad5f0dff8316288d32cdaf21dad3ad790731d3c2c3bd3fa1fa0031",
+      "finalSHA256": "c2aa789131fbaeeb7f0c1300b69e57d2a7e67dfbeaad0ee56a0c74a89cb0ab9f"
+    },
+    {
+      "path": "client/src/pages/HostMonitor.tsx",
+      "处理": "本地适配",
+      "依据工单": "08",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "1df7df11bb1f30cf0169b3b0af978ef2da5458169eeafd546427cb4db1130760",
+      "upstreamFinalSHA256": "159afac9bed62d310daf2867fcf8cbe2574698ad2acd8c1bd55de5608d1ccb0f",
+      "localBaseSHA256": "1df7df11bb1f30cf0169b3b0af978ef2da5458169eeafd546427cb4db1130760",
+      "finalSHA256": "b24c4eb1426a578964098478fbf18aed2fc43be3e78f07e18a74b052841aa151"
+    },
+    {
+      "path": "client/src/pages/Hosts.tsx",
+      "处理": "本地适配",
+      "依据工单": "01、02、09",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "a2f728fd2ddd85b43ba8af5ad86ae309a963d85323651623597961d053bb3efd",
+      "upstreamFinalSHA256": "d4f3701372baa2722110205336faef4f964e419fac23fdd7a1f6ddb6dfad85bd",
+      "localBaseSHA256": "a2f728fd2ddd85b43ba8af5ad86ae309a963d85323651623597961d053bb3efd",
+      "finalSHA256": "1836ef0a08e12c7f94bfc31790462848359bb54767ed5408c06bfa26f1c83c40"
+    },
+    {
+      "path": "client/src/pages/Login.tsx",
+      "处理": "本地适配",
+      "依据工单": "01、02、09",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "1b559e6e662c3d9fcba173c802bb3f83c3b0b51b39e7162bc156e3932d3c7557",
+      "upstreamFinalSHA256": "6090ead9e99ff34d118e5113f3dbdb4764f29bec9273a1fd734fd7cfec7ca2dc",
+      "localBaseSHA256": "1b559e6e662c3d9fcba173c802bb3f83c3b0b51b39e7162bc156e3932d3c7557",
+      "finalSHA256": "a1e17fc6f826cf74ac2be27fb4386f731478fbdc13d565ed8a8595a0e876f953"
+    },
+    {
+      "path": "client/src/pages/LookingGlass.tsx",
+      "处理": "本地适配",
+      "依据工单": "01、02、09",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "1abc90e3174bede1efb5064d3d01df264bae72dfa2598d5371cd511eb99dc4f0",
+      "upstreamFinalSHA256": "ec6bcc216ad8a147b69ca4194a57f1b394d3bdc70374e9fde8157eab584738cb",
+      "localBaseSHA256": "1abc90e3174bede1efb5064d3d01df264bae72dfa2598d5371cd511eb99dc4f0",
+      "finalSHA256": "c12e0e2d366f1e7a3d724079f5551f60bb8c89eef2f2e1d60cb68f5cd8dc4884"
+    },
+    {
+      "path": "client/src/pages/NotFound.tsx",
+      "处理": "直接合入",
+      "依据工单": "01、02、09",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": "fd8c3b5092d5d1ce3d9dea1e21af13ae2d1706ce96fd3900d69eef980ba837bb",
+      "upstreamFinalSHA256": "d4148dfc1b695976f9d20bcec10344add7988e5cf77e42b9521b7702bb1e5e4e",
+      "localBaseSHA256": "fd8c3b5092d5d1ce3d9dea1e21af13ae2d1706ce96fd3900d69eef980ba837bb",
+      "finalSHA256": "d4148dfc1b695976f9d20bcec10344add7988e5cf77e42b9521b7702bb1e5e4e"
+    },
+    {
+      "path": "client/src/pages/Payments.tsx",
+      "处理": "本地适配",
+      "依据工单": "01、02、09",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "a1c80365867c900a77b0cc53b0f695a3f5c7eb2ea22034faf286301005911c0c",
+      "upstreamFinalSHA256": "a7ca36f41f002601177585cbf0313de0aa838eb185fc693217b286192350949f",
+      "localBaseSHA256": "a1c80365867c900a77b0cc53b0f695a3f5c7eb2ea22034faf286301005911c0c",
+      "finalSHA256": "dbbed1d16fbfdb8cb3c198623112dca8b3b0108ab143c4b45327429386ab59b5"
+    },
+    {
+      "path": "client/src/pages/Plans.tsx",
+      "处理": "直接合入",
+      "依据工单": "01、02、09",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": "feb1c9b39961992023e1b22f1481b9a1132349c591e0985b8aa45e833e947936",
+      "upstreamFinalSHA256": "4b1130a577b7d2f934f726ed5e7da0ba7a1c5d4b828470717ccff99a4b9d3072",
+      "localBaseSHA256": "feb1c9b39961992023e1b22f1481b9a1132349c591e0985b8aa45e833e947936",
+      "finalSHA256": "4b1130a577b7d2f934f726ed5e7da0ba7a1c5d4b828470717ccff99a4b9d3072"
+    },
+    {
+      "path": "client/src/pages/Plugins.tsx",
+      "处理": "本地适配",
+      "依据工单": "01、02、09",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "69d62d013123720921abc5bb0e45880e5462fa7608aa3019a99be2f7e31f89e3",
+      "upstreamFinalSHA256": "8d18ea80f359b7d2ebc208cbcc396dd926d1fdcf4143c963ed013b43d13f4401",
+      "localBaseSHA256": "69d62d013123720921abc5bb0e45880e5462fa7608aa3019a99be2f7e31f89e3",
+      "finalSHA256": "e9d1cc75aa74968e5e83d032ce6b6bb10bb0f860f7aae821a91525df6d76c626"
+    },
+    {
+      "path": "client/src/pages/Profile.tsx",
+      "处理": "本地适配",
+      "依据工单": "01、02、09",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。其中两平台专属新增字段、入口、测试、版本要求已排除，共用网页行为保留。",
+      "upstreamBaseSHA256": "91f89e77d9062226d0f98eadf05f19c6a1bf9ede63ff602098f4d836c8381584",
+      "upstreamFinalSHA256": "e061b3ba1f56aa39f5ca42b0df7cc5d5999da7a3872f0c6cf42281b77d8963be",
+      "localBaseSHA256": "91f89e77d9062226d0f98eadf05f19c6a1bf9ede63ff602098f4d836c8381584",
+      "finalSHA256": "e01c447f59b85670cda57689839e590a0224f03b5d4fcf19d938774f5bb747ef"
+    },
+    {
+      "path": "client/src/pages/PublicHome.tsx",
+      "处理": "本地适配",
+      "依据工单": "01、02、09",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "74c21e08f1bf5445e52efb82d2a7e4175f7d4c5ce476bd79e25613a60ea955c4",
+      "upstreamFinalSHA256": "5a0fcd2e4a1c4f99b6244596bef2ff95a763617e3491571277e90788b7aaf88b",
+      "localBaseSHA256": "979e62f7b18e0fceea7eb2ac647572b24b699a112eba836f15efdf126b7cc6e5",
+      "finalSHA256": "40389f3653e5c60474437b9494ec656311fd57af4263add96162d4b94d314ba8"
+    },
+    {
+      "path": "client/src/pages/Rules.tsx",
+      "处理": "本地适配",
+      "依据工单": "01、02、09",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "b2ac49e1f41e433282ba630474652549e35a4ad68906366c1cc57949b1b84be6",
+      "upstreamFinalSHA256": "91d1657fff452bb55cba1a21a59ef874905b6bc3db693febde3800c5dbf03b58",
+      "localBaseSHA256": "90f00214ea30ea628f79fbb4bbd6782b058fc60fe35431d889748dee94a351aa",
+      "finalSHA256": "f3f02d191a9c0bc0b198fbacc25f3c663022199c7dc5246d00f73879d19e043a"
+    },
+    {
+      "path": "client/src/pages/Settings.tsx",
+      "处理": "本地适配",
+      "依据工单": "01、02、09",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。其中两平台专属新增字段、入口、测试、版本要求已排除，共用网页行为保留。",
+      "upstreamBaseSHA256": "0d43e341e374f3e57c353615090a5137b090bc8d9462e4f56228b0cea3795c36",
+      "upstreamFinalSHA256": "0a3b222fa35a3000667dfa6fabc674564930922e834b9c17d12de95f9ff3b4e9",
+      "localBaseSHA256": "92e778886ca8b07ba68f6338f04a21f9e5f77a53ac630480998ff081638fe308",
+      "finalSHA256": "928cfe04a2f56c9ccc01334736a7237fae11d35432b68ada5cfcb722cb14eaf8"
+    },
+    {
+      "path": "client/src/pages/Setup.tsx",
+      "处理": "直接合入",
+      "依据工单": "01、02、09",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": "1c5caf7b9d8b27f3f63abc7474a74d54aeaa554f40f35cefb3225418345a41c1",
+      "upstreamFinalSHA256": "3e9ef924862a3d1b1dfbd11779041521725d467ea970fd0f7984026c62a23dde",
+      "localBaseSHA256": "1c5caf7b9d8b27f3f63abc7474a74d54aeaa554f40f35cefb3225418345a41c1",
+      "finalSHA256": "3e9ef924862a3d1b1dfbd11779041521725d467ea970fd0f7984026c62a23dde"
+    },
+    {
+      "path": "client/src/pages/Store.tsx",
+      "处理": "本地适配",
+      "依据工单": "01、02、09",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "cdd05b98bafb3173763932f421bdb9044282d93674e31ba8a9498416a8077f09",
+      "upstreamFinalSHA256": "de0a2389be10e475e750a0cb0c3b4942f248de8e67bc68f6baee797833da4a7c",
+      "localBaseSHA256": "cdd05b98bafb3173763932f421bdb9044282d93674e31ba8a9498416a8077f09",
+      "finalSHA256": "12a54fecbcf0bd7b25371cd9027b929cfb9a368bd608732542acc10479a33328"
+    },
+    {
+      "path": "client/src/pages/Subscriptions.tsx",
+      "处理": "本地适配",
+      "依据工单": "01、02、09",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "6cf27a9efe23460bf2ea444969b6d0cc934d36f9b02bff33c8a228153607f8a6",
+      "upstreamFinalSHA256": "46b9d29ea5fde16ec1ff67eb4751829f8c29f8ef80f50f83efd66054a807bad3",
+      "localBaseSHA256": "6cf27a9efe23460bf2ea444969b6d0cc934d36f9b02bff33c8a228153607f8a6",
+      "finalSHA256": "52b8d13ec848a8108db91a6322a6c44f7b5cf1bd616df114554a565dc2171a9c"
+    },
+    {
+      "path": "client/src/pages/Tunnels.tsx",
+      "处理": "本地适配",
+      "依据工单": "01、02、09",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "e77287f56a7a817eece29ca40f117b91ac7f1edb6b793ef69474bf045f3a4220",
+      "upstreamFinalSHA256": "314099000ecc8533b0ee00ee1c8a4824438ffef8fa650cbe3298843b5b375954",
+      "localBaseSHA256": "e77287f56a7a817eece29ca40f117b91ac7f1edb6b793ef69474bf045f3a4220",
+      "finalSHA256": "9477a41329306e3f59e250d2a463aa7f965f2bc3400afbc741b2e4303af789dd"
+    },
+    {
+      "path": "client/src/pages/Users.tsx",
+      "处理": "本地适配",
+      "依据工单": "01、02、09",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "c55fffbfd89b4e14e38872d2a8794bf2f5a107cf9dc71ecc32e399562c1904ff",
+      "upstreamFinalSHA256": "f5ac895f28bb4a3af939dbb6fd16c16052222089e14e65ac0f55b02db4a1e8c1",
+      "localBaseSHA256": "c55fffbfd89b4e14e38872d2a8794bf2f5a107cf9dc71ecc32e399562c1904ff",
+      "finalSHA256": "c6f395397732651edefa04ccd519c6435900642f482aba76ad22f832ab086597"
+    },
+    {
+      "path": "client/src/pages/Wallet.tsx",
+      "处理": "直接合入",
+      "依据工单": "01、02、09",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": "6afa739904c78013c4b2ba4006e0636b18d27d94fefaadb4c5948d41f7b6acb1",
+      "upstreamFinalSHA256": "44aa5797d2b093ad5eb3d07f1399111c0e1cf976464df9f8a0c574c463cf67eb",
+      "localBaseSHA256": "6afa739904c78013c4b2ba4006e0636b18d27d94fefaadb4c5948d41f7b6acb1",
+      "finalSHA256": "44aa5797d2b093ad5eb3d07f1399111c0e1cf976464df9f8a0c574c463cf67eb"
+    },
+    {
+      "path": "docker-compose.yml",
+      "处理": "本地适配",
+      "依据工单": "19",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "357ca0f0ca7072c788dd57131cb5440431bb67742f59600ad689ef105c7aba3e",
+      "upstreamFinalSHA256": "07195d43f63083bda90c36022077ea4b611c9ab7a6c715bb2f4e865449ac8e08",
+      "localBaseSHA256": "204484883e5cc76d3eea20b129ad0ddb75a0b4400e82616d9d15dc3d7a1ddd16",
+      "finalSHA256": "7525639cbcf11e92081a279beee0abd4329e7735e25a15c52663691bff6fa96a"
+    },
+    {
+      "path": "docs/.vitepress/config.mts",
+      "处理": "本地适配",
+      "依据工单": "18",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "2fdb764b83bbdef5883f1c689b5e6618b9c8b2686fc1057037c3f779e93f0ea0",
+      "upstreamFinalSHA256": "0e51d14134fa4f499899699e0d4f96632de6e6edb66c3dca536c717a48f04aed",
+      "localBaseSHA256": "8b7cbc432304acfe0fd7d62a2688448e356b5d3d1c548416182308e8995d5e11",
+      "finalSHA256": "821bad68e465f8f72563a9b8bec9f31c7f7da8d73f1399f18643f8e161d0efd9"
+    },
+    {
+      "path": "docs/guide/account-recovery.md",
+      "处理": "直接合入",
+      "依据工单": "18",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "7f7a654005f5cfa0941a736b49b9d7c7e7539fd5546c44e82daa383bc63d033e",
+      "localBaseSHA256": null,
+      "finalSHA256": "7f7a654005f5cfa0941a736b49b9d7c7e7539fd5546c44e82daa383bc63d033e"
+    },
+    {
+      "path": "docs/guide/agent.md",
+      "处理": "本地适配",
+      "依据工单": "18",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "ccea475b73958f3fda9d4b3a724fa4c6e146e2ddb488175e296a1db18a44197b",
+      "upstreamFinalSHA256": "adc9bbc5cecb863a9b4266706cd7ec4ae35c4a0fd533b36fef65bf1da57eee7e",
+      "localBaseSHA256": "4e38142fd8cf078d2f191db14a82e0f51deb90bae5a4caf77be4b2a26314b53b",
+      "finalSHA256": "9c93b43f4e65a936418fe3279783355e0ca7ad5487195f0b50caff112b5ec8ef"
+    },
+    {
+      "path": "docs/guide/ai-assistant.md",
+      "处理": "直接合入",
+      "依据工单": "18",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "8c8077ce28d16eda6e08e2e94b353a6bf6c4cc922fa4c27555d125f87c5abc09",
+      "localBaseSHA256": null,
+      "finalSHA256": "8c8077ce28d16eda6e08e2e94b353a6bf6c4cc922fa4c27555d125f87c5abc09"
+    },
+    {
+      "path": "docs/guide/database.md",
+      "处理": "直接合入",
+      "依据工单": "18",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "e8c3b0d9952b2dd7365c9cfd2e6e5940b03fc55c4cde01beb76987a9c088b37a",
+      "localBaseSHA256": null,
+      "finalSHA256": "e8c3b0d9952b2dd7365c9cfd2e6e5940b03fc55c4cde01beb76987a9c088b37a"
+    },
+    {
+      "path": "docs/guide/deploy-docker.md",
+      "处理": "本地适配",
+      "依据工单": "18",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "29e11d417c949d5c7be02c187d3ac86061caa4bef5fc69a9152c8db2c40986c3",
+      "localBaseSHA256": null,
+      "finalSHA256": "7d82e83b75781ab3afd834c8296c0717014355b65e9e4098e11c7aa33e1bdae5"
+    },
+    {
+      "path": "docs/guide/deploy-local.md",
+      "处理": "本地适配",
+      "依据工单": "18",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "a8698a61c21a8a0c9a95b093d0a148d463ff7cdc943cd5f71fda7835c799ac7f",
+      "localBaseSHA256": null,
+      "finalSHA256": "f3339bb274b0889ca3d0ea160881080a264b4504ccf7b23e0606267f0dc851f5"
+    },
+    {
+      "path": "docs/guide/deploy-panel.md",
+      "处理": "本地适配",
+      "依据工单": "18",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "113e8181e0ed6717b0c98a88ddfea761a68eb62c5c8b357f1c34acb2014b53df",
+      "upstreamFinalSHA256": "19a735b172f9799fb98bc745f082c223956d3987184f955550e70ecdb03ffff5",
+      "localBaseSHA256": "a768af8d441f9ddab60fa7ca628add9e2d5056e0785d73c21f9e83788a490a38",
+      "finalSHA256": "bfca3870bb0c80173d4b57d3302fc6f1612d5da526ec0e3f065f951db251ce76"
+    },
+    {
+      "path": "docs/guide/development.md",
+      "处理": "直接合入",
+      "依据工单": "18",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "2a967a7ff72f4f78884127aad49ceb789c7323ccbf2a8a9ff0e9598e769540b3",
+      "localBaseSHA256": null,
+      "finalSHA256": "2a967a7ff72f4f78884127aad49ceb789c7323ccbf2a8a9ff0e9598e769540b3"
+    },
+    {
+      "path": "docs/guide/env-vars.md",
+      "处理": "本地适配",
+      "依据工单": "18",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "900c768446ca1b9d08a9201afd1953e7c01c8adcc303ed30d3540adc4bbba238",
+      "upstreamFinalSHA256": "f967dadb17b034e8b551505a5c784446c6e51d93844d462df61ee527da170b48",
+      "localBaseSHA256": "d7f17cae2de25577f7232add275f4ceef6f30fe2f3e5e3c6317dc5709bc1b6ea",
+      "finalSHA256": "d17a0521cdbcfafdf67c0dc226a2c072dfde044cd90ca2da24752a1a8dd29b1a"
+    },
+    {
+      "path": "docs/guide/first-setup.md",
+      "处理": "直接合入",
+      "依据工单": "18",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": "774f56b322870f189a1d5686a540ef023ae414dc5fdc2997f38745a8528b3b9d",
+      "upstreamFinalSHA256": "5a3f60e215234c9eb3e8743dfe4c3c8adf175523b37abf75df4e46affadee993",
+      "localBaseSHA256": "774f56b322870f189a1d5686a540ef023ae414dc5fdc2997f38745a8528b3b9d",
+      "finalSHA256": "5a3f60e215234c9eb3e8743dfe4c3c8adf175523b37abf75df4e46affadee993"
+    },
+    {
+      "path": "docs/guide/google-login.md",
+      "处理": "直接合入",
+      "依据工单": "18",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "800ef7a36ad9a741695777893662f4cb2bcc05b77676b443ff69b7611e569233",
+      "localBaseSHA256": null,
+      "finalSHA256": "800ef7a36ad9a741695777893662f4cb2bcc05b77676b443ff69b7611e569233"
+    },
+    {
+      "path": "docs/guide/index.md",
+      "处理": "本地适配",
+      "依据工单": "18",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "adb799c5f1156f413e33cb0e2607a7317b06152e84a6262ab4b3172c2b788c78",
+      "upstreamFinalSHA256": "8bb1334b999c9b0fd2864fe1a01c08cc61f93a833fb4046cf26364a40c5be169",
+      "localBaseSHA256": "99da002a1c990330139cc516ba22ae4960ca887c1c43128406fec0e9ff29435a",
+      "finalSHA256": "3635bd3bc520e54e84b64711290966f4d3f0744648f3708186a6440f93f6077a"
+    },
+    {
+      "path": "docs/guide/migration.md",
+      "处理": "直接合入",
+      "依据工单": "18",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "8b6756b0afc7eba517a1d0c237d26afafa58f8374173323083f380ce5e6d817a",
+      "localBaseSHA256": null,
+      "finalSHA256": "8b6756b0afc7eba517a1d0c237d26afafa58f8374173323083f380ce5e6d817a"
+    },
+    {
+      "path": "docs/guide/mobile-app.md",
+      "处理": "按用户决定排除",
+      "依据工单": "16、17",
+      "说明": "第16、17单取消；新增文件不交付，已有文件保持本地基线。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "46ba8e6cee47529a5c4e17a09b22fe2ad1dd48c664a8f19b93c4ce9677198204",
+      "localBaseSHA256": null,
+      "finalSHA256": null
+    },
+    {
+      "path": "docs/guide/notifications.md",
+      "处理": "直接合入",
+      "依据工单": "18",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": "65d7ba474b14064f87f60dcc7e26da8455aeb16e10838e2408a4a42ef9901090",
+      "upstreamFinalSHA256": "f5893f22acff388528c3f183d2e9a8e5eca22df1e84c5890592d041e0af572ec",
+      "localBaseSHA256": "65d7ba474b14064f87f60dcc7e26da8455aeb16e10838e2408a4a42ef9901090",
+      "finalSHA256": "f5893f22acff388528c3f183d2e9a8e5eca22df1e84c5890592d041e0af572ec"
+    },
+    {
+      "path": "docs/guide/paths-logs.md",
+      "处理": "本地适配",
+      "依据工单": "18",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "fe0626d60bbba1f26933fd0974c2d6ea658773429d7641f0f5fe4b7cd8f853e1",
+      "localBaseSHA256": null,
+      "finalSHA256": "dcfd6cfab111badf0d1a9039f50053d7859a84b66e81b4815f3101906524afa1"
+    },
+    {
+      "path": "docs/guide/quick-start.md",
+      "处理": "本地适配",
+      "依据工单": "18",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "75ae3b1d7e56a58974e9b4f7b5f5be83f78cce41707a37e86db21d97ead580ab",
+      "upstreamFinalSHA256": "1e2fd638420da05ded68db1384bfd1f0af6704420295b255040799fe55dd54dc",
+      "localBaseSHA256": "317624ef0917d03236504a0d3a6b8550d6123deaa8f776ba8bf67e606564cebf",
+      "finalSHA256": "92879271cec02bb217042f128adcc342264f2091d36604aa1e94226af0441b38"
+    },
+    {
+      "path": "docs/guide/reverse-proxy.md",
+      "处理": "直接合入",
+      "依据工单": "18",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "7a6124d50978adfbbe8e0d60870e1ecdb7d8d98a69604eb3206544a2354b7578",
+      "localBaseSHA256": null,
+      "finalSHA256": "7a6124d50978adfbbe8e0d60870e1ecdb7d8d98a69604eb3206544a2354b7578"
+    },
+    {
+      "path": "docs/guide/rules.md",
+      "处理": "本地适配",
+      "依据工单": "18",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "1c44a71ff2b338604b0add9394cd518bbf8a89beff383cf7e2ac46a91dbe4649",
+      "upstreamFinalSHA256": "8f7c163011a2cc0dc1a7fada0cea6afb52d722c084d4a40b45341aab89b844eb",
+      "localBaseSHA256": "5c9eaa1d97e689c92a5a669f17715eb46dc632f2398abfaea71f9b4ca0203916",
+      "finalSHA256": "077270d297d4f44d2c5162c121c961c42bc9a2a74940b859dd499c931cb0d477"
+    },
+    {
+      "path": "docs/guide/troubleshooting.md",
+      "处理": "本地适配",
+      "依据工单": "18",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "cb35c59ddee751529a480d9b61bfd90351ebc703a38b4e3ceb97231adbf43a42",
+      "upstreamFinalSHA256": "f5311e0188168f41d58701fb7e4e1aec86b6553f758e737a2775964a2c99cc6c",
+      "localBaseSHA256": "16f28563186b4789ae69ca979ef4263d8c4db62ddf15351d10e6bf44d7193051",
+      "finalSHA256": "03d6e7de9c2e9bd5e722aa8d1b0a94e7b731f2fa31d726fdd97d6aeaf509c3ea"
+    },
+    {
+      "path": "docs/guide/uninstall.md",
+      "处理": "本地适配",
+      "依据工单": "18",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "d9ab04080963dd73d342b2847d135163c1ee61ffa3491275c71994fb69616213",
+      "upstreamFinalSHA256": "c7c569c2724c78dff3f125aa1a57960e8ca8272f9430f45be235da8381ffd843",
+      "localBaseSHA256": "86bdfed59fac6fb593442119df7d8faa67e9f6ca53a2f3e59dd05c40ceae2021",
+      "finalSHA256": "c13bf28e1f9988fc9f16b5da75f34a160526796560ec987c6445a21e8eab29af"
+    },
+    {
+      "path": "docs/guide/upgrade-backup.md",
+      "处理": "本地适配",
+      "依据工单": "18",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "1ca11cf2d58c239580487270554ef638e13da24196bf1da6eaaf49eb63c6fb18",
+      "upstreamFinalSHA256": "3e8f0835697fc1b353ce3b427df0c53f11e559bc1863e98d405f685d940a1904",
+      "localBaseSHA256": "c84b2815f0f0f101223b3e7bf8523cd17a3cd584903a650183726a23b6209a47",
+      "finalSHA256": "264a0ef73cb1972e4cd2eee9e04820c8c5f63411439738395b9a105353386abe"
+    },
+    {
+      "path": "docs/index.md",
+      "处理": "直接合入",
+      "依据工单": "18",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": "53c4f2b373e4911168c064dc2795b48460789ddef0c1a5435dfb7d3f5afa148d",
+      "upstreamFinalSHA256": "e9e6d5f53f91eafb3dc5c5397890690056ab0e62f2c49a81da51c694dff0e97c",
+      "localBaseSHA256": "53c4f2b373e4911168c064dc2795b48460789ddef0c1a5435dfb7d3f5afa148d",
+      "finalSHA256": "e9e6d5f53f91eafb3dc5c5397890690056ab0e62f2c49a81da51c694dff0e97c"
+    },
+    {
+      "path": "drizzle/schema.ts",
+      "处理": "本地适配",
+      "依据工单": "19",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "61665f4d230a680cf114bd5ec41e861aef8f9a9f8e362a01e90a40138b84a1ae",
+      "upstreamFinalSHA256": "3a8b874e54382451737ae8abc37912db531e4814f832fa87bd9baa881831f88b",
+      "localBaseSHA256": "e439548bf0d940a5f494db534d27ef9b66b16d907c819a24f80bc4169ffd607e",
+      "finalSHA256": "cbc2631b53dcf22a260e46aa846e7f82f926dc37e99b2806743e029660d7e423"
+    },
+    {
+      "path": "index.html",
+      "处理": "直接合入",
+      "依据工单": "19",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": "2de6d649f6322c5407787d7cf300d6e938bc91305de6df55e6f174050bb3cec8",
+      "upstreamFinalSHA256": "c5fc3157dc53b2cb3bb4ac3b90c0d16cd5ecfc47cedb2927d83f21ca91a24526",
+      "localBaseSHA256": "2de6d649f6322c5407787d7cf300d6e938bc91305de6df55e6f174050bb3cec8",
+      "finalSHA256": "c5fc3157dc53b2cb3bb4ac3b90c0d16cd5ecfc47cedb2927d83f21ca91a24526"
+    },
+    {
+      "path": "ios/.gitignore",
+      "处理": "按用户决定排除",
+      "依据工单": "16、17",
+      "说明": "第16、17单取消；新增文件不交付，已有文件保持本地基线。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "2b7132a9943d2622e51e656897ca5162f56b121b40b423dedce1fbc699dba88a",
+      "localBaseSHA256": null,
+      "finalSHA256": null
+    },
+    {
+      "path": "ios/App/App.xcodeproj/project.pbxproj",
+      "处理": "按用户决定排除",
+      "依据工单": "16、17",
+      "说明": "第16、17单取消；新增文件不交付，已有文件保持本地基线。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "bb31166a461d6cd3f6ba6a22887242d3f4b2e8e374ee3d1ccebd5e908e0f5485",
+      "localBaseSHA256": null,
+      "finalSHA256": null
+    },
+    {
+      "path": "ios/App/App.xcodeproj/project.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist",
+      "处理": "按用户决定排除",
+      "依据工单": "16、17",
+      "说明": "第16、17单取消；新增文件不交付，已有文件保持本地基线。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "dfa0f9bb85b95ccba9c6811adadf8cb407fb5d52088e89db83ebc308ec448542",
+      "localBaseSHA256": null,
+      "finalSHA256": null
+    },
+    {
+      "path": "ios/App/App/AppDelegate.swift",
+      "处理": "按用户决定排除",
+      "依据工单": "16、17",
+      "说明": "第16、17单取消；新增文件不交付，已有文件保持本地基线。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "5963d47ceba89e0d5694376ebf0bca630284db3de794bdf8666ea3093fe38a2f",
+      "localBaseSHA256": null,
+      "finalSHA256": null
+    },
+    {
+      "path": "ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png",
+      "处理": "按用户决定排除",
+      "依据工单": "16、17",
+      "说明": "第16、17单取消；新增文件不交付，已有文件保持本地基线。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "ffc2a55e50a9c37c84b2394a9c6294444f70a497c5586b5d45568a606cfe242f",
+      "localBaseSHA256": null,
+      "finalSHA256": null
+    },
+    {
+      "path": "ios/App/App/Assets.xcassets/AppIcon.appiconset/Contents.json",
+      "处理": "按用户决定排除",
+      "依据工单": "16、17",
+      "说明": "第16、17单取消；新增文件不交付，已有文件保持本地基线。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "5c09bec6eede599b14fa9e4c44b03e7febebc930615a0cd70f02981c09dfe48a",
+      "localBaseSHA256": null,
+      "finalSHA256": null
+    },
+    {
+      "path": "ios/App/App/Assets.xcassets/Contents.json",
+      "处理": "按用户决定排除",
+      "依据工单": "16、17",
+      "说明": "第16、17单取消；新增文件不交付，已有文件保持本地基线。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "972ec1fd42325872438eb085ac29e94f51c10788ec18ec5549439950866c541d",
+      "localBaseSHA256": null,
+      "finalSHA256": null
+    },
+    {
+      "path": "ios/App/App/Assets.xcassets/Splash.imageset/Contents.json",
+      "处理": "按用户决定排除",
+      "依据工单": "16、17",
+      "说明": "第16、17单取消；新增文件不交付，已有文件保持本地基线。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "041481917eb249533ac6dd63d283bc6190b2d0642a93deda11b2ed0f6f7b605a",
+      "localBaseSHA256": null,
+      "finalSHA256": null
+    },
+    {
+      "path": "ios/App/App/Assets.xcassets/Splash.imageset/splash-2732x2732-1.png",
+      "处理": "按用户决定排除",
+      "依据工单": "16、17",
+      "说明": "第16、17单取消；新增文件不交付，已有文件保持本地基线。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "1b5002b74a5500e697298ced06ca2811ac33f2771f236f3c720ff23243890530",
+      "localBaseSHA256": null,
+      "finalSHA256": null
+    },
+    {
+      "path": "ios/App/App/Assets.xcassets/Splash.imageset/splash-2732x2732-2.png",
+      "处理": "按用户决定排除",
+      "依据工单": "16、17",
+      "说明": "第16、17单取消；新增文件不交付，已有文件保持本地基线。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "1b5002b74a5500e697298ced06ca2811ac33f2771f236f3c720ff23243890530",
+      "localBaseSHA256": null,
+      "finalSHA256": null
+    },
+    {
+      "path": "ios/App/App/Assets.xcassets/Splash.imageset/splash-2732x2732.png",
+      "处理": "按用户决定排除",
+      "依据工单": "16、17",
+      "说明": "第16、17单取消；新增文件不交付，已有文件保持本地基线。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "1b5002b74a5500e697298ced06ca2811ac33f2771f236f3c720ff23243890530",
+      "localBaseSHA256": null,
+      "finalSHA256": null
+    },
+    {
+      "path": "ios/App/App/Base.lproj/LaunchScreen.storyboard",
+      "处理": "按用户决定排除",
+      "依据工单": "16、17",
+      "说明": "第16、17单取消；新增文件不交付，已有文件保持本地基线。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "b7f9edbcbf6bc01f83d38f6837ce8d1561f19012aa3d3cc3608379cdc8936259",
+      "localBaseSHA256": null,
+      "finalSHA256": null
+    },
+    {
+      "path": "ios/App/App/Base.lproj/Main.storyboard",
+      "处理": "按用户决定排除",
+      "依据工单": "16、17",
+      "说明": "第16、17单取消；新增文件不交付，已有文件保持本地基线。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "7b7dc7acc67134bfaa80e5ce9c9068ba53db5369b9b70248aa7439fc2b09daae",
+      "localBaseSHA256": null,
+      "finalSHA256": null
+    },
+    {
+      "path": "ios/App/App/Info.plist",
+      "处理": "按用户决定排除",
+      "依据工单": "16、17",
+      "说明": "第16、17单取消；新增文件不交付，已有文件保持本地基线。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "ba251a3e9df207554a4b74d75ba4251f839245b36747e867b6e9ef4f3ed0db09",
+      "localBaseSHA256": null,
+      "finalSHA256": null
+    },
+    {
+      "path": "ios/App/App/PrivacyInfo.xcprivacy",
+      "处理": "按用户决定排除",
+      "依据工单": "16、17",
+      "说明": "第16、17单取消；新增文件不交付，已有文件保持本地基线。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "03980c92d18cd035a3351a53417b421797fe08b4ee3b81925d3e1e5411295e2f",
+      "localBaseSHA256": null,
+      "finalSHA256": null
+    },
+    {
+      "path": "ios/App/CapApp-SPM/.gitignore",
+      "处理": "按用户决定排除",
+      "依据工单": "16、17",
+      "说明": "第16、17单取消；新增文件不交付，已有文件保持本地基线。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "4b958e2b4dd57319aadef2551153c74b9cb5ffe9f89d6e3e491122a94913f016",
+      "localBaseSHA256": null,
+      "finalSHA256": null
+    },
+    {
+      "path": "ios/App/CapApp-SPM/Package.swift",
+      "处理": "按用户决定排除",
+      "依据工单": "16、17",
+      "说明": "第16、17单取消；新增文件不交付，已有文件保持本地基线。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "32162cbb7791e8f2e19b834399d06f056992e1ecc2c6371f5988a918bb57ac67",
+      "localBaseSHA256": null,
+      "finalSHA256": null
+    },
+    {
+      "path": "ios/App/CapApp-SPM/README.md",
+      "处理": "按用户决定排除",
+      "依据工单": "16、17",
+      "说明": "第16、17单取消；新增文件不交付，已有文件保持本地基线。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "42c535861f4a866e35f85764ed6af1ea046d6a409bf9852ecb00e5d292a1626e",
+      "localBaseSHA256": null,
+      "finalSHA256": null
+    },
+    {
+      "path": "ios/App/CapApp-SPM/Sources/CapApp-SPM/CapApp-SPM.swift",
+      "处理": "按用户决定排除",
+      "依据工单": "16、17",
+      "说明": "第16、17单取消；新增文件不交付，已有文件保持本地基线。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "70bf9dafddc35e3877dfb133a996f5be7ccd1e132897a98fdbf4869ff605ece9",
+      "localBaseSHA256": null,
+      "finalSHA256": null
+    },
+    {
+      "path": "ios/debug.xcconfig",
+      "处理": "按用户决定排除",
+      "依据工单": "16、17",
+      "说明": "第16、17单取消；新增文件不交付，已有文件保持本地基线。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "4838938a72b913b99cfda54a43bbe73f05893071dc6e3702b0adc44794b64272",
+      "localBaseSHA256": null,
+      "finalSHA256": null
+    },
+    {
+      "path": "package.json",
+      "处理": "本地适配",
+      "依据工单": "19",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。其中两平台专属新增字段、入口、测试、版本要求已排除，共用网页行为保留。",
+      "upstreamBaseSHA256": "1bfdf0a443abc065708ee60d24c9edcc194a654c915b137481d21317939fd48d",
+      "upstreamFinalSHA256": "062162b7289948ad0cb9ed0ccd779e44d36da61eb8340b56b6764b4235cee8d7",
+      "localBaseSHA256": "30bd097f6842219cc3a1be19ff310d3da88ff8a0009cde1be1fb67e8147abd94",
+      "finalSHA256": "98d4abde32fc04865ef678ebec2641619b302ebc56a81ea43aa94330f01e3a6c"
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "处理": "按用户决定排除",
+      "依据工单": "16、17",
+      "说明": "第16、17单取消；新增文件不交付，已有文件保持本地基线。",
+      "upstreamBaseSHA256": "774db504b26c7d6d300ecf6a6b8f62d8c27b8c0ae2cab4c856e257da2f632b94",
+      "upstreamFinalSHA256": "34ff559c31ba85faeb794926e7f2aa7b4be1259425c956c3b8cd8d1c0a70c324",
+      "localBaseSHA256": "774db504b26c7d6d300ecf6a6b8f62d8c27b8c0ae2cab4c856e257da2f632b94",
+      "finalSHA256": "774db504b26c7d6d300ecf6a6b8f62d8c27b8c0ae2cab4c856e257da2f632b94"
+    },
+    {
+      "path": "scripts/build-ios-ipa.mjs",
+      "处理": "按用户决定排除",
+      "依据工单": "16、17",
+      "说明": "第16、17单取消；新增文件不交付，已有文件保持本地基线。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "57fe157ccc0839331d471b7f3611ad3a75047871fda60c0567829205daa1bbab",
+      "localBaseSHA256": null,
+      "finalSHA256": null
+    },
+    {
+      "path": "scripts/check-versions.mjs",
+      "处理": "本地适配",
+      "依据工单": "19",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。其中两平台专属新增字段、入口、测试、版本要求已排除，共用网页行为保留。",
+      "upstreamBaseSHA256": "1f7a2fc1c08af92ce08e769cfadf48d43a9dd559d7e15f834a9ee2e99f573e4e",
+      "upstreamFinalSHA256": "b6080a989421885136bead56707cd1c03beb05f3d202e5dfc872915dc771df23",
+      "localBaseSHA256": "09f25eedd02834b7f40d79e2ae52e547a335d4094bfce8a3ec7b888a0cd72ef3",
+      "finalSHA256": "daec05996b653ab1fe8c81e9093de04c43ce9180b041c78667e7ad5212102c2c"
+    },
+    {
+      "path": "scripts/extract-release-notes.mjs",
+      "处理": "直接合入",
+      "依据工单": "18",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": "6a71d34f8effb26d9d94e537367b0d2e1dd47989093416ddcb974cbc1a967840",
+      "upstreamFinalSHA256": "0670bf92c040713a81b62d57a5b32f11d07238068c4cb3ed7457ab4475c07617",
+      "localBaseSHA256": "6a71d34f8effb26d9d94e537367b0d2e1dd47989093416ddcb974cbc1a967840",
+      "finalSHA256": "0670bf92c040713a81b62d57a5b32f11d07238068c4cb3ed7457ab4475c07617"
+    },
+    {
+      "path": "scripts/install-panel-docker.sh",
+      "处理": "本地适配",
+      "依据工单": "19",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "f5f0c2b61bd802cc58b5c048cfb6fd66a9f46b15937289cfb3e8e8e01807ad93",
+      "upstreamFinalSHA256": "21e6e58c8d372efe1fbf4e7411681f114fa2971405eaa0b8a378981b2194bea9",
+      "localBaseSHA256": "b359cee6a709a5057f9e38cef1f18a4f751b79d020708d5ebfdc3a91b8213a4e",
+      "finalSHA256": "53d4bb2e74b4ba995713f327545115d900ed1051712f2ebb830247b0b81d739c"
+    },
+    {
+      "path": "scripts/install-panel-local.sh",
+      "处理": "本地适配",
+      "依据工单": "19",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "f73792a7b5854b9f005c3ac3416f2e59c9fc6f2a556dbc9715f0c5447dc1dca8",
+      "upstreamFinalSHA256": "f30792ae8eac95a42df1060e19b431b713d776af841bebf38b1e632f26ea83e8",
+      "localBaseSHA256": "2bd9be218c9940c7b0e0bb4062d1fc870930ae84a3a380de0208af60d8061619",
+      "finalSHA256": "4a2d776d977be96e4e71d33d5303c78c929d5238ce4bbb446718067303c85077"
+    },
+    {
+      "path": "scripts/ios-build.test.mjs",
+      "处理": "按用户决定排除",
+      "依据工单": "16、17",
+      "说明": "第16、17单取消；新增文件不交付，已有文件保持本地基线。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "8ee101ebf451a502e971aac2023052d2d1b15d37df4092da5d95b8429ba9ed87",
+      "localBaseSHA256": null,
+      "finalSHA256": null
+    },
+    {
+      "path": "scripts/ios-icon.swift",
+      "处理": "按用户决定排除",
+      "依据工单": "16、17",
+      "说明": "第16、17单取消；新增文件不交付，已有文件保持本地基线。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "5260520822677d589e5ec61ec0f5d6b3a1822f3035bce7fadc019028783e6333",
+      "localBaseSHA256": null,
+      "finalSHA256": null
+    },
+    {
+      "path": "scripts/release-notes.test.mjs",
+      "处理": "直接合入",
+      "依据工单": "19",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "77bf8a36714afd8655d5686c9edd0c82301a3412b6895acd5006ab8848e58f07",
+      "localBaseSHA256": null,
+      "finalSHA256": "77bf8a36714afd8655d5686c9edd0c82301a3412b6895acd5006ab8848e58f07"
+    },
+    {
+      "path": "server/_core/systemRouter.ts",
+      "处理": "本地适配",
+      "依据工单": "19",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。其中两平台专属新增字段、入口、测试、版本要求已排除，共用网页行为保留。",
+      "upstreamBaseSHA256": "1481f25d6b83dbd061814d6358c9a44b8821c11f1c1e8a56703d0aecdf67a457",
+      "upstreamFinalSHA256": "3995ba71d6b149cdfc8fcb5df98541c398019b195ed7935234d50cd1abab4766",
+      "localBaseSHA256": "db0864dd81b046a481e8c92964a444b09002739a9f8d72479a0d75c2bdf4f3ba",
+      "finalSHA256": "4f240c219c58c435f43fea59dc92d5e1a51e1e8f1bc34bd2ac041336a5a934de"
+    },
+    {
+      "path": "server/agentActionCommands.test.ts",
+      "处理": "本地适配",
+      "依据工单": "19",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "60f0af35946e708e678303d3e282bf2c68aeabca730720d6a56b6f73a58f1edb",
+      "upstreamFinalSHA256": "c36618b6c0c015564791edac80ab38a0f5bcdfe7ecbb4a5ee7451e99cfd8cd1c",
+      "localBaseSHA256": "9e8a5453d339bdb107268bd00e80d6476c99f1b02cfee70cab7231777213033a",
+      "finalSHA256": "e7b288170f0e98fbdea9651b2dba74bb571bf34a0df919bb136466cae14b1b77"
+    },
+    {
+      "path": "server/agentActionCommands.ts",
+      "处理": "本地适配",
+      "依据工单": "19",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "784218b60488dab4c4a59c5176aa7032d050ad7a1ee1b32376642d27fbbe1718",
+      "upstreamFinalSHA256": "31a0074efdb4568fc9c2979e716f0b7e433345c265791c088e0d8c26d39a3733",
+      "localBaseSHA256": "56858abbd5199eda31cff4e15a11e95b47d45131b54a091c2d3bf09583bcf63b",
+      "finalSHA256": "d78b8e0bfd08b5c0f80dbc647351fc40a14038556516e753f904026f5d1548b7"
+    },
+    {
+      "path": "server/agentEvents.ts",
+      "处理": "直接合入",
+      "依据工单": "19",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": "4f406450091a1e4fec280f43b7bab9a8e094ff9a6c98a1314c76c058fe98ef99",
+      "upstreamFinalSHA256": "26c4adfeceee3372f0628419ae170aea742afb319c90b03a866cf3a52a80f1c0",
+      "localBaseSHA256": "4f406450091a1e4fec280f43b7bab9a8e094ff9a6c98a1314c76c058fe98ef99",
+      "finalSHA256": "26c4adfeceee3372f0628419ae170aea742afb319c90b03a866cf3a52a80f1c0"
+    },
+    {
+      "path": "server/agentHeartbeatRoute.ts",
+      "处理": "本地适配",
+      "依据工单": "19",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "351f80fabdfe2f07395ba37567d5fa5619a8d60e1592313ec806ad5343eb9dda",
+      "upstreamFinalSHA256": "488dae8eebccd7b4e7a063d492858597f1945c4aacd2d6edd5341d4d14b42212",
+      "localBaseSHA256": "a7c40b854706810f24dfd674df515e5a828f944b0942133700e46b5a41682a5d",
+      "finalSHA256": "bd3784c95eccd4eefcd1a871c0db03840989b04a8000ce1737e820b8c3a84421"
+    },
+    {
+      "path": "server/agentPanelUrl.ts",
+      "处理": "直接合入",
+      "依据工单": "19",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": "8b80309e8355190638339aa5c525f2a8d6a1bf086d0bdcc9909787b5d4f97d63",
+      "upstreamFinalSHA256": "ca4ca9023c80ee17ef64eea4f287fecfeba82c6f4595d4cb8e95e6068081e69b",
+      "localBaseSHA256": "8b80309e8355190638339aa5c525f2a8d6a1bf086d0bdcc9909787b5d4f97d63",
+      "finalSHA256": "ca4ca9023c80ee17ef64eea4f287fecfeba82c6f4595d4cb8e95e6068081e69b"
+    },
+    {
+      "path": "server/agentProbeCounterReportGate.ts",
+      "处理": "本地适配",
+      "依据工单": "06、07",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "be3cb48c9faf4f30b1eafaef9dc46ff0286f9f9d59057f2c53376a6184d3782c",
+      "localBaseSHA256": null,
+      "finalSHA256": "55e965dcfddc1755d61a1d1c68191d94baa2a2770709661bdba46a25aaf6bdad"
+    },
+    {
+      "path": "server/agentReportRoutes.ts",
+      "处理": "本地适配",
+      "依据工单": "19",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "781d2cae826ae1170395f1a2a584da9cfce3ca10fd14b8650a965ab78d28cc7d",
+      "upstreamFinalSHA256": "9d0cd6259662bcdf44e3e1215b5ed7147464c9a649e3fed5a6399883e715a714",
+      "localBaseSHA256": "c1b0ee39b5762cc77f972037d8b83649007b88edf8c52bc807f9a54583c001d9",
+      "finalSHA256": "c9792d6fa1f71fbb90200c623ce41237874af81263f9cb26f4e563c4691ad810"
+    },
+    {
+      "path": "server/agentRoutes.ts",
+      "处理": "直接合入",
+      "依据工单": "19",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": "6d2431e001c5c79ecb337fe23b8d1f697fcaa6cd225a9bf3ea92716795421680",
+      "upstreamFinalSHA256": "b18e1de28a6b165d19e4ef4a36ebf8067c3597dfbcadea29a967622b665dc5f9",
+      "localBaseSHA256": "6d2431e001c5c79ecb337fe23b8d1f697fcaa6cd225a9bf3ea92716795421680",
+      "finalSHA256": "b18e1de28a6b165d19e4ef4a36ebf8067c3597dfbcadea29a967622b665dc5f9"
+    },
+    {
+      "path": "server/agentSelfTestRoutes.ts",
+      "处理": "本地适配",
+      "依据工单": "07",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "bb50b63a10a91a0eff38e4e23ac1202eafffaf5c76b009efbc38524216da91c4",
+      "upstreamFinalSHA256": "1494c69785ac963574875a2fdfc0566aeb9ddbc8c71f79fe1e40fdc1a5338170",
+      "localBaseSHA256": "bb50b63a10a91a0eff38e4e23ac1202eafffaf5c76b009efbc38524216da91c4",
+      "finalSHA256": "466ad2065ef9a9bce2b02630f669a2317e5123a93fd5b2ac4401c9d566ed1e15"
+    },
+    {
+      "path": "server/agentTrafficRoute.test.ts",
+      "处理": "本地适配",
+      "依据工单": "19",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "717ba88f93c76a3d87c0ac2fc561ada11bc39374c8c765d6156eefa6667e1278",
+      "upstreamFinalSHA256": "b898373d7402b687b1dc6be74fd3283a7cfa2652de885d1068f7ec9fcddc6e49",
+      "localBaseSHA256": "287ff9449b802cd4426c2dfc400eb657464e5772d8328fac4efc10cfc677cd3a",
+      "finalSHA256": "753231faa6059198dd41cdb68f5cfd306133e1e26ad934c2b9db13ab3f283aed"
+    },
+    {
+      "path": "server/ai/client.test.ts",
+      "处理": "本地适配",
+      "依据工单": "12、13",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "c133cdbc84004614dc8bddd593d0aad4c5feb4c69305417fb8b18cb42320a5c4",
+      "upstreamFinalSHA256": "f0519c2dcebf2d8d8ca4cb78185a54b1f2ff7acdbd6c6102a86a8d8aea42e90e",
+      "localBaseSHA256": "c133cdbc84004614dc8bddd593d0aad4c5feb4c69305417fb8b18cb42320a5c4",
+      "finalSHA256": "5084eab1e3b08dff4e1eeb06c07324e6c6c8c61e17e2a778298b3b6fe9e963f8"
+    },
+    {
+      "path": "server/ai/client.ts",
+      "处理": "本地适配",
+      "依据工单": "12、13",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "fb05f88314705e95c5ae879ec319b5e0fe19cd04020d33bb8f59f3dd54aa8c81",
+      "upstreamFinalSHA256": "5437c6356edcd4aeb30153494273cf64f0172030332010e2a0b0ff55fc85319a",
+      "localBaseSHA256": "fb05f88314705e95c5ae879ec319b5e0fe19cd04020d33bb8f59f3dd54aa8c81",
+      "finalSHA256": "5ec50532334f354a8ac6a3488e1c3a0edc68e3ca072b1140332245c719236b03"
+    },
+    {
+      "path": "server/ai/panelTools.fixture.ts",
+      "处理": "本地适配",
+      "依据工单": "12、13",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "5a923d445abebda92dde9adacc40871a86a0a63ff2c24c86ec78bc82ee713896",
+      "localBaseSHA256": null,
+      "finalSHA256": "4cf67efd39e06d03f3589039a9ad4ce6549c89d5d9d5d58effbac4a86fe2e8ce"
+    },
+    {
+      "path": "server/ai/panelTools.test.ts",
+      "处理": "本地适配",
+      "依据工单": "12、13",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "b4bee8bec281bee12d0d74e866838bb2cfefb2a5af2f162939bb2cc3ee65ac70",
+      "localBaseSHA256": null,
+      "finalSHA256": "69aff4e6869c322b588997fd4716bbaaf7df220fee6414b1ad678599e2035a55"
+    },
+    {
+      "path": "server/ai/panelTools.ts",
+      "处理": "本地适配",
+      "依据工单": "12、13",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "d49c386846cc41a9fee60b90606f85066e4886d3e3082dc338d6141cd1e57814",
+      "localBaseSHA256": null,
+      "finalSHA256": "b70cf8eb55cd21c389d0bf67c6bf35d5ee12b3b87e2e2f05122ffa3df985a924"
+    },
+    {
+      "path": "server/ai/planner.test.ts",
+      "处理": "直接合入",
+      "依据工单": "12、13",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "e7d0fdea8e0c341fc4e37c5b1f7052111dc7f26b5fe03cf99c03a0b9b483b29f",
+      "localBaseSHA256": null,
+      "finalSHA256": "e7d0fdea8e0c341fc4e37c5b1f7052111dc7f26b5fe03cf99c03a0b9b483b29f"
+    },
+    {
+      "path": "server/ai/planner.ts",
+      "处理": "本地适配",
+      "依据工单": "12、13",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "7075ce246df725fc2d55af474bf847e0ec8864131090b7f480dfdf7b7c51fa47",
+      "localBaseSHA256": null,
+      "finalSHA256": "ac666d3ec17917e176d5688ddaac5b88df57aa1116004560fd2c33546e8a32e8"
+    },
+    {
+      "path": "server/ai/ruleCreateWizard.test.ts",
+      "处理": "直接合入",
+      "依据工单": "12、13",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "e5f45350732cb5db5321efb7295bf8af2193858c69c20ae544edf48c7aba8cbc",
+      "localBaseSHA256": null,
+      "finalSHA256": "e5f45350732cb5db5321efb7295bf8af2193858c69c20ae544edf48c7aba8cbc"
+    },
+    {
+      "path": "server/ai/ruleCreateWizard.ts",
+      "处理": "本地适配",
+      "依据工单": "12、13",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "7fe0c711b540460d3bc9484eb7c7364ccc475291e7aabb491bb2c7b10b8e0441",
+      "localBaseSHA256": null,
+      "finalSHA256": "375cf493eeab6cd62edfc7fc5d24bb61dfb9935a4eb5d79e3f3591eb6c23ad96"
+    },
+    {
+      "path": "server/ai/skills/forwardxCore.test.ts",
+      "处理": "直接合入",
+      "依据工单": "12、13",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": "83615129c592f2007ea789ae137be803f49f6320d4d70c3c76685ddd96ef01b0",
+      "upstreamFinalSHA256": "775ef27618136287e65302872a41e70e0c949b52b28470f6082b3e09d8d7b5b5",
+      "localBaseSHA256": "83615129c592f2007ea789ae137be803f49f6320d4d70c3c76685ddd96ef01b0",
+      "finalSHA256": "775ef27618136287e65302872a41e70e0c949b52b28470f6082b3e09d8d7b5b5"
+    },
+    {
+      "path": "server/ai/skills/forwardxCore.ts",
+      "处理": "直接合入",
+      "依据工单": "12、13",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": "07cd38a95a9e540f78859ad84e8a630f5bd37e3507eb3e9085c0d439e36349ef",
+      "upstreamFinalSHA256": "0e168192eb16487b78e4954989e65b223593dde1ec6887bf24098454017320ad",
+      "localBaseSHA256": "07cd38a95a9e540f78859ad84e8a630f5bd37e3507eb3e9085c0d439e36349ef",
+      "finalSHA256": "0e168192eb16487b78e4954989e65b223593dde1ec6887bf24098454017320ad"
+    },
+    {
+      "path": "server/ai/workflow.fixture.ts",
+      "处理": "本地适配",
+      "依据工单": "12、13",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "c9f3e5e15f5c7f6d2ae37405bfbbe0f09bb530582a53d520db20d09121903539",
+      "localBaseSHA256": null,
+      "finalSHA256": "c6729ea0db4bc34592c74ac632951e66247d0354b8f77478793e2e4b2c44d061"
+    },
+    {
+      "path": "server/ai/workflow.test.ts",
+      "处理": "本地适配",
+      "依据工单": "12、13",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "bf904af2e6fdab449a18506d34f9dcdd4be517fc55cad566f6811cb989942fd7",
+      "localBaseSHA256": null,
+      "finalSHA256": "e34d6cd1b88eb12b6ba59cdf2afad28a46c03010d2e082bea039210c27ef4dee"
+    },
+    {
+      "path": "server/ai/workflowStore.ts",
+      "处理": "直接合入",
+      "依据工单": "12、13",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "ea4f2b1ee438a2083d9cff8ef14ffe39b086c03e55a93f087d9993977e4470b9",
+      "localBaseSHA256": null,
+      "finalSHA256": "ea4f2b1ee438a2083d9cff8ef14ffe39b086c03e55a93f087d9993977e4470b9"
+    },
+    {
+      "path": "server/authCaptcha.test.ts",
+      "处理": "直接合入",
+      "依据工单": "10",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": "5d83fe8262800e336a89749eecf79e53179a092b423ef5e7b3e07b5c96812ae6",
+      "upstreamFinalSHA256": "1abe06a828c37dd27f28abd7ece51a30ce9bbacba902e3b9cfa9b6120fc297d3",
+      "localBaseSHA256": "5d83fe8262800e336a89749eecf79e53179a092b423ef5e7b3e07b5c96812ae6",
+      "finalSHA256": "1abe06a828c37dd27f28abd7ece51a30ce9bbacba902e3b9cfa9b6120fc297d3"
+    },
+    {
+      "path": "server/authCaptchaSettings.fixture.ts",
+      "处理": "直接合入",
+      "依据工单": "10",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "401faa7bdf6f89cf17f309abd36b008fd7ba7231c02f780146e995d4874d2c83",
+      "localBaseSHA256": null,
+      "finalSHA256": "401faa7bdf6f89cf17f309abd36b008fd7ba7231c02f780146e995d4874d2c83"
+    },
+    {
+      "path": "server/backgroundServices.ts",
+      "处理": "直接合入",
+      "依据工单": "19",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": "a4953a129e182aded9411cb7bca87942c8480254eefa63885d1e97dd8d63d81a",
+      "upstreamFinalSHA256": "cbe741e9391a57c0e002c2d33bf299720ca252645e3972e4c110f8d073394e3e",
+      "localBaseSHA256": "a4953a129e182aded9411cb7bca87942c8480254eefa63885d1e97dd8d63d81a",
+      "finalSHA256": "cbe741e9391a57c0e002c2d33bf299720ca252645e3972e4c110f8d073394e3e"
+    },
+    {
+      "path": "server/botAccounts.ts",
+      "处理": "本地适配",
+      "依据工单": "11",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "ee4411197dc40fb21408753a84807266658326013110304da69b8df3d2b58d4a",
+      "localBaseSHA256": null,
+      "finalSHA256": "895986cb44e41594704bac44c57c887ed8c1e3242f4cd03e45ae5418c51ce38e"
+    },
+    {
+      "path": "server/botTransportContext.ts",
+      "处理": "直接合入",
+      "依据工单": "11",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "6b3522c80e51ade40ca570a0c61fe7c17d512f964bbd79664c03a310ed6cef62",
+      "localBaseSHA256": null,
+      "finalSHA256": "6b3522c80e51ade40ca570a0c61fe7c17d512f964bbd79664c03a310ed6cef62"
+    },
+    {
+      "path": "server/db.ts",
+      "处理": "直接合入",
+      "依据工单": "14、15",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": "41186a87f05bd12129f6f03ab1ebda0b4fede4465171d3ab3674d70bb8cab803",
+      "upstreamFinalSHA256": "8e7e06e73a31450b0bd31aa451883f8fbce13446cb1733a711b2ace00801f04d",
+      "localBaseSHA256": "41186a87f05bd12129f6f03ab1ebda0b4fede4465171d3ab3674d70bb8cab803",
+      "finalSHA256": "8e7e06e73a31450b0bd31aa451883f8fbce13446cb1733a711b2ace00801f04d"
+    },
+    {
+      "path": "server/dbRuntime.ts",
+      "处理": "直接合入",
+      "依据工单": "14、15",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": "f39697fbf0af862b5f18cdbeb6359993151adc8e0b1dfbd4e1501ed012ba9741",
+      "upstreamFinalSHA256": "c5f9f1c773a2e47ac9f1bc9daa7bc022d7150d78dd2cb22ed664d0bcc81f2632",
+      "localBaseSHA256": "f39697fbf0af862b5f18cdbeb6359993151adc8e0b1dfbd4e1501ed012ba9741",
+      "finalSHA256": "c5f9f1c773a2e47ac9f1bc9daa7bc022d7150d78dd2cb22ed664d0bcc81f2632"
+    },
+    {
+      "path": "server/dbSchema.ts",
+      "处理": "本地适配",
+      "依据工单": "14、15",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "a0ab320b9fa75676ff19170b53ea12e3226052636d876d90a8bd6e7c66975149",
+      "upstreamFinalSHA256": "e540e1f74421305e6705f39ccabdc6a6fe283575929521267a7dbb8f3fb061b4",
+      "localBaseSHA256": "3b30bf7af1cc6a1d0a033eacc1d56483a502c014bee49818e2d3e6b163a41aea",
+      "finalSHA256": "399960ab0117c4a3f6f0e700bc90c13c1dd4323d6a556bedac4889caa39cdc58"
+    },
+    {
+      "path": "server/discordAccounts.ts",
+      "处理": "直接合入",
+      "依据工单": "11",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "4c21e79b0f945aa6e3dde3063edd525eccd9405e59e4d6bb5ef9bb0bf9c186eb",
+      "localBaseSHA256": null,
+      "finalSHA256": "4c21e79b0f945aa6e3dde3063edd525eccd9405e59e4d6bb5ef9bb0bf9c186eb"
+    },
+    {
+      "path": "server/discordBot.ts",
+      "处理": "本地适配",
+      "依据工单": "11",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "726268d92e15fd1fae501cf4e69af5acef68c8bf1052aba46e4e00f22aa30bd7",
+      "localBaseSHA256": null,
+      "finalSHA256": "e025ceace9f1dfe1cab586198ac82b801e1d5b34903479fb72774473a54ac279"
+    },
+    {
+      "path": "server/discordCredentials.ts",
+      "处理": "直接合入",
+      "依据工单": "11",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "b06b3e633349adc32304d8bf09e5f4bc3e7499530ab4bd8c4b726354fdddc784",
+      "localBaseSHA256": null,
+      "finalSHA256": "b06b3e633349adc32304d8bf09e5f4bc3e7499530ab4bd8c4b726354fdddc784"
+    },
+    {
+      "path": "server/discordIdentity.ts",
+      "处理": "直接合入",
+      "依据工单": "11",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "d392b33e89bb483fb890fa7a2f9f9567244ea13cf5be91f6c508105996f898c1",
+      "localBaseSHA256": null,
+      "finalSHA256": "d392b33e89bb483fb890fa7a2f9f9567244ea13cf5be91f6c508105996f898c1"
+    },
+    {
+      "path": "server/discordNotifications.fixture.ts",
+      "处理": "直接合入",
+      "依据工单": "11",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "2cdf35a3188012f9369b741e91e4a100d4664ea8c8f33482742a0f498283c5f7",
+      "localBaseSHA256": null,
+      "finalSHA256": "2cdf35a3188012f9369b741e91e4a100d4664ea8c8f33482742a0f498283c5f7"
+    },
+    {
+      "path": "server/discordNotifications.test.ts",
+      "处理": "直接合入",
+      "依据工单": "11",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "9ad342779fc790552906f28461d1edbc2006ae6600bed209e53d26885a2dc47c",
+      "localBaseSHA256": null,
+      "finalSHA256": "9ad342779fc790552906f28461d1edbc2006ae6600bed209e53d26885a2dc47c"
+    },
+    {
+      "path": "server/forwardChainManualProbe.ts",
+      "处理": "直接合入",
+      "依据工单": "07",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "855bdb499f9a932fc971f706fc6dd7565b3e859a4ce3fa08405432f9efea956d",
+      "localBaseSHA256": null,
+      "finalSHA256": "855bdb499f9a932fc971f706fc6dd7565b3e859a4ce3fa08405432f9efea956d"
+    },
+    {
+      "path": "server/forwardGroupListeners.test.ts",
+      "处理": "直接合入",
+      "依据工单": "01、02、03",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": "7999eb2807b3bd6f52e027b7b93a013cd06e5eeae2e0c212b579433ccb7712f3",
+      "upstreamFinalSHA256": "a19584a9ebaf9117af069a109bda4e244d50c1d015ae35ef4bd7c71bf8be8ba8",
+      "localBaseSHA256": "7999eb2807b3bd6f52e027b7b93a013cd06e5eeae2e0c212b579433ccb7712f3",
+      "finalSHA256": "a19584a9ebaf9117af069a109bda4e244d50c1d015ae35ef4bd7c71bf8be8ba8"
+    },
+    {
+      "path": "server/forwardGroupSwitchNotifier.ts",
+      "处理": "直接合入",
+      "依据工单": "11",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": "2f6210a398e236d2160c1c062fc2ad6867cabe0d56ae1dd65294e807007d981d",
+      "upstreamFinalSHA256": "7d265efbf5f3c84cf233c10b2c17f8bcb1d1e09b2b536d05f47fa2821f1c975a",
+      "localBaseSHA256": "2f6210a398e236d2160c1c062fc2ad6867cabe0d56ae1dd65294e807007d981d",
+      "finalSHA256": "7d265efbf5f3c84cf233c10b2c17f8bcb1d1e09b2b536d05f47fa2821f1c975a"
+    },
+    {
+      "path": "server/forwardRuleErrorNotifier.ts",
+      "处理": "本地适配",
+      "依据工单": "11",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "b513c1d53992beaf9d2c911a066faf6e06504127b62f9f78202f573f104fada7",
+      "upstreamFinalSHA256": "88c4a34b6927243ca83ddf5f198585c653f58ecca6c596ba6e7d0c308b0c3e16",
+      "localBaseSHA256": "e7635302595ce3b20d560e4b3c988d3e6f51cfe84a09f299dea2497a950652b1",
+      "finalSHA256": "26ee5048def37f901088daf8ed7af35b1b0b5d6e2fda52747c482d9bd8658596"
+    },
+    {
+      "path": "server/googleAccounts.ts",
+      "处理": "直接合入",
+      "依据工单": "10",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "1a05911f7f0a38e0fa918f9173e92a8102cd57c18143c4134e5ed07e91557a66",
+      "localBaseSHA256": null,
+      "finalSHA256": "1a05911f7f0a38e0fa918f9173e92a8102cd57c18143c4134e5ed07e91557a66"
+    },
+    {
+      "path": "server/googleAuthRoutes.ts",
+      "处理": "直接合入",
+      "依据工单": "10",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "270605db320ec7094895bdd6680fee8526c582bd69f9f761f3c2a1402b4d0e26",
+      "localBaseSHA256": null,
+      "finalSHA256": "270605db320ec7094895bdd6680fee8526c582bd69f9f761f3c2a1402b4d0e26"
+    },
+    {
+      "path": "server/googleOAuth.fixture.ts",
+      "处理": "直接合入",
+      "依据工单": "10",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "af45427e4da559a319ffb62d6cbb831a2a53a502fe94d9ae5c06fcca6b3ef88b",
+      "localBaseSHA256": null,
+      "finalSHA256": "af45427e4da559a319ffb62d6cbb831a2a53a502fe94d9ae5c06fcca6b3ef88b"
+    },
+    {
+      "path": "server/googleOAuth.test.ts",
+      "处理": "直接合入",
+      "依据工单": "10",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "b41f5a95bfa463b883374946d6acfeea83a7dbdefa49df96924a4bcc618adf4c",
+      "localBaseSHA256": null,
+      "finalSHA256": "b41f5a95bfa463b883374946d6acfeea83a7dbdefa49df96924a4bcc618adf4c"
+    },
+    {
+      "path": "server/googleOAuth.ts",
+      "处理": "直接合入",
+      "依据工单": "10",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "26de8cbca6ed67e3e8f8ed660fa6d9dc5397d6fd67ceb175a3069bec375df2c5",
+      "localBaseSHA256": null,
+      "finalSHA256": "26de8cbca6ed67e3e8f8ed660fa6d9dc5397d6fd67ceb175a3069bec375df2c5"
+    },
+    {
+      "path": "server/historyCleanupIndexes.test.ts",
+      "处理": "直接合入",
+      "依据工单": "19",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": "a2e80c345615848a1986de73f8854a1e9e05c3220908a3fe7532ce161e7c8557",
+      "upstreamFinalSHA256": "dd8d491ed8020305f60c14fe6e5ca3367b3200b83eb8ee32b92f44cc825ec454",
+      "localBaseSHA256": "a2e80c345615848a1986de73f8854a1e9e05c3220908a3fe7532ce161e7c8557",
+      "finalSHA256": "dd8d491ed8020305f60c14fe6e5ca3367b3200b83eb8ee32b92f44cc825ec454"
+    },
+    {
+      "path": "server/hopTestState.ts",
+      "处理": "直接合入",
+      "依据工单": "07",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": "9cc1afb2039874013dedf8aefd585f83e2306571fa3c0333afbd070bca501641",
+      "upstreamFinalSHA256": "f8121fd8f6bae22a0c2a21f6643aeb1e1704f4a85d256b525d8fb398f2ee3582",
+      "localBaseSHA256": "9cc1afb2039874013dedf8aefd585f83e2306571fa3c0333afbd070bca501641",
+      "finalSHA256": "f8121fd8f6bae22a0c2a21f6643aeb1e1704f4a85d256b525d8fb398f2ee3582"
+    },
+    {
+      "path": "server/hostGeo.ts",
+      "处理": "直接合入",
+      "依据工单": "19",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": "f4765f6b3eb6c4aa52c4de26d676ec883aeabd1cf035d181243d0451d0f1f841",
+      "upstreamFinalSHA256": "9b06dc0b6bb99f7d38c6b24372326ae86b18dd08aecd80bd53099733a0f33e24",
+      "localBaseSHA256": "f4765f6b3eb6c4aa52c4de26d676ec883aeabd1cf035d181243d0451d0f1f841",
+      "finalSHA256": "9b06dc0b6bb99f7d38c6b24372326ae86b18dd08aecd80bd53099733a0f33e24"
+    },
+    {
+      "path": "server/hostStatusNotifier.ts",
+      "处理": "直接合入",
+      "依据工单": "11",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": "4d022347e0b4689f3ad8602ac516baf05c5e7a7821f27f4d51b68102410aa52e",
+      "upstreamFinalSHA256": "c41c4ef223873afe5c46c1a5e21c5191c086edfb8fe0653acebb82af8fa079e2",
+      "localBaseSHA256": "4d022347e0b4689f3ad8602ac516baf05c5e7a7821f27f4d51b68102410aa52e",
+      "finalSHA256": "c41c4ef223873afe5c46c1a5e21c5191c086edfb8fe0653acebb82af8fa079e2"
+    },
+    {
+      "path": "server/index.ts",
+      "处理": "直接合入",
+      "依据工单": "19",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": "49c191c37b63e15e0e1d8ac8d983b0523dc9d7e4d20c76acfc3975af999f35b6",
+      "upstreamFinalSHA256": "10efc02cc594e52b2e0181969af31fdce34937cffef8973af6bf9f156fee6506",
+      "localBaseSHA256": "49c191c37b63e15e0e1d8ac8d983b0523dc9d7e4d20c76acfc3975af999f35b6",
+      "finalSHA256": "10efc02cc594e52b2e0181969af31fdce34937cffef8973af6bf9f156fee6506"
+    },
+    {
+      "path": "server/linkAccessView.ts",
+      "处理": "直接合入",
+      "依据工单": "01、02、03",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": "8b5f433ce2398ce0c0e9600836572d3321a1be1890046ada6570275aeb5ec274",
+      "upstreamFinalSHA256": "fad85634256837e6130328f56b3af507d5a0a4a33f9cf3e4fab2507c5925a718",
+      "localBaseSHA256": "8b5f433ce2398ce0c0e9600836572d3321a1be1890046ada6570275aeb5ec274",
+      "finalSHA256": "fad85634256837e6130328f56b3af507d5a0a4a33f9cf3e4fab2507c5925a718"
+    },
+    {
+      "path": "server/localeHint.test.ts",
+      "处理": "直接合入",
+      "依据工单": "19",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "a197659af104b806aeed59bf7ffa0f966ef2872d9e6bfe035ffd0bde2e109887",
+      "localBaseSHA256": null,
+      "finalSHA256": "a197659af104b806aeed59bf7ffa0f966ef2872d9e6bfe035ffd0bde2e109887"
+    },
+    {
+      "path": "server/localeHint.ts",
+      "处理": "直接合入",
+      "依据工单": "19",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "f1cc77e92d82c646ec41a0945022e1147d5a44de4e0b758ac4258758a6a9e29d",
+      "localBaseSHA256": null,
+      "finalSHA256": "f1cc77e92d82c646ec41a0945022e1147d5a44de4e0b758ac4258758a6a9e29d"
+    },
+    {
+      "path": "server/migration.ts",
+      "处理": "本地适配",
+      "依据工单": "14、15",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "71cd263435d8fe9af60e5cbb38053bcccb9e4ac9d7c3431bf99b495cbeafa9ef",
+      "upstreamFinalSHA256": "4c0d484dac9948a38625047c48acdd1c88a16941ddb1809fc241b98b60ec2955",
+      "localBaseSHA256": "71cd263435d8fe9af60e5cbb38053bcccb9e4ac9d7c3431bf99b495cbeafa9ef",
+      "finalSHA256": "3b9ade226506d4e30ff64a862e5937542d5b8c3c1eebe4e8b463781b4a6d8cfa"
+    },
+    {
+      "path": "server/migrationCodes.ts",
+      "处理": "直接合入",
+      "依据工单": "14、15",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": "1217c203a4b2bfa2cdc54995c77e716d1f71f0c3925c17a5980d445374a84481",
+      "upstreamFinalSHA256": "4d0c2a0e3748e5cde535df5fdded7b88b77b3a47b184231947ebe432c5bf3070",
+      "localBaseSHA256": "1217c203a4b2bfa2cdc54995c77e716d1f71f0c3925c17a5980d445374a84481",
+      "finalSHA256": "4d0c2a0e3748e5cde535df5fdded7b88b77b3a47b184231947ebe432c5bf3070"
+    },
+    {
+      "path": "server/mysqlLongTextSchema.test.ts",
+      "处理": "直接合入",
+      "依据工单": "19",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": "50baa0ac5d55b0c0ba148c3f61b6267ba14e29fb4a0caf3d7398c5f64287f091",
+      "upstreamFinalSHA256": "fc2aac5650bb3c84c72d67834edd68770458a88eca4df40759cab75e7ae92753",
+      "localBaseSHA256": "50baa0ac5d55b0c0ba148c3f61b6267ba14e29fb4a0caf3d7398c5f64287f091",
+      "finalSHA256": "fc2aac5650bb3c84c72d67834edd68770458a88eca4df40759cab75e7ae92753"
+    },
+    {
+      "path": "server/notificationSettings.ts",
+      "处理": "直接合入",
+      "依据工单": "11",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "6e9c48fdfe03902fa15db6393631d91f1d872481771925bd5a404c38bb5d644b",
+      "localBaseSHA256": null,
+      "finalSHA256": "6e9c48fdfe03902fa15db6393631d91f1d872481771925bd5a404c38bb5d644b"
+    },
+    {
+      "path": "server/notifications.ts",
+      "处理": "直接合入",
+      "依据工单": "11",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "f2b13106d060b1ffe6cd79645eaf12f9d40a092e98c8336bc1dffb61622e5b7d",
+      "localBaseSHA256": null,
+      "finalSHA256": "f2b13106d060b1ffe6cd79645eaf12f9d40a092e98c8336bc1dffb61622e5b7d"
+    },
+    {
+      "path": "server/paginationQueries.test.ts",
+      "处理": "本地适配",
+      "依据工单": "19",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "ab0a7bf6eb8809b6642bb915ce4b4deada0ac7ebe1dc9808267b3b5fce36236c",
+      "upstreamFinalSHA256": "80201584a89ae95f08e1c884f4922d08c7c26d56b014f31b86855474bd987aa6",
+      "localBaseSHA256": "ab0a7bf6eb8809b6642bb915ce4b4deada0ac7ebe1dc9808267b3b5fce36236c",
+      "finalSHA256": "141d53391cf91132f0968164bce0bbb08324eab6720f6b61437e693f53cf1bbb"
+    },
+    {
+      "path": "server/panelInstallerAccelerator.test.ts",
+      "处理": "本地适配",
+      "依据工单": "19",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "96d99f01d460b2bcd37bcb7b4592c5ab4e3881a2affea525ad555089fd44b4b3",
+      "upstreamFinalSHA256": "c332fd27af626aa9b90b19994caff4e2ddf7c1167062fd73bea170e35ea716ed",
+      "localBaseSHA256": "beaa54411d33354e1a9ae1cd58da9c7ced46257dd3863162ff57f76d21939af2",
+      "finalSHA256": "008d8f2d51f34aeb6772a839e07001d07b76a554b46daa5168aeea707a063f22"
+    },
+    {
+      "path": "server/probeCounter.test.ts",
+      "处理": "本地适配",
+      "依据工单": "06、07",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "4f6d014a4dc6ab20dc87b078744188089348ff721c645a0539133bc4599432b3",
+      "localBaseSHA256": null,
+      "finalSHA256": "e13705d064477c30db6452763041488b32b8a38c552d1400ed3866b5d1c9b1e4"
+    },
+    {
+      "path": "server/publicHostMonitor.test.ts",
+      "处理": "直接合入",
+      "依据工单": "19",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "07339355a2e0c36465c581e3f8d88848be7c93c9ba31bead5cca398e3e72523b",
+      "localBaseSHA256": null,
+      "finalSHA256": "07339355a2e0c36465c581e3f8d88848be7c93c9ba31bead5cca398e3e72523b"
+    },
+    {
+      "path": "server/repositories/forwardRuleRepository.ts",
+      "处理": "本地适配",
+      "依据工单": "01、02、03",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "1a35f572ead1600a26612a7b52dc4272720066241f8d69d95f605769bc1759c8",
+      "upstreamFinalSHA256": "ad3e8c077699988f5c68b557be4cdfea12ce1f027fb35afd8dfdd91c7fba0d9d",
+      "localBaseSHA256": "cef013daf9acb6d4841edbcadae58b1463c59272dcf6481b8862d69a72c187cb",
+      "finalSHA256": "5bf718572a7b2c17f81d42da17a9e28f5dbe25d937b399d198a8178688034eb0"
+    },
+    {
+      "path": "server/repositories/forwardTestRepository.ts",
+      "处理": "本地适配",
+      "依据工单": "07",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "817da3e062fac93a489bd409a0eb6a0aee8c0882efbf8681a7affeddd437d270",
+      "upstreamFinalSHA256": "893dbeaa77dab83fc3356b18bb31230ccedefda0754516e54d6b6b99277dc6b8",
+      "localBaseSHA256": "817da3e062fac93a489bd409a0eb6a0aee8c0882efbf8681a7affeddd437d270",
+      "finalSHA256": "5ce5ddc324dff136752148bb4386cc7a4158a96030710c59563bfb02c4f1e441"
+    },
+    {
+      "path": "server/repositories/metricsRepository.ts",
+      "处理": "本地适配",
+      "依据工单": "19",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "323beeed5fef3e6a93ff27ad8eb7a4def1a569d08eb6c91b08fe0e12e32d7e52",
+      "upstreamFinalSHA256": "f752f46e76b49d056e2859d4f35aef9f707a778e6b0d8a69525c3d881bf46ec3",
+      "localBaseSHA256": "581e6576060e7e9c6264a107c9856789fbf627cfcb95f3475d82594a094afbe0",
+      "finalSHA256": "2bd137fa67f6487500c1f533489ae684db347b0c19ce6984ce3dcff9c787357d"
+    },
+    {
+      "path": "server/repositories/probeCounterRepository.ts",
+      "处理": "本地适配",
+      "依据工单": "06、07",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "a00b19de4cd50f4cab88c1d8b270a6cd834c1373a83180424e7dc0d663b32e9d",
+      "localBaseSHA256": null,
+      "finalSHA256": "f796a8362b960268134d8bf392cb84fec52fe1579e2f920349b3e2444d36fb50"
+    },
+    {
+      "path": "server/repositories/userRepository.ts",
+      "处理": "本地适配",
+      "依据工单": "01、02、03",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "c376a78ebd055ec8c7b31dfdb5cd7facacc6dbcfa238f669581e96c22a7267de",
+      "upstreamFinalSHA256": "89ba4a396547cecfe5f97cd0348937db3df0fa7e14e2e42e9413fd00a9f2fdb9",
+      "localBaseSHA256": "c376a78ebd055ec8c7b31dfdb5cd7facacc6dbcfa238f669581e96c22a7267de",
+      "finalSHA256": "b19f9c5c7c9ecb75bc833130eefbc14d92746d0af936deb1105ae7600c325b72"
+    },
+    {
+      "path": "server/routers.ts",
+      "处理": "直接合入",
+      "依据工单": "19",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": "041d2ba78fda4806fa068dd624538aee5a3d1d9a51361d8dcaafdbf44778ce5c",
+      "upstreamFinalSHA256": "d2c9630d878774bc6d64e566ca26bed2c400f84ec9aa33ebb3abcd8e1d7d08a8",
+      "localBaseSHA256": "041d2ba78fda4806fa068dd624538aee5a3d1d9a51361d8dcaafdbf44778ce5c",
+      "finalSHA256": "d2c9630d878774bc6d64e566ca26bed2c400f84ec9aa33ebb3abcd8e1d7d08a8"
+    },
+    {
+      "path": "server/routers/announcements.ts",
+      "处理": "直接合入",
+      "依据工单": "19",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": "bc77684bd1737f470bf628cc50a4a7c0a8542bb177222a16fb988291391ef91a",
+      "upstreamFinalSHA256": "7f54f4e8d5537e5d0c4f189d5652fd6255038abb10006bc753d2a489c33158f1",
+      "localBaseSHA256": "bc77684bd1737f470bf628cc50a4a7c0a8542bb177222a16fb988291391ef91a",
+      "finalSHA256": "7f54f4e8d5537e5d0c4f189d5652fd6255038abb10006bc753d2a489c33158f1"
+    },
+    {
+      "path": "server/routers/auth.ts",
+      "处理": "直接合入",
+      "依据工单": "19",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": "ab43329b7b3602f3af37ef960cb2cc902cd92b1f1e7bb2109400ad91fbe781c7",
+      "upstreamFinalSHA256": "9076d1fbdda4e818baedbea2a63aceae8921c3fd12a78b473f70c9e9349b9155",
+      "localBaseSHA256": "ab43329b7b3602f3af37ef960cb2cc902cd92b1f1e7bb2109400ad91fbe781c7",
+      "finalSHA256": "9076d1fbdda4e818baedbea2a63aceae8921c3fd12a78b473f70c9e9349b9155"
+    },
+    {
+      "path": "server/routers/discord.ts",
+      "处理": "直接合入",
+      "依据工单": "11",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "67cb8dbfa3bc5e342862b56f39ecc12286543d1537992fbf41feee84ae912177",
+      "localBaseSHA256": null,
+      "finalSHA256": "67cb8dbfa3bc5e342862b56f39ecc12286543d1537992fbf41feee84ae912177"
+    },
+    {
+      "path": "server/routers/forwardGroups.ts",
+      "处理": "直接合入",
+      "依据工单": "01、02、03",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": "ea04058e8bf538dcb3b8e544cc37a1e0741c9dc0c82b6609167a389f8505fbd1",
+      "upstreamFinalSHA256": "4373868c3be66a8697ff6cf91ab1cd47d041407ce54b9bc9353d6caa084ed29f",
+      "localBaseSHA256": "ea04058e8bf538dcb3b8e544cc37a1e0741c9dc0c82b6609167a389f8505fbd1",
+      "finalSHA256": "4373868c3be66a8697ff6cf91ab1cd47d041407ce54b9bc9353d6caa084ed29f"
+    },
+    {
+      "path": "server/routers/google.ts",
+      "处理": "直接合入",
+      "依据工单": "10",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "14341f8907dba8300d06dca314e099084dd15be91ab1283c185f0801766ac17d",
+      "localBaseSHA256": null,
+      "finalSHA256": "14341f8907dba8300d06dca314e099084dd15be91ab1283c185f0801766ac17d"
+    },
+    {
+      "path": "server/routers/helpers.ts",
+      "处理": "直接合入",
+      "依据工单": "19",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": "c5366e9f0995678c8f0f5565e4caa2cb9a275b82bd18ba466e2f1a854de9af02",
+      "upstreamFinalSHA256": "dfa9e0130d19b258a9f722b84006f56596be655ad8e9293213d8d0f592685019",
+      "localBaseSHA256": "c5366e9f0995678c8f0f5565e4caa2cb9a275b82bd18ba466e2f1a854de9af02",
+      "finalSHA256": "dfa9e0130d19b258a9f722b84006f56596be655ad8e9293213d8d0f592685019"
+    },
+    {
+      "path": "server/routers/hosts.ts",
+      "处理": "直接合入",
+      "依据工单": "19",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": "34a3c58bbd86309adc187e974e0ff2cba812eb61da04367a84cdc72ce2321f43",
+      "upstreamFinalSHA256": "1ee118999e9b12e2c8bb63c60e786c73267ec7bf4410eb3d60ada6fc02e5c76d",
+      "localBaseSHA256": "34a3c58bbd86309adc187e974e0ff2cba812eb61da04367a84cdc72ce2321f43",
+      "finalSHA256": "1ee118999e9b12e2c8bb63c60e786c73267ec7bf4410eb3d60ada6fc02e5c76d"
+    },
+    {
+      "path": "server/routers/plans.ts",
+      "处理": "直接合入",
+      "依据工单": "19",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": "92b7abe077d83e7289716df4d322b130f97cb34bc042ea84e80027df4b7c3758",
+      "upstreamFinalSHA256": "f59fbf1af7f4d0c1480746f58882764ff104a960528122702d9b5f4f307c5125",
+      "localBaseSHA256": "92b7abe077d83e7289716df4d322b130f97cb34bc042ea84e80027df4b7c3758",
+      "finalSHA256": "f59fbf1af7f4d0c1480746f58882764ff104a960528122702d9b5f4f307c5125"
+    },
+    {
+      "path": "server/routers/ruleLimitInput.ts",
+      "处理": "本地适配",
+      "依据工单": "01、02、03",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "2f4db06bf9ffe0e994b7eac9d14ff01daab3c27e011b53112bc9914c02082f72",
+      "localBaseSHA256": null,
+      "finalSHA256": "7463c759ed8444b477a5b15f58f95cfc8e3f60001cd25fef7e799ff68d87a521"
+    },
+    {
+      "path": "server/routers/rules.crud.ts",
+      "处理": "本地适配",
+      "依据工单": "01、02、03",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "82707b2bdc0a0186d795911ab7bded08311ebbbaf7b5a55cb5394d8e91e617dd",
+      "upstreamFinalSHA256": "09f503d425589f59668488420ded290b7087e26bb9a0fe89eff0a73e3d4c2719",
+      "localBaseSHA256": "ac68fca5bb7a00f48fc03ac71f5bb0b415ba0fac77151f0d665ec425533f6e70",
+      "finalSHA256": "8f6bd750066529e905a9ba00255d0198419735bf4f2d690d955d3fa005fe0904"
+    },
+    {
+      "path": "server/routers/rules.selfTest.ts",
+      "处理": "本地适配",
+      "依据工单": "07",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "d9c9ac4e1912a2f5ebc8b65001ef62062303c4a5e1899f70d97fba30e839d4a0",
+      "upstreamFinalSHA256": "3ca2dbea55c74d892213ff2d94bb48cafcfc324eb8891248ae9ff082ad48ca84",
+      "localBaseSHA256": "d9c9ac4e1912a2f5ebc8b65001ef62062303c4a5e1899f70d97fba30e839d4a0",
+      "finalSHA256": "81b484b671ee4616c930842e9955e5a96996fc17d5643b7a65b61941e73fa375"
+    },
+    {
+      "path": "server/routers/rules.traffic.ts",
+      "处理": "本地适配",
+      "依据工单": "01、02、03",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "145eee8c9a77ac49eae4baf6af25eb3fe978dc98355428adff74320447a325c2",
+      "upstreamFinalSHA256": "85d0581d3bd95e2bbaa15625aaa5ec30f12dceb5ae7ec6784380e4a1bc67de2e",
+      "localBaseSHA256": "2e3dce22761d9656e7f138f962ebc691d83f38b2c8aa53bce6e9058e9e68fa87",
+      "finalSHA256": "d61f55a3bc4c8dfcb8759faff60d1903a2bc295e11ad0da376a7e8f70d51ff1b"
+    },
+    {
+      "path": "server/routers/rules.ts",
+      "处理": "本地适配",
+      "依据工单": "01、02、03",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "3a9d6e4d0e7fd5c694522ce05ee945dd845904e1d3035c29f3bb56758674f50b",
+      "upstreamFinalSHA256": "a04a3cd69dddf792e173ebe51d8f3f69b30ca45072352adf72f03e83f2320b32",
+      "localBaseSHA256": "3921bdb39f0a6f851b7739067809830af719fb0c6de7366218d362426efc7a2d",
+      "finalSHA256": "b0662dd7602669987e7daead5921ab856e7a398a172687a514be93b28dc446d6"
+    },
+    {
+      "path": "server/routers/setup.ts",
+      "处理": "直接合入",
+      "依据工单": "19",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": "112f9ddb6218d511649627321d3a9ae8678e6ba32ba482491e12a09ec42b5153",
+      "upstreamFinalSHA256": "48e348f87e1e0b17e6e44ee3c575eccb64e3ce119ef452f895f96d1efe22774a",
+      "localBaseSHA256": "112f9ddb6218d511649627321d3a9ae8678e6ba32ba482491e12a09ec42b5153",
+      "finalSHA256": "48e348f87e1e0b17e6e44ee3c575eccb64e3ce119ef452f895f96d1efe22774a"
+    },
+    {
+      "path": "server/routers/telegram.ts",
+      "处理": "本地适配",
+      "依据工单": "11",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "630c69da85d0f55ebe3fbe66719f0326504966a50547ca96948ea2b6fc180ff7",
+      "upstreamFinalSHA256": "5dd07cf963c1fc7896317126dac8b93e2806189fb83519a786b176aae6eedf9e",
+      "localBaseSHA256": "630c69da85d0f55ebe3fbe66719f0326504966a50547ca96948ea2b6fc180ff7",
+      "finalSHA256": "6ef1b5876151e5e438abac260daaa712402b66c83df243ea59af8dae0ce01968"
+    },
+    {
+      "path": "server/routers/tunnels.ts",
+      "处理": "本地适配",
+      "依据工单": "19",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "3e755411fa49c5a5b37ce4996722d5b0d92d027efb7caea9c3fcdc855533188a",
+      "upstreamFinalSHA256": "860e8f774ca9377243cb94f4d84417e03840def467846e9f4884f18e0b950fcf",
+      "localBaseSHA256": "435a9207b3eedaf6fbb01c848c9d8f49fd347ce1ae253f2c2f3e7cba5abd9d66",
+      "finalSHA256": "6f4442835162f99f9c1ccf7cbdf2df7512c961b7b36d66cb0454d5153acf3fe3"
+    },
+    {
+      "path": "server/routers/users.ts",
+      "处理": "直接合入",
+      "依据工单": "19",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": "be3d25c2511aecae3253c4d013831e65048151ab683a920792fb1ece77a68144",
+      "upstreamFinalSHA256": "01c540e4e29a162b18944f739a0172adac50c84502a8d17cf0944949dcb90e46",
+      "localBaseSHA256": "be3d25c2511aecae3253c4d013831e65048151ab683a920792fb1ece77a68144",
+      "finalSHA256": "01c540e4e29a162b18944f739a0172adac50c84502a8d17cf0944949dcb90e46"
+    },
+    {
+      "path": "server/ruleLimits.fixture.ts",
+      "处理": "本地适配",
+      "依据工单": "01、02、03",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "5d9fbd21e4c6455da4d21976b97097fa8819c14cbb9a9836ecf4ee6c0fdeebca",
+      "localBaseSHA256": null,
+      "finalSHA256": "1ea548f9f241f8132d3e227e818d3dc18fabeed08136649db33f63717a60b133"
+    },
+    {
+      "path": "server/ruleLimits.test.ts",
+      "处理": "直接合入",
+      "依据工单": "01、02、03",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "fd4cfd711172a179cbdcac40e824eb0e965f6102a2cbf0ef7290a044f298a81f",
+      "localBaseSHA256": null,
+      "finalSHA256": "fd4cfd711172a179cbdcac40e824eb0e965f6102a2cbf0ef7290a044f298a81f"
+    },
+    {
+      "path": "server/ruleLimits.ts",
+      "处理": "本地适配",
+      "依据工单": "01、02、03",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "5ff5e5b77e6084ea27faf879994e749d5c6f4fbf2cea76c7cdce71bd4f20c6e7",
+      "localBaseSHA256": null,
+      "finalSHA256": "ad0b3cf7faf273f8b69c50fdf64555e298e751878135ad42f603dc4d4bce64e7"
+    },
+    {
+      "path": "server/scheduledTask.test.ts",
+      "处理": "直接合入",
+      "依据工单": "19",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": "e1a8c1594a630be4f7c22d2fd65e5289dbfdbb352991ada59f420ba0f989789b",
+      "upstreamFinalSHA256": "0ef814133392b5f3b16aa906f912c8927fd5d8e452734918bcb851e54cae721a",
+      "localBaseSHA256": "e1a8c1594a630be4f7c22d2fd65e5289dbfdbb352991ada59f420ba0f989789b",
+      "finalSHA256": "0ef814133392b5f3b16aa906f912c8927fd5d8e452734918bcb851e54cae721a"
+    },
+    {
+      "path": "server/scheduledTask.ts",
+      "处理": "直接合入",
+      "依据工单": "19",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": "a6073715329fed845401803f2e5767da80e551aa6f1354c320ae60c474162f19",
+      "upstreamFinalSHA256": "9e4ba3b6597435d5e38d734d856c8dabb528ae87fd2e1f90bba8e457812a79b4",
+      "localBaseSHA256": "a6073715329fed845401803f2e5767da80e551aa6f1354c320ae60c474162f19",
+      "finalSHA256": "9e4ba3b6597435d5e38d734d856c8dabb528ae87fd2e1f90bba8e457812a79b4"
+    },
+    {
+      "path": "server/scheduler.ts",
+      "处理": "本地适配",
+      "依据工单": "19",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "42857de9147f1361c35282888159f6ef14aded70d29a0b512b78ffd03ef7ec88",
+      "upstreamFinalSHA256": "b11e371e376b23a9f84b612dcd7ca688a1f5475c5acc524bb40df869c9be97c6",
+      "localBaseSHA256": "42857de9147f1361c35282888159f6ef14aded70d29a0b512b78ffd03ef7ec88",
+      "finalSHA256": "7a5835b117fd2414bc4778b7ea9a779733618d453ef94d89b5c2dd9a8d253bc1"
+    },
+    {
+      "path": "server/seamlessMigration.fixture.ts",
+      "处理": "本地适配",
+      "依据工单": "14、15",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "f83e8f1d9665398d352e9d415a1cfb317faee0dda7f6caf0fce69857df8ebe42",
+      "localBaseSHA256": null,
+      "finalSHA256": "56f3cfe46191969158e0206653662072d482c73a5e26877ddfd88baae89bb002"
+    },
+    {
+      "path": "server/seamlessMigration.test.ts",
+      "处理": "本地适配",
+      "依据工单": "14、15",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "e0d46b100d52c51224e8fda226c0a1435a1ff5044efd14729cbf5e86bc9dc4d7",
+      "localBaseSHA256": null,
+      "finalSHA256": "7ef5db6f72e869d81c825ffb17f8abab426e0a61dfd09b8420f6c3bc1dbd23d2"
+    },
+    {
+      "path": "server/seamlessMigrationImport.ts",
+      "处理": "直接合入",
+      "依据工单": "14、15",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "31e1a44a2103eecabfb743d626b05739010d8c949e22e8b59b085f59b51de323",
+      "localBaseSHA256": null,
+      "finalSHA256": "31e1a44a2103eecabfb743d626b05739010d8c949e22e8b59b085f59b51de323"
+    },
+    {
+      "path": "server/seamlessMigrationProxy.ts",
+      "处理": "直接合入",
+      "依据工单": "14、15",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "c11568e8d471066bae17daae513e2f6800903efb4164620af34b7b799aad08aa",
+      "localBaseSHA256": null,
+      "finalSHA256": "c11568e8d471066bae17daae513e2f6800903efb4164620af34b7b799aad08aa"
+    },
+    {
+      "path": "server/seamlessMigrationState.ts",
+      "处理": "直接合入",
+      "依据工单": "14、15",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "cb711f22ee0d1cf858f526544fbd18b04e6f226005d1839fda73140f1055ec55",
+      "localBaseSHA256": null,
+      "finalSHA256": "cb711f22ee0d1cf858f526544fbd18b04e6f226005d1839fda73140f1055ec55"
+    },
+    {
+      "path": "server/seamlessPanelMigration.ts",
+      "处理": "直接合入",
+      "依据工单": "14、15",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "1b274ed79102f5351475254cc6b522c1e8bd5b1fabcf2ccc3e7e40ed3d8136a4",
+      "localBaseSHA256": null,
+      "finalSHA256": "1b274ed79102f5351475254cc6b522c1e8bd5b1fabcf2ccc3e7e40ed3d8136a4"
+    },
+    {
+      "path": "server/selfTestTiming.ts",
+      "处理": "直接合入",
+      "依据工单": "07",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": "0fde34b2311e2c4112d0c8d6a096b65d914dd866034a7450340d33db0f961787",
+      "upstreamFinalSHA256": "707d165c22eb50139c17950506de809d3806406a21f93264a490378a66c61dbb",
+      "localBaseSHA256": "0fde34b2311e2c4112d0c8d6a096b65d914dd866034a7450340d33db0f961787",
+      "finalSHA256": "707d165c22eb50139c17950506de809d3806406a21f93264a490378a66c61dbb"
+    },
+    {
+      "path": "server/services/forwardGroupService.ts",
+      "处理": "直接合入",
+      "依据工单": "01、02、03",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": "1115a69afcafe84e901e1bb58bb5dde119cd279a9b17da765cfbb1abdfb703a7",
+      "upstreamFinalSHA256": "b90f7fbc5af6ee9c2e5dfe895f95ce397a8c529e5ffff47171722b5f8ee735dd",
+      "localBaseSHA256": "1115a69afcafe84e901e1bb58bb5dde119cd279a9b17da765cfbb1abdfb703a7",
+      "finalSHA256": "b90f7fbc5af6ee9c2e5dfe895f95ce397a8c529e5ffff47171722b5f8ee735dd"
+    },
+    {
+      "path": "server/services/userCommandService.ts",
+      "处理": "直接合入",
+      "依据工单": "19",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": "e7260a13af78a9396b1f80ddf4142901c644b2fa1812a866b37a51461cf77208",
+      "upstreamFinalSHA256": "eafce8e9df5933cd73201fa1794bf6f0fabbf4bfb046860761657b05eef963ca",
+      "localBaseSHA256": "e7260a13af78a9396b1f80ddf4142901c644b2fa1812a866b37a51461cf77208",
+      "finalSHA256": "eafce8e9df5933cd73201fa1794bf6f0fabbf4bfb046860761657b05eef963ca"
+    },
+    {
+      "path": "server/session.ts",
+      "处理": "直接合入",
+      "依据工单": "19",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": "552373af58db6f5ec143e0f0e5c17bfc1ec7b482cc8af633686c600d0305be5e",
+      "upstreamFinalSHA256": "9721f411cf7e58ada7e8dd5dcbaebc4add945e30ab8060bc2c85dd44d915bfb6",
+      "localBaseSHA256": "552373af58db6f5ec143e0f0e5c17bfc1ec7b482cc8af633686c600d0305be5e",
+      "finalSHA256": "9721f411cf7e58ada7e8dd5dcbaebc4add945e30ab8060bc2c85dd44d915bfb6"
+    },
+    {
+      "path": "server/telegramBot.ts",
+      "处理": "本地适配",
+      "依据工单": "11",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "dc95c8eb3621af17f284a265ce115372526442dd84bdbe296cd51849ff8184e6",
+      "upstreamFinalSHA256": "f35693136ecdc716f6d521057a2c13bd8dac3d592c9dc4539d2417a47a456d81",
+      "localBaseSHA256": "dce99d7558ddcd701cb65987e296a6cae1cdf32a8d8d55ef19c7a4497608a111",
+      "finalSHA256": "09957f7e93b810ee62e5e6fb78cfd558bc78f879a326cd7104e4cd2dfd1d8cc0"
+    },
+    {
+      "path": "server/telegramReady.ts",
+      "处理": "直接合入",
+      "依据工单": "11",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": "fa2f0c712706037274a79cce0aed2ca43b209a0bd3facb214cbd764d90e23794",
+      "upstreamFinalSHA256": "37b8b1415ba418b87fbddbb7f7711e7d35f1470a97c167a9a42d62b8455d2fa2",
+      "localBaseSHA256": "fa2f0c712706037274a79cce0aed2ca43b209a0bd3facb214cbd764d90e23794",
+      "finalSHA256": "37b8b1415ba418b87fbddbb7f7711e7d35f1470a97c167a9a42d62b8455d2fa2"
+    },
+    {
+      "path": "server/tunnelEndpointRefresh.test.ts",
+      "处理": "直接合入",
+      "依据工单": "19",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "26178f77d6e87152282ea571a2ee1cea649056a0d07f028b91916324739b9302",
+      "localBaseSHA256": null,
+      "finalSHA256": "26178f77d6e87152282ea571a2ee1cea649056a0d07f028b91916324739b9302"
+    },
+    {
+      "path": "server/tunnelManualProbe.test.ts",
+      "处理": "本地适配",
+      "依据工单": "07",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "d71df67d47262bd08967cbf0cbb25e8b509a7f2fc187042248f76697b62c7e3c",
+      "localBaseSHA256": null,
+      "finalSHA256": "bc7201d552f889bcb0ebb3ad1c5304cc7813d02ce4ce23f9f25f068e53d3250a"
+    },
+    {
+      "path": "server/tunnelManualProbe.ts",
+      "处理": "本地适配",
+      "依据工单": "07",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "3bd91b057ec406fce9ae7a994d6c8e0f15c680f243cecb0e3b2933080d9bc35b",
+      "localBaseSHA256": null,
+      "finalSHA256": "e2268dd5383804f82dcbd42fcbbf9b95b5d03d075607beac1f3b20ece0027ff8"
+    },
+    {
+      "path": "shared/agentDtos.ts",
+      "处理": "本地适配",
+      "依据工单": "19",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": "10044f0b2ad44d5621c68d49d232f53ebd6a0d2bfe8d850c3a92529c8507c3be",
+      "upstreamFinalSHA256": "e76bd0f640520554eec891b82a3b2f10e326d83ff7fd34d3ccc732ce1fb2d396",
+      "localBaseSHA256": "10044f0b2ad44d5621c68d49d232f53ebd6a0d2bfe8d850c3a92529c8507c3be",
+      "finalSHA256": "e2caadb3bac9920070a576c782c890b8e65f2de9270018fb89a75b59b68ea841"
+    },
+    {
+      "path": "shared/googleAuth.ts",
+      "处理": "直接合入",
+      "依据工单": "10",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "f6ff748a774aa0f212928de81d24c97c1a6f42d1ba4bd08519bd9cae1762b146",
+      "localBaseSHA256": null,
+      "finalSHA256": "f6ff748a774aa0f212928de81d24c97c1a6f42d1ba4bd08519bd9cae1762b146"
+    },
+    {
+      "path": "shared/probeStatistics.ts",
+      "处理": "本地适配",
+      "依据工单": "06、07",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "d77dd130e8971cd7c23cb2dba0dd6774228e1ec0bbd393e8fa710a46d0b052f5",
+      "localBaseSHA256": null,
+      "finalSHA256": "b1d2062f0da3a80757fcad8136121afabe5160d6333a09e1054b4c7624b302bf"
+    },
+    {
+      "path": "shared/ruleLimits.ts",
+      "处理": "直接合入",
+      "依据工单": "01、02、03",
+      "说明": "最终文件与固定上游目标逐字一致；行为检查见对应工单及19完整集合。",
+      "upstreamBaseSHA256": null,
+      "upstreamFinalSHA256": "a375d43ad9a78468491f1c11ea91f7c5df4ab70d52e79ff3dd128bac2d71050d",
+      "localBaseSHA256": null,
+      "finalSHA256": "a375d43ad9a78468491f1c11ea91f7c5df4ab70d52e79ff3dd128bac2d71050d"
+    },
+    {
+      "path": "shared/versions.ts",
+      "处理": "本地适配",
+      "依据工单": "19",
+      "说明": "保留本地SNI、权限、统计、版本和来源约定，吸收上游变化及各单已确认修正；相关行为见对应工单。其中两平台专属新增字段、入口、测试、版本要求已排除，共用网页行为保留。",
+      "upstreamBaseSHA256": "d512427dd98c755f1ef65924ab56636c24ecf3b879355a1a5b0d38692e177acf",
+      "upstreamFinalSHA256": "c6f34b2826f0e29674f9ce0bc2cb195cebd85ff045b5429762614c8ee9362304",
+      "localBaseSHA256": "2816d0b8a89e864201c42a6ed1a2e38d9e055627e14f193c26a748829706943d",
+      "finalSHA256": "a1e4d7ec394f839327d4b29dbeeca04941a343585dea1b1e3183928bbe2f9d89"
+    }
+  ]
+}

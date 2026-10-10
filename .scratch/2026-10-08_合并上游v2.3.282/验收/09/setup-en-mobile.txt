@@ -1,0 +1,58 @@
+Browser tab: 3, Title: "ForwardX", URL: "http://127.0.0.1:18839/setup".
+1 AXWebArea ForwardX, URL: 127.0.0.1:18839/setup
+	2 container
+		3 container root
+			4 container
+				5 text Language
+				6 pop up button (collapsed, settable) Description: Language, Value: English, Secondary Actions: Expand
+					7 menu
+						8 Auto (installation / browser / IP)
+						9 Simplified Chinese
+						10 (selected) English
+			11 image ForwardX
+			12 heading ForwardX Initial Setup, Value: 1
+				13 text ForwardX Initial Setup
+			14 text Set up your database, optionally migrate an existing panel, and configure your administrator account.
+			15 image
+			16 container
+				17 text Step  1
+			18 text Connect Database
+			19 image
+			20 container
+				21 text Step  2
+			22 text Import Existing Data
+			23 image
+			24 container
+				25 text Step  3
+			26 text Create Administrator
+			47 image
+			48 text Connect Database
+			49 text Select the database and initialize it.
+			50 button SQLite Local Database Suitable for single-server deployments.
+				51 text SQLite Local Database
+				52 image
+				53 text Suitable for single-server deployments.
+			54 button MySQL External Database Use an existing MySQL database.
+				55 text MySQL External Database
+				56 text Use an existing MySQL database.
+			57 button PostgreSQL External Database Use an existing PostgreSQL database.
+				58 text PostgreSQL External Database
+				59 text Use an existing PostgreSQL database.
+			60 container
+				61 image
+				62 heading Database version requirements, Value: 5
+					63 text Database version requirements
+				64 text SQLite needs no separate service. MySQL 8.0.13 or later is required; PostgreSQL 12 or later is recommended.
+			65 container
+				66 image
+				67 heading Currently connected SQLite Database, Value: 5
+					68 text Currently connected  SQLite  Database
+				69 text /data/forwardx.db  If you need to change the database configuration, select a new database type and save it again.
+			70 text SQLite Data File
+			71 text field (settable) /tmp/用户输入-unchanged.db
+			72 button Save & Connect
+				73 text Save & Connect
+				74 image
+		46 container Notifications alt+T
+
+The focused UI element is 71 text field (settable) /tmp/用户输入-unchanged.db

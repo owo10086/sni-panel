@@ -1,0 +1,61 @@
+{
+  "stage": "off",
+  "checks": [
+    {
+      "name": "default enabled on public HTTP",
+      "passed": true
+    },
+    {
+      "name": "registration requires verification by default",
+      "passed": true
+    },
+    {
+      "name": "password failures trigger login verification",
+      "passed": true
+    },
+    {
+      "name": "anonymous cannot disable verification",
+      "passed": true
+    },
+    {
+      "name": "admin disables verification and both public HTTP settings agree",
+      "passed": true
+    },
+    {
+      "name": "existing password succeeds without captcha after disabling",
+      "passed": true
+    },
+    {
+      "name": "registration succeeds without captcha",
+      "passed": true
+    },
+    {
+      "name": "ordinary user cannot change verification",
+      "passed": true
+    },
+    {
+      "name": "disabled account remains blocked",
+      "passed": true
+    },
+    {
+      "name": "wrong-password checks and brute-force limits remain",
+      "passed": true
+    },
+    {
+      "name": "email verification still required without captcha",
+      "passed": true
+    },
+    {
+      "name": "email allowlist still enforced",
+      "passed": true
+    },
+    {
+      "name": "2FA still required without captcha",
+      "passed": true
+    },
+    {
+      "name": "registration switch still enforced",
+      "passed": true
+    }
+  ]
+}

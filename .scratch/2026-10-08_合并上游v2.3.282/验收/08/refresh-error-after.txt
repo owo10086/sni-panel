@@ -1,0 +1,83 @@
+- banner:
+  - heading "08监控验收" [level=1]
+  - button "精简卡片":
+  - button "标准卡片":
+  - button "列表视图":
+  - link "登录":
+    - /url: /login
+    - text: 登录
+- main:
+  - status:
+    - generic: "刷新失败，正在自动重试；当前展示上次数据: 验收：服务器暂时不可用"
+    - generic: 最近刷新 2026-10-10 00:46:46
+    - button "刷新" [active]:
+      - text: 刷新
+  - paragraph: 在线状态
+  - generic "2 / 2"
+  - paragraph: 全部在线
+  - paragraph: 当前瞬时流量
+  - paragraph: 入向
+  - paragraph: 0 B/s
+  - paragraph: 出向
+  - paragraph: 0 B/s
+  - paragraph: 累计流量
+  - paragraph: 入向
+  - paragraph: 0 B
+  - paragraph: 出向
+  - paragraph: 0 B
+  - button "全部 2":
+    - text: 全部
+    - generic: "2"
+  - button "监控主机 B v3.3.0 在线 国家/地区： 地区获取中 57% 40% 12% ∞ 入站 --/s 出站 --/s 累计 入 0 B 出 0 B 到期 永久有效 运行时间 10分钟":
+    - generic "监控主机 B"
+    - generic: v3.3.0
+    - generic: 在线
+    - generic: 国家/地区：
+    - generic "地区获取中":
+      - generic: 地区获取中
+    - progressbar
+    - generic: 57%
+    - progressbar
+    - generic: 40%
+    - progressbar
+    - generic: 12%
+    - progressbar
+    - generic: ∞
+    - text: 入站
+    - generic: "--/s"
+    - text: 出站
+    - generic: "--/s"
+    - text: 累计
+    - generic "入 0 B / 出 0 B": 入 0 B
+    - generic: 出 0 B
+    - text: 到期
+    - generic "永久有效"
+    - generic: 运行时间
+    - generic: 10分钟
+  - button "监控主机 A v3.3.0 在线 国家/地区： 地区获取中 23% 40% 12% ∞ 入站 --/s 出站 --/s 累计 入 0 B 出 0 B 到期 永久有效 运行时间 10分钟":
+    - generic "监控主机 A"
+    - generic: v3.3.0
+    - generic: 在线
+    - generic: 国家/地区：
+    - generic "地区获取中":
+      - generic: 地区获取中
+    - progressbar
+    - generic: 23%
+    - progressbar
+    - generic: 40%
+    - progressbar
+    - generic: 12%
+    - progressbar
+    - generic: ∞
+    - text: 入站
+    - generic: "--/s"
+    - text: 出站
+    - generic: "--/s"
+    - text: 累计
+    - generic "入 0 B / 出 0 B": 入 0 B
+    - generic: 出 0 B
+    - text: 到期
+    - generic "永久有效"
+    - generic: 运行时间
+    - generic: 10分钟
+- region "Notifications alt+T"

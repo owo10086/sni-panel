@@ -1,0 +1,33 @@
+- generic: Language
+- combobox
+- button:
+- button:
+- main:
+  - generic: sni-panel
+  - generic: Welcome Back
+  - generic: Sign in to your account to continue
+  - button: No server address added, click on the top right button to add
+  - text: Username or email
+  - textbox:
+    - /placeholder: Please enter a username or email
+  - text: Password
+  - textbox:
+    - /placeholder: Please enter the password.
+  - button:
+  - button:
+    - text: Log In
+  - button: Don't have an account? Sign up
+- region "Notifications alt+T":
+  - list:
+    - generic: Please enter the full panel address, e.g. https://panel.example.com
+- dialog "Panel Address":
+  - heading "Panel Address" [level=2]
+  - paragraph: APP will connect to this panel address.
+  - text: Server Address
+  - textbox "Server Address":
+    - /placeholder: https://panel.example.com
+    - text: <redacted>
+  - button "Cancel"
+  - button "Save" [active]
+  - button "Close":
+    - generic: Close

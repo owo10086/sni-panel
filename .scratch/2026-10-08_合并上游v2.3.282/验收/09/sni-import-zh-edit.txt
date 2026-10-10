@@ -1,0 +1,52 @@
+Browser tab: 3, Title: "sni-panel 09验收", URL: "http://127.0.0.1:18829/rules".
+1 AXWebArea sni-panel 09验收, URL: 127.0.0.1:18829/rules
+	2 container forwardx-overlay-root
+		3 container Notifications alt+T
+		4 container 编辑规则, ID: radix-_r_12_
+			5 heading 编辑规则, Value: 2, ID: radix-_r_13_
+				6 text 编辑规则
+			7 container
+				8 tab group 转发规则类型
+					9 tab (selectable, settable, boolean) 端口转发, ID: radix-_r_3a_-trigger-local, Value: 0
+端口转发
+					10 tab (selectable, disabled, settable, boolean) 隧道转发, ID: radix-_r_3a_-trigger-tunnel, Value: 0
+隧道转发
+					11 tab (selected, settable, boolean) 转发链, Value: 1, ID: radix-_r_3a_-trigger-chain
+						12 image
+						13 text 转发链
+					14 tab (selectable, settable, boolean) 转发组, ID: radix-_r_3a_-trigger-group, Value: 0
+转发组
+				15 text 使用转发链
+				16 combo box (collapsed) Value: 用户转发链 / Long chain resource unchanged 1x 可用, Secondary Actions: Expand
+					17 container 可用 / 用户转发链 / Long chain resource unchanged / 1x
+						18 text 用户转发链 / Long chain resource unchanged 1x 可用
+				19 image
+				20 text nftables 1 .  用户主机 1 Long host name unchanged 2 .  用户主机 2 Long host name unchanged 规则名称
+				21 text field (settable) 用户导入规则 unchanged <&>
+				22 text 协议 TCP SNI 分流
+				23 image
+				24 text SNI 分流转发 多条规则共用一个入口端口，入口按 TLS 域名选择转发链，出口再选择对应落地机。
+				25 switch Description: SNI 分流转发, Value: 1
+				26 text 源端口
+				27 text SNI 分流入口
+				28 text 18511
+				29 button 修改入口端口
+				30 text 目标地址
+				31 text field (settable) 203.0.113.20
+				32 text SNI 域名 *
+				33 text field (settable) import09.example.test
+				34 text 最大连接数
+				35 stepper (settable)
+				36 text 目标端口  *
+				37 stepper (settable, integer) 443
+				38 text 异常通知 请先在系统设置中配置并启用所选通知渠道。
+				39 switch (disabled) 0
+				40 button (collapsed) 单条规则限额与有效期, Secondary Actions: Expand
+					41 text 单条规则限额与有效期
+			42 button 取消
+			43 button 保存
+			44 button Close
+				45 image
+				46 text Close
+
+The focused UI element is 11 tab (selected, settable, boolean) 转发链, Value: 1, ID: radix-_r_3a_-trigger-chain

@@ -1,0 +1,14 @@
+Browser tab: 3, Title: "sni-panel 09验收", URL: "http://127.0.0.1:18829/rules".
+The following is a diff from the previous accessibility tree with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
+Removed element IDs: 71-73, 80
+~				23 text Import content Enter the entry port once, then paste one SNI rule per line. To import 0
+~				62 checkbox File Import, Value: 0
+~				68 checkbox SNI splitting, Value: 1
++				85 text Entry Port
++				86 stepper (settable, integer) 443
++				87 text These SNI rules share one entry port. A port conflict returns an error so you can fix it. SNI rule list
++				88 text entry area (settable)
++				89 text Import destination Choose the forwarding chain for these SNI rules. Selected 1
++					90 image
+~				84 text Import to 用户端口 / Long port resource unchanged
+The focused UI element is 68 checkbox SNI splitting, Value: 1

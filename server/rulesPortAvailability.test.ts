@@ -364,14 +364,22 @@ test("direct-host create, port lookup, enable, and update paths enforce subscrip
       assert.ok(reassigned.every((row) => Number(row.sourcePort) >= 17000 && Number(row.sourcePort) <= 18000));
 
       await assert.rejects(() => limitedCaller.toggle({ id: 102, isEnabled: true }), /套餐端口/);
+      await assert.rejects(() => adminCaller.toggle({ id: 102, isEnabled: true }), /套餐端口/);
+      assert.equal(Number((await runtime.queryRaw('SELECT "isEnabled" FROM "forward_rules" WHERE "id" = ?', [102]))[0].isEnabled), 0);
+      await adminCaller.update({ id: 102, sourcePort: 17501 });
       await adminCaller.toggle({ id: 102, isEnabled: true });
       assert.equal(Number((await runtime.queryRaw('SELECT "isEnabled" FROM "forward_rules" WHERE "id" = ?', [102]))[0].isEnabled), 1);
 
       await assert.rejects(() => limitedCaller.update({ id: 104, isEnabled: true }), /套餐端口/);
-      await adminCaller.update({ id: 104, isEnabled: true });
+      await assert.rejects(() => adminCaller.update({ id: 104, isEnabled: true }), /套餐端口/);
+      assert.equal(Number((await runtime.queryRaw('SELECT "isEnabled" FROM "forward_rules" WHERE "id" = ?', [104]))[0].isEnabled), 0);
+      await adminCaller.update({ id: 104, sourcePort: 17502, isEnabled: true });
       assert.equal(Number((await runtime.queryRaw('SELECT "isEnabled" FROM "forward_rules" WHERE "id" = ?', [104]))[0].isEnabled), 1);
 
       await assert.rejects(() => limitedCaller.toggle({ id: 103, isEnabled: true }), /套餐端口/);
+      await assert.rejects(() => adminCaller.toggle({ id: 103, isEnabled: true }), /套餐端口/);
+      assert.equal(Number((await runtime.queryRaw('SELECT "isEnabled" FROM "forward_rules" WHERE "id" = ?', [103]))[0].isEnabled), 0);
+      await adminCaller.update({ id: 103, sourcePort: 17503 });
       await adminCaller.toggle({ id: 103, isEnabled: true });
       assert.equal(Number((await runtime.queryRaw('SELECT "isEnabled" FROM "forward_rules" WHERE "id" = ?', [103]))[0].isEnabled), 1);
     } finally {

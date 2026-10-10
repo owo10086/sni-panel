@@ -1,0 +1,68 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import net from 'node:net';
+import tls from 'node:tls';
+import path from 'node:path';
+import os from 'node:os';
+import { spawn,spawnSync } from 'node:child_process';
+const input=process.argv[2];
+const labels=process.argv.slice(3,6);
+assert.equal(labels.length,3);
+const configs=labels.map(label=>Object.fromEntries(['entry','exit'].map(role=>[role,JSON.parse(fs.readFileSync(path.join(input,label+'-'+role+'.json'),'utf8'))])));
+const [before,excluded,restored]=configs;
+const healthy='quota-healthy.example.com';
+const affected='gost-api.example.com';
+for(const role of ['entry','exit']){
+  assert.ok(before[role].sniRoutes.some(route=>route.sni===affected));
+  assert.ok(!excluded[role].sniRoutes.some(route=>route.sni===affected));
+  assert.ok(restored[role].sniRoutes.some(route=>route.sni===affected));
+  for(const value of configs){assert.equal(value[role].listenPort,before[role].listenPort);assert.ok(value[role].sniRoutes.some(route=>route.sni===healthy));}
+}
+const entryRoute=before.entry.sniRoutes.find(route=>route.sni===affected);
+const exitRoute=before.exit.sniRoutes.find(route=>route.sni===affected);
+assert.equal(before.entry.listenPort,18443);assert.equal(before.exit.listenPort,24001);
+assert.ok(!entryRoute.limitIn&&!entryRoute.maxConnections);
+assert.equal(exitRoute.limitIn,125000);assert.equal(exitRoute.maxConnections,2);
+const work=fs.mkdtempSync(path.join(os.tmpdir(),'ticket03-double-'));
+function execute(binary,args){const result=spawnSync(binary,args,{encoding:'utf8',timeout:15000});assert.equal(result.status,0,result.stderr||String(result.error));}
+const addresses=new Set([...before.entry.sniRoutes,...before.exit.sniRoutes].map(route=>route.targetIp));
+for(const address of addresses) execute('ip',['address','add',address+'/32','dev','lo']);
+execute('openssl',['req','-x509','-newkey','rsa:2048','-nodes','-keyout',path.join(work,'key.pem'),'-out',path.join(work,'cert.pem'),'-subj','/CN=double-splitter','-days','1']);
+const credentials={key:fs.readFileSync(path.join(work,'key.pem')),cert:fs.readFileSync(path.join(work,'cert.pem'))};
+const controls=Object.fromEntries(['entry','exit'].map(role=>[role,path.join(work,role+'.sock')]));
+const backends=[];const processes=[];let persistent;
+function connect(sni){return new Promise((resolve,reject)=>{const socket=tls.connect({host:'127.0.0.1',port:before.entry.listenPort,servername:sni,rejectUnauthorized:false});socket.setTimeout(3000,()=>socket.destroy(new Error('TLS timeout')));socket.once('error',reject);socket.once('secureConnect',()=>{socket.on('error',()=>{});resolve(socket);});});}
+function echo(socket,text){return new Promise((resolve,reject)=>{socket.once('data',data=>resolve(data.toString()));socket.once('error',reject);socket.write(text);});}
+async function request(sni){const socket=await connect(sni);try{return await echo(socket,'probe');}finally{socket.destroy();}}
+function update(role,cfg){return new Promise((resolve,reject)=>{const socket=net.connect(controls[role]);let input='';socket.setTimeout(2000,()=>socket.destroy(new Error('Control timeout')));socket.once('error',reject);socket.once('connect',()=>socket.write(JSON.stringify({version:cfg.sniRouteVersion,sniRoutes:cfg.sniRoutes})+'\n'));socket.on('data',chunk=>{input+=chunk;if(input.includes('\n')){const result=JSON.parse(input.trim());socket.destroy();assert.equal(result.ok,true,result.error);resolve();}});});}
+try{
+  const targets=new Map(before.exit.sniRoutes.map(route=>[route.targetIp+':'+route.targetPort,route]));
+  for(const route of targets.values()){
+    const backend=tls.createServer(credentials,socket=>{socket.on('error',()=>{});socket.on('data',data=>socket.write(socket.servername+':'+data.toString()));});
+    await new Promise((resolve,reject)=>{backend.once('error',reject);backend.listen(route.targetPort,route.targetIp,resolve);});backends.push(backend);
+  }
+  for(const role of ['exit','entry']){
+    fs.writeFileSync(path.join(work,role+'.json'),JSON.stringify({...before[role],controlSocketPath:controls[role]}));
+    const process=spawn(path.join(input,'forwardx-fxp'),['-config',path.join(work,role+'.json')],{stdio:'ignore'});processes.push(process);
+    for(let i=0;!fs.existsSync(controls[role])&&i<100;i++)await new Promise(resolve=>setTimeout(resolve,20));
+    assert.ok(fs.existsSync(controls[role]),role+' FXP control socket started');
+  }
+  persistent=await connect(healthy);
+  assert.equal(await echo(persistent,'before'),healthy+':before');
+  assert.equal(await request(affected),affected+':probe');
+  await update('exit',excluded.exit);await update('entry',excluded.entry);
+  await assert.rejects(connect(affected));
+  assert.equal(await request(healthy),healthy+':probe');
+  assert.equal(await echo(persistent,'during'),healthy+':during');
+  await assert.rejects(connect('unknown.example.com'));
+  for(const process of processes)assert.equal(process.exitCode,null);
+  await update('exit',restored.exit);await update('entry',restored.entry);
+  assert.equal(await request(affected),affected+':probe');
+  assert.equal(await echo(persistent,'after'),healthy+':after');
+  for(const process of processes)assert.equal(process.exitCode,null);
+  console.log('PASS: real HTTP configs drive entry 18443 and exit 24001; '+labels.join(' -> ')+' stops and restores only the affected domain; both FXP listeners and healthy end-to-end TLS connection survive');
+}finally{
+  persistent?.destroy();
+  for(const process of processes.reverse()){if(process.exitCode===null){const stopped=new Promise(resolve=>process.once('exit',resolve));process.kill('SIGTERM');await stopped;}}
+  await Promise.all(backends.map(backend=>new Promise(resolve=>backend.close(resolve))));
+}

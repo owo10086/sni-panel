@@ -167,13 +167,14 @@ export async function userHasRuleSourcePort(userId: number, sourcePort: number):
 }
 
 /** 获取某用户使用的端口数量（去重） */
-export async function getUserPortCount(userId: number): Promise<number> {
+export async function getUserPortCount(userId: number, excludeRuleId?: number): Promise<number> {
   const db = await getDb();
   if (!db) return 0;
   const r = await db.select({ count: sqlCountDistinct(forwardRules.sourcePort) }).from(forwardRules).where(and(
     eq(forwardRules.userId, userId),
     eq(forwardRules.pendingDelete, false),
     sql`${forwardRules.forwardGroupRuleId} IS NULL`,
+    excludeRuleId === undefined ? undefined : sql`${forwardRules.id} <> ${excludeRuleId}`,
   ));
   return Number(r[0]?.count) || 0;
 }

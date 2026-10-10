@@ -1,0 +1,843 @@
+--- a/client/src/i18n/en.json
++++ b/client/src/i18n/en.json
+@@ -391,10 +391,10 @@
+   "版本升级": "Version Upgrade",
+   "半年": "Six months.",
+   "半年付": "Semiannual",
+-  "绑定 Telegram 后可开启公告推送订阅。": "Tie Telegram to open the bulletin for subscription.",
++  "绑定 Telegram 后可开启公告推送订阅。": "Bind Telegram to subscribe to announcement notifications.",
+   "绑定后可接收提醒，并支持 Telegram 登录。": "Bind to receive alarms and support Telegram login.",
+   "绑定后可用 Telegram 登录和查询。": "You can login and query with Telegram after binding.",
+-  "绑定码": "Link Code",
++  "绑定码": "Binding code",
+   "绑定码已过期，请重新生成。": "The binding code has expired, please regenerate.",
+   "绑定时间": "Linked At",
+   "绑定时间：": "Linked at:",
+@@ -410,7 +410,7 @@
+   "保存 Logo": "Save Logo",
+   "保存 SSL 配置": "Save SSL Configuration",
+   "保存 Telegram 配置": "Save Telegram Configuration",
+-  "保存 Token 后自动识别机器人": "Automatic recognition of bot after saving Token",
++  "保存 Token 后自动识别机器人": "The bot is identified automatically after you save its token.",
+   "保存背景": "Save Background",
+   "保存并登录": "Save & Login",
+   "保存并连接": "Save & Connect",
+@@ -693,7 +693,7 @@
+   "打开 Telegram 完成绑定": "Open Telegram to bind",
+   "打开仓库": "Open the warehouse.",
+   "打开方式": "Open With",
+-  "打开机器人": "Open the bot.",
++  "打开机器人": "Open bot",
+   "打开新面板": "Open New Panel",
+   "打开页面": "Open Page",
+   "打开支付页": "Open Payment Page",
+@@ -1039,7 +1039,7 @@
+   "复制": "Copy",
+   "复制{0}入口: {1}": "Copy {0} entry: {1}",
+   "复制安装命令": "Copy Installation Commands",
+-  "复制绑定码": "Copy Forced",
++  "复制绑定码": "Copy binding code",
+   "复制备用密钥": "Copy Backup Key",
+   "复制成功": "Copied",
+   "复制到右侧目标": "Copy to Right Target",
+@@ -1743,7 +1743,7 @@
+   "配色": "Theme",
+   "配置 ": "Configure ",
+   "配置 Agent 安装、升级与面板更新访问 GitHub 的方式。": "Configure the way Agent installs, upgrades and panels update access to GitHub.",
+-  "配置 Bot Token，启用绑定、提醒和快捷登录。": "Configure Bot Token, enable binding, alarm and fast login.",
++  "配置 Bot Token，启用绑定、提醒和快捷登录。": "Configure a bot token to enable account binding, notifications and quick login.",
+   "配置 SMTP 服务器和账号。": "Configure SMTP servers and accounts.",
+   "配置后台显示的品牌名称。": "Configure brand names displayed in the backstage.",
+   "配置可先保存，启用插件后再同步到 Agent。": "Configure to save first, to enable plugins and then synchronize to Agent.",
+@@ -2283,7 +2283,7 @@
+   "生成 Token 失败": "Failed to generate Token",
+   "生成安装命令": "Generate installation commands",
+   "生成绑定二维码": "Generate bound QR code",
+-  "生成绑定码": "Get Link Code",
++  "生成绑定码": "Generate binding code",
+   "生成兑换码": "Generate Redemption Codes",
+   "生成迁移码": "Generate migration code",
+   "生成迁移码失败": "Failed to generate migration code",
+@@ -3810,6 +3810,9 @@
+   "Web 服务监听端口": "Web Service listening port",
+   "WireGuard UDP 端口": "WireGuard UDP Port",
+   "通知渠道": "Notifications",
++  "Discord Token 校验失败 (HTTP {0})，原配置未修改": "Discord token validation failed (HTTP {0}). The previous configuration was kept.",
++  "请配置 Discord Bot Token，而不是用户 Token 或 Webhook": "Use a Discord bot token rather than a user token or webhook.",
++  "管理账号安全、头像和通知渠道。": "Manage account security, your avatar and notification channels.",
+   "Telegram 与 Discord 二选一，默认 Telegram。切换保留原配置和绑定，仅所选渠道发送通知和处理交互。": "Use Telegram (default) or Discord. Only the selected channel is active; both configurations and account links are kept.",
+   "保存通知渠道": "Save Channel",
+   "通知渠道已保存": "Notification channel saved",
+@@ -3819,10 +3822,10 @@
+   "使用 Discord Developer Portal 创建机器人。无需 Webhook 或公开交互回调地址。": "Create a bot in the Discord Developer Portal. No webhook or public interaction callback URL is required.",
+   "输入 Discord Bot Token": "Enter Discord Bot Token",
+   "已配置；留空保留原 Token": "Configured; leave blank to keep the existing token",
+-  "剩余流量阈值": "Remaining Traffic",
++  "剩余流量阈值": "Remaining traffic threshold",
+   "机器人已连接": "Bot connected",
+   "机器人未连接；请确认已选择 Discord 并检查 Token": "Bot disconnected; select Discord and check the token",
+-  "保存 Discord 配置": "Save Settings",
++  "保存 Discord 配置": "Save Discord settings",
+   "校验 Token / 同步指令": "Validate & Sync",
+   "删除 Discord 机器人": "Remove Discord bot",
+   "删除 Bot Token 并关闭机器人，保留用户绑定。": "Remove the bot token and disable the bot. User bindings are retained.",
+@@ -4223,5 +4226,17 @@
+   "下载规则文件": "Download rule files",
+   "规则已拆分为 {0} 个文件，请逐个点击下载，避免浏览器拦截连续下载。": "The rules are split into {0} files. Download each file separately so your browser can save every part.",
+   "下载第 {0}/{1} 个文件（{2} 条规则）": "Download file {0}/{1} ({2} rules)",
+-  "已生成 {0} 条规则，共 {1} 个文件，请逐个下载": "Prepared {0} rules in {1} files. Download each file."
++  "已生成 {0} 条规则，共 {1} 个文件，请逐个下载": "Prepared {0} rules in {1} files. Download each file.",
++  "数据库不可用或面板迁移中，通知已暂停": "Notifications are paused while the database is unavailable or the panel is being migrated.",
++  "Telegram 通知渠道未启用": "The Telegram notification channel is not enabled.",
++  "绑定码无效或已过期": "The binding code is invalid or has expired.",
++  "管理员尚未启用 Discord 通知渠道": "The administrator has not enabled the Discord notification channel.",
++  "Discord 通知渠道未启用": "The Discord notification channel is not enabled.",
++  "Discord 登录码无效或已过期": "The Discord login code is invalid or has expired.",
++  "Telegram 登录码无效或已过期": "The Telegram login code is invalid or has expired.",
++  "当前管理员尚未绑定 Discord": "The current administrator has not bound Discord.",
++  "请先解除当前 Discord 绑定": "Unbind your current Discord account first.",
++  "Discord 通知渠道未启用或未配置": "The Discord notification channel is not enabled or configured.",
++  "Discord 请求队列繁忙，请稍后重试": "The Discord request queue is busy. Try again shortly.",
++  "Discord 限流，请稍后重试": "Discord is limiting requests. Try again shortly."
+ }
+--- a/client/src/i18n/messages.ts
++++ b/client/src/i18n/messages.ts
+@@ -8,6 +8,8 @@
+ };
+ 
+ export function translateNotificationText(message: string): string {
++  const discordValidation = /^Discord Token 校验失败 \(HTTP ([1-5]\d{2})\)，原配置未修改$/.exec(message);
++  if (discordValidation) return t("Discord Token 校验失败 (HTTP {0})，原配置未修改", [discordValidation[1]]);
+   const source = Object.hasOwn(messageAliases, message) ? messageAliases[message] : message;
+   return t(source);
+ }
+--- a/client/src/i18n/runtime.test.ts
++++ b/client/src/i18n/runtime.test.ts
+@@ -36,6 +36,8 @@
+     assert.equal(translateNotificationText("所选用户不存在"), "The selected user does not exist");
+     assert.equal(translateNotificationText("Agent stderr: User not found"), "Agent stderr: User not found");
+     assert.equal(translateNotificationText("__proto__"), "__proto__");
++    assert.equal(translateNotificationText("Discord Token 校验失败 (HTTP 401)，原配置未修改"), "Discord token validation failed (HTTP 401). The previous configuration was kept.");
++    assert.equal(translateNotificationText("Agent stderr: Discord Token 校验失败 (HTTP 401)，原配置未修改"), "Agent stderr: Discord Token 校验失败 (HTTP 401)，原配置未修改");
+     // English labels must never leak into serialized rule fields or state IDs.
+     const { parseRuleTransferFile } = await import("../lib/ruleTransfer");
+     const ruleInput = { kind: "forwardx.forward-rules", version: 1, scope: { type: "chain", id: 7, name: "用户链路" }, rules: [{ name: "用户规则", forwardType: "realm", protocol: "both", sourcePort: 65535, targetIp: "example.com", targetPort: 443, proxyProtocolSend: false }] };
+--- a/client/src/pages/Profile.tsx
++++ b/client/src/pages/Profile.tsx
+@@ -380,7 +380,7 @@
+       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+         <div className="min-w-0">
+           <h1 className="text-xl font-bold tracking-tight sm:text-2xl">{translateText("个人资料")}</h1>
+-          <p className="mt-1 text-sm text-muted-foreground">{translateText("管理账号安全、头像和 Telegram。")}</p>
++          <p className="mt-1 text-sm text-muted-foreground">{translateText("管理账号安全、头像和通知渠道。")}</p>
+         </div>
+         <Badge variant="outline" className="w-fit gap-1.5 px-3 py-1.5">
+           <UserRound className="h-3.5 w-3.5" />
+--- a/server/botAccounts.ts
++++ b/server/botAccounts.ts
+@@ -19,7 +19,7 @@
+     return isDiscordBotContext() ? discord.clearDiscordBindCode(userId) : telegram.clearTelegramBindCode(userId);
+   },
+   bind(userId: number, identity: any, code: string) {
+-    return isDiscordBotContext() ? discord.bindDiscordAccount(userId, identity, code) : telegram.bindTelegramAccount(userId, identity);
++    return isDiscordBotContext() ? discord.bindDiscordAccount(userId, identity, code) : telegram.bindTelegramAccount(userId, identity, code);
+   },
+   unbind(userId: number) {
+     return isDiscordBotContext() ? discord.unbindDiscordAccount(userId) : telegram.unbindTelegramAccount(userId);
+--- a/server/discordBot.ts
++++ b/server/discordBot.ts
+@@ -1,7 +1,7 @@
+ import { getNotificationSettings } from "./notificationSettings";
+ import { setSettings } from "./repositories/settingsRepository";
+ import { KeyedTaskDispatcher } from "./keyedTaskDispatcher";
+-import { seamlessBackgroundPaused } from "./seamlessMigrationState";
++import { notificationBackgroundPaused } from "./notificationBackground";
+ import { processDiscordBotUpdate, TELEGRAM_BOT_COMMANDS } from "./telegramBot";
+ import { isDiscordSnowflake as snowflake } from "./discordIdentity";
+ 
+@@ -51,8 +51,10 @@
+   return apiQueue.enqueue("discord-rest", async () => {
+     for (let attempt = 0; attempt < 3; attempt++) {
+       await delay(Math.max(0, nextApiAt - Date.now()));
++      if (notificationBackgroundPaused()) throw new Error("数据库不可用或面板迁移中，通知已暂停");
+       const settings = await getNotificationSettings("discord");
+-      if (!settings.token || (!allowInactive && (!settings.active || seamlessBackgroundPaused()))) throw new Error("Discord 通知渠道未启用或未配置");
++      if (notificationBackgroundPaused()) throw new Error("数据库不可用或面板迁移中，通知已暂停");
++      if (!settings.token || (!allowInactive && !settings.active)) throw new Error("Discord 通知渠道未启用或未配置");
+       nextApiAt = Date.now() + 350;
+       const response = await fetch(`${REST_BASE}${path}`, { method, headers: { Authorization: `Bot ${settings.token}`, "Content-Type": "application/json" },
+         ...(body !== undefined ? { body: JSON.stringify(body) } : {}), signal: AbortSignal.timeout(10_000) });
+@@ -118,6 +120,7 @@
+   return true;
+ }
+ async function acknowledgeInteraction(interaction: any, type: number, content?: string) {
++  if (notificationBackgroundPaused()) return;
+   if (!snowflake(interaction.id) || typeof interaction.token !== "string" || !/^[A-Za-z0-9._-]{10,256}$/.test(interaction.token)) return;
+   const response = await fetch(`${REST_BASE}/interactions/${interaction.id}/${interaction.token}/callback`, {
+     method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ type, ...(content ? { data: { content, flags: 64, allowed_mentions: { parse: [] } } } : {}) }),
+@@ -127,8 +130,9 @@
+ }
+ export async function handleDiscordGatewayDispatch(event: string, data: any) {
+   if (event !== "MESSAGE_CREATE" && event !== "INTERACTION_CREATE") return;
++  if (notificationBackgroundPaused()) return;
+   const settings = await getNotificationSettings("discord");
+-  if (seamlessBackgroundPaused() || !settings.active || !data) return;
++  if (notificationBackgroundPaused() || !settings.active || !data) return;
+   if (event === "INTERACTION_CREATE" && data.application_id !== settings.botId) return;
+   const actor = event === "MESSAGE_CREATE" ? data.author : data.user;
+   // Guild/group messages and bot messages never enter account/private handlers.
+@@ -181,10 +185,11 @@
+   if (reconciling) return;
+   reconciling = true;
+   try {
++    if (notificationBackgroundPaused()) { closeGateway(); activeToken = ""; return; }
+     const configurationGeneration = generation;
+     const settings = await getNotificationSettings("discord");
+     if (configurationGeneration !== generation) return;
+-    if (!settings.active || seamlessBackgroundPaused()) {
++    if (!settings.active || notificationBackgroundPaused()) {
+       closeGateway(); activeToken = "";
+       if (!settings.active && watchdog) { clearInterval(watchdog); watchdog = null; }
+       return;
+@@ -195,6 +200,7 @@
+       await refreshDiscordBotProfile().catch(() => console.warn("[Discord] Bot identity/commands could not be synchronized; retry in notification settings"));
+       if (configurationGeneration !== generation) return;
+     }
++    if (notificationBackgroundPaused()) { closeGateway(); activeToken = ""; return; }
+     if (gateway && !connected && Date.now() - connectingAt > 30_000) {
+       closeGateway();
+       reconnectAt = Date.now() + 10_000;
+@@ -208,6 +214,7 @@
+     const send = (payload: unknown) => { if (gateway === socket && socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify(payload)); };
+     socket.addEventListener("message", (message) => {
+       if (epoch !== generation || typeof message.data !== "string" || message.data.length > 256_000) return;
++      if (notificationBackgroundPaused()) { closeGateway(); activeToken = ""; return; }
+       let payload: any;
+       try { payload = JSON.parse(message.data); } catch { return; }
+       if (typeof payload.s === "number") sequence = payload.s;
+@@ -217,6 +224,7 @@
+         if (!Number.isFinite(interval) || interval < 1000 || interval > 120_000) { socket.close(); return; }
+         acknowledged = true;
+         heartbeat = setInterval(() => {
++          if (notificationBackgroundPaused()) { closeGateway(); activeToken = ""; return; }
+           if (!acknowledged) {
+             closeGateway();
+             reconnectAt = Date.now() + Math.min(60_000, 2000 * 2 ** Math.min(++failures, 5));
+--- a/server/notificationBackground.ts
++++ b/server/notificationBackground.ts
+@@ -0,0 +1,8 @@
++import { databaseHealth } from "./databaseHealthState";
++import { seamlessBackgroundPaused } from "./seamlessMigrationState";
++
++// Database recovery and migration recovery are independent. Notification
++// workers only observe these protections; they never clear either state.
++export function notificationBackgroundPaused() {
++  return databaseHealth.snapshot().state === "unavailable" || seamlessBackgroundPaused();
++}
+--- a/server/notificationSafety.fixture.ts
++++ b/server/notificationSafety.fixture.ts
+@@ -0,0 +1,309 @@
++import assert from "node:assert/strict";
++import * as runtime from "./dbRuntime";
++import { ensureDatabaseSchema } from "./dbSchema";
++import { setSettings } from "./repositories/settingsRepository";
++import { getUserById, createUser, createTelegramBindCode, createTelegramLoginCode } from "./repositories/userRepository";
++import { botAccounts } from "./botAccounts";
++import { telegramRouter } from "./routers/telegram";
++import { createDiscordCode } from "./discordAccounts";
++import { databaseHealth } from "./databaseHealthState";
++import { persistSeamlessMigrationState } from "./seamlessMigrationState";
++import { discordRequest, startDiscordBot, stopDiscordBot, handleDiscordGatewayDispatch } from "./discordBot";
++import { processDiscordBotUpdate, sendTelegramMessage, startTelegramBot, stopTelegramBot } from "./telegramBot";
++
++const actor = "123456789012345678";
++const chat = "234567890123456789";
++const messageId = "345678901234567890";
++const freeze = () => persistSeamlessMigrationState({ version: 1, id: "test-notification", role: "source", phase: "frozen",
++  sourceUrl: "https://old.example.test", targetUrl: "https://new.example.test", tokenHash: "a".repeat(64),
++  startedAt: Date.now(), expiresAt: Date.now() + 300_000 });
++
++async function protection(userId: number) {
++  const originalFetch = globalThis.fetch;
++  const originalSocket = globalThis.WebSocket;
++  const requests: string[] = [];
++  const sockets: FakeGateway[] = [];
++  class FakeGateway extends EventTarget {
++    static OPEN = 1;
++    readyState = 1;
++    constructor(public url: string) { super(); sockets.push(this); }
++    send(_payload: string) {}
++    close() { this.readyState = 3; this.dispatchEvent(Object.assign(new Event("close"), { code: 1000 })); }
++  }
++  globalThis.WebSocket = FakeGateway as unknown as typeof WebSocket;
++  globalThis.fetch = (async (url) => {
++    requests.push(String(url));
++    return Response.json({ id: chat, bot: true, username: "test" });
++  }) as typeof fetch;
++  try {
++    await createDiscordCode(userId, "DC-PROTECT", new Date(Date.now() + 300_000), "Bind");
++    databaseHealth.unavailable({ code: "SQLITE_FULL" });
++    await assert.rejects(discordRequest("/users/@me"), /暂停|不可用/);
++    await assert.rejects(discordRequest("/users/@me", "GET", undefined, true), /暂停|不可用/);
++    await startDiscordBot();
++    assert.equal(sockets.length, 0, "unavailable database cannot open the Gateway");
++    const update = { update_id: 0, message: { message_id: messageId, chat: { id: chat, type: "private" },
++      from: { id: actor }, text: "/bind DC-PROTECT" } };
++    await processDiscordBotUpdate(update, async () => { throw new Error("paused update must not reply"); });
++    await handleDiscordGatewayDispatch("MESSAGE_CREATE", { id: messageId, channel_id: chat, author: { id: actor }, content: "/bind DC-PROTECT" });
++    assert.equal((await getUserById(userId))?.discordId, null);
++    assert.equal(requests.length, 0);
++    freeze();
++    databaseHealth.healthy();
++    await startDiscordBot();
++    await assert.rejects(discordRequest("/users/@me", "GET", undefined, true), /暂停|不可用/);
++    assert.equal(sockets.length, 0, "database recovery must not clear migration protection");
++    databaseHealth.unavailable({ code: "SQLITE_FULL" });
++    persistSeamlessMigrationState(null);
++    await startDiscordBot();
++    assert.equal(sockets.length, 0, "migration recovery must not clear database protection");
++    databaseHealth.healthy();
++    await Promise.all([startDiscordBot(), startDiscordBot()]);
++    await startDiscordBot();
++    assert.equal(sockets.length, 1, "both protections removed resume only one Gateway");
++    stopDiscordBot();
++
++    let retries = 0;
++    globalThis.fetch = (async () => {
++      retries++;
++      databaseHealth.unavailable({ code: "SQLITE_FULL" });
++      return Response.json({ retry_after: 0.001 }, { status: 429 });
++    }) as typeof fetch;
++    await assert.rejects(discordRequest("/retry"), /暂停|不可用/);
++    assert.equal(retries, 1, "a retry must recheck protection before sending");
++    await setSettings({ notificationChannel: "telegram" });
++    await assert.rejects(sendTelegramMessage("1001", "paused notice"), /暂停|不可用/);
++    assert.equal(retries, 1);
++  } finally {
++    stopDiscordBot(); databaseHealth.healthy(); persistSeamlessMigrationState(null);
++    globalThis.fetch = originalFetch; globalThis.WebSocket = originalSocket;
++  }
++}
++
++async function privateTelegram(userId: number) {
++  await setSettings({ notificationChannel: "telegram" });
++  await createTelegramBindCode(userId, "PRIVATE-BIND", new Date(Date.now() + 300_000));
++  const originalFetch = globalThis.fetch;
++  const replies: any[] = [];
++  let delivered = false;
++  let finish!: () => void;
++  const completed = new Promise<void>((resolve) => { finish = resolve; });
++  const pendingPolls: (() => void)[] = [];
++  const tgMessage = (text: string, type: string) => ({ message_id: 1, chat: { id: 1001, type }, from: { id: 1001 }, text });
++  globalThis.fetch = (async (url, options) => {
++    const method = String(url).split("/").at(-1);
++    const body = JSON.parse(String(options?.body || "{}"));
++    if (method === "getUpdates") {
++      if (!delivered) {
++        delivered = true;
++        return Response.json({ ok: true, result: [
++          { update_id: 1, message: tgMessage("/bind PRIVATE-BIND", "group") },
++          { update_id: 2, message: tgMessage("/usage", "supergroup") },
++          { update_id: 3, callback_query: { id: "group-button", from: { id: 1001 }, message: tgMessage("", "group"), data: "fx:user" } },
++          { update_id: 4, message: tgMessage("/menu", "private") },
++        ] });
++      }
++      await new Promise<void>((resolve) => pendingPolls.push(resolve));
++      return Response.json({ ok: true, result: [] });
++    }
++    if (method === "sendMessage" || method === "editMessageText" || method === "answerCallbackQuery") {
++      replies.push(body);
++      if (method === "sendMessage" && !String(body.text).includes("notification user") && String(body.text).includes("绑定")) finish();
++      if (method === "sendMessage" && String(body.text).includes("<b>ForwardX")) finish();
++    }
++    return Response.json({ ok: true, result: method === "getMe" ? { id: 999, username: "test_bot" } : { message_id: 1 } });
++  }) as typeof fetch;
++  let timer: ReturnType<typeof setTimeout> | undefined;
++  try {
++    await startTelegramBot();
++    await Promise.race([completed, new Promise<never>((_resolve, reject) => { timer = setTimeout(() => reject(new Error("private menu did not arrive")), 5000); })]);
++    assert.equal((await getUserById(userId))?.telegramId, null, "a group cannot consume a binding code");
++    assert.equal((await getUserById(userId))?.telegramBindCode, "PRIVATE-BIND");
++    assert.equal(replies.length, 1, "only the private menu may produce account output");
++  } finally {
++    if (timer) clearTimeout(timer);
++    stopTelegramBot(); pendingPolls.forEach((resolve) => resolve());
++    await new Promise<void>((resolve) => setImmediate(resolve));
++    globalThis.fetch = originalFetch;
++  }
++}
++
++async function telegramLifecycle(userId: number) {
++  await setSettings({ notificationChannel: "telegram" });
++  await createTelegramBindCode(userId, "STALE-POLL", new Date(Date.now() + 300_000));
++  const originalFetch = globalThis.fetch;
++  const polls: { complete: (updates: unknown[]) => void }[] = [];
++  globalThis.fetch = (async (url) => {
++    const method = String(url).split("/").at(-1);
++    if (method === "getUpdates") {
++      const result = await new Promise<unknown[]>((resolve) => polls.push({ complete: resolve }));
++      return Response.json({ ok: true, result });
++    }
++    return Response.json({ ok: true, result: method === "getMe" ? { id: 999, username: "test_bot" } : { message_id: 1 } });
++  }) as typeof fetch;
++  const settle = () => new Promise<void>((resolve) => setImmediate(resolve));
++  try {
++    await Promise.all([startTelegramBot(), startTelegramBot()]);
++    await settle();
++    assert.equal(polls.length, 1, "concurrent starts must not create two long polls");
++    stopTelegramBot();
++    await startTelegramBot();
++    await settle();
++    assert.equal(polls.length, 2);
++    polls[0].complete([{ update_id: 1, message: { message_id: 1, chat: { id: 1001, type: "private" }, from: { id: 1001 }, text: "/bind STALE-POLL" } }]);
++    await settle();
++    assert.equal(polls.length, 2, "an old poller cannot start polling again after restart");
++    assert.equal((await getUserById(userId))?.telegramId, null, "an old response cannot consume a binding code");
++    assert.equal((await getUserById(userId))?.telegramBindCode, "STALE-POLL");
++  } finally {
++    stopTelegramBot(); polls.forEach((poll) => poll.complete([])); await settle(); globalThis.fetch = originalFetch;
++  }
++}
++
++async function telegramQueue() {
++  await setSettings({ notificationChannel: "telegram" });
++  const originalFetch = globalThis.fetch;
++  const requests: any[] = [];
++  let delivered = 0;
++  let blocked = true;
++  let releaseSend!: () => void;
++  let releasePoll!: () => void;
++  globalThis.fetch = (async (url, options) => {
++    const method = String(url).split("/").at(-1);
++    if (method === "getUpdates") {
++      const body = JSON.parse(String(options?.body || "{}"));
++      requests.push(body);
++      if (requests.length <= 2) {
++        const result = Array.from({ length: body.limit || 100 }, () => ({ update_id: ++delivered,
++          message: { message_id: delivered, chat: { id: 1001, type: "private" }, from: { id: 1001 }, text: "/menu" } }));
++        return Response.json({ ok: true, result });
++      }
++      await new Promise<void>((resolve) => { releasePoll = resolve; });
++      return Response.json({ ok: true, result: [] });
++    }
++    if (method === "sendMessage" && blocked) await new Promise<void>((resolve) => { releaseSend = resolve; });
++    return Response.json({ ok: true, result: method === "getMe" ? { id: 999, username: "test_bot" } : { message_id: 1 } });
++  }) as typeof fetch;
++  try {
++    await startTelegramBot();
++    await new Promise<void>((resolve) => setImmediate(resolve));
++    assert.equal(delivered, 128, "slow handlers cannot accumulate more than 128 accepted updates");
++    assert.equal(requests.length, 2, "a full queue pauses the next long poll");
++    assert.equal(requests[0].limit, 100);
++    assert.equal(requests[1].limit, 28);
++    blocked = false;
++    releaseSend();
++    await new Promise<void>((resolve) => setImmediate(resolve));
++    assert.equal(requests.length, 3, "draining resumes polling");
++    assert.equal(requests[2].offset, 129, "resume continues after the accepted updates");
++    assert.equal(requests[2].limit, 100);
++  } finally {
++    stopTelegramBot(); releaseSend?.(); releasePoll?.();
++    await new Promise<void>((resolve) => setImmediate(resolve));
++    globalThis.fetch = originalFetch;
++  }
++}
++
++async function telegramQueuedProtection(userId: number) {
++  await setSettings({ notificationChannel: "telegram" });
++  await createTelegramBindCode(userId, "QUEUED-SAFE", new Date(Date.now() + 300_000));
++  const originalFetch = globalThis.fetch;
++  let delivered = false;
++  let releaseSend!: () => void;
++  let releasePoll!: () => void;
++  let replies = 0;
++  globalThis.fetch = (async (url) => {
++    const method = String(url).split("/").at(-1);
++    if (method === "getUpdates") {
++      if (!delivered) {
++        delivered = true;
++        return Response.json({ ok: true, result: ["/menu", "/bind QUEUED-SAFE"].map((text, index) => ({
++          update_id: index + 1, message: { message_id: index + 1, chat: { id: 1001, type: "private" }, from: { id: 1001 }, text },
++        })) });
++      }
++      await new Promise<void>((resolve) => { releasePoll = resolve; });
++      return Response.json({ ok: true, result: [] });
++    }
++    if (method === "sendMessage") {
++      replies++;
++      await new Promise<void>((resolve) => { releaseSend = resolve; });
++    }
++    return Response.json({ ok: true, result: method === "getMe" ? { id: 999, username: "test_bot" } : { message_id: 1 } });
++  }) as typeof fetch;
++  try {
++    await startTelegramBot();
++    await new Promise<void>((resolve) => setImmediate(resolve));
++    assert.equal(replies, 1, "the earlier account command is already in flight");
++    databaseHealth.unavailable({ code: "SQLITE_FULL" });
++    releaseSend();
++    await new Promise<void>((resolve) => setImmediate(resolve));
++    assert.equal((await getUserById(userId))?.telegramId, null);
++    assert.equal((await getUserById(userId))?.telegramBindCode, "QUEUED-SAFE");
++    assert.equal(replies, 1, "the queued binding must not reply or execute after database failure");
++  } finally {
++    stopTelegramBot(); releaseSend?.(); releasePoll?.();
++    await new Promise<void>((resolve) => setImmediate(resolve));
++    databaseHealth.healthy(); globalThis.fetch = originalFetch;
++  }
++}
++
++async function run() {
++  await runtime.connectDatabase({ type: "sqlite", sqlite: { path: process.env.FORWARDX_TEST_DB! } });
++  await ensureDatabaseSchema();
++  const userId = await createUser({ username: "notification-user", password: "test-only-password", name: "notification user" });
++  await setSettings({ notificationChannel: "discord", discordBotEnabled: "true", discordBotToken: "dc-test-token",
++    discordBotId: "999999999999999999", telegramBotEnabled: "true", telegramBotToken: "tg-test-token", panelPublicUrl: "https://panel.example.test" });
++  if (process.argv[2] === "protection") await protection(userId);
++  else if (process.argv[2] === "binding") {
++    await createTelegramBindCode(userId, "DISABLED-BIND", new Date(Date.now() + 300_000));
++    await runtime.executeRaw('UPDATE users SET "accountEnabled" = 0 WHERE id = ?', [userId]);
++    await assert.rejects(botAccounts.bind(userId, { id: "1001" }, "DISABLED-BIND"), /绑定码|禁用/);
++    assert.equal((await getUserById(userId))?.telegramId, null);
++    await runtime.executeRaw('UPDATE users SET "accountEnabled" = 1 WHERE id = ?', [userId]);
++    await createTelegramBindCode(userId, "SINGLE-BIND", new Date(Date.now() + 300_000));
++    await createTelegramLoginCode(userId, "STALE-LOGIN", new Date(Date.now() + 300_000));
++    const attempts = await Promise.allSettled([
++      botAccounts.bind(userId, { id: "1001" }, "SINGLE-BIND"),
++      botAccounts.bind(userId, { id: "1002" }, "SINGLE-BIND"),
++    ]);
++    assert.equal(attempts.filter((item) => item.status === "fulfilled").length, 1);
++    const bound = await getUserById(userId);
++    assert.equal(bound?.telegramId, "1001");
++    assert.equal(bound?.telegramBindCode, null);
++    assert.equal(bound?.telegramLoginCode, null, "a new binding invalidates old login links");
++    await assert.rejects(botAccounts.bind(userId, { id: "1002" }, "SINGLE-BIND"), /绑定码/);
++    assert.equal((await getUserById(userId))?.telegramId, "1001");
++    await createTelegramBindCode(userId, "EXPIRED-BIND", new Date(Date.now() - 1));
++    await assert.rejects(botAccounts.bind(userId, { id: "1002" }, "EXPIRED-BIND"), /过期/);
++    assert.equal((await getUserById(userId))?.telegramId, "1001");
++  }
++  else if (process.argv[2] === "login") {
++    const cookies: unknown[] = [];
++    const caller = telegramRouter.createCaller({ user: null, req: { headers: {}, ip: "127.0.0.1", protocol: "https", socket: {} } as any,
++      res: { cookie: (...args: unknown[]) => cookies.push(args) } as any, authSession: null, authFailureReason: null });
++    await runtime.executeRaw('UPDATE users SET "telegramId" = ? WHERE id = ?', ["1001", userId]);
++    await createTelegramLoginCode(userId, "CHANNEL-LOGIN", new Date(Date.now() + 300_000));
++    await assert.rejects(caller.login({ code: "CHANNEL-LOGIN" }), /未启用/);
++    assert.equal(cookies.length, 0);
++    assert.equal((await getUserById(userId))?.telegramLoginCode, "CHANNEL-LOGIN", "inactive provider must not consume a code");
++    await setSettings({ notificationChannel: "telegram" });
++    const result = await caller.login({ code: "CHANNEL-LOGIN" });
++    assert.equal(result.id, userId);
++    assert.equal("telegramLoginCode" in result, false);
++    assert.equal(cookies.length, 1);
++    await assert.rejects(caller.login({ code: "CHANNEL-LOGIN" }), /无效/);
++    await createTelegramLoginCode(userId, "EXPIRED-LOGIN", new Date(Date.now() - 1));
++    await assert.rejects(caller.login({ code: "EXPIRED-LOGIN" }), /过期/);
++    await createTelegramLoginCode(userId, "DISABLED-LOGIN", new Date(Date.now() + 300_000));
++    await runtime.executeRaw('UPDATE users SET "accountEnabled" = 0 WHERE id = ?', [userId]);
++    await assert.rejects(caller.login({ code: "DISABLED-LOGIN" }), /禁用/);
++    assert.equal(cookies.length, 1);
++  }
++  else if (process.argv[2] === "private") await privateTelegram(userId);
++  else if (process.argv[2] === "lifecycle") await telegramLifecycle(userId);
++  else if (process.argv[2] === "queue") await telegramQueue();
++  else if (process.argv[2] === "queued-protection") await telegramQueuedProtection(userId);
++  else throw new Error("unknown scenario");
++}
++
++run().finally(() => runtime.closeDatabase()).catch((error) => { console.error(error); process.exitCode = 1; });
+--- a/server/notificationSafety.test.ts
++++ b/server/notificationSafety.test.ts
+@@ -0,0 +1,27 @@
++import assert from "node:assert/strict";
++import { spawnSync } from "node:child_process";
++import fs from "node:fs";
++import os from "node:os";
++import path from "node:path";
++import test from "node:test";
++
++function scenario(name: string) {
++  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "forwardx-notification-safety-"));
++  try {
++    const result = spawnSync(process.execPath, ["--import", "tsx", "server/notificationSafety.fixture.ts", name], {
++      cwd: process.cwd(), encoding: "utf8", timeout: 45_000,
++      env: { ...process.env, DATABASE_TYPE: "sqlite", FORWARDX_TEST_DB: path.join(directory, "panel.db"),
++        FORWARDX_SEAMLESS_MIGRATION_STATE_PATH: path.join(directory, "migration.json"), FORWARDX_LOG_DIR: path.join(directory, "logs"),
++        TELEGRAM_BOT_TOKEN: "", DISCORD_BOT_TOKEN: "", JWT_SECRET: "notification-test-secret-32-characters" },
++    });
++    assert.equal(result.status, 0, result.stderr || result.stdout);
++  } finally { fs.rmSync(directory, { recursive: true, force: true }); }
++}
++
++test("both notification providers pause for database failures and independent migration protection", () => scenario("protection"));
++test("Telegram binding codes cannot bind disabled accounts or be consumed twice", () => scenario("binding"));
++test("Telegram one-time login requires the active provider and rejects reused, expired and disabled codes", () => scenario("login"));
++test("Telegram group messages and group buttons cannot disclose accounts or consume binding codes", () => scenario("private"));
++test("Telegram concurrent starts and immediate restart keep one poller and discard old responses", () => scenario("lifecycle"));
++test("Telegram stops fetching updates when slow handlers fill the bounded queue", () => scenario("queue"));
++test("Telegram queued account commands recheck database protection before binding", () => scenario("queued-protection"));
+--- a/server/repositories/userRepository.ts
++++ b/server/repositories/userRepository.ts
+@@ -211,35 +211,46 @@
+   username?: string | null;
+   firstName?: string | null;
+   lastName?: string | null;
+-}) {
+-  const db = await getDb();
+-  if (!db) return;
+-  const now = nowDate();
+-  const existing = await getUserByTelegramId(telegram.id);
+-  if (existing && existing.id !== userId) {
++}, code: string) {
++  return withDatabaseTransaction(async () => {
++    const db = await getDb();
++    if (!db) throw new Error("Database unavailable");
++    const q = quoteDbIdentifier;
++    await queryRaw(`SELECT ${q("id")} FROM ${q("users")} WHERE ${q("id")} = ?${getDatabaseKind() === "sqlite" ? "" : " FOR UPDATE"}`, [userId]);
++    const user = await getUserById(userId);
++    if (!user || user.accountEnabled === false || user.telegramBindCode !== code
++      || new Date(user.telegramBindCodeExpiresAt || 0).getTime() <= Date.now()) {
++      throw new Error("绑定码无效或已过期");
++    }
++    const now = nowDate();
++    const existing = await getUserByTelegramId(telegram.id);
++    if (existing && existing.id !== userId) {
++      await db.update(users).set({
++        telegramId: null,
++        telegramUsername: null,
++        telegramFirstName: null,
++        telegramLastName: null,
++        telegramLinkedAt: null,
++        telegramLastSeenAt: null,
++        telegramLoginCode: null,
++        telegramLoginCodeExpiresAt: null,
++        updatedAt: now,
++      }).where(eq(users.id, existing.id));
++    }
+     await db.update(users).set({
+-      telegramId: null,
+-      telegramUsername: null,
+-      telegramFirstName: null,
+-      telegramLastName: null,
+-      telegramLinkedAt: null,
+-      telegramLastSeenAt: null,
++      telegramId: telegram.id,
++      telegramUsername: telegram.username || null,
++      telegramFirstName: telegram.firstName || null,
++      telegramLastName: telegram.lastName || null,
++      telegramLinkedAt: now,
++      telegramLastSeenAt: now,
++      telegramBindCode: null,
++      telegramBindCodeExpiresAt: null,
+       telegramLoginCode: null,
+       telegramLoginCodeExpiresAt: null,
+       updatedAt: now,
+-    }).where(eq(users.id, existing.id));
+-  }
+-  await db.update(users).set({
+-    telegramId: telegram.id,
+-    telegramUsername: telegram.username || null,
+-    telegramFirstName: telegram.firstName || null,
+-    telegramLastName: telegram.lastName || null,
+-    telegramLinkedAt: now,
+-    telegramLastSeenAt: now,
+-    telegramBindCode: null,
+-    telegramBindCodeExpiresAt: null,
+-    updatedAt: now,
+-  }).where(eq(users.id, userId));
++    }).where(eq(users.id, userId));
++  });
+ }
+ 
+ export async function updateTelegramLastSeen(telegramId: string, telegram?: {
+--- a/server/routers/telegram.ts
++++ b/server/routers/telegram.ts
+@@ -340,6 +340,7 @@
+   login: publicProcedure
+     .input(z.object({ code: z.string().min(8).max(64), mobile: z.boolean().optional() }))
+     .mutation(async ({ input, ctx }) => {
++      if (!(await getTelegramRuntimeSettings()).enabled) throw new Error("Telegram 通知渠道未启用");
+       const code = input.code.trim().toUpperCase();
+       // APP-prefixed codes belong exclusively to the browser/mobile polling
+       // flow and require its separate poll token.
+--- a/server/telegramBot.ts
++++ b/server/telegramBot.ts
+@@ -1,4 +1,5 @@
+ import { databaseHealth } from "./databaseHealthState";
++import { notificationBackgroundPaused } from "./notificationBackground";
+ import * as db from "./db";
+ import { botTransportContext, isDiscordBotContext } from "./botTransportContext";
+ import { botAccounts } from "./botAccounts";
+@@ -229,7 +230,8 @@
+ };
+ 
+ let pollingStarted = false;
+-let pollingAbort = false;
++let pollingGeneration = 0;
++let pollingRequest: AbortController | null = null;
+ let updateOffset = 0;
+ let activeTokenKey = "";
+ const pendingBindChats = new Map<string, number>();
+@@ -249,6 +251,7 @@
+ const AI_INTERACTION_RATE_LIMIT = 20;
+ const AI_INTERACTION_RATE_WINDOW_MS = 60 * 1000;
+ const TELEGRAM_UPDATE_CONCURRENCY = 8;
++const TELEGRAM_UPDATE_QUEUE_LIMIT = 128;
+ const aiInteractionRateLimiter = new SlidingWindowRateLimiter({
+   limit: AI_INTERACTION_RATE_LIMIT,
+   windowMs: AI_INTERACTION_RATE_WINDOW_MS,
+@@ -630,10 +633,12 @@
+   };
+ }
+ 
+-async function telegramApi<T = any>(method: string, body?: Record<string, unknown>): Promise<T> {
++async function telegramApi<T = any>(method: string, body?: Record<string, unknown>, requestSignal?: AbortSignal): Promise<T> {
++  if (notificationBackgroundPaused()) throw new Error("数据库不可用或面板迁移中，通知已暂停");
+   const transport = botTransportContext.getStore();
+   if (transport) return transport.api(method, body);
+   const settings = await getTelegramSettings();
++  if (notificationBackgroundPaused()) throw new Error("数据库不可用或面板迁移中，通知已暂停");
+   if (!settings.token) throw new Error("Telegram Bot Token is not configured");
+   if (!settings.enabled && method !== "getMe" && method !== "setMyCommands") throw new Error("Telegram notification channel is inactive");
+   return withTelegramApiTimeout(method, async (signal) => {
+@@ -641,7 +646,7 @@
+       method: "POST",
+       headers: { "Content-Type": "application/json" },
+       body: JSON.stringify(body || {}),
+-      signal,
++      signal: requestSignal ? AbortSignal.any([signal, requestSignal]) : signal,
+     });
+     const json = await resp.json().catch(() => null) as any;
+     if (!resp.ok || !json?.ok) {
+@@ -5654,10 +5659,14 @@
+ }
+ 
+ async function processTelegramUpdate(update: TelegramUpdate) {
++  if (notificationBackgroundPaused()) return;
++  const chat = update.message?.chat || update.callback_query?.message?.chat;
++  if (!chat || chat.type !== "private") return;
+   if (!isDiscordBotContext() && !(await getTelegramSettings()).enabled) return;
+   try {
+     const chatId = update.message?.chat.id || update.callback_query?.message?.chat.id || update.update_id;
+     await withKeyedTaskLock(`bot-conversation:${isDiscordBotContext() ? "discord" : "telegram"}:${chatId}`, async () => {
++      if (notificationBackgroundPaused()) return;
+       if (update.message) await handleMessage(update.message);
+       if (update.callback_query) await handleCallback(update.callback_query);
+     });
+@@ -5672,14 +5681,15 @@
+ // query and AI handlers, with transport and account identity isolated per task.
+ export async function processDiscordBotUpdate(update: TelegramUpdate, api: (method: string, body?: Record<string, unknown>) => Promise<any>) {
+   return botTransportContext.run({ provider: "discord", api }, async () => {
+-    if (seamlessBackgroundPaused() || !(await getNotificationSettings("discord")).active) return;
++    if (notificationBackgroundPaused() || !(await getNotificationSettings("discord")).active) return;
++    if (notificationBackgroundPaused()) return;
+     const command = update.message?.text?.trim().split(/\s+/)[0];
+     if (command === "/webapp") update = { ...update, message: { ...update.message!, text: "/login" } };
+     return seamlessActivity(() => processTelegramUpdate(update));
+   });
+ }
+ 
+-async function pollOnce() {
++async function pollOnce(epoch: number) {
+   if (databaseHealth.snapshot().state === "unavailable") {
+     await new Promise((resolve) => setTimeout(resolve, 15000));
+     return;
+@@ -5688,11 +5698,16 @@
+     await new Promise((resolve) => setTimeout(resolve, 1_000));
+     return;
+   }
+-  return seamlessActivity(pollOnceAdmitted);
+-}
+-
+-async function pollOnceAdmitted() {
++  return seamlessActivity(() => pollOnceAdmitted(epoch));
++}
++
++async function pollOnceAdmitted(epoch: number) {
++  if (telegramUpdateDispatcher.pendingCount >= TELEGRAM_UPDATE_QUEUE_LIMIT) {
++    await telegramUpdateDispatcher.waitForIdle();
++  }
++  if (!pollingStarted || epoch !== pollingGeneration || notificationBackgroundPaused()) return;
+   const settings = await getTelegramSettings();
++  if (!pollingStarted || epoch !== pollingGeneration) return;
+   if (!settings.enabled || !settings.token) {
+     await new Promise((resolve) => setTimeout(resolve, 30000));
+     return;
+@@ -5702,15 +5717,25 @@
+     updateOffset = 0;
+     activeTokenKey = tokenKey;
+   }
+-  const updates = await telegramApi<TelegramUpdate[]>("getUpdates", {
+-    offset: updateOffset || undefined,
+-    timeout: 25,
+-    allowed_updates: ["message", "callback_query"],
+-  });
++  const request = new AbortController();
++  pollingRequest = request;
++  let updates: TelegramUpdate[];
++  try {
++    updates = await telegramApi<TelegramUpdate[]>("getUpdates", {
++      offset: updateOffset || undefined,
++      limit: Math.min(100, TELEGRAM_UPDATE_QUEUE_LIMIT - telegramUpdateDispatcher.pendingCount),
++      timeout: 25,
++      allowed_updates: ["message", "callback_query"],
++    }, request.signal);
++  } finally {
++    if (pollingRequest === request) pollingRequest = null;
++  }
++  if (!pollingStarted || epoch !== pollingGeneration || tokenKey !== activeTokenKey) return;
+   for (const update of updates) {
+     updateOffset = Math.max(updateOffset, update.update_id + 1);
+     void telegramUpdateDispatcher
+-      .enqueue(telegramUpdateQueueKey(update), () => seamlessBackgroundPaused() ? Promise.resolve() : seamlessActivity(() => processTelegramUpdate(update)))
++      .enqueue(telegramUpdateQueueKey(update), () => !pollingStarted || epoch !== pollingGeneration || tokenKey !== activeTokenKey || notificationBackgroundPaused()
++        ? Promise.resolve() : seamlessActivity(() => processTelegramUpdate(update)))
+       .catch((error) => console.error("[Telegram] Update dispatcher failed:", error));
+   }
+ }
+@@ -5728,7 +5753,9 @@
+ 
+ export async function startTelegramBot() {
+   if (pollingStarted) return;
++  const startGeneration = pollingGeneration;
+   const settings = await getTelegramSettings();
++  if (pollingStarted || startGeneration !== pollingGeneration) return;
+   if (!settings.enabled || !settings.token) {
+     console.info("[Telegram] Bot is disabled or token is not configured");
+     return;
+@@ -5738,15 +5765,16 @@
+     return;
+   }
+   pollingStarted = true;
+-  pollingAbort = false;
++  const epoch = ++pollingGeneration;
+   console.info("[Telegram] Starting bot polling");
+   refreshTelegramBotProfile().catch((error) => console.warn(`[Telegram] getMe failed: ${error instanceof Error ? error.message : String(error)}`));
+ 
+   void (async () => {
+-    while (!pollingAbort) {
++    while (pollingStarted && epoch === pollingGeneration) {
+       try {
+-        await pollOnce();
++        await pollOnce(epoch);
+       } catch (error) {
++        if (!pollingStarted || epoch !== pollingGeneration) return;
+         console.warn(`[Telegram] Polling failed: ${error instanceof Error ? error.message : String(error)}`);
+         await new Promise((resolve) => setTimeout(resolve, 5000));
+       }
+@@ -5755,11 +5783,14 @@
+ }
+ 
+ export function stopTelegramBot() {
+-  pollingAbort = true;
++  pollingGeneration++;
+   pollingStarted = false;
++  pollingRequest?.abort();
++  pollingRequest = null;
+ }
+ 
+ export function resetTelegramBotPolling() {
++  pollingRequest?.abort();
+   updateOffset = 0;
+   activeTokenKey = "";
+ }

@@ -1,3 +1,7 @@
+import { getFormatLocale } from "@/i18n";
+import { t as translateText } from "@/i18n";
+import NotificationSettingsCard from "@/components/NotificationSettingsCard";
+import GoogleLoginSettingsCard from "@/components/GoogleLoginSettingsCard";
 import { useAuth } from "@/_core/hooks/useAuth";
 import DashboardLayout from "@/components/DashboardLayout";
 import { DockerUpgradeCommands } from "@/components/DockerUpgradeCommands";
@@ -100,7 +104,7 @@ import {
 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useMemo, useRef, useState, useEffect } from "react";
-import { toast } from "sonner";
+import { toast } from "@/lib/localizedToast";
 import { useLocation } from "wouter";
 import { BRAND_LOGO_MAX_BYTES } from "@shared/avatar";
 import {
@@ -120,16 +124,16 @@ import {
 function getUpgradeProgress(job: any) {
   const status = job?.status || "idle";
   const isRollback = job?.mode === "rollback";
-  const actionLabel = isRollback ? "回退" : "升级";
+  const actionLabel = isRollback ? translateText("回退") : translateText("升级");
   const logs = Array.isArray(job?.logs) ? job.logs.join("\n") : "";
   const matched = (patterns: RegExp[]) => patterns.some((pattern) => pattern.test(logs));
   const steps = [
     {
-      label: `准备${actionLabel}`,
+      label: translateText("准备{0}", [actionLabel]),
       done: status !== "idle" && matched([/开始升级/i, /开始回退/i, /Starting panel/i, /start/i]),
     },
     {
-      label: "检查发布资产",
+      label: translateText("检查发布资产"),
       done: matched([
         /Release assets/i,
         /not available yet/i,
@@ -141,7 +145,7 @@ function getUpgradeProgress(job: any) {
       ]),
     },
     {
-      label: "下载或拉取资产",
+      label: translateText("下载或拉取资产"),
       done: matched([
         /Downloading panel bundle/i,
         /Pulling image/i,
@@ -159,48 +163,48 @@ function getUpgradeProgress(job: any) {
       ]),
     },
     {
-      label: "安装并重启",
+      label: translateText("安装并重启"),
       done: matched([/Container .* (Creating|Created|Starting|Started)/i, /docker compose up/i, /systemctl restart/i, /已启动/i, /recreate/i]),
     },
   ];
 
   if (status === "success") {
-    return { percent: 100, label: `${actionLabel}完成`, steps: steps.map((step) => ({ ...step, done: true, active: false })) };
+    return { percent: 100, label: translateText("{0}完成", [actionLabel]), steps: steps.map((step) => ({ ...step, done: true, active: false })) };
   }
   if (status === "waiting_assets") {
-    return { percent: 34, label: "等待 GitHub Actions 构建发布资产", steps: steps.map((step, index) => ({ ...step, done: index === 0, active: index === 1 })) };
+    return { percent: 34, label: translateText("等待 GitHub Actions 构建发布资产"), steps: steps.map((step, index) => ({ ...step, done: index === 0, active: index === 1 })) };
   }
   if (status === "error") {
     const doneCount = steps.filter((step) => step.done).length;
     const activeIndex = Math.min(doneCount, steps.length - 1);
-    return { percent: Math.max(10, doneCount * 22), label: `${actionLabel}异常`, steps: steps.map((step, index) => ({ ...step, active: index === activeIndex && !step.done })) };
+    return { percent: Math.max(10, doneCount * 22), label: translateText("{0}异常", [actionLabel]), steps: steps.map((step, index) => ({ ...step, active: index === activeIndex && !step.done })) };
   }
   if (status === "running") {
     const doneCount = steps.filter((step) => step.done).length;
     const activeIndex = Math.min(doneCount, steps.length - 1);
-    const activeStep = steps[activeIndex]?.label || "等待服务重启";
+    const activeStep = steps[activeIndex]?.label || translateText("等待服务重启");
     return { percent: Math.min(92, Math.max(12, doneCount * 22 + 8)), label: activeStep, steps: steps.map((step, index) => ({ ...step, active: index === activeIndex && !step.done })) };
   }
-  return { percent: 0, label: `等待${actionLabel}`, steps: steps.map((step) => ({ ...step, active: false })) };
+  return { percent: 0, label: translateText("等待{0}", [actionLabel]), steps: steps.map((step) => ({ ...step, active: false })) };
 }
 
 function formatDatabaseSwitchDuration(milliseconds: number) {
   const seconds = Math.max(0, Math.floor(milliseconds / 1000));
-  if (seconds < 60) return `${seconds} 秒`;
+  if (seconds < 60) return translateText("{0} 秒", [seconds]);
   const minutes = Math.floor(seconds / 60);
   const remainingSeconds = seconds % 60;
-  if (minutes < 60) return remainingSeconds > 0 ? `${minutes} 分 ${remainingSeconds} 秒` : `${minutes} 分钟`;
+  if (minutes < 60) return remainingSeconds > 0 ? translateText("{0} 分 {1} 秒", [minutes, remainingSeconds]) : translateText("{0} 分钟", [minutes]);
   const hours = Math.floor(minutes / 60);
   const remainingMinutes = minutes % 60;
-  return remainingMinutes > 0 ? `${hours} 小时 ${remainingMinutes} 分` : `${hours} 小时`;
+  return remainingMinutes > 0 ? translateText("{0} 小时 {1} 分", [hours, remainingMinutes]) : translateText("{0} 小时", [hours]);
 }
 
 const defaultGithubAcceleratorUrl = "https://git.poouo.com";
 type AiProvider = "deepseek" | "siliconflow" | "custom";
 const aiProviderOptions: Array<{ value: AiProvider; label: string }> = [
   { value: "deepseek", label: "DeepSeek" },
-  { value: "siliconflow", label: "SiliconFlow（聚合平台）" },
-  { value: "custom", label: "自定义 OpenAI 兼容" },
+  { value: "siliconflow", label: translateText("SiliconFlow（聚合平台）") },
+  { value: "custom", label: translateText("自定义 OpenAI 兼容") },
 ];
 const aiProviderDefaults: Record<AiProvider, { baseUrl: string; model: string }> = {
   deepseek: {
@@ -319,183 +323,7 @@ function normalizePanelLogSummary(summary?: Partial<PanelLogSummary> | null): Pa
 
 function createDefaultHomepageHtml(themeId: PersonalizationThemePresetId) {
   const theme = getPersonalizationThemePreset(themeId);
-  return `<!doctype html>
-<html lang="zh-CN">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>ForwardX</title>
-  <style>
-    :root {
-      --fx-primary: ${theme.light.primary};
-      --fx-primary-foreground: ${theme.light.primaryForeground};
-      --fx-ring: ${theme.light.ring};
-      --fx-chart-1: ${theme.light.chart1};
-      --fx-chart-2: ${theme.light.chart2};
-      --fx-chart-3: ${theme.light.chart3};
-      --fx-chart-4: ${theme.light.chart4};
-      --fx-bg: #f8fafc;
-      --fx-ink: #0f172a;
-      --fx-muted: #475569;
-      --fx-border: rgba(15, 23, 42, .10);
-      --fx-card: rgba(255, 255, 255, .76);
-      --fx-card-soft: rgba(248, 250, 252, .72);
-    }
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --fx-primary: ${theme.dark.primary};
-        --fx-primary-foreground: ${theme.dark.primaryForeground};
-        --fx-ring: ${theme.dark.ring};
-        --fx-chart-1: ${theme.dark.chart1};
-        --fx-chart-2: ${theme.dark.chart2};
-        --fx-chart-3: ${theme.dark.chart3};
-        --fx-chart-4: ${theme.dark.chart4};
-        --fx-bg: #0b1020;
-        --fx-ink: #f8fafc;
-        --fx-muted: #a8b3c7;
-        --fx-border: rgba(226, 232, 240, .14);
-        --fx-card: rgba(15, 23, 42, .72);
-        --fx-card-soft: rgba(15, 23, 42, .56);
-      }
-    }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      min-height: 100vh;
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      color: var(--fx-ink);
-      background:
-        radial-gradient(circle at 16% -10%, color-mix(in oklch, var(--fx-chart-1) 20%, transparent) 0, transparent 34rem),
-        radial-gradient(circle at 92% 0%, color-mix(in oklch, var(--fx-chart-2) 16%, transparent) 0, transparent 30rem),
-        linear-gradient(135deg, color-mix(in oklch, var(--fx-bg) 94%, white 6%) 0%, var(--fx-bg) 52%, color-mix(in oklch, var(--fx-bg) 88%, var(--fx-chart-4) 12%) 100%);
-    }
-    .page {
-      min-height: 100vh;
-      display: grid;
-      place-items: center;
-      padding: 32px 18px;
-    }
-    .hero {
-      width: min(1080px, 100%);
-      display: grid;
-      grid-template-columns: 1.1fr .9fr;
-      gap: 36px;
-      align-items: center;
-    }
-    .eyebrow {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      border: 1px solid color-mix(in oklch, var(--fx-primary) 28%, transparent);
-      background: var(--fx-card);
-      color: var(--fx-primary);
-      padding: 8px 12px;
-      border-radius: 999px;
-      font-size: 13px;
-      font-weight: 600;
-    }
-    .dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: var(--fx-primary);
-    }
-    h1 {
-      margin: 18px 0 14px;
-      font-size: clamp(42px, 7vw, 76px);
-      line-height: .95;
-      letter-spacing: 0;
-    }
-    p {
-      max-width: 620px;
-      color: var(--fx-muted);
-      font-size: 17px;
-      line-height: 1.8;
-    }
-    .actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      margin-top: 26px;
-    }
-    .btn {
-      display: inline-flex;
-      min-height: 44px;
-      align-items: center;
-      justify-content: center;
-      border-radius: 10px;
-      padding: 0 18px;
-      text-decoration: none;
-      font-weight: 700;
-    }
-    .btn.primary {
-      color: var(--fx-primary-foreground);
-      background: var(--fx-primary);
-      box-shadow: 0 14px 30px color-mix(in oklch, var(--fx-primary) 26%, transparent);
-    }
-    .btn.secondary {
-      color: var(--fx-ink);
-      border: 1px solid var(--fx-border);
-      background: var(--fx-card);
-    }
-    .panel {
-      border: 1px solid var(--fx-border);
-      background: var(--fx-card);
-      border-radius: 16px;
-      padding: 18px;
-      box-shadow: 0 24px 80px color-mix(in oklch, var(--fx-primary) 14%, transparent);
-      backdrop-filter: blur(18px);
-    }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 12px;
-    }
-    .item {
-      border: 1px solid var(--fx-border);
-      border-radius: 12px;
-      padding: 16px;
-      background: var(--fx-card-soft);
-    }
-    .item b {
-      display: block;
-      margin-bottom: 6px;
-    }
-    .item span {
-      color: var(--fx-muted);
-      font-size: 13px;
-      line-height: 1.6;
-    }
-    @media (max-width: 820px) {
-      .hero { grid-template-columns: 1fr; }
-      .grid { grid-template-columns: 1fr; }
-    }
-  </style>
-</head>
-<body>
-  <main class="page">
-    <section class="hero">
-      <div>
-        <span class="eyebrow"><span class="dot"></span>ForwardX 面板</span>
-        <h1>多主机转发管理</h1>
-        <p>管理转发、隧道、用户和流量。</p>
-        <div class="actions">
-          <a class="btn primary" href="/login">进入面板</a>
-          <a class="btn secondary" href="/login?mode=register">创建账号</a>
-        </div>
-      </div>
-      <div class="panel">
-        <div class="grid">
-          <div class="item"><b>多节点</b><span>管理多台 Linux 主机和隧道。</span></div>
-          <div class="item"><b>流量统计</b><span>按用户和规则记录转发用量。</span></div>
-          <div class="item"><b>套餐订阅</b><span>支持余额、套餐和支付配置。</span></div>
-          <div class="item"><b>Telegram</b><span>用户可通过机器人自助查询和管理。</span></div>
-        </div>
-      </div>
-    </section>
-  </main>
-</body>
-</html>`;
+  return translateText("<!doctype html>\n<html lang=\"zh-CN\">\n<head>\n  <meta charset=\"utf-8\" />\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n  <title>ForwardX</title>\n  <style>\n    :root {\n      --fx-primary: {0};\n      --fx-primary-foreground: {1};\n      --fx-ring: {2};\n      --fx-chart-1: {3};\n      --fx-chart-2: {4};\n      --fx-chart-3: {5};\n      --fx-chart-4: {6};\n      --fx-bg: #f8fafc;\n      --fx-ink: #0f172a;\n      --fx-muted: #475569;\n      --fx-border: rgba(15, 23, 42, .10);\n      --fx-card: rgba(255, 255, 255, .76);\n      --fx-card-soft: rgba(248, 250, 252, .72);\n    }\n    @media (prefers-color-scheme: dark) {\n      :root {\n        --fx-primary: {7};\n        --fx-primary-foreground: {8};\n        --fx-ring: {9};\n        --fx-chart-1: {10};\n        --fx-chart-2: {11};\n        --fx-chart-3: {12};\n        --fx-chart-4: {13};\n        --fx-bg: #0b1020;\n        --fx-ink: #f8fafc;\n        --fx-muted: #a8b3c7;\n        --fx-border: rgba(226, 232, 240, .14);\n        --fx-card: rgba(15, 23, 42, .72);\n        --fx-card-soft: rgba(15, 23, 42, .56);\n      }\n    }\n    * { box-sizing: border-box; }\n    body {\n      margin: 0;\n      min-height: 100vh;\n      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif;\n      color: var(--fx-ink);\n      background:\n        radial-gradient(circle at 16% -10%, color-mix(in oklch, var(--fx-chart-1) 20%, transparent) 0, transparent 34rem),\n        radial-gradient(circle at 92% 0%, color-mix(in oklch, var(--fx-chart-2) 16%, transparent) 0, transparent 30rem),\n        linear-gradient(135deg, color-mix(in oklch, var(--fx-bg) 94%, white 6%) 0%, var(--fx-bg) 52%, color-mix(in oklch, var(--fx-bg) 88%, var(--fx-chart-4) 12%) 100%);\n    }\n    .page {\n      min-height: 100vh;\n      display: grid;\n      place-items: center;\n      padding: 32px 18px;\n    }\n    .hero {\n      width: min(1080px, 100%);\n      display: grid;\n      grid-template-columns: 1.1fr .9fr;\n      gap: 36px;\n      align-items: center;\n    }\n    .eyebrow {\n      display: inline-flex;\n      align-items: center;\n      gap: 8px;\n      border: 1px solid color-mix(in oklch, var(--fx-primary) 28%, transparent);\n      background: var(--fx-card);\n      color: var(--fx-primary);\n      padding: 8px 12px;\n      border-radius: 999px;\n      font-size: 13px;\n      font-weight: 600;\n    }\n    .dot {\n      width: 7px;\n      height: 7px;\n      border-radius: 50%;\n      background: var(--fx-primary);\n    }\n    h1 {\n      margin: 18px 0 14px;\n      font-size: clamp(42px, 7vw, 76px);\n      line-height: .95;\n      letter-spacing: 0;\n    }\n    p {\n      max-width: 620px;\n      color: var(--fx-muted);\n      font-size: 17px;\n      line-height: 1.8;\n    }\n    .actions {\n      display: flex;\n      flex-wrap: wrap;\n      gap: 12px;\n      margin-top: 26px;\n    }\n    .btn {\n      display: inline-flex;\n      min-height: 44px;\n      align-items: center;\n      justify-content: center;\n      border-radius: 10px;\n      padding: 0 18px;\n      text-decoration: none;\n      font-weight: 700;\n    }\n    .btn.primary {\n      color: var(--fx-primary-foreground);\n      background: var(--fx-primary);\n      box-shadow: 0 14px 30px color-mix(in oklch, var(--fx-primary) 26%, transparent);\n    }\n    .btn.secondary {\n      color: var(--fx-ink);\n      border: 1px solid var(--fx-border);\n      background: var(--fx-card);\n    }\n    .panel {\n      border: 1px solid var(--fx-border);\n      background: var(--fx-card);\n      border-radius: 16px;\n      padding: 18px;\n      box-shadow: 0 24px 80px color-mix(in oklch, var(--fx-primary) 14%, transparent);\n      backdrop-filter: blur(18px);\n    }\n    .grid {\n      display: grid;\n      grid-template-columns: repeat(2, minmax(0, 1fr));\n      gap: 12px;\n    }\n    .item {\n      border: 1px solid var(--fx-border);\n      border-radius: 12px;\n      padding: 16px;\n      background: var(--fx-card-soft);\n    }\n    .item b {\n      display: block;\n      margin-bottom: 6px;\n    }\n    .item span {\n      color: var(--fx-muted);\n      font-size: 13px;\n      line-height: 1.6;\n    }\n    @media (max-width: 820px) {\n      .hero { grid-template-columns: 1fr; }\n      .grid { grid-template-columns: 1fr; }\n    }\n  </style>\n</head>\n<body>\n  <main class=\"page\">\n    <section class=\"hero\">\n      <div>\n        <span class=\"eyebrow\"><span class=\"dot\"></span>ForwardX 面板</span>\n        <h1>多主机转发管理</h1>\n        <p>管理转发、隧道、用户和流量。</p>\n        <div class=\"actions\">\n          <a class=\"btn primary\" href=\"/login\">进入面板</a>\n          <a class=\"btn secondary\" href=\"/login?mode=register\">创建账号</a>\n        </div>\n      </div>\n      <div class=\"panel\">\n        <div class=\"grid\">\n          <div class=\"item\"><b>多节点</b><span>管理多台 Linux 主机和隧道。</span></div>\n          <div class=\"item\"><b>流量统计</b><span>按用户和规则记录转发用量。</span></div>\n          <div class=\"item\"><b>套餐订阅</b><span>支持余额、套餐和支付配置。</span></div>\n          <div class=\"item\"><b>Telegram</b><span>用户可通过机器人自助查询和管理。</span></div>\n        </div>\n      </div>\n    </section>\n  </main>\n</body>\n</html>", [theme.light.primary, theme.light.primaryForeground, theme.light.ring, theme.light.chart1, theme.light.chart2, theme.light.chart3, theme.light.chart4, theme.dark.primary, theme.dark.primaryForeground, theme.dark.ring, theme.dark.chart1, theme.dark.chart2, theme.dark.chart3, theme.dark.chart4]);
 }
 
 function formatCountdown(seconds: number) {
@@ -513,12 +341,12 @@ function getMigrationCodeCountdown(code: { expiresAt: number } | null, now: numb
 const settingsTabs = ["system", "telegram", "email", "personalization", "backup", "logs"] as const;
 type SettingsTab = typeof settingsTabs[number];
 const settingsTabItems = [
-  { value: "system", label: "系统配置", icon: Settings2 },
-  { value: "telegram", label: "Telegram", icon: Send },
-  { value: "email", label: "邮箱设置", icon: Mail },
-  { value: "personalization", label: "个性化配置", icon: Palette },
-  { value: "backup", label: "备份恢复", icon: Database },
-  { value: "logs", label: "面板日志", icon: FileText },
+  { value: "system", label: translateText("系统配置"), icon: Settings2 },
+  { value: "telegram", label: translateText("通知渠道"), icon: Send },
+  { value: "email", label: translateText("邮箱设置"), icon: Mail },
+  { value: "personalization", label: translateText("个性化配置"), icon: Palette },
+  { value: "backup", label: translateText("备份恢复"), icon: Database },
+  { value: "logs", label: translateText("面板日志"), icon: FileText },
 ] as const;
 type DatabaseType = "sqlite" | "mysql" | "postgresql";
 type BackupSummaryCache = {
@@ -699,10 +527,10 @@ function SettingsContent() {
     if (typeof navigator !== "undefined" && navigator.clipboard && window.isSecureContext) {
       try {
         await navigator.clipboard.writeText(text);
-        toast.success("已复制到剪贴板");
+        toast.success(translateText("已复制到剪贴板"));
         return;
       } catch (err) {
-        console.warn("[Clipboard] navigator.clipboard 失败，回退 execCommand:", err);
+        console.warn(translateText("[Clipboard] navigator.clipboard 失败，回退 execCommand:"), err);
       }
     }
 
@@ -730,7 +558,7 @@ function SettingsContent() {
       textarea.setSelectionRange(0, text.length);
       success = document.execCommand("copy");
     } catch (err) {
-      console.error("[Clipboard] execCommand fallback 异常:", err);
+      console.error(translateText("[Clipboard] execCommand fallback 异常:"), err);
       success = false;
     } finally {
       if (textarea.parentNode) {
@@ -739,16 +567,16 @@ function SettingsContent() {
     }
 
     if (success) {
-      toast.success("已复制到剪贴板");
+      toast.success(translateText("已复制到剪贴板"));
       return;
     }
 
     // 最后兑底：弹 prompt 让用户手动 Ctrl+C，避免静默失败
     try {
-      window.prompt("复制失败，请手动选中并复制 (Ctrl+C / Cmd+C)：", text);
-      toast.warning("未能自动写入剪贴板，已弹出手动复制窗口");
+      window.prompt(translateText("复制失败，请手动选中并复制 (Ctrl+C / Cmd+C)："), text);
+      toast.warning(translateText("未能自动写入剪贴板，已弹出手动复制窗口"));
     } catch {
-      toast.error("复制失败，请手动复制");
+      toast.error(translateText("复制失败，请手动复制"));
     }
   };
 
@@ -758,21 +586,22 @@ function SettingsContent() {
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">系统设置</h1>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">{translateText("系统设置")}</h1>
         </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
-        <SlidingTabsList items={settingsTabItems} activeValue={activeTab} ariaLabel="系统设置" minItemWidthRem={7.5} />
+        <SlidingTabsList items={settingsTabItems} activeValue={activeTab} ariaLabel={translateText("系统设置")} minItemWidthRem={7.5} />
 
         {/* System Info Tab */}
         <TabsContent value="system" className="space-y-4">
           <SystemInfoSection />
+          <GoogleLoginSettingsCard />
         </TabsContent>
 
         {/* Telegram Bot Tab */}
         <TabsContent value="telegram" className="space-y-4">
-          <TelegramBotSettingsCard />
+          <NotificationSettingsCard telegram={<TelegramBotSettingsCard />} />
           <DeepSeekSettingsCard />
         </TabsContent>
 
@@ -820,28 +649,28 @@ function PanelLogsSection() {
     onSuccess: (data) => {
       try {
         downloadTextFile(data.filename, data.content, data.mimeType || "text/plain;charset=utf-8");
-        toast.success(`已导出 ${data.count} 条日志`);
+        toast.success(translateText("已导出 {0} 条日志", [data.count]));
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : "日志已生成，但浏览器保存文件失败");
+        toast.error(error instanceof Error ? error.message : translateText("日志已生成，但浏览器保存文件失败"));
       }
     },
-    onError: (err) => toast.error(err.message || "导出日志失败"),
+    onError: (err) => toast.error(err.message || translateText("导出日志失败")),
   });
   const clearLogsMutation = trpc.system.clearPanelLogs.useMutation({
     onSuccess: async () => {
-      toast.success("日志已清空");
+      toast.success(translateText("日志已清空"));
       setPanelLogOffset(0);
       await refetchPanelLogs();
     },
-    onError: (err) => toast.error(err.message || "清空日志失败"),
+    onError: (err) => toast.error(err.message || translateText("清空日志失败")),
   });
   const startSupportBundleMutation = trpc.system.startSupportBundle.useMutation({
     onSuccess: (data) => {
       downloadedSupportTaskRef.current = "";
       setSupportTaskId(data.taskId);
-      toast.info(`正在收集 ${data.requested} 台在线 Agent 的诊断信息`);
+      toast.info(translateText("正在收集 {0} 台在线 Agent 的诊断信息", [data.requested]));
     },
-    onError: (err) => toast.error(err.message || "启动支持包任务失败"),
+    onError: (err) => toast.error(err.message || translateText("启动支持包任务失败")),
   });
   const supportBundleQuery = trpc.system.supportBundleStatus.useQuery(
     { taskId: supportTaskId || "00000000-0000-0000-0000-000000000000" },
@@ -854,9 +683,9 @@ function PanelLogsSection() {
     try {
       downloadTextFile(data.download.filename, data.download.content, data.download.mimeType);
       const failed = data.hosts.filter((host) => host.status !== "complete").length;
-      toast.success(failed > 0 ? `支持包已生成，${failed} 台 Agent 未返回完整诊断` : "支持包已生成");
+      toast.success(failed > 0 ? translateText("支持包已生成，{0} 台 Agent 未返回完整诊断", [failed]) : translateText("支持包已生成"));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "支持包已生成，但浏览器保存文件失败");
+      toast.error(error instanceof Error ? error.message : translateText("支持包已生成，但浏览器保存文件失败"));
     }
     setSupportTaskId("");
   }, [supportBundleQuery.data, supportTaskId]);
@@ -885,7 +714,7 @@ function PanelLogsSection() {
   }
   const summary = panelLogSummaryRef.current;
   const levelTabs = [
-    { value: "all", label: "全部", count: summary.all || 0 },
+    { value: "all", label: translateText("全部"), count: summary.all || 0 },
     { value: "info", label: "Info", count: summary.info || 0 },
     { value: "warn", label: "Warn", count: summary.warn || 0 },
     { value: "error", label: "Error", count: summary.error || 0 },
@@ -900,10 +729,8 @@ function PanelLogsSection() {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <CardTitle className="flex items-center gap-2 text-base">
-                <FileText className="h-4 w-4 text-primary" />
-                面板日志
-              </CardTitle>
-              <CardDescription>最近 24 小时运行日志。</CardDescription>
+                <FileText className="h-4 w-4 text-primary" />{translateText("面板日志")}</CardTitle>
+              <CardDescription>{translateText("最近 24 小时运行日志。")}</CardDescription>
             </div>
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
               <div className="flex items-center gap-2">
@@ -923,22 +750,20 @@ function PanelLogsSection() {
                   onClick={() => exportLogsMutation.mutate({ level: exportLevel })}
                   disabled={exportLogsMutation.isPending}
                 >
-                  <Download className="mr-1.5 h-3.5 w-3.5" />
-                  导出日志
-                </Button>
+                  <Download className="mr-1.5 h-3.5 w-3.5" />{translateText("导出日志")}</Button>
               </div>
-              <Button variant="outline" size="sm" onClick={refreshPanelLogs} disabled={panelLogsFetching}>刷新</Button>
+              <Button variant="outline" size="sm" onClick={refreshPanelLogs} disabled={panelLogsFetching}>{translateText("刷新")}</Button>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => startSupportBundleMutation.mutate()}
                 disabled={startSupportBundleMutation.isPending || !!supportTaskId}
-                title="收集面板日志、配置审计和在线 Agent 的脱敏诊断"
+                title={translateText("收集面板日志、配置审计和在线 Agent 的脱敏诊断")}
               >
                 {supportTaskId ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Download className="mr-1.5 h-3.5 w-3.5" />}
-                {supportTaskId ? `收集中 ${supportBundleQuery.data?.total ? supportBundleQuery.data.total - supportBundleQuery.data.pending : 0}/${supportBundleQuery.data?.total || 0}` : "生成支持包"}
+                {supportTaskId ? translateText("收集中 {0}/{1}", [supportBundleQuery.data?.total ? supportBundleQuery.data.total - supportBundleQuery.data.pending : 0, supportBundleQuery.data?.total || 0]) : translateText("生成支持包")}
               </Button>
-              <Button variant="destructive" size="sm" onClick={() => clearLogsMutation.mutate()} disabled={clearLogsMutation.isPending}>清空日志</Button>
+              <Button variant="destructive" size="sm" onClick={() => clearLogsMutation.mutate()} disabled={clearLogsMutation.isPending}>{translateText("清空日志")}</Button>
             </div>
           </div>
         </CardHeader>
@@ -954,16 +779,16 @@ function PanelLogsSection() {
             </TabsList>
           </Tabs>
           {panelLogsLoading ? (
-            <DataSectionLoading label="正在加载面板日志" minHeight="h-80" />
+            <DataSectionLoading label={translateText("正在加载面板日志")} minHeight="h-80" />
           ) : (
           <div className={logViewportClass}>
             {panelLogEntries.length === 0 ? (
-              <div className={logEmptyClass}>暂无日志</div>
+              <div className={logEmptyClass}>{translateText("暂无日志")}</div>
             ) : (
               <div className="space-y-1">
                 {panelLogEntries.map((entry: any) => (
                   <div key={entry.id} className="grid gap-2 sm:grid-cols-[150px_56px_1fr]">
-                    <span className="text-muted-foreground">{new Date(entry.createdAt).toLocaleString()}</span>
+                    <span className="text-muted-foreground">{new Date(entry.createdAt).toLocaleString(getFormatLocale())}</span>
                     <span className={logLevelClass(entry.level)}>{String(entry.level).toUpperCase()}</span>
                     <span className="whitespace-pre-wrap break-words text-foreground/90">{entry.message}</span>
                   </div>
@@ -973,9 +798,7 @@ function PanelLogsSection() {
           </div>
           )}
           <div className="mt-3 flex flex-col gap-2 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-            <span>
-              当前显示 {panelLogStart}-{panelLogEnd} / {panelLogs?.total || 0} 条
-              {panelLogsFetching && !panelLogsLoading ? "，正在刷新" : ""}
+            <span>{translateText("当前显示 ")}{panelLogStart}-{panelLogEnd} / {panelLogs?.total || 0}{translateText(" 条")}{panelLogsFetching && !panelLogsLoading ? translateText("，正在刷新") : ""}
             </span>
             <div className="flex gap-2">
               <Button
@@ -983,17 +806,13 @@ function PanelLogsSection() {
                 size="sm"
                 onClick={() => setPanelLogOffset(Math.max(0, panelLogOffset - LOG_PAGE_SIZE))}
                 disabled={panelLogsFetching || panelLogOffset <= 0}
-              >
-                较新
-              </Button>
+              >{translateText("较新")}</Button>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setPanelLogOffset(panelLogs?.nextOffset || 0)}
                 disabled={panelLogsFetching || !panelLogs?.hasMore}
-              >
-                更早
-              </Button>
+              >{translateText("更早")}</Button>
             </div>
           </div>
         </CardContent>
@@ -1021,6 +840,7 @@ function BackupRestoreSection({ panelUrl }: { panelUrl: string }) {
       dataScope: PanelMigrationScope;
       targetDatabaseType?: "sqlite" | "mysql" | "postgresql";
       directSqliteRequested: boolean;
+      seamless: boolean;
     } | null;
   } | null>(null);
   const [migrationCodeTick, setMigrationCodeTick] = useState(Date.now());
@@ -1040,11 +860,13 @@ function BackupRestoreSection({ panelUrl }: { panelUrl: string }) {
     migrationCode: string;
     targetPanelUrl: string;
     dataScope: PanelMigrationScope;
+    seamless: boolean;
   }>({
     oldPanelUrl: "",
     migrationCode: "",
     targetPanelUrl: panelUrl,
     dataScope: "essential",
+    seamless: true,
   });
   const [showOnlineConfirm, setShowOnlineConfirm] = useState(false);
   const [migrationJobId, setMigrationJobId] = useState<string | null>(null);
@@ -1085,7 +907,7 @@ function BackupRestoreSection({ panelUrl }: { panelUrl: string }) {
     gcTime: 5 * 60_000,
     refetchOnWindowFocus: false,
   });
-  const { data: migrationJob } = trpc.system.panelMigrationStatus.useQuery(
+  const { data: migrationJob } = trpc.setup.migrationStatus.useQuery(
     { jobId: migrationJobId || "" },
     {
       enabled: !!migrationJobId,
@@ -1126,10 +948,10 @@ function BackupRestoreSection({ panelUrl }: { panelUrl: string }) {
   const databaseSwitchSucceeded = databaseSwitchJob?.status === "success";
   const databaseSwitchElapsed = databaseSwitchJob
     ? formatDatabaseSwitchDuration((databaseSwitchJob.finishedAt || Date.now()) - databaseSwitchJob.startedAt)
-    : "0 秒";
+    : translateText("0 秒");
   const databaseSwitchUpdatedAgo = databaseSwitchJob
     ? formatDatabaseSwitchDuration(Date.now() - (databaseSwitchJob.updatedAt || databaseSwitchJob.startedAt))
-    : "0 秒";
+    : translateText("0 秒");
 
   useEffect(() => {
     setMigrationCode(currentMigrationCode || null);
@@ -1159,12 +981,12 @@ function BackupRestoreSection({ panelUrl }: { panelUrl: string }) {
   useEffect(() => {
     if (!migrationJob || reportedMigrationJobId === migrationJob.id) return;
     if (migrationJob?.status === "success") {
-      toast.success(migrationJob.message || "在线迁移完成");
+      toast.success(migrationJob.message || translateText("在线迁移完成"));
       utils.system.backupSummary.invalidate();
       setReportedMigrationJobId(migrationJob.id);
     }
     if (migrationJob?.status === "failed") {
-      toast.error(migrationJob.error || "在线迁移失败");
+      toast.error(migrationJob.error || translateText("在线迁移失败"));
       setReportedMigrationJobId(migrationJob.id);
     }
   }, [migrationJob, reportedMigrationJobId, utils.system.backupSummary]);
@@ -1186,7 +1008,7 @@ function BackupRestoreSection({ panelUrl }: { panelUrl: string }) {
   useEffect(() => {
     if (!databaseSwitchJob || reportedDatabaseSwitchJobId === databaseSwitchJob.id) return;
     if (databaseSwitchJob.status === "success") {
-      toast.success(databaseSwitchJob.message || "数据库切换完成");
+      toast.success(databaseSwitchJob.message || translateText("数据库切换完成"));
       utils.system.backupSummary.invalidate();
       utils.system.databaseSwitchStatus.invalidate();
       setReportedDatabaseSwitchJobId(databaseSwitchJob.id);
@@ -1195,7 +1017,7 @@ function BackupRestoreSection({ panelUrl }: { panelUrl: string }) {
       }
     }
     if (databaseSwitchJob.status === "failed") {
-      toast.error(databaseSwitchJob.error || "数据库切换失败");
+      toast.error(databaseSwitchJob.error || translateText("数据库切换失败"));
       setReportedDatabaseSwitchJobId(databaseSwitchJob.id);
     }
   }, [databaseSwitchJob, reportedDatabaseSwitchJobId, utils.system.backupSummary, utils.system.databaseSwitchStatus]);
@@ -1204,25 +1026,25 @@ function BackupRestoreSection({ panelUrl }: { panelUrl: string }) {
     onSuccess: (data) => {
       setMigrationCode(data);
       utils.system.getMigrationCode.invalidate();
-      toast.success("迁移码已生成，5 分钟内有效");
+      toast.success(translateText("迁移码已生成，5 分钟内有效"));
     },
-    onError: (err) => toast.error(err.message || "生成迁移码失败"),
+    onError: (err) => toast.error(err.message || translateText("生成迁移码失败")),
   });
 
   const approveMigrationRequestMutation = trpc.system.approveMigrationRequest.useMutation({
     onSuccess: () => {
       utils.system.getMigrationCode.invalidate();
-      toast.success("已同意迁移请求，新面板将开始导入数据");
+      toast.success(translateText("已同意迁移请求，新面板将开始导入数据"));
     },
-    onError: (err) => toast.error(err.message || "同意迁移请求失败"),
+    onError: (err) => toast.error(err.message || translateText("同意迁移请求失败")),
   });
 
   const rejectMigrationRequestMutation = trpc.system.rejectMigrationRequest.useMutation({
     onSuccess: () => {
       utils.system.getMigrationCode.invalidate();
-      toast.success("已拒绝迁移请求");
+      toast.success(translateText("已拒绝迁移请求"));
     },
-    onError: (err) => toast.error(err.message || "拒绝迁移请求失败"),
+    onError: (err) => toast.error(err.message || translateText("拒绝迁移请求失败")),
   });
 
   const finishExportProgress = (next: BackupTaskProgress) => {
@@ -1261,8 +1083,8 @@ function BackupRestoreSection({ panelUrl }: { panelUrl: string }) {
       };
       setExportProgress({
         percent: 92,
-        step: "正在准备下载文件",
-        detail: `备份文件 ${data.filename} 已生成，浏览器即将保存。`,
+        step: translateText("正在准备下载文件"),
+        detail: translateText("备份文件 {0} 已生成，浏览器即将保存。", [data.filename]),
         status: "running",
       });
       setBackupPassword("");
@@ -1273,29 +1095,29 @@ function BackupRestoreSection({ panelUrl }: { panelUrl: string }) {
         downloadTextFile(backupFile.filename, backupFile.content, backupFile.mimeType);
         finishExportProgress({
           percent: 100,
-          step: "备份文件已生成",
-          detail: "已请求浏览器保存；若 Safari 没有开始下载，可点击“再次保存已生成备份”。",
+          step: translateText("备份文件已生成"),
+          detail: translateText("已请求浏览器保存；若 Safari 没有开始下载，可点击“再次保存已生成备份”。"),
           status: "success",
         });
-        toast.success("备份文件已生成");
+        toast.success(translateText("备份文件已生成"));
       } catch {
         finishExportProgress({
           percent: 100,
-          step: "备份已生成，浏览器保存失败",
-          detail: "无需重新导出，请点击“再次保存已生成备份”重试。",
+          step: translateText("备份已生成，浏览器保存失败"),
+          detail: translateText("无需重新导出，请点击“再次保存已生成备份”重试。"),
           status: "error",
         });
-        toast.error("备份已生成，但浏览器未能保存文件，请点击重新保存");
+        toast.error(translateText("备份已生成，但浏览器未能保存文件，请点击重新保存"));
       }
     },
     onError: (err) => {
       finishExportProgress({
         percent: 100,
-        step: "备份生成失败",
-        detail: err.message || "服务器生成备份失败",
+        step: translateText("备份生成失败"),
+        detail: err.message || translateText("服务器生成备份失败"),
         status: "error",
       });
-      toast.error(err.message || "服务器生成备份失败");
+      toast.error(err.message || translateText("服务器生成备份失败"));
     },
   });
 
@@ -1307,12 +1129,12 @@ function BackupRestoreSection({ panelUrl }: { panelUrl: string }) {
       const skippedRows = Number(result.skippedRows || 0);
       const validation = result.agentValidation;
       const validationText = validation?.requestedHosts
-        ? ` 已请求 ${validation.requestedHosts} 台 Agent 重新检查连接和 Mimic 环境，${validation.pendingHosts || 0} 台离线主机将在重新连接后上报。`
+        ? translateText(" 已请求 {0} 台 Agent 重新检查连接和 Mimic 环境，{1} 台离线主机将在重新连接后上报。", [validation.requestedHosts, validation.pendingHosts || 0])
         : "";
       setImportProgress({
         percent: 88,
-        step: "正在刷新面板数据",
-        detail: "备份已导入，正在更新当前页面的数据概览。",
+        step: translateText("正在刷新面板数据"),
+        detail: translateText("备份已导入，正在更新当前页面的数据概览。"),
         status: "running",
       });
       setShowImportConfirm(false);
@@ -1324,33 +1146,33 @@ function BackupRestoreSection({ panelUrl }: { panelUrl: string }) {
       finishImportProgress({
         percent: 100,
         step: result.alreadyImported
-          ? "已阻止重复导入"
+          ? translateText("已阻止重复导入")
           : result.partial
-          ? "备份已部分恢复"
+          ? translateText("备份已部分恢复")
           : result.mode === "incremental"
-          ? "增量导入完成"
-          : "备份恢复完成",
+          ? translateText("增量导入完成")
+          : translateText("备份恢复完成"),
         detail: result.alreadyImported
-          ? "该备份文件已经导入过，本次未再次写入数据。"
-          : `其余可用数据已经导入：新增 ${insertedRows} 条，更新 ${updatedRows} 条，复用 ${reusedRows} 条，跳过 ${skippedRows} 条。${validationText}`,
+          ? translateText("该备份文件已经导入过，本次未再次写入数据。")
+          : translateText("其余可用数据已经导入：新增 {0} 条，更新 {1} 条，复用 {2} 条，跳过 {3} 条。{4}", [insertedRows, updatedRows, reusedRows, skippedRows, validationText]),
         status: "success",
       });
       if (result.alreadyImported) {
-        toast.warning("该备份已经导入过，已阻止重复写入");
+        toast.warning(translateText("该备份已经导入过，已阻止重复写入"));
       } else if (result.partial) {
-        toast.warning(result.warnings?.[0] || `备份已部分恢复，跳过 ${skippedRows} 条；其余数据已经导入`);
+        toast.warning(result.warnings?.[0] || translateText("备份已部分恢复，跳过 {0} 条；其余数据已经导入", [skippedRows]));
       } else {
-        toast.success(result.mode === "incremental" ? "增量导入完成，当前面板数据已保留" : "备份恢复完成");
+        toast.success(result.mode === "incremental" ? translateText("增量导入完成，当前面板数据已保留") : translateText("备份恢复完成"));
       }
     },
     onError: (err) => {
       finishImportProgress({
         percent: 100,
-        step: "备份导入失败",
-        detail: err.message || "导入备份失败",
+        step: translateText("备份导入失败"),
+        detail: err.message || translateText("导入备份失败"),
         status: "error",
       });
-      toast.error(err.message || "导入备份失败");
+      toast.error(err.message || translateText("导入备份失败"));
     },
   });
 
@@ -1362,8 +1184,8 @@ function BackupRestoreSection({ panelUrl }: { panelUrl: string }) {
         const nextPercent = Math.min(86, current.percent + (current.percent < 70 ? 3 : 1));
         return {
           percent: nextPercent,
-          step: nextPercent >= 78 ? "等待服务器完成导出" : current.step,
-          detail: nextPercent >= 78 ? "数据量较大时导出会多花一些时间，请保持当前页面打开。" : current.detail,
+          step: nextPercent >= 78 ? translateText("等待服务器完成导出") : current.step,
+          detail: nextPercent >= 78 ? translateText("数据量较大时导出会多花一些时间，请保持当前页面打开。") : current.detail,
           status: "running",
         };
       });
@@ -1379,8 +1201,8 @@ function BackupRestoreSection({ panelUrl }: { panelUrl: string }) {
         const nextPercent = Math.min(84, current.percent + (current.percent < 65 ? 3 : 1));
         return {
           percent: nextPercent,
-          step: nextPercent >= 74 ? "等待服务器完成导入" : current.step,
-          detail: nextPercent >= 74 ? "备份文件较大时恢复会多花一些时间，请不要关闭页面。" : current.detail,
+          step: nextPercent >= 74 ? translateText("等待服务器完成导入") : current.step,
+          detail: nextPercent >= 74 ? translateText("备份文件较大时恢复会多花一些时间，请不要关闭页面。") : current.detail,
           status: "running",
         };
       });
@@ -1392,20 +1214,20 @@ function BackupRestoreSection({ panelUrl }: { panelUrl: string }) {
       setMigrationJobId(job.id);
       setReportedMigrationJobId(null);
       setShowOnlineConfirm(false);
-      toast.success("在线迁移任务已开始");
+      toast.success(translateText("在线迁移任务已开始"));
     },
-    onError: (err) => toast.error(err.message || "启动在线迁移失败"),
+    onError: (err) => toast.error(err.message || translateText("启动在线迁移失败")),
   });
 
   const testDatabaseSwitchMutation = trpc.system.testDatabaseSwitchTarget.useMutation({
     onSuccess: (data, variables) => {
       setTestedDatabaseSwitchKey(JSON.stringify(variables));
       setDatabaseSwitchValidationError("");
-      toast.success(data.message || "目标数据库连接及写入权限测试通过");
+      toast.success(data.message || translateText("目标数据库连接及写入权限测试通过"));
     },
     onError: (err) => {
       setTestedDatabaseSwitchKey("");
-      const message = err.message || "目标数据库连接或迁移写入权限验证失败";
+      const message = err.message || translateText("目标数据库连接或迁移写入权限验证失败");
       setDatabaseSwitchValidationError(message);
       toast.error(message);
     },
@@ -1420,9 +1242,9 @@ function BackupRestoreSection({ panelUrl }: { panelUrl: string }) {
       setDatabaseSwitchJobId(job.id);
       setReportedDatabaseSwitchJobId(null);
       setShowDatabaseSwitchConfirm(false);
-      toast.success("数据库迁移切换任务已开始");
+      toast.success(translateText("数据库迁移切换任务已开始"));
     },
-    onError: (err) => toast.error(err.message || "启动数据库切换失败"),
+    onError: (err) => toast.error(err.message || translateText("启动数据库切换失败")),
   });
 
   const copyMigrationCode = async (code: string) => {
@@ -1442,8 +1264,8 @@ function BackupRestoreSection({ panelUrl }: { panelUrl: string }) {
       document.body.removeChild(textarea);
     }
 
-    if (copied) toast.success("迁移码已复制");
-    else toast.error("复制失败，请手动选中迁移码复制");
+    if (copied) toast.success(translateText("迁移码已复制"));
+    else toast.error(translateText("复制失败，请手动选中迁移码复制"));
   };
 
   const migrationCountdown = getMigrationCodeCountdown(migrationCode, migrationCodeTick);
@@ -1456,27 +1278,27 @@ function BackupRestoreSection({ panelUrl }: { panelUrl: string }) {
 
   const handleExportBackup = () => {
     if (backupPassword.length < 8) {
-      toast.error("备份密码至少需要 8 位");
+      toast.error(translateText("备份密码至少需要 8 位"));
       return;
     }
     if (backupPassword !== backupPasswordConfirm) {
-      toast.error("两次输入的备份密码不一致");
+      toast.error(translateText("两次输入的备份密码不一致"));
       return;
     }
     setExportProgress({
       percent: 12,
-      step: "正在读取面板数据",
-      detail: "正在整理用户、主机、规则、隧道和系统配置。",
+      step: translateText("正在读取面板数据"),
+      detail: translateText("正在整理用户、主机、规则、隧道和系统配置。"),
       status: "running",
     });
     window.setTimeout(() => {
       setExportProgress((current) => current?.status === "running"
-        ? { percent: 42, step: "正在裁剪低价值数据", detail: "正在跳过日志、历史探测和临时统计数据，减小备份体积。", status: "running" }
+        ? { percent: 42, step: translateText("正在裁剪低价值数据"), detail: translateText("正在跳过日志、历史探测和临时统计数据，减小备份体积。"), status: "running" }
         : current);
     }, 700);
     window.setTimeout(() => {
       setExportProgress((current) => current?.status === "running"
-        ? { percent: 68, step: "正在加密备份内容", detail: "备份文件会使用当前输入的密码加密保存。", status: "running" }
+        ? { percent: 68, step: translateText("正在加密备份内容"), detail: translateText("备份文件会使用当前输入的密码加密保存。"), status: "running" }
         : current);
     }, 1600);
     exportBackupMutation.mutate({ password: backupPassword });
@@ -1493,26 +1315,26 @@ function BackupRestoreSection({ panelUrl }: { panelUrl: string }) {
       );
       finishExportProgress({
         percent: 100,
-        step: "已再次请求浏览器保存",
-        detail: "若下载仍未开始，请检查当前浏览器对该站点的下载权限。",
+        step: translateText("已再次请求浏览器保存"),
+        detail: translateText("若下载仍未开始，请检查当前浏览器对该站点的下载权限。"),
         status: "success",
       });
-      toast.success("已再次请求浏览器保存加密备份");
+      toast.success(translateText("已再次请求浏览器保存加密备份"));
     } catch {
       finishExportProgress({
         percent: 100,
-        step: "浏览器保存失败",
-        detail: "请检查当前浏览器的下载权限后再次重试。",
+        step: translateText("浏览器保存失败"),
+        detail: translateText("请检查当前浏览器的下载权限后再次重试。"),
         status: "error",
       });
-      toast.error("当前浏览器未能保存文件，请检查该站点的下载权限");
+      toast.error(translateText("当前浏览器未能保存文件，请检查该站点的下载权限"));
     }
   };
 
   const handleBackupFileChange = async (file: File | undefined) => {
     if (!file) return;
     if (file.size > 50 * 1024 * 1024) {
-      toast.error("备份文件过大");
+      toast.error(translateText("备份文件过大"));
       return;
     }
     const text = await file.text();
@@ -1522,15 +1344,15 @@ function BackupRestoreSection({ panelUrl }: { panelUrl: string }) {
 
   const openImportConfirm = () => {
     if (!backupSummaryReady) {
-      toast.info("正在读取当前面板数据，请稍后再导入");
+      toast.info(translateText("正在读取当前面板数据，请稍后再导入"));
       return;
     }
     if (!importContent) {
-      toast.error("请选择备份文件");
+      toast.error(translateText("请选择备份文件"));
       return;
     }
     if (!importPassword) {
-      toast.error("请输入备份密码");
+      toast.error(translateText("请输入备份密码"));
       return;
     }
     setShowImportConfirm(true);
@@ -1539,18 +1361,18 @@ function BackupRestoreSection({ panelUrl }: { panelUrl: string }) {
   const confirmImportBackup = () => {
     setImportProgress({
       percent: 15,
-      step: "正在读取备份文件",
-      detail: importFilename ? `正在处理 ${importFilename}。` : "正在处理已选择的备份文件。",
+      step: translateText("正在读取备份文件"),
+      detail: importFilename ? translateText("正在处理 {0}。", [importFilename]) : translateText("正在处理已选择的备份文件。"),
       status: "running",
     });
     window.setTimeout(() => {
       setImportProgress((current) => current?.status === "running"
-        ? { percent: 36, step: "正在解密备份内容", detail: "正在使用备份密码校验并解密文件。", status: "running" }
+        ? { percent: 36, step: translateText("正在解密备份内容"), detail: translateText("正在使用备份密码校验并解密文件。"), status: "running" }
         : current);
     }, 700);
     window.setTimeout(() => {
       setImportProgress((current) => current?.status === "running"
-        ? { percent: 62, step: "正在写入面板数据", detail: "正在恢复主机、规则、隧道和转发组数据。", status: "running" }
+        ? { percent: 62, step: translateText("正在写入面板数据"), detail: translateText("正在恢复主机、规则、隧道和转发组数据。"), status: "running" }
         : current);
     }, 1600);
     importBackupMutation.mutate({
@@ -1563,11 +1385,11 @@ function BackupRestoreSection({ panelUrl }: { panelUrl: string }) {
 
   const openOnlineConfirm = () => {
     if (!backupSummaryReady) {
-      toast.info("正在读取当前面板数据，请稍后再迁移");
+      toast.info(translateText("正在读取当前面板数据，请稍后再迁移"));
       return;
     }
     if (!onlineMigration.oldPanelUrl.trim() || !onlineMigration.migrationCode.trim() || !onlineMigration.targetPanelUrl.trim()) {
-      toast.error("请填写旧面板地址、迁移码和新面板访问地址");
+      toast.error(translateText("请填写旧面板地址、迁移码和新面板访问地址"));
       return;
     }
     setShowOnlineConfirm(true);
@@ -1585,15 +1407,15 @@ function BackupRestoreSection({ panelUrl }: { panelUrl: string }) {
       return;
     }
     if (!backupSummaryReady) {
-      toast.info("正在读取当前面板数据，请稍后再切换");
+      toast.info(translateText("正在读取当前面板数据，请稍后再切换"));
       return;
     }
     if (!isDatabaseSwitchTested) {
-      toast.error("请先验证目标数据库连接和写入权限，通过后才能开始切换");
+      toast.error(translateText("请先验证目标数据库连接和写入权限，通过后才能开始切换"));
       return;
     }
     if (databaseSwitchRunning || startDatabaseSwitchMutation.isPending) {
-      toast.info("已有数据库切换任务正在执行");
+      toast.info(translateText("已有数据库切换任务正在执行"));
       return;
     }
     setShowDatabaseSwitchConfirm(true);
@@ -1603,11 +1425,11 @@ function BackupRestoreSection({ panelUrl }: { panelUrl: string }) {
     <div className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         {[
-          { label: "当前用户", value: displayBackupSummary.userCount },
-          { label: "当前主机", value: displayBackupSummary.hostCount },
-          { label: "当前规则", value: displayBackupSummary.ruleCount },
-          { label: "当前隧道", value: displayBackupSummary.tunnelCount },
-          { label: "转发组", value: displayBackupSummary.forwardGroupCount },
+          { label: translateText("当前用户"), value: displayBackupSummary.userCount },
+          { label: translateText("当前主机"), value: displayBackupSummary.hostCount },
+          { label: translateText("当前规则"), value: displayBackupSummary.ruleCount },
+          { label: translateText("当前隧道"), value: displayBackupSummary.tunnelCount },
+          { label: translateText("转发组"), value: displayBackupSummary.forwardGroupCount },
         ].map((item) => (
           <Card key={item.label} className="border-border/40 bg-card/60 backdrop-blur-md">
             <CardContent className="min-h-[80px] p-4">
@@ -1624,15 +1446,15 @@ function BackupRestoreSection({ panelUrl }: { panelUrl: string }) {
         <ShieldCheck className="h-4 w-4" />
         <AlertTitle>
           {!backupSummaryReady && backupSummaryLoading
-            ? "已展示缓存数据，正在后台刷新"
+            ? translateText("已展示缓存数据，正在后台刷新")
             : hasExistingData
-              ? "当前面板已有业务数据，迁移将按增量方式执行"
-              : "当前面板没有业务数据，可作为完整恢复执行"}
+              ? translateText("当前面板已有业务数据，迁移将按增量方式执行")
+              : translateText("当前面板没有业务数据，可作为完整恢复执行")}
         </AlertTitle>
         <AlertDescription>
           {backupSummaryReady
-            ? "增量迁移会保留新面板现有主机、用户、规则和订单数据，并把旧面板数据追加导入；重复的用户账号、主机 Token、订单号、兑换码会复用现有记录。"
-            : "首次进入没有缓存时会先显示 0；接口返回真实数据后会自动更新并缓存，后续进入可直接展示上次统计。"}
+            ? translateText("增量迁移会保留新面板现有主机、用户、规则和订单数据，并把旧面板数据追加导入；重复的用户账号、主机 Token、订单号、兑换码会复用现有记录。")
+            : translateText("首次进入没有缓存时会先显示 0；接口返回真实数据后会自动更新并缓存，后续进入可直接展示上次统计。")}
         </AlertDescription>
       </Alert>
 
@@ -1640,114 +1462,97 @@ function BackupRestoreSection({ panelUrl }: { panelUrl: string }) {
         <Card className="border-border/40 bg-card/60 backdrop-blur-md">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
-              <Key className="h-4 w-4 text-primary" />
-              旧面板迁移码
-            </CardTitle>
-            <CardDescription>
-              在旧面板生成迁移码，并审批新面板发起的在线迁移请求。
-            </CardDescription>
+              <Key className="h-4 w-4 text-primary" />{translateText("旧面板迁移码")}</CardTitle>
+            <CardDescription>{translateText("在旧面板生成迁移码，并审批新面板发起的在线迁移请求。")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {migrationCode ? (
               <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
-                <p className="text-xs text-muted-foreground">迁移码</p>
+                <p className="text-xs text-muted-foreground">{translateText("迁移码")}</p>
                 <div className="mt-1 flex items-center justify-between gap-3">
                   <code className="break-all font-mono text-lg font-semibold tracking-widest">{migrationCode.code}</code>
                   <Button variant="outline" size="sm" onClick={() => copyMigrationCode(migrationCode.code)}>
-                    <Copy className="mr-2 h-3.5 w-3.5" />
-                    复制
-                  </Button>
+                    <Copy className="mr-2 h-3.5 w-3.5" />{translateText("复制")}</Button>
                 </div>
                 <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                  <span>有效至 {new Date(migrationCode.expiresAt).toLocaleTimeString()}</span>
-                  <Badge variant={migrationCountdown > 0 ? "outline" : "secondary"}>
-                    剩余 {formatCountdown(migrationCountdown)}
+                  <span>{translateText("有效至 ")}{new Date(migrationCode.expiresAt).toLocaleTimeString(getFormatLocale())}</span>
+                  <Badge variant={migrationCountdown > 0 ? "outline" : "secondary"}>{translateText("剩余 ")}{formatCountdown(migrationCountdown)}
                   </Badge>
                 </div>
                 {migrationRequest?.status === "pending" && (
                   <div className="mt-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3">
-                    <p className="text-sm font-medium text-amber-700 dark:text-amber-300">收到新面板迁移请求</p>
-                    <p className="mt-1 break-all text-xs text-muted-foreground">
-                      目标面板：{migrationRequest.targetPanelUrl}
+                    <p className="text-sm font-medium text-amber-700 dark:text-amber-300">{translateText("收到新面板迁移请求")}</p>
+                    <p className="mt-1 break-all text-xs text-muted-foreground">{translateText("目标面板：")}{migrationRequest.targetPanelUrl}
                     </p>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      迁移内容：{panelMigrationScopeLabel(migrationRequest.dataScope || "full")}
-                      {migrationRequest.directSqliteRequested ? " · SQLite 快速传输" : ""}
+                    <p className="mt-1 text-xs text-muted-foreground">{translateText("迁移内容：")}{translateText(panelMigrationScopeLabel(migrationRequest.dataScope || "full"))}；{migrationRequest.seamless ? translateText("无缝模式：短暂暂停业务写入，保留转发进程及旧地址") : translateText("普通模式")}
+                      {migrationRequest.directSqliteRequested ? translateText(" · SQLite 快速传输") : ""}
                     </p>
                     <div className="mt-3 flex flex-wrap gap-2">
                       <Button
                         size="sm"
                         onClick={() => approveMigrationRequestMutation.mutate({ requestId: migrationRequest.id })}
                         disabled={approveMigrationRequestMutation.isPending || rejectMigrationRequestMutation.isPending}
-                      >
-                        同意迁移
-                      </Button>
+                      >{translateText("同意迁移")}</Button>
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={() => rejectMigrationRequestMutation.mutate({ requestId: migrationRequest.id })}
                         disabled={approveMigrationRequestMutation.isPending || rejectMigrationRequestMutation.isPending}
-                      >
-                        拒绝
-                      </Button>
+                      >{translateText("拒绝")}</Button>
                     </div>
                   </div>
                 )}
                 {migrationRequest?.status === "approved" && (
-                  <div className="mt-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-700 dark:text-emerald-300">
-                    已同意迁移请求，正在等待新面板拉取数据。
-                  </div>
+                  <div className="mt-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-700 dark:text-emerald-300">{translateText("已同意迁移请求，正在等待新面板拉取数据。")}</div>
                 )}
                 {migrationRequest?.status === "rejected" && (
-                  <div className="mt-3 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
-                    已拒绝本次迁移请求。
-                  </div>
+                  <div className="mt-3 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">{translateText("已拒绝本次迁移请求。")}</div>
                 )}
               </div>
             ) : (
               <Alert>
                 <ShieldCheck className="h-4 w-4" />
-                <AlertTitle>一次性迁移码</AlertTitle>
-                <AlertDescription>迁移码 5 分钟有效，使用后失效。</AlertDescription>
+                <AlertTitle>{translateText("一次性迁移码")}</AlertTitle>
+                <AlertDescription>{translateText("迁移码 5 分钟有效，使用后失效。")}</AlertDescription>
               </Alert>
             )}
-            <Button onClick={() => createMigrationCodeMutation.mutate()} disabled={createMigrationCodeMutation.isPending}>
-              生成迁移码
-            </Button>
+            <Button onClick={() => createMigrationCodeMutation.mutate()} disabled={createMigrationCodeMutation.isPending}>{translateText("生成迁移码")}</Button>
           </CardContent>
         </Card>
 
         <Card className="border-border/40 bg-card/60 backdrop-blur-md">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
-              <MoveRight className="h-4 w-4 text-primary" />
-              在线迁移接收
-            </CardTitle>
-            <CardDescription>
-              拉取旧面板数据，并在新面板运行验证通过后完成接管。
-            </CardDescription>
+              <MoveRight className="h-4 w-4 text-primary" />{translateText("在线迁移接收")}</CardTitle>
+            <CardDescription>{translateText("拉取旧面板数据，并在新面板运行验证通过后完成接管。")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
+            <div className="rounded-md border p-3 space-y-2">
+              <Label className="flex items-center justify-between">{translateText("无缝迁移（旧地址转交）")}<Switch checked={onlineMigration.seamless} onCheckedChange={(seamless) => setOnlineMigration({ ...onlineMigration, seamless })} /></Label>
+              <p className="text-xs text-muted-foreground">{onlineMigration.seamless
+                ? translateText("不主动重启 Agent 或转发进程。仅支持单实例面板，两端须为相同版本和数据库类型，目标须无业务数据，迁移期间不能有其他程序写入同库；旧数据库保留为只读，旧地址和转交服务必须持续运行。面板操作会短暂停用，新面板需重新登录。")
+                : translateText("普通模式会切换 Agent 的面板地址，可能重建转发进程并中断现有连接。新面板验证通过后才会接管，旧面板数据不会自动删除。")}</p>
+            </div>
             <div className="space-y-2">
-              <Label>迁移内容</Label>
+              <Label>{translateText("迁移内容")}</Label>
               <Tabs
                 value={onlineMigration.dataScope}
                 onValueChange={(value) => setOnlineMigration({ ...onlineMigration, dataScope: value as PanelMigrationScope })}
               >
                 <TabsList className="grid h-auto w-full grid-cols-2">
-                  <TabsTrigger value="essential">关键数据迁移</TabsTrigger>
-                  <TabsTrigger value="full">全量迁移</TabsTrigger>
+                  <TabsTrigger value="essential">{translateText("关键数据迁移")}</TabsTrigger>
+                  <TabsTrigger value="full">{translateText("全量迁移")}</TabsTrigger>
                 </TabsList>
               </Tabs>
               <p className="text-xs text-muted-foreground">
                 {onlineMigration.dataScope === "essential"
-                  ? "跳过监控、延迟、测试和审计历史，迁移速度更快。"
-                  : "保留全部数据；空 SQLite 目标会自动使用数据库快速传输。"}
+                  ? translateText("跳过监控、延迟、测试和审计历史，迁移速度更快。")
+                  : translateText("保留全部数据；空 SQLite 目标会自动使用数据库快速传输。")}
               </p>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label>旧面板地址</Label>
+                <Label>{translateText("旧面板地址")}</Label>
                 <Input
                   value={onlineMigration.oldPanelUrl}
                   onChange={(e) => setOnlineMigration({ ...onlineMigration, oldPanelUrl: e.target.value })}
@@ -1755,16 +1560,16 @@ function BackupRestoreSection({ panelUrl }: { panelUrl: string }) {
                 />
               </div>
               <div className="space-y-2">
-                <Label>旧面板迁移码</Label>
+                <Label>{translateText("旧面板迁移码")}</Label>
                 <Input
                   value={onlineMigration.migrationCode}
                   onChange={(e) => setOnlineMigration({ ...onlineMigration, migrationCode: e.target.value.toUpperCase() })}
-                  placeholder="迁移码"
+                  placeholder={translateText("迁移码")}
                 />
               </div>
             </div>
             <div className="space-y-2">
-              <Label>新面板访问地址</Label>
+              <Label>{translateText("新面板访问地址")}</Label>
               <Input
                 value={onlineMigration.targetPanelUrl}
                 onChange={(e) => setOnlineMigration({ ...onlineMigration, targetPanelUrl: e.target.value })}
@@ -1779,14 +1584,12 @@ function BackupRestoreSection({ panelUrl }: { panelUrl: string }) {
                 </div>
                 <Progress value={migrationJob.progress} className="mt-3" />
                 <p className="mt-2 text-xs text-muted-foreground">
-                  {migrationJob.error || migrationJob.message || "验证完成前请保持新旧面板可访问。"}
+                  {migrationJob.error || migrationJob.message || translateText("验证完成前请保持新旧面板可访问。")}
                 </p>
               </div>
             )}
             <Button className="gap-2" onClick={openOnlineConfirm} disabled={startPanelMigrationMutation.isPending}>
-              <MoveRight className="h-4 w-4" />
-              开始在线迁移
-            </Button>
+              <MoveRight className="h-4 w-4" />{translateText("开始在线迁移")}</Button>
           </CardContent>
         </Card>
       </div>
@@ -1794,12 +1597,8 @@ function BackupRestoreSection({ panelUrl }: { panelUrl: string }) {
       <Card className="border-border/40 bg-card/60 backdrop-blur-md">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
-            <Database className="h-4 w-4 text-primary" />
-            数据库在线切换
-          </CardTitle>
-          <CardDescription>
-            在 SQLite、MySQL、PostgreSQL 之间迁移当前面板数据，连接和写入权限验证通过后才能开始。
-          </CardDescription>
+            <Database className="h-4 w-4 text-primary" />{translateText("数据库在线切换")}</CardTitle>
+          <CardDescription>{translateText("在 SQLite、MySQL、PostgreSQL 之间迁移当前面板数据，连接和写入权限验证通过后才能开始。")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-3 sm:grid-cols-3">
@@ -1824,7 +1623,7 @@ function BackupRestoreSection({ panelUrl }: { panelUrl: string }) {
                   {databaseSwitchType === type && <CheckCircle2 className="h-4 w-4 text-primary" />}
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {type === "sqlite" ? "本地数据文件" : type === "mysql" ? "外部 MySQL 数据库" : "外部 PostgreSQL 数据库"}
+                  {type === "sqlite" ? translateText("本地数据文件") : type === "mysql" ? translateText("外部 MySQL 数据库") : translateText("外部 PostgreSQL 数据库")}
                 </p>
               </button>
             ))}
@@ -1832,44 +1631,39 @@ function BackupRestoreSection({ panelUrl }: { panelUrl: string }) {
 
           <Alert className="border-primary/20 bg-primary/5 text-primary">
             <Database className="h-4 w-4" />
-            <AlertTitle>数据库版本要求</AlertTitle>
-            <AlertDescription>
-              SQLite 无需额外服务；MySQL 需要 8.0.13 或更高版本；PostgreSQL 建议使用 12 或更高版本。
-            </AlertDescription>
+            <AlertTitle>{translateText("数据库版本要求")}</AlertTitle>
+            <AlertDescription>{translateText("SQLite 无需额外服务；MySQL 需要 8.0.13 或更高版本；PostgreSQL 建议使用 12 或更高版本。")}</AlertDescription>
           </Alert>
 
           <div className="grid gap-4 rounded-lg border border-border/40 bg-muted/20 p-4">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="text-sm font-medium">
-                  当前数据库：{databaseSwitchStatus?.currentType
+                <p className="text-sm font-medium">{translateText("当前数据库：")}{databaseSwitchStatus?.currentType
                     ? databaseSwitchStatus.currentType === "sqlite"
                       ? "SQLite"
                       : databaseSwitchStatus.currentType === "mysql"
                         ? "MySQL"
                         : "PostgreSQL"
-                    : "未识别"}
+                    : translateText("未识别")}
                 </p>
-                <p className="text-xs text-muted-foreground">
-                  目标数据库需要为空库；迁移完成后面板会自动重启或刷新连接。
-                </p>
+                <p className="text-xs text-muted-foreground">{translateText("目标数据库需要为空库；迁移完成后面板会自动重启或刷新连接。")}</p>
               </div>
               <Badge variant={isDatabaseSwitchTested ? "default" : "outline"} className="w-fit">
-                {isDatabaseSwitchTested ? "连接与写入已验证" : "等待测试"}
+                {isDatabaseSwitchTested ? translateText("连接与写入已验证") : translateText("等待测试")}
               </Badge>
             </div>
 
             {databaseSwitchStatus?.blockedReason && (
               <Alert variant="destructive">
                 <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>当前环境暂不支持面板内切换</AlertTitle>
+                <AlertTitle>{translateText("当前环境暂不支持面板内切换")}</AlertTitle>
                 <AlertDescription>{databaseSwitchStatus.blockedReason}</AlertDescription>
               </Alert>
             )}
 
             {databaseSwitchType === "sqlite" ? (
               <div className="space-y-2">
-                <Label>SQLite 数据文件</Label>
+                <Label>{translateText("SQLite 数据文件")}</Label>
                 <Input
                   value={databaseSwitchSqlitePath}
                   onChange={(e) => {
@@ -1883,7 +1677,7 @@ function BackupRestoreSection({ panelUrl }: { panelUrl: string }) {
               <div className="grid gap-4">
                 <div className="grid gap-4 sm:grid-cols-[1fr_120px]">
                   <div className="space-y-2">
-                    <Label>地址</Label>
+                    <Label>{translateText("地址")}</Label>
                     <Input
                       value={databaseSwitchExternal.host}
                       onChange={(e) => {
@@ -1894,7 +1688,7 @@ function BackupRestoreSection({ panelUrl }: { panelUrl: string }) {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>端口</Label>
+                    <Label>{translateText("端口")}</Label>
                     <Input
                       type="number"
                       min={1}
@@ -1912,7 +1706,7 @@ function BackupRestoreSection({ panelUrl }: { panelUrl: string }) {
                 </div>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
-                    <Label>数据库名</Label>
+                    <Label>{translateText("数据库名")}</Label>
                     <Input
                       value={databaseSwitchExternal.database}
                       onChange={(e) => {
@@ -1922,7 +1716,7 @@ function BackupRestoreSection({ panelUrl }: { panelUrl: string }) {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>用户名</Label>
+                    <Label>{translateText("用户名")}</Label>
                     <Input
                       value={databaseSwitchExternal.user}
                       onChange={(e) => {
@@ -1933,7 +1727,7 @@ function BackupRestoreSection({ panelUrl }: { panelUrl: string }) {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label>密码</Label>
+                  <Label>{translateText("密码")}</Label>
                   <Input
                     type="password"
                     value={databaseSwitchExternal.password}
@@ -1945,8 +1739,8 @@ function BackupRestoreSection({ panelUrl }: { panelUrl: string }) {
                 </div>
                 <div className="flex items-center justify-between rounded-md border border-border/50 bg-background/40 p-3">
                   <div>
-                    <p className="text-sm font-medium">启用 SSL</p>
-                    <p className="text-xs text-muted-foreground">远程数据库或云数据库可按需开启。</p>
+                    <p className="text-sm font-medium">{translateText("启用 SSL")}</p>
+                    <p className="text-xs text-muted-foreground">{translateText("远程数据库或云数据库可按需开启。")}</p>
                   </div>
                   <Switch
                     checked={databaseSwitchExternal.ssl}
@@ -1962,10 +1756,10 @@ function BackupRestoreSection({ panelUrl }: { panelUrl: string }) {
             {databaseSwitchValidationError && (
               <Alert variant="destructive">
                 <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>目标数据库验证失败，迁移未启动</AlertTitle>
+                <AlertTitle>{translateText("目标数据库验证失败，迁移未启动")}</AlertTitle>
                 <AlertDescription className="space-y-2">
                   <p className="whitespace-pre-wrap break-words">{databaseSwitchValidationError}</p>
-                  <p>请修正目标账号或数据库权限并重新验证。验证通过前不会读取、写入或切换业务数据。</p>
+                  <p>{translateText("请修正目标账号或数据库权限并重新验证。验证通过前不会读取、写入或切换业务数据。")}</p>
                 </AlertDescription>
               </Alert>
             )}
@@ -1994,9 +1788,9 @@ function BackupRestoreSection({ panelUrl }: { panelUrl: string }) {
                       <p className="text-sm font-medium">{databaseSwitchJob.step}</p>
                       <p className="mt-0.5 text-xs text-muted-foreground">
                         {databaseSwitchJob.stageIndex && databaseSwitchJob.stageTotal
-                          ? `第 ${databaseSwitchJob.stageIndex}/${databaseSwitchJob.stageTotal} 步 · `
+                          ? translateText("第 {0}/{1} 步 · ", [databaseSwitchJob.stageIndex, databaseSwitchJob.stageTotal])
                           : ""}
-                        {databaseSwitchJob.sourceType || "未识别"} → {databaseSwitchJob.targetType || databaseSwitchConfig.type}
+                        {databaseSwitchJob.sourceType || translateText("未识别")} → {databaseSwitchJob.targetType || databaseSwitchConfig.type}
                       </p>
                     </div>
                   </div>
@@ -2004,7 +1798,7 @@ function BackupRestoreSection({ panelUrl }: { panelUrl: string }) {
                     <Badge
                       variant={databaseSwitchFailed ? "destructive" : databaseSwitchSucceeded ? "default" : databaseSwitchRunning ? "secondary" : "outline"}
                     >
-                      {databaseSwitchFailed ? "已失败" : databaseSwitchSucceeded ? "已完成" : databaseSwitchRunning ? "执行中" : "等待中"}
+                      {databaseSwitchFailed ? translateText("已失败") : databaseSwitchSucceeded ? translateText("已完成") : databaseSwitchRunning ? translateText("执行中") : translateText("等待中")}
                     </Badge>
                     <span className="text-sm tabular-nums">{databaseSwitchJob.progress}%</span>
                   </div>
@@ -2018,24 +1812,24 @@ function BackupRestoreSection({ panelUrl }: { panelUrl: string }) {
                   )}
                 />
                 <div className="mt-2 space-y-1.5 text-xs text-muted-foreground">
-                  <p>{databaseSwitchJob.detail || databaseSwitchJob.error || databaseSwitchJob.message || "数据库迁移切换正在执行，请不要重复提交。"}</p>
+                  <p>{databaseSwitchJob.detail || databaseSwitchJob.error || databaseSwitchJob.message || translateText("数据库迁移切换正在执行，请不要重复提交。")}</p>
                   {(databaseSwitchJob.currentTable
                     || typeof databaseSwitchJob.totalRows === "number"
                     || typeof databaseSwitchJob.totalTables === "number") && (
                     <div className="flex flex-wrap gap-x-4 gap-y-1 tabular-nums">
-                      {databaseSwitchJob.currentTable && <span>当前表：<code>{databaseSwitchJob.currentTable}</code></span>}
+                      {databaseSwitchJob.currentTable && <span>{translateText("当前表：")}<code>{databaseSwitchJob.currentTable}</code></span>}
                       {typeof databaseSwitchJob.totalRows === "number" && (
-                        <span>数据行：{databaseSwitchJob.processedRows || 0}/{databaseSwitchJob.totalRows}</span>
+                        <span>{translateText("数据行：")}{databaseSwitchJob.processedRows || 0}/{databaseSwitchJob.totalRows}</span>
                       )}
                       {typeof databaseSwitchJob.totalTables === "number" && (
-                        <span>数据表：{databaseSwitchJob.processedTables || 0}/{databaseSwitchJob.totalTables}</span>
+                        <span>{translateText("数据表：")}{databaseSwitchJob.processedTables || 0}/{databaseSwitchJob.totalTables}</span>
                       )}
                     </div>
                   )}
                   <div className="flex flex-wrap gap-x-4 gap-y-1 tabular-nums">
-                    <span>耗时：{databaseSwitchElapsed}</span>
-                    {databaseSwitchRunning && <span>最后进度更新：{databaseSwitchUpdatedAgo}前</span>}
-                    {databaseSwitchJob.finishedAt && <span>任务已结束，不会继续在后台执行</span>}
+                    <span>{translateText("耗时：")}{databaseSwitchElapsed}</span>
+                    {databaseSwitchRunning && <span>{translateText("最后进度更新：")}{databaseSwitchUpdatedAgo}{translateText("前")}</span>}
+                    {databaseSwitchJob.finishedAt && <span>{translateText("任务已结束，不会继续在后台执行")}</span>}
                   </div>
                   {databaseSwitchJob.message && databaseSwitchJob.message !== databaseSwitchJob.detail && !databaseSwitchFailed && (
                     <p>{databaseSwitchJob.message}</p>
@@ -2043,8 +1837,7 @@ function BackupRestoreSection({ panelUrl }: { panelUrl: string }) {
                   {databaseSwitchFailed
                     && databaseSwitchJob.errorDetail
                     && databaseSwitchJob.errorDetail !== databaseSwitchJob.error && (
-                      <p className="text-destructive">
-                        数据库原始错误：<code className="break-all">{databaseSwitchJob.errorDetail}</code>
+                      <p className="text-destructive">{translateText("数据库原始错误：")}<code className="break-all">{databaseSwitchJob.errorDetail}</code>
                       </p>
                     )}
                   {databaseSwitchJob.suggestion && (
@@ -2067,16 +1860,14 @@ function BackupRestoreSection({ panelUrl }: { panelUrl: string }) {
                 onClick={handleTestDatabaseSwitch}
                 disabled={testDatabaseSwitchMutation.isPending || databaseSwitchRunning || !!databaseSwitchStatus?.blockedReason}
               >
-                {testDatabaseSwitchMutation.isPending ? "验证中..." : "验证连接与权限"}
+                {testDatabaseSwitchMutation.isPending ? translateText("验证中...") : translateText("验证连接与权限")}
               </Button>
               <Button
                 className="gap-2"
                 onClick={openDatabaseSwitchConfirm}
                 disabled={!isDatabaseSwitchTested || databaseSwitchRunning || startDatabaseSwitchMutation.isPending || !!databaseSwitchStatus?.blockedReason}
               >
-                <MoveRight className="h-4 w-4" />
-                开始迁移切换
-              </Button>
+                <MoveRight className="h-4 w-4" />{translateText("开始迁移切换")}</Button>
             </div>
           </div>
         </CardContent>
@@ -2086,39 +1877,35 @@ function BackupRestoreSection({ panelUrl }: { panelUrl: string }) {
         <Card className="border-border/40 bg-card/60 backdrop-blur-md">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
-              <Download className="h-4 w-4 text-primary" />
-              加密数据导出
-            </CardTitle>
-            <CardDescription>
-              导出一份离线备份文件，文件内容会使用你设置的备份密码加密。
-            </CardDescription>
+              <Download className="h-4 w-4 text-primary" />{translateText("加密数据导出")}</CardTitle>
+            <CardDescription>{translateText("导出一份离线备份文件，文件内容会使用你设置的备份密码加密。")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label>备份密码</Label>
-                <Input type="password" value={backupPassword} onChange={(e) => setBackupPassword(e.target.value)} placeholder="至少 8 位" />
+                <Label>{translateText("备份密码")}</Label>
+                <Input type="password" value={backupPassword} onChange={(e) => setBackupPassword(e.target.value)} placeholder={translateText("至少 8 位")} />
               </div>
               <div className="space-y-2">
-                <Label>确认备份密码</Label>
+                <Label>{translateText("确认备份密码")}</Label>
                 <Input type="password" value={backupPasswordConfirm} onChange={(e) => setBackupPasswordConfirm(e.target.value)} />
               </div>
             </div>
             <Alert>
               <Lock className="h-4 w-4" />
-              <AlertTitle>请妥善保存备份密码</AlertTitle>
-              <AlertDescription>备份文件不保存明文数据，忘记密码将无法解密恢复。</AlertDescription>
+              <AlertTitle>{translateText("请妥善保存备份密码")}</AlertTitle>
+              <AlertDescription>{translateText("备份文件不保存明文数据，忘记密码将无法解密恢复。")}</AlertDescription>
             </Alert>
             <BackupTaskProgressView progress={exportProgress} />
             <div className="flex flex-wrap gap-2">
               <Button className="gap-2" onClick={handleExportBackup} disabled={exportBackupMutation.isPending}>
                 {exportBackupMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-                {exportBackupMutation.isPending ? "正在导出..." : "导出加密备份"}
+                {exportBackupMutation.isPending ? translateText("正在导出...") : translateText("导出加密备份")}
               </Button>
               {pendingBackupDownload && (
                 <Button variant="outline" className="gap-2" onClick={handleRetryBackupDownload} disabled={backupSaveCooldown}>
                   {backupSaveCooldown ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-                  {backupSaveCooldown ? "请稍候..." : "再次保存已生成备份"}
+                  {backupSaveCooldown ? translateText("请稍候...") : translateText("再次保存已生成备份")}
                 </Button>
               )}
             </div>
@@ -2128,32 +1915,28 @@ function BackupRestoreSection({ panelUrl }: { panelUrl: string }) {
         <Card className="border-border/40 bg-card/60 backdrop-blur-md">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
-              <Upload className="h-4 w-4 text-primary" />
-              离线导入恢复
-            </CardTitle>
-            <CardDescription>
-              旧面板离线时，可通过加密备份文件恢复并接管旧主机。
-            </CardDescription>
+              <Upload className="h-4 w-4 text-primary" />{translateText("离线导入恢复")}</CardTitle>
+            <CardDescription>{translateText("旧面板离线时，可通过加密备份文件恢复并接管旧主机。")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="space-y-2">
-              <Label>备份文件</Label>
+              <Label>{translateText("备份文件")}</Label>
               <Input
                 ref={fileInputRef}
                 type="file"
                 accept=".fwxbak,application/json"
                 onChange={(e) => handleBackupFileChange(e.target.files?.[0])}
               />
-              {importFilename && <p className="text-xs text-muted-foreground">已选择：{importFilename}</p>}
+              {importFilename && <p className="text-xs text-muted-foreground">{translateText("已选择：")}{importFilename}</p>}
             </div>
             <div className="space-y-2">
-              <Label>备份密码</Label>
+              <Label>{translateText("备份密码")}</Label>
               <Input type="password" value={importPassword} onChange={(e) => setImportPassword(e.target.value)} />
             </div>
             <BackupTaskProgressView progress={importProgress} />
             <Button className="gap-2" onClick={openImportConfirm} disabled={importBackupMutation.isPending}>
               {importBackupMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-              {importBackupMutation.isPending ? "正在导入..." : "导入并恢复"}
+              {importBackupMutation.isPending ? translateText("正在导入...") : translateText("导入并恢复")}
             </Button>
           </CardContent>
         </Card>
@@ -2163,31 +1946,25 @@ function BackupRestoreSection({ panelUrl }: { panelUrl: string }) {
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-amber-500" />
-              确认导入备份
-            </DialogTitle>
-            <DialogDescription>
-              导入后会接管备份内已有主机，旧面板的主机、规则、隧道和转发组会迁移到当前面板。
-            </DialogDescription>
+              <AlertTriangle className="h-5 w-5 text-amber-500" />{translateText("确认导入备份")}</DialogTitle>
+            <DialogDescription>{translateText("导入后会接管备份内已有主机，旧面板的主机、规则、隧道和转发组会迁移到当前面板。")}</DialogDescription>
           </DialogHeader>
           <Alert>
             <ShieldCheck className="h-4 w-4" />
-            <AlertTitle>{hasExistingData ? "将执行增量导入" : "将执行完整恢复"}</AlertTitle>
+            <AlertTitle>{hasExistingData ? translateText("将执行增量导入") : translateText("将执行完整恢复")}</AlertTitle>
             <AlertDescription>
               {hasExistingData
-                ? "当前面板已有数据会被保留，备份内数据会增量追加；重复数据会尽量复用现有记录。"
-                : "当前面板没有业务数据，导入后会保留当前管理员账户，并以备份数据作为当前面板数据。"}
+                ? translateText("当前面板已有数据会被保留，备份内数据会增量追加；重复数据会尽量复用现有记录。")
+                : translateText("当前面板没有业务数据，导入后会保留当前管理员账户，并以备份数据作为当前面板数据。")}
             </AlertDescription>
           </Alert>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowImportConfirm(false)} disabled={importBackupMutation.isPending}>
-              取消
-            </Button>
+            <Button variant="outline" onClick={() => setShowImportConfirm(false)} disabled={importBackupMutation.isPending}>{translateText("取消")}</Button>
             <Button
               onClick={confirmImportBackup}
               disabled={importBackupMutation.isPending}
             >
-              {importBackupMutation.isPending ? "正在导入..." : "确认导入"}
+              {importBackupMutation.isPending ? translateText("正在导入...") : translateText("确认导入")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -2197,37 +1974,29 @@ function BackupRestoreSection({ panelUrl }: { panelUrl: string }) {
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-amber-500" />
-              确认在线迁移
-            </DialogTitle>
-            <DialogDescription>
-              新面板将连接旧面板拉取数据，并在旧面板审批后执行迁移。
-            </DialogDescription>
+              <AlertTriangle className="h-5 w-5 text-amber-500" />{translateText("确认在线迁移")}</DialogTitle>
+            <DialogDescription>{translateText("新面板将连接旧面板拉取数据，并在旧面板审批后执行迁移。")}</DialogDescription>
           </DialogHeader>
           <Alert>
             <ShieldCheck className="h-4 w-4" />
-            <AlertTitle>{panelMigrationScopeLabel(onlineMigration.dataScope)}</AlertTitle>
+            <AlertTitle>{translateText(panelMigrationScopeLabel(onlineMigration.dataScope))}</AlertTitle>
             <AlertDescription>
-              {hasExistingData ? "当前面板数据会保留并执行增量合并；" : "目标面板验证通过后才会接管；"}
-              旧面板数据不会自动删除。
-            </AlertDescription>
+              {onlineMigration.seamless ? translateText("无缝模式仅接受空业务目标面板；旧地址必须保留并持续转交请求，不自动重启 Agent 或转发进程；") : hasExistingData ? translateText("当前面板数据会保留并执行增量合并；") : translateText("目标面板验证通过后才会接管；")}{translateText("旧面板数据不会自动删除。")}</AlertDescription>
           </Alert>
+          {!onlineMigration.seamless && <p className="text-sm text-muted-foreground">{translateText("普通模式会切换 Agent 的面板地址，可能重建转发进程并中断现有连接。新面板验证通过后才会接管，旧面板数据不会自动删除。")}</p>}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowOnlineConfirm(false)} disabled={startPanelMigrationMutation.isPending}>
-              取消
-            </Button>
+            <Button variant="outline" onClick={() => setShowOnlineConfirm(false)} disabled={startPanelMigrationMutation.isPending}>{translateText("取消")}</Button>
             <Button
               onClick={() => startPanelMigrationMutation.mutate({
                 oldPanelUrl: onlineMigration.oldPanelUrl.trim(),
                 migrationCode: onlineMigration.migrationCode.trim(),
                 targetPanelUrl: onlineMigration.targetPanelUrl.trim(),
                 dataScope: onlineMigration.dataScope,
+                seamless: onlineMigration.seamless,
                 confirmed: true,
               })}
               disabled={startPanelMigrationMutation.isPending}
-            >
-              确认迁移
-            </Button>
+            >{translateText("确认迁移")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -2236,34 +2005,26 @@ function BackupRestoreSection({ panelUrl }: { panelUrl: string }) {
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-amber-500" />
-              确认切换数据库
-            </DialogTitle>
-            <DialogDescription>
-              面板会把当前数据迁移到目标数据库，完成后自动重启或刷新连接。
-            </DialogDescription>
+              <AlertTriangle className="h-5 w-5 text-amber-500" />{translateText("确认切换数据库")}</DialogTitle>
+            <DialogDescription>{translateText("面板会把当前数据迁移到目标数据库，完成后自动重启或刷新连接。")}</DialogDescription>
           </DialogHeader>
           <Alert>
             <ShieldCheck className="h-4 w-4" />
-            <AlertTitle>请确认目标数据库为空库</AlertTitle>
-            <AlertDescription>
-              迁移会保留当前数据 ID；如果目标数据库已有业务数据，后端会阻止切换以避免覆盖或混合数据。
-            </AlertDescription>
+            <AlertTitle>{translateText("请确认目标数据库为空库")}</AlertTitle>
+            <AlertDescription>{translateText("迁移会保留当前数据 ID；如果目标数据库已有业务数据，后端会阻止切换以避免覆盖或混合数据。")}</AlertDescription>
           </Alert>
           <Alert className="border-primary/20 bg-primary/5 text-primary">
             <Database className="h-4 w-4" />
-            <AlertTitle>请确认数据库版本</AlertTitle>
-            <AlertDescription>
-              MySQL 需要 8.0.13 或以上版本；PostgreSQL 建议 12 或以上版本。
-            </AlertDescription>
+            <AlertTitle>{translateText("请确认数据库版本")}</AlertTitle>
+            <AlertDescription>{translateText("MySQL 需要 8.0.13 或以上版本；PostgreSQL 建议 12 或以上版本。")}</AlertDescription>
           </Alert>
           <div className="rounded-lg border border-border/40 bg-muted/20 p-3 text-sm">
             <div className="flex items-center justify-between gap-3">
-              <span className="text-muted-foreground">当前数据库</span>
+              <span className="text-muted-foreground">{translateText("当前数据库")}</span>
               <code>{databaseSwitchStatus?.currentType || "-"}</code>
             </div>
             <div className="mt-2 flex items-center justify-between gap-3">
-              <span className="text-muted-foreground">目标数据库</span>
+              <span className="text-muted-foreground">{translateText("目标数据库")}</span>
               <code>{databaseSwitchConfig.type}</code>
             </div>
           </div>
@@ -2272,18 +2033,14 @@ function BackupRestoreSection({ panelUrl }: { panelUrl: string }) {
               variant="outline"
               onClick={() => setShowDatabaseSwitchConfirm(false)}
               disabled={startDatabaseSwitchMutation.isPending}
-            >
-              取消
-            </Button>
+            >{translateText("取消")}</Button>
             <Button
               onClick={() => startDatabaseSwitchMutation.mutate({
                 target: databaseSwitchConfig,
                 confirmed: true,
               })}
               disabled={startDatabaseSwitchMutation.isPending || !isDatabaseSwitchTested}
-            >
-              确认切换
-            </Button>
+            >{translateText("确认切换")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -2316,13 +2073,13 @@ function TelegramBotSettingsCard() {
   const updateSettingsMutation = trpc.system.updateSettings.useMutation({
     onSuccess: () => {
       utils.system.getSettings.invalidate();
-      toast.success("Telegram 机器人配置已保存");
+      toast.success(translateText("Telegram 机器人配置已保存"));
     },
-    onError: (err) => toast.error(err.message || "保存失败"),
+    onError: (err) => toast.error(err.message || translateText("保存失败")),
   });
   const testTelegramMutation = trpc.telegram.testSend.useMutation({
-    onSuccess: () => toast.success("测试消息已发送，请查看已绑定的 Telegram"),
-    onError: (err) => toast.error(err.message || "测试发送失败"),
+    onSuccess: () => toast.success(translateText("测试消息已发送，请查看已绑定的 Telegram")),
+    onError: (err) => toast.error(err.message || translateText("测试发送失败")),
   });
 
   const handleSaveTelegram = () => {
@@ -2331,11 +2088,11 @@ function TelegramBotSettingsCard() {
     const hasTelegramToken = !!settings?.telegram?.configured || settings?.telegram?.tokenSource === "env" || !!nextToken;
     const remindersReady = telegramEnabled && !!settings?.telegram?.configured;
     if (telegramEnabled && !hasTelegramToken) {
-      toast.error("请先填写 Bot Token");
+      toast.error(translateText("请先填写 Bot Token"));
       return;
     }
     if ((telegramExpiryReminder || telegramTrafficReminder || telegramHostStatusNotify) && !remindersReady) {
-      toast.error("请先保存并启用 Telegram 机器人后再开启提醒");
+      toast.error(translateText("请先保存并启用 Telegram 机器人后再开启提醒"));
       return;
     }
     updateSettingsMutation.mutate({
@@ -2365,10 +2122,10 @@ function TelegramBotSettingsCard() {
 
   const tokenSourceLabel =
     settings?.telegram?.tokenSource === "env"
-      ? "环境变量 TELEGRAM_BOT_TOKEN"
+      ? translateText("环境变量 TELEGRAM_BOT_TOKEN")
       : settings?.telegram?.tokenSource === "database"
-        ? "数据库配置"
-        : "未配置";
+        ? translateText("数据库配置")
+        : translateText("未配置");
 
   const telegramTokenLocked = !!settings?.telegram?.configured || settings?.telegram?.tokenSource === "env";
   const telegramTokenDisplayValue = telegramTokenLocked
@@ -2376,7 +2133,7 @@ function TelegramBotSettingsCard() {
     : telegramBotTokenInput;
   const hasTelegramTokenForEnable = !!settings?.telegram?.configured || settings?.telegram?.tokenSource === "env" || !!telegramBotTokenInput.trim();
   const telegramRemindersReady = telegramEnabled && !!settings?.telegram?.configured;
-  const telegramReminderHint = telegramRemindersReady ? null : "请先保存并启用 Telegram 机器人。";
+  const telegramReminderHint = telegramRemindersReady ? null : translateText("请先保存并启用 Telegram 机器人。");
 
   return (
     <>
@@ -2385,21 +2142,17 @@ function TelegramBotSettingsCard() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <CardTitle className="flex items-center gap-2 text-base">
-              <Send className="h-4 w-4 text-primary" />
-              Telegram 机器人
-            </CardTitle>
-            <CardDescription className="mt-1">
-              配置 Bot Token，启用绑定、提醒和快捷登录。
-            </CardDescription>
+              <Send className="h-4 w-4 text-primary" />{translateText("Telegram 机器人")}</CardTitle>
+            <CardDescription className="mt-1">{translateText("配置 Bot Token，启用绑定、提醒和快捷登录。")}</CardDescription>
           </div>
           <Badge variant={settings?.telegram?.configured ? "default" : "outline"} className="w-fit">
-            {settings?.telegram?.configured ? "已配置" : "未配置"}
+            {settings?.telegram?.configured ? translateText("已配置") : translateText("未配置")}
           </Badge>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {isLoading ? (
-          <DataSectionLoading label="正在加载 Telegram 配置" minHeight="min-h-[120px]" />
+          <DataSectionLoading label={translateText("正在加载 Telegram 配置")} minHeight="min-h-[120px]" />
         ) : (
           <>
             <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_220px]">
@@ -2407,7 +2160,7 @@ function TelegramBotSettingsCard() {
                 <Label>Bot Token</Label>
                 <Input
                   type="text"
-                  placeholder={settings?.telegram?.tokenMasked || "从 @BotFather 获取，例如 123456:ABC..."}
+                  placeholder={settings?.telegram?.tokenMasked || translateText("从 @BotFather 获取，例如 123456:ABC...")}
                   value={telegramTokenDisplayValue}
                   onChange={(e) => {
                     if (!telegramTokenLocked) setTelegramBotTokenInput(e.target.value);
@@ -2422,23 +2175,22 @@ function TelegramBotSettingsCard() {
                   }}
                   className={telegramTokenLocked ? "select-none font-mono" : "font-mono"}
                 />
-                <p className="text-xs text-muted-foreground">
-                  来源：{tokenSourceLabel}
+                <p className="text-xs text-muted-foreground">{translateText("来源：")}{tokenSourceLabel}
                 </p>
               </div>
               <div className="rounded-lg border border-border/40 bg-background/50 p-3">
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <p className="text-sm font-medium">启用机器人</p>
+                    <p className="text-sm font-medium">{translateText("启用机器人")}</p>
                     <p className="mt-1 text-xs text-muted-foreground">
-                      {settings?.telegram?.botUsername ? `@${settings.telegram.botUsername}` : "保存 Token 后自动识别机器人"}
+                      {settings?.telegram?.botUsername ? `@${settings.telegram.botUsername}` : translateText("保存 Token 后自动识别机器人")}
                     </p>
                   </div>
                   <Switch
                     checked={telegramEnabled}
                     onCheckedChange={(checked) => {
                       if (checked && !hasTelegramTokenForEnable) {
-                        toast.error("请先填写 Bot Token");
+                        toast.error(translateText("请先填写 Bot Token"));
                         return;
                       }
                       setTelegramEnabled(checked);
@@ -2449,17 +2201,15 @@ function TelegramBotSettingsCard() {
             </div>
             <Alert>
               <Globe className="h-4 w-4" />
-              <AlertTitle>快捷登录需要域名</AlertTitle>
-              <AlertDescription>
-                在系统配置填写公开地址，并在 @BotFather 绑定同一域名。
-              </AlertDescription>
+              <AlertTitle>{translateText("快捷登录需要域名")}</AlertTitle>
+              <AlertDescription>{translateText("在系统配置填写公开地址，并在 @BotFather 绑定同一域名。")}</AlertDescription>
             </Alert>
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
               <div className="rounded-lg border border-border/40 bg-background/50 p-3">
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <p className="text-sm font-medium">到期提醒</p>
-                    <p className="mt-1 text-xs text-muted-foreground">{telegramReminderHint || "到期前 3 天提醒。"}</p>
+                    <p className="text-sm font-medium">{translateText("到期提醒")}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">{telegramReminderHint || translateText("到期前 3 天提醒。")}</p>
                   </div>
                   <Switch
                     checked={telegramRemindersReady && telegramExpiryReminder}
@@ -2471,8 +2221,8 @@ function TelegramBotSettingsCard() {
               <div className="rounded-lg border border-border/40 bg-background/50 p-3">
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <p className="text-sm font-medium">主机上线/离线通知</p>
-                    <p className="mt-1 text-xs text-muted-foreground">{telegramReminderHint || "仅发送给已绑定 Telegram 的管理员。"}</p>
+                    <p className="text-sm font-medium">{translateText("主机上线/离线通知")}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">{telegramReminderHint || translateText("仅发送给已绑定 Telegram 的管理员。")}</p>
                   </div>
                   <Switch
                     checked={telegramRemindersReady && telegramHostStatusNotify}
@@ -2484,8 +2234,8 @@ function TelegramBotSettingsCard() {
               <div className="rounded-lg border border-border/40 bg-background/50 p-3">
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <p className="text-sm font-medium">流量提醒</p>
-                    <p className="mt-1 text-xs text-muted-foreground">{telegramReminderHint || "低于阈值时提醒。"}</p>
+                    <p className="text-sm font-medium">{translateText("流量提醒")}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">{telegramReminderHint || translateText("低于阈值时提醒。")}</p>
                   </div>
                   <Switch
                     checked={telegramRemindersReady && telegramTrafficReminder}
@@ -2494,7 +2244,7 @@ function TelegramBotSettingsCard() {
                   />
                 </div>
                 <div className="mt-3 flex items-center gap-2">
-                  <Label className="shrink-0 text-xs text-muted-foreground">阈值</Label>
+                  <Label className="shrink-0 text-xs text-muted-foreground">{translateText("阈值")}</Label>
                   <Input
                     type="number"
                     min={1}
@@ -2508,20 +2258,17 @@ function TelegramBotSettingsCard() {
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
-              <Button onClick={handleSaveTelegram} disabled={updateSettingsMutation.isPending}>
-                保存 Telegram 配置
-              </Button>
+              <Button onClick={handleSaveTelegram} disabled={updateSettingsMutation.isPending}>{translateText("保存 Telegram 配置")}</Button>
               <Button
                 variant="outline"
                 onClick={() => testTelegramMutation.mutate()}
                 disabled={
                   testTelegramMutation.isPending ||
+                  settings?.notificationChannel !== "telegram" ||
                   !settings?.telegram?.configured ||
                   !settings?.telegram?.enabled
                 }
-              >
-                测试发送
-              </Button>
+              >{translateText("测试发送")}</Button>
               {settings?.telegram?.tokenSource === "database" && (
                 <Button
                   variant="outline"
@@ -2529,16 +2276,12 @@ function TelegramBotSettingsCard() {
                   onClick={() => setShowDeleteTelegramBot(true)}
                   disabled={updateSettingsMutation.isPending}
                 >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  删除机器人
-                </Button>
+                  <Trash2 className="mr-2 h-4 w-4" />{translateText("删除机器人")}</Button>
               )}
               {settings?.telegram?.botUsername && (
                 <Button variant="ghost" asChild className="gap-2">
                   <a href={`https://t.me/${settings.telegram.botUsername}`} target="_blank" rel="noopener noreferrer">
-                    <ExternalLink className="h-4 w-4" />
-                    打开机器人
-                  </a>
+                    <ExternalLink className="h-4 w-4" />{translateText("打开机器人")}</a>
                 </Button>
               )}
             </div>
@@ -2551,25 +2294,17 @@ function TelegramBotSettingsCard() {
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-destructive">
-            <AlertTriangle className="h-5 w-5" />
-            删除 Telegram 机器人
-          </DialogTitle>
-          <DialogDescription>
-            删除当前 Bot Token。
-          </DialogDescription>
+            <AlertTriangle className="h-5 w-5" />{translateText("删除 Telegram 机器人")}</DialogTitle>
+          <DialogDescription>{translateText("删除当前 Bot Token。")}</DialogDescription>
         </DialogHeader>
         <div className="rounded-lg border border-border/40 bg-muted/20 p-3 text-sm">
-          <p className="text-xs text-muted-foreground">当前机器人</p>
-          <p className="mt-1 font-medium">{settings?.telegram?.botUsername ? `@${settings.telegram.botUsername}` : "Telegram 机器人"}</p>
+          <p className="text-xs text-muted-foreground">{translateText("当前机器人")}</p>
+          <p className="mt-1 font-medium">{settings?.telegram?.botUsername ? `@${settings.telegram.botUsername}` : translateText("Telegram 机器人")}</p>
           <p className="mt-2 font-mono text-xs text-muted-foreground">{settings?.telegram?.tokenMasked || "-"}</p>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => setShowDeleteTelegramBot(false)}>
-            取消
-          </Button>
-          <Button variant="destructive" onClick={handleClearTelegramToken} disabled={updateSettingsMutation.isPending}>
-            确认删除
-          </Button>
+          <Button variant="outline" onClick={() => setShowDeleteTelegramBot(false)}>{translateText("取消")}</Button>
+          <Button variant="destructive" onClick={handleClearTelegramToken} disabled={updateSettingsMutation.isPending}>{translateText("确认删除")}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -2654,12 +2389,12 @@ function DeepSeekSettingsCard() {
           },
         }));
         setShowDeleteDeepSeekKey(false);
-        toast.success("AI API Key 已删除");
+        toast.success(translateText("AI API Key 已删除"));
         return;
       }
-      toast.success("AI 配置已保存");
+      toast.success(translateText("AI 配置已保存"));
     },
-    onError: (err) => toast.error(err.message || "保存失败"),
+    onError: (err) => toast.error(err.message || translateText("保存失败")),
   });
 
   const selectedModelMeta = useMemo(() => {
@@ -2708,7 +2443,7 @@ function DeepSeekSettingsCard() {
     const nextApiKey = activeProviderConfig.apiKeyInput.trim();
     const hasApiKey = providerConfigured || !!nextApiKey;
     if (deepseekEnabled && !hasApiKey) {
-      toast.error("请先填写 AI API Key");
+      toast.error(translateText("请先填写 AI API Key"));
       return;
     }
     const maxTokens = normalizeMaxTokens();
@@ -2762,29 +2497,27 @@ function DeepSeekSettingsCard() {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <CardTitle className="flex items-center gap-2 text-base">
-                <Key className="h-4 w-4 text-emerald-500" />
-                AI 助手模型
-              </CardTitle>
-              <CardDescription className="mt-1">
-                支持 DeepSeek / SiliconFlow / 自定义 OpenAI 兼容接口，用于 Telegram AI 指令解析。
-              </CardDescription>
+                <Key className="h-4 w-4 text-emerald-500" />{translateText("AI 助手模型")}</CardTitle>
+              <CardDescription className="mt-1">{translateText("支持 DeepSeek / SiliconFlow / 自定义 OpenAI 兼容接口，用于所选通知渠道的 AI 指令解析。")}</CardDescription>
+              <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{translateText("复杂请求会按需发送有权限的最少资源信息给 AI 服务，不包含密码、Token 或隧道密钥。待办可发送“继续”恢复，所有修改仍需确认。")}</p>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{translateText("支持规则、到期、设置开关、主机、隧道、转发组、用户额度授权、套餐订阅和公告等常用操作；敏感凭据、迁移和升级仍请使用网页。")}</p>
             </div>
             <Badge variant={providerConfigured ? "default" : "outline"} className="w-fit">
-              {providerConfigured ? "已配置" : "未配置"}
+              {providerConfigured ? translateText("已配置") : translateText("未配置")}
             </Badge>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
           {isLoading ? (
-            <DataSectionLoading label="正在加载 AI 配置" minHeight="min-h-[120px]" />
+            <DataSectionLoading label={translateText("正在加载 AI 配置")} minHeight="min-h-[120px]" />
           ) : (
             <>
               <div className="grid gap-3 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>提供商</Label>
+                  <Label>{translateText("提供商")}</Label>
                   <Select value={deepseekProvider} onValueChange={handleProviderChange}>
                     <SelectTrigger className="h-10">
-                      <SelectValue placeholder="选择提供商" />
+                      <SelectValue placeholder={translateText("选择提供商")} />
                     </SelectTrigger>
                     <SelectContent>
                       {aiProviderOptions.map((option) => (
@@ -2794,18 +2527,18 @@ function DeepSeekSettingsCard() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>启用 AI 助手</Label>
+                  <Label>{translateText("启用 AI 助手")}</Label>
                   <div className="flex h-10 items-center justify-between rounded-md border border-border/40 bg-background/50 px-3">
                     <p className="min-w-0 flex-1 truncate pr-3 text-sm text-muted-foreground">
                       {providerConfigured
                         ? `${providerLabel} · ${deepseekModel}${selectedModelMeta?.isFree === true ? " · Free" : (selectedModelMeta?.isFree === false ? " · Paid" : "")}`
-                        : "保存 API Key 后启用"}
+                        : translateText("保存 API Key 后启用")}
                     </p>
                     <Switch
                       checked={deepseekEnabled}
                       onCheckedChange={(checked) => {
                         if (checked && !hasDeepSeekKeyForEnable) {
-                          toast.error("请先填写 AI API Key");
+                          toast.error(translateText("请先填写 AI API Key"));
                           return;
                         }
                         setDeepseekEnabled(checked);
@@ -2820,7 +2553,7 @@ function DeepSeekSettingsCard() {
                   <Label>API Key</Label>
                   <Input
                     type="text"
-                    placeholder={activeProviderConfig.apiKeyMasked || "从提供商控制台获取，例如 sk-..."}
+                    placeholder={activeProviderConfig.apiKeyMasked || translateText("从提供商控制台获取，例如 sk-...")}
                     value={deepseekKeyDisplayValue}
                     onChange={(e) => {
                       if (!deepseekKeyLocked) updateActiveProviderConfig({ apiKeyInput: e.target.value });
@@ -2834,12 +2567,10 @@ function DeepSeekSettingsCard() {
                     }}
                     className={deepseekKeyLocked ? "select-none font-mono" : "font-mono"}
                   />
-                  <p className="text-xs text-muted-foreground">
-                    按提供商分别保存 API Key，切换提供商时会自动带出对应配置。
-                  </p>
+                  <p className="text-xs text-muted-foreground">{translateText("按提供商分别保存 API Key，切换提供商时会自动带出对应配置。")}</p>
                 </div>
                 <div className="space-y-2 lg:col-span-3">
-                  <Label>接口地址</Label>
+                  <Label>{translateText("接口地址")}</Label>
                   <Input
                     type="text"
                     value={deepseekBaseUrl}
@@ -2849,7 +2580,7 @@ function DeepSeekSettingsCard() {
                   />
                 </div>
                 <div className="space-y-2 lg:col-span-4">
-                  <Label>模型</Label>
+                  <Label>{translateText("模型")}</Label>
                   <Input
                     type="text"
                     value={deepseekModel}
@@ -2862,7 +2593,7 @@ function DeepSeekSettingsCard() {
 
               <div className="rounded-lg border border-border/40 bg-background/50 p-2.5">
                 <div className="mb-2 flex items-center justify-between gap-2">
-                  <p className="text-xs text-muted-foreground">可用聊天模型（支持展示 Free 状态）</p>
+                  <p className="text-xs text-muted-foreground">{translateText("可用聊天模型（支持展示 Free 状态）")}</p>
                   <Button
                     type="button"
                     variant="ghost"
@@ -2871,9 +2602,7 @@ function DeepSeekSettingsCard() {
                     onClick={() => aiModelsQuery.refetch()}
                     disabled={!providerConfigured || aiModelsQuery.isFetching}
                   >
-                    {aiModelsQuery.isFetching && <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />}
-                    刷新
-                  </Button>
+                    {aiModelsQuery.isFetching && <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />}{translateText("刷新")}</Button>
                 </div>
                 {!!providerConfigured && models.length > 0 && (
                   <Select
@@ -2881,7 +2610,7 @@ function DeepSeekSettingsCard() {
                     onValueChange={(value) => updateActiveProviderConfig({ model: value })}
                   >
                     <SelectTrigger className="h-9">
-                      <SelectValue placeholder="从列表选择模型" />
+                      <SelectValue placeholder={translateText("从列表选择模型")} />
                     </SelectTrigger>
                     <SelectContent className="max-h-72">
                       {models.map((item: any) => (
@@ -2894,21 +2623,19 @@ function DeepSeekSettingsCard() {
                   </Select>
                 )}
                 {!!providerConfigured && models.length > 0 ? (
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    共 {models.length} 个，Free {knownFreeCount} 个，付费 {knownPaidCount} 个，未知 {unknownFreeCount} 个。
-                  </p>
+                  <p className="mt-2 text-xs text-muted-foreground">{translateText("共 ")}{models.length}{translateText(" 个，Free ")}{knownFreeCount}{translateText(" 个，付费 ")}{knownPaidCount}{translateText(" 个，未知 ")}{unknownFreeCount}{translateText(" 个。")}</p>
                 ) : (
                   <p className="text-xs text-muted-foreground">
                     {providerConfigured
-                      ? (aiModelsQuery.data?.error || "暂未获取到模型列表，可手动输入模型名称。")
-                      : "保存 API Key 后可拉取模型列表。"}
+                      ? (aiModelsQuery.data?.error || translateText("暂未获取到模型列表，可手动输入模型名称。"))
+                      : translateText("保存 API Key 后可拉取模型列表。")}
                   </p>
                 )}
               </div>
 
               <div className="grid gap-3 sm:max-w-[560px] sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>最大输出</Label>
+                  <Label>{translateText("最大输出")}</Label>
                   <Input
                     type="number"
                     min={128}
@@ -2918,7 +2645,7 @@ function DeepSeekSettingsCard() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>温度</Label>
+                  <Label>{translateText("温度")}</Label>
                   <Input
                     type="number"
                     min={0}
@@ -2934,10 +2661,8 @@ function DeepSeekSettingsCard() {
                 <div className="rounded-lg border border-border/40 bg-background/50 p-3">
                   <div className="flex items-center justify-between gap-3">
                     <div>
-                      <p className="text-sm font-medium">普通用户可用 AI 管理</p>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        关闭后普通用户不能使用 AI 对话执行管理操作。
-                      </p>
+                      <p className="text-sm font-medium">{translateText("普通用户可用 AI 管理")}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">{translateText("关闭后普通用户不能使用 AI 对话执行管理操作。")}</p>
                     </div>
                     <Switch
                       checked={deepseekTelegramUserManageEnabled}
@@ -2948,10 +2673,8 @@ function DeepSeekSettingsCard() {
                 <div className="rounded-lg border border-border/40 bg-background/50 p-3">
                   <div className="flex items-center justify-between gap-3">
                     <div>
-                      <p className="text-sm font-medium">机器人信息自动撤回</p>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        仅对 AI 相关聊天内容生效，默认关闭。
-                      </p>
+                      <p className="text-sm font-medium">{translateText("机器人信息自动撤回")}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">{translateText("仅对 AI 相关聊天内容生效，默认关闭。")}</p>
                     </div>
                     <Switch
                       checked={deepseekTelegramAutoRecallEnabled}
@@ -2960,7 +2683,7 @@ function DeepSeekSettingsCard() {
                   </div>
                 </div>
                 <div className="space-y-2 rounded-lg border border-border/40 bg-background/50 p-3">
-                  <Label className="text-xs text-muted-foreground">撤回时间（秒）</Label>
+                  <Label className="text-xs text-muted-foreground">{translateText("撤回时间（秒）")}</Label>
                   <Input
                     type="number"
                     min={30}
@@ -2968,15 +2691,13 @@ function DeepSeekSettingsCard() {
                     value={deepseekTelegramAutoRecallSeconds}
                     onChange={(e) => setDeepseekTelegramAutoRecallSeconds(Math.min(1200, Math.max(30, Number(e.target.value) || 60)))}
                   />
-                  <p className="text-xs text-muted-foreground">范围 30-1200 秒，默认 60 秒。</p>
+                  <p className="text-xs text-muted-foreground">{translateText("范围 30-1200 秒，默认 60 秒。")}</p>
                 </div>
               </div>
 
               <div className="flex flex-wrap gap-2">
                 <Button onClick={handleSaveDeepSeek} disabled={updateSettingsMutation.isPending}>
-                  {updateSettingsMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  保存 AI 配置
-                </Button>
+                  {updateSettingsMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}{translateText("保存 AI 配置")}</Button>
                 {providerConfigured && (
                   <Button
                     variant="outline"
@@ -2984,9 +2705,7 @@ function DeepSeekSettingsCard() {
                     onClick={() => setShowDeleteDeepSeekKey(true)}
                     disabled={updateSettingsMutation.isPending}
                   >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    删除 API Key
-                  </Button>
+                    <Trash2 className="mr-2 h-4 w-4" />{translateText("删除 API Key")}</Button>
                 )}
               </div>
             </>
@@ -3004,15 +2723,11 @@ function DeepSeekSettingsCard() {
           <div className="min-h-0 flex-1 overflow-y-auto p-4 pr-12 sm:p-6 sm:pr-12">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-destructive">
-                <AlertTriangle className="h-5 w-5 shrink-0" />
-                删除 AI API Key
-              </DialogTitle>
-              <DialogDescription>
-                删除后会同时关闭 AI 助手，需要重新填写 API Key 后才能启用。
-              </DialogDescription>
+                <AlertTriangle className="h-5 w-5 shrink-0" />{translateText("删除 AI API Key")}</DialogTitle>
+              <DialogDescription>{translateText("删除后会同时关闭 AI 助手，需要重新填写 API Key 后才能启用。")}</DialogDescription>
             </DialogHeader>
             <div className="mt-4 rounded-lg border border-border/40 bg-muted/20 p-3 text-sm">
-              <p className="text-xs text-muted-foreground">当前配置</p>
+              <p className="text-xs text-muted-foreground">{translateText("当前配置")}</p>
               <p className="mt-1 truncate font-medium">{providerLabel}</p>
               <p className="mt-1 truncate font-medium">{deepseekModel || activeProviderDefaults.model}</p>
               <p
@@ -3028,12 +2743,10 @@ function DeepSeekSettingsCard() {
               variant="outline"
               onClick={() => setShowDeleteDeepSeekKey(false)}
               disabled={updateSettingsMutation.isPending}
-            >
-              取消
-            </Button>
+            >{translateText("取消")}</Button>
             <Button variant="destructive" onClick={handleClearDeepSeekKey} disabled={updateSettingsMutation.isPending}>
               {updateSettingsMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {updateSettingsMutation.isPending ? "正在删除..." : "确认删除"}
+              {updateSettingsMutation.isPending ? translateText("正在删除...") : translateText("确认删除")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -3045,6 +2758,7 @@ type SystemSettingsSaveKey =
   | "networkTest"
   | "panelUrl"
   | "registration"
+  | "authCaptcha"
   | "twoFactor"
   | "sessionPolicy"
   | "updateAutoCheck"
@@ -3075,21 +2789,21 @@ function normalizePublicHostMonitorPathInput(value: string) {
 type PersonalizationSaveKey = "title" | "logo" | "theme" | "background" | "homepage" | "sidebarPages";
 
 const personalizationSaveMessages: Record<PersonalizationSaveKey, string> = {
-  title: "网站标题已保存",
-  logo: "Logo 已保存",
-  theme: "默认配色已保存",
-  background: "自定义背景已保存",
-  homepage: "公开首页已保存",
-  sidebarPages: "自定义菜单已保存",
+  title: translateText("网站标题已保存"),
+  logo: translateText("Logo 已保存"),
+  theme: translateText("默认配色已保存"),
+  background: translateText("自定义背景已保存"),
+  homepage: translateText("公开首页已保存"),
+  sidebarPages: translateText("自定义菜单已保存"),
 };
 
 const personalizationSaveErrorMessages: Record<PersonalizationSaveKey, string> = {
-  title: "网站标题保存失败",
-  logo: "Logo 保存失败",
-  theme: "默认配色保存失败",
-  background: "自定义背景保存失败",
-  homepage: "公开首页保存失败",
-  sidebarPages: "自定义菜单保存失败",
+  title: translateText("网站标题保存失败"),
+  logo: translateText("Logo 保存失败"),
+  theme: translateText("默认配色保存失败"),
+  background: translateText("自定义背景保存失败"),
+  homepage: translateText("公开首页保存失败"),
+  sidebarPages: translateText("自定义菜单保存失败"),
 };
 
 function PersonalizationSettingsSection() {
@@ -3155,11 +2869,11 @@ function PersonalizationSettingsSection() {
         utils.system.publicInfo.invalidate(),
         utils.system.sidebarPages.invalidate(),
       ]);
-      toast.success(key ? personalizationSaveMessages[key] : "个性化配置已保存");
+      toast.success(key ? personalizationSaveMessages[key] : translateText("个性化配置已保存"));
     },
     onError: (err) => {
       const key = savingSectionRef.current;
-      toast.error(err.message || (key ? personalizationSaveErrorMessages[key] : "保存失败"));
+      toast.error(err.message || (key ? personalizationSaveErrorMessages[key] : translateText("保存失败")));
     },
     onSettled: () => {
       savingSectionRef.current = null;
@@ -3201,16 +2915,16 @@ function PersonalizationSettingsSection() {
   const blurAmount = Math.round(clampBackgroundBlur(backgroundConfig.blur));
   const backgroundEnabled = backgroundConfig.source !== "none" && !!previewBackgroundUrl;
   const mobileBackgroundHint = previewIsVideo
-    ? "移动端不会渲染视频背景，并会回退到默认背景，避免浏览器持续解码视频导致卡顿。"
-    : "移动端会自动关闭背景虚化和缩放效果，只保留静态背景和不透明度，降低页面滚动卡顿。";
+    ? translateText("移动端不会渲染视频背景，并会回退到默认背景，避免浏览器持续解码视频导致卡顿。")
+    : translateText("移动端会自动关闭背景虚化和缩放效果，只保留静态背景和不透明度，降低页面滚动卡顿。");
   const previewBackdropStyle = {
     filter: `blur(${blurAmount}px)`,
     transform: `scale(${1.04 + blurAmount / 280})`,
   };
   const backgroundSourceOptions = [
-    { value: "builtin" as const, label: "内置壁纸", icon: ImageIcon },
-    { value: "upload" as const, label: "上传图片", icon: Upload },
-    { value: "url" as const, label: "外部链接", icon: Globe },
+    { value: "builtin" as const, label: translateText("内置壁纸"), icon: ImageIcon },
+    { value: "upload" as const, label: translateText("上传图片"), icon: Upload },
+    { value: "url" as const, label: translateText("外部链接"), icon: Globe },
   ];
 
   const handleLogoUpload = async (file: File | undefined) => {
@@ -3224,9 +2938,9 @@ function PersonalizationSettingsSection() {
         minQuality: 0.55,
       });
       setSiteLogoDataUrl(result.dataUrl);
-      toast.success(`Logo 已处理为 ${formatBytes(result.size)}`);
+      toast.success(translateText("Logo 已处理为 {0}", [formatBytes(result.size)]));
     } catch (err: any) {
-      toast.error(err?.message || "Logo 上传失败");
+      toast.error(err?.message || translateText("Logo 上传失败"));
     } finally {
       setCompressingLogo(false);
       if (logoInputRef.current) logoInputRef.current.value = "";
@@ -3245,7 +2959,7 @@ function PersonalizationSettingsSection() {
       });
       const item: PersonalizationBackgroundImage = {
         id: createLocalId("wallpaper"),
-        name: file.name.replace(/\.[^.]+$/, "").slice(0, 60) || "上传背景",
+        name: file.name.replace(/\.[^.]+$/, "").slice(0, 60) || translateText("上传背景"),
         dataUrl: result.dataUrl,
         size: result.size,
         createdAt: Date.now(),
@@ -3261,9 +2975,9 @@ function PersonalizationSettingsSection() {
         });
       });
       setBackgroundSourceMode("upload");
-      toast.success(`背景已处理为 ${formatBytes(result.size)}`);
+      toast.success(translateText("背景已处理为 {0}", [formatBytes(result.size)]));
     } catch (err: any) {
-      toast.error(err?.message || "背景上传失败");
+      toast.error(err?.message || translateText("背景上传失败"));
     } finally {
       setCompressingBackground(false);
       if (backgroundInputRef.current) backgroundInputRef.current.value = "";
@@ -3286,11 +3000,11 @@ function PersonalizationSettingsSection() {
   const applyBackgroundUrl = () => {
     const url = backgroundUrlInput.trim();
     if (!url) {
-      toast.error("请填写背景链接");
+      toast.error(translateText("请填写背景链接"));
       return;
     }
     if (!/^https?:\/\//i.test(url)) {
-      toast.error("背景链接必须以 http:// 或 https:// 开头");
+      toast.error(translateText("背景链接必须以 http:// 或 https:// 开头"));
       return;
     }
     updateBackground({
@@ -3316,9 +3030,9 @@ function PersonalizationSettingsSection() {
   const handleUseHomepageTemplate = async () => {
     if (homepageHtml.trim()) {
       const confirmed = await confirmDialog({
-        title: "覆盖首页内容",
-        description: "当前编辑内容会被示例模板覆盖，确定继续吗？",
-        confirmText: "覆盖",
+        title: translateText("覆盖首页内容"),
+        description: translateText("当前编辑内容会被示例模板覆盖，确定继续吗？"),
+        confirmText: translateText("覆盖"),
       });
       if (!confirmed) return;
     }
@@ -3331,7 +3045,7 @@ function PersonalizationSettingsSection() {
 
   const handleSaveLogo = () => {
     if (siteLogoDataUrl && imageDataUrlSize(siteLogoDataUrl) > BRAND_LOGO_MAX_BYTES) {
-      toast.error("Logo 超过 100KB，请重新上传");
+      toast.error(translateText("Logo 超过 100KB，请重新上传"));
       return;
     }
     savePersonalizationSection("logo", { siteLogoDataUrl });
@@ -3349,11 +3063,11 @@ function PersonalizationSettingsSection() {
     const nextBackground = normalizePersonalizationBackgroundConfig(backgroundConfig);
     if (nextBackground.source === "url") {
       if (!nextBackground.url.trim()) {
-        toast.error("请先应用背景链接");
+        toast.error(translateText("请先应用背景链接"));
         return;
       }
       if (!/^https?:\/\//i.test(nextBackground.url.trim())) {
-        toast.error("背景链接必须以 http:// 或 https:// 开头");
+        toast.error(translateText("背景链接必须以 http:// 或 https:// 开头"));
         return;
       }
     }
@@ -3393,18 +3107,18 @@ function PersonalizationSettingsSection() {
     if (!file) return;
     try {
       if (!file.name.toLowerCase().endsWith(".svg") && file.type !== "image/svg+xml") {
-        throw new Error("请选择 SVG 文件");
+        throw new Error(translateText("请选择 SVG 文件"));
       }
       if (file.size > MAX_CUSTOM_SIDEBAR_ICON_BYTES) {
-        throw new Error("SVG 图标不能超过 24KB");
+        throw new Error(translateText("SVG 图标不能超过 24KB"));
       }
       const svg = (await file.text()).trim();
       if (!isSafeCustomSidebarSvg(svg)) {
-        throw new Error("SVG 图标包含脚本、外部资源或不支持的标签");
+        throw new Error(translateText("SVG 图标包含脚本、外部资源或不支持的标签"));
       }
       setCustomSidebarDraft((current) => ({ ...current, svg }));
     } catch (error: any) {
-      toast.error(error?.message || "SVG 图标读取失败");
+      toast.error(error?.message || translateText("SVG 图标读取失败"));
     } finally {
       if (customSidebarIconInputRef.current) customSidebarIconInputRef.current.value = "";
     }
@@ -3415,15 +3129,15 @@ function PersonalizationSettingsSection() {
     const url = normalizeCustomSidebarUrl(customSidebarDraft.url);
     const svg = customSidebarDraft.svg.trim();
     if (!name) {
-      toast.error("请填写菜单名称");
+      toast.error(translateText("请填写菜单名称"));
       return;
     }
     if (!isValidCustomSidebarUrl(url)) {
-      toast.error("请输入有效的 HTTP/HTTPS 地址或面板路径（例如 /monitor）");
+      toast.error(translateText("请输入有效的 HTTP/HTTPS 地址或面板路径（例如 /monitor）"));
       return;
     }
     if (svg && !isSafeCustomSidebarSvg(svg)) {
-      toast.error("SVG 图标包含脚本、外部资源或不支持的标签");
+      toast.error(translateText("SVG 图标包含脚本、外部资源或不支持的标签"));
       return;
     }
     const page: CustomSidebarPage = {
@@ -3436,7 +3150,7 @@ function PersonalizationSettingsSection() {
     };
     const exists = customSidebarPages.some((item) => item.id === page.id);
     if (!exists && customSidebarPages.length >= MAX_CUSTOM_SIDEBAR_PAGES) {
-      toast.error(`最多添加 ${MAX_CUSTOM_SIDEBAR_PAGES} 个菜单项`);
+      toast.error(translateText("最多添加 {0} 个菜单项", [MAX_CUSTOM_SIDEBAR_PAGES]));
       return;
     }
     const next = normalizeCustomSidebarPages(
@@ -3445,7 +3159,7 @@ function PersonalizationSettingsSection() {
         : [...customSidebarPages, page],
     );
     if (next.length !== (exists ? customSidebarPages.length : customSidebarPages.length + 1)) {
-      toast.error("菜单项内容校验失败");
+      toast.error(translateText("菜单项内容校验失败"));
       return;
     }
     pendingCustomSidebarPagesRef.current = next;
@@ -3454,9 +3168,9 @@ function PersonalizationSettingsSection() {
 
   const handleDeleteCustomSidebarPage = async (page: CustomSidebarPage) => {
     const confirmed = await confirmDialog({
-      title: "删除菜单项",
-      description: `确定删除“${page.name}”吗？`,
-      confirmText: "删除",
+      title: translateText("删除菜单项"),
+      description: translateText("确定删除“{0}”吗？", [page.name]),
+      confirmText: translateText("删除"),
       tone: "destructive",
     });
     if (!confirmed) return;
@@ -3470,7 +3184,7 @@ function PersonalizationSettingsSection() {
     : "";
 
   if (isLoading) {
-    return <DataSectionLoading label="正在加载个性化配置" minHeight="min-h-[220px]" />;
+    return <DataSectionLoading label={translateText("正在加载个性化配置")} minHeight="min-h-[220px]" />;
   }
 
   return (
@@ -3479,12 +3193,8 @@ function PersonalizationSettingsSection() {
         <Card className="border-border/40 bg-card/60 backdrop-blur-md">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
-              <Globe className="h-4 w-4 text-primary" />
-              网站标题
-            </CardTitle>
-            <CardDescription>
-              配置后台显示的品牌名称。
-            </CardDescription>
+              <Globe className="h-4 w-4 text-primary" />{translateText("网站标题")}</CardTitle>
+            <CardDescription>{translateText("配置后台显示的品牌名称。")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex flex-col gap-2 sm:flex-row">
@@ -3495,13 +3205,9 @@ function PersonalizationSettingsSection() {
                 className="flex-1"
               />
               <Button type="button" onClick={handleSaveTitle} disabled={isSavingPersonalization("title")} className="gap-2">
-                {isSavingPersonalization("title") && <Loader2 className="h-4 w-4 animate-spin" />}
-                保存
-              </Button>
+                {isSavingPersonalization("title") && <Loader2 className="h-4 w-4 animate-spin" />}{translateText("保存")}</Button>
             </div>
-            <p className="text-xs text-muted-foreground">
-              用于侧边栏、浏览器标题和移动端顶部展示，最多 64 个字符。
-            </p>
+            <p className="text-xs text-muted-foreground">{translateText("用于侧边栏、浏览器标题和移动端顶部展示，最多 64 个字符。")}</p>
           </CardContent>
         </Card>
 
@@ -3511,19 +3217,17 @@ function PersonalizationSettingsSection() {
               <ImageIcon className="h-4 w-4 text-primary" />
               Logo
             </CardTitle>
-            <CardDescription>
-              上传后会用于登录页、公开首页和侧边栏。
-            </CardDescription>
+            <CardDescription>{translateText("上传后会用于登录页、公开首页和侧边栏。")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center gap-4">
               <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border/50 bg-muted/30">
                 {siteLogoDataUrl ? (
-                  <img src={siteLogoDataUrl} alt="Logo 预览" className="h-full w-full object-contain p-2" />
+                  <img src={siteLogoDataUrl} alt={translateText("Logo 预览")} className="h-full w-full object-contain p-2" />
                 ) : (
                   <>
-                    <img src="/logo-light.png" alt="默认 Logo" className="h-full w-full object-contain p-2 dark:hidden" />
-                    <img src="/logo-dark.png" alt="默认 Logo" className="hidden h-full w-full object-contain p-2 dark:block" />
+                    <img src="/logo-light.png" alt={translateText("默认 Logo")} className="h-full w-full object-contain p-2 dark:hidden" />
+                    <img src="/logo-dark.png" alt={translateText("默认 Logo")} className="hidden h-full w-full object-contain p-2 dark:block" />
                   </>
                 )}
               </div>
@@ -3537,21 +3241,13 @@ function PersonalizationSettingsSection() {
                     onChange={(event) => handleLogoUpload(event.target.files?.[0])}
                   />
                   <Button type="button" variant="outline" onClick={() => logoInputRef.current?.click()} disabled={compressingLogo || isSavingPersonalization("logo")}>
-                    {compressingLogo ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
-                    上传 Logo
-                  </Button>
+                    {compressingLogo ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}{translateText("上传 Logo")}</Button>
                   <Button type="button" variant="outline" onClick={() => setSiteLogoDataUrl("")} disabled={!siteLogoDataUrl || compressingLogo || isSavingPersonalization("logo")}>
-                    <RefreshCw className="mr-2 h-4 w-4" />
-                    还原默认
-                  </Button>
+                    <RefreshCw className="mr-2 h-4 w-4" />{translateText("还原默认")}</Button>
                   <Button type="button" onClick={handleSaveLogo} disabled={compressingLogo || isSavingPersonalization("logo")} className="gap-2">
-                    {isSavingPersonalization("logo") && <Loader2 className="h-4 w-4 animate-spin" />}
-                    保存 Logo
-                  </Button>
+                    {isSavingPersonalization("logo") && <Loader2 className="h-4 w-4 animate-spin" />}{translateText("保存 Logo")}</Button>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  最大 100KB，超过后会在浏览器内自动压缩。
-                </p>
+                <p className="text-xs text-muted-foreground">{translateText("最大 100KB，超过后会在浏览器内自动压缩。")}</p>
               </div>
             </div>
           </CardContent>
@@ -3562,10 +3258,8 @@ function PersonalizationSettingsSection() {
         <CardHeader className="gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="space-y-1.5">
             <CardTitle className="flex items-center gap-2 text-base">
-              <PanelLeft className="h-4 w-4 text-primary" />
-              自定义菜单
-            </CardTitle>
-            <CardDescription>在左侧导航中嵌入常用页面；禁止 iframe 的网站可改为新窗口打开。</CardDescription>
+              <PanelLeft className="h-4 w-4 text-primary" />{translateText("自定义菜单")}</CardTitle>
+            <CardDescription>{translateText("在左侧导航中嵌入常用页面；禁止 iframe 的网站可改为新窗口打开。")}</CardDescription>
           </div>
           <Button
             type="button"
@@ -3573,9 +3267,7 @@ function PersonalizationSettingsSection() {
             onClick={() => openCustomSidebarDialog()}
             disabled={isSavingPersonalization("sidebarPages") || customSidebarPages.length >= MAX_CUSTOM_SIDEBAR_PAGES}
           >
-            <Plus className="h-4 w-4" />
-            新增菜单项
-          </Button>
+            <Plus className="h-4 w-4" />{translateText("新增菜单项")}</Button>
         </CardHeader>
         <CardContent>
           {customSidebarPages.length ? (
@@ -3593,10 +3285,10 @@ function PersonalizationSettingsSection() {
                     <div className="flex min-w-0 flex-wrap items-center gap-2">
                       <p className="max-w-full truncate text-sm font-medium">{page.name}</p>
                       <Badge variant="outline" className="shrink-0 text-[10px]">
-                        {page.visibility === "admin" ? "仅管理员" : "所有用户"}
+                        {page.visibility === "admin" ? translateText("仅管理员") : translateText("所有用户")}
                       </Badge>
                       <Badge variant="secondary" className="shrink-0 text-[10px]">
-                        {page.openMode === "external" ? "新窗口" : "嵌入"}
+                        {page.openMode === "external" ? translateText("新窗口") : translateText("嵌入")}
                       </Badge>
                     </div>
                     <p className="mt-1 truncate text-xs text-muted-foreground" title={page.url}>{page.url}</p>
@@ -3606,8 +3298,8 @@ function PersonalizationSettingsSection() {
                       type="button"
                       variant="ghost"
                       size="icon"
-                      title="编辑菜单项"
-                      aria-label={`编辑 ${page.name}`}
+                      title={translateText("编辑菜单项")}
+                      aria-label={translateText("编辑 {0}", [page.name])}
                       disabled={isSavingPersonalization("sidebarPages")}
                       onClick={() => openCustomSidebarDialog(page)}
                     >
@@ -3618,8 +3310,8 @@ function PersonalizationSettingsSection() {
                       variant="ghost"
                       size="icon"
                       className="text-destructive hover:text-destructive"
-                      title="删除菜单项"
-                      aria-label={`删除 ${page.name}`}
+                      title={translateText("删除菜单项")}
+                      aria-label={translateText("删除 {0}", [page.name])}
                       disabled={isSavingPersonalization("sidebarPages")}
                       onClick={() => void handleDeleteCustomSidebarPage(page)}
                     >
@@ -3635,9 +3327,7 @@ function PersonalizationSettingsSection() {
               onClick={() => openCustomSidebarDialog()}
               className="flex min-h-28 w-full flex-col items-center justify-center rounded-md border border-dashed border-border/60 bg-muted/15 px-4 text-sm text-muted-foreground transition-colors hover:border-primary/40 hover:bg-primary/5 hover:text-foreground"
             >
-              <Plus className="mb-2 h-5 w-5" />
-              新增第一个菜单项
-            </button>
+              <Plus className="mb-2 h-5 w-5" />{translateText("新增第一个菜单项")}</button>
           )}
         </CardContent>
       </Card>
@@ -3646,12 +3336,8 @@ function PersonalizationSettingsSection() {
         <CardHeader className="gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="space-y-1.5">
             <CardTitle className="flex items-center gap-2 text-base">
-              <Palette className="h-4 w-4 text-primary" />
-              默认配色
-            </CardTitle>
-            <CardDescription>
-              选择后保存，按钮、选中态、提示框、侧边栏主色和背景轻微渐变会同步变化。
-            </CardDescription>
+              <Palette className="h-4 w-4 text-primary" />{translateText("默认配色")}</CardTitle>
+            <CardDescription>{translateText("选择后保存，按钮、选中态、提示框、侧边栏主色和背景轻微渐变会同步变化。")}</CardDescription>
           </div>
           <Button
             type="button"
@@ -3659,9 +3345,7 @@ function PersonalizationSettingsSection() {
             disabled={isSavingPersonalization("theme") || !themeDirty}
             className="w-full gap-2 sm:w-auto"
           >
-            {isSavingPersonalization("theme") && <Loader2 className="h-4 w-4 animate-spin" />}
-            保存配色
-          </Button>
+            {isSavingPersonalization("theme") && <Loader2 className="h-4 w-4 animate-spin" />}{translateText("保存配色")}</Button>
         </CardHeader>
         <CardContent>
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-6">
@@ -3714,22 +3398,14 @@ function PersonalizationSettingsSection() {
         <CardHeader className="gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="space-y-1.5">
             <CardTitle className="flex items-center gap-2 text-base">
-              <Palette className="h-4 w-4 text-primary" />
-              自定义背景
-            </CardTitle>
-            <CardDescription>
-              默认不使用背景，可选择内置、上传或链接背景。
-            </CardDescription>
+              <Palette className="h-4 w-4 text-primary" />{translateText("自定义背景")}</CardTitle>
+            <CardDescription>{translateText("默认不使用背景，可选择内置、上传或链接背景。")}</CardDescription>
           </div>
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
             <Button type="button" variant="outline" onClick={handleResetBackground} disabled={isSavingPersonalization("background")} className="w-full gap-2 sm:w-auto">
-              <RefreshCw className="h-4 w-4" />
-              恢复默认
-            </Button>
+              <RefreshCw className="h-4 w-4" />{translateText("恢复默认")}</Button>
             <Button type="button" onClick={handleSaveBackground} disabled={compressingBackground || isSavingPersonalization("background")} className="w-full gap-2 sm:w-auto">
-              {isSavingPersonalization("background") && <Loader2 className="h-4 w-4 animate-spin" />}
-              保存背景
-            </Button>
+              {isSavingPersonalization("background") && <Loader2 className="h-4 w-4 animate-spin" />}{translateText("保存背景")}</Button>
           </div>
         </CardHeader>
         <CardContent className="space-y-5">
@@ -3759,9 +3435,7 @@ function PersonalizationSettingsSection() {
                     />
                   )
                 ) : (
-                  <div className="absolute inset-0 grid place-items-center text-sm text-muted-foreground">
-                    未启用背景
-                  </div>
+                  <div className="absolute inset-0 grid place-items-center text-sm text-muted-foreground">{translateText("未启用背景")}</div>
                 )}
                 {previewBackgroundUrl && (
                   <div
@@ -3783,7 +3457,7 @@ function PersonalizationSettingsSection() {
                     ) : (
                       <img
                         src={previewBackgroundUrl}
-                        alt="背景原图预览"
+                        alt={translateText("背景原图预览")}
                         loading="eager"
                         decoding="async"
                         className="h-full w-full rounded-[4px] object-contain"
@@ -3792,7 +3466,7 @@ function PersonalizationSettingsSection() {
                   </div>
                 )}
                 <div className="absolute bottom-3 left-3 rounded-md border border-border/50 bg-background/75 px-3 py-2 text-xs backdrop-blur">
-                  {backgroundEnabled ? `不透明度 ${opacityPercent}% / 虚化 ${blurAmount}px` : "无背景"}
+                  {backgroundEnabled ? translateText("不透明度 {0}% / 虚化 {1}px", [opacityPercent, blurAmount]) : translateText("无背景")}
                 </div>
               </div>
 
@@ -3801,7 +3475,7 @@ function PersonalizationSettingsSection() {
                   <div className="grid gap-4 lg:grid-cols-2">
                     <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_6rem] sm:items-center">
                       <div className="space-y-2">
-                        <Label>背景不透明度</Label>
+                        <Label>{translateText("背景不透明度")}</Label>
                         <input
                           type="range"
                           min={0}
@@ -3824,7 +3498,7 @@ function PersonalizationSettingsSection() {
                     </div>
                     <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_6rem] sm:items-center">
                       <div className="space-y-2">
-                        <Label>背景虚化程度</Label>
+                        <Label>{translateText("背景虚化程度")}</Label>
                         <input
                           type="range"
                           min={0}
@@ -3878,7 +3552,7 @@ function PersonalizationSettingsSection() {
 
               {backgroundSourceMode === "builtin" && (
                 <div className="space-y-2">
-                  <p className="text-sm font-medium">内置壁纸</p>
+                  <p className="text-sm font-medium">{translateText("内置壁纸")}</p>
                   <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
                     {BUILTIN_WALLPAPERS.map((item) => {
                       const active = backgroundConfig.source === "builtin" && backgroundConfig.selectedId === item.id;
@@ -3911,8 +3585,8 @@ function PersonalizationSettingsSection() {
                 <div className="space-y-2">
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                      <p className="text-sm font-medium">上传背景</p>
-                      <p className="text-xs text-muted-foreground">最多保留 6 张，单张最大 1.5MB，超过会自动压缩。</p>
+                      <p className="text-sm font-medium">{translateText("上传背景")}</p>
+                      <p className="text-xs text-muted-foreground">{translateText("最多保留 6 张，单张最大 1.5MB，超过会自动压缩。")}</p>
                     </div>
                     <div>
                       <input
@@ -3923,9 +3597,7 @@ function PersonalizationSettingsSection() {
                         onChange={(event) => handleBackgroundUpload(event.target.files?.[0])}
                       />
                       <Button type="button" variant="outline" onClick={() => backgroundInputRef.current?.click()} disabled={compressingBackground || isSavingPersonalization("background")}>
-                        {compressingBackground ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
-                        上传背景
-                      </Button>
+                        {compressingBackground ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}{translateText("上传背景")}</Button>
                     </div>
                   </div>
                   {backgroundConfig.images.length > 0 ? (
@@ -3952,7 +3624,7 @@ function PersonalizationSettingsSection() {
                                 <p className="truncate text-xs font-medium" title={item.name}>{item.name}</p>
                                 <p className="text-[11px] text-muted-foreground">{formatBytes(item.size || imageDataUrlSize(item.dataUrl))}</p>
                               </div>
-                              <Button type="button" variant="ghost" size="icon" onClick={() => handleDeleteUploadedBackground(item.id)} aria-label={`删除 ${item.name}`}>
+                              <Button type="button" variant="ghost" size="icon" onClick={() => handleDeleteUploadedBackground(item.id)} aria-label={translateText("删除 {0}", [item.name])}>
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             </div>
@@ -3961,9 +3633,7 @@ function PersonalizationSettingsSection() {
                       })}
                     </div>
                   ) : (
-                    <div className="rounded-lg border border-dashed border-border/50 bg-muted/20 p-4 text-sm text-muted-foreground">
-                      还没有上传背景。
-                    </div>
+                    <div className="rounded-lg border border-dashed border-border/50 bg-muted/20 p-4 text-sm text-muted-foreground">{translateText("还没有上传背景。")}</div>
                   )}
                 </div>
               )}
@@ -3971,12 +3641,10 @@ function PersonalizationSettingsSection() {
               {backgroundSourceMode === "url" && (
                 <div className="space-y-2">
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <p className="text-sm font-medium">自定义链接</p>
+                    <p className="text-sm font-medium">{translateText("自定义链接")}</p>
                     <Button variant="outline" size="sm" className="w-full gap-1.5 sm:w-auto" asChild>
                       <a href="https://c.7zz.cn/home?path=cloudreve%3A%2F%2FVaU6%40share" target="_blank" rel="noopener noreferrer">
-                        <ExternalLink className="h-3.5 w-3.5" />
-                        动态 MP4 视频库
-                      </a>
+                        <ExternalLink className="h-3.5 w-3.5" />{translateText("动态 MP4 视频库")}</a>
                     </Button>
                   </div>
                   <div className="grid gap-2 lg:grid-cols-[9rem_minmax(0,1fr)_auto]">
@@ -3985,8 +3653,8 @@ function PersonalizationSettingsSection() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="image">图片链接</SelectItem>
-                        <SelectItem value="video">视频链接</SelectItem>
+                        <SelectItem value="image">{translateText("图片链接")}</SelectItem>
+                        <SelectItem value="video">{translateText("视频链接")}</SelectItem>
                       </SelectContent>
                     </Select>
                     <Input
@@ -3994,13 +3662,9 @@ function PersonalizationSettingsSection() {
                       onChange={(event) => setBackgroundUrlInput(event.target.value)}
                       placeholder="https://example.com/background.jpg"
                     />
-                    <Button type="button" variant="outline" onClick={applyBackgroundUrl}>
-                      应用链接
-                    </Button>
+                    <Button type="button" variant="outline" onClick={applyBackgroundUrl}>{translateText("应用链接")}</Button>
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    视频背景会静音循环播放，建议使用 HTTPS 链接；移动端不会展示视频背景。
-                  </p>
+                  <p className="text-xs text-muted-foreground">{translateText("视频背景会静音循环播放，建议使用 HTTPS 链接；移动端不会展示视频背景。")}</p>
                 </div>
               )}
             </div>
@@ -4012,31 +3676,25 @@ function PersonalizationSettingsSection() {
         <CardHeader className="gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="space-y-1.5">
             <CardTitle className="flex items-center gap-2 text-base">
-              <Globe className="h-4 w-4 text-primary" />
-              公开首页
-            </CardTitle>
-            <CardDescription>
-              设置未登录时展示的首页。
-            </CardDescription>
+              <Globe className="h-4 w-4 text-primary" />{translateText("公开首页")}</CardTitle>
+            <CardDescription>{translateText("设置未登录时展示的首页。")}</CardDescription>
           </div>
           <Button type="button" onClick={handleSaveHomepage} disabled={isSavingPersonalization("homepage")} className="w-full gap-2 sm:w-auto">
-            {isSavingPersonalization("homepage") && <Loader2 className="h-4 w-4 animate-spin" />}
-            保存首页
-          </Button>
+            {isSavingPersonalization("homepage") && <Loader2 className="h-4 w-4 animate-spin" />}{translateText("保存首页")}</Button>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="grid gap-3 lg:grid-cols-2">
             <div className="flex items-center justify-between gap-3 rounded-lg border border-border/40 bg-muted/20 p-3">
               <div>
-                <p className="text-sm font-medium">启用公开首页</p>
-                <p className="text-xs text-muted-foreground">关闭后直接进入登录页。</p>
+                <p className="text-sm font-medium">{translateText("启用公开首页")}</p>
+                <p className="text-xs text-muted-foreground">{translateText("关闭后直接进入登录页。")}</p>
               </div>
               <Switch checked={homepageEnabled} onCheckedChange={setHomepageEnabled} />
             </div>
             <div className="flex items-center justify-between gap-3 rounded-lg border border-border/40 bg-muted/20 p-3">
               <div>
-                <p className="text-sm font-medium">使用自定义 H5</p>
-                <p className="text-xs text-muted-foreground">优先展示自定义页面。</p>
+                <p className="text-sm font-medium">{translateText("使用自定义 H5")}</p>
+                <p className="text-xs text-muted-foreground">{translateText("优先展示自定义页面。")}</p>
               </div>
               <Switch checked={homepageCustomEnabled} onCheckedChange={setHomepageCustomEnabled} />
             </div>
@@ -4045,35 +3703,26 @@ function PersonalizationSettingsSection() {
             <div className="space-y-2">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <Label className="text-sm font-medium">首页 H5/HTML 代码</Label>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    支持完整 HTML 或 body 内容。
-                  </p>
+                  <Label className="text-sm font-medium">{translateText("首页 H5/HTML 代码")}</Label>
+                  <p className="mt-1 text-xs text-muted-foreground">{translateText("支持完整 HTML 或 body 内容。")}</p>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <Button variant="outline" size="sm" onClick={handleUseHomepageTemplate}>
-                    使用示例
-                  </Button>
+                  <Button variant="outline" size="sm" onClick={handleUseHomepageTemplate}>{translateText("使用示例")}</Button>
                   <Button variant="outline" size="sm" onClick={handlePreviewHomepage} className="gap-2">
-                    <Eye className="h-4 w-4" />
-                    预览
-                  </Button>
+                    <Eye className="h-4 w-4" />{translateText("预览")}</Button>
                   <Button variant="outline" size="sm" asChild>
-                    <a href="/homepage-preview" target="_blank" rel="noopener noreferrer">
-                      查看已保存
-                    </a>
+                    <a href="/homepage-preview" target="_blank" rel="noopener noreferrer">{translateText("查看已保存")}</a>
                   </Button>
                 </div>
               </div>
               <Textarea
                 value={homepageHtml}
                 onChange={(e) => setHomepageHtml(e.target.value)}
-                placeholder="粘贴你的首页 H5/HTML 代码"
+                placeholder={translateText("粘贴你的首页 H5/HTML 代码")}
                 className="min-h-72 font-mono text-xs leading-5"
               />
               <p className="text-xs text-muted-foreground">
-                {homepageHtml.length.toLocaleString()} / 60,000 字符
-              </p>
+                {homepageHtml.length.toLocaleString(getFormatLocale())}{translateText(" / 60,000 字符")}</p>
             </div>
           )}
         </CardContent>
@@ -4089,24 +3738,24 @@ function PersonalizationSettingsSection() {
         <DialogContent className="flex max-h-[calc(100svh-1.5rem)] max-w-xl flex-col overflow-hidden p-0">
           <DialogHeader className="px-4 pt-4 sm:px-6 sm:pt-6">
             <DialogTitle>
-              {customSidebarPages.some((page) => page.id === customSidebarDraft.id) ? "编辑菜单项" : "新增菜单项"}
+              {customSidebarPages.some((page) => page.id === customSidebarDraft.id) ? translateText("编辑菜单项") : translateText("新增菜单项")}
             </DialogTitle>
-            <DialogDescription>配置左侧导航名称、页面地址、打开方式和可见范围。</DialogDescription>
+            <DialogDescription>{translateText("配置左侧导航名称、页面地址、打开方式和可见范围。")}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 overflow-y-auto px-4 py-2 sm:px-6">
             <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_9rem]">
               <div className="space-y-2">
-                <Label htmlFor="custom-sidebar-name">菜单名称</Label>
+                <Label htmlFor="custom-sidebar-name">{translateText("菜单名称")}</Label>
                 <Input
                   id="custom-sidebar-name"
                   value={customSidebarDraft.name}
                   maxLength={64}
                   onChange={(event) => setCustomSidebarDraft((current) => ({ ...current, name: event.target.value }))}
-                  placeholder="例如：监控中心"
+                  placeholder={translateText("例如：监控中心")}
                 />
               </div>
               <div className="space-y-2">
-                <Label>可见角色</Label>
+                <Label>{translateText("可见角色")}</Label>
                 <Select
                   value={customSidebarDraft.visibility}
                   onValueChange={(visibility) => setCustomSidebarDraft((current) => ({
@@ -4116,14 +3765,14 @@ function PersonalizationSettingsSection() {
                 >
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="admin">仅管理员</SelectItem>
-                    <SelectItem value="all">所有用户</SelectItem>
+                    <SelectItem value="admin">{translateText("仅管理员")}</SelectItem>
+                    <SelectItem value="all">{translateText("所有用户")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="custom-sidebar-url">页面 URL</Label>
+              <Label htmlFor="custom-sidebar-url">{translateText("页面 URL")}</Label>
               <Input
                 id="custom-sidebar-url"
                 type="url"
@@ -4132,10 +3781,10 @@ function PersonalizationSettingsSection() {
                 onChange={(event) => setCustomSidebarDraft((current) => ({ ...current, url: event.target.value }))}
                 placeholder="https://example.com/dashboard"
               />
-              <p className="text-xs text-muted-foreground">支持完整网址、裸域名和面板相对路径（例如 /monitor）。</p>
+              <p className="text-xs text-muted-foreground">{translateText("支持完整网址、裸域名和面板相对路径（例如 /monitor）。")}</p>
             </div>
             <div className="space-y-2">
-              <Label>打开方式</Label>
+              <Label>{translateText("打开方式")}</Label>
               <Select
                 value={customSidebarDraft.openMode}
                 onValueChange={(openMode) => setCustomSidebarDraft((current) => ({
@@ -4145,15 +3794,15 @@ function PersonalizationSettingsSection() {
               >
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={CUSTOM_SIDEBAR_OPEN_MODES[0]}>面板内嵌入</SelectItem>
-                  <SelectItem value={CUSTOM_SIDEBAR_OPEN_MODES[1]}>新窗口打开</SelectItem>
+                  <SelectItem value={CUSTOM_SIDEBAR_OPEN_MODES[0]}>{translateText("面板内嵌入")}</SelectItem>
+                  <SelectItem value={CUSTOM_SIDEBAR_OPEN_MODES[1]}>{translateText("新窗口打开")}</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground">目标网站设置了 X-Frame-Options 或 CSP 时，请选择新窗口打开。</p>
+              <p className="text-xs text-muted-foreground">{translateText("目标网站设置了 X-Frame-Options 或 CSP 时，请选择新窗口打开。")}</p>
             </div>
             <div className="space-y-2">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <Label htmlFor="custom-sidebar-svg">SVG 图标</Label>
+                <Label htmlFor="custom-sidebar-svg">{translateText("SVG 图标")}</Label>
                 <div className="flex items-center gap-2">
                   <input
                     ref={customSidebarIconInputRef}
@@ -4163,13 +3812,9 @@ function PersonalizationSettingsSection() {
                     onChange={(event) => void handleCustomSidebarIconUpload(event.target.files?.[0])}
                   />
                   <Button type="button" variant="outline" size="sm" className="gap-2" onClick={() => customSidebarIconInputRef.current?.click()}>
-                    <Upload className="h-3.5 w-3.5" />
-                    上传 SVG
-                  </Button>
+                    <Upload className="h-3.5 w-3.5" />{translateText("上传 SVG")}</Button>
                   {customSidebarDraft.svg && (
-                    <Button type="button" variant="ghost" size="sm" onClick={() => setCustomSidebarDraft((current) => ({ ...current, svg: "" }))}>
-                      清除
-                    </Button>
+                    <Button type="button" variant="ghost" size="sm" onClick={() => setCustomSidebarDraft((current) => ({ ...current, svg: "" }))}>{translateText("清除")}</Button>
                   )}
                 </div>
               </div>
@@ -4183,23 +3828,19 @@ function PersonalizationSettingsSection() {
                 />
                 <div className="flex min-h-20 items-center justify-center rounded-md border border-border/50 bg-muted/20">
                   {customSidebarIconPreview ? (
-                    <img src={customSidebarIconPreview} alt="图标预览" className="h-8 w-8 object-contain" />
+                    <img src={customSidebarIconPreview} alt={translateText("图标预览")} className="h-8 w-8 object-contain" />
                   ) : (
                     <PanelLeft className="h-6 w-6 text-muted-foreground" />
                   )}
                 </div>
               </div>
-              <p className="text-xs text-muted-foreground">可选，最大 24KB。</p>
+              <p className="text-xs text-muted-foreground">{translateText("可选，最大 24KB。")}</p>
             </div>
           </div>
           <DialogFooter className="gap-2 border-t border-border/40 px-4 py-3 sm:px-6">
-            <Button type="button" variant="outline" disabled={isSavingPersonalization("sidebarPages")} onClick={() => setCustomSidebarDialogOpen(false)}>
-              取消
-            </Button>
+            <Button type="button" variant="outline" disabled={isSavingPersonalization("sidebarPages")} onClick={() => setCustomSidebarDialogOpen(false)}>{translateText("取消")}</Button>
             <Button type="button" className="gap-2" disabled={isSavingPersonalization("sidebarPages")} onClick={handleSaveCustomSidebarPage}>
-              {isSavingPersonalization("sidebarPages") && <Loader2 className="h-4 w-4 animate-spin" />}
-              保存
-            </Button>
+              {isSavingPersonalization("sidebarPages") && <Loader2 className="h-4 w-4 animate-spin" />}{translateText("保存")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -4228,6 +3869,7 @@ function SystemInfoSection() {
   const [showPanelSslConfirm, setShowPanelSslConfirm] = useState(false);
   const [panelSslCountdown, setPanelSslCountdown] = useState(5);
   const [registrationEnabled, setRegistrationEnabled] = useState(true);
+  const [authCaptchaEnabled, setAuthCaptchaEnabled] = useState(true);
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
   const [lookingGlassUserEnabled, setLookingGlassUserEnabled] = useState(true);
   const [forwardProtocols, setForwardProtocols] = useState<ForwardProtocolSettings>(() => normalizeForwardProtocolSettings());
@@ -4293,6 +3935,7 @@ function SystemInfoSection() {
       setPanelSslCertPem(settings.panelSsl?.certPem || "");
       setPanelSslKeyPem(settings.panelSsl?.keyPem || "");
       setRegistrationEnabled(settings.registrationEnabled ?? true);
+      setAuthCaptchaEnabled(settings.authCaptchaEnabled ?? true);
       setTwoFactorEnabled(!!settings.twoFactorEnabled);
       setLookingGlassUserEnabled(settings.lookingGlassUserEnabled ?? true);
       setAllowMultiDeviceLogin(!!settings.allowMultiDeviceLogin);
@@ -4368,15 +4011,15 @@ function SystemInfoSection() {
     const status = upgradeStatus?.job?.status;
     if (!status || status === "idle") return;
     const previous = previousUpgradeStatus.current;
-    const actionLabel = upgradeStatus?.job?.mode === "rollback" ? "回退" : "升级";
+    const actionLabel = upgradeStatus?.job?.mode === "rollback" ? translateText("回退") : translateText("升级");
     if (previous === "running" && status === "success") {
-      toast.success(`面板${actionLabel}成功，${PANEL_UPGRADE_REFRESH_DELAY_SECONDS} 秒后自动刷新`);
+      toast.success(translateText("面板{0}成功，{1} 秒后自动刷新", [actionLabel, PANEL_UPGRADE_REFRESH_DELAY_SECONDS]));
     }
     if (previous === "running" && status === "waiting_assets") {
-      toast.info(upgradeStatus?.job?.error || "发布资产仍在构建中，请稍后重试");
+      toast.info(upgradeStatus?.job?.error || translateText("发布资产仍在构建中，请稍后重试"));
     }
     if (previous === "running" && status === "error") {
-      toast.error(upgradeStatus?.job?.error || `面板${actionLabel}失败`);
+      toast.error(upgradeStatus?.job?.error || translateText("面板{0}失败", [actionLabel]));
     }
     previousUpgradeStatus.current = status;
   }, [upgradeStatus?.job?.status, upgradeStatus?.job?.error]);
@@ -4404,9 +4047,9 @@ function SystemInfoSection() {
   const updateSettingsMutation = trpc.system.updateSettings.useMutation({
     onSuccess: () => {
       utils.system.getSettings.invalidate();
-      toast.success("面板设置已保存");
+      toast.success(translateText("面板设置已保存"));
     },
-    onError: (err) => toast.error(err.message || "保存失败"),
+    onError: (err) => toast.error(err.message || translateText("保存失败")),
     onSettled: () => setSavingSetting(null),
   });
 
@@ -4416,26 +4059,26 @@ function SystemInfoSection() {
     onSuccess: (result) => {
       utils.system.getSettings.invalidate();
       if (result.restartScheduled) {
-        toast.success(`Web 端口已修改为 ${result.port}，服务正在重启`);
+        toast.success(translateText("Web 端口已修改为 {0}，服务正在重启", [result.port]));
       } else {
-        toast.info("Web 端口未变化");
+        toast.info(translateText("Web 端口未变化"));
       }
       setShowWebPortConfirm(false);
     },
-    onError: (err) => toast.error(err.message || "修改 Web 端口失败"),
+    onError: (err) => toast.error(err.message || translateText("修改 Web 端口失败")),
   });
 
   const updatePanelSslMutation = trpc.system.updatePanelSsl.useMutation({
     onSuccess: (result) => {
       utils.system.getSettings.invalidate();
       if (result.restartScheduled) {
-        toast.success(result.enabled ? "面板 SSL 已开启，服务正在重启" : "面板 SSL 已关闭，服务正在重启");
+        toast.success(result.enabled ? translateText("面板 SSL 已开启，服务正在重启") : translateText("面板 SSL 已关闭，服务正在重启"));
       } else {
-        toast.info("面板 SSL 配置未变化");
+        toast.info(translateText("面板 SSL 配置未变化"));
       }
       setShowPanelSslConfirm(false);
     },
-    onError: (err) => toast.error(err.message || "保存面板 SSL 配置失败"),
+    onError: (err) => toast.error(err.message || translateText("保存面板 SSL 配置失败")),
   });
 
   const generatePanelSelfSignedMutation = trpc.system.generatePanelSelfSignedCertificate.useMutation({
@@ -4444,9 +4087,9 @@ function SystemInfoSection() {
       setPanelSslCertPath(result.certPath);
       setPanelSslKeyPath(result.keyPath);
       utils.system.getSettings.invalidate();
-      toast.success("自签证书已生成并填入路径");
+      toast.success(translateText("自签证书已生成并填入路径"));
     },
-    onError: (err) => toast.error(err.message || "生成自签证书失败"),
+    onError: (err) => toast.error(err.message || translateText("生成自签证书失败")),
   });
 
   const saveSystemSettings = (
@@ -4475,7 +4118,7 @@ function SystemInfoSection() {
   const handleSavePanelUrl = () => {
     const v = panelUrlInput.trim();
     if (v && !/^https?:\/\//i.test(v)) {
-      toast.error("面板公开地址必须以 http:// 或 https:// 开头");
+      toast.error(translateText("面板公开地址必须以 http:// 或 https:// 开头"));
       return;
     }
     saveSystemSettings("panelUrl", { panelPublicUrl: v });
@@ -4489,16 +4132,16 @@ function SystemInfoSection() {
 
   const openWebPortConfirm = () => {
     if (!settings?.webPortManagement?.enabled) {
-      toast.info(isDockerWebPort ? "Docker 部署的访问端口由宿主机端口映射管理，请在部署配置中修改。" : "当前环境不支持在后台修改 Web 端口。");
+      toast.info(isDockerWebPort ? translateText("Docker 部署的访问端口由宿主机端口映射管理，请在部署配置中修改。") : translateText("当前环境不支持在后台修改 Web 端口。"));
       return;
     }
     const port = Math.floor(Number(webPortInput));
     if (!isValidWebPort(webPortInput)) {
-      toast.error("端口必须是 1-65535 的数字");
+      toast.error(translateText("端口必须是 1-65535 的数字"));
       return;
     }
     if (port === webPortDisplay) {
-      toast.info("端口未变化");
+      toast.info(translateText("端口未变化"));
       return;
     }
     setShowWebPortConfirm(true);
@@ -4506,7 +4149,7 @@ function SystemInfoSection() {
 
   const confirmWebPortChange = () => {
     if (!isValidWebPort(webPortInput)) {
-      toast.error("端口必须是 1-65535 的数字");
+      toast.error(translateText("端口必须是 1-65535 的数字"));
       return;
     }
     updateWebPortMutation.mutate({ port: Math.floor(Number(webPortInput)), confirmed: true });
@@ -4514,7 +4157,7 @@ function SystemInfoSection() {
 
   const openPanelSslConfirm = () => {
     if (panelSslEnabled && (!panelSslCertPath.trim() || !panelSslKeyPath.trim())) {
-      toast.error("开启面板 SSL 需要填写证书文件和私钥文件路径");
+      toast.error(translateText("开启面板 SSL 需要填写证书文件和私钥文件路径"));
       return;
     }
     setShowPanelSslConfirm(true);
@@ -4522,7 +4165,7 @@ function SystemInfoSection() {
 
   const confirmPanelSslChange = () => {
     if (panelSslEnabled && (!panelSslCertPath.trim() || !panelSslKeyPath.trim())) {
-      toast.error("开启面板 SSL 需要填写证书文件和私钥文件路径");
+      toast.error(translateText("开启面板 SSL 需要填写证书文件和私钥文件路径"));
       return;
     }
     updatePanelSslMutation.mutate({
@@ -4537,17 +4180,17 @@ function SystemInfoSection() {
     if (!panelSslEnabled) return true;
     if (panelSslMode === "path") {
       if (!panelSslCertPath.trim() || !panelSslKeyPath.trim()) {
-        toast.error("开启面板 SSL 需要填写证书文件和私钥文件路径");
+        toast.error(translateText("开启面板 SSL 需要填写证书文件和私钥文件路径"));
         return false;
       }
       return true;
     }
     if (!/-----BEGIN CERTIFICATE-----[\s\S]+-----END CERTIFICATE-----/.test(panelSslCertPem.trim())) {
-      toast.error("证书内容不是有效的 PEM 证书");
+      toast.error(translateText("证书内容不是有效的 PEM 证书"));
       return false;
     }
     if (!/-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]+-----END [A-Z ]*PRIVATE KEY-----/.test(panelSslKeyPem.trim())) {
-      toast.error("私钥内容不是有效的 PEM 私钥");
+      toast.error(translateText("私钥内容不是有效的 PEM 私钥"));
       return false;
     }
     return true;
@@ -4580,6 +4223,16 @@ function SystemInfoSection() {
     saveSystemSettings("registration", { registrationEnabled });
   };
 
+  const handleSaveAuthCaptcha = () => {
+    saveSystemSettings("authCaptcha", { authCaptchaEnabled }, {
+      onSuccess: () => {
+        void utils.auth.emailConfig.invalidate();
+        void utils.auth.needsCaptcha.invalidate();
+        void utils.system.publicInfo.invalidate();
+      },
+    });
+  };
+
   const handleSaveTwoFactor = () => {
     saveSystemSettings("twoFactor", { twoFactorEnabled });
   };
@@ -4588,11 +4241,11 @@ function SystemInfoSection() {
     const huaweicloudEndpoint = normalizeConfigUrl(ddnsHuaweiCloudEndpoint);
     const aliyunEndpoint = normalizeConfigUrl(ddnsAliyunEndpoint);
     if (huaweicloudEndpoint && !/^https?:\/\//i.test(huaweicloudEndpoint)) {
-      toast.error("华为云 Endpoint 需要以 http:// 或 https:// 开头");
+      toast.error(translateText("华为云 Endpoint 需要以 http:// 或 https:// 开头"));
       return;
     }
     if (aliyunEndpoint && !/^https?:\/\//i.test(aliyunEndpoint)) {
-      toast.error("阿里云 Endpoint 需要以 http:// 或 https:// 开头");
+      toast.error(translateText("阿里云 Endpoint 需要以 http:// 或 https:// 开头"));
       return;
     }
     const ttl = normalizeTtl(ddnsTtl, Number(settings?.ddns?.ttl || 600));
@@ -4639,7 +4292,7 @@ function SystemInfoSection() {
   const handleSavePublicHostMonitor = () => {
     const path = normalizePublicHostMonitorPathInput(publicHostMonitorPath) || "dev";
     if (!/^[a-z0-9][a-z0-9_-]{0,63}$/.test(path)) {
-      toast.error("主机监控面板路径只能包含小写字母、数字、短横线或下划线，且不能超过 64 个字符");
+      toast.error(translateText("主机监控面板路径只能包含小写字母、数字、短横线或下划线，且不能超过 64 个字符"));
       return;
     }
     saveSystemSettings("hostMonitor", {
@@ -4720,7 +4373,7 @@ function SystemInfoSection() {
     const inputUrl = normalizeConfigUrl(githubAcceleratorUrlInput);
     const acceleratorUrl = normalizeGithubAcceleratorUrl(inputUrl);
     if (inputUrl && !acceleratorUrl) {
-      toast.error("GitHub 加速地址必须是 HTTP(S) 基础地址，且不能包含查询参数或锚点");
+      toast.error(translateText("GitHub 加速地址必须是 HTTP(S) 基础地址，且不能包含查询参数或锚点"));
       return;
     }
     saveSystemSettings("agentInstall", {
@@ -4765,8 +4418,8 @@ function SystemInfoSection() {
       copied = document.execCommand("copy");
       document.body.removeChild(textarea);
     }
-    if (copied) toast.success("已复制到剪贴板");
-    else toast.error("复制失败，请手动复制");
+    if (copied) toast.success(translateText("已复制到剪贴板"));
+    else toast.error(translateText("复制失败，请手动复制"));
   };
 
   const startUpgradeMutation = trpc.system.startUpgrade.useMutation({
@@ -4774,11 +4427,11 @@ function SystemInfoSection() {
       if (result?.pendingReason) {
         toast.info(result.pendingReason);
       } else {
-        toast.success("升级任务已启动");
+        toast.success(translateText("升级任务已启动"));
       }
       await refetchUpgradeStatus();
     },
-    onError: (err) => toast.error(err.message || "启动升级失败"),
+    onError: (err) => toast.error(err.message || translateText("启动升级失败")),
   });
 
   const startRollbackMutation = trpc.system.startVersionRollback.useMutation({
@@ -4786,9 +4439,9 @@ function SystemInfoSection() {
       if ((result as any)?.pendingReason) {
         toast.info((result as any).pendingReason);
       } else if ((result as any)?.type === "agent") {
-        toast.success(`Agent 回退任务已下发 ${((result as any).requested || 0)} 台，实时推送 ${((result as any).pushed || 0)} 台`);
+        toast.success(translateText("Agent 回退任务已下发 {0} 台，实时推送 {1} 台", [((result as any).requested || 0), ((result as any).pushed || 0)]));
       } else {
-        toast.success("面板回退任务已启动");
+        toast.success(translateText("面板回退任务已启动"));
       }
       setShowRollbackDialog(false);
       await refetchUpgradeStatus();
@@ -4796,7 +4449,7 @@ function SystemInfoSection() {
       utils.hosts.options.invalidate();
       utils.hosts.listPage.invalidate();
     },
-    onError: (err) => toast.error(err.message || "启动回退失败"),
+    onError: (err) => toast.error(err.message || translateText("启动回退失败")),
   });
 
   const refreshRollbackVersions = async () => {
@@ -4820,7 +4473,7 @@ function SystemInfoSection() {
     const cooldownMs = 60 * 1000;
     const waitMs = cooldownMs - (now - lastPanelUpdateCheck.current);
     if (waitMs > 0) {
-      toast.info(`请 ${Math.ceil(waitMs / 1000)} 秒后重试`);
+      toast.info(translateText("请 {0} 秒后重试", [Math.ceil(waitMs / 1000)]));
       return;
     }
     try {
@@ -4828,9 +4481,9 @@ function SystemInfoSection() {
       lastPanelUpdateCheck.current = now;
       await utils.system.checkUpdate.fetch({ force: true });
       await refetchUpgradeStatus();
-      toast.success("版本检查完成");
+      toast.success(translateText("版本检查完成"));
     } catch (err: any) {
-      toast.error(err?.message || "检查更新失败");
+      toast.error(err?.message || translateText("检查更新失败"));
     } finally {
       setCheckingUpdate(false);
     }
@@ -4845,8 +4498,8 @@ function SystemInfoSection() {
     url: githubAcceleratorUrlInput,
   });
   const manualPanelUpgradeCommands = ([
-    ["本地部署", "local"],
-    ["Docker 部署", "docker"],
+    [translateText("本地部署"), "local"],
+    [translateText("Docker 部署"), "docker"],
   ] as const).map(([label, deployment]) => ({
     label,
     command: buildPanelInstallerCommand({
@@ -4886,25 +4539,25 @@ function SystemInfoSection() {
   const androidApkDownloadUrl = settings?.androidApkDownloadUrl || "";
   const contactLinks = [
     {
-      label: "GitHub 仓库",
+      label: translateText("GitHub 仓库"),
       url: settings?.repoUrl || "#",
       icon: Github,
       iconClassName: "",
     },
     {
-      label: "Telegram 双向消息机器人",
+      label: translateText("Telegram 双向消息机器人"),
       url: settings?.telegramBotUrl || "#",
       icon: Send,
       iconClassName: "text-primary",
     },
     {
-      label: "Telegram 群组",
+      label: translateText("Telegram 群组"),
       url: "https://t.me/ForwardX_panel",
       icon: UserPlus,
       iconClassName: "text-primary",
     },
     ...(androidApkDownloadUrl ? [{
-      label: "Android APK 下载",
+      label: translateText("Android APK 下载"),
       url: androidApkDownloadUrl,
       icon: Download,
       iconClassName: "text-emerald-600",
@@ -4918,7 +4571,7 @@ function SystemInfoSection() {
   const totalProtocolEnabledCount = directProtocolEnabledCount + tunnelProtocolEnabledCount;
   const totalProtocolCount = directForwardProtocolKeys.length + tunnelForwardProtocolKeys.length;
   const sidebarMenuEnabledCount = SIDEBAR_MENU_KEYS.filter((key) => sidebarMenu[key]).length;
-  const panelSslSourceLabel = panelSslMode === "pem" ? "粘贴 PEM 内容" : "服务器文件路径";
+  const panelSslSourceLabel = panelSslMode === "pem" ? translateText("粘贴 PEM 内容") : translateText("服务器文件路径");
   const panelSslPathActive = panelSslMode === "path";
   const panelSslPemActive = panelSslMode === "pem";
   const panelSslPathConfigured = !!panelSslCertPath.trim() && !!panelSslKeyPath.trim();
@@ -4933,7 +4586,7 @@ function SystemInfoSection() {
 
   if (isLoading) {
     return (
-      <DataSectionLoading label="正在加载系统设置" minHeight="min-h-[220px]" />
+      <DataSectionLoading label={translateText("正在加载系统设置")} minHeight="min-h-[220px]" />
     );
   }
 
@@ -4943,56 +4596,42 @@ function SystemInfoSection() {
         <Card className="border-border/40 bg-card/60 backdrop-blur-md">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
-              <Wifi className="h-4 w-4 text-primary" />
-              网络测试
-            </CardTitle>
-            <CardDescription>
-              配置普通用户是否可见网络测试入口。
-            </CardDescription>
+              <Wifi className="h-4 w-4 text-primary" />{translateText("网络测试")}</CardTitle>
+            <CardDescription>{translateText("配置普通用户是否可见网络测试入口。")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0">
-                <p className="text-sm font-medium">普通用户可见网络测试</p>
-                <p className="text-xs text-muted-foreground">
-                  关闭后侧边栏入口和接口都会对普通用户禁用。
-                </p>
+                <p className="text-sm font-medium">{translateText("普通用户可见网络测试")}</p>
+                <p className="text-xs text-muted-foreground">{translateText("关闭后侧边栏入口和接口都会对普通用户禁用。")}</p>
               </div>
               <Switch className="shrink-0" checked={lookingGlassUserEnabled} onCheckedChange={setLookingGlassUserEnabled} />
             </div>
-            <Button onClick={handleSaveLookingGlass} disabled={isSavingSetting("networkTest")}>
-              保存
-            </Button>
+            <Button onClick={handleSaveLookingGlass} disabled={isSavingSetting("networkTest")}>{translateText("保存")}</Button>
           </CardContent>
         </Card>
         <Card className="border-border/40 bg-card/60 backdrop-blur-md">
-          <CardHeader className="gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div className="space-y-1.5">
+          <CardHeader className="responsive-actions gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
+            <div className="min-w-0 flex-1 basis-40 space-y-1.5">
               <CardTitle className="flex items-center gap-2 text-base">
-                <ShieldCheck className="h-4 w-4 text-primary" />
-                转发协议总开关
-              </CardTitle>
-              <CardDescription>
-                控制用户可用的转发协议。
-              </CardDescription>
+                <ShieldCheck className="h-4 w-4 text-primary" />{translateText("转发协议总开关")}</CardTitle>
+              <CardDescription>{translateText("控制用户可用的转发协议。")}</CardDescription>
             </div>
             <Button variant="outline" className="w-full gap-2 sm:w-auto" onClick={openForwardProtocolDialog}>
-              <Settings2 className="h-4 w-4" />
-              管理协议开关
-            </Button>
+              <Settings2 className="h-4 w-4" />{translateText("管理协议开关")}</Button>
           </CardHeader>
           <CardContent>
             <div className="grid gap-3 sm:grid-cols-3">
               <div className="rounded-lg border border-border/40 bg-muted/20 p-3">
-                <p className="text-xs text-muted-foreground">全部协议</p>
+                <p className="text-xs text-muted-foreground">{translateText("全部协议")}</p>
                 <p className="mt-1 text-lg font-semibold">{totalProtocolEnabledCount} / {totalProtocolCount}</p>
               </div>
               <div className="rounded-lg border border-border/40 bg-muted/20 p-3">
-                <p className="text-xs text-muted-foreground">端口转发</p>
+                <p className="text-xs text-muted-foreground">{translateText("端口转发")}</p>
                 <p className="mt-1 text-lg font-semibold">{directProtocolEnabledCount} / {directForwardProtocolKeys.length}</p>
               </div>
               <div className="rounded-lg border border-border/40 bg-muted/20 p-3">
-                <p className="text-xs text-muted-foreground">隧道协议</p>
+                <p className="text-xs text-muted-foreground">{translateText("隧道协议")}</p>
                 <p className="mt-1 text-lg font-semibold">{tunnelProtocolEnabledCount} / {tunnelForwardProtocolKeys.length}</p>
               </div>
             </div>
@@ -5004,17 +4643,13 @@ function SystemInfoSection() {
         <Card className="border-border/40 bg-card/60 backdrop-blur-md">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
-              <Globe className="h-4 w-4 text-primary" />
-              面板公开访问地址
-            </CardTitle>
-            <CardDescription>
-              Agent 安装和回调使用此地址。
-            </CardDescription>
+              <Globe className="h-4 w-4 text-primary" />{translateText("面板公开访问地址")}</CardTitle>
+            <CardDescription>{translateText("Agent 安装和回调使用此地址。")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex flex-col gap-2 sm:flex-row">
               <Input
-                placeholder="例如：https://forwardx.example.com 或 http://1.2.3.4:3000"
+                placeholder={translateText("例如：https://forwardx.example.com 或 http://1.2.3.4:3000")}
                 value={panelUrlInput}
                 onChange={(e) => setPanelUrlInput(e.target.value)}
                 className="flex-1"
@@ -5022,27 +4657,19 @@ function SystemInfoSection() {
               <Button
                 onClick={handleSavePanelUrl}
                 disabled={isSavingSetting("panelUrl")}
-              >
-                保存
-              </Button>
+              >{translateText("保存")}</Button>
             </div>
-            <p className="text-xs text-muted-foreground">
-              留空使用当前访问地址。需以 http:// 或 https:// 开头。
-            </p>
-            <p className="text-xs leading-relaxed text-amber-600 dark:text-amber-300">
-              反向代理或 Docker 部署请填写外部可访问的面板地址，否则 Agent 可能无法回连。
-            </p>
+            <p className="text-xs text-muted-foreground">{translateText("留空使用当前访问地址。需以 http:// 或 https:// 开头。")}</p>
+            <p className="text-xs leading-relaxed text-amber-600 dark:text-amber-300">{translateText("反向代理或 Docker 部署请填写外部可访问的面板地址，否则 Agent 可能无法回连。")}</p>
           </CardContent>
         </Card>
 
         <Card className="border-border/40 bg-card/60 backdrop-blur-md">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
-              <Wifi className="h-4 w-4 text-primary" />
-              Web 服务监听端口
-            </CardTitle>
+              <Wifi className="h-4 w-4 text-primary" />{translateText("Web 服务监听端口")}</CardTitle>
             <CardDescription>
-              {isDockerWebPort ? "Docker 部署的宿主机访问端口由端口映射管理，容器内固定监听 3000。" : "修改本地部署面板的 Web 访问端口。"}
+              {isDockerWebPort ? translateText("Docker 部署的宿主机访问端口由端口映射管理，容器内固定监听 3000。") : translateText("修改本地部署面板的 Web 访问端口。")}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -5062,22 +4689,22 @@ function SystemInfoSection() {
                 disabled={webPortChangeDisabled}
                 variant={isDockerWebPort ? "outline" : "default"}
               >
-                {isDockerWebPort ? "不可修改" : "修改端口"}
+                {isDockerWebPort ? translateText("不可修改") : translateText("修改端口")}
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">
               {isDockerWebPort
-                ? `宿主机端口：${webPortDisplay} → 容器端口：${webContainerPort}。`
-                : `当前监听端口：${webPortDisplay}。修改后服务会重启，请使用新端口访问后台。`}
+                ? translateText("宿主机端口：{0} → 容器端口：{1}。", [webPortDisplay, webContainerPort])
+                : translateText("当前监听端口：{0}。修改后服务会重启，请使用新端口访问后台。", [webPortDisplay])}
             </p>
             {!settings?.webPortManagement?.enabled && (
               <Alert>
                 <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>{isDockerWebPort ? "Docker 部署端口由映射管理" : "当前环境不支持后台修改端口"}</AlertTitle>
+                <AlertTitle>{isDockerWebPort ? translateText("Docker 部署端口由映射管理") : translateText("当前环境不支持后台修改端口")}</AlertTitle>
                 <AlertDescription>
                   {isDockerWebPort
-                    ? "请在部署配置中修改宿主机端口映射。"
-                    : "请在服务环境变量或启动脚本中修改监听端口。"}
+                    ? translateText("请在部署配置中修改宿主机端口映射。")
+                    : translateText("请在服务环境变量或启动脚本中修改监听端口。")}
                 </AlertDescription>
               </Alert>
             )}
@@ -5087,19 +4714,14 @@ function SystemInfoSection() {
         <Card className="border-border/40 bg-card/60 backdrop-blur-md xl:col-span-2">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
-              <Lock className="h-4 w-4 text-primary" />
-              面板 SSL 访问
-            </CardTitle>
-            <CardDescription>
-              在当前端口启用 HTTPS。
-            </CardDescription>
+              <Lock className="h-4 w-4 text-primary" />{translateText("面板 SSL 访问")}</CardTitle>
+            <CardDescription>{translateText("在当前端口启用 HTTPS。")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between gap-3 rounded-lg border border-border/40 bg-muted/20 p-3">
               <div className="min-w-0">
-                <p className="text-sm font-medium">启用 HTTPS</p>
-                <p className="text-xs text-muted-foreground">
-                  当前协议：{settings?.panelSsl?.activeProtocol === "https" ? "HTTPS" : "HTTP"}，端口：{webPortDisplay}
+                <p className="text-sm font-medium">{translateText("启用 HTTPS")}</p>
+                <p className="text-xs text-muted-foreground">{translateText("当前协议：")}{settings?.panelSsl?.activeProtocol === "https" ? "HTTPS" : "HTTP"}{translateText("，端口：")}{webPortDisplay}
                 </p>
               </div>
               <Switch className="shrink-0" checked={panelSslEnabled} onCheckedChange={setPanelSslEnabled} />
@@ -5108,14 +4730,12 @@ function SystemInfoSection() {
               <div className="flex min-w-0 items-start gap-2">
                 <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
                 <div className="min-w-0">
-                  <p className="font-medium">当前证书来源：{panelSslSourceLabel}</p>
-                  <p className="text-xs text-muted-foreground">
-                    仅使用当前选中的证书来源。
-                  </p>
+                  <p className="font-medium">{translateText("当前证书来源：")}{panelSslSourceLabel}</p>
+                  <p className="text-xs text-muted-foreground">{translateText("仅使用当前选中的证书来源。")}</p>
                 </div>
               </div>
               <Badge variant="outline" className="w-fit shrink-0 border-primary/30 bg-background/70 text-primary">
-                {panelSslEnabled ? "HTTPS 将按此来源启动" : "启用后按此来源启动"}
+                {panelSslEnabled ? translateText("HTTPS 将按此来源启动") : translateText("启用后按此来源启动")}
               </Badge>
             </div>
             <div className="grid gap-4 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
@@ -5123,14 +4743,12 @@ function SystemInfoSection() {
                 <div className="flex items-center justify-between gap-3">
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <p className="text-sm font-medium">服务器文件路径</p>
+                      <p className="text-sm font-medium">{translateText("服务器文件路径")}</p>
                       <Badge variant={panelSslPathActive ? "default" : "outline"} className="text-[10px]">
-                        {panelSslPathActive ? "当前使用" : panelSslPathConfigured ? "已保存备用" : "未配置"}
+                        {panelSslPathActive ? translateText("当前使用") : panelSslPathConfigured ? translateText("已保存备用") : translateText("未配置")}
                       </Badge>
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      读取服务器上的证书和私钥文件。
-                    </p>
+                    <p className="text-xs text-muted-foreground">{translateText("读取服务器上的证书和私钥文件。")}</p>
                   </div>
                   <Button
                     type="button"
@@ -5139,12 +4757,12 @@ function SystemInfoSection() {
                     onClick={() => setPanelSslMode("path")}
                     disabled={panelSslPathActive}
                   >
-                    {panelSslPathActive ? "正在使用" : "使用此来源"}
+                    {panelSslPathActive ? translateText("正在使用") : translateText("使用此来源")}
                   </Button>
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="panel-ssl-cert-path">证书文件路径</Label>
+                <Label htmlFor="panel-ssl-cert-path">{translateText("证书文件路径")}</Label>
                 <Input
                   id="panel-ssl-cert-path"
                   value={panelSslCertPath}
@@ -5153,7 +4771,7 @@ function SystemInfoSection() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="panel-ssl-key-path">私钥文件路径</Label>
+                <Label htmlFor="panel-ssl-key-path">{translateText("私钥文件路径")}</Label>
                 <Input
                   id="panel-ssl-key-path"
                   value={panelSslKeyPath}
@@ -5171,7 +4789,7 @@ function SystemInfoSection() {
                 }}
                 disabled={generatePanelSelfSignedMutation.isPending}
               >
-                {generatePanelSelfSignedMutation.isPending ? "生成中..." : "生成自签证书"}
+                {generatePanelSelfSignedMutation.isPending ? translateText("生成中...") : translateText("生成自签证书")}
               </Button>
               </div>
 
@@ -5179,14 +4797,12 @@ function SystemInfoSection() {
                 <div className="flex items-center justify-between gap-3">
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <p className="text-sm font-medium">粘贴 PEM 内容</p>
+                      <p className="text-sm font-medium">{translateText("粘贴 PEM 内容")}</p>
                       <Badge variant={panelSslPemActive ? "default" : "outline"} className="text-[10px]">
-                        {panelSslPemActive ? "当前使用" : panelSslPemConfigured ? "已保存备用" : "未配置"}
+                        {panelSslPemActive ? translateText("当前使用") : panelSslPemConfigured ? translateText("已保存备用") : translateText("未配置")}
                       </Badge>
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      直接保存证书和私钥 PEM 内容。
-                    </p>
+                    <p className="text-xs text-muted-foreground">{translateText("直接保存证书和私钥 PEM 内容。")}</p>
                   </div>
                   <Button
                     type="button"
@@ -5195,12 +4811,12 @@ function SystemInfoSection() {
                     onClick={() => setPanelSslMode("pem")}
                     disabled={panelSslPemActive}
                   >
-                    {panelSslPemActive ? "正在使用" : "使用此来源"}
+                    {panelSslPemActive ? translateText("正在使用") : translateText("使用此来源")}
                   </Button>
                 </div>
                 <div className="grid gap-3 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="panel-ssl-cert-pem">证书 PEM</Label>
+                  <Label htmlFor="panel-ssl-cert-pem">{translateText("证书 PEM")}</Label>
                   <Textarea
                     id="panel-ssl-cert-pem"
                     value={panelSslCertPem}
@@ -5210,7 +4826,7 @@ function SystemInfoSection() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="panel-ssl-key-pem">私钥 PEM</Label>
+                  <Label htmlFor="panel-ssl-key-pem">{translateText("私钥 PEM")}</Label>
                   <Textarea
                     id="panel-ssl-key-pem"
                     value={panelSslKeyPem}
@@ -5222,13 +4838,9 @@ function SystemInfoSection() {
                 </div>
               </div>
             </div>
-            <p className="text-xs text-muted-foreground">
-              默认关闭。保存时会校验证书和私钥，配置生效需要重启面板；端口不变。
-            </p>
+            <p className="text-xs text-muted-foreground">{translateText("默认关闭。保存时会校验证书和私钥，配置生效需要重启面板；端口不变。")}</p>
             <div className="flex justify-end">
-              <Button onClick={openPanelSslConfirmV2} disabled={updatePanelSslMutation.isPending || generatePanelSelfSignedMutation.isPending}>
-                保存 SSL 配置
-              </Button>
+              <Button onClick={openPanelSslConfirmV2} disabled={updatePanelSslMutation.isPending || generatePanelSelfSignedMutation.isPending}>{translateText("保存 SSL 配置")}</Button>
             </div>
           </CardContent>
         </Card>
@@ -5238,26 +4850,18 @@ function SystemInfoSection() {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-amber-500" />
-              确认修改 Web 端口
-            </DialogTitle>
-            <DialogDescription>
-              即将把 Web 服务监听端口修改为 {webPortInput || "-"}，确认后服务会重启。
-            </DialogDescription>
+              <AlertTriangle className="h-5 w-5 text-amber-500" />{translateText("确认修改 Web 端口")}</DialogTitle>
+            <DialogDescription>{translateText("即将把 Web 服务监听端口修改为 ")}{webPortInput || "-"}{translateText("，确认后服务会重启。")}</DialogDescription>
           </DialogHeader>
           <Alert>
             <AlertTriangle className="h-4 w-4" />
-            <AlertTitle>请先确认安全组和防火墙已放行新端口</AlertTitle>
-            <AlertDescription>
-              如果新端口未放行，服务重启后可能无法通过浏览器访问后台。
-            </AlertDescription>
+            <AlertTitle>{translateText("请先确认安全组和防火墙已放行新端口")}</AlertTitle>
+            <AlertDescription>{translateText("如果新端口未放行，服务重启后可能无法通过浏览器访问后台。")}</AlertDescription>
           </Alert>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowWebPortConfirm(false)} disabled={updateWebPortMutation.isPending}>
-              取消
-            </Button>
+            <Button variant="outline" onClick={() => setShowWebPortConfirm(false)} disabled={updateWebPortMutation.isPending}>{translateText("取消")}</Button>
             <Button onClick={confirmWebPortChange} disabled={webPortCountdown > 0 || updateWebPortMutation.isPending}>
-              {webPortCountdown > 0 ? `确认修改（${webPortCountdown}s）` : "确认并重启"}
+              {webPortCountdown > 0 ? translateText("确认修改（{0}s）", [webPortCountdown]) : translateText("确认并重启")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -5267,56 +4871,61 @@ function SystemInfoSection() {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-amber-500" />
-              确认修改面板 SSL
-            </DialogTitle>
-            <DialogDescription>
-              确认后面板会重启，当前端口 {webPortDisplay} 将切换为 {panelSslEnabled ? "HTTPS" : "HTTP"} 访问。
-            </DialogDescription>
+              <AlertTriangle className="h-5 w-5 text-amber-500" />{translateText("确认修改面板 SSL")}</DialogTitle>
+            <DialogDescription>{translateText("确认后面板会重启，当前端口 ")}{webPortDisplay}{translateText(" 将切换为 ")}{panelSslEnabled ? "HTTPS" : "HTTP"}{translateText(" 访问。")}</DialogDescription>
           </DialogHeader>
           <Alert>
             <AlertTriangle className="h-4 w-4" />
-            <AlertTitle>请确认访问地址和证书文件已准备好</AlertTitle>
-            <AlertDescription>
-              开启 SSL 后请使用 https:// 访问当前端口；关闭后请改回 http:// 访问当前端口。
-            </AlertDescription>
+            <AlertTitle>{translateText("请确认访问地址和证书文件已准备好")}</AlertTitle>
+            <AlertDescription>{translateText("开启 SSL 后请使用 https:// 访问当前端口；关闭后请改回 http:// 访问当前端口。")}</AlertDescription>
           </Alert>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowPanelSslConfirm(false)} disabled={updatePanelSslMutation.isPending}>
-              取消
-            </Button>
+            <Button variant="outline" onClick={() => setShowPanelSslConfirm(false)} disabled={updatePanelSslMutation.isPending}>{translateText("取消")}</Button>
             <Button onClick={confirmPanelSslChangeV2} disabled={panelSslCountdown > 0 || updatePanelSslMutation.isPending}>
-              {panelSslCountdown > 0 ? `确认修改（${panelSslCountdown}s）` : "确认并重启"}
+              {panelSslCountdown > 0 ? translateText("确认修改（{0}s）", [panelSslCountdown]) : translateText("确认并重启")}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
+      <Card className="border-border/40 bg-card/60 backdrop-blur-md">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Shield className="h-4 w-4 shrink-0 text-primary" />{translateText("登录/注册人机验证")}
+          </CardTitle>
+          <CardDescription>{translateText("默认开启。建议使用 HTTPS；部分浏览器在 HTTP 下无法完成验证。")}</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between gap-3 rounded-lg border border-border/40 bg-muted/20 p-3">
+            <div className="min-w-0">
+              <p className="text-sm font-medium">{translateText("启用人机验证")}</p>
+              <p className="text-xs text-muted-foreground">{translateText("关闭后登录和注册不再要求人机验证，但仍保留密码、登录限流、邮箱验证和双重验证。公网部署建议保持开启。")}</p>
+            </div>
+            <Switch aria-label={translateText("启用人机验证")} className="shrink-0" checked={authCaptchaEnabled} onCheckedChange={setAuthCaptchaEnabled} />
+          </div>
+          <div className="flex justify-end">
+            <Button onClick={handleSaveAuthCaptcha} disabled={isSavingSetting("authCaptcha")}>{translateText("保存人机验证设置")}</Button>
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="grid gap-4 xl:grid-cols-2">
         <Card className="border-border/40 bg-card/60 backdrop-blur-md">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
-              <UserPlus className="h-4 w-4 text-primary" />
-              用户注册
-            </CardTitle>
-            <CardDescription>
-              控制新用户自助注册。
-            </CardDescription>
+              <UserPlus className="h-4 w-4 text-primary" />{translateText("用户注册")}</CardTitle>
+            <CardDescription>{translateText("控制新用户自助注册。")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between gap-3 rounded-lg border border-border/40 bg-muted/20 p-3">
               <div>
-                <p className="text-sm font-medium">开放注册</p>
-                <p className="text-xs text-muted-foreground">
-                  关闭后仅管理员可添加用户。
-                </p>
+                <p className="text-sm font-medium">{translateText("开放注册")}</p>
+                <p className="text-xs text-muted-foreground">{translateText("关闭后仅管理员可添加用户。")}</p>
               </div>
               <Switch checked={registrationEnabled} onCheckedChange={setRegistrationEnabled} />
             </div>
             <div className="flex justify-end">
-              <Button onClick={handleSaveRegistration} disabled={isSavingSetting("registration")}>
-                保存注册设置
-              </Button>
+              <Button onClick={handleSaveRegistration} disabled={isSavingSetting("registration")}>{translateText("保存注册设置")}</Button>
             </div>
           </CardContent>
         </Card>
@@ -5324,27 +4933,19 @@ function SystemInfoSection() {
         <Card className="border-border/40 bg-card/60 backdrop-blur-md">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
-              <Shield className="h-4 w-4 text-primary" />
-              双重验证
-            </CardTitle>
-            <CardDescription>
-              账号可绑定 2FA 动态验证码。
-            </CardDescription>
+              <Shield className="h-4 w-4 text-primary" />{translateText("双重验证")}</CardTitle>
+            <CardDescription>{translateText("账号可绑定 2FA 动态验证码。")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between gap-3 rounded-lg border border-border/40 bg-muted/20 p-3">
               <div>
-                <p className="text-sm font-medium">启用 2FA 软件支持</p>
-                <p className="text-xs text-muted-foreground">
-                  关闭后隐藏绑定入口。
-                </p>
+                <p className="text-sm font-medium">{translateText("启用 2FA 软件支持")}</p>
+                <p className="text-xs text-muted-foreground">{translateText("关闭后隐藏绑定入口。")}</p>
               </div>
               <Switch checked={twoFactorEnabled} onCheckedChange={setTwoFactorEnabled} />
             </div>
             <div className="flex justify-end">
-              <Button onClick={handleSaveTwoFactor} disabled={isSavingSetting("twoFactor")}>
-                保存双重验证设置
-              </Button>
+              <Button onClick={handleSaveTwoFactor} disabled={isSavingSetting("twoFactor")}>{translateText("保存双重验证设置")}</Button>
             </div>
           </CardContent>
         </Card>
@@ -5353,44 +4954,38 @@ function SystemInfoSection() {
       <Card className="border-border/40 bg-card/60 backdrop-blur-md">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
-            <Cloud className="h-4 w-4 text-primary" />
-            DDNS 服务商
-          </CardTitle>
-          <CardDescription>
-            转发组切换时同步更新域名。
-          </CardDescription>
+            <Cloud className="h-4 w-4 text-primary" />{translateText("DDNS 服务商")}</CardTitle>
+          <CardDescription>{translateText("转发组切换时同步更新域名。")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-3 lg:grid-cols-2">
             <div className="flex items-center justify-between gap-3 rounded-lg border border-border/40 bg-muted/20 p-3">
               <div className="min-w-0">
-                <p className="text-sm font-medium">启用 DDNS</p>
-                <p className="text-xs text-muted-foreground">关闭后不更新域名。</p>
+                <p className="text-sm font-medium">{translateText("启用 DDNS")}</p>
+                <p className="text-xs text-muted-foreground">{translateText("关闭后不更新域名。")}</p>
               </div>
               <Switch className="shrink-0" checked={ddnsEnabled} onCheckedChange={setDdnsEnabled} />
             </div>
             <div className="flex flex-col gap-3 rounded-lg border border-border/40 bg-muted/20 p-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="min-w-0">
-                <p className="text-sm font-medium">服务商</p>
-                <p className="text-xs text-muted-foreground">选择用于同步域名的 DDNS 服务。</p>
+                <p className="text-sm font-medium">{translateText("服务商")}</p>
+                <p className="text-xs text-muted-foreground">{translateText("选择用于同步域名的 DDNS 服务。")}</p>
               </div>
               <div className="flex w-full flex-col gap-2 sm:w-auto sm:min-w-56">
                 <Select value={ddnsProvider} onValueChange={(v) => setDdnsProvider(v as any)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="disabled">不使用</SelectItem>
+                    <SelectItem value="disabled">{translateText("不使用")}</SelectItem>
                     <SelectItem value="cloudflare">Cloudflare</SelectItem>
-                    <SelectItem value="huaweicloud">华为云 DNS</SelectItem>
-                    <SelectItem value="aliyun">阿里云 DNS</SelectItem>
-                    <SelectItem value="tencentcloud">腾讯云 DNSPod</SelectItem>
-                    <SelectItem value="webhook">自定义 Webhook</SelectItem>
+                    <SelectItem value="huaweicloud">{translateText("华为云 DNS")}</SelectItem>
+                    <SelectItem value="aliyun">{translateText("阿里云 DNS")}</SelectItem>
+                    <SelectItem value="tencentcloud">{translateText("腾讯云 DNSPod")}</SelectItem>
+                    <SelectItem value="webhook">{translateText("自定义 Webhook")}</SelectItem>
                   </SelectContent>
                 </Select>
                 <Button type="button" variant="outline" size="sm" className="justify-center gap-2" asChild>
                   <a href={ddnsProviderGuideUrl(ddnsProvider)} target="_blank" rel="noreferrer">
-                    <ExternalLink className="h-3.5 w-3.5" />
-                    查看配置教程
-                  </a>
+                    <ExternalLink className="h-3.5 w-3.5" />{translateText("查看配置教程")}</a>
                 </Button>
               </div>
             </div>
@@ -5404,7 +4999,7 @@ function SystemInfoSection() {
               placeholder="600"
               inputMode="numeric"
             />
-            <p className="text-xs text-muted-foreground">TTL 范围：60-86400 秒。Webhook 会原样传递该值。</p>
+            <p className="text-xs text-muted-foreground">{translateText("TTL 范围：60-86400 秒。Webhook 会原样传递该值。")}</p>
           </div>
 
           {ddnsProvider === "cloudflare" && (
@@ -5414,10 +5009,10 @@ function SystemInfoSection() {
                 <Input
                   value={ddnsCloudflareApiToken}
                   onChange={(e) => setDdnsCloudflareApiToken(e.target.value)}
-                  placeholder={settings?.ddns?.cloudflareTokenMasked || "需要 Zone:Read + DNS:Edit 权限"}
+                  placeholder={settings?.ddns?.cloudflareTokenMasked || translateText("需要 Zone:Read + DNS:Edit 权限")}
                   type="password"
                 />
-                <p className="text-xs text-muted-foreground">自动识别 Zone；Token 留空时保留原值。</p>
+                <p className="text-xs text-muted-foreground">{translateText("自动识别 Zone；Token 留空时保留原值。")}</p>
               </div>
             </div>
           )}
@@ -5427,36 +5022,36 @@ function SystemInfoSection() {
               <div className="grid gap-3 lg:grid-cols-2">
                 <div className="space-y-2">
                   <Label>Access Key ID</Label>
-                  <Input value={ddnsHuaweiCloudAccessKeyId} onChange={(e) => setDdnsHuaweiCloudAccessKeyId(e.target.value)} placeholder="华为云 AK" />
+                  <Input value={ddnsHuaweiCloudAccessKeyId} onChange={(e) => setDdnsHuaweiCloudAccessKeyId(e.target.value)} placeholder={translateText("华为云 AK")} />
                 </div>
                 <div className="space-y-2">
                   <Label>Secret Access Key</Label>
                   <Input
                     value={ddnsHuaweiCloudSecretKey}
                     onChange={(e) => setDdnsHuaweiCloudSecretKey(e.target.value)}
-                    placeholder={settings?.ddns?.huaweicloudSecretKeyMasked || "留空保留已保存密钥"}
+                    placeholder={settings?.ddns?.huaweicloudSecretKeyMasked || translateText("留空保留已保存密钥")}
                     type="password"
                   />
                 </div>
               </div>
               <div className="grid gap-3 lg:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>公网 Zone ID</Label>
-                  <Input value={ddnsHuaweiCloudZoneId} onChange={(e) => setDdnsHuaweiCloudZoneId(e.target.value)} placeholder="公网域名 Zone ID" />
+                  <Label>{translateText("公网 Zone ID")}</Label>
+                  <Input value={ddnsHuaweiCloudZoneId} onChange={(e) => setDdnsHuaweiCloudZoneId(e.target.value)} placeholder={translateText("公网域名 Zone ID")} />
                 </div>
                 <div className="space-y-2">
-                  <Label>区域</Label>
+                  <Label>{translateText("区域")}</Label>
                   <Input value={ddnsHuaweiCloudRegion} onChange={(e) => setDdnsHuaweiCloudRegion(e.target.value)} placeholder="cn-north-4" />
                 </div>
               </div>
               <div className="grid gap-3 lg:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>默认线路</Label>
+                  <Label>{translateText("默认线路")}</Label>
                   <Input value={ddnsHuaweiCloudLine} onChange={(e) => setDdnsHuaweiCloudLine(e.target.value)} placeholder="default_view" />
                 </div>
                 <div className="space-y-2">
                   <Label>Endpoint</Label>
-                  <Input value={ddnsHuaweiCloudEndpoint} onChange={(e) => setDdnsHuaweiCloudEndpoint(e.target.value)} placeholder="留空使用区域默认 Endpoint" />
+                  <Input value={ddnsHuaweiCloudEndpoint} onChange={(e) => setDdnsHuaweiCloudEndpoint(e.target.value)} placeholder={translateText("留空使用区域默认 Endpoint")} />
                 </div>
               </div>
             </div>
@@ -5467,21 +5062,21 @@ function SystemInfoSection() {
               <div className="grid gap-3 lg:grid-cols-2">
                 <div className="space-y-2">
                   <Label>AccessKey ID</Label>
-                  <Input value={ddnsAliyunAccessKeyId} onChange={(e) => setDdnsAliyunAccessKeyId(e.target.value)} placeholder="阿里云 AccessKey ID" />
+                  <Input value={ddnsAliyunAccessKeyId} onChange={(e) => setDdnsAliyunAccessKeyId(e.target.value)} placeholder={translateText("阿里云 AccessKey ID")} />
                 </div>
                 <div className="space-y-2">
                   <Label>AccessKey Secret</Label>
                   <Input
                     value={ddnsAliyunAccessKeySecret}
                     onChange={(e) => setDdnsAliyunAccessKeySecret(e.target.value)}
-                    placeholder={settings?.ddns?.aliyunAccessKeySecretMasked || "留空保留已保存密钥"}
+                    placeholder={settings?.ddns?.aliyunAccessKeySecretMasked || translateText("留空保留已保存密钥")}
                     type="password"
                   />
                 </div>
               </div>
               <div className="grid gap-3 lg:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>主域名</Label>
+                  <Label>{translateText("主域名")}</Label>
                   <Input value={ddnsAliyunDomainName} onChange={(e) => setDdnsAliyunDomainName(e.target.value)} placeholder="example.com" />
                 </div>
                 <div className="space-y-2">
@@ -5491,7 +5086,7 @@ function SystemInfoSection() {
               </div>
               <div className="grid gap-3 lg:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>默认线路</Label>
+                  <Label>{translateText("默认线路")}</Label>
                   <Input value={ddnsAliyunLine} onChange={(e) => setDdnsAliyunLine(e.target.value)} placeholder="default" />
                 </div>
               </div>
@@ -5503,32 +5098,32 @@ function SystemInfoSection() {
               <div className="grid gap-3 lg:grid-cols-2">
                 <div className="space-y-2">
                   <Label>SecretId</Label>
-                  <Input value={ddnsTencentCloudSecretId} onChange={(e) => setDdnsTencentCloudSecretId(e.target.value)} placeholder="腾讯云 SecretId" />
+                  <Input value={ddnsTencentCloudSecretId} onChange={(e) => setDdnsTencentCloudSecretId(e.target.value)} placeholder={translateText("腾讯云 SecretId")} />
                 </div>
                 <div className="space-y-2">
                   <Label>SecretKey</Label>
                   <Input
                     value={ddnsTencentCloudSecretKey}
                     onChange={(e) => setDdnsTencentCloudSecretKey(e.target.value)}
-                    placeholder={settings?.ddns?.tencentcloudSecretKeyMasked || "留空保留已保存密钥"}
+                    placeholder={settings?.ddns?.tencentcloudSecretKeyMasked || translateText("留空保留已保存密钥")}
                     type="password"
                   />
                 </div>
               </div>
               <div className="grid gap-3 lg:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>主域名</Label>
+                  <Label>{translateText("主域名")}</Label>
                   <Input value={ddnsTencentCloudDomainName} onChange={(e) => setDdnsTencentCloudDomainName(e.target.value)} placeholder="example.com" />
                 </div>
               </div>
               <div className="grid gap-3 lg:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>默认线路名称</Label>
-                  <Input value={ddnsTencentCloudRecordLine} onChange={(e) => setDdnsTencentCloudRecordLine(e.target.value)} placeholder="默认" />
+                  <Label>{translateText("默认线路名称")}</Label>
+                  <Input value={ddnsTencentCloudRecordLine} onChange={(e) => setDdnsTencentCloudRecordLine(e.target.value)} placeholder={translateText("默认")} />
                 </div>
                 <div className="space-y-2">
-                  <Label>默认线路 ID</Label>
-                  <Input value={ddnsTencentCloudRecordLineId} onChange={(e) => setDdnsTencentCloudRecordLineId(e.target.value)} placeholder="可留空" />
+                  <Label>{translateText("默认线路 ID")}</Label>
+                  <Input value={ddnsTencentCloudRecordLineId} onChange={(e) => setDdnsTencentCloudRecordLineId(e.target.value)} placeholder={translateText("可留空")} />
                 </div>
               </div>
             </div>
@@ -5538,7 +5133,7 @@ function SystemInfoSection() {
             <div className="space-y-3">
               <div className="grid gap-3 lg:grid-cols-[160px_minmax(0,1fr)]">
                 <div className="space-y-2">
-                  <Label>请求方法</Label>
+                  <Label>{translateText("请求方法")}</Label>
                   <Select value={ddnsWebhookMethod} onValueChange={(v) => setDdnsWebhookMethod(v as any)}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
@@ -5558,14 +5153,14 @@ function SystemInfoSection() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label>请求头</Label>
+                <Label>{translateText("请求头")}</Label>
                 <Textarea
                   value={ddnsWebhookHeaders}
                   onChange={(e) => setDdnsWebhookHeaders(e.target.value)}
                   placeholder='{"Authorization":"Bearer xxx"}'
                   className="min-h-20 font-mono text-xs"
                 />
-                <p className="text-xs text-muted-foreground">支持 JSON 或每行一个 Header。</p>
+                <p className="text-xs text-muted-foreground">{translateText("支持 JSON 或每行一个 Header。")}</p>
               </div>
             </div>
           )}
@@ -5573,7 +5168,7 @@ function SystemInfoSection() {
           <div className="flex justify-end">
             <Button onClick={handleSaveDdns} disabled={isSavingSetting("ddns")}>
               {isSavingSetting("ddns") && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isSavingSetting("ddns") ? "保存中..." : "保存 DDNS 配置"}
+              {isSavingSetting("ddns") ? translateText("保存中...") : translateText("保存 DDNS 配置")}
             </Button>
           </div>
         </CardContent>
@@ -5582,44 +5177,40 @@ function SystemInfoSection() {
       <Card className="border-border/40 bg-card/60 backdrop-blur-md">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
-            <Monitor className="h-4 w-4 text-primary" />
-            主机监控配置
-          </CardTitle>
+            <Monitor className="h-4 w-4 text-primary" />{translateText("主机监控配置")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between gap-3 rounded-lg border border-border/40 bg-muted/20 p-3">
             <div className="min-w-0">
-              <p className="text-sm font-medium">允许免登录查看主机监控</p>
+              <p className="text-sm font-medium">{translateText("允许免登录查看主机监控")}</p>
             </div>
             <Switch className="shrink-0" checked={publicHostMonitorEnabled} onCheckedChange={setPublicHostMonitorEnabled} />
           </div>
 
           <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(260px,0.8fr)]">
             <div className="space-y-2 lg:col-span-2">
-              <Label>展示标题</Label>
+              <Label>{translateText("展示标题")}</Label>
               <Input
                 value={publicHostMonitorTitle}
                 onChange={(e) => setPublicHostMonitorTitle(e.target.value.slice(0, 80))}
-                placeholder="留空默认使用站点标题 + 主机监控"
+                placeholder={translateText("留空默认使用站点标题 + 主机监控")}
                 maxLength={80}
               />
             </div>
             <div className="space-y-2">
-              <Label>主机监控面板路径</Label>
+              <Label>{translateText("主机监控面板路径")}</Label>
               <Input
                 value={publicHostMonitorPath}
                 onChange={(e) => setPublicHostMonitorPath(e.target.value)}
                 placeholder="dev"
               />
-              <p className="text-xs text-muted-foreground">
-                支持字母、数字、短横线和下划线。
-              </p>
+              <p className="text-xs text-muted-foreground">{translateText("支持字母、数字、短横线和下划线。")}</p>
             </div>
             <div className="space-y-2">
-              <Label>访问地址</Label>
+              <Label>{translateText("访问地址")}</Label>
               <div className="flex min-w-0 gap-2">
                 <Input value={publicHostMonitorUrl} readOnly className="font-mono text-xs" />
-                <Button type="button" variant="outline" size="icon" title="打开主机监控面板" asChild>
+                <Button type="button" variant="outline" size="icon" title={translateText("打开主机监控面板")} asChild>
                   <a href={publicHostMonitorUrl} target="_blank" rel="noreferrer">
                     <ExternalLink className="h-4 w-4" />
                   </a>
@@ -5631,7 +5222,7 @@ function SystemInfoSection() {
           <div className="flex justify-end">
             <Button onClick={handleSavePublicHostMonitor} disabled={isSavingSetting("hostMonitor")}>
               {isSavingSetting("hostMonitor") && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isSavingSetting("hostMonitor") ? "保存中..." : "保存主机监控配置"}
+              {isSavingSetting("hostMonitor") ? translateText("保存中...") : translateText("保存主机监控配置")}
             </Button>
           </div>
         </CardContent>
@@ -5641,51 +5232,39 @@ function SystemInfoSection() {
         <Card className="border-border/40 bg-card/60 backdrop-blur-md">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
-              <ShieldCheck className="h-4 w-4 text-primary" />
-              登录会话配置
-            </CardTitle>
-            <CardDescription>
-              控制同一账户在多台设备上的后台访问策略。
-            </CardDescription>
+              <ShieldCheck className="h-4 w-4 text-primary" />{translateText("登录会话配置")}</CardTitle>
+            <CardDescription>{translateText("控制同一账户在多台设备上的后台访问策略。")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between gap-3 rounded-lg border border-border/40 bg-muted/20 p-3">
               <div className="min-w-0">
-                <p className="text-sm font-medium">允许多设备在线</p>
-                <p className="text-xs text-muted-foreground">
-                  关闭时后登录的设备会立即接管，正在使用的旧会话将退出；仅保留 Cookie 但未在使用的设备不会阻止新登录。
-                </p>
+                <p className="text-sm font-medium">{translateText("允许多设备在线")}</p>
+                <p className="text-xs text-muted-foreground">{translateText("关闭时后登录的设备会立即接管，正在使用的旧会话将退出；仅保留 Cookie 但未在使用的设备不会阻止新登录。")}</p>
               </div>
               <Switch className="shrink-0" checked={allowMultiDeviceLogin} onCheckedChange={setAllowMultiDeviceLogin} />
             </div>
             <div className="flex justify-end">
               <Button onClick={handleSaveSessionPolicy} disabled={isSavingSetting("sessionPolicy")}>
                 {isSavingSetting("sessionPolicy") && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isSavingSetting("sessionPolicy") ? "保存中..." : "保存登录会话配置"}
+                {isSavingSetting("sessionPolicy") ? translateText("保存中...") : translateText("保存登录会话配置")}
               </Button>
             </div>
           </CardContent>
         </Card>
 
         <Card className="border-border/40 bg-card/60 backdrop-blur-md">
-          <CardHeader className="gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div className="space-y-1.5">
+          <CardHeader className="responsive-actions gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
+            <div className="min-w-0 flex-1 basis-40 space-y-1.5">
               <CardTitle className="flex items-center gap-2 text-base">
-                <PanelLeft className="h-4 w-4 text-primary" />
-                左侧导航栏菜单展示设置
-              </CardTitle>
-              <CardDescription>
-                控制左侧导航栏常用入口是否展示。
-              </CardDescription>
+                <PanelLeft className="h-4 w-4 text-primary" />{translateText("左侧导航栏菜单展示设置")}</CardTitle>
+              <CardDescription>{translateText("控制左侧导航栏常用入口是否展示。")}</CardDescription>
             </div>
             <Button variant="outline" className="w-full gap-2 sm:w-auto" onClick={openSidebarMenuDialog}>
-              <Settings2 className="h-4 w-4" />
-              管理菜单开关
-            </Button>
+              <Settings2 className="h-4 w-4" />{translateText("管理菜单开关")}</Button>
           </CardHeader>
           <CardContent>
             <div className="rounded-lg border border-border/40 bg-muted/20 p-3">
-              <p className="text-xs text-muted-foreground">已开启菜单</p>
+              <p className="text-xs text-muted-foreground">{translateText("已开启菜单")}</p>
               <p className="mt-1 text-lg font-semibold">{sidebarMenuEnabledCount} / {SIDEBAR_MENU_KEYS.length}</p>
             </div>
           </CardContent>
@@ -5706,19 +5285,15 @@ function SystemInfoSection() {
         <DialogContent className="flex max-h-[calc(100svh-1.5rem)] w-[calc(100vw-0.75rem)] max-w-[42rem] flex-col gap-3 overflow-hidden p-3 sm:max-h-[92svh] sm:w-full sm:max-w-3xl sm:p-6">
           <DialogHeader className="shrink-0 pr-8">
             <DialogTitle className="flex items-center gap-2">
-              <ShieldCheck className="h-5 w-5 text-primary" />
-              转发协议总开关
-            </DialogTitle>
-            <DialogDescription>
-              开启或关闭可用协议。
-            </DialogDescription>
+              <ShieldCheck className="h-5 w-5 text-primary" />{translateText("转发协议总开关")}</DialogTitle>
+            <DialogDescription>{translateText("开启或关闭可用协议。")}</DialogDescription>
           </DialogHeader>
           <div className="-mx-1 min-h-0 overflow-y-auto overscroll-contain px-1 pb-1">
             <div className="grid gap-3 min-[360px]:grid-cols-2">
               <div className="space-y-2 rounded-lg border border-border/40 bg-muted/20 p-3">
                 <div>
-                  <p className="text-sm font-medium">端口转发</p>
-                  <p className="text-xs text-muted-foreground">端口转发工具开关。</p>
+                  <p className="text-sm font-medium">{translateText("端口转发")}</p>
+                  <p className="text-xs text-muted-foreground">{translateText("端口转发工具开关。")}</p>
                 </div>
                 <div className="flex flex-col gap-2">
                   {directForwardProtocolKeys.map((key) => (
@@ -5734,8 +5309,8 @@ function SystemInfoSection() {
               </div>
               <div className="space-y-2 rounded-lg border border-border/40 bg-muted/20 p-3">
                 <div>
-                  <p className="text-sm font-medium">隧道协议</p>
-                  <p className="text-xs text-muted-foreground">隧道模式开关。</p>
+                  <p className="text-sm font-medium">{translateText("隧道协议")}</p>
+                  <p className="text-xs text-muted-foreground">{translateText("隧道模式开关。")}</p>
                 </div>
                 <div className="flex flex-col gap-2">
                   {tunnelForwardProtocolKeys.map((key) => (
@@ -5752,12 +5327,8 @@ function SystemInfoSection() {
             </div>
           </div>
           <DialogFooter className="shrink-0 gap-2 border-t border-border/40 pt-3 sm:border-0 sm:pt-0">
-            <Button variant="outline" onClick={closeForwardProtocolDialog}>
-              取消
-            </Button>
-            <Button onClick={handleSaveForwardProtocols} disabled={isSavingSetting("forwardProtocols")}>
-              保存协议开关
-            </Button>
+            <Button variant="outline" onClick={closeForwardProtocolDialog}>{translateText("取消")}</Button>
+            <Button onClick={handleSaveForwardProtocols} disabled={isSavingSetting("forwardProtocols")}>{translateText("保存协议开关")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -5775,12 +5346,8 @@ function SystemInfoSection() {
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <PanelLeft className="h-5 w-5 text-primary" />
-              左侧导航栏菜单展示设置
-            </DialogTitle>
-            <DialogDescription>
-              关闭后对应入口不再显示在左侧导航栏中，插件入口也在这里统一控制。
-            </DialogDescription>
+              <PanelLeft className="h-5 w-5 text-primary" />{translateText("左侧导航栏菜单展示设置")}</DialogTitle>
+            <DialogDescription>{translateText("关闭后对应入口不再显示在左侧导航栏中，插件入口也在这里统一控制。")}</DialogDescription>
           </DialogHeader>
           <div className="grid gap-2 sm:grid-cols-2">
             {SIDEBAR_MENU_KEYS.map((key) => (
@@ -5794,12 +5361,10 @@ function SystemInfoSection() {
             ))}
           </div>
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={closeSidebarMenuDialog}>
-              取消
-            </Button>
+            <Button variant="outline" onClick={closeSidebarMenuDialog}>{translateText("取消")}</Button>
             <Button onClick={handleSaveSidebarMenu} disabled={isSavingSetting("sidebarMenu")}>
               {isSavingSetting("sidebarMenu") && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isSavingSetting("sidebarMenu") ? "保存中..." : "保存菜单开关"}
+              {isSavingSetting("sidebarMenu") ? translateText("保存中...") : translateText("保存菜单开关")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -5811,28 +5376,24 @@ function SystemInfoSection() {
           <CardHeader className="gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div className="space-y-1.5">
               <CardTitle className="flex items-center gap-2 text-base">
-                <Rocket className="h-4 w-4 text-primary" />
-                版本升级
-              </CardTitle>
-              <CardDescription>
-                检查并升级 ForwardX。
-              </CardDescription>
+                <Rocket className="h-4 w-4 text-primary" />{translateText("版本升级")}</CardTitle>
+              <CardDescription>{translateText("检查并升级 ForwardX。")}</CardDescription>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(220px,0.9fr)]">
               <div className="rounded-lg border border-border/40 bg-muted/20 p-3">
-                <p className="text-xs text-muted-foreground">当前面板版本</p>
+                <p className="text-xs text-muted-foreground">{translateText("当前面板版本")}</p>
                 <p className="mt-1 font-mono text-sm">v{upgradeStatus?.currentVersion || settings?.version}</p>
               </div>
               <div className="rounded-lg border border-border/40 bg-muted/20 p-3">
-                <p className="text-xs text-muted-foreground">当前 Agent 目标版本</p>
+                <p className="text-xs text-muted-foreground">{translateText("当前 Agent 目标版本")}</p>
                 <p className="mt-1 font-mono text-sm">v{upgradeStatus?.currentAgentVersion || settings?.agentVersion || "-"}</p>
               </div>
               <div className="flex items-center justify-between gap-3 rounded-lg border border-border/40 bg-muted/20 p-3">
                 <div className="min-w-0">
-                  <p className="text-sm font-medium">自动检查更新</p>
-                  <p className="text-xs text-muted-foreground">开启后定期检查面板和 Agent 更新。</p>
+                  <p className="text-sm font-medium">{translateText("自动检查更新")}</p>
+                  <p className="text-xs text-muted-foreground">{translateText("开启后定期检查面板和 Agent 更新。")}</p>
                 </div>
                 <OptimisticSwitch
                   className="shrink-0"
@@ -5842,9 +5403,9 @@ function SystemInfoSection() {
                     setUpdateAutoCheckEnabled(checked);
                     utils.system.getSettings.invalidate();
                     utils.system.publicInfo.invalidate();
-                    toast.success(`自动检查更新已${checked ? "开启" : "关闭"}`);
+                    toast.success(translateText("自动检查更新已{0}", [checked ? translateText("开启") : translateText("关闭")]));
                   }}
-                  onToggleError={(error) => toast.error(error instanceof Error ? error.message : "自动检查更新失败")}
+                  onToggleError={(error) => toast.error(error instanceof Error ? error.message : translateText("自动检查更新失败"))}
                 />
               </div>
             </div>
@@ -5852,7 +5413,7 @@ function SystemInfoSection() {
           {updateInfo?.error && (
             <Alert variant="destructive">
               <AlertTriangle className="h-4 w-4" />
-              <AlertTitle>检查更新失败</AlertTitle>
+              <AlertTitle>{translateText("检查更新失败")}</AlertTitle>
               <AlertDescription>{updateInfo.error}</AlertDescription>
             </Alert>
           )}
@@ -5860,11 +5421,11 @@ function SystemInfoSection() {
           {!upgradeEnabled && (
             <Alert>
               <AlertTriangle className="h-4 w-4" />
-              <AlertTitle>{isDockerDeployment ? "Docker 部署请在弹窗中选择升级方式" : "当前环境尚未启用一键升级"}</AlertTitle>
+              <AlertTitle>{isDockerDeployment ? translateText("Docker 部署请在弹窗中选择升级方式") : translateText("当前环境尚未启用一键升级")}</AlertTitle>
               <AlertDescription>
                 {isDockerDeployment
-                  ? "检查到新版本后可打开升级命令弹窗，在服务器终端执行一键脚本或手动 Compose 命令。"
-                  : <>配置 <code>FORWARDX_UPGRADE_COMMAND</code> 后可一键升级。</>}
+                  ? translateText("检查到新版本后可打开升级命令弹窗，在服务器终端执行一键脚本或手动 Compose 命令。")
+                  : <>{translateText("配置")}<code>FORWARDX_UPGRADE_COMMAND</code> {translateText("后可一键升级。")}</>}
               </AlertDescription>
             </Alert>
           )}
@@ -5877,15 +5438,14 @@ function SystemInfoSection() {
                     <Rocket className="h-5 w-5" />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-primary">发现新版本 {updateInfo.latestVersion}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      来源：{updateInfo.source === "release" ? "GitHub Release" : updateInfo.source === "tag" ? "GitHub Tag" : updateInfo.source === "main" ? "main 分支" : "GitHub"}
-                      {updateInfo.publishedAt ? `，发布时间：${new Date(updateInfo.publishedAt).toLocaleString()}` : ""}
-                      {updateInfo.latestAgentVersion ? `，Agent 目标：v${updateInfo.latestAgentVersion}` : ""}
+                    <p className="text-sm font-semibold text-primary">{translateText("发现新版本 ")}{updateInfo.latestVersion}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">{translateText("来源：")}{updateInfo.source === "release" ? "GitHub Release" : updateInfo.source === "tag" ? "GitHub Tag" : updateInfo.source === "main" ? translateText("main 分支") : "GitHub"}
+                      {updateInfo.publishedAt ? translateText("，发布时间：{0}", [new Date(updateInfo.publishedAt).toLocaleString(getFormatLocale())]) : ""}
+                      {updateInfo.latestAgentVersion ? translateText("，Agent 目标：v{0}", [updateInfo.latestAgentVersion]) : ""}
                     </p>
                   </div>
                 </div>
-                <Badge className="w-fit">可升级</Badge>
+                <Badge className="w-fit">{translateText("可升级")}</Badge>
               </div>
             </div>
           )}
@@ -5893,14 +5453,13 @@ function SystemInfoSection() {
           {updateInfo?.pendingReason && !updateInfo.error && (!updateInfo.hasUpdate || updateInfo.deployable === false) && (
             <Alert>
               <AlertTriangle className="h-4 w-4" />
-              <AlertTitle>新版本正在准备中</AlertTitle>
+              <AlertTitle>{translateText("新版本正在准备中")}</AlertTitle>
               <AlertDescription>{updateInfo.pendingReason}</AlertDescription>
             </Alert>
           )}
 
           {updateInfo && !updateInfo.error && !updateInfo.pendingReason && !updateInfo.hasUpdate && (
-            <div className="rounded-lg border border-border/40 bg-muted/20 p-3 text-sm text-muted-foreground">
-              当前已是最新版本，上次检查时间：{new Date(updateInfo.checkedAt).toLocaleString()}
+            <div className="rounded-lg border border-border/40 bg-muted/20 p-3 text-sm text-muted-foreground">{translateText("当前已是最新版本，上次检查时间：")}{new Date(updateInfo.checkedAt).toLocaleString(getFormatLocale())}
             </div>
           )}
 
@@ -5911,13 +5470,11 @@ function SystemInfoSection() {
               disabled={checkingUpdate || isUpgradeRunning}
               className="gap-2"
             >
-              <RefreshCw className={`h-4 w-4 ${checkingUpdate ? "forwardx-icon-spin" : ""}`} />
-              检查更新
-            </Button>
+              <RefreshCw className={`h-4 w-4 ${checkingUpdate ? "forwardx-icon-spin" : ""}`} />{translateText("检查更新")}</Button>
             <Button
               onClick={() => {
                 if (!updateInfo?.latestVersion) {
-                  toast.error("请先检查更新");
+                  toast.error(translateText("请先检查更新"));
                   return;
                 }
                 if (isDockerDeployment) {
@@ -5925,7 +5482,7 @@ function SystemInfoSection() {
                   return;
                 }
                 if (!upgradeEnabled) {
-                  toast.error("未配置升级命令，无法自动升级");
+                  toast.error(translateText("未配置升级命令，无法自动升级"));
                   return;
                 }
                 setShowUpgradeConfirm(true);
@@ -5934,7 +5491,7 @@ function SystemInfoSection() {
               className="gap-2"
             >
               <Rocket className="h-4 w-4" />
-              {isDockerDeployment ? "查看升级命令" : "升级并重启"}
+              {isDockerDeployment ? translateText("查看升级命令") : translateText("升级并重启")}
             </Button>
             <Button
               variant="outline"
@@ -5942,14 +5499,10 @@ function SystemInfoSection() {
               disabled={isUpgradeRunning || startRollbackMutation.isPending}
               className="gap-2"
             >
-              <RefreshCw className="h-4 w-4" />
-              版本回退
-            </Button>
+              <RefreshCw className="h-4 w-4" />{translateText("版本回退")}</Button>
             <Button variant="ghost" asChild className="gap-2">
               <a href={upgradeChangelogUrl} target="_blank" rel="noopener noreferrer">
-                <ExternalLink className="h-4 w-4" />
-                升级日志
-              </a>
+                <ExternalLink className="h-4 w-4" />{translateText("升级日志")}</a>
             </Button>
           </div>
 
@@ -5979,20 +5532,20 @@ function SystemInfoSection() {
                   <div>
                     <p className="text-sm font-semibold">
                       {upgradeStatus.job.status === "success"
-                        ? (upgradeStatus.job.mode === "rollback" ? "回退成功" : "升级成功")
+                        ? (upgradeStatus.job.mode === "rollback" ? translateText("回退成功") : translateText("升级成功"))
                         : upgradeStatus.job.status === "waiting_assets"
-                          ? "发布资产构建中"
+                          ? translateText("发布资产构建中")
                         : upgradeStatus.job.status === "error"
-                          ? (upgradeStatus.job.mode === "rollback" ? "回退出现异常" : "升级出现异常")
-                          : (upgradeStatus.job.mode === "rollback" ? "正在回退" : "正在升级")}
+                          ? (upgradeStatus.job.mode === "rollback" ? translateText("回退出现异常") : translateText("升级出现异常"))
+                          : (upgradeStatus.job.mode === "rollback" ? translateText("正在回退") : translateText("正在升级"))}
                     </p>
                     <p className="mt-1 text-xs text-muted-foreground">
                       {upgradeStatus.job.status === "success"
-                        ? `已完成 ${upgradeStatus.job.targetVersion || ""} ${upgradeStatus.job.mode === "rollback" ? "回退" : "升级"}，${PANEL_UPGRADE_REFRESH_DELAY_SECONDS} 秒后自动刷新`
+                        ? translateText("已完成 {0} {1}，{2} 秒后自动刷新", [upgradeStatus.job.targetVersion || "", upgradeStatus.job.mode === "rollback" ? translateText("回退") : translateText("升级"), PANEL_UPGRADE_REFRESH_DELAY_SECONDS])
                         : upgradeStatus.job.status === "waiting_assets"
-                          ? "GitHub Actions 仍在生成面板安装包或镜像，请稍后重新检查更新"
+                          ? translateText("GitHub Actions 仍在生成面板安装包或镜像，请稍后重新检查更新")
                         : upgradeStatus.job.status === "error"
-                          ? `${upgradeStatus.job.mode === "rollback" ? "回退" : "升级"}未完成，请查看下方异常信息`
+                          ? translateText("{0}未完成，请查看下方异常信息", [upgradeStatus.job.mode === "rollback" ? translateText("回退") : translateText("升级")])
                           : upgradeProgress.label}
                     </p>
                   </div>
@@ -6031,12 +5584,12 @@ function SystemInfoSection() {
                   {upgradeStatus.job.error && (
                     <Alert>
                       <RefreshCw className="h-4 w-4" />
-                      <AlertTitle>等待发布资产</AlertTitle>
+                      <AlertTitle>{translateText("等待发布资产")}</AlertTitle>
                       <AlertDescription>{upgradeStatus.job.error}</AlertDescription>
                     </Alert>
                   )}
                   <pre className="max-h-52 overflow-auto rounded-lg border border-amber-500/25 bg-amber-500/5 p-3 text-xs leading-relaxed text-muted-foreground">
-                    {upgradeErrorLogs || "正在等待 GitHub Actions 构建发布资产"}
+                    {upgradeErrorLogs || translateText("正在等待 GitHub Actions 构建发布资产")}
                   </pre>
                 </div>
               )}
@@ -6047,10 +5600,10 @@ function SystemInfoSection() {
                     <p className="text-xs font-medium text-destructive">{upgradeStatus.job.error}</p>
                   )}
                   <pre className="max-h-64 overflow-auto rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-xs leading-relaxed text-destructive">
-                    {upgradeErrorLogs || "暂无异常日志"}
+                    {upgradeErrorLogs || translateText("暂无异常日志")}
                   </pre>
                   <div className="rounded-lg border border-destructive/25 bg-background/80 p-3 text-xs">
-                    <p className="font-medium text-destructive">自动任务失败时，可在服务器执行以下命令：</p>
+                    <p className="font-medium text-destructive">{translateText("自动任务失败时，可在服务器执行以下命令：")}</p>
                     <div className="mt-2 space-y-2">
                       {manualPanelUpgradeCommands.map((item) => (
                         <div key={item.label} className="space-y-1">
@@ -6071,39 +5624,29 @@ function SystemInfoSection() {
       <Card className="border-border/40 bg-card/60 backdrop-blur-md">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
-            <Github className="h-4 w-4 text-primary" />
-            GitHub 下载加速
-          </CardTitle>
-          <CardDescription>
-            配置 Agent 安装、升级与面板更新访问 GitHub 的方式。
-          </CardDescription>
+            <Github className="h-4 w-4 text-primary" />{translateText("GitHub 下载加速")}</CardTitle>
+          <CardDescription>{translateText("配置 Agent 安装、升级与面板更新访问 GitHub 的方式。")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-3 lg:grid-cols-2">
             <div className="flex items-center justify-between gap-3 rounded-lg border border-border/40 bg-muted/20 p-3">
               <div className="min-w-0">
-                <p className="text-sm font-medium">启用 GitHub 加速地址</p>
-                <p className="text-xs text-muted-foreground">
-                  开启并填写地址后，GitHub 真实地址会拼接在加速地址后面。
-                </p>
+                <p className="text-sm font-medium">{translateText("启用 GitHub 加速地址")}</p>
+                <p className="text-xs text-muted-foreground">{translateText("开启并填写地址后，GitHub 真实地址会拼接在加速地址后面。")}</p>
               </div>
               <Switch className="shrink-0" checked={githubAcceleratorEnabled} onCheckedChange={setGithubAcceleratorEnabled} />
             </div>
             <div className="flex items-center justify-between gap-3 rounded-lg border border-border/40 bg-muted/20 p-3">
               <div className="min-w-0">
-                <p className="text-sm font-medium">优先连接面板安装 Agent</p>
-                <p className="text-xs text-muted-foreground">
-                  开启后先从面板拉取安装脚本和 Agent 程序，失败后回退 GitHub。
-                </p>
+                <p className="text-sm font-medium">{translateText("优先连接面板安装 Agent")}</p>
+                <p className="text-xs text-muted-foreground">{translateText("开启后先从面板拉取安装脚本和 Agent 程序，失败后回退 GitHub。")}</p>
               </div>
               <Switch className="shrink-0" checked={agentPreferPanelInstall} onCheckedChange={setAgentPreferPanelInstall} />
             </div>
             <div className="flex items-center justify-between gap-3 rounded-lg border border-border/40 bg-muted/20 p-3 lg:col-span-2">
               <div className="min-w-0">
-                <p className="text-sm font-medium">面板更新使用加速站</p>
-                <p className="text-xs text-muted-foreground">
-                  版本检查、Release 安装包、版本回退和升级脚本优先使用加速地址，失败时自动回退直连。
-                </p>
+                <p className="text-sm font-medium">{translateText("面板更新使用加速站")}</p>
+                <p className="text-xs text-muted-foreground">{translateText("版本检查、Release 安装包、版本回退和升级脚本优先使用加速地址，失败时自动回退直连。")}</p>
               </div>
               <Switch
                 className="shrink-0"
@@ -6113,21 +5656,17 @@ function SystemInfoSection() {
             </div>
           </div>
           <div className="space-y-2">
-            <Label>GitHub 加速地址</Label>
+            <Label>{translateText("GitHub 加速地址")}</Label>
             <Input
               value={githubAcceleratorUrlInput}
               onChange={(e) => setGithubAcceleratorUrlInput(e.target.value)}
               placeholder={defaultGithubAcceleratorUrl}
               className="font-mono"
             />
-            <p className="text-xs text-muted-foreground">
-              格式示例：https://mirror.example.com。未填写或未开启对应开关时使用直连 GitHub。
-            </p>
+            <p className="text-xs text-muted-foreground">{translateText("格式示例：https://mirror.example.com。未填写或未开启对应开关时使用直连 GitHub。")}</p>
           </div>
           <div className="flex justify-end">
-            <Button onClick={handleSaveAgentInstall} disabled={isSavingSetting("agentInstall")}>
-              保存 GitHub 下载配置
-            </Button>
+            <Button onClick={handleSaveAgentInstall} disabled={isSavingSetting("agentInstall")}>{translateText("保存 GitHub 下载配置")}</Button>
           </div>
         </CardContent>
       </Card>
@@ -6137,28 +5676,23 @@ function SystemInfoSection() {
         <DialogContent className="overflow-y-auto sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Rocket className="h-5 w-5 text-primary" />
-              确认升级并重启
-            </DialogTitle>
-            <DialogDescription>
-              即将升级到 {updateInfo?.latestVersion}。
+              <Rocket className="h-5 w-5 text-primary" />{translateText("确认升级并重启")}</DialogTitle>
+            <DialogDescription>{translateText("即将升级到 ")}{updateInfo?.latestVersion}。
             </DialogDescription>
           </DialogHeader>
           <div className="rounded-lg border border-border/40 bg-muted/30 p-3 text-sm">
             <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">当前版本</span>
+              <span className="text-muted-foreground">{translateText("当前版本")}</span>
               <code>v{upgradeStatus?.currentVersion || settings?.version}</code>
             </div>
             <div className="mt-2 flex items-center justify-between">
-              <span className="text-muted-foreground">目标版本</span>
+              <span className="text-muted-foreground">{translateText("目标版本")}</span>
               <code>{updateInfo?.latestVersion}</code>
             </div>
           </div>
           <SniEntryVersionPreflight enabled={showUpgradeConfirm} />
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setShowUpgradeConfirm(false)}>
-              取消
-            </Button>
+            <Button variant="outline" onClick={() => setShowUpgradeConfirm(false)}>{translateText("取消")}</Button>
             <Button
               className="gap-2"
               disabled={startUpgradeMutation.isPending || isUpgradeRunning}
@@ -6168,9 +5702,7 @@ function SystemInfoSection() {
                 startUpgradeMutation.mutate({ targetVersion: updateInfo.latestVersion });
               }}
             >
-              <Rocket className="h-4 w-4" />
-              确认升级
-            </Button>
+              <Rocket className="h-4 w-4" />{translateText("确认升级")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -6179,12 +5711,8 @@ function SystemInfoSection() {
         <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <RefreshCw className="h-5 w-5 text-primary" />
-              版本回退
-            </DialogTitle>
-            <DialogDescription>
-              选择最近 5 个以内的可回退版本。
-            </DialogDescription>
+              <RefreshCw className="h-5 w-5 text-primary" />{translateText("版本回退")}</DialogTitle>
+            <DialogDescription>{translateText("选择最近 5 个以内的可回退版本。")}</DialogDescription>
           </DialogHeader>
 
           <Tabs
@@ -6195,14 +5723,14 @@ function SystemInfoSection() {
             }}
           >
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="panel">面板</TabsTrigger>
+              <TabsTrigger value="panel">{translateText("面板")}</TabsTrigger>
               <TabsTrigger value="agent">Agent</TabsTrigger>
             </TabsList>
 
             {rollbackVersionsQuery.data?.error && (
               <Alert variant="destructive" className="mt-4">
                 <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>获取版本失败</AlertTitle>
+                <AlertTitle>{translateText("获取版本失败")}</AlertTitle>
                 <AlertDescription>{rollbackVersionsQuery.data.error}</AlertDescription>
               </Alert>
             )}
@@ -6210,24 +5738,24 @@ function SystemInfoSection() {
             <TabsContent value="panel" className="mt-4 space-y-4">
               <div className="rounded-lg border border-border/40 bg-muted/20 p-3 text-sm">
                 <div className="flex items-center justify-between gap-3">
-                  <span className="text-muted-foreground">当前面板版本</span>
+                  <span className="text-muted-foreground">{translateText("当前面板版本")}</span>
                   <code>v{rollbackVersionsQuery.data?.currentPanelVersion || upgradeStatus?.currentVersion || settings?.version}</code>
                 </div>
                 <div className="mt-2 flex items-center justify-between gap-3">
-                  <span className="text-muted-foreground">当前兼容 Agent</span>
+                  <span className="text-muted-foreground">{translateText("当前兼容 Agent")}</span>
                   <code>v{rollbackVersionsQuery.data?.currentAgentVersion || settings?.agentVersion || "-"}</code>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label>回退到面板版本</Label>
+                <Label>{translateText("回退到面板版本")}</Label>
                 <Select
                   value={rollbackType === "panel" ? selectedRollbackVersion : ""}
                   onValueChange={setSelectedRollbackVersion}
                   disabled={rollbackVersionsQuery.isLoading || rollbackPanelVersions.length === 0}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder={rollbackVersionsQuery.isLoading ? "正在获取 GitHub 版本..." : "选择面板版本"} />
+                    <SelectValue placeholder={rollbackVersionsQuery.isLoading ? translateText("正在获取 GitHub 版本...") : translateText("选择面板版本")} />
                   </SelectTrigger>
                   <SelectContent>
                     {rollbackPanelVersions.map((item: any) => (
@@ -6242,25 +5770,22 @@ function SystemInfoSection() {
               {rollbackPanelVersions.length === 0 && !rollbackVersionsQuery.isLoading && (
                 <Alert>
                   <AlertTriangle className="h-4 w-4" />
-                  <AlertTitle>暂无可回退面板版本</AlertTitle>
-                  <AlertDescription>未从 GitHub Release 获取到低于当前版本的最近 5 个版本。</AlertDescription>
+                  <AlertTitle>{translateText("暂无可回退面板版本")}</AlertTitle>
+                  <AlertDescription>{translateText("未从 GitHub Release 获取到低于当前版本的最近 5 个版本。")}</AlertDescription>
                 </Alert>
               )}
 
               {selectedRollbackTarget && (
-                <div className="rounded-lg border border-border/40 bg-muted/20 p-3 text-xs text-muted-foreground">
-                  目标版本：v{(selectedRollbackTarget as any).panelVersion}
-                  {(selectedRollbackTarget as any).publishedAt ? `，发布时间：${new Date((selectedRollbackTarget as any).publishedAt).toLocaleString()}` : ""}
+                <div className="rounded-lg border border-border/40 bg-muted/20 p-3 text-xs text-muted-foreground">{translateText("目标版本：v")}{(selectedRollbackTarget as any).panelVersion}
+                  {(selectedRollbackTarget as any).publishedAt ? translateText("，发布时间：{0}", [new Date((selectedRollbackTarget as any).publishedAt).toLocaleString(getFormatLocale())]) : ""}
                 </div>
               )}
 
               {!canRunPanelRollback && selectedRollbackPanelCommand && (
                 <Alert>
                   <AlertTriangle className="h-4 w-4" />
-                  <AlertTitle>当前环境请使用脚本回退</AlertTitle>
-                  <AlertDescription>
-                    后台未启用一键回退或当前为 Docker 部署，请在服务器执行下方命令。
-                  </AlertDescription>
+                  <AlertTitle>{translateText("当前环境请使用脚本回退")}</AlertTitle>
+                  <AlertDescription>{translateText("后台未启用一键回退或当前为 Docker 部署，请在服务器执行下方命令。")}</AlertDescription>
                 </Alert>
               )}
               {!canRunPanelRollback && selectedRollbackPanelCommand && (
@@ -6273,20 +5798,20 @@ function SystemInfoSection() {
             <TabsContent value="agent" className="mt-4 space-y-4">
               <div className="rounded-lg border border-border/40 bg-muted/20 p-3 text-sm">
                 <div className="flex items-center justify-between gap-3">
-                  <span className="text-muted-foreground">当前面板内置 Agent</span>
+                  <span className="text-muted-foreground">{translateText("当前面板内置 Agent")}</span>
                   <code>v{rollbackVersionsQuery.data?.currentAgentVersion || settings?.agentVersion || "-"}</code>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label>回退到 Agent 版本</Label>
+                <Label>{translateText("回退到 Agent 版本")}</Label>
                 <Select
                   value={rollbackType === "agent" ? selectedRollbackVersion : ""}
                   onValueChange={setSelectedRollbackVersion}
                   disabled={rollbackVersionsQuery.isLoading || rollbackAgentVersions.length === 0}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder={rollbackVersionsQuery.isLoading ? "正在获取 GitHub 版本..." : "选择 Agent 版本"} />
+                    <SelectValue placeholder={rollbackVersionsQuery.isLoading ? translateText("正在获取 GitHub 版本...") : translateText("选择 Agent 版本")} />
                   </SelectTrigger>
                   <SelectContent>
                     {rollbackAgentVersions.map((item: any) => (
@@ -6301,29 +5826,26 @@ function SystemInfoSection() {
               {rollbackAgentVersions.length === 0 && !rollbackVersionsQuery.isLoading && (
                 <Alert>
                   <AlertTriangle className="h-4 w-4" />
-                  <AlertTitle>暂无可回退 Agent 版本</AlertTitle>
-                  <AlertDescription>未从最近 5 个面板 Release 中获取到低于当前 Agent 的版本。</AlertDescription>
+                  <AlertTitle>{translateText("暂无可回退 Agent 版本")}</AlertTitle>
+                  <AlertDescription>{translateText("未从最近 5 个面板 Release 中获取到低于当前 Agent 的版本。")}</AlertDescription>
                 </Alert>
               )}
 
               {selectedRollbackTarget && (
-                <div className="rounded-lg border border-border/40 bg-muted/20 p-3 text-xs text-muted-foreground">
-                  将下发 Agent v{(selectedRollbackTarget as any).agentVersion}，资产来源 Release v{(selectedRollbackTarget as any).panelVersion}。
+                <div className="rounded-lg border border-border/40 bg-muted/20 p-3 text-xs text-muted-foreground">{translateText("将下发 Agent v")}{(selectedRollbackTarget as any).agentVersion}{translateText("，资产来源 Release v")}{(selectedRollbackTarget as any).panelVersion}。
                 </div>
               )}
             </TabsContent>
           </Tabs>
 
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setShowRollbackDialog(false)}>
-              取消
-            </Button>
+            <Button variant="outline" onClick={() => setShowRollbackDialog(false)}>{translateText("取消")}</Button>
             <Button
               variant="outline"
               onClick={() => refreshRollbackVersions()}
               disabled={rollbackVersionsQuery.isFetching}
             >
-              {rollbackVersionsQuery.isFetching ? "刷新中..." : "刷新版本"}
+              {rollbackVersionsQuery.isFetching ? translateText("刷新中...") : translateText("刷新版本")}
             </Button>
             <Button
               className="gap-2"
@@ -6343,7 +5865,7 @@ function SystemInfoSection() {
               }}
             >
               <RefreshCw className={`h-4 w-4 ${startRollbackMutation.isPending ? "forwardx-icon-spin" : ""}`} />
-              {rollbackType === "panel" && !canRunPanelRollback ? "复制回退脚本" : "确认回退"}
+              {rollbackType === "panel" && !canRunPanelRollback ? translateText("复制回退脚本") : translateText("确认回退")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -6354,16 +5876,14 @@ function SystemInfoSection() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Rocket className="h-5 w-5 text-primary" />
-              Docker 升级命令
-            </DialogTitle>
+              {translateText("Docker 升级命令")}</DialogTitle>
             <DialogDescription>
-              检测到新版本 {updateInfo?.latestVersion || ""}，Docker 部署通过服务器终端升级。
-            </DialogDescription>
+              {translateText("检测到新版本")}{updateInfo?.latestVersion || ""}{translateText("，Docker 部署通过服务器终端升级。")}</DialogDescription>
           </DialogHeader>
           {updateInfo?.pendingReason && !updateInfo.error && updateInfo.deployable === false && (
             <Alert>
               <AlertTriangle className="h-4 w-4" />
-              <AlertTitle>Docker 镜像可能仍在构建</AlertTitle>
+              <AlertTitle>{translateText("Docker 镜像可能仍在构建")}</AlertTitle>
               <AlertDescription>{updateInfo.pendingReason}</AlertDescription>
             </Alert>
           )}
@@ -6375,11 +5895,10 @@ function SystemInfoSection() {
           />
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setShowDockerUpgradeScript(false)}>
-              关闭
-            </Button>
+              {translateText("关闭")}</Button>
             <Button className="gap-2" onClick={() => copyTextToClipboard(selectedDockerUpgradeCommand)}>
               <Copy className="h-4 w-4" />
-              {dockerUpgradeMethod === "manual" ? "复制手动升级命令" : "复制脚本"}
+              {dockerUpgradeMethod === "manual" ? translateText("复制手动升级命令") : translateText("复制脚本")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -6388,12 +5907,8 @@ function SystemInfoSection() {
       <Card className="border-border/40 bg-card/60 backdrop-blur-md">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
-            <Settings2 className="h-4 w-4 text-primary" />
-            开源与联系
-          </CardTitle>
-          <CardDescription>
-            项目地址与联系渠道。
-          </CardDescription>
+            <Settings2 className="h-4 w-4 text-primary" />{translateText("开源与联系")}</CardTitle>
+          <CardDescription>{translateText("项目地址与联系渠道。")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="grid gap-3 sm:grid-cols-2">
@@ -6423,7 +5938,7 @@ function SystemInfoSection() {
           </div>
 
           <div className="flex items-center justify-between text-xs text-muted-foreground pt-2">
-            <span>当前版本</span>
+            <span>{translateText("当前版本")}</span>
             <code className="font-mono">v{settings?.version}</code>
           </div>
           <div className="flex items-center justify-between text-xs text-muted-foreground">

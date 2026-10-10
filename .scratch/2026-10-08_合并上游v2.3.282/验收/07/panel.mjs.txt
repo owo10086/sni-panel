@@ -1,0 +1,49 @@
+import crypto from 'node:crypto';
+import fs from 'node:fs';
+import path from 'node:path';
+import http from 'node:http';
+import {createRequire} from 'node:module';
+import {pathToFileURL} from 'node:url';
+process.env.DATABASE_TYPE='sqlite'; const secret='/private/tmp/forwardx-282-ticket07/jwt.txt'; if(!fs.existsSync(secret))fs.writeFileSync(secret,crypto.randomBytes(32).toString('hex'),{mode:0o600}); process.env.JWT_SECRET=fs.readFileSync(secret,'utf8');
+const root=process.cwd(); const require=createRequire(path.join(root,'package.json'));
+const express=require('express'); const cookieParser=require('cookie-parser');
+const {createExpressMiddleware}=require('@trpc/server/adapters/express');
+const {createServer}=await import(pathToFileURL(require.resolve('vite')).href);
+const source=file=>import(pathToFileURL(path.join(root,file)).href);
+const runtime=await source('server/dbRuntime.ts'); const {ensureDatabaseSchema}=await source('server/dbSchema.ts');
+const db=await source('server/db.ts'); const {appRouter}=await source('server/routers.ts');
+const {createContext}=await source('server/_core/context.ts'); const {issueLoginSession}=await source('server/routers/auth.ts');
+const {agentRouter}=await source('server/agentRoutes.ts'); const {encryptPayload,decryptPayload}=await source('server/agentCrypto.ts');
+const {registerDatabaseHealthRoutes}=await source('server/databaseHealthRoutes.ts'); const {registerLocaleHintRoute}=await source('server/localeHint.ts');
+const dir='/private/tmp/forwardx-282-ticket07';
+await runtime.connectDatabase({type:'sqlite',sqlite:{path:path.join(dir,'panel.db')}}); await ensureDatabaseSchema();
+const insert=(table,row)=>runtime.insertAndGetId(table,row);
+if(!(await db.getUserById(1))){
+ await insert('users',{id:1,username:'manual-admin',password:'unused',name:'验收管理员',role:'admin',canAddRules:true,manualCanAddRules:true});
+ for(const id of [1,2,3,4,5,6])await insert('hosts',{id,name:'验收主机'+id,ip:'127.0.0.'+id,ipv4:'127.0.0.'+id,userId:1,isOnline:true,lastHeartbeat:Math.floor(Date.now()/1000),agentToken:'isolated-manual-token-'+id,agentVersion:'3.3.0'});
+ await insert('forward_groups',{id:10,name:'手动探测转发链',groupType:'host',groupMode:'chain',forwardType:'nftables',domain:'',targetIp:'0.0.0.0',targetPort:1,userId:1,isEnabled:true});
+ for(const [priority,hostId]of [1,2,3].entries())await insert('forward_group_members',{id:101+priority,groupId:10,memberType:'host',hostId,priority:priority+1,isEnabled:true});
+ await insert('forward_rules',{id:101,hostId:1,name:'普通探测规则',forwardType:'nftables',protocol:'tcp',sourcePort:23001,targetIp:'127.0.0.1',targetPort:31001,userId:1,isEnabled:true,isRunning:true});
+ await insert('forward_rules',{id:102,hostId:1,name:'手动探测转发链规则',forwardType:'nftables',protocol:'tcp',sourcePort:23002,targetIp:'127.0.0.1',targetPort:31001,userId:1,isEnabled:true,isRunning:true,forwardGroupId:10,isForwardGroupTemplate:true});
+ await insert('tunnels',{id:1,name:'手动探测隧道',entryHostId:1,exitHostId:3,mode:'tcp',listenPort:31003,userId:1,isRunning:true});
+ const manual=await source('server/tunnelManualProbe.ts');
+ const probes=[{fromHostId:1,toHostId:2,targetIp:'127.0.0.2',targetPort:31002,hopIndex:0,hopCount:2,pathKeys:['main'],routeLabel:'验收主机1 -> 验收主机2',hopLabel:'1/2 1->2'},{fromHostId:2,toHostId:3,targetIp:'127.0.0.3',targetPort:31003,hopIndex:1,hopCount:2,pathKeys:['main'],routeLabel:'验收主机2 -> 验收主机3',hopLabel:'2/2 2->3'}];
+ const batch=await manual.queueManualTunnelProbeBatch(await db.getTunnelById(1),probes);
+ const rows=await runtime.queryRaw('SELECT * FROM forward_tests WHERE "batchId"=? ORDER BY id',[batch.batchId]);
+ await db.completeForwardTestIfActive(rows[0].id,{status:'success',latencyMs:17,message:'TCP success'});
+ for(const [index,probe]of probes.entries()){
+  const id=await db.createForwardTest({ruleId:102,hostId:probe.fromHostId,userId:1,batchId:'fc-live-restart',message:JSON.stringify({kind:'forward-chain',groupId:10,ruleId:102,method:'tcp',...probe})});
+  if(index===0)await db.completeForwardTestIfActive(id,{status:'success',latencyMs:11,message:'TCP success'});
+ }
+}
+await (await source('server/tunnelManualProbe.ts')).recoverManualTunnelProbeBatches();
+await (await source('server/forwardChainManualProbe.ts')).recoverManualForwardChainBatches();
+const app=express(); app.use(express.json({limit:'10mb'}));app.use(cookieParser());app.use(agentRouter);
+registerDatabaseHealthRoutes(app);registerLocaleHintRoute(app);
+app.get('/__ticket07/login',async(req,res,next)=>{try {await issueLoginSession({req,res},await db.getUserById(1),'browser');res.redirect('/rules');}catch(e){next(e);}});
+app.use('/api/trpc',createExpressMiddleware({router:appRouter,createContext}));
+const vite=await createServer({configFile:path.join(root,'vite.config.ts'),root,server:{middlewareMode:true},appType:'spa'});app.use(vite.middlewares);
+const server=http.createServer(app);await new Promise(resolve=>server.listen(18827,'127.0.0.1',resolve));
+console.log('Ticket07 real routes ready http://127.0.0.1:18827/__ticket07/login');
+const timer=setInterval(()=>void runtime.executeRaw('UPDATE hosts SET "isOnline"=1,"lastHeartbeat"=?',[Math.floor(Date.now()/1000)]),10000);
+let closing=false;const stop=async()=>{if(closing)return;closing=true;clearInterval(timer);server.closeAllConnections();await new Promise(resolve=>server.close(resolve));await vite.close();await runtime.closeDatabase();process.exit(0);};process.on('SIGINT',stop);process.on('SIGTERM',stop);

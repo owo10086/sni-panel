@@ -1,0 +1,23 @@
+{
+  "baselineFiles": 966,
+  "changes": [
+    {
+      "path": "client/src/components/GoogleAccountCard.tsx",
+      "before": "951b91e2691d5c613454fbbc3016d23f1d324280acd1daae55f6dafcbfe64da0",
+      "after": "a3103a6c2949239aeef6c47db3251edfa89311880a82e02f5005785fd65af0eb",
+      "status": "modified"
+    },
+    {
+      "path": "client/src/i18n/en.json",
+      "before": "fd463a4d86c5988459c04614405add4faa1c50e25a53205047fd13d21492e4ef",
+      "after": "05c4b05dc36f88d41bd47ccfe58457b793f6aae91d0be600b8aec3e0ea54c818",
+      "status": "modified"
+    },
+    {
+      "path": "client/src/pages/Login.tsx",
+      "before": "119e28c8d2d63d65e634d18aa9c0bb02592d669b14a6f478077a84fb1f78e939",
+      "after": "011ed34793e84bfea1e42617526fd9d32cb6451789135be70a26a7d05cb4998a",
+      "status": "modified"
+    }
+  ]
+}

@@ -1,3 +1,4 @@
+import { t as translateText } from "@/i18n";
 import DashboardLayout from "@/components/DashboardLayout";
 import DataSectionLoading from "@/components/DataSectionLoading";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -40,16 +41,16 @@ function SniEntryPortsContent() {
     <div className="min-w-0 space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex min-w-0 flex-wrap items-center gap-2">
-          <h1 className="text-xl font-bold sm:text-2xl">SNI 入口</h1>
-          <Badge variant="outline">只读</Badge>
-          {overview.data && <Badge variant="secondary">{overview.data.entries.length} 个入口端口</Badge>}
+          <h1 className="text-xl font-bold sm:text-2xl">{translateText("SNI 入口")}</h1>
+          <Badge variant="outline">{translateText("只读")}</Badge>
+          {overview.data && <Badge variant="secondary">{overview.data.entries.length} {translateText("个入口端口")}</Badge>}
         </div>
         <Button
           variant="outline"
           size="icon"
           className="h-8 w-8 shrink-0"
-          title="刷新 SNI 入口"
-          aria-label="刷新 SNI 入口"
+          title={translateText("刷新 SNI 入口")}
+          aria-label={translateText("刷新 SNI 入口")}
           onClick={() => void overview.refetch()}
           disabled={overview.isFetching}
         >
@@ -62,18 +63,18 @@ function SniEntryPortsContent() {
         <Input
           value={search}
           onChange={(event) => setSearch(event.target.value)}
-          placeholder="搜索入口主机、端口、域名、转发链或落地机"
-          aria-label="搜索 SNI 入口"
+          placeholder={translateText("搜索入口主机、端口、域名、转发链或落地机")}
+          aria-label={translateText("搜索 SNI 入口")}
           className="h-9 pl-9 text-sm"
         />
       </div>
 
       {overview.isLoading ? (
-        <DataSectionLoading label="正在加载 SNI 入口" />
+        <DataSectionLoading label={translateText("正在加载 SNI 入口")} />
       ) : overview.isError ? (
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>SNI 入口加载失败</AlertTitle>
+          <AlertTitle>{translateText("SNI 入口加载失败")}</AlertTitle>
           <AlertDescription className="break-words">{overview.error.message}</AlertDescription>
         </Alert>
       ) : (
@@ -81,16 +82,15 @@ function SniEntryPortsContent() {
           {!!overview.data?.unsupportedEntryHostCount && (
             <Alert className="border-amber-500/30 bg-amber-500/5">
               <AlertTriangle className="h-4 w-4" />
-              <AlertTitle>入口 Agent 版本不足</AlertTitle>
+              <AlertTitle>{translateText("入口 Agent 版本不足")}</AlertTitle>
               <AlertDescription>
-                {overview.data.unsupportedEntryHostCount} 台入口主机需要 Agent {overview.data.minimumAgentVersion} 或更高版本。
-              </AlertDescription>
+                {overview.data.unsupportedEntryHostCount} {translateText("台入口主机需要 Agent")}{overview.data.minimumAgentVersion} {translateText("或更高版本。")}</AlertDescription>
             </Alert>
           )}
           {entries.length === 0 ? (
             <div className="flex min-h-[180px] flex-col items-center justify-center gap-2 border-y border-border/50 text-sm text-muted-foreground">
               <Network className="h-6 w-6" />
-              <p>{query ? "没有符合搜索条件的 SNI 入口" : "暂无转发链 SNI 入口"}</p>
+              <p>{query ? translateText("没有符合搜索条件的 SNI 入口") : translateText("暂无转发链 SNI 入口")}</p>
             </div>
           ) : (
             <div className="space-y-6">
@@ -100,35 +100,35 @@ function SniEntryPortsContent() {
                     <div className="min-w-0">
                       <h2 className="flex min-w-0 flex-wrap items-center gap-2 text-sm font-semibold">
                         <Server className="h-4 w-4 shrink-0 text-muted-foreground" />
-                        <span className="break-words">{entry.entryHost.name || `主机 #${entry.entryHost.id}`}</span>
+                        <span className="break-words">{entry.entryHost.name || translateText("主机 #{0}", [entry.entryHost.id])}</span>
                         <span className="shrink-0 font-mono">:{entry.sourcePort}</span>
-                        <Badge variant="secondary" className="shrink-0 text-[11px]">{entry.routes.length} 个域名</Badge>
+                        <Badge variant="secondary" className="shrink-0 text-[11px]">{entry.routes.length} {translateText("个域名")}</Badge>
                       </h2>
                       <p className="mt-1 text-xs text-muted-foreground">
-                        Agent {entry.entryHost.agentVersion ? `v${entry.entryHost.agentVersion}` : "版本未上报"}，最低版本 {overview.data?.minimumAgentVersion}
+                        Agent {entry.entryHost.agentVersion ? `v${entry.entryHost.agentVersion}` : translateText("版本未上报")}{translateText("，最低版本")}{overview.data?.minimumAgentVersion}
                       </p>
                     </div>
                     <div className="flex flex-wrap gap-2">
                       <Badge variant={entry.entryHost.versionSupported ? "outline" : "destructive"} className="shrink-0">
-                        {entry.entryHost.versionSupported ? "版本满足要求" : "Agent 需要升级"}
+                        {entry.entryHost.versionSupported ? translateText("版本满足要求") : translateText("Agent 需要升级")}
                       </Badge>
-                      {!entry.domainSetConsistent && <Badge variant="outline" className="border-amber-500/40 text-amber-700 dark:text-amber-300">域名集合存在差异</Badge>}
+                      {!entry.domainSetConsistent && <Badge variant="outline" className="border-amber-500/40 text-amber-700 dark:text-amber-300">{translateText("域名集合存在差异")}</Badge>}
                     </div>
                   </div>
                   {!entry.domainSetConsistent && (
                     <div className="border-l-2 border-amber-500/60 pl-3 text-xs leading-5 text-amber-700 dark:text-amber-300">
-                      <p>同一入口端口在相关入口主机上的域名集合存在差异。</p>
-                      {entry.missingDomains.length > 0 && <p className="break-words">本入口缺少域名：<span className="font-mono">{entry.missingDomains.join("、")}</span></p>}
+                      <p>{translateText("同一入口端口在相关入口主机上的域名集合存在差异。")}</p>
+                      {entry.missingDomains.length > 0 && <p className="break-words">{translateText("本入口缺少域名：")}<span className="font-mono">{entry.missingDomains.join("、")}</span></p>}
                     </div>
                   )}
                   <div className="min-w-0 overflow-x-auto border-y border-border/40">
                     <Table className="min-w-[600px]">
                       <TableHeader>
                         <TableRow>
-                          <TableHead className="w-[32%]">SNI 域名</TableHead>
-                          <TableHead className="w-[28%]">转发链</TableHead>
-                          <TableHead className="w-[30%]">落地机</TableHead>
-                          <TableHead className="w-[10%] text-right">状态</TableHead>
+                          <TableHead className="w-[32%]">{translateText("SNI 域名")}</TableHead>
+                          <TableHead className="w-[28%]">{translateText("转发链")}</TableHead>
+                          <TableHead className="w-[30%]">{translateText("落地机")}</TableHead>
+                          <TableHead className="w-[10%] text-right">{translateText("状态")}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -142,7 +142,7 @@ function SniEntryPortsContent() {
                             <TableCell className="break-all font-mono text-xs">{targetAddress(route.target.address, route.target.port)}</TableCell>
                             <TableCell className="text-right">
                               <Badge variant={route.isEnabled ? "secondary" : "outline"} className="whitespace-nowrap text-[11px]">
-                                {route.isEnabled ? "启用" : "停用"}
+                                {route.isEnabled ? translateText("启用") : translateText("停用")}
                               </Badge>
                             </TableCell>
                           </TableRow>

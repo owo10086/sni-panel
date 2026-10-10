@@ -1,0 +1,52 @@
+import crypto from 'node:crypto';
+import fs from 'node:fs';
+import path from 'node:path';
+import http from 'node:http';
+import {createRequire} from 'node:module';
+import {pathToFileURL} from 'node:url';
+process.env.DATABASE_TYPE='sqlite'; process.env.JWT_SECRET=crypto.randomBytes(32).toString('hex');
+const root=process.cwd(); const require=createRequire(path.join(root,'package.json'));
+const express=require('express'); const cookieParser=require('cookie-parser');
+const {createExpressMiddleware}=require('@trpc/server/adapters/express');
+const {createServer}=await import(pathToFileURL(require.resolve('vite')).href);
+const source=file=>import(pathToFileURL(path.join(root,file)).href);
+const runtime=await source('server/dbRuntime.ts'); const {ensureDatabaseSchema}=await source('server/dbSchema.ts');
+const db=await source('server/db.ts'); const {appRouter}=await source('server/routers.ts');
+const {createContext}=await source('server/_core/context.ts'); const {issueLoginSession}=await source('server/routers/auth.ts');
+const {agentRouter}=await source('server/agentRoutes.ts'); const {encryptPayload,decryptPayload}=await source('server/agentCrypto.ts');
+const {registerDatabaseHealthRoutes}=await source('server/databaseHealthRoutes.ts'); const {registerLocaleHintRoute}=await source('server/localeHint.ts');
+const dir='/private/tmp/forwardx-282-ticket06';
+await runtime.connectDatabase({type:'sqlite',sqlite:{path:path.join(dir,'panel.db')}}); await ensureDatabaseSchema();
+await runtime.executeRaw('UPDATE hosts SET "agentToken"=? WHERE "id"=2',['isolated-entry-only-token']);
+const insert=(table,row)=>runtime.executeRaw(`INSERT INTO "${table}" (${Object.keys(row).map(k=>`"${k}"`).join(',')}) VALUES (${Object.keys(row).map(()=>'?').join(',')})`,Object.values(row));
+if (!(await db.getUserById(1))) {
+  await insert('users',{id:1,username:'probe-admin',password:'unused',name:'验收管理员',role:'admin',canAddRules:1,manualCanAddRules:1});
+  for (const id of [1,2]) await insert('hosts',{id,name:'验收主机'+id,ip:'127.0.0.'+id,ipv4:'127.0.0.'+id,userId:1,isOnline:1,lastHeartbeat:Math.floor(Date.now()/1000),agentToken:id===1?'isolated-probe-agent-token':'isolated-entry-only-token',agentVersion:'3.3.0'});
+  await insert('tunnels',{id:1,name:'累计探测验收隧道',entryHostId:2,exitHostId:1,mode:'tcp',listenPort:31000,userId:1});
+  for(const [id,name,protocol] of [[1,'TCP 累计探测','tcp'],[2,'Ping 累计探测','udp'],[3,'旧 Agent 延迟记录','tcp']])
+    await insert('forward_rules',{id,hostId:2,name,forwardType:'gost',protocol,sourcePort:32000+id,targetIp:'127.0.0.1',targetPort:31001,tunnelId:1,userId:1,isEnabled:1,isRunning:1});
+  await insert('tcping_stats',{ruleId:3,hostId:1,latencyMs:8,isTimeout:0,probeCount:3,probeSuccesses:2,recordedAt:Math.floor(Date.now()/1000)});
+}
+const app=express(); app.use(express.json({limit:'10mb'}));app.use(cookieParser());app.use(agentRouter);
+registerDatabaseHealthRoutes(app);registerLocaleHintRoute(app);
+app.get('/__ticket06/login',async(req,res,next)=>{try {await issueLoginSession({req,res},await db.getUserById(1),'browser');res.redirect('/rules');}catch(e){next(e);}});
+app.use('/api/trpc',createExpressMiddleware({router:appRouter,createContext}));
+const vite=await createServer({configFile:path.join(root,'vite.config.ts'),root,server:{middlewareMode:true},appType:'spa'});app.use(vite.middlewares);
+const server=http.createServer(app);await new Promise(resolve=>server.listen(18826,'127.0.0.1',resolve));
+const token='isolated-probe-agent-token';const records=JSON.parse(fs.readFileSync(path.join(dir,'agent-evidence/reports.json'),'utf8'));
+const post=async payload=>{const res=await fetch('http://127.0.0.1:18826/api/agent/tcping',{method:'POST',headers:{'content-type':'application/json','x-agent-encrypted':'1',authorization:`Bearer ${token}`},body:JSON.stringify(encryptPayload(payload,token))});const value=decryptPayload(await res.json(),token);if(res.status!==200)throw new Error(JSON.stringify(value));};
+const candidates=records.filter(row=>row.stage!=='released-3.2.0');
+// Every captured real batch is reported once; repeated transport delivery and
+// delayed pre-restart payloads must leave the sums unchanged.
+for(const row of candidates){await post(row.payload);await post(row.payload);}
+const since=new Date(Date.now()-3600_000);
+const expected=id=>candidates.reduce((sum,row)=>{const report=row.payload.results.find(r=>r.ruleId===id);return {total:sum.total+report.probeCount,successes:sum.successes+report.probeSuccesses};},{total:0,successes:0});
+const assert=(await import('node:assert/strict')).default;
+for(const id of [1,2]){const stats=await db.getTcpingProbeStatisticsByRule(id,since);assert.equal(stats.total,expected(id).total);assert.equal(stats.successes,expected(id).successes);}
+for(const row of [...candidates].reverse())await post(row.payload);
+const legacy=records.find(row=>row.stage==='released-3.2.0');if(legacy)await post(legacy.payload);
+for(const id of [1,2]){const stats=await db.getTcpingProbeStatisticsByRule(id,since);assert.equal(stats.total,expected(id).total);assert.equal(stats.successes,expected(id).successes);fs.writeFileSync(path.join(dir,`rule-${id}-statistics.json`),JSON.stringify(stats,null,2));}
+assert.equal((await db.getTcpingProbeStatisticsByRule(3,since)).available,false);
+console.log(JSON.stringify({encryptedReportReplay:true,duplicatesAndOldCycleIgnored:true,tcp:expected(1),ping:expected(2),legacyUnavailable:true,url:'http://127.0.0.1:18826/__ticket06/login'}));
+const timer=setInterval(()=>void runtime.executeRaw('UPDATE hosts SET "isOnline"=1,"lastHeartbeat"=?',[Math.floor(Date.now()/1000)]),10000);
+let closing=false;const stop=async()=>{if(closing)return;closing=true;clearInterval(timer);server.closeAllConnections();await new Promise(resolve=>server.close(resolve));await vite.close();await runtime.closeDatabase();process.exit(0);};process.on('SIGINT',stop);process.on('SIGTERM',stop);

@@ -1,0 +1,12 @@
+## Latest page snapshot
+uid=63_0 RootWebArea "ForwardX" url="http://127.0.0.1:18822/rules"
+  uid=63_1 region "Notifications alt+T" live="polite" relevant="additions text"
+  uid=63_2 dialog "Reset rule data" description="Confirm the replacement rule "自建一" All statistics?"
+    uid=63_3 heading "Reset rule data" level="2"
+    uid=63_4 StaticText "Confirm the replacement rule "自建一" All statistics?"
+    uid=63_5 StaticText "This clears statistics for this rule."
+    uid=63_6 StaticText "This does not reset account plan traffic usage, balances or usage billing records, or change rule expiry dates."
+    uid=63_7 button "Cancel" focusable focused
+    uid=63_8 button "Confirm Reset"
+    uid=63_9 button "Close"
+

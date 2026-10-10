@@ -1,0 +1,3 @@
+import React from 'react';import {createRoot} from 'react-dom/client';import MobileAppSettings from '@/components/MobileAppSettings';import {ThemeProvider} from '@/contexts/ThemeContext';import {Toaster} from '@/components/ui/sonner';import {initializeLanguage} from '@/i18n';import '@/index.css';
+await initializeLanguage();document.documentElement.classList.add('capacitor-native');
+createRoot(document.getElementById('root')!).render(<ThemeProvider><div data-mobile-main="true" style={{padding:'20px',paddingTop:'calc(20px + var(--forwardx-safe-area-top))',paddingBottom:'calc(20px + var(--forwardx-safe-area-bottom))'}}><MobileAppSettings snapshot={{trafficLimit:100,trafficUsed:85,expiresAt:new Date(Date.now()+2*86400000)}}/></div><Toaster/></ThemeProvider>);

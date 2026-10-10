@@ -1,0 +1,157 @@
+{
+  "requests": [
+    {
+      "at": "2026-10-09T17:38:52.036Z",
+      "path": "/system.updateSettings",
+      "body": {
+        "0": {
+          "json": {
+            "ddns": {
+              "enabled": false,
+              "provider": "tencentcloud",
+              "ttl": 600,
+              "cloudflareZoneId": "",
+              "cloudflareApiToken": null,
+              "huaweicloudAccessKeyId": "",
+              "huaweicloudSecretKey": null,
+              "huaweicloudRegion": "cn-north-4",
+              "huaweicloudEndpoint": "",
+              "huaweicloudZoneId": "",
+              "huaweicloudTtl": 600,
+              "huaweicloudLine": "default_view",
+              "aliyunAccessKeyId": "",
+              "aliyunAccessKeySecret": null,
+              "aliyunDomainName": "",
+              "aliyunEndpoint": "https://alidns.aliyuncs.com",
+              "aliyunTtl": 600,
+              "aliyunLine": "default",
+              "tencentcloudSecretId": "",
+              "tencentcloudSecretKey": null,
+              "tencentcloudDomainName": "",
+              "tencentcloudTtl": 600,
+              "tencentcloudRecordLine": "默认",
+              "tencentcloudRecordLineId": "",
+              "webhookUrl": "",
+              "webhookMethod": "POST",
+              "webhookHeaders": ""
+            }
+          },
+          "meta": {
+            "values": {
+              "ddns.cloudflareApiToken": [
+                "undefined"
+              ],
+              "ddns.huaweicloudSecretKey": [
+                "undefined"
+              ],
+              "ddns.aliyunAccessKeySecret": [
+                "undefined"
+              ],
+              "ddns.tencentcloudSecretKey": [
+                "undefined"
+              ]
+            },
+            "v": 1
+          }
+        }
+      },
+      "query": {
+        "batch": "1"
+      }
+    }
+  ],
+  "settings": [
+    [
+      "ddnsTtl",
+      "600"
+    ],
+    [
+      "ddnsEnabled",
+      "false"
+    ],
+    [
+      "ddnsProvider",
+      "tencentcloud"
+    ],
+    [
+      "ddnsCloudflareZoneId",
+      null
+    ],
+    [
+      "ddnsHuaweiCloudAccessKeyId",
+      null
+    ],
+    [
+      "ddnsHuaweiCloudRegion",
+      "cn-north-4"
+    ],
+    [
+      "ddnsHuaweiCloudEndpoint",
+      null
+    ],
+    [
+      "ddnsHuaweiCloudZoneId",
+      null
+    ],
+    [
+      "ddnsHuaweiCloudTtl",
+      "600"
+    ],
+    [
+      "ddnsHuaweiCloudLine",
+      "default_view"
+    ],
+    [
+      "ddnsAliyunAccessKeyId",
+      null
+    ],
+    [
+      "ddnsAliyunDomainName",
+      null
+    ],
+    [
+      "ddnsAliyunEndpoint",
+      "https://alidns.aliyuncs.com"
+    ],
+    [
+      "ddnsAliyunTtl",
+      "600"
+    ],
+    [
+      "ddnsAliyunLine",
+      "default"
+    ],
+    [
+      "ddnsTencentCloudSecretId",
+      null
+    ],
+    [
+      "ddnsTencentCloudDomainName",
+      null
+    ],
+    [
+      "ddnsTencentCloudTtl",
+      "600"
+    ],
+    [
+      "ddnsTencentCloudRecordLine",
+      "默认"
+    ],
+    [
+      "ddnsTencentCloudRecordLineId",
+      null
+    ],
+    [
+      "ddnsWebhookUrl",
+      null
+    ],
+    [
+      "ddnsWebhookMethod",
+      "POST"
+    ],
+    [
+      "ddnsWebhookHeaders",
+      null
+    ]
+  ]
+}

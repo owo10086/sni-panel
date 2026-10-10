@@ -1,0 +1,157 @@
+Browser tab: 3, Title: "sni-panel 移动验收", URL: "http://127.0.0.1:18871/".
+1 AXWebArea sni-panel 移动验收, URL: 127.0.0.1:18871/
+	2 container
+		3 container root
+			4 container
+				5 image sni-panel 移动验收
+				6 text sni-panel 移动验收
+				7 button Description: Toggle theme, Help: 切换到黑夜模式
+					8 image
+				9 button Toggle navigation
+					10 image
+				11 text 主菜单
+				12 content list
+					13 button 仪表盘
+						14 image
+						15 text 仪表盘
+					16 button 主机管理
+						17 image
+						18 text 主机管理
+					19 button 链路管理
+						20 image
+						21 text 链路管理
+					22 button 转发规则
+						23 image
+						24 text 转发规则
+					25 button 公告
+						26 image
+						27 text 公告
+				28 text 管理
+				29 content list
+					30 button 个人资料
+						31 image
+						32 text 个人资料
+					33 button SNI 入口
+						34 image
+						35 text SNI 入口
+					36 button 支付对接
+						37 image
+						38 text 支付对接
+					39 button 账单与兑换
+						40 image
+						41 text 账单与兑换
+					42 button 套餐管理
+						43 image
+						44 text 套餐管理
+					45 button 用户管理
+						46 image
+						47 text 用户管理
+					48 button 网络测试
+						49 image
+						50 text 网络测试
+					51 button 系统设置
+						52 image
+						53 text 系统设置
+				54 pop up button (collapsed) 移动验收管理员 管理员 · TG 未绑定, Help: 移动验收管理员, ID: radix-_r_g_, Secondary Actions: Expand
+					55 image Created with getavataaars.com
+					56 text 移动验收管理员
+					57 container
+						58 text 管理员  ·  TG 未绑定
+			59 container
+				60 button Toggle Sidebar
+					61 image
+					62 text Toggle Sidebar
+				63 text 仪表盘
+				64 button Toggle theme
+					65 image
+				66 heading 仪表盘, Value: 1
+					67 text 仪表盘
+				68 container
+					69 text 欢迎回来， 移动验收管理员
+				70 text 系统在线
+				71 container
+					72 text 主机总数
+					73 text 0
+					74 text 0 台在线
+				75 container
+					76 text 转发规则
+					77 text 0
+					78 text 0 条已启用
+				79 container
+					80 text 入站流量
+					81 text 0 B
+					82 text 累计入站
+				83 container
+					84 text 出站流量
+					85 text 0 B
+					86 text 累计出站
+				87 image
+				88 text APP 设置
+				89 container
+					90 image
+					91 text 流量提醒 低于阈值时提醒。
+					92 switch Description: 流量提醒 低于阈值时提醒。, Value: 0
+				93 text 剩余流量阈值 (%)
+				94 stepper (disabled, settable, integer) 20
+				95 container
+					96 image
+					97 text 到期提醒 到期前提醒。
+					98 switch Description: 到期提醒 到期前提醒。, Value: 0
+				99 text 提前提醒天数
+				100 stepper (disabled, settable, integer) 3
+				101 text 提醒时间
+				102 time field (disabled, settable) 09:00
+				103 container
+					104 image
+					105 text 我的消耗 管理员权限
+					106 image
+					107 text 我的已用流量 0 B 按当前登录账号统计
+					108 image
+					109 text 计费流量 未开启 流量计费功能未开启
+					110 image
+					111 text 计费消费 - 仅统计当前账号
+					112 image
+					113 text 权限状态 管理员 不受套餐订阅限制
+				114 image
+				115 text 近 24H 流量展示 每小时汇总 入站 出站
+				116 image
+				117 text 每小时汇总一次可见规则流量。 暂无流量数据
+				118 image
+				119 text 隧道流量 近 24H
+				120 image
+				121 text 暂无流量数据
+				122 image
+				123 text 端口转发流量 近 24H
+				124 image
+				125 text 暂无流量数据
+				126 image
+				127 text 转发组流量 近 24H
+				128 image
+				129 text 暂无流量数据
+				130 image
+				131 text 主机在线率
+				132 container
+					133 image
+					134 text 0 %
+				135 text 在线  0 离线  0
+				136 image
+				137 text 规则启用率
+				138 container
+					139 image
+					140 text 0 %
+				141 text 已启用  0 停用  0
+				142 image
+				143 text 系统概览 规则负载
+				144 text 0 % 用户角色
+				145 image
+				146 text 管理员
+				147 link Description: 项目地址, Value: github.com/owo10086/sni-panel
+				148 text |
+				149 link Description: 使用教程, Value: owo10086.github.io/sni-panel/
+				150 text |
+				151 link Description: 联系TG, Value: t.me/miyin_private_bot
+				152 text |
+				153 link Description: TG群组, Value: t.me/ForwardX_panel
+		154 container Notifications alt+T
+
+The focused UI element is 1 AXWebArea sni-panel 移动验收, URL: 127.0.0.1:18871/

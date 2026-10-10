@@ -1,3 +1,4 @@
+import { t as translateText } from "@/i18n";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -31,7 +32,7 @@ export function useRuleBulkActions<T extends RuleBulkRule>({ selection, editRule
     try {
       await onChanged(changedIds);
     } catch (error) {
-      toast.error(`刷新规则列表失败：${batchOperationErrorMessage(error)}`);
+      toast.error(translateText("刷新规则列表失败：{0}", [batchOperationErrorMessage(error)]));
     }
   };
 
@@ -43,7 +44,7 @@ export function useRuleBulkActions<T extends RuleBulkRule>({ selection, editRule
     try {
       await finish(await editRules(selection.selectedRules, input), scopeKey);
     } catch (error) {
-      toast.error(`批量编辑处理失败：${batchOperationErrorMessage(error)}`);
+      toast.error(translateText("批量编辑处理失败：{0}", [batchOperationErrorMessage(error)]));
     } finally {
       working.current = false;
       selection.setBusy(false);
@@ -58,8 +59,8 @@ export function useRuleBulkActions<T extends RuleBulkRule>({ selection, editRule
     const ids = [...selection.selectedIds];
     try {
       if (!(await confirmDialog({
-        title: "删除转发规则", description: `确认删除选中的 ${ids.length} 条转发规则？`,
-        confirmText: "删除", tone: "destructive",
+        title: translateText("删除转发规则"), description: translateText("确认删除选中的 {0} 条转发规则？", [ids.length]),
+        confirmText: translateText("删除"), tone: "destructive",
       }))) return;
       const results = await runBatchOperations(chunkBatchItems(ids, 500), 2, deleteRules);
       const outcomes = results.flatMap((result): RuleBulkOutcome[] => result.status === "rejected"
@@ -70,7 +71,7 @@ export function useRuleBulkActions<T extends RuleBulkRule>({ selection, editRule
         ]);
       await finish(outcomes, scopeKey, true);
     } catch (error) {
-      toast.error(`批量删除失败：${batchOperationErrorMessage(error)}`);
+      toast.error(translateText("批量删除失败：{0}", [batchOperationErrorMessage(error)]));
     } finally {
       working.current = false;
       selection.setBusy(false);

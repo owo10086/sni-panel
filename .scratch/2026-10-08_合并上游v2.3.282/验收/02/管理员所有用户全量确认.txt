@@ -1,0 +1,13 @@
+Successfully clicked on the element
+## Latest page snapshot
+uid=51_0 RootWebArea "ForwardX" url="http://127.0.0.1:18822/rules?tab=tunnel"
+  uid=51_447 region "Notifications alt+T" live="polite" relevant="additions text"
+  uid=59_0 dialog "重置全部规则数据" description="确认重置所有用户范围内的全部规则统计数据？此操作覆盖所有分页，不受搜索、链路、分类或勾选影响。"
+    uid=59_1 heading "重置全部规则数据" level="2"
+    uid=59_2 StaticText "确认重置所有用户范围内的全部规则统计数据？此操作覆盖所有分页，不受搜索、链路、分类或勾选影响。"
+    uid=59_3 StaticText "重置统计会同时清零规则已用额度。因额度用尽而暂停的规则，在账户和其他运行条件允许时可能恢复；已到期的规则仍会暂停。"
+    uid=59_4 StaticText "此操作不会重置账户套餐已用流量、余额或流量按量计费记录，也不会改变规则到期时间。"
+    uid=59_5 button "取消" focusable focused
+    uid=59_6 button "确认重置"
+    uid=59_7 button "Close"
+

@@ -1,0 +1,18 @@
+- text: APP 设置
+- text: 流量提醒
+- generic: 低于阈值时提醒。
+- switch "流量提醒 低于阈值时提醒。" [checked]
+- text: 剩余流量阈值 (%)
+- spinbutton: "25"
+- text: 到期提醒
+- generic: 到期前提醒。
+- switch "到期提醒 到期前提醒。" [checked] [active]
+- text: 提前提醒天数
+- spinbutton: "3"
+- text: 提醒时间
+- textbox: 09:00
+- region "Notifications alt+T":
+  - list:
+    - generic: APP 通知设置已保存
+    - generic: APP 通知设置已保存
+    - generic: APP 通知设置已保存

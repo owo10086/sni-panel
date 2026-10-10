@@ -1,0 +1,13 @@
+{
+  "stage": "google-config",
+  "checks": [
+    {
+      "name": "Google default disabled",
+      "passed": true
+    },
+    {
+      "name": "configured Google enabled; client secret omitted from response",
+      "passed": true
+    }
+  ]
+}

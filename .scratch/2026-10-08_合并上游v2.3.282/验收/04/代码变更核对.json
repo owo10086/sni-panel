@@ -1,0 +1,11 @@
+{
+  "checkedExistingFiles": 719,
+  "changedExistingFiles": [
+    "agent/runtime_persistence.go"
+  ],
+  "newCodeFiles": [
+    "scripts/verify-sni-agent-recovery.mjs"
+  ],
+  "fxpRebuildMatchesTestedBinary": true,
+  "fxpSha256": "9bd10091c929869bfe01fb29d829e8b8778203ce97f3c6de81ee2f59d7c89dc2"
+}

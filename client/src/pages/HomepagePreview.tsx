@@ -1,3 +1,4 @@
+import { t as translateText } from "@/i18n";
 import { Button } from "@/components/ui/button";
 import { createHomepageDocument } from "@/lib/homepageHtml";
 import { trpc } from "@/lib/trpc";
@@ -29,7 +30,7 @@ export default function HomepagePreview() {
 
   let html = mode === "draft" ? draftHtml : settings?.homepageHtml || "";
   if (!html.trim()) {
-    html = "<main style=\"min-height:100vh;display:grid;place-items:center;font-family:system-ui,sans-serif;color:#64748b;\"><div>暂无自定义首页内容</div></main>";
+    html = translateText("<main style=\"min-height:100vh;display:grid;place-items:center;font-family:system-ui,sans-serif;color:#64748b;\"><div>暂无自定义首页内容</div></main>");
   }
 
   return (
@@ -38,11 +39,9 @@ export default function HomepagePreview() {
         <div className="flex items-center gap-2 text-sm font-medium">
           <Button variant="ghost" size="sm" asChild className="gap-2">
             <Link href="/settings?tab=system">
-              <ArrowLeft className="h-4 w-4" />
-              返回设置
-            </Link>
+              <ArrowLeft className="h-4 w-4" />{translateText("返回设置")}</Link>
           </Button>
-          <span className="text-muted-foreground">{mode === "draft" ? "草稿预览" : "已保存预览"}</span>
+          <span className="text-muted-foreground">{mode === "draft" ? translateText("草稿预览") : translateText("已保存预览")}</span>
         </div>
       </div>
       {isLoading && mode !== "draft" ? null : (

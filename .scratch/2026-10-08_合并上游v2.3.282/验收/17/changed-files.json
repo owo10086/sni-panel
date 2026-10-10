@@ -1,0 +1,52 @@
+[
+  {
+    "path": ".github/workflows/ios-ipa.yml",
+    "before": "7c226b35581a99e91ea53a20d701b2fba13f7321a2b2899ea6a72cbab4d0b3ff",
+    "after": "cfdd289d2f13ca2daf6e329ccdd1739781d32245da64611231ac9ad8b567bcb8"
+  },
+  {
+    "path": "client/src/i18n/en.json",
+    "before": "25eb466518ae2ee2348cf9c81107216e69d2270a8c4eaa8df135f5c6f84193da",
+    "after": "14100b69a432430f077d96bcdd2f3b8c8d1fc569e36fa64a748e9249b839cf4e"
+  },
+  {
+    "path": "client/src/index.css",
+    "before": "441bab0f15eba11ee2cb4ef52b9d0e4770934ac44dc7f7aaf42cdd121fe75a5b",
+    "after": "2d932ab532482d5da10836e798525209ef7f06d0e1ed9bb29ee8d3108c5abc67"
+  },
+  {
+    "path": "client/src/pages/Login.tsx",
+    "before": "011ed34793e84bfea1e42617526fd9d32cb6451789135be70a26a7d05cb4998a",
+    "after": "a1e17fc6f826cf74ac2be27fb4386f731478fbdc13d565ed8a8595a0e876f953"
+  },
+  {
+    "path": "client/src/pages/Profile.tsx",
+    "before": "3262e95fccdcf64bcb8d4e532ebd61e6bda652fac119be8f4a1e311645091188",
+    "after": "1de7dc45ad5503c0f871e7593eadcf8ab23b2767b581cba7e9d221e09fe0ad07"
+  },
+  {
+    "path": "ios/App/App.xcodeproj/project.pbxproj",
+    "before": "bb31166a461d6cd3f6ba6a22887242d3f4b2e8e374ee3d1ccebd5e908e0f5485",
+    "after": "650c0b9937c3de7c88e2801d9aaa4dbbb7d043b09b449b2fffffe07cdc2fd8e9"
+  },
+  {
+    "path": "ios/App/App/Info.plist",
+    "before": "ba251a3e9df207554a4b74d75ba4251f839245b36747e867b6e9ef4f3ed0db09",
+    "after": "f3f13c14b0b4a0384cbc3a840448871773bbec8dcae6e366b5d34ccd31ffe7b8"
+  },
+  {
+    "path": "ios/App/App/en.lproj/InfoPlist.strings",
+    "before": null,
+    "after": "dd2a5cc0c0ac4b94158d14767846fd1f43ed46c3d7dc00f50818a56f36d57d5c"
+  },
+  {
+    "path": "ios/App/App/zh-Hans.lproj/InfoPlist.strings",
+    "before": null,
+    "after": "fdb55e451cb9f5f17f08bce4d441759ed19d4d412bcdb041117898285b6e7c23"
+  },
+  {
+    "path": "scripts/build-ios-ipa.mjs",
+    "before": "57fe157ccc0839331d471b7f3611ad3a75047871fda60c0567829205daa1bbab",
+    "after": "c621e4e5115b7db7769347edc86847b39524212c2896f486f528420b50cbceec"
+  }
+]

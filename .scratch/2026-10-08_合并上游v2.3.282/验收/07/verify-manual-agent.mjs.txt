@@ -1,0 +1,266 @@
+// Run only in an isolated Linux container with actual panel heartbeat plans.
+// Usage: node verify-gost-agent-sync.mjs INPUT_DIR [AGENT_BINARY]
+import assert from "node:assert/strict";
+import { spawn, spawnSync } from "node:child_process";
+import crypto from "node:crypto";
+import fs from "node:fs";
+import http from "node:http";
+import net from "node:net";
+import dgram from "node:dgram";
+import path from "node:path";
+
+assert.equal(process.platform, "linux");
+assert.ok(fs.existsSync("/.dockerenv"), "use an isolated Docker container");
+const input = process.argv[2];
+const agentBinary = process.argv[3] || path.join(input, "forwardx-agent");
+const plans = JSON.parse(fs.readFileSync(path.join(input, "plans.json"), "utf8"));
+const work = "/tmp/gost-agent-sync";
+const evidence = path.join(input, "gost-evidence");
+const token = "isolated-gost-token";
+const services = ["forwardx-runtime", "forwardx-tunnel-runtime"];
+const marker = "# forwardx-gost-additive-sync ";
+const connections = new Set();
+const children = new Set();
+const backends = [];
+const checks = [];
+let agent;
+let occupied;
+let udpBackend;
+let udpClient;
+let currentState;
+let nextSelfTests=[];
+const selfTestReports=[];
+const heartbeats=[];
+const probePlan=JSON.parse(fs.readFileSync(path.join(input, "selftests.json"),"utf8"));
+let agentLog;
+let heartbeatCount = 0;
+let stageCounter = 0;
+fs.mkdirSync(work, { recursive: true });
+fs.mkdirSync(evidence, { recursive: true });
+const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
+function execute(binary, args) {
+  const result = spawnSync(binary, args, { encoding: "utf8", timeout: 15000 });
+  assert.equal(result.status, 0, result.stderr || String(result.error));
+  return result.stdout;
+}
+function configFor(plan, service) {
+  const spec = plan.managedConfigs.find(item => item.serviceName === service);
+  assert.ok(spec, `missing ${service}`);
+  return JSON.parse(Buffer.from(spec.contentBase64, "base64"));
+}
+function identity(service) {
+  const pid = Number(fs.readFileSync(`/run/${service}.pid`, "utf8"));
+  const stat = fs.readFileSync(`/proc/${pid}/stat`, "utf8");
+  const start = stat.slice(stat.lastIndexOf(")") + 2).split(" ")[19];
+  return { pid, start };
+}
+function identities() { return Object.fromEntries(services.map(service => [service, identity(service)])); }
+function privateConfig(service) {
+  return new Promise((resolve, reject) => {
+    const req = http.get({ socketPath: `/run/forwardx-agent/gost-api/${service}.sock`, path: "/config", timeout: 3000 }, res => {
+      let text = "";
+      res.on("data", data => { text += data; });
+      res.on("end", () => {
+        try { assert.equal(res.statusCode, 200); resolve(JSON.parse(text)); } catch (err) { reject(err); }
+      });
+    });
+    req.on("error", reject);
+    req.on("timeout", () => req.destroy(new Error("GOST API timed out")));
+  });
+}
+async function waitFor(check, description, limit = 20000) {
+  const until = Date.now() + limit;
+  while (Date.now() < until) {
+    try { if (await check()) return; } catch { /* Process/socket can be between states. */ }
+    if (agent) assert.ok(agent.exitCode === null && agent.signalCode === null, fs.readFileSync(agentLog, "utf8"));
+    await pause(50);
+  }
+  throw new Error(`Timed out: ${description}\n${agentLog ? fs.readFileSync(agentLog, "utf8") : ""}`);
+}
+async function connect(port) {
+  return new Promise((resolve, reject) => {
+    const conn = net.connect(port, "127.0.0.1");
+    conn.setTimeout(3000, () => conn.destroy(new Error(`port ${port} timed out`)));
+    conn.once("connect", () => { conn.setTimeout(0); connections.add(conn); resolve(conn); });
+    conn.once("error", reject);
+    conn.on("error", () => {});
+    conn.on("close", () => connections.delete(conn));
+  });
+}
+async function echo(conn, message, expected = message) {
+  assert.ok(!conn.destroyed, "established connection was closed");
+  const data = await new Promise((resolve, reject) => {
+    const chunks = [];
+    let size = 0;
+    const onData = chunk => {
+      chunks.push(chunk); size += chunk.length;
+      if (size >= Buffer.byteLength(expected)) { cleanup(); resolve(Buffer.concat(chunks).toString()); }
+    };
+    const onError = err => { cleanup(); reject(err); };
+    const onClose = () => onError(new Error("established connection closed while waiting"));
+    const timer = setTimeout(() => onError(new Error("echo timed out")), 3000);
+    const cleanup = () => { clearTimeout(timer); conn.off("data", onData); conn.off("error", onError); conn.off("close", onClose); };
+    conn.on("data", onData); conn.once("error", onError); conn.once("close", onClose);
+    conn.write(message);
+  });
+  assert.equal(data, expected);
+}
+async function newEcho(port, expectedPrefix = "") {
+  const conn = await connect(port);
+  try { await echo(conn, `new-${port}`, expectedPrefix + `new-${port}`); } finally { conn.destroy(); }
+}
+async function closed(port) {
+  return new Promise(resolve => {
+    const conn = net.connect(port, "127.0.0.1");
+    conn.once("connect", () => { conn.destroy(); resolve(false); });
+    conn.once("error", () => resolve(true));
+    conn.setTimeout(500, () => { conn.destroy(); resolve(true); });
+  });
+}
+async function udpEcho() {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => { udpClient.off("message", onMessage); reject(new Error("UDP echo timed out")); }, 3000);
+    const onMessage = data => { clearTimeout(timer); assert.equal(data.toString(), "udp-alive"); resolve(); };
+    udpClient.once("message", onMessage);
+    udpClient.send("udp-alive", 21001, "127.0.0.1");
+  });
+}
+// Replay actual panel-generated plans over the Agent's public encrypted HTTP
+// boundary. Authentication/encryption is tested separately by the panel export.
+const key = salt => crypto.createHash("sha256").update(`${token}|${salt}`).digest();
+function envelope(payload) {
+  const iv = crypto.randomBytes(16);
+  const cipher = crypto.createCipheriv("aes-256-ctr", key("forwardx-agent-v1"), iv);
+  const ct = Buffer.concat([cipher.update(JSON.stringify(payload)), cipher.final()]);
+  const ts = Date.now(); const tsBytes = Buffer.alloc(8); tsBytes.writeBigUInt64BE(BigInt(ts));
+  const mac = crypto.createHmac("sha256", key("forwardx-agent-mac")).update(Buffer.concat([Buffer.from("v1"), iv, ct, tsBytes])).digest("hex");
+  return { v: 1, iv: iv.toString("hex"), ct: ct.toString("hex"), ts, mac };
+}
+const panel = http.createServer(async (req, res) => {
+  const chunks = [];
+  for await (const chunk of req) chunks.push(chunk);
+  let requestPath = req.url;
+  let actualPayload={};
+  if (requestPath === "/api/sync") {
+    const request = JSON.parse(Buffer.concat(chunks));
+    const decipher = crypto.createDecipheriv("aes-256-ctr", key("forwardx-agent-v1"), Buffer.from(request.iv, "hex"));
+    const payload = JSON.parse(Buffer.concat([decipher.update(Buffer.from(request.ct, "hex")), decipher.final()]));
+    requestPath = payload.path; actualPayload=payload.payload;
+  }
+  res.setHeader("content-type", "application/json");
+  if (requestPath === "/api/agent/heartbeat") {
+    heartbeatCount++; heartbeats.push(actualPayload);
+    const state = currentState;
+    currentState = undefined;
+    const selfTests=nextSelfTests; nextSelfTests=[];
+    res.end(JSON.stringify(envelope({ nextInterval: 1, desiredState: state, selfTests })));
+  } else if(requestPath === "/api/agent/selftest-result") { selfTestReports.push(actualPayload); res.end(JSON.stringify(envelope({success:true}))); } else if (req.method === "GET") { res.writeHead(404); res.end("{}"); }
+  else { res.end(JSON.stringify(envelope({ success: true }))); }
+});
+async function stopChild(child) {
+  if (child?.exitCode === null && child.signalCode === null) {
+    const stopped = new Promise(resolve => child.once("exit", resolve));
+    child.kill("SIGTERM"); await stopped;
+  }
+  if (child === agent) agent = undefined;
+}
+async function startAgent(stage, binary = agentBinary) {
+  agentLog = path.join(work, `agent-${stage}.log`);
+  const fd = fs.openSync(agentLog, "w");
+  agent = spawn(binary, ["-config", path.join(work, "agent.json")], { stdio: ["ignore", fd, fd] });
+  fs.closeSync(fd); children.add(agent);
+  await waitFor(() => fs.readFileSync(agentLog, "utf8").includes("local runtime restore complete"), "Agent startup");
+}
+async function dispatch(stage, plan, success = true) {
+  const action = structuredClone(plan);
+  const revision = ++stageCounter;
+  action.configHash = `${stage}-${revision}`;
+  action.issuedAt = Date.now(); action.forceRuntimeSync = true;
+  const before = fs.readFileSync(agentLog, "utf8").length;
+  currentState = { version: 1, issuedAt: action.issuedAt, configRevision: revision, configHash: action.configHash, actions: [action] };
+  await waitFor(() => fs.readFileSync(agentLog, "utf8").slice(before).includes(`runtime action complete forwardType=gost-runtime-sync ok=${success}`), `${stage} result`, 30000);
+  currentState = undefined;
+  // Failure actions complete their disk/runtime rollback before logging result.
+  fs.copyFileSync(agentLog, path.join(evidence, `agent-${stage}.log`));
+}
+async function record(stage, extra = {}) {
+  const configs = {};
+  for (const service of services) configs[service] = await privateConfig(service);
+  fs.writeFileSync(path.join(evidence, `${stage}.json`), JSON.stringify({ stage, processes: identities(), configs, listeners: execute("ss", ["-lntup"]), ...extra }, null, 2));
+  checks.push(stage); console.log(`PASS: ${stage}`);
+}
+try {
+  for (const ip of ["198.51.100.10", "198.51.100.20", "198.51.100.30"]) execute("ip", ["address", "add", `${ip}/32`, "dev", "lo"]);
+  fs.copyFileSync(path.join(input, "gost"), "/usr/local/bin/gost"); fs.chmodSync("/usr/local/bin/gost", 0o755);
+  for (const [port, prefix] of [[30001, ""], [30002, "edited:"]]) {
+    const backend = net.createServer(conn => { connections.add(conn); conn.on("error", () => {}); conn.on("close", () => connections.delete(conn)); conn.on("data", data => conn.write(prefix + data.toString())); });
+    await new Promise(resolve => backend.listen(port, "198.51.100.30", resolve)); backends.push(backend);
+  }
+  udpBackend = dgram.createSocket("udp4"); udpBackend.on("message", (data, remote) => udpBackend.send(data, remote.port, remote.address));
+  await new Promise(resolve => udpBackend.bind(30001, "198.51.100.30", resolve));
+  udpClient = dgram.createSocket("udp4");
+  await new Promise(resolve => panel.listen(0, "127.0.0.1", resolve));
+  fs.writeFileSync(path.join(work, "agent.json"), JSON.stringify({ panelUrl: `http://127.0.0.1:${panel.address().port}`, token, interval: 1 }));
+  // Install the actual panel-generated SysV service definitions, then start
+  // legacy configs without the private API to check first activation.
+  fs.mkdirSync("/etc/init.d", { recursive: true });
+  for (const command of plans.base.commands.filter(command => command.includes("script_tmp="))) execute("sh", ["-c", command]);
+  fs.copyFileSync(path.join(input, "gost"), "/usr/local/bin/forwardx-runtime"); fs.chmodSync("/usr/local/bin/forwardx-runtime", 0o755);
+  for (const spec of plans.base.managedConfigs) {
+    const config = JSON.parse(Buffer.from(spec.contentBase64, "base64")); delete config.api;
+    fs.mkdirSync(path.dirname(spec.path), { recursive: true }); fs.writeFileSync(spec.path, JSON.stringify(config));
+    execute(`/etc/init.d/${spec.serviceName}`, ["start"]);
+  }
+  await waitFor(async () => { await newEcho(21001); return true; }, "legacy GOST listeners");
+  const legacyIdentities = identities();
+  const legacyConnection = await connect(21001); await echo(legacyConnection, "legacy-before");
+  await startAgent("candidate");
+  await dispatch("first-api-activation", plans.base);
+  for (const service of services) assert.notDeepEqual(identity(service), legacyIdentities[service]);
+  await waitFor(() => legacyConnection.destroyed, "first activation closes old connection");
+  await record("first-api-activation", { before: legacyIdentities, oldConnectionClosed: true });
+  const entryConfig = configFor(plans.entry, "forwardx-runtime"); delete entryConfig.api;
+  fs.writeFileSync(path.join(work, "entry.json"), JSON.stringify(entryConfig));
+  const fd = fs.openSync(path.join(work, "entry.log"), "w");
+  const entry = spawn("/usr/local/bin/gost", ["-C", path.join(work, "entry.json")], { stdio: ["ignore", fd, fd] });
+  fs.closeSync(fd); children.add(entry);
+  await waitFor(async () => { await newEcho(22001); return true; }, "real authenticated GOST entry");
+  const original = identities();
+  const c1 = await connect(21001), c2 = await connect(21002), tunnelConnection = await connect(22001);
+  const healthy = async stage => {
+    assert.deepEqual(identities(), original, `${stage}: shared processes changed`);
+    await echo(c1, stage + "-main1"); await echo(c2, stage + "-main2"); await echo(tunnelConnection, stage + "-tunnel"); await udpEcho();
+  };
+  await pause(1200);
+  const before=heartbeats.at(-1);
+  fs.writeFileSync(path.join(input,"heartbeat-before.json"), JSON.stringify(before,null,2));
+  assert.ok(Number.isFinite(before.agentLastAppliedRevision) && before.agentLastAppliedRevision > 0,"full heartbeat must report a real applied revision");
+  assert.ok(typeof before.agentLastAppliedHash === "string" && before.agentLastAppliedHash.length > 0,"full heartbeat must report a real applied hash");
+  const beforeConfigs=Object.fromEntries(plans.base.managedConfigs.map(spec=>[spec.path,fs.readFileSync(spec.path,"utf8")]));
+  fs.writeFileSync(path.join(input,"agent-ready.json"),JSON.stringify({ready:true}));
+  await waitFor(()=>fs.existsSync(path.join(input,"fresh-selftests.json")),"fresh panel self-test plan");
+  const fresh=JSON.parse(fs.readFileSync(path.join(input,"fresh-selftests.json"),"utf8"));
+  probePlan.ids=fresh.ids; nextSelfTests=fresh.selfTests;
+  await waitFor(()=>selfTestReports.length===2,"real manual self-tests");
+  await healthy("selftest-only");
+  for(const [file,content]of Object.entries(beforeConfigs))assert.equal(fs.readFileSync(file,"utf8"),content);
+  await waitFor(()=>heartbeats.at(-1)!==before,"next heartbeat after diagnostics");
+  const after=heartbeats.at(-1);
+  fs.writeFileSync(path.join(input,"heartbeat-after.json"), JSON.stringify(after,null,2));
+  for(const name of ["agentLastAppliedRevision","agentLastAppliedHash"])assert.equal(after[name],before[name],name);
+  assert.equal(selfTestReports.find(r=>r.testId===probePlan.ids[0]).targetReachable,true);
+  assert.equal(selfTestReports.find(r=>r.testId===probePlan.ids[1]).targetReachable,false);
+  await record("selftest-only",{establishedConnectionsPreserved:3,udp:true,configFilesUnchanged:true,beforeRevision:before.agentLastAppliedRevision,afterRevision:after.agentLastAppliedRevision,beforeHash:before.agentLastAppliedHash,afterHash:after.agentLastAppliedHash});
+  fs.writeFileSync(path.join(input,"selftest-reports.json"),JSON.stringify(selfTestReports,null,2));
+  fs.writeFileSync(path.join(input,"manual-network-result.json"),JSON.stringify({checks,heartbeatCount,candidateVersion:"3.3.0",reports:selfTestReports,connectionsPreserved:3,udp:true,revisionPreserved:true},null,2));
+} finally {
+  currentState = undefined;
+  for (const child of children) await stopChild(child);
+  for (const service of services) {
+    if (fs.existsSync(`/etc/init.d/${service}`)) spawnSync(`/etc/init.d/${service}`, ["stop"], {timeout: 5000});
+  }
+  for (const conn of connections) conn.destroy();
+  occupied?.close(); udpClient?.close(); udpBackend?.close();
+  for (const backend of backends) backend.close();
+  panel.closeAllConnections(); await new Promise(resolve => panel.close(resolve));
+}

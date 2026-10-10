@@ -1,0 +1,74 @@
+{
+  "connections": {
+    "configuredLimit": 7,
+    "accepted": 7,
+    "eighthRejected": true,
+    "healthyDomainAvailable": true
+  },
+  "rate": {
+    "limitIn": 6250000,
+    "limitOut": 6250000,
+    "limitedPayloadBytes": 33554432,
+    "limitedMilliseconds": 4449,
+    "healthyPayloadBytes": 524288,
+    "healthyMilliseconds": 4
+  },
+  "actualExitAccounting": {
+    "api": {
+      "quotaUsedIn": 33603308,
+      "quotaUsedOut": 33615228,
+      "ruleLimitReason": null
+    },
+    "web": {
+      "quotaUsedIn": null,
+      "quotaUsedOut": null,
+      "ruleLimitReason": null,
+      "trafficBytesIn": 526414,
+      "trafficBytesOut": 530860
+    },
+    "actualReportCount": 1
+  },
+  "duplicate": {
+    "duplicate": true,
+    "before": {
+      "quotaUsedIn": 33603308,
+      "quotaUsedOut": 33615228,
+      "ruleLimitReason": null
+    },
+    "after": {
+      "quotaUsedIn": 33603308,
+      "quotaUsedOut": 33615228,
+      "ruleLimitReason": null
+    },
+    "reportId": "fxp-8b292a769f803551863c41e31a2cf591"
+  },
+  "entryIgnored": {
+    "before": {
+      "quotaUsedIn": 33603308,
+      "quotaUsedOut": 33615228,
+      "ruleLimitReason": null
+    },
+    "after": {
+      "quotaUsedIn": 33603308,
+      "quotaUsedOut": 33615228,
+      "ruleLimitReason": null
+    }
+  },
+  "liveQuotaCycle": {
+    "limit": 67284072,
+    "blocked": {
+      "quotaUsedIn": 33735009,
+      "quotaUsedOut": 33748419,
+      "ruleLimitReason": "traffic_limit"
+    },
+    "reset": {
+      "quotaUsedIn": 0,
+      "quotaUsedOut": 0,
+      "ruleLimitReason": null
+    },
+    "sharedListenerAlive": true,
+    "healthyPersistentTlsSurvived": true,
+    "apiTlsRestored": true,
+    "businessPreserved": true
+  }
+}

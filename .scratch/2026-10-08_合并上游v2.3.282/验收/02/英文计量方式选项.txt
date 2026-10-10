@@ -1,0 +1,8 @@
+## Latest page snapshot
+uid=66_0 RootWebArea "ForwardX" url="http://127.0.0.1:18822/rules?tab=all"
+  uid=66_72 region "Notifications alt+T" live="polite" relevant="additions text"
+  uid=70_0 listbox orientation="vertical"
+    uid=70_1 option "One-way (Outbound)" selectable value="One-way (Outbound)"
+    uid=70_2 option "Total, two-way" focusable focused selectable selected value="Total, two-way"
+    uid=70_3 option "Maximum of cumulative inbound and outbound traffic" selectable value="Maximum of cumulative inbound and outbound traffic"
+

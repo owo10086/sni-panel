@@ -1,0 +1,12 @@
+Browser tab: 1, Title: "sni-panel 迁移验收", URL: "http://127.0.0.1:18851/settings?tab=backup".
+1 AXWebArea sni-panel 迁移验收, URL: 127.0.0.1:18851/settings?tab=backup
+	2 container
+		3 container
+			4 heading Panel migration in progress; new operations are paused, Value: 1
+				5 text Panel migration in progress; new operations are paused
+			6 text Migration does not require restarting the Agent or existing forwarding processes. The old panel database is retained. Exporting a consistent snapshot. If requests have not been transferred, the freeze expires after one hour.
+			7 link Description: Open new panel, Value: 127.0.0.1:18851/
+			8 button Cancel pending migration as administrator
+			9 text Requires a still-valid administrator session from before migration. Cancellation is unavailable after requests have been transferred.
+
+The focused UI element is 1 AXWebArea sni-panel 迁移验收, URL: 127.0.0.1:18851/settings?tab=backup

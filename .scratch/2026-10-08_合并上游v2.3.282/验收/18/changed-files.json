@@ -1,0 +1,47 @@
+[
+  {
+    "path": "CHANGELOG.en.md",
+    "before": "f8eb23f48c259135a91fb49c85ef3f76e659537fe3226ce08554323da991228f",
+    "after": "c2bb0484de07d5571f88e0cd10d7c0d8b9e09bc0f48e74aad3e2611e33896e7c"
+  },
+  {
+    "path": "README.md",
+    "before": "098ded6d0322606e6a66b62d75540b63f88bb8f6c623315ca9acd396f3bb84e2",
+    "after": "f74898050a0241f25e7e2d0af6945d926cb241984ded81de9a53dad8a60a85b4"
+  },
+  {
+    "path": "README.en.md",
+    "before": "ef54fc267db0799c176e1d39e743903946a8753340b78653f05fec12e3dfc076",
+    "after": "0607a9a3c2ba4edbf2c90a80acd2bdcaf09de470b5916995a08c95a9c958f400"
+  },
+  {
+    "path": "client/src/lib/panelUpgrade.test.ts",
+    "before": "ed8de2c7e5117fa520303e890f3681e67d86b7c32b5177a5d94e862561e9c0d9",
+    "after": "c5bcfa70965790e07bbf61ae6e915c140c612313b86e19fa61ae55ffde9a8fae"
+  },
+  {
+    "path": "docs/guide/deploy-docker.md",
+    "before": "651882224f14fb811d883eac6a919fb2c151ff56b04558bdf4583d8a27a4152b",
+    "after": "7d82e83b75781ab3afd834c8296c0717014355b65e9e4098e11c7aa33e1bdae5"
+  },
+  {
+    "path": "docs/guide/deploy-panel.md",
+    "before": "19a735b172f9799fb98bc745f082c223956d3987184f955550e70ecdb03ffff5",
+    "after": "bfca3870bb0c80173d4b57d3302fc6f1612d5da526ec0e3f065f951db251ce76"
+  },
+  {
+    "path": "docs/guide/paths-logs.md",
+    "before": "fe0626d60bbba1f26933fd0974c2d6ea658773429d7641f0f5fe4b7cd8f853e1",
+    "after": "dcfd6cfab111badf0d1a9039f50053d7859a84b66e81b4815f3101906524afa1"
+  },
+  {
+    "path": "docs/guide/upgrade-backup.md",
+    "before": "75a4a262aca11b5df780b9887bec3ffb79c03ce7b6b4ab98702367d42b22dc9b",
+    "after": "264a0ef73cb1972e4cd2eee9e04820c8c5f63411439738395b9a105353386abe"
+  },
+  {
+    "path": "docs/guide/mobile-app.md",
+    "before": "5ed51ac0060bbd837cdcdf35df3734106d5428ff037574f8d7009a205240eb27",
+    "after": "f8a83071238a0313b9d107a9abf2e7258a0d9de82b60e8890eef5b937afdbd02"
+  }
+]

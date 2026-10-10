@@ -90,6 +90,11 @@ export async function authenticateUser(username: string, password: string) {
     verifyPasswordAgainstDummy(password);
     return null;
   }
+  if (user.password === "!google-only") {
+    // Preserve the password login failure work factor for Google-only accounts.
+    verifyPasswordAgainstDummy(password);
+    return null;
+  }
   if (!verifyPassword(password, user.password)) return null;
   const db = await getDb();
   if (db && (user as any).accountEnabled !== false) {
@@ -206,35 +211,46 @@ export async function bindTelegramAccount(userId: number, telegram: {
   username?: string | null;
   firstName?: string | null;
   lastName?: string | null;
-}) {
-  const db = await getDb();
-  if (!db) return;
-  const now = nowDate();
-  const existing = await getUserByTelegramId(telegram.id);
-  if (existing && existing.id !== userId) {
+}, code: string) {
+  return withDatabaseTransaction(async () => {
+    const db = await getDb();
+    if (!db) throw new Error("Database unavailable");
+    const q = quoteDbIdentifier;
+    await queryRaw(`SELECT ${q("id")} FROM ${q("users")} WHERE ${q("id")} = ?${getDatabaseKind() === "sqlite" ? "" : " FOR UPDATE"}`, [userId]);
+    const user = await getUserById(userId);
+    if (!user || user.accountEnabled === false || user.telegramBindCode !== code
+      || new Date(user.telegramBindCodeExpiresAt || 0).getTime() <= Date.now()) {
+      throw new Error("绑定码无效或已过期");
+    }
+    const now = nowDate();
+    const existing = await getUserByTelegramId(telegram.id);
+    if (existing && existing.id !== userId) {
+      await db.update(users).set({
+        telegramId: null,
+        telegramUsername: null,
+        telegramFirstName: null,
+        telegramLastName: null,
+        telegramLinkedAt: null,
+        telegramLastSeenAt: null,
+        telegramLoginCode: null,
+        telegramLoginCodeExpiresAt: null,
+        updatedAt: now,
+      }).where(eq(users.id, existing.id));
+    }
     await db.update(users).set({
-      telegramId: null,
-      telegramUsername: null,
-      telegramFirstName: null,
-      telegramLastName: null,
-      telegramLinkedAt: null,
-      telegramLastSeenAt: null,
+      telegramId: telegram.id,
+      telegramUsername: telegram.username || null,
+      telegramFirstName: telegram.firstName || null,
+      telegramLastName: telegram.lastName || null,
+      telegramLinkedAt: now,
+      telegramLastSeenAt: now,
+      telegramBindCode: null,
+      telegramBindCodeExpiresAt: null,
       telegramLoginCode: null,
       telegramLoginCodeExpiresAt: null,
       updatedAt: now,
-    }).where(eq(users.id, existing.id));
-  }
-  await db.update(users).set({
-    telegramId: telegram.id,
-    telegramUsername: telegram.username || null,
-    telegramFirstName: telegram.firstName || null,
-    telegramLastName: telegram.lastName || null,
-    telegramLinkedAt: now,
-    telegramLastSeenAt: now,
-    telegramBindCode: null,
-    telegramBindCodeExpiresAt: null,
-    updatedAt: now,
-  }).where(eq(users.id, userId));
+    }).where(eq(users.id, userId));
+  });
 }
 
 export async function updateTelegramLastSeen(telegramId: string, telegram?: {
@@ -893,6 +909,7 @@ export async function getUserTrafficSummaries() {
     maxIPs: users.maxIPs,
     balanceCents: users.balanceCents,
     telegramId: users.telegramId,
+    discordId: users.discordId,
     telegramUsername: users.telegramUsername,
     telegramFirstName: users.telegramFirstName,
     telegramLastName: users.telegramLastName,

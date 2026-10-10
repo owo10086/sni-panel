@@ -1,0 +1,82 @@
+[
+  {
+    "provider": "telegram",
+    "recipient": "1001",
+    "text": "<b>🔴 ForwardX 转发规则异常提醒</b>\n\n<b>规则</b>：notify rule &lt;unchanged&gt; (#100)\n<b>入口主机</b>：- (#500)\n<b>入口端口</b>：<code>18000</code>\n<b>目标</b>：<code>192.0.2.3:443</code>\n<b>方式</b>：端口转发 / gost\n<b>协议</b>：TCP\n<b>原因</b>：target offline\n<b>时间</b>：2026/10/10 03:07:46"
+  },
+  {
+    "provider": "telegram",
+    "recipient": "1001",
+    "text": "<b>ForwardX 端口占用警告</b>\n<b>规则</b>：notify rule &lt;unchanged&gt; (#100)\n<b>入口主机</b>：-\n<b>入口端口</b>：18000\n<b>信息</b>：local listener 18000\n<b>时间</b>：2026/10/10 03:07:46"
+  },
+  {
+    "provider": "telegram",
+    "recipient": "1001",
+    "text": "<b>ForwardX 端口占用解除提醒</b>\n<b>规则</b>：notify rule &lt;unchanged&gt; (#100)\n<b>入口主机</b>：-\n<b>入口端口</b>：18000\n<b>信息</b>：监听占用已解除\n<b>时间</b>：2026/10/10 03:07:46"
+  },
+  {
+    "provider": "telegram",
+    "recipient": "1001",
+    "text": "<b>▌ ForwardX 转发组自动切换告警</b>\n<b>转发组</b>：notify group (#600)\n<b>原因</b>：entry unavailable\n<b>切换前</b>：- / <code>192.0.2.1</code>\n<b>切换后</b>：- / <code>192.0.2.2</code>\n<b>时间</b>：2026/10/10 03:07:46"
+  },
+  {
+    "provider": "telegram",
+    "recipient": "1001",
+    "text": "<b>🟢 ForwardX 主机上线通知</b>\n\n<b>状态</b>：🟢 在线\n<b>主机</b>：notify-host-telegram (#1)\n<b>地址</b>：<code>192.0.2.1</code>\n<b>说明</b>：Agent 已重新连接面板\n<b>时间</b>：2026/10/10 03:07:46"
+  },
+  {
+    "provider": "telegram",
+    "recipient": "1001",
+    "text": "<b>🔴 ForwardX 主机离线告警</b>\n\n<b>状态</b>：🔴 离线\n<b>主机</b>：notify-host-telegram (#1)\n<b>地址</b>：<code>192.0.2.1</code>\n<b>说明</b>：心跳超时，主机已被标记离线\n<b>时间</b>：2026/10/10 03:07:46"
+  },
+  {
+    "provider": "telegram",
+    "recipient": "1001",
+    "text": "<b>ForwardX 新公告</b>\n\n<b>notify announcement telegram</b>\n\ntest announcement\n\n可在个人资料中关闭公告通知。"
+  },
+  {
+    "provider": "telegram",
+    "recipient": "1002",
+    "text": "<b>ForwardX 新公告</b>\n\n<b>notify announcement telegram</b>\n\ntest announcement\n\n可在个人资料中关闭公告通知。"
+  },
+  {
+    "provider": "discord",
+    "recipient": "123456789012345671",
+    "text": "🔴 ForwardX 转发规则异常提醒\n\n规则：notify rule <unchanged> (#101)\n入口主机：- (#501)\n入口端口：18000\n目标：192.0.2.3:443\n方式：端口转发 / gost\n协议：TCP\n原因：target offline\n时间：2026/10/10 03:07:46"
+  },
+  {
+    "provider": "discord",
+    "recipient": "123456789012345671",
+    "text": "ForwardX 端口占用警告\n规则：notify rule <unchanged> (#101)\n入口主机：-\n入口端口：18000\n信息：local listener 18000\n时间：2026/10/10 03:07:47"
+  },
+  {
+    "provider": "discord",
+    "recipient": "123456789012345671",
+    "text": "ForwardX 端口占用解除提醒\n规则：notify rule <unchanged> (#101)\n入口主机：-\n入口端口：18000\n信息：监听占用已解除\n时间：2026/10/10 03:07:47"
+  },
+  {
+    "provider": "discord",
+    "recipient": "123456789012345671",
+    "text": "▌ ForwardX 转发组自动切换告警\n转发组：notify group (#601)\n原因：entry unavailable\n切换前：- / 192.0.2.1\n切换后：- / 192.0.2.2\n时间：2026/10/10 03:07:48"
+  },
+  {
+    "provider": "discord",
+    "recipient": "123456789012345671",
+    "text": "🟢 ForwardX 主机上线通知\n\n状态：🟢 在线\n主机：notify-host-discord (#2)\n地址：192.0.2.1\n说明：Agent 已重新连接面板\n时间：2026/10/10 03:07:49"
+  },
+  {
+    "provider": "discord",
+    "recipient": "123456789012345671",
+    "text": "🔴 ForwardX 主机离线告警\n\n状态：🔴 离线\n主机：notify-host-discord (#2)\n地址：192.0.2.1\n说明：心跳超时，主机已被标记离线\n时间：2026/10/10 03:07:50"
+  },
+  {
+    "provider": "discord",
+    "recipient": "123456789012345671",
+    "text": "ForwardX 新公告\n\nnotify announcement discord\n\ntest announcement\n\n可在个人资料中关闭公告通知。"
+  },
+  {
+    "provider": "discord",
+    "recipient": "123456789012345672",
+    "text": "ForwardX 新公告\n\nnotify announcement discord\n\ntest announcement\n\n可在个人资料中关闭公告通知。"
+  }
+]

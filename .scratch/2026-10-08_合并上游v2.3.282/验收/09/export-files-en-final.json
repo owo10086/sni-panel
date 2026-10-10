@@ -1,0 +1,21 @@
+{
+  "parts": [
+    {
+      "file": "forwardx-rules-batch-20261009-part-1-of-2 (2).json",
+      "count": 500,
+      "sha256": "0f5cf65178be7a7544805f909ceabdf99846595063096549f8d20c3a4790bd47",
+      "firstName": "用户 SNI 规则 unchanged",
+      "lastName": "导出测试 / unchanged 497"
+    },
+    {
+      "file": "forwardx-rules-batch-20261009-part-2-of-2.json",
+      "count": 4,
+      "sha256": "b1abbba30e0249c10922931dffd49da7b18c5f87b26fc429ed73421e4898bc55",
+      "firstName": "导出测试 / unchanged 498",
+      "lastName": "导出测试 / unchanged 501"
+    }
+  ],
+  "total": 504,
+  "uniqueNames": 504,
+  "userNamesPreserved": true
+}

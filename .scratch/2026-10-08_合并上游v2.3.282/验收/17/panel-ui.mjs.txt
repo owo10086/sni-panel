@@ -1,0 +1,30 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import {createRequire} from 'node:module';
+import {pathToFileURL} from 'node:url';
+const root=process.cwd(),directory='/private/tmp/forwardx-282-ticket17/ui';fs.mkdirSync(directory,{recursive:true});
+process.env.DATABASE_TYPE='sqlite';process.env.DATABASE_CONFIG_PATH=path.join(directory,'database.json');process.env.SQLITE_PATH=path.join(directory,'panel.db');process.env.FORWARDX_SEAMLESS_MIGRATION_STATE_PATH=path.join(directory,'migration.json');process.env.FORWARDX_LOG_DIR=path.join(directory,'logs');process.env.FORWARDX_DEV_PANEL='true';process.env.JWT_SECRET='ticket17-isolated-browser-session';
+const source=f=>import(pathToFileURL(path.join(root,f)).href);
+const require=createRequire(path.join(root,'package.json'));const express=require('express'),cookieParser=require('cookie-parser');const {createExpressMiddleware}=require('@trpc/server/adapters/express');const {createServer}=await import(pathToFileURL(require.resolve('vite')).href);
+const runtime=await source('server/dbRuntime.ts');const {ensureDatabaseSchema}=await source('server/dbSchema.ts');const users=await source('server/repositories/userRepository.ts');const db=await source('server/db.ts');const {appRouter}=await source('server/routers.ts');const {createContext}=await source('server/_core/context.ts');const {issueLoginSession}=await source('server/routers/auth.ts');const state=await source('server/seamlessMigrationState.ts');const {migrationRouter}=await source('server/migration.ts');const {registerLocaleHintRoute}=await source('server/localeHint.ts');const {registerDatabaseHealthRoutes}=await source('server/databaseHealthRoutes.ts');
+await runtime.connectDatabase({type:'sqlite',sqlite:{path:process.env.SQLITE_PATH}});await ensureDatabaseSchema();
+if(!(await users.getUserByUsername('mobile-admin'))) {await users.createUser({username:'mobile-admin',password:'ticket17-browser-password',name:'移动验收管理员',role:'admin'});await db.setSettings({siteTitle:'sni-panel 移动验收',panelPublicUrl:'http://127.0.0.1:18871',setupCompleted:'true',setupDataChoice:'fresh',siteLanguage:'zh-CN',telegramBotEnabled:'false',discordBotEnabled:'false',authCaptchaEnabled:'false'});}
+const app=express();app.use(express.json());app.use(cookieParser());
+app.get('/__ticket17/guest',(req,res)=>{res.clearCookie('app_session_id');res.redirect('/login?lang='+encodeURIComponent(req.query.lang||'en')+'&platform=ios&safe=1')});
+app.post('/__ticket17/state',(req,res)=>{state.persistSeamlessMigrationState(req.body.state);res.json({saved:true});});
+app.get('/__ticket17/as-admin',async(req,res,next)=>{try{await issueLoginSession({req,res},await users.getUserByUsername('mobile-admin'),'browser');res.redirect('/profile?lang='+encodeURIComponent(req.query.lang||'zh-CN')+'&scenario='+encodeURIComponent(req.query.scenario||'missing')+'&platform='+encodeURIComponent(req.query.platform||'android'));}catch(e){next(e)}});
+app.use('/api/trpc',(req,res,next)=>{fs.appendFileSync(path.join(directory,'requests.jsonl'),JSON.stringify({path:req.path,method:req.method})+'\n');next();});
+registerLocaleHintRoute(app);registerDatabaseHealthRoutes(app);app.use(state.seamlessAdmissionMiddleware);app.use(migrationRouter);app.use('/api/trpc',createExpressMiddleware({router:appRouter,createContext}));
+app.get('/__ticket17/releases',(req,res)=>{
+  const scenario=String(req.query.scenario||'missing'),platform=String(req.query.platform||'android');
+  const name=platform==='ios'?'forwardx-ios-v1.0.1-unsigned.ipa':'forwardx-android-v2.4.0.apk';
+  fs.appendFileSync(path.join(directory,'mobile-events.jsonl'),JSON.stringify({event:'releases',scenario,platform,requestedSource:req.query.source})+'\n');
+  if(scenario==='error')return res.status(503).json({message:'isolated GitHub failure'});
+  res.json([{tag_name:'v3.3.0',html_url:'https://github.com/poouo/Forwardx/releases/tag/v2.3.282',assets:scenario==='missing'?[]:[{name}]}]);
+});
+app.post('/__ticket17/event',(req,res)=>{fs.appendFileSync(path.join(directory,'mobile-events.jsonl'),JSON.stringify(req.body)+'\n');res.json({ok:true})});
+const plugin={name:'ticket17-mobile-boundary',transformIndexHtml(html){return html.replace('<head>','<head><script type="module" src="/__ticket17/bridge.js"></script>')},configureServer(viteServer){viteServer.middlewares.use('/__ticket17/bridge.js',(_req,res)=>{res.setHeader('Content-Type','text/javascript');res.end(fs.readFileSync('/private/tmp/forwardx-282-ticket17/bridge.js','utf8'))})}};
+const vite=await createServer({configFile:path.join(root,'vite.config.ts'),root,plugins:[plugin],resolve:{alias:{'@capacitor/app':'/private/tmp/forwardx-282-ticket17/native.ts','@capacitor/browser':'/private/tmp/forwardx-282-ticket17/native.ts','@capacitor/local-notifications':'/private/tmp/forwardx-282-ticket17/native.ts','@capacitor/preferences':'/private/tmp/forwardx-282-ticket17/native.ts'}},server:{middlewareMode:true,hmr:{port:18873},fs:{allow:[root,'/private/tmp/forwardx-282-ticket17']}},appType:'spa'});
+app.get('/__ticket17/notifications',async(req,res,next)=>{try{res.type('html').send(await vite.transformIndexHtml(req.originalUrl,'<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"></head><body><div id="root"></div><script type="module" src="/@fs/private/tmp/forwardx-282-ticket17/notifications.tsx"></script></body></html>'))}catch(e){next(e)}});
+app.use(vite.middlewares);const server=app.listen(18871,'127.0.0.1',()=>console.log('UI ready http://127.0.0.1:18871/__ticket17/as-admin'));
+let stopping=false;const stop=async()=>{if(stopping)return;stopping=true;server.closeAllConnections();await new Promise(r=>server.close(r));await vite.close();state.persistSeamlessMigrationState(null);await runtime.closeDatabase();process.exit(0)};process.on('SIGTERM',stop);process.on('SIGINT',stop);

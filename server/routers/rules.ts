@@ -15,6 +15,7 @@ import { isHostStatusOnline } from "../hostStatusNotifier";
 import { normalizeSniValue } from "@shared/sni";
 import type { ForwardRule } from "../../drizzle/schema";
 import { getSniEntryHostVersionStatuses, getSniEntryPortOverview } from "../sniEntryPortOverview";
+import { assertRuleWritable } from "../../shared/ruleLimits";
 
 type SniRuntimeEndpointStatus = {
   hostId: number;
@@ -33,7 +34,7 @@ type SniRuntimeRuleStatus = {
   exit: SniRuntimeEndpointStatus;
 };
 
-type ForwardRuleView = ForwardRule & {
+type ForwardRuleView = Omit<ForwardRule, never> & {
   sniRuntime?: SniRuntimeRuleStatus;
   portOccupancyWarnings?: RulePortWarning[];
   portBindFailure?: string | null;
@@ -368,12 +369,12 @@ export const rulesRouter = router({
     }),
   getById: protectedProcedure
     .input(z.object({ id: z.number() }))
-    .query(async ({ input, ctx }) => {
+    .query(async ({ input, ctx }): Promise<ForwardRuleView | null | undefined> => {
       const rule = await db.getForwardRuleById(input.id);
       if (!rule) return null;
       if (ctx.user.role !== "admin" && rule.userId !== ctx.user.id) return null;
       if (ctx.user.role !== "admin" && isManagedForwardGroupChildRule(rule)) return null;
-      return withRuleResourceAccess(rule, ctx.user);
+      return withRuleResourceAccess(rule as ForwardRule, ctx.user) as Promise<ForwardRuleView | null | undefined>;
     }),
   reorder: protectedProcedure
     .input(z.object({
@@ -382,6 +383,14 @@ export const rulesRouter = router({
       startIndex: z.number().int().min(0).max(1_000_000).optional().default(0),
     }))
     .mutation(async ({ input, ctx }) => {
+      if (ctx.user.role !== "admin") {
+        // Validate the entire batch before the first write.
+        for (const id of input.ids) {
+          const rule = await db.getForwardRuleById(id);
+          if (!rule) throw new Error("规则不存在");
+          assertRuleWritable(ctx.user, rule);
+        }
+      }
       await db.reorderForwardRules(input.category, input.ids, ctx.user.role === "admin" ? undefined : ctx.user.id, input.startIndex);
       return { success: true };
     }),

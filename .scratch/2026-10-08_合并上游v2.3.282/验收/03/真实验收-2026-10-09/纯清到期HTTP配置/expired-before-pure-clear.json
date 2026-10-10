@@ -1,0 +1,21 @@
+{
+  "role": "sni-splitter",
+  "ruleId": 102,
+  "listenPort": 24000,
+  "protocol": "tcp",
+  "sniRouteVersion": 21,
+  "sourceAllowIps": [],
+  "sniRoutes": [
+    {
+      "sni": "web.example.com",
+      "ruleId": 102,
+      "targetIp": "203.0.113.21",
+      "targetPort": 8443,
+      "limitIn": 0,
+      "limitOut": 0,
+      "maxConnections": 0,
+      "maxIPs": 0,
+      "accessScope": "u1_t7"
+    }
+  ]
+}

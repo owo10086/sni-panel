@@ -1,0 +1,31 @@
+- generic: Language
+- combobox "Language":
+  - option "Automatic (browser / IP)"
+  - option "Simplified Chinese"
+  - option "English" [selected]
+- button "Toggle Theme":
+- main:
+  - img "ForwardX"
+  - generic: ForwardX
+  - generic: Welcome Back
+  - generic: Sign in to your account to continue
+  - text: Username or email
+  - textbox "Username or email" [active]:
+    - /placeholder: Please enter a username or email
+  - text: Password
+  - textbox "Password":
+    - /placeholder: Please enter the password.
+  - button:
+  - button "Log In":
+    - text: Log In
+  - button "Continue with Google":
+    - text: Continue with Google
+  - generic: or
+  - text: Log In with Telegram
+  - button "Open Telegram Login":
+    - text: Open Telegram Login
+  - paragraph: Available to linked accounts. Click to connect and verify your account.
+  - button "Don't have an account? Sign up"
+- region "Notifications alt+T":
+  - list:
+    - generic: Google sign-in expired or the browser cookie did not match. Start again.

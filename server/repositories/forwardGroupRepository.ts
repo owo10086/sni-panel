@@ -128,6 +128,7 @@ type SyncForwardGroupRulesOptions = {
   createMissing?: boolean;
   preserveRuntime?: boolean;
   deferRefresh?: boolean;
+  prioritizeTemplateRuleId?: number;
 };
 
 function nullableNumber(value: unknown) {
@@ -3419,6 +3420,13 @@ async function syncForwardGroupRulesUnlocked(groupId: number, options: SyncForwa
       }
     }
     return;
+  }
+
+  // Move the edited template's children before validating the other templates.
+  // Until then its old entry child still occupies the previous shared port.
+  if (options.prioritizeTemplateRuleId) {
+    const updatedIndex = templates.findIndex((template: { id: unknown }) => Number(template.id) === options.prioritizeTemplateRuleId);
+    if (updatedIndex > 0) templates.unshift(...templates.splice(updatedIndex, 1));
   }
 
   const runtimeDependenciesEnabled = await forwardGroupRuntimeDependenciesEnabled(group);

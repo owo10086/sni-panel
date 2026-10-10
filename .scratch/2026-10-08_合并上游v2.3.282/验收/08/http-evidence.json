@@ -1,0 +1,92 @@
+{
+  "syntheticAgentPayload": true,
+  "realEncryptedHeartbeatRoute": true,
+  "realSSERefreshEvent": {
+    "name": "agent-refresh",
+    "data": {
+      "reason": "public-metrics-watch",
+      "ts": 1791564617152,
+      "urgent": false,
+      "forceMimicCheck": false
+    }
+  },
+  "heartbeatResponse": {
+    "portRuleManifestRevision": 0,
+    "portRuleManifestSignature": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "portRuleManifest": [],
+    "success": true,
+    "actions": [],
+    "selfTests": [],
+    "lookingGlassTests": [],
+    "iperf3Tasks": [],
+    "pluginTasks": [],
+    "agentUpgrade": null,
+    "panelUrl": "",
+    "forceTcping": false,
+    "nextInterval": 3,
+    "requestLocalState": false,
+    "compactReports": true,
+    "presenceSupported": true,
+    "metricsOnly": true,
+    "trafficReportInterval": 10,
+    "requestPortOccupancy": false
+  },
+  "refreshedAt": "2026-10-09T16:50:17.266Z",
+  "metrics": [
+    {
+      "hostId": 1,
+      "cpuUsage": 68,
+      "memoryUsage": 45,
+      "memoryUsed": null,
+      "swapUsage": null,
+      "swapUsed": null,
+      "swapTotal": null,
+      "networkSpeedIn": 0,
+      "networkIn": 100000,
+      "networkOut": 150000,
+      "networkSpeedOut": 0,
+      "diskUsage": 13,
+      "diskUsed": null,
+      "diskTotal": null,
+      "uptime": 900,
+      "recordedAt": "2026-10-09T16:50:17.000Z"
+    },
+    {
+      "hostId": 2,
+      "cpuUsage": 57,
+      "memoryUsage": 40,
+      "memoryUsed": null,
+      "swapUsage": null,
+      "swapUsed": null,
+      "swapTotal": null,
+      "networkSpeedIn": null,
+      "networkIn": 1000,
+      "networkOut": 2000,
+      "networkSpeedOut": null,
+      "diskUsage": 12,
+      "diskUsed": null,
+      "diskTotal": null,
+      "uptime": 600,
+      "recordedAt": "2026-10-09T16:41:47.000Z"
+    }
+  ],
+  "detailMetric": {
+    "hostId": 1,
+    "cpuUsage": 68,
+    "memoryUsage": 45,
+    "memoryUsed": null,
+    "swapUsage": null,
+    "swapUsed": null,
+    "swapTotal": null,
+    "networkSpeedIn": 0,
+    "networkIn": 100000,
+    "networkOut": 150000,
+    "networkSpeedOut": 0,
+    "diskUsage": 13,
+    "diskUsed": null,
+    "diskTotal": null,
+    "uptime": 900,
+    "recordedAt": "2026-10-09T16:50:17.000Z"
+  },
+  "missingHostRejected": true
+}

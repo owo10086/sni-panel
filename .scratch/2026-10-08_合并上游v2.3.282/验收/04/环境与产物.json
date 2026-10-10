@@ -1,0 +1,36 @@
+{
+  "date": "2026-10-09",
+  "timezone": "Asia/Shanghai",
+  "head": "b258398e55ab1bee06eedcc1475a96bd7a79ff83",
+  "image": "forwardx-sni-test:20261006",
+  "linuxArchitecture": "arm64",
+  "artifacts": {
+    "agent-before": "bf7df8646dfad54cbe0984387b62cd734000931bc3dd83255c00cd1fc36d8039",
+    "released-agent": "fd783c076476e49d2db4097e2f0a486ad87a7c1e14376cec83da8e1a3bbeabff",
+    "forwardx-agent": "1d5a6650100282b1b2a22fd0cb7ebe03515de58ca851a77434334d8858bad592",
+    "forwardx-fxp": "9bd10091c929869bfe01fb29d829e8b8778203ce97f3c6de81ee2f59d7c89dc2",
+    "agent-tests": "ece39246d2b2aeb2c0bd353146b5c1faf1e43a775f237609155e2739b9880d8d",
+    "fxp-tests": "3f9f02b01b12eca8aa8cef29f28d983a8da238cecd09c538eb050bd974f7cd46"
+  },
+  "tests": {
+    "agent-full": {
+      "pass": 458,
+      "skip": 2,
+      "fail": 0
+    },
+    "fxp-full": {
+      "pass": 125,
+      "skip": 0,
+      "fail": 0
+    }
+  },
+  "retiredSnapshotCount": 6,
+  "productionOperations": "只读核对，未重启或升级生产主机",
+  "upgradeScope": "隔离环境将已发布3.2.0 Agent替换为当前3.3.0候选二进制；正式安装器与生产上线属于工单20",
+  "verificationScriptSha256": "f38b23fcef2004271403ebb3955f40ddfc5a4f657c357807f1e0706732e73839",
+  "linuxVet": {
+    "agent": 0,
+    "fxp": 0
+  },
+  "fixtureStopped": true
+}

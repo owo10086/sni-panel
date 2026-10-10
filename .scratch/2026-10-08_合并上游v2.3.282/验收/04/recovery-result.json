@@ -1,0 +1,13 @@
+{
+  "retiredSnapshotCount": 6,
+  "retiredPort": 56392,
+  "livePort": 24000,
+  "livePid": 38,
+  "stages": [
+    "cold",
+    "restart",
+    "released-agent-to-candidate",
+    "actual-panel-heartbeat-confirmation"
+  ],
+  "runtime": "State  Recv-Q Send-Q Local Address:Port  Peer Address:PortProcess                      \nLISTEN 0      511     203.0.113.20:443        0.0.0.0:*    users:((\"node\",pid=1,fd=19))\nLISTEN 0      511        127.0.0.1:34709      0.0.0.0:*    users:((\"node\",pid=1,fd=18))\nLISTEN 0      4096               *:24000            *:*    users:((\"forwardx-fxp\",pid=590,fd=3))\n"
+}

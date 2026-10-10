@@ -1,15 +1,16 @@
 import { and, desc, eq, isNull, or } from "drizzle-orm";
 import { forwardTests, InsertForwardTest, tunnelLatencyStats } from "../../drizzle/schema";
 import { executeRaw, getDb, insertAndGetId, nowDate, queryRaw, rawAffectedRows } from "../dbRuntime";
-import { quoteIdentifier } from "../dbCompat";
-import { selfTestSweepActivity } from "../selfTestTiming";
+import { quoteIdentifier, boolLiteral } from "../dbCompat";
+import { selfTestSweepActivity, SELF_TEST_MAX_LIFETIME_SECONDS, selfTestTimeoutSeconds } from "../selfTestTiming";
+import { structuredLinkTestMessage } from "../linkTestMessages";
 
 // ==================== Forward Tests ====================
 
 export async function createForwardTest(data: InsertForwardTest) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
-  const id = await insertAndGetId("forward_tests", data as any);
+  const id = await insertAndGetId("forward_tests", { ...data, requestMessage: data.requestMessage ?? data.message } as any);
   selfTestSweepActivity.markActive();
   return id;
 }
@@ -29,17 +30,26 @@ export async function hasActiveForwardTests() {
 
 const FORWARD_TEST_LEASE_SECONDS = 8;
 
+function dispatchTimeoutSeconds(row: any) {
+  try { return selfTestTimeoutSeconds(JSON.parse(row.requestMessage ?? row.message ?? "null")); }
+  catch { return selfTestTimeoutSeconds(null); }
+}
+
 export async function getPendingForwardTestsByHost(hostId: number, leaseSeconds = FORWARD_TEST_LEASE_SECONDS) {
   const cutoff = Math.floor((Date.now() - Math.max(1, leaseSeconds) * 1000) / 1000);
-  return queryRaw<any>(
+  const rows = await queryRaw<any>(
     `SELECT *
        FROM ${quoteIdentifier("forward_tests")}
       WHERE ${quoteIdentifier("hostId")} = ?
+        AND ${quoteIdentifier("createdAt")} >= ?
         AND (${quoteIdentifier("status")} = 'pending'
           OR (${quoteIdentifier("status")} = 'running' AND ${quoteIdentifier("updatedAt")} < ?))
       ORDER BY ${quoteIdentifier("createdAt")} ASC, ${quoteIdentifier("id")} ASC`,
-    [hostId, cutoff],
+    [hostId, Math.floor(Date.now() / 1000) - SELF_TEST_MAX_LIFETIME_SECONDS, cutoff],
   );
+  const now = Math.floor(Date.now() / 1000);
+  return rows.filter(row => row.status !== "running"
+    || Number(row.firstDispatchedAt ?? row.updatedAt) >= now - dispatchTimeoutSeconds(row));
 }
 
 export async function markForwardTestRunning(id: number, leaseSeconds = FORWARD_TEST_LEASE_SECONDS) {
@@ -47,14 +57,20 @@ export async function markForwardTestRunning(id: number, leaseSeconds = FORWARD_
   if (!db) return false;
   const q = quoteIdentifier;
   const cutoff = Math.floor((Date.now() - Math.max(1, leaseSeconds) * 1000) / 1000);
+  const [row] = await queryRaw<any>(`SELECT * FROM ${q("forward_tests")} WHERE ${q("id")} = ?`, [id]);
+  if (!row) return false;
+  const runningCutoff = Math.floor(Date.now() / 1000) - dispatchTimeoutSeconds(row);
   const result = await executeRaw(
     `UPDATE ${q("forward_tests")}
-     SET ${q("status")} = 'running',
+     SET ${q("firstDispatchedAt")} = COALESCE(${q("firstDispatchedAt")}, CASE WHEN ${q("status")} = 'running' THEN ${q("updatedAt")} ELSE ? END),
+         ${q("status")} = 'running',
          ${q("updatedAt")} = ?
      WHERE ${q("id")} = ?
+       AND ${q("createdAt")} >= ?
        AND (${q("status")} = 'pending'
-         OR (${q("status")} = 'running' AND ${q("updatedAt")} < ?))`,
-    [nowDate(), id, cutoff],
+         OR (${q("status")} = 'running' AND ${q("updatedAt")} < ?
+           AND COALESCE(${q("firstDispatchedAt")}, ${q("updatedAt")}) >= ?))`,
+    [nowDate(), nowDate(), id, Math.floor(Date.now() / 1000) - SELF_TEST_MAX_LIFETIME_SECONDS, cutoff, runningCutoff],
   );
   const claimed = rawAffectedRows(result) > 0;
   if (claimed) selfTestSweepActivity.markActive();
@@ -133,18 +149,37 @@ export async function getLatestForwardTest(ruleId: number, options: { includeAct
   const ruleCol = quoteIdentifier("ruleId");
   const statusCol = quoteIdentifier("status");
   const idCol = quoteIdentifier("id");
-  const updatedCol = quoteIdentifier("updatedAt");
-  const createdCol = quoteIdentifier("createdAt");
-  const messageCol = quoteIdentifier("message");
+  const batchCol = quoteIdentifier("batchId");
+  const [newest] = await queryRaw<any>(`SELECT * FROM ${table} WHERE ${ruleCol} = ? ORDER BY ${idCol} DESC LIMIT 1`, [ruleId]);
+  if (!newest) return undefined;
   if (options.includeActive !== false) {
+    if (String(newest.batchId || "").startsWith("fc-")) {
+      const batch = await queryRaw<any>(`SELECT * FROM ${table} WHERE ${ruleCol} = ? AND ${batchCol} = ? ORDER BY ${idCol}`, [ruleId, newest.batchId]);
+      if (batch.some(row => ["pending", "running"].includes(row.status))) {
+        const meta = JSON.parse(batch[0].requestMessage);
+        const details = batch.map(row => {
+          const request = JSON.parse(row.requestMessage);
+          const pending = ["pending", "running"].includes(row.status);
+          const success = row.status === "success" && Number(row.latencyMs) > 0;
+          return { ...request, pending, success, latencyMs: success ? Number(row.latencyMs) : null,
+            message: pending ? null : row.status === "timeout" ? "探测超时：未收到 Agent 结果" : row.message };
+        });
+        return { ...newest, status: "pending", latencyMs: null,
+          message: structuredLinkTestMessage({ kind: "forward-chain-hop-pending", groupId: Number(meta.groupId), details,
+            message: `转发链逐跳探测中：${details.filter(detail => !detail.pending).length}/${details.length} 段已完成` }) };
+      }
+    }
     const pendingRows = await queryRaw<any>(
-      `SELECT * FROM ${table} WHERE ${ruleCol} = ? AND ${statusCol} IN ('pending', 'running') ORDER BY ${updatedCol} DESC, ${createdCol} DESC, ${idCol} DESC LIMIT 1`,
-      [ruleId],
+      `SELECT * FROM ${table} WHERE ${ruleCol} = ? AND ${statusCol} IN ('pending', 'running')
+       AND (${idCol} = ? OR (${batchCol} = ? AND ${batchCol} IS NOT NULL)) ORDER BY ${idCol} DESC LIMIT 1`,
+      [ruleId, newest.id, newest.batchId],
     );
     if (pendingRows[0]) return pendingRows[0];
   }
   const rows = await queryRaw<any>(
-    `SELECT * FROM ${table} WHERE ${ruleCol} = ? AND ${statusCol} IN ('success', 'failed', 'timeout') ORDER BY ${updatedCol} DESC, CASE WHEN ${messageCol} LIKE '%forward-chain-hop-summary%' OR ${messageCol} LIKE '%"kind":"forward-via-tunnel"%' THEN 0 ELSE 1 END, ${createdCol} DESC, ${idCol} DESC LIMIT 1`,
+    `SELECT * FROM ${table} WHERE ${ruleCol} = ? AND ${statusCol} IN ('success', 'failed', 'timeout')
+     AND (${batchCol} IS NULL OR ${batchCol} NOT LIKE 'fc-%' OR ${quoteIdentifier("batchSettled")} = ${boolLiteral(true)})
+     ORDER BY ${idCol} DESC LIMIT 1`,
     [ruleId],
   );
   return rows[0];

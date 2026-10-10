@@ -1,0 +1,217 @@
+--- a/.github/workflows/ios-ipa.yml
++++ b/.github/workflows/ios-ipa.yml
+@@ -61,7 +61,7 @@
+ 
+       - name: Explain signing requirements
+         run: |
+-          echo '### ForwardX iOS IPA' >> "$GITHUB_STEP_SUMMARY"
++          echo '### sni-panel iOS IPA' >> "$GITHUB_STEP_SUMMARY"
+           echo 'Unsigned arm64 IPA for iOS 15+. Sign with your own certificate/profile or sideloading tool before installing. No Apple secrets are required. This does not publish to App Store/TestFlight.' >> "$GITHUB_STEP_SUMMARY"
+           echo 'Manual runs: download forwardx-ios-ipa from Actions artifacts. Tag builds: also attached to the corresponding panel Release.' >> "$GITHUB_STEP_SUMMARY"
+ 
+--- a/client/src/i18n/en.json
++++ b/client/src/i18n/en.json
+@@ -1362,7 +1362,7 @@
+   "检查 APP 更新": "Check APP Updates",
+   "检查并升级 ForwardX。": "Check and upgrade ForwardX.",
+   "检查插件更新失败": "Failed to check plugin update",
+-  "检查当前 APP 是否有新版本。": "Checks if there is a new version of the current APP.",
++  "检查当前 APP 是否有新版本。": "Check for a new app version.",
+   "检查到新版本后可复制脚本到服务器执行，脚本会覆盖原有 ForwardX 容器。": "Check the new version and copy the script to the server for execution, which will cover the original ForwardX packaging.",
+   "检查发布资产": "Check release assets",
+   "检查更新": "Check for updates",
+@@ -2333,7 +2333,7 @@
+   "使用示例": "Use Example",
+   "使用隧道": "Use of tunnels",
+   "使用以前的数据": "Use previous data",
+-  "使用邮箱注册 ForwardX 账户": "Create a ForwardX account with your email",
++  "使用邮箱注册 sni-panel 账户": "Create a sni-panel account with your email",
+   "使用转发链": "Use forwarding chain",
+   "使用转发组": "Use forwarding group",
+   "使用自定义 H5": "Use custom H5",
+--- a/client/src/index.css
++++ b/client/src/index.css
+@@ -503,8 +503,18 @@
+ 
+   html.capacitor-native .mobile-login-screen {
+     min-height: 100dvh;
+-    padding-top: max(0.75rem, env(safe-area-inset-top));
+-    padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
++    padding-top: max(0.75rem, var(--forwardx-safe-area-top));
++    padding-bottom: max(0.75rem, var(--forwardx-safe-area-bottom));
++  }
++
++  .mobile-auth-controls {
++    top: 1rem;
++    right: 1rem;
++  }
++
++  html.capacitor-native .mobile-auth-controls {
++    top: calc(1rem + var(--forwardx-safe-area-top));
++    right: max(1rem, env(safe-area-inset-right, 0px));
+   }
+ 
+   html.capacitor-native [data-latency-stats="true"] {
+--- a/client/src/pages/Login.tsx
++++ b/client/src/pages/Login.tsx
+@@ -302,7 +302,7 @@
+   });
+   const registrationEnabled = emailConfig?.registrationEnabled !== false;
+   const registrationCaptchaEnabled = emailConfig?.authCaptchaEnabled !== false;
+-  const siteTitle = "ForwardX";
++  const siteTitle = "sni-panel";
+   const logoSrc = resolvedTheme === "dark" ? "/logo-dark.png" : "/logo-light.png";
+ 
+   useEffect(() => {
+@@ -870,7 +870,7 @@
+   return (
+     <div className="mobile-login-screen auth-shell relative min-h-screen overflow-hidden">
+       <div className="auth-grid-overlay pointer-events-none absolute inset-0 opacity-[0.14]" />
+-      <div className="absolute right-4 top-4 z-20 flex items-center gap-2">
++      <div className="mobile-auth-controls absolute z-20 flex items-center gap-2">
+         <LanguageSelector compact />
+         {mobileAuth.isNative && (
+           <button
+@@ -956,7 +956,7 @@
+                 {mode === "login" ? translateText("欢迎回来") : translateText("创建账号")}
+               </CardTitle>
+               <CardDescription className="mt-1 text-sm text-muted-foreground">
+-                {isTelegramPending ? translateText("正在通过 Telegram 登录") : mode === "login" ? translateText("登录账号以继续") : translateText("使用邮箱注册 ForwardX 账户")}
++                {isTelegramPending ? translateText("正在通过 Telegram 登录") : mode === "login" ? translateText("登录账号以继续") : translateText("使用邮箱注册 sni-panel 账户")}
+               </CardDescription>
+             </CardHeader>
+             <CardContent className="px-0">
+--- a/client/src/pages/Profile.tsx
++++ b/client/src/pages/Profile.tsx
+@@ -701,7 +701,7 @@
+           <CardHeader>
+             <CardTitle className="flex items-center gap-2 text-base">
+               <Download className="h-4 w-4 text-primary" />{translateText("软件更新")}</CardTitle>
+-            <CardDescription>{translateText("检查当前 APP 是否有新版本。")}{mobileAuth.platform === "ios" && translateText("iOS 提供未签名 IPA，需要自行签名后安装。")}
++            <CardDescription>{translateText("检查当前 APP 是否有新版本。")}{mobileAuth.platform === "ios" && <> {translateText("iOS 提供未签名 IPA，需要自行签名后安装。")}</>}
+             </CardDescription>
+           </CardHeader>
+           <CardContent className="space-y-4">
+--- a/ios/App/App.xcodeproj/project.pbxproj
++++ b/ios/App/App.xcodeproj/project.pbxproj
+@@ -7,6 +7,7 @@
+ 	objects = {
+ 
+ /* Begin PBXBuildFile section */
++		A01700000000000000000001 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = A01700000000000000000002 /* InfoPlist.strings */; };
+ 		A01100000000000000000001 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = A01100000000000000000002 /* PrivacyInfo.xcprivacy */; };
+ 		2FAD9763203C412B000D30F8 /* config.xml in Resources */ = {isa = PBXBuildFile; fileRef = 2FAD9762203C412B000D30F8 /* config.xml */; };
+ 		4D22ABE92AF431CB00220026 /* CapApp-SPM in Frameworks */ = {isa = PBXBuildFile; productRef = 4D22ABE82AF431CB00220026 /* CapApp-SPM */; };
+@@ -19,6 +20,8 @@
+ /* End PBXBuildFile section */
+ 
+ /* Begin PBXFileReference section */
++		A01700000000000000000003 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
++		A01700000000000000000004 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
+ 		A01100000000000000000002 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+ 		2FAD9762203C412B000D30F8 /* config.xml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = config.xml; sourceTree = "<group>"; };
+ 		50379B222058CBB4000EE86E /* capacitor.config.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = capacitor.config.json; sourceTree = "<group>"; };
+@@ -70,6 +73,7 @@
+ 				504EC30E1FED79650016851F /* Assets.xcassets */,
+ 				504EC3101FED79650016851F /* LaunchScreen.storyboard */,
+ 				504EC3131FED79650016851F /* Info.plist */,
++				A01700000000000000000002 /* InfoPlist.strings */,
+ 				A01100000000000000000002 /* PrivacyInfo.xcprivacy */,
+ 				2FAD9762203C412B000D30F8 /* config.xml */,
+ 				50B271D01FEDC1A000F3C39B /* public */,
+@@ -122,6 +126,7 @@
+ 			hasScannedForEncodings = 0;
+ 			knownRegions = (
+ 				en,
++				"zh-Hans",
+ 				Base,
+ 			);
+ 			mainGroup = 504EC2FB1FED79650016851F;
+@@ -143,6 +148,7 @@
+ 			buildActionMask = 2147483647;
+ 			files = (
+ 				504EC3121FED79650016851F /* LaunchScreen.storyboard in Resources */,
++				A01700000000000000000001 /* InfoPlist.strings in Resources */,
+ 				A01100000000000000000001 /* PrivacyInfo.xcprivacy in Resources */,
+ 				50B271D11FEDC1A000F3C39B /* public in Resources */,
+ 				504EC30F1FED79650016851F /* Assets.xcassets in Resources */,
+@@ -166,6 +172,15 @@
+ /* End PBXSourcesBuildPhase section */
+ 
+ /* Begin PBXVariantGroup section */
++		A01700000000000000000002 /* InfoPlist.strings */ = {
++			isa = PBXVariantGroup;
++			children = (
++				A01700000000000000000003 /* en */,
++				A01700000000000000000004 /* zh-Hans */,
++			);
++			name = InfoPlist.strings;
++			sourceTree = "<group>";
++		};
+ 		504EC30B1FED79650016851F /* Main.storyboard */ = {
+ 			isa = PBXVariantGroup;
+ 			children = (
+--- a/ios/App/App/Info.plist
++++ b/ios/App/App/Info.plist
+@@ -7,7 +7,7 @@
+ 	<key>CFBundleDevelopmentRegion</key>
+ 	<string>en</string>
+ 	<key>CFBundleDisplayName</key>
+-        <string>ForwardX</string>
++        <string>sni-panel</string>
+ 	<key>CFBundleExecutable</key>
+ 	<string>$(EXECUTABLE_NAME)</string>
+ 	<key>CFBundleIdentifier</key>
+@@ -33,7 +33,7 @@
+ 		<true/>
+ 	</dict>
+ 	<key>NSLocalNetworkUsageDescription</key>
+-	<string>连接您指定的局域网 ForwardX 面板以管理主机和转发规则。</string>
++	<string>Connect to your selected local sni-panel server to manage hosts and forwarding rules.</string>
+ 	<key>UILaunchStoryboardName</key>
+ 	<string>LaunchScreen</string>
+ 	<key>UIMainStoryboardFile</key>
+--- a/ios/App/App/en.lproj/InfoPlist.strings
++++ b/ios/App/App/en.lproj/InfoPlist.strings
+@@ -0,0 +1,2 @@
++"CFBundleDisplayName" = "sni-panel";
++"NSLocalNetworkUsageDescription" = "Connect to your selected local sni-panel server to manage hosts and forwarding rules.";
+--- a/ios/App/App/zh-Hans.lproj/InfoPlist.strings
++++ b/ios/App/App/zh-Hans.lproj/InfoPlist.strings
+@@ -0,0 +1,2 @@
++"CFBundleDisplayName" = "sni-panel";
++"NSLocalNetworkUsageDescription" = "连接您指定的局域网 sni-panel 面板，以管理主机和转发规则。";
+--- a/scripts/build-ios-ipa.mjs
++++ b/scripts/build-ios-ipa.mjs
+@@ -58,7 +58,21 @@
+   }
+   const executable = readPlist("CFBundleExecutable");
+   if (path.basename(executable) !== executable) throw new Error("Invalid app executable");
+-  run("lipo", [path.join(app, executable), "-verify_arch", "arm64"]);
++  if (run("lipo", [path.join(app, executable), "-archs"], true) !== "arm64") {
++    throw new Error("Expected an arm64-only device executable");
++  }
++  if (readPlist("CFBundleDisplayName") !== "sni-panel" || readPlist("MinimumOSVersion") !== "15.0"
++    || readPlist("UIDeviceFamily:0") !== "1" || readPlist("UIDeviceFamily:1") !== "2") {
++    throw new Error("Expected sni-panel for iOS/iPadOS 15+");
++  }
++  for (const language of ["en", "zh-Hans"]) {
++    if (!fs.existsSync(path.join(app, `${language}.lproj/InfoPlist.strings`))) {
++      throw new Error(`Built app is missing ${language} permission text`);
++    }
++  }
++  if (fs.existsSync(path.join(app, "embedded.mobileprovision")) || fs.existsSync(path.join(app, "_CodeSignature"))) {
++    throw new Error("Expected an unsigned app without a provisioning profile");
++  }
+   if (!fs.existsSync(path.join(app, "public/index.html")) || !fs.existsSync(path.join(app, "PrivacyInfo.xcprivacy"))) {
+     throw new Error("Built app is missing web assets or privacy manifest");
+   }
+@@ -80,7 +94,7 @@
+   const hash = createHash("sha256").update(fs.readFileSync(packed)).digest("hex");
+   fs.writeFileSync(path.join(output, `${name}.sha256`), `${hash}  ${name}\n`);
+   fs.writeFileSync(path.join(output, "README-IOS-SIGNING.txt"),
+-    "ForwardX iOS IPA (arm64, iOS 15+), unsigned.\nSign with your own certificate/provisioning profile or sideloading tool before installing.\nThis is not an App Store or TestFlight build. No Apple credentials are included.\nUse a trusted HTTPS panel; untrusted TLS certificates are not bypassed.\n");
++    "sni-panel iOS IPA (arm64, iOS/iPadOS 15+), unsigned.\nSign with your own certificate/provisioning profile or sideloading tool before installing.\nThis is not an App Store or TestFlight build. No Apple credentials are included.\nUse a trusted HTTPS panel; untrusted TLS certificates are not bypassed.\n");
+   console.log(`Unsigned IPA generated: ${path.join(output, name)}`);
+ }
+ 

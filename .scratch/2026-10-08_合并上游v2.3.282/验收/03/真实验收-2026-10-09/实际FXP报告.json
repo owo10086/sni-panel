@@ -1,0 +1,50 @@
+[
+  {
+    "reportId": "fxp-8b292a769f803551863c41e31a2cf591",
+    "reportProducerId": "fxp-c3a628b934d84ed66190ecd1889970606b357193af504d20eef341ca44f5e1c6",
+    "stats": [
+      {
+        "bytesIn": 33603308,
+        "bytesOut": 33615228,
+        "connections": 8,
+        "ruleId": 101
+      },
+      {
+        "bytesIn": 526414,
+        "bytesOut": 530860,
+        "connections": 3,
+        "ruleId": 102
+      }
+    ]
+  },
+  {
+    "reportId": "fxp-8b292a769f803551863c41e31a2cf591",
+    "reportProducerId": "fxp-c3a628b934d84ed66190ecd1889970606b357193af504d20eef341ca44f5e1c6",
+    "stats": [
+      {
+        "bytesIn": 33603308,
+        "bytesOut": 33615228,
+        "connections": 8,
+        "ruleId": 101
+      },
+      {
+        "bytesIn": 526414,
+        "bytesOut": 530860,
+        "connections": 3,
+        "ruleId": 102
+      }
+    ]
+  },
+  {
+    "reportId": "fxp-f2f2cd1733b77eaea044fea6a3e2a323",
+    "reportProducerId": "fxp-c3a628b934d84ed66190ecd1889970606b357193af504d20eef341ca44f5e1c6",
+    "stats": [
+      {
+        "bytesIn": 131701,
+        "bytesOut": 133191,
+        "connections": 1,
+        "ruleId": 101
+      }
+    ]
+  }
+]

@@ -1,0 +1,7 @@
+{
+  "checks": [
+    "web save restored public HTTP setting",
+    "web save restored registration verification",
+    "restored verification also applies to failed password sign-in"
+  ]
+}

@@ -1,0 +1,14 @@
+Browser tab: 3, Title: "sni-panel 09验收", URL: "http://127.0.0.1:18829/rules".
+The following is a diff from the previous accessibility tree with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
+Removed element IDs: 71-73, 80
+~				23 text 导入内容 填写一次入口端口，按行粘贴 SNI 分流规则。 待导入 0
+~				62 checkbox 文件导入, Value: 0
+~				68 checkbox SNI 分流, Value: 1
++				85 text 入口端口
++				86 stepper (settable, integer) 443
++				87 text 同一批 SNI 分流规则共用该入口端口，端口占用时会返回错误供修正。 SNI 规则列表
++				88 text entry area (settable)
++				89 text 导入目标 选择承载这批 SNI 分流规则的转发链。 已选择 1
++					90 image
+~				84 text 将导入到 用户端口 / Long port resource unchanged
+The focused UI element is 68 checkbox SNI 分流, Value: 1

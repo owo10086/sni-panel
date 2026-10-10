@@ -1,0 +1,56 @@
+{
+  "checks": [
+    {
+      "name": "admin settings return masked credentials and preserve both providers",
+      "passed": true
+    },
+    {
+      "name": "ordinary user cannot test-send or configure admin notification settings",
+      "passed": true
+    },
+    {
+      "name": "public Discord channel cannot consume a bind code",
+      "passed": true
+    },
+    {
+      "name": "ordinary user binding through Gateway preserves the old Telegram identity",
+      "passed": true
+    },
+    {
+      "name": "Discord subscription is stored independently",
+      "passed": true
+    },
+    {
+      "name": "ordinary bot queries work while admin enumeration is rejected",
+      "passed": true
+    },
+    {
+      "name": "Discord login creates a usable ordinary session and refuses the repeated code",
+      "passed": true
+    },
+    {
+      "name": "Discord unbind clears its subscription and keeps Telegram",
+      "passed": true
+    },
+    {
+      "name": "switching back to Telegram preserves Discord binding and subscription",
+      "passed": true
+    },
+    {
+      "name": "Telegram login through actual polling creates a session and is single-use",
+      "passed": true
+    },
+    {
+      "name": "Telegram announcement preference remains writable through the public account API",
+      "passed": true
+    },
+    {
+      "name": "Telegram unbind and new binding work through real polling and public account APIs",
+      "passed": true
+    },
+    {
+      "name": "final Discord selection keeps both saved configurations and admin bindings",
+      "passed": true
+    }
+  ]
+}

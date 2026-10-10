@@ -4,6 +4,8 @@ import { AGENT_VERSION } from "./_core/systemRouter";
 import { clearHostTcpingRequest, hasHostTcpingRequest, isHostMetricsWatching, pushAgentDesiredState } from "./agentEvents";
 import { AGENT_PLUGIN_TASK_VERSION, buildMetaAgentSelfTestPayload, buildRuleAgentSelfTestPayload, hasAgentVersionChanged, isAgentUpgradeTargetSatisfied, isAgentVersionAtLeast, parseSelfTestMeta, tunnelSecretSeed } from "./agentRouteUtils";
 import { resolveAgentAdvertisedPanelUrl } from "./agentPanelUrl";
+import { getSeamlessMigrationState } from "./seamlessMigrationState";
+import { recordSeamlessRuntimeReport } from "./seamlessPanelMigration";
 import { getAgentMigrationSwitchTarget, getPanelMigrationAgentDirective } from "./panelMigrationAgentState";
 import * as hopRepo from "./repositories/tunnelRepository";
 import crypto from "crypto";
@@ -67,7 +69,9 @@ import {
   normalizeSourceAllowIps,
   killByPatternCmd,
   removeManagedServiceCmd,
-  restartManagedServiceIfConfigChangedCmd,
+  GOST_API_DIR,
+  gostRuntimeApiConfig,
+  syncGostServiceIfConfigChangedCmd,
   restartMimicServiceIfConfigChangedCmd,
   shQuote,
   startManagedServiceCmd,
@@ -1224,6 +1228,8 @@ export function selectEffectiveForwardRateLimit(options: {
   tunnelLimitMbps?: unknown;
   forwardGroupId?: unknown;
   forwardGroupLimitMbps?: unknown;
+  ruleId?: unknown;
+  ruleLimitMbps?: unknown;
 }) {
   const userId = Math.max(0, Number(options.userId) || 0);
   const hostId = Math.max(0, Number(options.hostId) || 0);
@@ -1243,6 +1249,11 @@ export function selectEffectiveForwardRateLimit(options: {
       mbps: normalizeRateLimitMbps(options.forwardGroupLimitMbps),
       scope: `user-${userId}-host-${hostId}-group-${forwardGroupId}`,
       enabled: forwardGroupId > 0,
+    },
+    {
+      mbps: normalizeRateLimitMbps(options.ruleLimitMbps),
+      scope: `rule-${Number(options.ruleId) || 0}-host-${hostId}`,
+      enabled: Number(options.ruleId) > 0,
     },
   ].filter((candidate) => candidate.enabled !== false && candidate.mbps > 0);
   if (candidates.length === 0) return { mbps: 0, scope: "" };
@@ -1435,7 +1446,7 @@ agentRouter.post("/api/agent/presence", async (req: Request, res: Response) => {
     if (shouldPersistAgentPresence({ wasOnline, lastHeartbeat: (host as any).lastHeartbeat })) {
       await db.touchHostHeartbeat(host.id);
     }
-    if (!wasOnline) {
+    if (!wasOnline && getSeamlessMigrationState()?.phase !== "verifying") {
       // Presence has an eight-second client timeout and must remain a liveness-only
       // request. Runtime recovery is serialized separately and must not make an
       // already accepted presence look like a communication failure to the Agent.
@@ -1474,6 +1485,20 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
       return;
     }
     const wasOnline = isHostStatusOnline(host);
+    if (getSeamlessMigrationState()?.phase === "verifying") {
+      recordAuthenticatedAgentActivity(host.id);
+      await db.touchHostHeartbeat(host.id);
+      const local = normalizeAgentLocalRuntimeState(req.body?.localState);
+      if (local) {
+        resolveAgentLocalRuntimeState(host.id, normalizeRuntimeStateSignature(req.body?.localStateSignature), local);
+        recordSeamlessRuntimeReport(host.id, local);
+      }
+      // Do not send an empty authoritative desired state: that would remove
+      // live listeners. The coalesced flag explicitly retains Agent state.
+      res.json({ success: true, actions: [], selfTests: [], nextInterval: 2,
+        reconciliationCoalesced: true, requestLocalState: true, compactReports: true, presenceSupported: true });
+      return;
+    }
     recordAuthenticatedAgentActivity(host.id);
     observePresenceCapableHostActivity(host.id);
     logHostId = Number((host as any).id || 0);
@@ -2902,6 +2927,12 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
         limits: [`$ ${bytesPerSecond}B ${bytesPerSecond}B`],
       });
     };
+    const limitedGroupIds = [...new Set([...agentAllRules, ...agentHostRules]
+      .filter((rule: any) => Number(rule.rateLimitMbps) > 0 && Number(rule.forwardGroupId) > 0 && !normalizeSniValue(rule.sni))
+      .map((rule: any) => Number(rule.forwardGroupId)))];
+    const ruleLimitEntryHosts = new Map(await Promise.all(limitedGroupIds.map(async groupId => [
+      groupId, new Set(await db.getForwardGroupRuleEntryHostIds(groupId)),
+    ] as const)));
     const effectiveRateLimitForRule = (rule: any, tunnel?: any | null) => {
       const userId = Number(rule?.userId || 0);
       const user = rateLimitUserById.get(userId) as any;
@@ -2915,6 +2946,14 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
         tunnelLimitMbps: tunnelRateLimitMbps(tunnel),
         forwardGroupId,
         forwardGroupLimitMbps: forwardGroupRateLimitMbps(group),
+        ruleId: Number(rule.forwardGroupRuleId || rule.id),
+        // Ordinary chains enforce a rule cap at each public entry. Applying it
+        // again on a shared downstream host would pool independent entries.
+        // SNI keeps its separate, single enforcement point at the exit splitter.
+        ruleLimitMbps: !normalizeSniValue(rule.sni) && (
+          (ruleLimitEntryHosts.has(forwardGroupId) && !ruleLimitEntryHosts.get(forwardGroupId)!.has(Number(host.id)))
+          || (tunnel && !isCurrentHostTunnelEntry(tunnel))
+        ) ? 0 : rule.rateLimitMbps,
       });
     };
     const applyGostLimiter = (service: any, rule: any, tunnel?: any | null) => {
@@ -4145,7 +4184,7 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
     const gostChains = [...tunnelGostChains];
     const gostManagedConfigs: any[] = [];
     const buildGostReloadCmds = () => {
-      const encodedConfig = Buffer.from(JSON.stringify({ services: gostServiceConfig, chains: gostChains, limiters: gostRateLimiters }, null, 2), "utf8").toString("base64");
+      const encodedConfig = Buffer.from(JSON.stringify({ services: gostServiceConfig, chains: gostChains, limiters: gostRateLimiters, api: gostRuntimeApiConfig(gostServiceName) }, null, 2), "utf8").toString("base64");
       gostManagedConfigs.push({
         path: RUNTIME_CONFIG_PATH,
         contentBase64: encodedConfig,
@@ -4164,6 +4203,7 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
         })) : [];
       const cmds = [
         `mkdir -p ${shQuote(RUNTIME_CONFIG_DIR)}`,
+        `mkdir -p ${shQuote(GOST_API_DIR)} && chmod 700 ${shQuote(GOST_API_DIR)}`,
         ...proxyDebugCmds,
         writeManagedServiceCmd(gostServiceName, gostServiceUnit),
         stopManagedServiceCmd(LEGACY_GOST_SERVICE_NAME),
@@ -4173,7 +4213,7 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
         if (anyTunnelDnsRefresh(hostTunnels as any[])) {
           cmds.push(dnsRuntimeRefreshCmd("gost"), `rm -f ${shQuote(`${RUNTIME_CONFIG_PATH}.sha256`)} 2>/dev/null || true`);
         }
-        cmds.push(restartManagedServiceIfConfigChangedCmd(gostServiceName, RUNTIME_CONFIG_PATH));
+        cmds.push(syncGostServiceIfConfigChangedCmd(gostServiceName, RUNTIME_CONFIG_PATH));
       } else {
         cmds.push(stopManagedServiceCmd(gostServiceName));
       }
@@ -4294,7 +4334,7 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
           listener: gostTunnelTransportType(tunnel.mode),
         }));
       }) : [];
-      const encodedConfig = Buffer.from(JSON.stringify({ services }, null, 2), "utf8").toString("base64");
+      const encodedConfig = Buffer.from(JSON.stringify({ services, api: gostRuntimeApiConfig(TUNNEL_RUNTIME_SERVICE_NAME) }, null, 2), "utf8").toString("base64");
       gostManagedConfigs.push({
         path: TUNNEL_RUNTIME_CONFIG_PATH,
         contentBase64: encodedConfig,
@@ -4303,6 +4343,7 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
       });
       const cmds = [
         `mkdir -p ${shQuote(RUNTIME_CONFIG_DIR)}`,
+        `mkdir -p ${shQuote(GOST_API_DIR)} && chmod 700 ${shQuote(GOST_API_DIR)}`,
         ...proxyDebugCmds,
         writeManagedServiceCmd(TUNNEL_RUNTIME_SERVICE_NAME, [
           "[Unit]",
@@ -4329,7 +4370,7 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
         if (anyTunnelDnsRefresh(hostTunnels as any[])) {
           cmds.push(dnsRuntimeRefreshCmd("gost-tunnel"), `rm -f ${shQuote(`${TUNNEL_RUNTIME_CONFIG_PATH}.sha256`)} 2>/dev/null || true`);
         }
-        cmds.push(restartManagedServiceIfConfigChangedCmd(TUNNEL_RUNTIME_SERVICE_NAME, TUNNEL_RUNTIME_CONFIG_PATH));
+        cmds.push(syncGostServiceIfConfigChangedCmd(TUNNEL_RUNTIME_SERVICE_NAME, TUNNEL_RUNTIME_CONFIG_PATH));
       } else {
         cmds.push(stopManagedServiceCmd(TUNNEL_RUNTIME_SERVICE_NAME));
       }
@@ -7072,7 +7113,7 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
       for (const t of pendingTests) {
         const claimed = await db.markForwardTestRunning(t.id);
         if (!claimed) continue;
-        const meta = parseSelfTestMeta((t as any).message);
+        const meta = parseSelfTestMeta((t as any).requestMessage ?? (t as any).message);
         const metaSelfTest = buildMetaAgentSelfTestPayload(t, meta);
         if (metaSelfTest) {
           selfTests.push(metaSelfTest);
@@ -7532,7 +7573,9 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
       || pluginTasks.length > 0
       || hasPendingPluginTasks
       || pluginSyncActionQueued
-      || forceTcping
+      // Deferred probes remain interactive work: retry after runtime readiness
+      // instead of sleeping for the idle interval past the self-test deadline.
+      || tcpingRequested
       || (hasPendingMultiHopRuntime && !hasTunnelApplyActions);
     const nextInterval = selectAgentHeartbeatInterval({
       requestLocalState: localRuntimeState.requestLocalState,
@@ -7660,7 +7703,7 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
         + iperf3Tasks.length
         + pluginTasks.length
         + (hasPendingPluginTasks ? 1 : 0)
-        + (forceTcping ? 1 : 0)
+        + (tcpingRequested ? 1 : 0)
         + (hasPendingMultiHopRuntime && !hasTunnelApplyActions ? 1 : 0)
       ) : 0,
     });

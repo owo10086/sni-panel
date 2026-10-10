@@ -1,0 +1,23 @@
+Browser tab: 3, Title: "sni-panel 09验收", URL: "http://127.0.0.1:18829/rules".
+The following is a diff from the previous accessibility tree with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
+Removed element IDs: 63-75, 79
+~				10 checkbox Batch Copy, Value: 0
+~				13 checkbox Batch Edit, Value: 1
+~				62 text 用户规则 B unchanged Forwarding Group : 18502  ->  203.0.113.10 : 443  /  nftables  /  TCP Batch Edit Content Access resources and target addresses can be replaced independently; unfilled entries retain the original value of each rule. No replacement set Replace Entry Resources Keep current entries Entry type
++				81 combo box (collapsed) Value: Port Forwarding, Secondary Actions: Expand
++					82 text Port Forwarding
++				83 text Port forwarding link
++				84 combo box (collapsed) Value: Do Not Replace Entry, Secondary Actions: Expand
++					85 text Do Not Replace Entry
++				86 text Replace Target Address Keep current targets Target Address
++				87 text field (settable)
++				88 text Target Port
++				89 stepper (settable)
++				90 text Port conflict management
++				91 combo box (disabled, collapsed) Value: Automatically allocate new ports, Secondary Actions: Expand
++					92 text Automatically allocate new ports
++				93 text is only effective when the entry resource is replaced and the original source port conflicts. Only the fields you fill in will change. Leave the entry resource unselected to keep each rule’s current entry. Leave the target address or port blank to keep its current value.
+~			41 button (disabled) Apply Batch Edit
++				94 image
+~				80 text Apply Batch Edit
+The focused UI element is 13 checkbox Batch Edit, Value: 1

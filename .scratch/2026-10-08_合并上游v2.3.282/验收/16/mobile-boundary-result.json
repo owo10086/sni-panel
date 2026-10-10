@@ -1,0 +1,167 @@
+{
+  "source": "actual update/settings/UI logic with isolated native/GitHub boundary",
+  "downloadTargets": [
+    "https://github.com/owo10086/sni-panel/releases/tag/v3.3.0",
+    "https://github.com/owo10086/sni-panel/releases/tag/v3.3.0",
+    "https://github.com/owo10086/sni-panel/releases/tag/v3.3.0"
+  ],
+  "notifications": [
+    {
+      "id": 40101,
+      "title": "sni-panel 流量提醒",
+      "body": "套餐流量剩余约 15%，请及时关注。",
+      "schedule": {
+        "at": "2026-10-11T01:00:00.000Z"
+      }
+    },
+    {
+      "id": 40101,
+      "title": "sni-panel 流量提醒",
+      "body": "套餐流量剩余约 15%，请及时关注。",
+      "schedule": {
+        "at": "2026-10-11T01:00:00.000Z"
+      }
+    },
+    {
+      "id": 40101,
+      "title": "sni-panel 流量提醒",
+      "body": "套餐流量剩余约 15%，请及时关注。",
+      "schedule": {
+        "at": "2026-10-11T01:00:00.000Z"
+      }
+    },
+    {
+      "id": 40102,
+      "title": "sni-panel 套餐到期提醒",
+      "body": "套餐将在 3 天内到期，请及时续费或联系管理员。",
+      "schedule": {
+        "at": "2026-10-10T04:09:27.047Z"
+      }
+    },
+    {
+      "id": 40101,
+      "title": "sni-panel 流量提醒",
+      "body": "套餐流量剩余约 15%，请及时关注。",
+      "schedule": {
+        "at": "2026-10-11T01:00:00.000Z"
+      }
+    },
+    {
+      "id": 40102,
+      "title": "sni-panel 套餐到期提醒",
+      "body": "套餐将在 3 天内到期，请及时续费或联系管理员。",
+      "schedule": {
+        "at": "2026-10-10T04:09:27.048Z"
+      }
+    },
+    {
+      "id": 40101,
+      "title": "sni-panel 流量提醒",
+      "body": "套餐流量剩余约 15%，请及时关注。",
+      "schedule": {
+        "at": "2026-10-11T01:00:00.000Z"
+      }
+    },
+    {
+      "id": 40102,
+      "title": "sni-panel 套餐到期提醒",
+      "body": "套餐将在 3 天内到期，请及时续费或联系管理员。",
+      "schedule": {
+        "at": "2026-10-10T04:09:27.309Z"
+      }
+    },
+    {
+      "id": 40101,
+      "title": "sni-panel 流量提醒",
+      "body": "套餐流量剩余约 15%，请及时关注。",
+      "schedule": {
+        "at": "2026-10-11T01:00:00.000Z"
+      }
+    },
+    {
+      "id": 40102,
+      "title": "sni-panel 套餐到期提醒",
+      "body": "套餐将在 3 天内到期，请及时续费或联系管理员。",
+      "schedule": {
+        "at": "2026-10-10T04:09:27.309Z"
+      }
+    },
+    {
+      "id": 40101,
+      "title": "sni-panel traffic reminder",
+      "body": "About 15% of your plan traffic remains. Monitor your usage.",
+      "schedule": {
+        "at": "2026-10-11T01:00:00.000Z"
+      }
+    },
+    {
+      "id": 40102,
+      "title": "sni-panel plan expiry reminder",
+      "body": "Your plan expires within 3 days. Renew it or contact an administrator.",
+      "schedule": {
+        "at": "2026-10-10T04:09:40.157Z"
+      }
+    },
+    {
+      "id": 40101,
+      "title": "sni-panel traffic reminder",
+      "body": "About 15% of your plan traffic remains. Monitor your usage.",
+      "schedule": {
+        "at": "2026-10-11T01:00:00.000Z"
+      }
+    },
+    {
+      "id": 40102,
+      "title": "sni-panel plan expiry reminder",
+      "body": "Your plan expires within 3 days. Renew it or contact an administrator.",
+      "schedule": {
+        "at": "2026-10-10T04:10:06.645Z"
+      }
+    },
+    {
+      "id": 40101,
+      "title": "sni-panel traffic reminder",
+      "body": "About 15% of your plan traffic remains. Monitor your usage.",
+      "schedule": {
+        "at": "2026-10-11T01:00:00.000Z"
+      }
+    },
+    {
+      "id": 40102,
+      "title": "sni-panel plan expiry reminder",
+      "body": "Your plan expires within 3 days. Renew it or contact an administrator.",
+      "schedule": {
+        "at": "2026-10-10T04:10:07.459Z"
+      }
+    },
+    {
+      "id": 40101,
+      "title": "sni-panel traffic reminder",
+      "body": "About 15% of your plan traffic remains. Monitor your usage.",
+      "schedule": {
+        "at": "2026-10-11T01:00:00.000Z"
+      }
+    },
+    {
+      "id": 40102,
+      "title": "sni-panel plan expiry reminder",
+      "body": "Your plan expires within 3 days. Renew it or contact an administrator.",
+      "schedule": {
+        "at": "2026-10-10T04:10:07.459Z"
+      }
+    }
+  ],
+  "deniedPermissionNoSchedule": true,
+  "viewport": {
+    "width": 390,
+    "height": 844,
+    "bodyWidth": 379
+  },
+  "persistedAfterReload": {
+    "traffic": true,
+    "expiry": true,
+    "threshold": 25,
+    "days": 3,
+    "time": "09:00"
+  }
+}

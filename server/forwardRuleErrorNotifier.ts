@@ -1,6 +1,5 @@
 import crypto from "crypto";
-import { sendTelegramMessage } from "./telegramBot";
-import { getTelegramAdminRecipients } from "./repositories/userRepository";
+import { sendUserNotification, getNotificationAdminRecipients, isNotificationReady } from "./notifications";
 import { formatForwardRuleProtocol, FORWARD_TYPE_LABELS, type ForwardType } from "../shared/forwardTypes";
 import { isTelegramBotReady } from "./telegramReady";
 
@@ -121,32 +120,32 @@ function ruleErrorMessage(payload: ForwardRuleErrorPayload) {
 export async function notifyForwardRuleError(payload: ForwardRuleErrorPayload) {
   const ruleId = Number(payload.rule?.id || 0);
   if (!ruleId || !payload.rule?.telegramErrorNotifyEnabled) return;
-  if (!(await isTelegramBotReady())) return;
+  if (!(await isNotificationReady())) return;
 
-  const recipients = await getTelegramAdminRecipients();
+  const recipients = await getNotificationAdminRecipients();
   if (recipients.length === 0) return;
   if (!shouldNotifyForwardRuleError(ruleId, payload.message)) return;
   const text = ruleErrorMessage(payload);
   let sent = 0;
   let failed = 0;
   for (const user of recipients as any[]) {
-    if (!user.telegramId) continue;
+    if (!user.notificationId) continue;
     try {
-      await sendTelegramMessage(user.telegramId, text);
+      await sendUserNotification(user, text);
       sent += 1;
     } catch (error) {
       failed += 1;
-      console.warn(`[Telegram] Forward rule error notify failed user=${user.id} rule=${ruleId}: ${error instanceof Error ? error.message : String(error)}`);
+      console.warn(`[Notification] Forward rule error notify failed user=${user.id} rule=${ruleId}: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
   if (sent > 0 || failed > 0) {
-    console.info(`[Telegram] Forward rule error notify rule=${ruleId} sent=${sent} failed=${failed}`);
+    console.info(`[Notification] Forward rule error notify rule=${ruleId} sent=${sent} failed=${failed}`);
   }
 }
 
 export async function notifyForwardRuleOccupancy(payload: ForwardRuleErrorPayload & { recovered: boolean }) {
-  if (!payload.rule?.telegramErrorNotifyEnabled || !(await isTelegramBotReady())) return;
-  const recipients = await getTelegramAdminRecipients();
+  if (!payload.rule?.telegramErrorNotifyEnabled || !(await isNotificationReady())) return;
+  const recipients = await getNotificationAdminRecipients();
   const text = [
     `<b>ForwardX 端口占用${payload.recovered ? "解除提醒" : "警告"}</b>`,
     `<b>规则</b>：${escapeHtml(payload.rule.name)} (#${escapeHtml(payload.rule.id)})`,
@@ -156,8 +155,8 @@ export async function notifyForwardRuleOccupancy(payload: ForwardRuleErrorPayloa
     `<b>时间</b>：${escapeHtml(formatTime())}`,
   ].join("\n");
   for (const user of recipients as any[]) {
-    if (!user.telegramId) continue;
-    await sendTelegramMessage(user.telegramId, text).catch((error) => {
+    if (!user.notificationId) continue;
+    await sendUserNotification(user, text).catch((error) => {
       console.warn(`[Telegram] Port occupancy notify failed rule=${payload.rule.id}: ${error instanceof Error ? error.message : String(error)}`);
     });
   }

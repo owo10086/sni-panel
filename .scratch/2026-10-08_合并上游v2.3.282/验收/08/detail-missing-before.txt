@@ -1,0 +1,48 @@
+- banner:
+  - heading "08监控验收" [level=1]
+  - link "登录":
+    - /url: /login
+    - text: 登录
+- main:
+  - status:
+    - generic: 最近刷新 2026-10-10 00:43:08
+    - button "刷新":
+      - text: 刷新
+  - status:
+    - generic: 刷新失败，正在自动重试
+    - button "刷新":
+      - text: 刷新
+  - button "返回":
+  - heading "监控主机 A" [level=2]
+  - generic: 在线
+  - paragraph: 状态
+  - paragraph: 在线
+  - paragraph: 运行时间
+  - paragraph: 10分钟
+  - paragraph: 内存
+  - paragraph: 40%
+  - paragraph: 磁盘
+  - paragraph: 12%
+  - paragraph: 区域
+  - generic "地区获取中":
+    - generic: 地区获取中
+  - paragraph: 版本
+  - paragraph: v3.3.0
+  - paragraph: 实时入站
+  - paragraph: "--"
+  - paragraph: 实时出站
+  - paragraph: "--"
+  - paragraph: 累计入站
+  - paragraph: 0 B
+  - paragraph: 累计出站
+  - paragraph: 0 B
+  - paragraph: 到期时间
+  - paragraph: 永久有效
+  - paragraph: 最后上报
+  - paragraph: 2026-10-10 00:41:47
+  - paragraph: 服务延迟趋势
+  - paragraph: 点击上方服务可筛选图表
+  - switch "削峰"
+  - generic: 削峰
+  - generic: 暂无服务监控延迟数据
+- region "Notifications alt+T"

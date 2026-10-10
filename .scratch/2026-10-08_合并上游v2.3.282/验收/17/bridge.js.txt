@@ -1,0 +1,9 @@
+const params=new URL(location.href).searchParams;
+const platform=params.get('platform')||sessionStorage.getItem('ticket17.platform')||'ios';sessionStorage.setItem('ticket17.platform',platform);
+window.Capacitor={isNativePlatform:()=>true,getPlatform:()=>platform};
+if(params.has('lang'))localStorage.setItem('forwardx.language',params.get('lang'));
+if(params.get('panel')==='missing'&&!sessionStorage.getItem('ticket17.panelReset')){localStorage.removeItem('forwardx.mobile.panelUrl');sessionStorage.setItem('ticket17.panelReset','1')}else if(!localStorage.getItem('forwardx.mobile.panelUrl')){localStorage.setItem('forwardx.mobile.panelUrl',location.origin)}
+const actualFetch=window.fetch.bind(window);
+window.fetch=(input,init)=>{const url=String(input);return actualFetch(url.startsWith('https://api.github.com/repos/owo10086/sni-panel/releases')?'/__ticket17/releases?scenario='+encodeURIComponent(params.get('scenario')||'missing')+'&platform='+platform+'&source='+encodeURIComponent(url):input,init)};
+
+if(params.get("safe")==="1"){document.documentElement.style.setProperty("--forwardx-safe-area-top","24px");document.documentElement.style.setProperty("--forwardx-safe-area-bottom","34px");}

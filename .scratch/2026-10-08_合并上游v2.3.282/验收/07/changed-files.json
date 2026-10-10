@@ -1,0 +1,77 @@
+[
+  {
+    "path": "client/src/i18n/en.json",
+    "beforeSha256": "d9ecdce4d5098194f590212e4b36d94761124c3d60df83a1a87aaa492392cdaf",
+    "afterSha256": "5aa9c3b36d9e24d65785064204b6c33dfedbc844004a2a478569a63c84f496d4"
+  },
+  {
+    "path": "server/tunnelManualProbe.test.ts",
+    "beforeSha256": "d71df67d47262bd08967cbf0cbb25e8b509a7f2fc187042248f76697b62c7e3c",
+    "afterSha256": "bc7201d552f889bcb0ebb3ad1c5304cc7813d02ce4ce23f9f25f068e53d3250a"
+  },
+  {
+    "path": "server/tunnelManualProbe.ts",
+    "beforeSha256": "3bd91b057ec406fce9ae7a994d6c8e0f15c680f243cecb0e3b2933080d9bc35b",
+    "afterSha256": "e2268dd5383804f82dcbd42fcbbf9b95b5d03d075607beac1f3b20ece0027ff8"
+  },
+  {
+    "path": "agent/main.go",
+    "beforeSha256": "cadb86dbbb78b977578fbec870e7c23eebdd2846f6f0892df956ecbf5255d00e",
+    "afterSha256": "edc076f771799069dd09be905ea40181b6f0888ad85182cfc6b1af410c048f27"
+  },
+  {
+    "path": "client/src/pages/Rules.tsx",
+    "beforeSha256": "a29fbd7ad197cec335fc65ce8811c45f95dbdeeb53344418546056ebaa01b6f3",
+    "afterSha256": "ba0067dafc3934427e27cace5d42e98b500b0720f899debb90f8b2374c823598"
+  },
+  {
+    "path": "package.json",
+    "beforeSha256": "384e0c52f0f4914bbfc2b0ca8e7a433ba9ee4cf29dd41639724020c123574b9e",
+    "afterSha256": "75e15def0bad72ea5516a4da29846196ee1f86a3c72cfd2154d80e70e91da8cc"
+  },
+  {
+    "path": "server/agentRouteUtils.ts",
+    "beforeSha256": "988bf804aea2c308618b6a14cf9bed4b35b698edc95b1c8aad8bdd646fec6826",
+    "afterSha256": "1f8f3f513b58e671dafe8821ebcab8d9eb4871a5cfb64b484684e6487af0571a"
+  },
+  {
+    "path": "server/agentSelfTestRoutes.ts",
+    "beforeSha256": "1494c69785ac963574875a2fdfc0566aeb9ddbc8c71f79fe1e40fdc1a5338170",
+    "afterSha256": "466ad2065ef9a9bce2b02630f669a2317e5123a93fd5b2ac4401c9d566ed1e15"
+  },
+  {
+    "path": "server/repositories/forwardTestRepository.ts",
+    "beforeSha256": "893dbeaa77dab83fc3356b18bb31230ccedefda0754516e54d6b6b99277dc6b8",
+    "afterSha256": "5ce5ddc324dff136752148bb4386cc7a4158a96030710c59563bfb02c4f1e441"
+  },
+  {
+    "path": "server/repositories/metricsRepository.ts",
+    "beforeSha256": "5feb9f8e561be33680c5cb7a8e2ff74206908e23559c0c2dcf0490054f9c5155",
+    "afterSha256": "2bd137fa67f6487500c1f533489ae684db347b0c19ce6984ce3dcff9c787357d"
+  },
+  {
+    "path": "server/routers/rules.selfTest.ts",
+    "beforeSha256": "3ca2dbea55c74d892213ff2d94bb48cafcfc324eb8891248ae9ff082ad48ca84",
+    "afterSha256": "81b484b671ee4616c930842e9955e5a96996fc17d5643b7a65b61941e73fa375"
+  },
+  {
+    "path": "server/scheduler.ts",
+    "beforeSha256": "b11e371e376b23a9f84b612dcd7ca688a1f5475c5acc524bb40df869c9be97c6",
+    "afterSha256": "7a5835b117fd2414bc4778b7ea9a779733618d453ef94d89b5c2dd9a8d253bc1"
+  },
+  {
+    "path": "shared/agentDtos.ts",
+    "beforeSha256": "58dcbdeb2e45ef75b902165b3c178f3c8c63a8850178d66ce209f2a3e4eff8cc",
+    "afterSha256": "e2caadb3bac9920070a576c782c890b8e65f2de9270018fb89a75b59b68ea841"
+  },
+  {
+    "path": "server/manualForwardChain.test.ts",
+    "added": true,
+    "afterSha256": "6eec4987dfb6ecd0bd60d286e9e7499216230971e860c36bf83c42455f12bdaa"
+  },
+  {
+    "path": "agent/heartbeat_identity_test.go",
+    "added": true,
+    "afterSha256": "c71b2c48bc9cf93612a46e3699b5caaa00cd457fdcc4d85f34634cabd12258af"
+  }
+]

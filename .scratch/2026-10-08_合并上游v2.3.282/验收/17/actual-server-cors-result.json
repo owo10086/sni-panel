@@ -1,0 +1,11 @@
+{
+  "source": "ticket18 final real Linux server/index.ts and SQLite",
+  "iosCors": {
+    "status": 204,
+    "origin": "capacitor://localhost",
+    "credentials": "true",
+    "untrustedOriginDenied": true
+  },
+  "authenticatedMobileRequestAndRestoredSession": true,
+  "nativeAppNetworking": false
+}

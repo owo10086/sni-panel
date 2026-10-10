@@ -1,0 +1,40 @@
+{
+  "total": 30,
+  "successes": 30,
+  "available": true,
+  "observedSince": "2026-10-09T15:22:30.000Z",
+  "latestAt": "2026-10-09T15:22:30.000Z",
+  "latencySamplesTruncated": false,
+  "latencySamples": [
+    {
+      "latency": 1,
+      "probeCount": 5,
+      "probeSuccesses": 5
+    },
+    {
+      "latency": 1,
+      "probeCount": 5,
+      "probeSuccesses": 5
+    },
+    {
+      "latency": 1,
+      "probeCount": 5,
+      "probeSuccesses": 5
+    },
+    {
+      "latency": 1,
+      "probeCount": 5,
+      "probeSuccesses": 5
+    },
+    {
+      "latency": 1,
+      "probeCount": 5,
+      "probeSuccesses": 5
+    },
+    {
+      "latency": 1,
+      "probeCount": 5,
+      "probeSuccesses": 5
+    }
+  ]
+}

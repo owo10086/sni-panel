@@ -1,0 +1,15 @@
+Browser tab: 3, Title: "sni-panel 09验收", URL: "http://127.0.0.1:18829/rules".
+1 AXWebArea sni-panel 09验收, URL: 127.0.0.1:18829/rules
+	2 container forwardx-overlay-root
+		3 container Notifications alt+T
+		4 container Delete Forward Rule, ID: radix-_r_1k_
+			5 heading Delete Forward Rule, Value: 2, ID: radix-_r_1l_
+				6 text Delete Forward Rule
+			7 text Delete rule "用户导入规则 unchanged <&>"?
+			8 button Cancel
+			9 button Delete
+			10 button Close
+				11 image
+				12 text Close
+
+The focused UI element is 8 button Cancel

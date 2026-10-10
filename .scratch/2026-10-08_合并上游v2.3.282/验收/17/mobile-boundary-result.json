@@ -1,0 +1,24 @@
+{
+  "nativePlatformBoundary": "isolated iOS bridge, not Simulator or device",
+  "viewport": {
+    "width": 390,
+    "height": 844,
+    "bodyScrollWidth": 379
+  },
+  "loginControlTop": {
+    "webPx": 16,
+    "reservedTopPx": 24,
+    "nativeCssResultPx": 40
+  },
+  "actualMobileLogins": 2,
+  "sessionKinds": {
+    "mobile": 2
+  },
+  "verifiedDashboardAfterChineseLogin": true,
+  "englishAndChineseDialogs": true,
+  "source": "owo10086/sni-panel",
+  "currentIOSVersion": "1.0.0",
+  "futureIPAVersionFixture": "1.0.1",
+  "missingIPAFeedback": true,
+  "noActualNativeInstallOrPermissionPrompt": true
+}

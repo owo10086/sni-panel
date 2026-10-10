@@ -1,0 +1,9 @@
+{
+  "stage": "on",
+  "checks": [
+    {
+      "name": "restoring verification takes effect on HTTP",
+      "passed": true
+    }
+  ]
+}

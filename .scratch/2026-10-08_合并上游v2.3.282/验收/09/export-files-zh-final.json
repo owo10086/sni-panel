@@ -1,0 +1,16 @@
+{
+  "parts": [
+    {
+      "file": "forwardx-rules-batch-20261009-part-1-of-2 (3).json",
+      "count": 500,
+      "sha256": "a75de0f0faa001c8c09d8003336a4994570c7b498c9406109fd0f78c86174f1b"
+    },
+    {
+      "file": "forwardx-rules-batch-20261009-part-2-of-2 (1).json",
+      "count": 4,
+      "sha256": "153f171f12b6cbde2b609a80ea3bb4eb4360ace42fd641681a31ff1b6398ac93"
+    }
+  ],
+  "total": 504,
+  "businessRulesEqualAcrossLanguages": true
+}

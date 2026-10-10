@@ -1,0 +1,260 @@
+Browser tab: 3, Title: "sni-panel 09验收", URL: "http://127.0.0.1:18829/rules".
+1 AXWebArea sni-panel 09验收, URL: 127.0.0.1:18829/rules
+	2 container
+		3 container root
+			4 container
+				5 image sni-panel 09验收
+				6 text sni-panel 09验收
+				7 button Description: Toggle theme, Help: Switch to Dark Mode
+					8 image
+				9 button Toggle navigation
+					10 image
+				11 text MAIN MENU
+				12 content list
+					13 button Dashboard
+						14 image
+						15 text Dashboard
+					16 button Hosts
+						17 image
+						18 text Hosts
+					19 button Links
+						20 image
+						21 text Links
+					22 button Forwarding Rules
+						23 image
+						24 text Forwarding Rules
+					25 button Announcements
+						26 image
+						27 text Announcements
+				28 text MANAGEMENT
+				29 content list
+					30 button Profile
+						31 image
+						32 text Profile
+					33 button SNI entry ports
+						34 image
+						35 text SNI entry ports
+					36 button Payment Integrations
+						37 image
+						38 text Payment Integrations
+					39 button Billing & Redemption
+						40 image
+						41 text Billing & Redemption
+					42 button Plans
+						43 image
+						44 text Plans
+					45 button Users
+						46 image
+						47 text Users
+					48 button Network Tests
+						49 image
+						50 text Network Tests
+					51 button Settings
+						52 image
+						53 text Settings
+				54 pop up button (collapsed) 中文管理员 <&> English Admin · Telegram Not Linked, Help: 中文管理员 <&> English, ID: radix-_r_2v_, Secondary Actions: Expand
+					55 image Created with getavataaars.com
+					56 text 中文管理员 <&> English
+					57 container
+						58 text Admin  ·  Telegram Not Linked
+			59 container
+				60 button Toggle Sidebar
+					61 image
+					62 text Toggle Sidebar
+				63 text Forwarding Rules
+				64 button Toggle theme
+					65 image
+				66 heading Forwarding Rules, Value: 1
+					67 text Forwarding Rules
+				68 text Manage forwarding rules and operational status
+				69 image
+				70 text 4 / 4 enabled
+				71 button Reset Data
+					72 image
+					73 text Reset Data
+				74 button Bulk Actions
+					75 image
+					76 text Bulk Actions
+				77 button Add Rule
+					78 image
+					79 text Add Rule
+				80 image
+				81 text Filter:
+				82 container
+					83 image
+					84 text field (settable)
+				85 combo box (collapsed) Value: My Rules, Secondary Actions: Expand
+					86 text My Rules
+				87 pop up button (collapsed) All links, ID: radix-_r_j_, Secondary Actions: Expand
+					88 text All links
+					89 image
+				90 combo box (collapsed) Value: Per page12 items, Secondary Actions: Expand
+					91 container
+						92 text Per page 12 items
+				93 tab group forwarding rule classification
+					94 tab (selected, settable, boolean) All 4, ID: radix-_r_m_-trigger-all, Value: 1
+All
+4
+					95 tab (selectable, settable, boolean) Port Forwarding 0, ID: radix-_r_m_-trigger-local, Value: 0
+Port Forwarding
+0
+					96 tab (selectable, settable, boolean) Tunnel Forwarding 0, ID: radix-_r_m_-trigger-tunnel, Value: 0
+Tunnel Forwarding
+0
+					97 tab (selectable, settable, boolean) Forwarding Chain 2, ID: radix-_r_m_-trigger-chain, Value: 0
+Forwarding Chain
+2
+					98 tab (selectable, settable, boolean) Forwarding Group 2, ID: radix-_r_m_-trigger-group, Value: 0
+Forwarding Group
+2
+				99 container
+					100 text Inbound Traffic
+					101 text TOTAL 0 B 24H 0 B
+				102 container
+					103 text Outbound Traffic
+					104 text TOTAL 0 B 24H 0 B
+				105 container
+					106 text Connection Count
+					107 text TOTAL 0 24H 0
+				108 container
+					109 checkbox (settable, integer) Description: Select all available rules on this page, Value: 0
+					110 text Select this page
+				111 container
+					112 checkbox (settable, integer) Description: Select all available Forwarding Chain rules on this page, Value: 0
+					113 button (expanded) Forwarding Chain 2 Follow the forwarding chain, Secondary Actions: Collapse
+						114 image
+						115 image
+						116 text Forwarding Chain
+						117 text 2
+						118 text Follow the forwarding chain
+					119 container
+						120 checkbox (settable, integer) Description: Select all available rules in this SNI group, Value: 0
+						121 button (collapsed) 用户转发链 / Long chain resource unchanged · SNI splitting Pending activation 1 rules Entry Port18510, Secondary Actions: Expand
+							122 image
+							123 image
+							124 container 用户转发链 / Long chain resource unchanged
+								125 text 用户转发链 / Long chain resource unchanged · SNI splitting
+							126 text Pending activation
+							127 text 1
+							128 text rules
+							129 text Entry Port
+							130 text 18510
+						131 text Entry splitter
+						132 text Entry 用户主机 1 Long host name unchanged:18510 Not observed yet Version - Unmatched connections 0
+						133 text The client used a domain not configured on the entry host. Check spelling and DNS; the request may also be a port scan.
+						134 text Exit splitter
+						135 text Exit 用户主机 2 Long host name unchanged:20859 Not observed yet Version - Unmatched connections 0
+						136 text Entry and exit configurations may not have synchronized yet.
+						137 checkbox (settable, integer) Description: Select all available rules in this SNI group, Value: 0
+						138 button (collapsed) 用户转发链 / Long chain resource unchanged · SNI splitting Pending activation 1 rules Entry Port18511, Secondary Actions: Expand
+							139 image
+							140 image
+							141 container 用户转发链 / Long chain resource unchanged
+								142 text 用户转发链 / Long chain resource unchanged · SNI splitting
+							143 text Pending activation
+							144 text 1
+							145 text rules
+							146 text Entry Port
+							147 text 18511
+						148 text Entry splitter
+						149 text Entry 用户主机 1 Long host name unchanged:18511 Not observed yet Version - Unmatched connections 0
+						150 text The client used a domain not configured on the entry host. Check spelling and DNS; the request may also be a port scan.
+						151 text Exit splitter
+						152 text Exit 用户主机 2 Long host name unchanged:25320 Not observed yet Version - Unmatched connections 0
+						153 text Entry and exit configurations may not have synchronized yet.
+					154 checkbox (settable, integer) Description: Select all available Forwarding Group rules on this page, Value: 0
+					155 button (expanded) Forwarding Group 2 Use forwarding group entries, Secondary Actions: Collapse
+						156 image
+						157 image
+						158 text Forwarding Group
+						159 text 2
+						160 text Use forwarding group entries
+					161 container
+						162 checkbox (settable, integer) Description: Select rule 用户规则 A <&> unchanged, Value: 0
+						163 text 用户规则 A <&> unchanged
+						164 container
+							165 text User:  中文管理员 <&> English
+						166 text 用户转发组 / unchanged failover group
+						167 switch Description: Disable forwarding rule 用户规则 A <&> unchanged, Help: Disable this rule to stop deployment and forwarding, Value: 1
+						168 text Entry
+						169 button failover.example.test:18501, Help: Copy Forwarding Group entry: failover.example.test:18501
+							170 text failover.example.test:18501
+							171 image
+						172 image
+						173 text Exit
+						174 text 203.0.113.10:443
+						175 text Link
+						176 image
+						177 text Forwarding Group
+						178 container Forwarding tool: nftables
+							179 image
+							180 text nftables
+						181 text Protocol
+						182 text TCP
+						183 text 24H Inbound
+						184 text —
+						185 text 24H Outbound
+						186 text —
+						187 text Total Traffic
+						188 text —
+						189 text Latency
+						190 text Not tested
+						191 button View TCPing Delay
+							192 image
+						193 button Forwarding Link Test
+							194 image
+						195 button Reset rule data
+							196 image
+						197 button
+							198 image
+						199 button
+							200 image
+						201 checkbox (settable, integer) Description: Select rule 用户规则 B unchanged, Value: 0
+						202 text 用户规则 B unchanged
+						203 container
+							204 text User:  中文管理员 <&> English
+						205 text 用户转发组 / unchanged failover group
+						206 switch Description: Disable forwarding rule 用户规则 B unchanged, Help: Disable this rule to stop deployment and forwarding, Value: 1
+						207 text Entry
+						208 button failover.example.test:18502, Help: Copy Forwarding Group entry: failover.example.test:18502
+							209 text failover.example.test:18502
+							210 image
+						211 image
+						212 text Exit
+						213 text 203.0.113.10:443
+						214 text Link
+						215 image
+						216 text Forwarding Group
+						217 container Forwarding tool: nftables
+							218 image
+							219 text nftables
+						220 text Protocol
+						221 text TCP
+						222 text 24H Inbound
+						223 text —
+						224 text 24H Outbound
+						225 text —
+						226 text Total Traffic
+						227 text —
+						228 text Latency
+						229 text Not tested
+						230 button View TCPing Delay
+							231 image
+						232 button Forwarding Link Test
+							233 image
+						234 button Reset rule data
+							235 image
+						236 button
+							237 image
+						238 button
+							239 image
+				240 link Description: Project Address, Value: github.com/owo10086/sni-panel
+				241 text |
+				242 link Description: Documentation, Value: owo10086.github.io/sni-panel/
+				243 text |
+				244 link Description: Contact via Telegram, Value: t.me/miyin_private_bot
+				245 text |
+				246 link Description: Telegram Group, Value: t.me/ForwardX_panel
+		247 container Notifications alt+T
+
+The focused UI element is 1 AXWebArea sni-panel 09验收, URL: 127.0.0.1:18829/rules

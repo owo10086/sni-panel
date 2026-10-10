@@ -1,0 +1,42 @@
+{
+  "panel": {
+    "pretest": 43,
+    "main": 844,
+    "total": 887,
+    "fail": 0,
+    "skip": 0
+  },
+  "releaseNotes": {
+    "pass": 5,
+    "fail": 0,
+    "skip": 0
+  },
+  "agentLinux": {
+    "topLevelPass": 461,
+    "allPassEvents": 569,
+    "fail": 0,
+    "skip": 0,
+    "realGOST": true,
+    "stress3000Rules": true,
+    "vetExit": 0
+  },
+  "fxpLinux": {
+    "topLevelPass": 125,
+    "allPassEvents": 160,
+    "fail": 0,
+    "skip": 0,
+    "publishedBinaryECH": true,
+    "vetExit": 0
+  },
+  "typecheckExit": 0,
+  "buildExit": 0,
+  "docsBuildExit": 0,
+  "links": {
+    "htmlPages": 45,
+    "localLinks": 2382,
+    "errors": []
+  },
+  "testFiles": 176,
+  "upstreamFiles": 288,
+  "productFiles": 299
+}

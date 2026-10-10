@@ -1,0 +1,22 @@
+Browser tab: 1, Title: "sni-panel 迁移验收", URL: "http://127.0.0.1:18851/settings?tab=backup".
+1 AXWebArea sni-panel 迁移验收, URL: 127.0.0.1:18851/settings?tab=backup
+	2 container forwardx-overlay-root
+		3 container Notifications alt+T
+		4 container Confirm online migration, ID: radix-_r_35_
+			5 heading Confirm online migration, Value: 2, ID: radix-_r_36_
+				6 image
+				7 text Confirm online migration
+			8 text The new panel will request data from the old panel. Migration starts after its administrator approves.
+			9 container
+				10 image
+				11 heading Essential data migration, Value: 5
+					12 text Essential data migration
+				13 text The target takes over only after verification.  The old panel data is retained.
+			14 text Normal migration changes the Agent panel address and may rebuild forwarding processes, interrupting existing connections. The new panel takes over only after verification. The old panel data is retained.
+			15 button Cancel
+			16 button Confirm migration
+			17 button Close
+				18 image
+				19 text Close
+
+The focused UI element is 15 button Cancel

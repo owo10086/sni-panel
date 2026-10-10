@@ -1,0 +1,2479 @@
+--- a/server/ai/panelTools.permissions.fixture.ts
++++ b/server/ai/panelTools.permissions.fixture.ts
+@@ -28,6 +28,11 @@
+   const admin = await caller(1);
+   const owner = await caller(2);
+   const base = { name: "用户自建 <&>", forwardGroupId: 10, forwardType: "nftables", protocol: "tcp", sourcePort: 18500, targetIp: "203.0.113.20", targetPort: 443 } satisfies Parameters<typeof admin.rules.create>[0];
++  const routeChanged = await preparePanelCall(2, "rules.create", base);
++  await admin.forwardGroups.updateFields({ id: 10, forwardType: "realm" });
++  await assert.rejects(executePanelCall(2, routeChanged), error => error instanceof PanelPreflightError && /配置已.*变化/.test(error.message));
++  assert.equal((await owner.rules.list()).length, 0, "a changed route rejects creation before any rules are written");
++  await admin.forwardGroups.updateFields({ id: 10, forwardType: "nftables" });
+   const own = (await run(2, "rules.create", base)).result.id;
+   await run(2, "rules.update", { id: own, targetPort: 8443 });
+   const read = (await owner.rules.getById({ id: own }))!;
+--- a/server/ai/panelTools.ts
++++ b/server/ai/panelTools.ts
+@@ -4,6 +4,7 @@
+ import type { TrpcContext } from "../_core/context";
+ import { SIDEBAR_MENU_KEYS, SIDEBAR_MENU_LABELS, DEFAULT_SIDEBAR_MENU_SETTINGS, normalizeSidebarMenuSettings } from "../../shared/sidebarMenu";
+ import { assertRuleWritable } from "../../shared/ruleLimits";
++import { botText, botLabel, botEnglish } from "../botLocale";
+ 
+ const id = z.number().int().positive();
+ const count = z.number().int().min(0).max(Number.MAX_SAFE_INTEGER);
+@@ -254,7 +255,7 @@
+   if (call.tool === "settings.set") {
+     const s = PANEL_SETTINGS[String(call.input.key)];
+     const current = settingValue(await db.getAllSettings(), String(call.input.key));
+-    return { fingerprint: digest(current), preview: [`${s.label}：${display(current)} → ${display(call.input.value)}`, ...(s.warning ? [`注意：${s.warning}`] : [])] };
++    return { fingerprint: digest(current), preview: [`${botLabel(s.label)}：${display(current)} → ${display(call.input.value)}`, ...(s.warning ? [botText`注意：${botLabel(s.warning)}`] : [])] };
+   }
+   let row: any;
+   const resourceId = Number(call.input.id || call.input.userId || call.input.hostId);
+@@ -265,14 +266,45 @@
+   if (def.resource === "user") row = await db.getUserById(resourceId);
+   if (def.resource === "plan") row = await db.getSubscriptionPlanById(resourceId);
+   if (def.resource === "announcement") row = (await db.listAnnouncements(true)).find((v: any) => v.id === resourceId);
+-  if (def.resource && !row) throw new Error("操作对象不存在，请重新指定");
++  if (def.resource && !row) throw new Error(botLabel("操作对象不存在，请重新指定"));
+   // Owning a visible resource and owning its configuration are different rights.
+-  if (row && user.role !== "admin" && Number(row.userId) !== Number(user.id)) throw new Error("无权修改其他用户的资源");
++  if (row && user.role !== "admin" && Number(row.userId) !== Number(user.id)) throw new Error(botLabel("无权修改其他用户的资源"));
+   if (def.resource === "rule") assertRuleWritable(user, row);
+-  if (def.resource === "rule" && row.forwardGroupRuleId) throw new Error("转发组成员规则由系统维护，请修改模板规则或转发组");
+-  if (call.tool === "rules.create" && call.input.userId && user.role !== "admin" && call.input.userId !== user.id) throw new Error("普通用户只能给自己添加规则");
++  if (def.resource === "rule" && row.forwardGroupRuleId) throw new Error(botLabel("转发组成员规则由系统维护，请修改模板规则或转发组"));
++  if (call.tool === "rules.create" && call.input.userId && user.role !== "admin" && call.input.userId !== user.id) throw new Error(botLabel("普通用户只能给自己添加规则"));
+   const fields = Object.keys(objectSchema(def.schema).shape).filter(k => !["id", "userId", "hostId"].includes(k));
+   let state: unknown = row ? pick(row, [...fields, "id", "name", "username", "title"]) : null;
++  if (call.tool === "rules.create") {
++    const hosts = new Set<number>();
++    const tunnels = new Set<number>();
++    const groups = new Set<number>();
++    const routes: unknown[] = [];
++    const groupQueue = call.input.forwardGroupId ? [Number(call.input.forwardGroupId)] : [];
++    if (call.input.tunnelId) tunnels.add(Number(call.input.tunnelId));
++    while (groupQueue.length) {
++      const id = groupQueue.shift()!;
++      if (groups.has(id)) continue;
++      groups.add(id);
++      const group = await db.getForwardGroupById(id);
++      if (!group) throw new Error(botLabel("操作对象不存在，请重新指定"));
++      routes.push({ group: pick(group, [...Object.keys(groupFields), "id", "groupType", "groupMode", "entryGroupId", "domain", "recordType", "exitStrategy", "isEnabled"]),
++        members: group.members.map((member: any) => pick(member, ["memberType", "hostId", "tunnelId", "connectHost", "priority", "isEnabled"])) });
++      if (group.entryGroupId) groupQueue.push(Number(group.entryGroupId));
++      for (const member of group.members) {
++        if (member.hostId) hosts.add(member.hostId);
++        if (member.tunnelId) tunnels.add(member.tunnelId);
++      }
++    }
++    for (const id of tunnels) {
++      const tunnel = await db.getTunnelById(id);
++      if (!tunnel) throw new Error(botLabel("操作对象不存在，请重新指定"));
++      routes.push({ tunnel: pick(tunnel, ["id", "name", "entryHostId", "exitHostId", "entryGroupId", "exitGroupId", "mode", "listenPort", "connectHost", "forwardxVersion", ...Object.keys(transport)]) });
++      if (tunnel.entryHostId) hosts.add(tunnel.entryHostId);
++      if (tunnel.exitHostId) hosts.add(tunnel.exitHostId);
++    }
++    for (const id of hosts) routes.push({ host: pick(await db.getHostById(id), ["id", "name", "ip", "ipv4", "ipv6", "portRangeStart", "portRangeEnd"]) });
++    state = routes;
++  }
+   if (def.resource === "announcement") state = pick(row, ["id", "title", "content", "type", "isActive"]);
+   if (def.resource === "group") state = { ...pick(row, Object.keys(row).filter(k => Object.keys(groupFields).includes(k) || ["groupMode", "groupType", "entryGroupId", "domain", "recordType", "exitStrategy", "isEnabled"].includes(k))), members: (row.members || []).map((m: any) => pick(m, ["memberType", "hostId", "tunnelId", "connectHost", "priority", "isEnabled"])) };
+   if (call.tool === "users.permissions_change") {
+@@ -283,22 +315,22 @@
+   }
+   if (call.tool.startsWith("subscriptions.") && call.tool !== "subscriptions.assign") {
+     row = (await db.listUserSubscriptions(undefined, { visibility: "admin" })).find((v: any) => Number(v.id) === resourceId);
+-    if (!row) throw new Error("订阅不存在");
++    if (!row) throw new Error(botLabel("订阅不存在"));
+     state = pick(row, ["id", "userId", "planId", "status", "expiresAt"]);
+   }
+   if (call.tool === "traffic_billing.save") {
+     state = (await db.listTrafficBillingConfigs()).find((v: any) => v.resourceType === call.input.resourceType && Number(v.resourceId) === Number(call.input.resourceId)) || null;
+-    if (call.input.id && (state as any)?.id !== call.input.id) throw new Error("计费配置ID与所选资源不一致");
++    if (call.input.id && (state as any)?.id !== call.input.id) throw new Error(botLabel("计费配置ID与所选资源不一致"));
+   }
+   if (call.tool === "plans.update") state = pick(row, [...Object.keys(planFields), "currency", "sortOrder", "trafficAddons"]);
+   if (call.tool === "subscriptions.assign") {
+     const plan = await db.getSubscriptionPlanById(Number(call.input.planId));
+-    if (!plan) throw new Error("套餐不存在");
++    if (!plan) throw new Error(botLabel("套餐不存在"));
+     state = { user: pick(row, ["id", "expiresAt", "trafficLimit", "maxRules"]), plan: pick(plan, [...Object.keys(planFields), "currency"]) };
+   }
+   if (call.tool === "users.limits") state = pick(row, [...fields, ...fields.map(k => `manual${k[0].toUpperCase()}${k.slice(1)}`)]);
+-  const preview = [row ? `对象：#${resourceId} ${row.name || row.title || row.username || ""}` : "", ...Object.entries(call.input).map(([k,v]) => `${fieldLabel(k)}：${row && fields.includes(k) && k in row && k !== "members" ? `${display(row[k])} → ` : ""}${display(v)}`), ...(def.warning ? [`注意：${def.warning}`] : [])].filter(Boolean);
+-  if (preview.join("\n").length > 2600) throw new Error("修改内容过多，无法完整展示确认卡片，请拆分为较小操作");
++  const preview = [row ? botText`对象：#${resourceId} ${row.name || row.title || row.username || ""}` : "", ...Object.entries(call.input).map(([k,v]) => `${fieldLabel(k)}：${row && fields.includes(k) && k in row && k !== "members" ? `${display(row[k])} → ` : ""}${display(v)}`), ...(def.warning ? [botText`注意：${botLabel(def.warning)}`] : [])].filter(Boolean);
++  if (preview.join("\n").length > 2600) throw new Error(botLabel("修改内容过多，无法完整展示确认卡片，请拆分为较小操作"));
+   return { fingerprint: digest(state), preview, row };
+ }
+ async function readManualPermissions(userId: number, resource: string) {
+@@ -315,7 +347,7 @@
+   const routeCall = webCall(call);
+   const normalized = await validateWebInput(routeCall);
+   const defaults = Object.entries(normalized).filter(([key]) => !(key in routeCall.input));
+-  const preview = [...state.preview, ...(defaults.length ? [`网页默认值：${defaults.map(([key,value]) => `${fieldLabel(key)}=${display(value)}`).join("，")}`] : [])];
++  const preview = [...state.preview, ...(defaults.length ? [botText`网页默认值：${defaults.map(([key,value]) => `${fieldLabel(key)}=${display(value)}`).join(", ")}`] : [])];
+   if (preview.join("\n").length > 2600) throw new Error("修改内容过多，无法完整展示确认卡片，请拆分操作");
+   return { ...call, fingerprint: state.fingerprint, preview };
+ }
+@@ -347,7 +379,7 @@
+   const def: Tool = PANEL_TOOLS[call.tool];
+   const { route, input } = webCall(call);
+   const result = await callRoute(caller, route, input);
+-  return { label: def.label, result: projectPanelResult(result) };
++  return { label: botLabel(def.label), result: projectPanelResult(result) };
+ }
+ 
+ // Read and execution results are projected even for admins; never return an
+@@ -364,22 +396,26 @@
+ }
+ for (const field of ["rateLimitMbps", "trafficMode", "quotaUsedIn", "quotaUsedOut", "ruleLimitReason", "expirySource", "ruleExpiresAt", "accountExpiresAt"]) SAFE_FIELDS.add(field);
+ SAFE_FIELDS.add("adminManaged");
+-function display(v: unknown): string { return v === true ? "开启" : v === false ? "关闭" : v == null ? "不限/未设置" : typeof v === "object" ? JSON.stringify(v) : String(v); }
++function display(v: unknown): string { return v === true ? botLabel("开启") : v === false ? botLabel("关闭") : v == null ? botLabel("不限/未设置") : typeof v === "object" ? JSON.stringify(v) : String(v); }
+ const FIELD_LABELS: Record<string, string> = {
+   adminManaged: "管理员自定义（用户只读）",
+   trafficMode: "流量计量方式", quotaUsedIn: "额度累计入向(字节)", quotaUsedOut: "额度累计出向(字节)",
+   ruleLimitReason: "规则暂停原因", expirySource: "生效到期来源", ruleExpiresAt: "规则到期时间", accountExpiresAt: "账户到期时间",
+   label: "查询内容", id: "ID", name: "名称", title: "标题", username: "用户名", value: "当前值", userId: "用户ID", hostId: "主机ID", tunnelId: "隧道ID", groupId: "转发组ID", forwardGroupId: "转发链/组ID", planId: "套餐ID", planName: "套餐", resourceId: "资源ID", resourceType: "资源类型", resourceIds: "资源ID列表", resource: "资源类型", operation: "操作", total: "匹配总数", count: "数量", items: "查询结果", result: "执行结果", configs: "计费配置", list: "列表", success: "成功", enabled: "启用", isEnabled: "启用", isActive: "有效", isStoreVisible: "商店展示", isOnline: "在线", status: "状态", type: "类型", message: "说明", createdAt: "创建时间", updatedAt: "更新时间", recordedAt: "采样时间", expiresAt: "到期时间", stoppedAt: "主机到期时间", bytesIn: "入向流量(字节)", bytesOut: "出向流量(字节)", trafficLimit: "流量额度(字节,0=不限)", trafficUsed: "已用流量(字节)", totalIn: "总入向(字节)", totalOut: "总出向(字节)", totalTrafficIn: "总入向(字节)", totalTrafficOut: "总出向(字节)", cpuUsage: "CPU使用率", memoryUsage: "内存使用率", diskUsage: "磁盘使用率", memoryUsed: "内存已用(字节)", memoryTotal: "内存总量(字节)", diskUsed: "磁盘已用(字节)", diskTotal: "磁盘总量(字节)", connections: "连接数", balanceCents: "余额(分)", priceCents: "价格(分)", pricePerGbMilliCents: "每GB价格(千分之一分)", durationDays: "期限(天)", maxRules: "规则上限", maxPorts: "端口上限", maxConnections: "连接上限", maxIPs: "IP上限", sourcePort: "入口端口", targetIp: "目标地址", targetPort: "目标端口", forwardType: "转发工具", protocol: "协议", listenPort: "隧道监听端口", portRangeStart: "起始端口", portRangeEnd: "结束端口", proxyProtocolSend: "发送PROXY", proxyProtocolReceive: "接收PROXY", proxyProtocolExitSend: "出口发送PROXY", proxyProtocolExitReceive: "出口接收PROXY", proxyProtocolVersion: "PROXY版本", tcpFastOpen: "TCP Fast Open", zeroCopy: "零拷贝", udpOverTcp: "UDP Over TCP", telegramErrorNotifyEnabled: "规则异常通知", blockHttp: "阻止HTTP", blockSocks: "阻止SOCKS", blockTls: "阻止TLS", rateLimitMbps: "限速(Mbps)", trafficMultiplier: "流量倍率(100=1倍)", members: "成员列表", hostIds: "主机授权", tunnelIds: "隧道授权", forwardGroupIds: "转发组授权", renewalReminderDays: "续费提前提醒(天)", telegramRenewalReminderEnabled: "续费提醒", trafficFailoverEnabled: "达量剔除", trafficFailoverThresholdPercent: "达量剔除阈值(%)", trafficAutoReset: "流量自动重置", trafficResetDay: "重置日", syncExistingSubscribers: "同步已有订阅", userCount: "用户数", activeRedemptionCodes: "有效兑换码", activeDiscountCodes: "有效折扣码", totalBalanceCents: "总余额(分)", totalHosts: "主机总数", onlineHosts: "在线主机", totalRules: "规则总数", runningRules: "运行规则", totalTunnels: "隧道总数", totalUsers: "用户总数", totalPlans: "套餐总数", remark: "备注", description: "说明", role: "角色", accountEnabled: "账号启用", currency: "币种",
+ };
+-function fieldLabel(key: string) { return FIELD_LABELS[key] || key; }
++function fieldLabel(key: string) {
++  const label = FIELD_LABELS[key] || key;
++  const translated = botLabel(label);
++  return botEnglish() && translated === label ? key : translated;
++}
+ export function formatPanelToolResult(value: unknown) {
+   function lines(v: any, indent = ""): string[] {
+     if (Array.isArray(v)) return v.length ? v.flatMap((item, index) => [`${indent}${index + 1}.`, ...lines(item, `${indent}  `)]) : [`${indent}无匹配记录`];
+     if (v && typeof v === "object") return Object.entries(v).flatMap(([key, item]) => item && typeof item === "object" ? [`${indent}${fieldLabel(key)}：`, ...lines(item, `${indent}  `)] : [`${indent}${fieldLabel(key)}：${display(item)}`]);
+     return [`${indent}${display(v)}`];
+   }
+-  const text = value === undefined ? "操作已提交，请查看面板确认运行状态" : lines(value).join("\n");
+-  return text.length > 2800 ? `${text.slice(0, 2800)}\n…结果较长，已截断；请指定ID或名称进一步查询。` : text;
++  const text = value === undefined ? botLabel("操作已提交，请查看面板确认运行状态") : lines(value).join("\n");
++  return text.length > 2800 ? botText`${text.slice(0, 2800)}\n…结果较长，已截断；请指定ID或名称进一步查询。` : text;
+ }
+ export async function queryPanelCall(actorId: number, tool: unknown, input: unknown, resources: (kind: "rules" | "hosts", actor: any) => Promise<any[]>) {
+   const db = await import("../db");
+--- a/server/ai/planner.ts
++++ b/server/ai/planner.ts
+@@ -1,4 +1,5 @@
+ import { z } from "zod";
++import { botLabel, botEnglish } from "../botLocale";
+ import { forwardxAiClient, type ForwardxAiClient } from "./client";
+ import type { ForwardxAiSettings } from "./settings";
+ import { forwardxManageIntentResponseSchema, forwardxQueryIntentResponseSchema, FORWARDX_MANAGE_ACTIONS, FORWARDX_QUERY_INTENTS } from "./skills/forwardxCore";
+@@ -50,13 +51,13 @@
+   const observed = new Set<string>();
+   for (let round = 0; round < 3; round++) {
+     const plan = await (options.client || forwardxAiClient).requestStructuredJson({
+-      operation: "bot.plan", settings: options.settings, systemPrompt: `${PROMPT}\nAvailable panel tools for this role:\n${panelToolCatalog(options.actorRole)}`,
++      operation: "bot.plan", settings: options.settings, systemPrompt: `${PROMPT}\nWrite goal and clarification questions in ${botEnglish() ? "English" : "Chinese"}. Preserve user names and input values.\nAvailable panel tools for this role:\n${panelToolCatalog(options.actorRole)}`,
+       userText: options.text, schema: botPlanSchema, maxTokens: 2048,
+       context: { actorRole: options.actorRole, currentTime: new Date().toISOString(), timezone: Intl.DateTimeFormat().resolvedOptions().timeZone, workflow: options.workflow, observations, remainingObservationRounds: 2 - round },
+     });
+     if (plan.kind !== "context") {
+       if (plan.kind === "manage" && (plan.confidence < 0.7 || plan.actions.some((a) => a.action === "none"))) {
+-        return { kind: "clarify", goal: plan.goal, confidence: plan.confidence, question: "请明确希望修改的对象和操作；当前信息不足以安全生成执行计划。" };
++        return { kind: "clarify", goal: plan.goal, confidence: plan.confidence, question: botLabel("请明确希望修改的对象和操作；当前信息不足以安全生成执行计划。") };
+       }
+       return plan;
+     }
+@@ -76,5 +77,5 @@
+       } else observations.push({ tool: tool.name, keyword: tool.keyword, data });
+     }
+   }
+-  return { kind: "clarify", goal: "明确操作目标", confidence: 0, question: "仍无法确定唯一的操作对象，请补充资源 ID、名称或具体参数。" };
++  return { kind: "clarify", goal: botLabel("明确操作目标"), confidence: 0, question: botLabel("仍无法确定唯一的操作对象，请补充资源 ID、名称或具体参数。") };
+ }
+--- a/server/ai/ruleCreateWizard.ts
++++ b/server/ai/ruleCreateWizard.ts
+@@ -1,3 +1,5 @@
++import { botText, botLabel } from "../botLocale";
++
+ export type BotChoice = { label: string; input: Record<string, unknown> };
+ export type BotChoicePrompt = { question: string; field: string; choices: BotChoice[]; page: number; pages: number };
+ export type RuleRouteChoice = { id: number; name: string; type: "tunnel" | "group"; groupMode?: string };
+@@ -12,20 +14,20 @@
+ }
+ 
+ export function ruleCreatePrompt(input: Record<string, unknown>, routes: RuleRouteChoice[], requestedPage = 0): BotChoicePrompt | null {
+-  if (!input.targetIp || !input.targetPort) return { question: "请补充目标地址和端口，例如 10.10.10.10:22。", field: "target", choices: [], page: 0, pages: 1 };
++  if (!input.targetIp || !input.targetPort) return { question: botLabel("请补充目标地址和端口，例如 10.10.10.10:22。"), field: "target", choices: [], page: 0, pages: 1 };
+   if (!input.tunnelId && !input.forwardGroupId) {
+     const pageSize = 8;
+     const pages = Math.max(1, Math.ceil(routes.length / pageSize));
+     const page = Math.max(0, Math.min(pages - 1, Math.floor(requestedPage) || 0));
+-    return { question: routes.length ? "请选择要添加到哪个隧道或端口转发链；也可以输入链路名称或 ID。" : "当前没有可用的隧道或端口转发链，请先创建资源或联系管理员授权，然后发送“继续”。",
++    return { question: routes.length ? botLabel("请选择要添加到哪个隧道或端口转发链；也可以输入链路名称或 ID。") : botLabel("当前没有可用的隧道或端口转发链，请先创建资源或联系管理员授权，然后发送“继续”。"),
+       field: "route", page, pages, choices: routes.slice(page * pageSize, (page + 1) * pageSize).map(route => ({
+-        label: `${route.type === "tunnel" ? "🔗 隧道" : route.groupMode === "chain" ? "🔀 转发链" : route.groupMode === "port" ? "🖥 端口转发" : "🔁 转发组"} #${route.id} ${Array.from(route.name).slice(0, 24).join("").replace(/[\r\n\t]/g, " ")}`,
++        label: `${route.type === "tunnel" ? botLabel("🔗 隧道") : route.groupMode === "chain" ? botLabel("🔀 转发链") : route.groupMode === "port" ? botLabel("🖥 端口转发") : botLabel("🔁 转发组")} #${route.id} ${Array.from(route.name).slice(0, 24).join("").replace(/[\r\n\t]/g, " ")}`,
+         input: route.type === "tunnel" ? { tunnelId: route.id, forwardGroupId: null } : { forwardGroupId: route.id, tunnelId: null },
+       })) };
+   }
+-  if (input.sourcePort === undefined) return { question: "入口监听端口使用哪个？点击随机分配，或直接输入 1–65535 的端口号。", field: "sourcePort", page: 0, pages: 1,
+-    choices: [{ label: "🎲 随机分配可用端口", input: { sourcePort: 0 } }] };
+-  if (input.protocol === undefined) return { question: "请选择需要转发的协议。", field: "protocol", page: 0, pages: 1,
++  if (input.sourcePort === undefined) return { question: botLabel("入口监听端口使用哪个？点击随机分配，或直接输入 1–65535 的端口号。"), field: "sourcePort", page: 0, pages: 1,
++    choices: [{ label: botLabel("🎲 随机分配可用端口"), input: { sourcePort: 0 } }] };
++  if (input.protocol === undefined) return { question: botLabel("请选择需要转发的协议。"), field: "protocol", page: 0, pages: 1,
+     choices: ["tcp", "udp", "both"].map(protocol => ({ label: protocol === "both" ? "TCP + UDP" : protocol.toUpperCase(), input: { protocol } })) };
+   return null;
+ }
+--- a/server/ai/workflow.fixture.ts
++++ b/server/ai/workflow.fixture.ts
+@@ -1,15 +1,39 @@
+ import assert from "node:assert/strict";
++import { mock } from "node:test";
+ import * as runtime from "../dbRuntime";
+ import { ensureDatabaseSchema } from "../dbSchema";
+ import { setSettings } from "../repositories/settingsRepository";
+ import { getUserById } from "../repositories/userRepository";
+ import * as store from "./workflowStore";
+ 
+-const scope: store.BotScope = { provider: "discord", chatId: "234567890123456789", actorUserId: 1 };
++const provider = process.env.WORKFLOW_PROVIDER === "telegram" ? "telegram" : "discord";
++const scope: store.BotScope = { provider, chatId: provider === "telegram" ? 1001 : "234567890123456789", actorUserId: 1 };
++const actorId = provider === "telegram" ? 1001 : "123456789012345679";
++const customerId = provider === "telegram" ? 1002 : "123456789012345680";
++const identityColumn = provider === "telegram" ? "telegramId" : "discordId";
++const pollQueue: any[] = [];
++let pollWake: (() => void) | undefined;
++let updateId = 0;
+ const phase = process.argv[2];
+ const replies: any[] = [];
+ const requests: any[] = [];
+ globalThis.fetch = (async (_url, init) => {
++  if (String(_url).startsWith("https://discord.com/api/v10/")) {
++    const body = JSON.parse(String(init?.body || "{}"));
++    if (body.content && !String(_url).includes("/interactions/")) replies.push({ method: "gatewayReply", body: { text: body.content, reply_markup: body.components } });
++    return Response.json({ id: "345678901234567890", username: "test_bot" });
++  }
++  if (String(_url).startsWith("https://api.telegram.org/")) {
++    const method = String(_url).split("/").at(-1)!;
++    const body = JSON.parse(String(init?.body || "{}"));
++    if (method === "getUpdates") {
++      if (!pollQueue.length) await new Promise<void>(resolve => { pollWake = resolve; });
++      pollWake = undefined;
++      return Response.json({ ok: true, result: pollQueue.splice(0) });
++    }
++    if (["sendMessage", "editMessageText"].includes(method)) { assert.ok(body.text.length <= 4096, "Telegram output stays within its message limit"); replies.push({ method, body }); }
++    return Response.json({ ok: true, result: method === "getMe" ? { id: 999, username: "test_bot" } : { message_id: 1 } });
++  }
+   const body = JSON.parse(String(init?.body));
+   requests.push(body);
+   const text = body.messages[1].content;
+@@ -30,34 +54,60 @@
+     : { kind: "manage", goal: "给张三充值并续费", confidence: 0.95, actions: [{ action: "balance_adjust", target: "2" }, { action: "renew", target: "2" }] };
+   return Response.json({ choices: [{ message: { content: JSON.stringify(response) } }] });
+ }) as typeof fetch;
+-const { processDiscordBotUpdate } = await import("../telegramBot");
++const { processDiscordBotUpdate, startTelegramBot, stopTelegramBot } = await import("../telegramBot");
+ const db = await import("../db");
+-const { discordComponents } = await import("../discordBot");
++const { discordComponents, handleDiscordGatewayDispatch, discordConnectionStatus } = await import("../discordBot");
++const gateway = async (event: string, data: any) => {
++  await handleDiscordGatewayDispatch(event, data);
++  const deadline = Date.now() + 10000;
++  while (discordConnectionStatus().queued) {
++    if (Date.now() > deadline) throw new Error("Gateway workflow did not finish");
++    await new Promise(resolve => setTimeout(resolve, 10));
++  }
++};
+ const api = async (method: string, body?: Record<string, unknown>) => {
+   replies.push({ method, body }); return { message_id: "345678901234567890" };
+ };
+-const from = { id: "123456789012345679", username: "admin" };
++const from = { id: actorId, username: "admin", language_code: phase.startsWith("english") ? "en" : "zh" };
+ const msg = { message_id: "345678901234567891", chat: { id: scope.chatId, type: "private" } };
+-const message = (text: string) => processDiscordBotUpdate({ update_id: 0, message: { ...msg, from, text } }, api);
+-const callback = (data: string) => processDiscordBotUpdate({ update_id: 0, callback_query: { id: "test-callback", from, message: msg, data } }, api);
++const dispatch = async (update: any) => {
++  if (provider === "discord") return processDiscordBotUpdate(update, api);
++  const before = replies.length;
++  pollQueue.push({ ...update, update_id: ++updateId });
++  pollWake?.();
++  const deadline = Date.now() + 5000;
++  while (replies.length === before) {
++    if (Date.now() > deadline) throw new Error("Telegram workflow reply timed out");
++    await new Promise(resolve => setTimeout(resolve, 10));
++  }
++  // Allow additional progress/result messages from the same business operation.
++  await new Promise(resolve => setTimeout(resolve, 50));
++};
++const message = (text: string) => dispatch({ update_id: 0, message: { ...msg, from, text } });
++const callback = (data: string) => dispatch({ update_id: 0, callback_query: { id: "test-callback", from, message: msg, data } });
+ 
+ await runtime.connectDatabase({ type: "sqlite", sqlite: { path: process.env.FORWARDX_TEST_DB! } });
+ try {
+   await ensureDatabaseSchema();
++  if (provider === "telegram") {
++    await setSettings({ notificationChannel: "telegram", telegramBotEnabled: "true", telegramBotToken: "test-token" });
++    await startTelegramBot();
++  }
+   if (phase === "start") {
+-    await runtime.executeRaw('INSERT INTO users (id,username,password,name,role,"accountEnabled","discordId") VALUES (1,?,?,?,\'admin\',1,?)', ["admin", "never-send-password", "管理员", from.id]);
++    await runtime.executeRaw(`INSERT INTO users (id,username,password,name,role,"accountEnabled","${identityColumn}") VALUES (1,?,?,?,'admin',1,?)`, ["admin", "never-send-password", "管理员", String(from.id)]);
+     await runtime.executeRaw('INSERT INTO users (id,username,password,name,role,"accountEnabled") VALUES (2,?,?,?,\'user\',1)', ["customer", "private-password", "张三"]);
+-    await setSettings({ notificationChannel: "discord", discordBotEnabled: "true", discordBotToken: "test-token", discordBotId: "999999999999999999", deepseekAiEnabled: "true", deepseekApiKey: "test-key", telegramAiAutoRecallEnabled: "false" });
++    await setSettings({ notificationChannel: provider, discordBotEnabled: "true", discordBotToken: "test-token", discordBotId: "999999999999999999", deepseekAiEnabled: "true", deepseekApiKey: "test-key", telegramAiAutoRecallEnabled: "false" });
+     // No old write keyword is needed to let the planner understand this goal.
+     await message("让张三继续用下去，顺便充点钱");
+     const draft = await store.readBotDraft<any>(scope);
++    assert.ok(draft, JSON.stringify(replies));
+     assert.equal(draft.intent.action, "balance_adjust");
+     assert.equal(draft.intent.target, "2");
+     assert.equal(draft.remainingIntents[0].action, "renew");
+     assert.ok(draft.missingFields.includes("amountYuan"));
+     assert.equal((await getUserById(2))?.balanceCents, 0);
+     assert.ok(requests.length > 0);
+-    assert.equal(await store.readBotDraft({ ...scope, provider: "telegram" }), null);
++    assert.equal(await store.readBotDraft({ ...scope, provider: provider === "discord" ? "telegram" : "discord" }), null);
+     assert.equal(await store.readBotDraft({ ...scope, actorUserId: 2 }), null);
+     assert.equal(await store.readBotDraft({ ...scope, chatId: "other-chat" }), null);
+   } else if (phase === "supplement") {
+@@ -89,6 +139,10 @@
+     assert.ok(next.missingFields.includes("duration"));
+     assert.equal((await store.readBotAction(scope, draft.confirmationKey))?.status, "succeeded");
+   } else if (phase === "finish") {
++    await message("继续");
++    assert.match(replies.at(-1).body.text, /已完成结果/);
++    assert.match(replies.at(-1).body.text, /50\.00/);
++    assert.match(replies.at(-1).body.text, /待处理/);
+     await message("1个月");
+     const draft = await store.readBotDraft<any>(scope);
+     assert.equal(draft.intent.target, "2");
+@@ -102,9 +156,9 @@
+   } else if (phase === "security") {
+     await message("读取上下文");
+     assert.ok(requests.some((request) => request.messages[2].content.includes('"name":"张三"')));
+-    const customerDiscordId = "123456789012345680";
+-    await runtime.executeRaw('UPDATE users SET "discordId" = ? WHERE id = 2', [customerDiscordId]);
+-    await processDiscordBotUpdate({ update_id: 0, message: { ...msg, from: { id: customerDiscordId }, text: "给自己充值50" } }, api);
++    const customerDiscordId = customerId;
++    await runtime.executeRaw(`UPDATE users SET "${identityColumn}" = ? WHERE id = 2`, [String(customerDiscordId)]);
++    await dispatch({ update_id: 0, message: { ...msg, from: { id: customerDiscordId }, text: "给自己充值50" } });
+     assert.equal((await getUserById(2))?.balanceCents, 5000);
+     const denied = await store.readBotDraft<any>({ ...scope, actorUserId: 2 });
+     assert.equal(denied.confirmationKey, undefined, "unauthorized write never gets an approval token");
+@@ -115,7 +169,7 @@
+     await runtime.executeRaw('UPDATE users SET role = \'user\' WHERE id = 1');
+     await callback(`fx:op:confirm:${draft.confirmationKey}`);
+     assert.equal((await getUserById(2))?.balanceCents, 5000);
+-    assert.equal((await store.readBotAction(scope, draft.confirmationKey))?.status, "uncertain");
++    assert.equal((await store.readBotAction(scope, draft.confirmationKey))?.status, "rejected", "permission loss is rejected before any business write");
+     await message("取消");
+     await runtime.executeRaw('UPDATE users SET role = \'admin\' WHERE id = 1');
+   } else if (phase === "claim") {
+@@ -123,7 +177,7 @@
+     await store.saveBotDraft(scope, { confirmationKey: token, sourceText: "test interrupted write", goal: "检查中断恢复", completedActions: [] });
+     const claims = await Promise.all(Array.from({ length: 8 }, () => store.claimBotAction(scope, token)));
+     assert.equal(claims.filter(Boolean).length, 1);
+-    assert.equal(await store.claimBotAction({ ...scope, provider: "telegram" }, token), null);
++    assert.equal(await store.claimBotAction({ ...scope, provider: provider === "discord" ? "telegram" : "discord" }, token), null);
+   } else if (phase === "uncertain") {
+     const draft = await store.readBotDraft<any>(scope);
+     assert.equal((await store.readBotAction(scope, draft.confirmationKey))?.status, "executing");
+@@ -243,13 +297,13 @@
+     assert.equal(rules.length, 1); assert.equal(rules[0].forwardType, "gost");
+     assert.equal(rules[0].targetPort, 443); assert.ok(rules[0].sourcePort > 0);
+   } else if (phase === "wizard_permissions") {
+-    const customerFrom = { id: "123456789012345680" };
++    const customerFrom = { id: customerId };
+     const customerScope = { ...scope, actorUserId: 2 };
+     await store.clearBotDraft(customerScope);
+-    await runtime.executeRaw(`UPDATE users SET "discordId"=?,"canAddRules"=1,"manualCanAddRules"=1 WHERE id=2`, [customerFrom.id]);
++    await runtime.executeRaw(`UPDATE users SET "${identityColumn}"=?,"canAddRules"=1,"manualCanAddRules"=1 WHERE id=2`, [String(customerFrom.id)]);
+     await db.setUserForwardGroupPermissions(2, [100]);
+-    const customerMessage = (text: string) => processDiscordBotUpdate({ update_id: 0, message: { ...msg, from: customerFrom, text } }, api);
+-    const customerClick = (data: string) => processDiscordBotUpdate({ update_id: 0, callback_query: { id: "customer-click", from: customerFrom, message: msg, data } }, api);
++    const customerMessage = (text: string) => dispatch({ update_id: 0, message: { ...msg, from: customerFrom, text } });
++    const customerClick = (data: string) => dispatch({ update_id: 0, callback_query: { id: "customer-click", from: customerFrom, message: msg, data } });
+     await customerMessage("帮我添加转发规则到目标10.10.10.10:22");
+     let draft = await store.readBotDraft<any>(customerScope);
+     assert.equal(draft.selection.choices.length, 1);
+@@ -279,7 +333,197 @@
+     draft = await store.readBotDraft<any>(scope);
+     await callback(`fx:op:confirm:${draft.confirmationKey}`);
+     assert.equal(await store.readBotDraft(scope), null);
++  } else if (phase === "menu_renew") {
++    const buttons = () => replies.at(-1).body.reply_markup.inline_keyboard.flat();
++    const beforeCancel = (await getUserById(2))!.expiresAt!.getTime();
++    await callback("fx:admin:renew:2:0");
++    const cancelled = buttons().find((b: any) => b.callback_data.startsWith("fx:admin:renew:confirm:"));
++    await callback(buttons().find((b: any) => b.text.includes("取消")).callback_data);
++    await callback(cancelled.callback_data);
++    assert.equal((await getUserById(2))!.expiresAt!.getTime(), beforeCancel, "cancelled menu approvals cannot renew later");
++    await message("/renew 2");
++    const replaced = buttons().find((b: any) => b.callback_data.startsWith("fx:admin:renew:confirm:"));
++    await callback("fx:admin:renew:2:0");
++    const confirm = replies.at(-1).body.reply_markup.inline_keyboard.flat().find((button: any) => button.callback_data.startsWith("fx:admin:renew:confirm:"));
++    assert.ok(confirm);
++    await callback(replaced.callback_data);
++    assert.equal((await getUserById(2))!.expiresAt!.getTime(), beforeCancel, "opening a new preview invalidates the old command approval");
++    await callback(confirm.callback_data);
++    const afterOnce = (await getUserById(2))!.expiresAt!.getTime();
++    await callback(confirm.callback_data);
++    assert.equal((await getUserById(2))!.expiresAt!.getTime(), afterOnce, "a repeated menu approval must not extend the account twice");
++    await message("/renew 2");
++    const renewalScope = { ...scope, chatId: `renewal:${scope.chatId}` };
++    const expired = await store.readBotDraft<any>(renewalScope);
++    const expiredAction = await store.readBotAction<any>(renewalScope, expired.confirmationKey);
++    await runtime.executeRaw('UPDATE ai_bot_workflows SET payload=? WHERE id=?', [JSON.stringify({ ...expiredAction!.payload, expiresAt: Date.now() - 1 }), expired.confirmationKey]);
++    await callback(`fx:admin:renew:confirm:${expired.confirmationKey}:0`);
++    assert.equal((await getUserById(2))!.expiresAt!.getTime(), afterOnce, "expired command approval cannot renew");
++    await message("/renew 2");
++  } else if (phase === "menu_restart") {
++    const renewalScope = { ...scope, chatId: `renewal:${scope.chatId}` };
++    const saved = await store.readBotDraft<any>(renewalScope);
++    const approval = await store.readBotAction<any>(renewalScope, saved.confirmationKey);
++    await callback(`fx:admin:renew:confirm:${saved.confirmationKey}:0`);
++    assert.equal((await getUserById(2))!.expiresAt!.getTime(), Math.floor(approval!.payload.nextExpiresAt / 1000) * 1000, "command renewal survives a real process restart");
++    await callback(`fx:admin:renew:confirm:${saved.confirmationKey}:0`);
++    assert.equal((await getUserById(2))!.expiresAt!.getTime(), Math.floor(approval!.payload.nextExpiresAt / 1000) * 1000);
++  } else if (phase === "english_wizard") {
++    const source = "add forwarding rule to 203.0.113.90:443";
++    await message(source);
++    let draft = await store.readBotDraft<any>(scope);
++    assert.match(replies.at(-1).body.text, /Choose.*tunnel|Choose.*forwarding/);
++    await callback(`fx:op:choose:${draft.selection.key}:0`);
++    draft = await store.readBotDraft<any>(scope);
++    assert.match(replies.at(-1).body.text, /listening port/);
++    await callback(`fx:op:choose:${draft.selection.key}:0`);
++    draft = await store.readBotDraft<any>(scope);
++    assert.match(replies.at(-1).body.text, /protocol/);
++    await callback(`fx:op:choose:${draft.selection.key}:0`);
++    draft = await store.readBotDraft<any>(scope);
++    assert.match(replies.at(-1).body.text, /Operation confirmation/);
++    assert.match(replies.at(-1).body.text, /Target address/);
++    assert.ok(replies.at(-1).body.text.includes(source));
++    await callback(`fx:op:confirm:${draft.confirmationKey}`);
++    assert.match(replies.at(-1).body.text, /Completed/);
++    await message("调整插件开关");
++    draft = await store.readBotDraft<any>(scope);
++    assert.match(replies.at(-1).body.text, /Choose/);
++    assert.match(replies.at(-1).body.reply_markup.inline_keyboard[0][0].text, /Enable/);
++    await callback(`fx:op:choose:${draft.selection.key}:0`);
++    draft = await store.readBotDraft<any>(scope);
++    assert.match(replies.at(-1).body.text, /Plugins/);
++    await callback(`fx:op:confirm:${draft.confirmationKey}`);
++    draft = await store.readBotDraft<any>(scope);
++    await callback(`fx:op:confirm:${draft.confirmationKey}`);
++    await message("让张三继续用下去，顺便充点钱");
++    assert.match(replies.at(-1).body.text, /Choose.*amount/);
++    const amount = replies.at(-1).body.reply_markup.inline_keyboard.flat().find((b: any) => b.text.includes("50"));
++    await callback(amount.callback_data);
++    draft = await store.readBotDraft<any>(scope);
++    assert.match(replies.at(-1).body.text, /Current balance/);
++    assert.ok(replies.at(-1).body.text.includes("张三"));
++    await callback(`fx:op:confirm:${draft.confirmationKey}`);
++    assert.match(replies.at(-1).body.text, /Choose.*duration/);
++    const duration = replies.at(-1).body.reply_markup.inline_keyboard.flat().find((b: any) => b.text === "1 month");
++    await callback(duration.callback_data);
++    draft = await store.readBotDraft<any>(scope);
++    assert.match(replies.at(-1).body.text, /expiry|Expiry/);
++    await callback(`fx:op:confirm:${draft.confirmationKey}`);
++    assert.match(replies.at(-1).body.text, /New expiry/);
++    assert.ok(replies.at(-1).body.text.includes("张三"));
++    // Restore the known starting balance for the following independent cases.
++    await runtime.executeRaw('UPDATE users SET "balanceCents"=5000 WHERE id=2');
++  } else if (phase === "gateway_english_start") {
++    if (provider === "discord") {
++      await gateway("INTERACTION_CREATE", { id: "456789012345678901", application_id: "999999999999999999", type: 2,
++        token: "test_interaction_token", channel_id: scope.chatId, user: { id: actorId, username: "admin" }, locale: "en-US",
++        data: { name: "ask", options: [{ name: "args", value: "add forwarding rule to 203.0.113.94:443" }] } });
++      assert.match(replies.at(-1).body.text, /Choose.*forwarding/);
++      assert.ok((await store.readBotDraft<any>(scope)).selection);
++    }
++  } else if (phase === "gateway_english_finish") {
++    if (provider === "discord") {
++      await gateway("MESSAGE_CREATE", { id: "456789012345678902", channel_id: scope.chatId,
++        author: { id: actorId, username: "admin" }, content: "resume" });
++      assert.match(replies.at(-1).body.text, /Choose.*forwarding/);
++      assert.ok(replies.at(-1).body.text.includes("203.0.113.94"));
++      await gateway("MESSAGE_CREATE", { id: "456789012345678903", channel_id: scope.chatId,
++        author: { id: actorId, username: "admin" }, content: "cancel" });
++      assert.match(replies.at(-1).body.text, /submitted|completed/);
++    }
++  } else if (phase === "english_partial_start") {
++    await message("让张三继续用下去，顺便充点钱");
++    await message("50元");
++    let draft = await store.readBotDraft<any>(scope);
++    await callback(`fx:op:confirm:${draft.confirmationKey}`);
++    assert.equal((await getUserById(2))!.balanceCents, 10000);
++    await message("1个月");
++    draft = await store.readBotDraft<any>(scope);
++    const { appRouter } = await import("../routers");
++    const admin = appRouter.createCaller({ user: (await getUserById(1))!, authSession: null, authFailureReason: null,
++      req: { headers: {}, socket: {}, protocol: "https", get: () => undefined }, res: { clearCookie: () => undefined } } as any);
++    await admin.users.updateTrafficSettings({ userId: 2, expiresAt: new Date(Date.now() + 86400000).toISOString() });
++    await callback(`fx:op:confirm:${draft.confirmationKey}`);
++    assert.equal((await store.readBotAction(scope, draft.confirmationKey))!.status, "rejected");
++    assert.match(replies.at(-1).body.text, /Not executed/);
++    assert.equal((await getUserById(2))!.balanceCents, 10000);
++  } else if (phase === "english_partial_resume") {
++    await message("resume");
++    assert.match(replies.at(-1).body.text, /Completed results/);
++    assert.match(replies.at(-1).body.text, /50\.00/);
++    assert.match(replies.at(-1).body.text, /Pending/);
++    const draft = await store.readBotDraft<any>(scope);
++    await callback(`fx:op:confirm:${draft.confirmationKey}`);
++    assert.match(replies.at(-1).body.text, /New expiry/);
++    await callback(`fx:op:confirm:${draft.confirmationKey}`);
++    assert.equal((await getUserById(2))!.balanceCents, 10000, "resuming a failed second step never repeats the completed top-up");
++    await runtime.executeRaw('UPDATE users SET "balanceCents"=5000 WHERE id=2');
++  } else if (phase === "resume_preview") {
++    await message("让张三继续用下去，顺便充点钱");
++    const oldChoice = replies.at(-1).body.reply_markup.inline_keyboard.flat().find((b: any) => b.text.includes("50"));
++    assert.ok(oldChoice);
++    await message("取消");
++    await message("让张三继续用下去，顺便充点钱");
++    await callback(oldChoice.callback_data);
++    const untouched = await store.readBotDraft<any>(scope);
++    assert.equal(untouched.intent.amountYuan, undefined, "an old amount button cannot fill a new draft");
++    assert.equal(untouched.confirmationKey, undefined);
++    await message("50元");
++    const old = await store.readBotDraft<any>(scope);
++    const balanceLine = replies.at(-1).body.text.match(/当前余额：[^\n]+/)[0];
++    await message("继续");
++    assert.match(replies.at(-1).body.text, /目标用户：#2/);
++    assert.ok(replies.at(-1).body.text.includes(balanceLine), "resume must show the same real target balance");
++    const refreshed = await store.readBotDraft<any>(scope);
++    assert.notEqual(refreshed.confirmationKey, old.confirmationKey);
++    await callback(`fx:op:confirm:${old.confirmationKey}`);
++    assert.equal((await getUserById(2))!.balanceCents, 5000);
++    await callback(`fx:op:confirm:${refreshed.confirmationKey}`);
++    assert.equal((await getUserById(2))!.balanceCents, 10000);
++  } else if (phase === "legacy_stale") {
++    await message("1个月");
++    const draft = await store.readBotDraft<any>(scope);
++    const expected = new Date(Date.now() + 5 * 86400000);
++    const { appRouter } = await import("../routers");
++    const admin = appRouter.createCaller({ user: (await getUserById(1))!, authSession: null, authFailureReason: null,
++      req: { headers: {}, socket: {}, protocol: "https", get: () => undefined }, res: { clearCookie: () => undefined } } as any);
++    await admin.users.updateTrafficSettings({ userId: 2, expiresAt: expected.toISOString() });
++    await callback(`fx:op:confirm:${draft.confirmationKey}`);
++    assert.equal((await getUserById(2))!.expiresAt!.getTime(), Math.floor(expected.getTime() / 1000) * 1000, "a changed expiry must invalidate the old renewal preview");
++    assert.equal((await store.readBotAction(scope, draft.confirmationKey))!.status, "rejected");
++    await message("取消");
++    await admin.users.updateTrafficSettings({ userId: 2, expiresAt: new Date(Date.now() - 86400000).toISOString() });
++    mock.timers.enable({ apis: ["Date"], now: Date.now() });
++    await message("1个月");
++    const exact = await store.readBotDraft<any>(scope);
++    const confirmedDate = replies.at(-1).body.text.match(/续费后到期：<b>([^<]+)<\/b>/)[1];
++    mock.timers.tick(60000);
++    await callback(`fx:op:confirm:${exact.confirmationKey}`);
++    mock.timers.reset();
++    assert.equal((await getUserById(2))!.expiresAt!.toLocaleString("zh-CN"), confirmedDate, "renewal must use the expiry shown on the confirmation card");
++  } else if (phase === "manage_revoked") {
++    const customerFrom = { id: customerId, language_code: "zh" };
++    const customerScope = { ...scope, actorUserId: 2 };
++    const customerMessage = (text: string) => dispatch({ update_id: 0, message: { ...msg, from: customerFrom, text } });
++    const customerClick = (data: string) => dispatch({ update_id: 0, callback_query: { id: "revoked-click", from: customerFrom, message: msg, data } });
++    await db.setUserForwardGroupPermissions(2, [100]);
++    await setSettings({ telegramAiUserManageEnabled: "true" });
++    await customerMessage("添加转发规则到203.0.113.92:443");
++    let draft = await store.readBotDraft<any>(customerScope);
++    for (let i = 0; i < 3; i++) {
++      await customerClick(`fx:op:choose:${draft.selection.key}:0`);
++      draft = await store.readBotDraft<any>(customerScope);
++    }
++    assert.ok(draft.confirmationKey);
++    const before = (await runtime.queryRaw<any>('SELECT COUNT(*) AS count FROM forward_rules WHERE "userId"=2'))[0].count;
++    await setSettings({ telegramAiUserManageEnabled: "false" });
++    await customerClick(`fx:op:confirm:${draft.confirmationKey}`);
++    assert.equal((await runtime.queryRaw<any>('SELECT COUNT(*) AS count FROM forward_rules WHERE "userId"=2'))[0].count, before, "disabling user management must immediately reject a previously valid approval");
++    assert.equal((await store.readBotAction(customerScope, draft.confirmationKey))!.status, "rejected");
++    await customerMessage("取消");
++    await setSettings({ telegramAiUserManageEnabled: "true" });
+   } else throw new Error(`Unknown phase ${phase}`);
+   assert.ok(!JSON.stringify(requests).includes("never-send-password"));
+   assert.ok(!JSON.stringify(requests).includes("private-password"));
+-} finally { await runtime.closeDatabase(); }
++} finally { stopTelegramBot(); pollWake?.(); await new Promise<void>(resolve => setImmediate(resolve)); await runtime.closeDatabase(); }
+--- a/server/ai/workflow.test.ts
++++ b/server/ai/workflow.test.ts
+@@ -9,12 +9,12 @@
+ test("real bot workflow survives process restarts, expired approvals, duplicate clicks and partial execution", () => {
+   const directory = fs.mkdtempSync(path.join(os.tmpdir(), "forwardx-ai-workflow-"));
+   try {
+-    for (const phase of ["start", "supplement", "confirm", "finish", "security", "claim", "uncertain", "panel_start", "panel_finish", "wizard_start", "wizard_finish", "wizard_tunnel", "wizard_permissions", "wizard_settings"]) {
++    for (const provider of ["discord", "telegram"]) for (const phase of ["start", "supplement", "confirm", "finish", "security", "claim", "uncertain", "panel_start", "panel_finish", "wizard_start", "wizard_finish", "wizard_tunnel", "wizard_permissions", "wizard_settings", "menu_renew", "menu_restart", "english_wizard", "gateway_english_start", "gateway_english_finish", "english_partial_start", "english_partial_resume", "resume_preview", "legacy_stale", "manage_revoked"]) {
+       const result = spawnSync(process.execPath, ["--import", "tsx", "server/ai/workflow.fixture.ts", phase], {
+         cwd: process.cwd(), encoding: "utf8", timeout: 60_000,
+-        env: { ...process.env, DATABASE_TYPE: "sqlite", FORWARDX_TEST_DB: path.join(directory, "workflow.db"), FORWARDX_LOG_DIR: path.join(directory, "logs"), JWT_SECRET: "workflow-test-only-32-characters-secret", TELEGRAM_BOT_TOKEN: "", DISCORD_BOT_TOKEN: "" },
++        env: { ...process.env, WORKFLOW_PROVIDER: provider, DATABASE_TYPE: "sqlite", FORWARDX_TEST_DB: path.join(directory, `${provider}.db`), FORWARDX_LOG_DIR: path.join(directory, "logs"), JWT_SECRET: "workflow-test-only-32-characters-secret", TELEGRAM_BOT_TOKEN: "", DISCORD_BOT_TOKEN: "" },
+       });
+-      assert.equal(result.status, 0, `${phase}: ${result.stderr || result.stdout}`);
++      assert.equal(result.status, 0, `${provider}/${phase}: ${result.stderr || result.stdout}`);
+     }
+   } finally { fs.rmSync(directory, { recursive: true, force: true }); }
+ });
+--- a/server/botLocale.en.json
++++ b/server/botLocale.en.json
+@@ -0,0 +1,324 @@
++{
++  "{0} 天": "{0} days",
++  "管理员": "Administrator",
++  "用户": "User",
++  "续费": "Renew",
++  "删除转发规则": "Delete forwarding rule",
++  "已关闭": "Closed",
++  "执行失败": "Failed",
++  "目标用户不存在或已被删除。": "The target user is missing or was deleted.",
++  "开启": "On",
++  "关闭": "Off",
++  "{0} 年": "{0} years",
++  "{0} 个月": "{0} months",
++  "🏠 返回菜单": "🏠 Menu",
++  "✅ 确认执行": "✅ Confirm",
++  "❌ 取消": "❌ Cancel",
++  "❌ 取消本次操作": "❌ Cancel this operation",
++  "⬅️ 上一页": "⬅️ Previous",
++  "下一页 ➡️": "Next ➡️",
++  "设置余额": "Set balance",
++  "调整余额": "Adjust balance",
++  "启用账号": "Enable account",
++  "停用账号": "Disable account",
++  "启用转发": "Enable forwarding",
++  "关闭转发": "Disable forwarding",
++  "启用规则": "Enable rule",
++  "关闭规则": "Disable rule",
++  "新增转发规则": "Create forwarding rule",
++  "启用隧道规则": "Enable tunnel rules",
++  "关闭隧道规则": "Disable tunnel rules",
++  "重置流量": "Reset traffic",
++  "生成余额兑换码": "Create balance redemption codes",
++  "生成折扣码": "Create discount codes",
++  "开启开放注册": "Open registration",
++  "关闭开放注册": "Close registration",
++  "面板配置操作": "Panel configuration",
++  "<b>操作确认</b>": "<b>Operation confirmation</b>",
++  "发起人：{0}（{1}）": "Requested by: {0} ({1})",
++  "目标用户：{0}": "Target user: {0}",
++  "操作类型：<b>{0}</b>": "Operation: <b>{0}</b>",
++  "当前余额：{0}": "Current balance: {0}",
++  "设置为：<b>{0}</b>": "Set to: <b>{0}</b>",
++  "变更金额：<b>{0}{1}</b>": "Balance change: <b>{0}{1}</b>",
++  "预计余额：<b>{0}</b>": "Expected balance: <b>{0}</b>",
++  "续费时长：<b>{0}</b>": "Renewal duration: <b>{0}</b>",
++  "当前到期：{0}": "Current expiry: {0}",
++  "续费后到期：<b>{0}</b>": "Expiry after renewal: <b>{0}</b>",
++  "将停用该用户账号，用户将无法登录和使用机器人。": "The account will be disabled. The user will lose access to the panel and bot.",
++  "将启用该用户账号。": "The account will be enabled.",
++  "将关闭该用户转发权限，并暂停其转发规则。": "Forwarding permission will be disabled and the user's rules will be paused.",
++  "将启用该用户转发权限。": "Forwarding permission will be enabled.",
++  "未指定": "Not specified",
++  "目标规则：{0}": "Target rule: {0}",
++  "将停用该规则。": "The rule will be disabled.",
++  "将启用该规则。": "The rule will be enabled.",
++  "转发方式：<b>{0}</b>": "Forwarding method: <b>{0}</b>",
++  "入口主机：{0}": "Entry host: {0}",
++  "所属隧道：{0}": "Tunnel: {0}",
++  "入口端口：{0}": "Entry port: {0}",
++  "<b>随机分配</b>": "<b>Assign an available port</b>",
++  "目标地址：{0}": "Target address: {0}",
++  "确认后将创建新规则并下发到对应节点。": "Confirmation will create the rule and send it to the relevant nodes.",
++  "确认后将删除该规则，并同步刷新对应节点。": "Confirmation will delete the rule and refresh the relevant nodes.",
++  "目标隧道：{0}": "Target tunnel: {0}",
++  "包含规则：<b>{0}</b> 条": "Rules: <b>{0}</b>",
++  "规则清单：": "Rule list:",
++  "- 其余 {0} 条将一并执行": "- The remaining {0} rules will also be processed.",
++  "确认后将批量停用以上规则。": "Confirmation will disable all listed rules.",
++  "确认后将批量启用以上规则。": "Confirmation will enable all listed rules.",
++  "将清零该用户当前统计流量。": "The user's current traffic statistics will be reset.",
++  "确认后将关闭新用户自助注册，现有用户不受影响。": "Confirmation will close registration. Existing users will keep access.",
++  "确认后将开放新用户自助注册。": "Confirmation will open registration.",
++  "生成数量：<b>{0}</b>": "Count: <b>{0}</b>",
++  "面额：<b>{0}</b>/个": "Value: <b>{0}</b> each",
++  "总面额：<b>{0}</b>": "Total value: <b>{0}</b>",
++  "确认后将立即生成余额兑换码。": "Confirmation will generate balance redemption codes.",
++  "折扣力度：<b>{0}</b>": "Discount: <b>{0}</b>",
++  "确认后将立即生成折扣码（默认不限次数，可在后台调整限制）。": "Confirmation will generate discount codes. They have unlimited uses by default; change the limit in the panel.",
++  "原始指令：{0}": "Original request: {0}",
++  "请在 {0} 分钟内点击「确认执行」。": "Click Confirm within {0} minutes.",
++  "当前账户不存在或已停用，请重新登录。": "The account is missing or disabled. Please sign in again.",
++  "只有原发起人可以确认该操作。": "Only the original requester can confirm this operation.",
++  "当前仅管理员可使用 AI 对话管理功能。": "AI management is currently available to administrators only.",
++  "当前账户已无该操作权限。": "This account no longer has permission for this operation.",
++  "操作参数不存在，请重新发起": "The operation parameters are missing. Please start again.",
++  "只有管理员可以调整开放注册。": "Only administrators can change registration settings.",
++  "<b>执行成功</b>": "<b>Completed</b>",
++  "操作：{0}": "Operation: {0}",
++  "当前状态：<b>{0}</b>": "Current status: <b>{0}</b>",
++  "已开放": "Open",
++  "规则 ID 无效。": "Invalid rule ID.",
++  "用户：{0}": "User: {0}",
++  "规则：{0}": "Rule: {0}",
++  "普通端口转发请先创建转发组或转发链后再新增规则。": "Create a forwarding group or chain before adding a port forwarding rule.",
++  "入口主机无效。": "Invalid entry host.",
++  "目标地址格式无效，请输入 IP 或域名。": "Invalid target address. Enter an IP address or domain.",
++  "目标端口无效，请输入 1-65535。": "Invalid target port. Enter a number from 1 to 65535.",
++  "源端口无效，请输入 1-65535，或省略源端口使用随机端口。": "Invalid entry port. Enter 1 to 65535, or omit it to assign an available port.",
++  "操作：新增转发规则": "Operation: Create forwarding rule",
++  "转发方式：{0}": "Forwarding method: {0}",
++  "隧道：{0}": "Tunnel: {0}",
++  "操作：删除转发规则": "Operation: Delete forwarding rule",
++  "已联动删除子规则：<b>{0}</b> 条": "Related child rules deleted: <b>{0}</b>",
++  "删除结算扣费：<b>{0}</b>": "Final traffic charge: <b>{0}</b>",
++  "当前余额：<b>{0}</b>": "Current balance: <b>{0}</b>",
++  "未找到可操作的规则。": "No rules are available for this operation.",
++  "批量操作失败：{0}": "Batch operation failed: {0}",
++  "没有可操作规则": "No rules are available.",
++  "<b>批量执行完成</b>": "<b>Batch completed</b>",
++  "成功：<b>{0}</b> / {1}": "Succeeded: <b>{0}</b> / {1}",
++  "失败：<b>{0}</b>": "Failed: <b>{0}</b>",
++  "成功规则：": "Successful rules:",
++  "- 其余 {0} 条已执行": "- The remaining {0} rules were processed.",
++  "失败详情：": "Failure details:",
++  "- 其余 {0} 条请在面板查看": "- View the remaining {0} rules in the panel.",
++  "只有管理员可以生成兑换码。": "Only administrators can generate redemption codes.",
++  "兑换码功能当前已关闭。": "Redemption codes are disabled.",
++  "兑换码数量必须在 1-{0} 之间。": "The redemption code count must be from 1 to {0}.",
++  "兑换码金额无效。": "Invalid redemption code value.",
++  "兑换码金额超出允许范围，请控制在 1,000,000 元以内。": "The value must not exceed CNY 1,000,000.",
++  "兑换码生成失败，请稍后重试。": "Failed to generate redemption codes. Please try again later.",
++  "操作：生成余额兑换码": "Operation: Generate balance redemption codes",
++  "数量：<b>{0}</b>": "Count: <b>{0}</b>",
++  "兑换码：": "Redemption codes:",
++  "- 其余 {0} 个请到后台账单页面查看": "- View the remaining {0} codes on the panel's billing page.",
++  "只有管理员可以生成折扣码。": "Only administrators can generate discount codes.",
++  "折扣码功能当前已关闭。": "Discount codes are disabled.",
++  "折扣码数量必须在 1-{0} 之间。": "The discount code count must be from 1 to {0}.",
++  "折扣力度无效，请输入 1-100% 或 1-10 折。": "Invalid discount. Enter 1 to 100 percent off.",
++  "折扣码生成失败，请稍后重试。": "Failed to generate discount codes. Please try again later.",
++  "操作：生成折扣码": "Operation: Generate discount codes",
++  "折扣码：": "Discount codes:",
++  "目标用户无效。": "Invalid target user.",
++  "普通用户仅可操作自己的账号。": "Users can only manage their own accounts.",
++  "余额金额无效。": "Invalid balance amount.",
++  "机器人余额设置：{0}": "Bot balance set: {0}",
++  "操作：设置余额": "Operation: Set balance",
++  "调整金额无效。": "Invalid balance adjustment.",
++  "机器人余额调整：{0}": "Bot balance adjustment: {0}",
++  "操作：调整余额": "Operation: Adjust balance",
++  "操作：续费 {0}": "Operation: Renew for {0}",
++  "新到期时间：<b>{0}</b>": "New expiry: <b>{0}</b>",
++  "操作：停用账号": "Operation: Disable account",
++  "操作：启用账号": "Operation: Enable account",
++  "操作：关闭转发": "Operation: Disable forwarding",
++  "操作：启用转发": "Operation: Enable forwarding",
++  "操作：重置流量": "Operation: Reset traffic",
++  "暂不支持的管理操作。": "This management operation is not supported.",
++  "待确认操作": "Operation awaiting confirmation",
++  "请补充目标地址和端口，例如 10.10.10.10:22。": "Enter a target address and port, for example 10.10.10.10:22.",
++  "请选择要添加到哪个隧道或端口转发链；也可以输入链路名称或 ID。": "Choose a tunnel or forwarding chain, or enter its name or ID.",
++  "当前没有可用的隧道或端口转发链，请先创建资源或联系管理员授权，然后发送“继续”。": "No tunnel or forwarding chain is available. Create a resource or ask an administrator for access, then send resume.",
++  "🔗 隧道": "🔗 Tunnel",
++  "🔀 转发链": "🔀 Forwarding chain",
++  "🖥 端口转发": "🖥 Port forwarding",
++  "🔁 转发组": "🔁 Forwarding group",
++  "入口监听端口使用哪个？点击随机分配，或直接输入 1–65535 的端口号。": "Choose the entry listening port. Assign an available port or enter a number from 1 to 65535.",
++  "🎲 随机分配可用端口": "🎲 Assign an available port",
++  "请选择需要转发的协议。": "Choose a forwarding protocol.",
++  "注意：{0}": "Note: {0}",
++  "操作对象不存在，请重新指定": "The target is missing. Please select it again.",
++  "无权修改其他用户的资源": "You cannot modify another user's resources.",
++  "转发组成员规则由系统维护，请修改模板规则或转发组": "Group member rules are managed by the system. Modify the template rule or forwarding group.",
++  "普通用户只能给自己添加规则": "Users can only create rules for themselves.",
++  "订阅不存在": "The subscription is missing.",
++  "计费配置ID与所选资源不一致": "The billing configuration ID does not match the selected resource.",
++  "套餐不存在": "The plan is missing.",
++  "对象：#{0} {1}": "Target: #{0} {1}",
++  "修改内容过多，无法完整展示确认卡片，请拆分为较小操作": "The changes are too large for a complete preview. Split them into smaller operations.",
++  "不限/未设置": "Unlimited / not set",
++  "操作已提交，请查看面板确认运行状态": "The operation was submitted. Check its running status in the panel.",
++  "名称": "Name",
++  "协议": "Protocol",
++  "入口端口": "Entry port",
++  "目标地址": "Target address",
++  "目标端口": "Target port",
++  "启用": "Enabled",
++  "转发链/组ID": "Forwarding chain/group ID",
++  "隧道ID": "Tunnel ID",
++  "转发工具": "Forwarding tool",
++  "已记录目标：{0}": "Target recorded: {0}",
++  "第 {0}/{1} 页": "Page {0}/{1}",
++  "待办已保存；选择后仍需确认才会创建。": "The draft is saved. Confirmation is still required after selecting options.",
++  "当前没有未完成的 AI 操作，可以直接发送新的请求。": "There is no unfinished AI operation. You can send a new request.",
++  "已结束本次待办。已提交或已完成的操作不会停止或撤销，请核实实际结果。": "This draft is closed. Submitted or completed operations will keep their effects; check the actual result.",
++  "确认已失效或已被处理。待办如未结束，可发送“继续”恢复并重新校验。": "This confirmation expired or was already processed. Send resume to continue and revalidate an unfinished draft.",
++  "该选项已失效，请使用最新选项，或发送“继续”查看当前待办。": "This option expired. Use the latest options or send resume to view the draft.",
++  "已取消本次操作，没有创建规则。": "Cancelled. No rule was created.",
++  "本次未执行：{0}。待办仍保留，发送“继续”重新预览。": "Not executed: {0}. The draft is saved; send resume to preview it again.",
++  "操作未确认完成：{0}。待办仍保留，请先核实面板中的实际结果；不会自动重复执行。": "Completion could not be confirmed: {0}. The draft is saved. Check the panel's actual result first; this operation will not be repeated automatically.",
++  "操作失败：{0}": "Operation failed: {0}",
++  "上次操作已开始执行，但结果尚未确认。为避免重复充值、创建或续期，不会自动重试。请先在面板核实结果，再取消此待办或发起新操作。": "The last operation started, but its result is unconfirmed. It will not be retried automatically. Check the panel before cancelling this draft or starting another operation.",
++  "AI 服务暂时不可用，本次未执行任何修改，请稍后重试。": "The AI service is unavailable. No changes were made. Please try again later.",
++  "待办已保存，补充信息或发送“取消”即可。": "The draft is saved. Add the missing information or send cancel.",
++  "信息不足，请补充。": "More information is needed.",
++  "待办已保存，可继续补充或发送“取消”。": "The draft is saved. Add more information or send cancel.",
++  "原待办仍保留，发送“继续”可恢复。": "The original draft is saved; send resume to recover it.",
++  "<b>执行成功：{0}</b>\n<pre>{1}</pre>": "<b>Completed: {0}</b>\n<pre>{1}</pre>",
++  "<b>目标：</b>{0}\n步骤 {1}/{2}（已完成 {3}）\n": "<b>Goal:</b> {0}\nStep {1}/{2} ({3} completed)\n",
++  "{0}\n…结果较长，已截断；请指定ID或名称进一步查询。": "{0}\n…Results were shortened. Specify an ID or name for more detail.",
++  "待处理：{0}（另有 {1} 项）\n": "Pending: {0} ({1} further steps)\n",
++  "<b>已完成结果：</b>\n": "<b>Completed results:</b>\n",
++  "待核实原因：{0}": "Reason to check: {0}",
++  "无法确认当前操作权限，请稍后重新预览。": "Current permissions could not be checked. Preview again later.",
++  "永久有效": "No expiry",
++  "插件功能": "Plugins",
++  "请选择「{0}」的状态。": "Choose the state for {0}.",
++  "✅ 开启": "✅ Enable",
++  "⛔ 关闭": "⛔ Disable",
++  "选择后会显示确认预览，不会直接修改。": "Your choice will be previewed for confirmation before any change.",
++  "网页默认值：{0}": "Panel defaults: {0}",
++  "使用真实业务校验分配端口；管理员未指定用户时归属自己": "Ports are allocated using panel validation; an administrator creates for themselves unless a user is specified.",
++  "✏️ 自定义输入": "✏️ Custom input",
++  "选择后会继续补充下一项；也可以直接发送完整信息。": "Continue with the next field after choosing, or send all details.",
++  "也可以不点击按钮，直接发送自定义内容。": "You can also send a custom value.",
++  "待办会保留至完成或取消。": "The draft is kept until completed or cancelled.",
++  "请选择充值金额，也可以输入自定义金额。": "Choose the top-up amount, or enter a custom amount.",
++  "请直接发送自定义充值金额，例如“88”。": "Send a custom top-up amount, for example 88.",
++  "请选择余额调整金额，正数为增加、负数为扣减，也可以输入自定义金额。": "Choose a balance adjustment amount; positive adds funds and negative deducts funds. You can enter a custom amount.",
++  "请直接发送自定义调整金额，例如“88”或“-30”。": "Send an adjustment amount, for example 88 or -30.",
++  "请选择要扣减的金额，也可以输入自定义金额。": "Choose the amount to deduct, or enter a custom amount.",
++  "请直接发送自定义扣减金额，例如“30”或“-30”。": "Send the amount to deduct, for example 30 or -30.",
++  "请选择设置后的余额，也可以输入自定义金额。": "Choose the new balance, or enter a custom amount.",
++  "请直接发送要设置的余额金额，例如“188”。": "Send the new balance, for example 188.",
++  "请选择续期时长，也可以输入自定义时长。": "Choose the renewal duration, or enter a custom duration.",
++  "请直接发送自定义续期时长，例如“45天”、“6个月”或“2年”。": "Send a renewal duration, for example 45 days, 6 months or 2 years.",
++  "7 天": "7 days",
++  "1 个月": "1 month",
++  "3 个月": "3 months",
++  "1 年": "1 year",
++  "该补充选项已经变化，请发送“继续”查看当前待办。": "This choice has changed. Send resume to view the current draft.",
++  "AI消息撤回时间(秒)": "AI message recall delay (seconds)",
++  "AI消息自动撤回": "Recall AI messages automatically",
++  "DDNS功能": "DDNS",
++  "Discord主机上下线通知": "Discord host status notifications",
++  "Discord到期提醒": "Discord expiry reminders",
++  "Discord剩余流量提醒阈值(%)": "Discord traffic reminder threshold (%)",
++  "Discord流量提醒": "Discord traffic reminders",
++  "GitHub下载加速": "GitHub download acceleration",
++  "TG主机上下线通知": "Telegram host status notifications",
++  "TG到期提醒": "Telegram expiry reminders",
++  "TG剩余流量提醒阈值(%)": "Telegram traffic reminder threshold (%)",
++  "TG流量提醒": "Telegram traffic reminders",
++  "两步验证": "Two-factor authentication",
++  "优先从面板安装Agent": "Prefer installing Agent from the panel",
++  "兑换码功能": "Redeem codes",
++  "公开主机监控": "Public host monitoring",
++  "公开首页": "Public homepage",
++  "多设备登录": "Multiple device login",
++  "套餐商店": "Plan store",
++  "开放注册": "Open registration",
++  "折扣码功能": "Discount codes",
++  "按量计费": "Usage billing",
++  "插件菜单与功能": "Plugin menu and features",
++  "普通用户AI对话管理": "AI management for regular users",
++  "注册邮箱验证": "Registration email verification",
++  "用户网络测试": "User network tests",
++  "站点名称": "Site title",
++  "自动检查更新": "Check updates automatically",
++  "自定义首页": "Custom homepage",
++  "邮件到期提醒": "Email expiry reminders",
++  "邮件剩余流量提醒阈值(%)": "Email traffic reminder threshold (%)",
++  "邮件功能": "Email",
++  "邮件流量提醒": "Email traffic reminders",
++  "邮箱注册白名单": "Registration email allowlist",
++  "面板更新使用加速": "Accelerate panel updates",
++  "默认隧道运行时": "Default tunnel runtime",
++  "0表示明确选择自动分配；证书等高级配置仍需网页完成": "0 explicitly selects automatic allocation; configure certificates and advanced options in the panel.",
++  "syncExistingSubscribers=true将同步已有订阅权益，否则只影响新订阅；必须明确指定": "syncExistingSubscribers=true updates existing subscription entitlements; false affects new subscriptions only. Choose explicitly.",
++  "telegramPush=true会向当前通知渠道的订阅用户发送公告": "telegramPush=true sends the announcement to subscribers through the current notification provider.",
++  "主机最新指标": "Latest host metrics",
++  "主机流量": "Host traffic",
++  "仪表盘概览": "Dashboard summary",
++  "会收回订阅权益，可能导致转发停用": "Subscription entitlements will be removed, which may stop forwarding.",
++  "修改主机配置": "Update host configuration",
++  "修改套餐": "Update plan",
++  "修改用户额度与有效期": "Update user limits and expiry",
++  "修改设置": "Update settings",
++  "修改转发/入口/出口组或链": "Update forwarding, entry or exit group or chain",
++  "修改转发规则": "Update forwarding rule",
++  "修改隧道": "Update tunnel",
++  "全量替换手动授权列表，套餐授权不变": "Replaces the manual permission list; plan permissions are retained.",
++  "全量替换手动授权列表，空列表表示移除全部手动授权；套餐授权不变": "Replaces the manual permission list. An empty list removes all manual permissions; plan permissions are retained.",
++  "公告查询": "List announcements",
++  "删除公告": "Delete announcement",
++  "到期查询": "List upcoming expiries",
++  "发布公告": "Publish announcement",
++  "取消订阅": "Cancel subscription",
++  "只变更列出的配置，未指定成员时保留原成员；PROXY变更会影响后端握手": "Only listed settings change; unspecified members are retained. PROXY changes affect backend handshakes.",
++  "只增减指定资源，保留其余手动授权和套餐授权": "Adds or removes only the specified resources; other manual and plan permissions are retained.",
++  "可能改变收费及资源授权；价格单位为千分之一分/GB": "May change billing and resource permissions. Prices use thousandths of a cent per GB.",
++  "可能改变额度、授权和端口分配；不是购买扣款操作": "May change limits, permissions and port allocations. This assignment does not charge a purchase.",
++  "同步指定转发组": "Sync forwarding group",
++  "启停转发/入口/出口组或链": "Enable or disable group or chain",
++  "增减用户手动资源授权": "Change manual resource permissions",
++  "套餐启停与上架": "Plan availability and store visibility",
++  "套餐查询": "List plans",
++  "延长订阅": "Extend subscription",
++  "按量计费配置": "Usage billing configuration",
++  "新增套餐": "Create plan",
++  "新增转发/入口/出口组或链": "Create group or chain",
++  "新增隧道": "Create tunnel",
++  "替换用户主机授权": "Replace user host permissions",
++  "替换用户转发组授权": "Replace user group permissions",
++  "替换用户隧道授权": "Replace user tunnel permissions",
++  "查询内容": "Query contents",
++  "用户手动资源授权": "User manual resource permissions",
++  "给用户分配套餐": "Assign plan to user",
++  "订阅查询": "List subscriptions",
++  "设置查询": "Read settings",
++  "账单概览": "Billing summary",
++  "转发组事件": "Forwarding group events",
++  "配置资源按量计费": "Configure resource usage billing",
++  "配额未指定时使用网页端默认值，预览会列明默认值": "Unspecified limits use panel defaults, which are listed in the preview.",
++  "重置主机流量": "Reset host traffic",
++  "重置统计不会退还已产生的账单": "Resetting statistics does not refund existing charges.",
++  "隧道配置变更可能触发重新下发并影响现有连接": "Tunnel changes may trigger configuration updates and affect existing connections.",
++  "请补充具体希望进行的操作。": "Describe the operation you want to perform.",
++  "当前还有未完成操作。请先发送“取消”结束原待办，再发起新的操作；原步骤不会被静默替换。": "An operation is still pending. Send cancel to end it before starting another operation; saved steps are kept.",
++  "当前待办的工具不能被静默替换，请先取消原操作。": "The pending tool cannot be replaced automatically. Cancel the original operation first.",
++  "请明确希望修改的对象和操作；当前信息不足以安全生成执行计划。": "Specify the target and desired change. More information is needed to prepare a safe plan.",
++  "明确操作目标": "Clarify the goal",
++  "仍无法确定唯一的操作对象，请补充资源 ID、名称或具体参数。": "The target is still ambiguous. Provide a resource ID, name or specific parameters."
++}
+--- a/server/botLocale.ts
++++ b/server/botLocale.ts
+@@ -0,0 +1,25 @@
++import { AsyncLocalStorage } from "node:async_hooks";
++import { createHash } from "node:crypto";
++import english from "./botLocale.en.json";
++
++const language = new AsyncLocalStorage<"zh" | "en">();
++export function botEnglish() { return language.getStore() === "en"; }
++/** Call only with panel-owned text. Values and user content are never translated. */
++export function botLabel(source: string) {
++  return botEnglish() ? (english as Record<string, string>)[source] || source : source;
++}
++export function botText(parts: TemplateStringsArray, ...values: unknown[]) {
++  const source = parts.reduce((text, part, index) => text + (index ? `{${index - 1}}` : "") + part, "");
++  return botLabel(source).replace(/\{(\d+)\}/g, (_match, index) => String(values[Number(index)]));
++}
++export async function withBotLocale<T>(provider: "telegram" | "discord", from: { id: string | number; language_code?: string } | undefined, task: () => Promise<T>) {
++  if (!from) return task();
++  const db = await import("./db");
++  const { botAccounts } = await import("./botAccounts");
++  const user = await botAccounts.getUserById(String(from.id));
++  const key = `botLanguage:${createHash("sha256").update(JSON.stringify([provider, String(from.id)])).digest("hex")}`;
++  const previous = await db.getSetting(key);
++  const locale = from.language_code ? (/^zh(?:[-_]|$)/i.test(from.language_code) ? "zh" : "en") : previous === "en" ? "en" : "zh";
++  if (user && user.accountEnabled !== false && from.language_code && previous !== locale) await db.setSetting(key, locale);
++  return language.run(locale, task);
++}
+--- a/server/discordBot.ts
++++ b/server/discordBot.ts
+@@ -144,7 +144,7 @@
+     if (event === "INTERACTION_CREATE") await acknowledgeInteraction(data, 4, "操作过于频繁，请稍后重试。");
+     return;
+   }
+-  const from = { id: actor.id, username: actor.username, first_name: actor.global_name || actor.username };
++  const from = { id: actor.id, username: actor.username, first_name: actor.global_name || actor.username, language_code: data.locale };
+   let update: any;
+   if (event === "MESSAGE_CREATE") {
+     if (typeof data.content !== "string" || !data.content.trim() || data.content.length > 4000) return;
+--- a/server/notificationSafety.fixture.ts
++++ b/server/notificationSafety.fixture.ts
+@@ -167,7 +167,11 @@
+   let delivered = 0;
+   let blocked = true;
+   let releaseSend!: () => void;
++  let markSending!: () => void;
++  const sending = new Promise<void>(resolve => { markSending = resolve; });
+   let releasePoll!: () => void;
++  let markResumed!: () => void;
++  const resumed = new Promise<void>(resolve => { markResumed = resolve; });
+   globalThis.fetch = (async (url, options) => {
+     const method = String(url).split("/").at(-1);
+     if (method === "getUpdates") {
+@@ -178,22 +182,23 @@
+           message: { message_id: delivered, chat: { id: 1001, type: "private" }, from: { id: 1001 }, text: "/menu" } }));
+         return Response.json({ ok: true, result });
+       }
++      markResumed();
+       await new Promise<void>((resolve) => { releasePoll = resolve; });
+       return Response.json({ ok: true, result: [] });
+     }
+-    if (method === "sendMessage" && blocked) await new Promise<void>((resolve) => { releaseSend = resolve; });
++    if (method === "sendMessage" && blocked) { markSending(); await new Promise<void>((resolve) => { releaseSend = resolve; }); }
+     return Response.json({ ok: true, result: method === "getMe" ? { id: 999, username: "test_bot" } : { message_id: 1 } });
+   }) as typeof fetch;
+   try {
+     await startTelegramBot();
+-    await new Promise<void>((resolve) => setImmediate(resolve));
++    await sending;
+     assert.equal(delivered, 128, "slow handlers cannot accumulate more than 128 accepted updates");
+     assert.equal(requests.length, 2, "a full queue pauses the next long poll");
+     assert.equal(requests[0].limit, 100);
+     assert.equal(requests[1].limit, 28);
+     blocked = false;
+     releaseSend();
+-    await new Promise<void>((resolve) => setImmediate(resolve));
++    await resumed;
+     assert.equal(requests.length, 3, "draining resumes polling");
+     assert.equal(requests[2].offset, 129, "resume continues after the accepted updates");
+     assert.equal(requests[2].limit, 100);
+@@ -210,6 +215,8 @@
+   const originalFetch = globalThis.fetch;
+   let delivered = false;
+   let releaseSend!: () => void;
++  let markSending!: () => void;
++  const sending = new Promise<void>(resolve => { markSending = resolve; });
+   let releasePoll!: () => void;
+   let replies = 0;
+   globalThis.fetch = (async (url) => {
+@@ -226,13 +233,14 @@
+     }
+     if (method === "sendMessage") {
+       replies++;
++      markSending();
+       await new Promise<void>((resolve) => { releaseSend = resolve; });
+     }
+     return Response.json({ ok: true, result: method === "getMe" ? { id: 999, username: "test_bot" } : { message_id: 1 } });
+   }) as typeof fetch;
+   try {
+     await startTelegramBot();
+-    await new Promise<void>((resolve) => setImmediate(resolve));
++    await sending;
+     assert.equal(replies, 1, "the earlier account command is already in flight");
+     databaseHealth.unavailable({ code: "SQLITE_FULL" });
+     releaseSend();
+--- a/server/telegramBot.ts
++++ b/server/telegramBot.ts
+@@ -2,6 +2,7 @@
+ import { notificationBackgroundPaused } from "./notificationBackground";
+ import * as db from "./db";
+ import { botTransportContext, isDiscordBotContext } from "./botTransportContext";
++import { botText, botLabel, botEnglish, withBotLocale } from "./botLocale";
+ import { botAccounts } from "./botAccounts";
+ import { getNotificationSettings, notificationChannel } from "./notificationSettings";
+ import { seamlessActivity, seamlessBackgroundPaused } from "./seamlessMigrationState";
+@@ -20,7 +21,7 @@
+ import { checkPanelUpdateTask, startPanelUpgradeTask } from "./_core/systemRouter";
+ import { forwardxAiClient } from "./ai/client";
+ import { planBotOperation, type ContextTool, type BotPlan } from "./ai/planner";
+-import { randomBytes } from "node:crypto";
++import { createHash, randomBytes } from "node:crypto";
+ import { ruleCreatePrompt, ruleCreateTextPatch, simpleRuleCreateRequest, type BotChoicePrompt, type RuleRouteChoice } from "./ai/ruleCreateWizard";
+ import { resolveRuleOperationOwner } from "./ruleOperationOwner";
+ import { PANEL_SETTINGS, panelToolNameSchema, panelInputSchema, preparePanelCall, executePanelCall, queryPanelCall, formatPanelToolResult, PanelPreflightError, type PanelToolName, type PreparedPanelCall } from "./ai/panelTools";
+@@ -60,6 +61,7 @@
+   first_name?: string;
+   last_name?: string;
+   username?: string;
++  language_code?: string;
+ };
+ 
+ type TelegramMessage = {
+@@ -153,6 +155,8 @@
+   actorRole: "admin" | "user";
+   action: Exclude<ManageActionKind, "none">;
+   panelCall?: PreparedPanelCall;
++  preflightFingerprint?: string;
++  renewalExpiresAt?: number;
+   targetUserId?: number;
+   amountCents?: number;
+   durationValue?: number;
+@@ -210,11 +214,13 @@
+   goal?: string;
+   remainingIntents?: ManageActionIntent[];
+   completedActions?: string[];
++  completedResults?: string[];
+   stage?: "collecting" | "confirming" | "uncertain";
+   confirmationKey?: string;
+   plannerOnly?: boolean;
+   question?: string;
+   selection?: BotChoicePrompt & { key: string };
++  clarifySelection?: { key: string; callbacks: string[] };
+ };
+ 
+ type UpdateCommandKind = "panel" | "agent";
+@@ -314,15 +320,15 @@
+ }
+ 
+ function formatDate(value: unknown) {
+-  if (!value) return "永久有效";
++  if (!value) return botLabel("永久有效");
+   const date = new Date(value as any);
+-  return Number.isNaN(date.getTime()) ? "永久有效" : date.toLocaleDateString("zh-CN");
++  return Number.isNaN(date.getTime()) ? botLabel("永久有效") : date.toLocaleDateString(botEnglish() ? "en-GB" : "zh-CN");
+ }
+ 
+ function formatDateTime(value: unknown) {
+-  if (!value) return "永久有效";
++  if (!value) return botLabel("永久有效");
+   const date = new Date(value as any);
+-  return Number.isNaN(date.getTime()) ? "永久有效" : date.toLocaleString("zh-CN");
++  return Number.isNaN(date.getTime()) ? botLabel("永久有效") : date.toLocaleString(botEnglish() ? "en-GB" : "zh-CN");
+ }
+ 
+ function formatTelegramName(from?: TelegramUser) {
+@@ -365,9 +371,9 @@
+ 
+ function formatManageDuration(value: number, unit: ManageDurationUnit) {
+   const safeValue = Math.max(1, Math.floor(value || 1));
+-  if (unit === "day") return `${safeValue} 天`;
+-  if (unit === "year") return `${safeValue} 年`;
+-  return `${safeValue} 个月`;
++  if (unit === "day") return botText`${safeValue} 天`;
++  if (unit === "year") return botText`${safeValue} 年`;
++  return botText`${safeValue} 个月`;
+ }
+ 
+ function formatDiscountPercentLabel(discountPercent: number | string | null | undefined) {
+@@ -425,6 +431,18 @@
+   return { provider: isDiscordBotContext() ? "discord" as const : "telegram" as const, chatId, actorUserId: Number(actorUserId) };
+ }
+ 
++async function manageActionFingerprint(action: Omit<PendingManageAction, "key" | "createdAt" | "expiresAt">) {
++  const pick = (row: any, fields: string[]) => row ? Object.fromEntries(fields.map(field => [field, row[field] ?? null])) : null;
++  const user = action.targetUserId ? await db.getUserById(action.targetUserId) : null;
++  const ruleIds = action.ruleIds || (action.ruleId ? [action.ruleId] : []);
++  const rules = await Promise.all(ruleIds.map(id => db.getForwardRuleById(id)));
++  const state = {
++    user: pick(user, ["id", "name", "username", "role", "accountEnabled", "canAddRules", "expiresAt", "balanceCents"]),
++    rules: rules.map(rule => pick(rule, ["id", "userId", "name", "isEnabled", "pendingDelete", "adminManaged", "sni", "sourcePort", "targetIp", "targetPort", "protocol", "forwardType", "tunnelId", "forwardGroupId", "rateLimitMbps", "trafficLimit", "trafficMode", "expiresAt"])),
++  };
++  return createHash("sha256").update(JSON.stringify(state)).digest("hex");
++}
++
+ async function createPendingManageAction(action: Omit<PendingManageAction, "key" | "createdAt" | "expiresAt">, chatId: number | string) {
+   const now = Date.now();
+   const pending: PendingManageAction = {
+@@ -432,6 +450,7 @@
+     key: "",
+     createdAt: now,
+     expiresAt: now + MANAGE_ACTION_CONFIRM_TTL_MS,
++    ...(!action.panelCall ? { preflightFingerprint: await manageActionFingerprint(action) } : {}),
+   };
+   const scope = manageScope(chatId, action.actorUserId);
+   await withDatabaseTransaction(async () => {
+@@ -485,6 +504,19 @@
+   };
+   await saveBotDraft(scope, session);
+   return session;
++}
++
++async function protectClarifyKeyboard(chatId: string | number, actorUserId: number, keyboard: InlineKeyboardMarkup) {
++  const session = await getPendingManageClarifySession(chatId, actorUserId);
++  if (!session) return keyboard;
++  const selection = { key: randomBytes(9).toString("hex"), callbacks: [] as string[] };
++  const inline_keyboard = keyboard.inline_keyboard.map(row => row.map(button => {
++    if (!button.callback_data?.startsWith("fx:op:clarify:")) return button;
++    const index = selection.callbacks.push(button.callback_data) - 1;
++    return { ...button, callback_data: `fx:op:clarify:choice:${selection.key}:${index}` };
++  }));
++  await saveBotDraft(manageScope(chatId, actorUserId), { ...session, clarifySelection: selection });
++  return { inline_keyboard };
+ }
+ 
+ async function getPendingManageClarifySession(chatId: number | string, actorUserId: number | string) {
+@@ -991,7 +1023,7 @@
+ function backMenuKeyboard(): InlineKeyboardMarkup {
+   return {
+     inline_keyboard: [
+-      [{ text: "🏠 返回菜单", callback_data: "fx:menu" }],
++      [{ text: botLabel("🏠 返回菜单"), callback_data: "fx:menu" }],
+     ],
+   };
+ }
+@@ -1005,12 +1037,12 @@
+   };
+ }
+ 
+-function renewalConfirmKeyboard(userId: number, page = 0): InlineKeyboardMarkup {
++function renewalConfirmKeyboard(userId: number, actionKey: string, page = 0): InlineKeyboardMarkup {
+   return {
+     inline_keyboard: [
+       [
+-        { text: "✅ 确认续期 1 个月", callback_data: `fx:admin:renew:confirm:${userId}:${page}` },
+-        { text: "❌ 取消", callback_data: `fx:admin:user:${userId}:${page}` },
++        { text: "✅ 确认续期 1 个月", callback_data: `fx:admin:renew:confirm:${actionKey}:${page}` },
++        { text: "❌ 取消", callback_data: `fx:admin:renew:cancel:${actionKey}:${page}` },
+       ],
+       [{ text: "👤 返回用户详情", callback_data: `fx:admin:user:${userId}:${page}` }],
+     ],
+@@ -1021,10 +1053,10 @@
+   return {
+     inline_keyboard: [
+       [
+-        { text: "✅ 确认执行", callback_data: `fx:op:confirm:${actionKey}` },
+-        { text: "❌ 取消", callback_data: `fx:op:cancel:${actionKey}` },
++        { text: botLabel("✅ 确认执行"), callback_data: `fx:op:confirm:${actionKey}` },
++        { text: botLabel("❌ 取消"), callback_data: `fx:op:cancel:${actionKey}` },
+       ],
+-      [{ text: "🏠 返回菜单", callback_data: "fx:menu" }],
++      [{ text: botLabel("🏠 返回菜单"), callback_data: "fx:menu" }],
+     ],
+   };
+ }
+@@ -1032,8 +1064,8 @@
+ function manageClarifyCancelKeyboard(): InlineKeyboardMarkup {
+   return {
+     inline_keyboard: [
+-      [{ text: "❌ 取消本次操作", callback_data: "fx:op:clarify:cancel" }],
+-      [{ text: "🏠 返回菜单", callback_data: "fx:menu" }],
++      [{ text: botLabel("❌ 取消本次操作"), callback_data: "fx:op:clarify:cancel" }],
++      [{ text: botLabel("🏠 返回菜单"), callback_data: "fx:menu" }],
+     ],
+   };
+ }
+@@ -1042,10 +1074,10 @@
+   const prefix = `fx:op:choose:${selection.key}:`;
+   const rows: InlineKeyboardButton[][] = selection.choices.map((choice, index) => [{ text: choice.label, callback_data: `${prefix}${index}` }]);
+   const navigation: InlineKeyboardButton[] = [];
+-  if (selection.page > 0) navigation.push({ text: "⬅️ 上一页", callback_data: `${prefix}page:${selection.page - 1}` });
+-  if (selection.page + 1 < selection.pages) navigation.push({ text: "下一页 ➡️", callback_data: `${prefix}page:${selection.page + 1}` });
++  if (selection.page > 0) navigation.push({ text: botLabel("⬅️ 上一页"), callback_data: `${prefix}page:${selection.page - 1}` });
++  if (selection.page + 1 < selection.pages) navigation.push({ text: botLabel("下一页 ➡️"), callback_data: `${prefix}page:${selection.page + 1}` });
+   if (navigation.length) rows.push(navigation);
+-  rows.push([{ text: "❌ 取消本次操作", callback_data: `${prefix}cancel` }]);
++  rows.push([{ text: botLabel("❌ 取消本次操作"), callback_data: `${prefix}cancel` }]);
+   return { inline_keyboard: rows };
+ }
+ 
+@@ -1247,7 +1279,7 @@
+     `状态：${status}`,
+     statusInfo.detail ? `说明：${escapeHtml(statusInfo.detail)}` : "",
+     `类型：${escapeHtml(rule.forwardType)} / ${escapeHtml(formatForwardRuleProtocol(rule.protocol))}`,
+-    `入口端口：${rule.sourcePort}`,
++    botText`入口端口：${rule.sourcePort}`,
+     `目标：${escapeHtml(rule.targetIp)}:${rule.targetPort}`,
+     `主机 ID：${rule.hostId}`,
+     rule.tunnelId ? `隧道 ID：${rule.tunnelId}` : "",
+@@ -1350,7 +1382,7 @@
+     "<b>确认套餐续期</b>",
+     "",
+     `用户：#${target.id} ${escapeHtml(target.name || target.username)}`,
+-    `当前到期：${escapeHtml(formatDateTime(target.expiresAt))}`,
++    botText`当前到期：${escapeHtml(formatDateTime(target.expiresAt))}`,
+     `续期方式：从${base.getTime() > Date.now() ? "当前到期时间" : "当前时间"}起延长 1 个月`,
+     `续期后到期：<b>${escapeHtml(formatDateTime(nextExpiresAt))}</b>`,
+     "",
+@@ -1359,12 +1391,25 @@
+   return { target, text, nextExpiresAt };
+ }
+ 
+-async function renewUserOneMonth(actor: any, userId: number) {
+-  const target = await db.getUserById(userId);
+-  if (!target) throw new Error("用户不存在");
+-  const { nextExpiresAt } = getRenewalDates(target, 1);
+-  await renewUserCommand({ actor, targetUserId: userId, expiresAt: nextExpiresAt, reasonPrefix: "telegram-command-user-renewed" });
+-  return { target, nextExpiresAt };
++type MenuRenewal = { kind: "menu_renew"; targetUserId: number; previousExpiresAt: number | null; nextExpiresAt: number; expiresAt: number };
++function renewalScope(chatId: string | number, actorUserId: number) {
++  return manageScope(`renewal:${chatId}`, actorUserId);
++}
++async function createMenuRenewal(chatId: string | number, actor: any, detail: Awaited<ReturnType<typeof renewalConfirmText>>) {
++  if (!detail.target || !detail.nextExpiresAt) return null;
++  const scope = renewalScope(chatId, actor.id);
++  return withDatabaseTransaction(async () => {
++    const draft = await readBotDraft<{ confirmationKey: string }>(scope);
++    const previous = draft && await readBotAction(scope, draft.confirmationKey);
++    if (previous?.status === "executing" || previous?.status === "uncertain") throw new Error("上次续期结果尚未确认，请先在面板核实。");
++    if (previous?.status === "pending" && !await finishBotAction(scope, previous.id, "cancelled", "续期预览已更新")) throw new Error("续期状态已变化，请重新查看。");
++    const key = await createBotAction<MenuRenewal>(scope, {
++      kind: "menu_renew", targetUserId: detail.target.id, previousExpiresAt: detail.target.expiresAt?.getTime() ?? null,
++      nextExpiresAt: detail.nextExpiresAt.getTime(), expiresAt: Date.now() + MANAGE_ACTION_CONFIRM_TTL_MS,
++    });
++    await saveBotDraft(scope, { confirmationKey: key });
++    return key;
++  });
+ }
+ 
+ async function loginText(user: any) {
+@@ -1853,20 +1898,20 @@
+   const rows: InlineKeyboardMarkup["inline_keyboard"] = [];
+   for (let index = 0; index < group.choices.length; index += 2) {
+     rows.push(group.choices.slice(index, index + 2).map((choice) => ({
+-      text: choice.label,
++      text: botLabel(choice.label),
+       callback_data: `fx:op:clarify:preset:${group.field}:${choice.value}`,
+     })));
+   }
+-  rows.push([{ text: "✏️ 自定义输入", callback_data: `fx:op:clarify:custom:${group.field}` }]);
+-  rows.push([{ text: "❌ 取消本次操作", callback_data: "fx:op:clarify:cancel" }]);
++  rows.push([{ text: botLabel("✏️ 自定义输入"), callback_data: `fx:op:clarify:custom:${group.field}` }]);
++  rows.push([{ text: botLabel("❌ 取消本次操作"), callback_data: "fx:op:clarify:cancel" }]);
+   const remainingCount = missingFields.filter((field) => field !== group.field).length;
+   const nextHint = remainingCount > 0
+     ? "选择后会继续补充下一项；也可以直接发送完整信息。"
+     : "也可以不点击按钮，直接发送自定义内容。";
+   return {
+     field: group.field,
+-    customPrompt: group.customPrompt,
+-    text: `${group.prompt}\n${nextHint}\n\n待办会保留至完成或取消。`,
++    customPrompt: botLabel(group.customPrompt),
++    text: `${botLabel(group.prompt)}\n${botLabel(nextHint)}\n\n${botLabel("待办会保留至完成或取消。")}`,
+     keyboard: { inline_keyboard: rows } as InlineKeyboardMarkup,
+     choices: group.choices,
+   };
+@@ -2471,32 +2516,32 @@
+ }
+ 
+ function manageRoleLabel(role: unknown) {
+-  return String(role) === "admin" ? "管理员" : "用户";
+-}
+-
+-function manageActionLabel(action: Exclude<ManageActionKind, "none">) {
++  return String(role) === "admin" ? botLabel("管理员") : botLabel("用户");
++}
++
++function manageActionLabel(action: ManageActionKind) {
+   const mapping: Record<Exclude<ManageActionKind, "none">, string> = {
+-    balance_set: "设置余额",
+-    balance_adjust: "调整余额",
+-    renew: "续费",
+-    account_enable: "启用账号",
+-    account_disable: "停用账号",
+-    forward_enable: "启用转发",
+-    forward_disable: "关闭转发",
+-    rule_enable: "启用规则",
+-    rule_disable: "关闭规则",
+-    rule_create: "新增转发规则",
+-    rule_delete: "删除转发规则",
+-    tunnel_rules_enable: "启用隧道规则",
+-    tunnel_rules_disable: "关闭隧道规则",
+-    traffic_reset: "重置流量",
+-    redeem_code_generate_balance: "生成余额兑换码",
+-    discount_code_generate_percent: "生成折扣码",
+-    registration_enable: "开启开放注册",
+-    registration_disable: "关闭开放注册",
+-    panel_operation: "面板配置操作",
++    balance_set: botLabel("设置余额"),
++    balance_adjust: botLabel("调整余额"),
++    renew: botLabel("续费"),
++    account_enable: botLabel("启用账号"),
++    account_disable: botLabel("停用账号"),
++    forward_enable: botLabel("启用转发"),
++    forward_disable: botLabel("关闭转发"),
++    rule_enable: botLabel("启用规则"),
++    rule_disable: botLabel("关闭规则"),
++    rule_create: botLabel("新增转发规则"),
++    rule_delete: botLabel("删除转发规则"),
++    tunnel_rules_enable: botLabel("启用隧道规则"),
++    tunnel_rules_disable: botLabel("关闭隧道规则"),
++    traffic_reset: botLabel("重置流量"),
++    redeem_code_generate_balance: botLabel("生成余额兑换码"),
++    discount_code_generate_percent: botLabel("生成折扣码"),
++    registration_enable: botLabel("开启开放注册"),
++    registration_disable: botLabel("关闭开放注册"),
++    panel_operation: botLabel("面板配置操作"),
+   };
+-  return mapping[action];
++  return action === "none" ? botLabel("待确认操作") : mapping[action];
+ }
+ 
+ function manageActionPermissionHint(isAdmin: boolean) {
+@@ -2669,7 +2714,7 @@
+   if (!intent || intent.action === "none") return { error: "未识别到可执行的管理操作。" };
+   const action = intent.action as Exclude<ManageActionKind, "none">;
+   const actor = await db.getUserById(Number(user?.id || 0));
+-  if (!actor || actor.accountEnabled === false) return { error: "当前账户不存在或已停用，请重新登录。" };
++  if (!actor || actor.accountEnabled === false) return { error: botLabel("当前账户不存在或已停用，请重新登录。") };
+   const isAdmin = String(actor?.role) === "admin";
+   if (!isManageActionAllowedForRole(actor?.role, action)) {
+     return { error: `你没有执行「${manageActionLabel(action)}」的权限。\n${manageActionPermissionHint(isAdmin)}` };
+@@ -2681,14 +2726,17 @@
+         const guided = await prepareRuleCreateChoices(actor, sourceText, intent, choicePage);
+         intent = guided.intent;
+         if (guided.choices) return { clarify: { actor, intent, missingFields: ["panelInput"], choices: guided.choices,
+-          text: `已记录目标：<code>${escapeHtml(String(intent.input?.targetIp || "待补充"))}:${escapeHtml(String(intent.input?.targetPort || "待补充"))}</code>\n${escapeHtml(guided.choices.question)}${guided.choices.pages > 1 ? `\n第 ${guided.choices.page + 1}/${guided.choices.pages} 页` : ""}\n待办已保存；选择后仍需确认才会创建。` } };
++          text: botText`已记录目标：${aiCode(`${String(intent.input?.targetIp || "待补充")}:${String(intent.input?.targetPort || "待补充")}`)}`
++            + `\n${escapeHtml(guided.choices.question)}`
++            + (guided.choices.pages > 1 ? "\n" + botText`第 ${guided.choices.page + 1}/${guided.choices.pages} 页` : "")
++            + "\n" + botLabel("待办已保存；选择后仍需确认才会创建。") } };
+       }
+       if (intent.tool === "settings.set" && isAdmin && intent.input?.value === undefined) {
+         const setting = PANEL_SETTINGS[String(intent.input?.key)];
+         if (setting?.schema.safeParse(true).success && setting.schema.safeParse(false).success) {
+-          const choices: BotChoicePrompt = { question: `请选择「${setting.label}」的状态。`, field: "value", page: 0, pages: 1,
+-            choices: [{ label: "✅ 开启", input: { value: true } }, { label: "⛔ 关闭", input: { value: false } }] };
+-          return { clarify: { actor, intent, choices, missingFields: ["panelInput"], text: `${escapeHtml(choices.question)}\n选择后会显示确认预览，不会直接修改。` } };
++          const choices: BotChoicePrompt = { question: botText`请选择「${botLabel(setting.label)}」的状态。`, field: "value", page: 0, pages: 1,
++            choices: [{ label: botLabel("✅ 开启"), input: { value: true } }, { label: botLabel("⛔ 关闭"), input: { value: false } }] };
++          return { clarify: { actor, intent, choices, missingFields: ["panelInput"], text: `${escapeHtml(choices.question)}\n${botLabel("选择后会显示确认预览，不会直接修改。")}` } };
+         }
+       }
+       const panelCall = await preparePanelCall(Number(actor.id), intent.tool, intent.input);
+@@ -2704,7 +2752,7 @@
+ 
+   if (action === "registration_enable" || action === "registration_disable") {
+     if (!isAdmin) {
+-      return { error: "只有管理员可以调整开放注册。" };
++      return { error: botLabel("只有管理员可以调整开放注册。") };
+     }
+     const pending: Omit<PendingManageAction, "key" | "createdAt" | "expiresAt"> = {
+       actorUserId: Number(actor.id),
+@@ -2768,10 +2816,10 @@
+         return { error: "兑换码金额必须大于 0。" };
+       }
+       if (amountCents > MANAGE_BALANCE_MAX_CENTS) {
+-        return { error: "兑换码金额超出允许范围，请控制在 1,000,000 元以内。" };
++        return { error: botLabel("兑换码金额超出允许范围，请控制在 1,000,000 元以内。") };
+       }
+       if (!codeCount || codeCount <= 0 || codeCount > MANAGE_CODE_MAX_COUNT) {
+-        return { error: `兑换码数量必须在 1-${MANAGE_CODE_MAX_COUNT} 之间。` };
++        return { error: botText`兑换码数量必须在 1-${MANAGE_CODE_MAX_COUNT} 之间。` };
+       }
+       const pending: Omit<PendingManageAction, "key" | "createdAt" | "expiresAt"> = {
+         actorUserId: Number(actor.id),
+@@ -2820,7 +2868,7 @@
+       };
+     }
+     if (!codeCount || codeCount <= 0 || codeCount > MANAGE_CODE_MAX_COUNT) {
+-      return { error: `折扣码数量必须在 1-${MANAGE_CODE_MAX_COUNT} 之间。` };
++      return { error: botText`折扣码数量必须在 1-${MANAGE_CODE_MAX_COUNT} 之间。` };
+     }
+     const pending: Omit<PendingManageAction, "key" | "createdAt" | "expiresAt"> = {
+       actorUserId: Number(actor.id),
+@@ -2968,7 +3016,7 @@
+         sourcePort = 0;
+       } else if (intent.sourcePort !== undefined && intent.sourcePort !== null && String(intent.sourcePort).trim() !== "") {
+         const parsed = parseManagePort(intent.sourcePort);
+-        if (!parsed) return { error: "源端口无效，请输入 1-65535，或省略源端口使用随机端口。" };
++        if (!parsed) return { error: botLabel("源端口无效，请输入 1-65535，或省略源端口使用随机端口。") };
+         sourcePort = parsed;
+       } else {
+         const extracted = extractManageSourcePort(sourceText);
+@@ -3177,6 +3225,7 @@
+     ...(Number.isFinite(amountCents as number) ? { amountCents } : {}),
+     ...(durationValue ? { durationValue } : {}),
+     ...(durationUnit ? { durationUnit } : {}),
++    ...(action === "renew" ? { renewalExpiresAt: getRenewalDatesByDuration(target, durationValue || 1, durationUnit || "month").nextExpiresAt.getTime() } : {}),
+     sourceText: sourceText.slice(0, 500),
+   };
+   return { prepared: { pending, target, actor } as PreparedManageAction };
+@@ -3185,41 +3234,41 @@
+ function manageActionConfirmText(pending: PendingManageAction, actor: any, target?: any) {
+   const action = pending.action as Exclude<ManageActionKind, "none">;
+   const lines: string[] = [
+-    "<b>操作确认</b>",
++    botLabel("<b>操作确认</b>"),
+     "",
+-    `发起人：${formatUserLabel(actor)}（${manageRoleLabel(actor?.role)}）`,
+-    ...(target ? [`目标用户：${formatUserLabel(target)}`] : []),
+-    `操作类型：<b>${escapeHtml(manageActionLabel(action))}</b>`,
++    botText`发起人：${formatUserLabel(actor)}（${manageRoleLabel(actor?.role)}）`,
++    ...(target ? [botText`目标用户：${formatUserLabel(target)}`] : []),
++    botText`操作类型：<b>${escapeHtml(manageActionLabel(action))}</b>`,
+   ];
+   if (action === "panel_operation") {
+     lines.push(...(pending.panelCall?.preview || []).map(line => escapeHtml(line)));
+   } else if (action === "balance_set") {
+-    lines.push(`当前余额：${formatMoneyCny(target?.balanceCents)}`);
+-    lines.push(`设置为：<b>${formatMoneyCny(pending.amountCents)}</b>`);
++    lines.push(botText`当前余额：${formatMoneyCny(target?.balanceCents)}`);
++    lines.push(botText`设置为：<b>${formatMoneyCny(pending.amountCents)}</b>`);
+   } else if (action === "balance_adjust") {
+     const delta = Number(pending.amountCents || 0);
+-    lines.push(`当前余额：${formatMoneyCny(target?.balanceCents)}`);
+-    lines.push(`变更金额：<b>${delta >= 0 ? "+" : ""}${formatMoneyCny(delta)}</b>`);
+-    lines.push(`预计余额：<b>${formatMoneyCny(Number(target?.balanceCents || 0) + delta)}</b>`);
++    lines.push(botText`当前余额：${formatMoneyCny(target?.balanceCents)}`);
++    lines.push(botText`变更金额：<b>${delta >= 0 ? "+" : ""}${formatMoneyCny(delta)}</b>`);
++    lines.push(botText`预计余额：<b>${formatMoneyCny(Number(target?.balanceCents || 0) + delta)}</b>`);
+   } else if (action === "renew") {
+     const durationValue = Math.max(1, Math.floor(Number(pending.durationValue || 1)));
+     const durationUnit = pending.durationUnit || "month";
+-    const { nextExpiresAt } = getRenewalDatesByDuration(target, durationValue, durationUnit);
+-    lines.push(`续费时长：<b>${escapeHtml(formatManageDuration(durationValue, durationUnit))}</b>`);
+-    lines.push(`当前到期：${escapeHtml(formatDateTime(target?.expiresAt))}`);
+-    lines.push(`续费后到期：<b>${escapeHtml(formatDateTime(nextExpiresAt))}</b>`);
++    const nextExpiresAt = new Date(pending.renewalExpiresAt!);
++    lines.push(botText`续费时长：<b>${escapeHtml(formatManageDuration(durationValue, durationUnit))}</b>`);
++    lines.push(botText`当前到期：${escapeHtml(formatDateTime(target?.expiresAt))}`);
++    lines.push(botText`续费后到期：<b>${escapeHtml(formatDateTime(nextExpiresAt))}</b>`);
+   } else if (action === "account_disable") {
+-    lines.push("将停用该用户账号，用户将无法登录和使用机器人。");
++    lines.push(botLabel("将停用该用户账号，用户将无法登录和使用机器人。"));
+   } else if (action === "account_enable") {
+-    lines.push("将启用该用户账号。");
++    lines.push(botLabel("将启用该用户账号。"));
+   } else if (action === "forward_disable") {
+-    lines.push("将关闭该用户转发权限，并暂停其转发规则。");
++    lines.push(botLabel("将关闭该用户转发权限，并暂停其转发规则。"));
+   } else if (action === "forward_enable") {
+-    lines.push("将启用该用户转发权限。");
++    lines.push(botLabel("将启用该用户转发权限。"));
+   } else if (action === "rule_disable" || action === "rule_enable") {
+-    const ruleText = pending.rulePreview?.[0] || (pending.ruleId ? `#${pending.ruleId}` : "未指定");
+-    lines.push(`目标规则：${aiCode(ruleText)}`);
+-    lines.push(action === "rule_disable" ? "将停用该规则。" : "将启用该规则。");
++    const ruleText = pending.rulePreview?.[0] || (pending.ruleId ? `#${pending.ruleId}` : botLabel("未指定"));
++    lines.push(botText`目标规则：${aiCode(ruleText)}`);
++    lines.push(action === "rule_disable" ? botLabel("将停用该规则。") : botLabel("将启用该规则。"));
+   } else if (action === "rule_create") {
+     const hostLabel = pending.hostId
+       ? `#${pending.hostId} ${pending.hostName || ""}`.trim()
+@@ -3227,89 +3276,92 @@
+     const tunnelLabel = pending.tunnelId
+       ? `#${pending.tunnelId} ${pending.tunnelName || ""}`.trim()
+       : "";
+-    lines.push(`转发方式：<b>${escapeHtml(manageForwardModeLabel(pending.forwardMode))}</b>`);
+-    lines.push(`入口主机：${aiCode(hostLabel)}`);
+-    if (tunnelLabel) lines.push(`所属隧道：${aiCode(tunnelLabel)}`);
+-    lines.push(`入口端口：${pending.sourcePort === 0 ? "<b>随机分配</b>" : aiCode(`:${pending.sourcePort ?? "-"}`)}`);
+-    lines.push(`目标地址：${aiCode(`${pending.targetIp || "-"}:${pending.targetPort ?? "-"}`)}`);
+-    lines.push("确认后将创建新规则并下发到对应节点。");
++    lines.push(botText`转发方式：<b>${escapeHtml(manageForwardModeLabel(pending.forwardMode))}</b>`);
++    lines.push(botText`入口主机：${aiCode(hostLabel)}`);
++    if (tunnelLabel) lines.push(botText`所属隧道：${aiCode(tunnelLabel)}`);
++    lines.push(botText`入口端口：${pending.sourcePort === 0 ? botLabel("<b>随机分配</b>") : aiCode(`:${pending.sourcePort ?? "-"}`)}`);
++    lines.push(botText`目标地址：${aiCode(`${pending.targetIp || "-"}:${pending.targetPort ?? "-"}`)}`);
++    lines.push(botLabel("确认后将创建新规则并下发到对应节点。"));
+   } else if (action === "rule_delete") {
+-    const ruleText = pending.rulePreview?.[0] || (pending.ruleId ? `#${pending.ruleId}` : "未指定");
+-    lines.push(`目标规则：${aiCode(ruleText)}`);
+-    lines.push("确认后将删除该规则，并同步刷新对应节点。");
++    const ruleText = pending.rulePreview?.[0] || (pending.ruleId ? `#${pending.ruleId}` : botLabel("未指定"));
++    lines.push(botText`目标规则：${aiCode(ruleText)}`);
++    lines.push(botLabel("确认后将删除该规则，并同步刷新对应节点。"));
+   } else if (action === "tunnel_rules_disable" || action === "tunnel_rules_enable") {
+     const tunnelLabel = pending.tunnelId
+       ? `#${pending.tunnelId} ${pending.tunnelName || ""}`.trim()
+       : (pending.tunnelName || "-");
+     const previews = pending.rulePreview || [];
+-    lines.push(`目标隧道：${aiCode(tunnelLabel)}`);
+-    lines.push(`包含规则：<b>${previews.length}</b> 条`);
++    lines.push(botText`目标隧道：${aiCode(tunnelLabel)}`);
++    lines.push(botText`包含规则：<b>${previews.length}</b> 条`);
+     if (previews.length > 0) {
+-      lines.push("规则清单：");
++      lines.push(botLabel("规则清单："));
+       const limit = 20;
+       for (const item of previews.slice(0, limit)) {
+         lines.push(`- ${aiCode(item)}`);
+       }
+       if (previews.length > limit) {
+-        lines.push(`- 其余 ${previews.length - limit} 条将一并执行`);
++        lines.push(botText`- 其余 ${previews.length - limit} 条将一并执行`);
+       }
+     }
+-    lines.push(action === "tunnel_rules_disable" ? "确认后将批量停用以上规则。" : "确认后将批量启用以上规则。");
++    lines.push(action === "tunnel_rules_disable" ? botLabel("确认后将批量停用以上规则。") : botLabel("确认后将批量启用以上规则。"));
+   } else if (action === "traffic_reset") {
+-    lines.push("将清零该用户当前统计流量。");
++    lines.push(botLabel("将清零该用户当前统计流量。"));
+   } else if (action === "registration_disable") {
+-    lines.push("确认后将关闭新用户自助注册，现有用户不受影响。");
++    lines.push(botLabel("确认后将关闭新用户自助注册，现有用户不受影响。"));
+   } else if (action === "registration_enable") {
+-    lines.push("确认后将开放新用户自助注册。");
++    lines.push(botLabel("确认后将开放新用户自助注册。"));
+   } else if (action === "redeem_code_generate_balance") {
+     const count = Math.max(1, Math.floor(Number(pending.codeCount || 1)));
+     const amountCents = Math.round(Number(pending.amountCents || 0));
+-    lines.push(`生成数量：<b>${count}</b>`);
+-    lines.push(`面额：<b>${formatMoneyCny(amountCents)}</b>/个`);
+-    lines.push(`总面额：<b>${formatMoneyCny(amountCents * count)}</b>`);
+-    lines.push("确认后将立即生成余额兑换码。");
++    lines.push(botText`生成数量：<b>${count}</b>`);
++    lines.push(botText`面额：<b>${formatMoneyCny(amountCents)}</b>/个`);
++    lines.push(botText`总面额：<b>${formatMoneyCny(amountCents * count)}</b>`);
++    lines.push(botLabel("确认后将立即生成余额兑换码。"));
+   } else if (action === "discount_code_generate_percent") {
+     const count = Math.max(1, Math.floor(Number(pending.codeCount || 1)));
+     const discountPercent = normalizeManageDiscountPercent(pending.discountPercent);
+-    lines.push(`生成数量：<b>${count}</b>`);
+-    lines.push(`折扣力度：<b>${escapeHtml(discountPercent ? formatDiscountPercentLabel(discountPercent) : "-")}</b>`);
+-    lines.push("确认后将立即生成折扣码（默认不限次数，可在后台调整限制）。");
+-  }
+-  lines.push("", `原始指令：${aiCode(shortText(pending.sourceText, 120))}`);
+-  lines.push(`请在 ${Math.round(MANAGE_ACTION_CONFIRM_TTL_MS / 60000)} 分钟内点击「确认执行」。`);
++    lines.push(botText`生成数量：<b>${count}</b>`);
++    lines.push(botText`折扣力度：<b>${escapeHtml(discountPercent ? formatDiscountPercentLabel(discountPercent) : "-")}</b>`);
++    lines.push(botLabel("确认后将立即生成折扣码（默认不限次数，可在后台调整限制）。"));
++  }
++  lines.push("", botText`原始指令：${aiCode(shortText(pending.sourceText, 120))}`);
++  lines.push(botText`请在 ${Math.round(MANAGE_ACTION_CONFIRM_TTL_MS / 60000)} 分钟内点击「确认执行」。`);
+   return lines.join("\n");
+ }
+ 
+ async function executePendingManageActionUnchecked(pending: PendingManageAction, callbackUser: any) {
+   const actor = await db.getUserById(Number(callbackUser?.id || 0));
+-  if (!actor || actor.accountEnabled === false) throw new Error("当前账户不存在或已停用，请重新登录。");
++  if (!actor || actor.accountEnabled === false) throw new PanelPreflightError(botLabel("当前账户不存在或已停用，请重新登录。"));
+   if (Number(actor?.id || 0) !== Number(pending.actorUserId || 0)) {
+-    throw new Error("只有原发起人可以确认该操作。");
+-  }
+-  const deepseekSettings = await getDeepSeekSettings().catch(() => null);
++    throw new PanelPreflightError(botLabel("只有原发起人可以确认该操作。"));
++  }
++  const deepseekSettings = await getDeepSeekSettings({ forceRefresh: true }).catch(() => { throw new PanelPreflightError(botLabel("无法确认当前操作权限，请稍后重新预览。")); });
+   if (String(actor?.role) !== "admin" && deepseekSettings?.telegramUserManageEnabled === false) {
+-    throw new Error("当前仅管理员可使用 AI 对话管理功能。");
++    throw new PanelPreflightError(botLabel("当前仅管理员可使用 AI 对话管理功能。"));
+   }
+   if (!isManageActionAllowedForRole(actor?.role, pending.action)) {
+-    throw new Error("当前账户已无该操作权限。");
++    throw new PanelPreflightError(botLabel("当前账户已无该操作权限。"));
++  }
++  if (!pending.panelCall && (!pending.preflightFingerprint || pending.preflightFingerprint !== await manageActionFingerprint(pending))) {
++    throw new PanelPreflightError(botLabel("配置已在预览后发生变化，本次未执行；请重新预览并确认"));
+   }
+   const sourceText = shortText(pending.sourceText || "", 180);
+ 
+   if (pending.action === "panel_operation") {
+-    if (!pending.panelCall) throw new Error("操作参数不存在，请重新发起");
++    if (!pending.panelCall) throw new Error(botLabel("操作参数不存在，请重新发起"));
+     const result = await executePanelCall(Number(actor.id), pending.panelCall);
+-    return `<b>执行成功：${escapeHtml(result.label)}</b>\n<pre>${escapeHtml(formatPanelToolResult(result.result))}</pre>`;
++    return botText`<b>执行成功：${escapeHtml(result.label)}</b>\n<pre>${escapeHtml(formatPanelToolResult(result.result))}</pre>`;
+   }
+ 
+   if (pending.action === "registration_enable" || pending.action === "registration_disable") {
+-    if (String(actor?.role) !== "admin") throw new Error("只有管理员可以调整开放注册。");
++    if (String(actor?.role) !== "admin") throw new Error(botLabel("只有管理员可以调整开放注册。"));
+     const enabled = pending.action === "registration_enable";
+     await db.setSetting("registrationEnabled", enabled ? "true" : "false");
+     console.info(`[TelegramBot] public registration ${enabled ? "enabled" : "disabled"} by user ${Number(actor.id || 0)}`);
+     return [
+-      "<b>执行成功</b>",
+-      `操作：${enabled ? "开启开放注册" : "关闭开放注册"}`,
+-      `当前状态：<b>${enabled ? "已开放" : "已关闭"}</b>`,
++      botLabel("<b>执行成功</b>"),
++      botText`操作：${enabled ? botLabel("开启开放注册") : botLabel("关闭开放注册")}`,
++      botText`当前状态：<b>${enabled ? botLabel("已开放") : botLabel("已关闭")}</b>`,
+     ].join("\n");
+   }
+ 
+@@ -3317,34 +3369,34 @@
+     if (pending.action === "rule_enable" || pending.action === "rule_disable") {
+       const enabled = pending.action === "rule_enable";
+       const ruleId = Number(pending.ruleId || 0);
+-      if (!Number.isFinite(ruleId) || ruleId <= 0) throw new Error("规则 ID 无效。");
++      if (!Number.isFinite(ruleId) || ruleId <= 0) throw new Error(botLabel("规则 ID 无效。"));
+       const rule = await toggleRuleForUser(actor, ruleId, enabled);
+       const targetUser = Number((rule as any)?.userId || 0) > 0
+         ? await db.getUserById(Number((rule as any).userId)).catch(() => null)
+         : null;
+       return [
+-        "<b>执行成功</b>",
+-        targetUser ? `用户：${formatUserLabel(targetUser)}` : "",
+-        `规则：${aiCode(formatManageRulePreview(rule))}`,
+-        `操作：${enabled ? "启用规则" : "关闭规则"}`,
++        botLabel("<b>执行成功</b>"),
++        targetUser ? botText`用户：${formatUserLabel(targetUser)}` : "",
++        botText`规则：${aiCode(formatManageRulePreview(rule))}`,
++        botText`操作：${enabled ? botLabel("启用规则") : botLabel("关闭规则")}`,
+       ].filter(Boolean).join("\n");
+     }
+ 
+     if (pending.action === "rule_create") {
+       const mode: ManageForwardMode = pending.forwardMode === "tunnel" ? "tunnel" : "host";
+       if (mode === "host") {
+-        throw new Error("普通端口转发请先创建转发组或转发链后再新增规则。");
++        throw new Error(botLabel("普通端口转发请先创建转发组或转发链后再新增规则。"));
+       }
+       const hostId = Number(pending.hostId || 0);
+       const tunnelId = mode === "tunnel" ? Number(pending.tunnelId || 0) : 0;
+       const targetIp = normalizeManageTargetIp(pending.targetIp || "");
+       const targetPort = parseManagePort(pending.targetPort);
+       const sourcePort = Number(pending.sourcePort ?? 0);
+-      if (!Number.isFinite(hostId) || hostId <= 0) throw new Error("入口主机无效。");
+-      if (!targetIp || !isValidManageRuleTargetHost(targetIp)) throw new Error("目标地址格式无效，请输入 IP 或域名。");
+-      if (!targetPort) throw new Error("目标端口无效，请输入 1-65535。");
++      if (!Number.isFinite(hostId) || hostId <= 0) throw new Error(botLabel("入口主机无效。"));
++      if (!targetIp || !isValidManageRuleTargetHost(targetIp)) throw new Error(botLabel("目标地址格式无效，请输入 IP 或域名。"));
++      if (!targetPort) throw new Error(botLabel("目标端口无效，请输入 1-65535。"));
+       if (!(sourcePort === 0 || parseManagePort(sourcePort))) {
+-        throw new Error("源端口无效，请输入 1-65535，或省略源端口使用随机端口。");
++        throw new Error(botLabel("源端口无效，请输入 1-65535，或省略源端口使用随机端口。"));
+       }
+       const forwardType = pickManageRuleForwardType(actor, mode);
+       const ruleName = `${isDiscordBotContext() ? "DC" : "TG"}-${new Date().toISOString().slice(0, 19).replace(/[-:T]/g, "")}-${sourcePort}`;
+@@ -3370,31 +3422,31 @@
+       const tunnel = tunnelId > 0 ? await db.getTunnelById(tunnelId).catch(() => null) : null;
+       const createdRule = await db.getForwardRuleById(Number(created.id)).catch(() => null);
+       return [
+-        "<b>执行成功</b>",
+-        `操作：新增转发规则`,
+-        `规则：${aiCode(createdRule ? formatManageRulePreview(createdRule) : `#${created.id} :${created.sourcePort} -> ${targetIp}:${targetPort}`)}`,
+-        `转发方式：${escapeHtml(manageForwardModeLabel(mode))}`,
+-        `入口端口：${aiCode(`:${created.sourcePort}`)}`,
+-        tunnelId > 0 ? `隧道：${aiCode(`#${tunnelId} ${(tunnel as any)?.name || ""}`.trim())}` : "",
++        botLabel("<b>执行成功</b>"),
++        botLabel(`操作：新增转发规则`),
++        botText`规则：${aiCode(createdRule ? formatManageRulePreview(createdRule) : `#${created.id} :${created.sourcePort} -> ${targetIp}:${targetPort}`)}`,
++        botText`转发方式：${escapeHtml(manageForwardModeLabel(mode))}`,
++        botText`入口端口：${aiCode(`:${created.sourcePort}`)}`,
++        tunnelId > 0 ? botText`隧道：${aiCode(`#${tunnelId} ${(tunnel as any)?.name || ""}`.trim())}` : "",
+       ].filter(Boolean).join("\n");
+     }
+ 
+     if (pending.action === "rule_delete") {
+       const ruleId = Number(pending.ruleId || 0);
+-      if (!Number.isFinite(ruleId) || ruleId <= 0) throw new Error("规则 ID 无效。");
++      if (!Number.isFinite(ruleId) || ruleId <= 0) throw new Error(botLabel("规则 ID 无效。"));
+       const result = await deleteForwardRuleForActor(actor, ruleId, { reasonPrefix: "telegram-rule" });
+       const rule = result.rule;
+       const targetUser = Number((rule as any).userId || 0) > 0
+         ? await db.getUserById(Number((rule as any).userId)).catch(() => null)
+         : null;
+       return [
+-        "<b>执行成功</b>",
+-        `操作：删除转发规则`,
+-        targetUser ? `用户：${formatUserLabel(targetUser)}` : "",
+-        `规则：${aiCode(formatManageRulePreview(rule))}`,
+-        result.childRules.length > 0 ? `已联动删除子规则：<b>${result.childRules.length}</b> 条` : "",
+-        result.chargedCents > 0 ? `删除结算扣费：<b>${formatMoneyCny(result.chargedCents)}</b>` : "",
+-        result.balanceAfterCents !== null ? `当前余额：<b>${formatMoneyCny(result.balanceAfterCents)}</b>` : "",
++        botLabel("<b>执行成功</b>"),
++        botLabel(`操作：删除转发规则`),
++        targetUser ? botText`用户：${formatUserLabel(targetUser)}` : "",
++        botText`规则：${aiCode(formatManageRulePreview(rule))}`,
++        result.childRules.length > 0 ? botText`已联动删除子规则：<b>${result.childRules.length}</b> 条` : "",
++        result.chargedCents > 0 ? botText`删除结算扣费：<b>${formatMoneyCny(result.chargedCents)}</b>` : "",
++        result.balanceAfterCents !== null ? botText`当前余额：<b>${formatMoneyCny(result.balanceAfterCents)}</b>` : "",
+       ].filter(Boolean).join("\n");
+     }
+ 
+@@ -3402,7 +3454,7 @@
+     const ruleIds = Array.from(new Set((pending.ruleIds || [])
+       .map((id) => Number(id))
+       .filter((id) => Number.isFinite(id) && id > 0)));
+-    if (ruleIds.length === 0) throw new Error("未找到可操作的规则。");
++    if (ruleIds.length === 0) throw new Error(botLabel("未找到可操作的规则。"));
+ 
+     const successRules: any[] = [];
+     const failedRules: Array<{ id: number; reason: string }> = [];
+@@ -3411,47 +3463,47 @@
+         const rule = await toggleRuleForUser(actor, ruleId, enabled);
+         successRules.push(rule);
+       } catch (error: any) {
+-        failedRules.push({ id: ruleId, reason: String(error?.message || "执行失败") });
++        failedRules.push({ id: ruleId, reason: String(error?.message || botLabel("执行失败")) });
+       }
+     }
+     if (successRules.length === 0) {
+-      throw new Error(`批量操作失败：${failedRules[0]?.reason || "没有可操作规则"}`);
++      throw new Error(botText`批量操作失败：${failedRules[0]?.reason || botLabel("没有可操作规则")}`);
+     }
+     const lines = [
+-      "<b>批量执行完成</b>",
+-      `隧道：${aiCode(pending.tunnelId ? `#${pending.tunnelId} ${pending.tunnelName || ""}`.trim() : (pending.tunnelName || "-"))}`,
+-      `操作：${enabled ? "启用隧道规则" : "关闭隧道规则"}`,
+-      `成功：<b>${successRules.length}</b> / ${ruleIds.length}`,
+-      failedRules.length > 0 ? `失败：<b>${failedRules.length}</b>` : "",
++      botLabel("<b>批量执行完成</b>"),
++      botText`隧道：${aiCode(pending.tunnelId ? `#${pending.tunnelId} ${pending.tunnelName || ""}`.trim() : (pending.tunnelName || "-"))}`,
++      botText`操作：${enabled ? botLabel("启用隧道规则") : botLabel("关闭隧道规则")}`,
++      botText`成功：<b>${successRules.length}</b> / ${ruleIds.length}`,
++      failedRules.length > 0 ? botText`失败：<b>${failedRules.length}</b>` : "",
+     ].filter(Boolean);
+     if (successRules.length > 0) {
+-      lines.push("成功规则：");
++      lines.push(botLabel("成功规则："));
+       for (const rule of successRules.slice(0, 15)) {
+         lines.push(`- ${aiCode(formatManageRulePreview(rule))}`);
+       }
+-      if (successRules.length > 15) lines.push(`- 其余 ${successRules.length - 15} 条已执行`);
++      if (successRules.length > 15) lines.push(botText`- 其余 ${successRules.length - 15} 条已执行`);
+     }
+     if (failedRules.length > 0) {
+-      lines.push("失败详情：");
++      lines.push(botLabel("失败详情："));
+       for (const item of failedRules.slice(0, 8)) {
+         lines.push(`- #${item.id} ${escapeHtml(shortText(item.reason, 36))}`);
+       }
+-      if (failedRules.length > 8) lines.push(`- 其余 ${failedRules.length - 8} 条请在面板查看`);
++      if (failedRules.length > 8) lines.push(botText`- 其余 ${failedRules.length - 8} 条请在面板查看`);
+     }
+     return lines.join("\n");
+   }
+ 
+   if (pending.action === "redeem_code_generate_balance") {
+-    if (String(actor?.role) !== "admin") throw new Error("只有管理员可以生成兑换码。");
+-    if (deepseekSettings?.redemptionEnabled === false) throw new Error("兑换码功能当前已关闭。");
++    if (String(actor?.role) !== "admin") throw new Error(botLabel("只有管理员可以生成兑换码。"));
++    if (deepseekSettings?.redemptionEnabled === false) throw new Error(botLabel("兑换码功能当前已关闭。"));
+     const codeCount = parseManageCodeCount(pending.codeCount) || 1;
+     if (codeCount <= 0 || codeCount > MANAGE_CODE_MAX_COUNT) {
+-      throw new Error(`兑换码数量必须在 1-${MANAGE_CODE_MAX_COUNT} 之间。`);
++      throw new Error(botText`兑换码数量必须在 1-${MANAGE_CODE_MAX_COUNT} 之间。`);
+     }
+     const amountCents = Math.round(Number(pending.amountCents || 0));
+-    if (!Number.isFinite(amountCents) || amountCents <= 0) throw new Error("兑换码金额无效。");
++    if (!Number.isFinite(amountCents) || amountCents <= 0) throw new Error(botLabel("兑换码金额无效。"));
+     if (amountCents > MANAGE_BALANCE_MAX_CENTS) {
+-      throw new Error("兑换码金额超出允许范围，请控制在 1,000,000 元以内。");
++      throw new Error(botLabel("兑换码金额超出允许范围，请控制在 1,000,000 元以内。"));
+     }
+     const codes = await db.createRedemptionCodes({
+       type: "balance",
+@@ -3464,32 +3516,32 @@
+       createdByUserId: Number(actor.id),
+     } as any, codeCount);
+     const createdCodes = (codes || []).map((item: any) => String(item || "").trim()).filter(Boolean);
+-    if (createdCodes.length === 0) throw new Error("兑换码生成失败，请稍后重试。");
++    if (createdCodes.length === 0) throw new Error(botLabel("兑换码生成失败，请稍后重试。"));
+     const preview = createdCodes.slice(0, MANAGE_CODE_DISPLAY_LIMIT);
+     const lines: string[] = [
+-      "<b>执行成功</b>",
+-      "操作：生成余额兑换码",
+-      `数量：<b>${createdCodes.length}</b>`,
+-      `面额：<b>${formatMoneyCny(amountCents)}</b>/个`,
+-      `总面额：<b>${formatMoneyCny(amountCents * createdCodes.length)}</b>`,
+-      "兑换码：",
++      botLabel("<b>执行成功</b>"),
++      botLabel("操作：生成余额兑换码"),
++      botText`数量：<b>${createdCodes.length}</b>`,
++      botText`面额：<b>${formatMoneyCny(amountCents)}</b>/个`,
++      botText`总面额：<b>${formatMoneyCny(amountCents * createdCodes.length)}</b>`,
++      botLabel("兑换码："),
+       ...preview.map((code) => `- ${aiCode(code)}`),
+     ];
+     if (createdCodes.length > preview.length) {
+-      lines.push(`- 其余 ${createdCodes.length - preview.length} 个请到后台账单页面查看`);
++      lines.push(botText`- 其余 ${createdCodes.length - preview.length} 个请到后台账单页面查看`);
+     }
+     return lines.join("\n");
+   }
+ 
+   if (pending.action === "discount_code_generate_percent") {
+-    if (String(actor?.role) !== "admin") throw new Error("只有管理员可以生成折扣码。");
+-    if (deepseekSettings?.discountEnabled === false) throw new Error("折扣码功能当前已关闭。");
++    if (String(actor?.role) !== "admin") throw new Error(botLabel("只有管理员可以生成折扣码。"));
++    if (deepseekSettings?.discountEnabled === false) throw new Error(botLabel("折扣码功能当前已关闭。"));
+     const codeCount = parseManageCodeCount(pending.codeCount) || 1;
+     if (codeCount <= 0 || codeCount > MANAGE_CODE_MAX_COUNT) {
+-      throw new Error(`折扣码数量必须在 1-${MANAGE_CODE_MAX_COUNT} 之间。`);
++      throw new Error(botText`折扣码数量必须在 1-${MANAGE_CODE_MAX_COUNT} 之间。`);
+     }
+     const discountPercent = normalizeManageDiscountPercent(pending.discountPercent);
+-    if (!discountPercent) throw new Error("折扣力度无效，请输入 1-100% 或 1-10 折。");
++    if (!discountPercent) throw new Error(botLabel("折扣力度无效，请输入 1-100% 或 1-10 折。"));
+     const createdCodes: string[] = [];
+     for (let i = 0; i < codeCount; i++) {
+       const code = await db.createDiscountCode({
+@@ -3504,122 +3556,122 @@
+       const codeText = String((code as any)?.code || "").trim();
+       if (codeText) createdCodes.push(codeText);
+     }
+-    if (createdCodes.length === 0) throw new Error("折扣码生成失败，请稍后重试。");
++    if (createdCodes.length === 0) throw new Error(botLabel("折扣码生成失败，请稍后重试。"));
+     const preview = createdCodes.slice(0, MANAGE_CODE_DISPLAY_LIMIT);
+     const lines: string[] = [
+-      "<b>执行成功</b>",
+-      "操作：生成折扣码",
+-      `数量：<b>${createdCodes.length}</b>`,
+-      `折扣力度：<b>${escapeHtml(formatDiscountPercentLabel(discountPercent))}</b>`,
+-      "折扣码：",
++      botLabel("<b>执行成功</b>"),
++      botLabel("操作：生成折扣码"),
++      botText`数量：<b>${createdCodes.length}</b>`,
++      botText`折扣力度：<b>${escapeHtml(formatDiscountPercentLabel(discountPercent))}</b>`,
++      botLabel("折扣码："),
+       ...preview.map((code) => `- ${aiCode(code)}`),
+     ];
+     if (createdCodes.length > preview.length) {
+-      lines.push(`- 其余 ${createdCodes.length - preview.length} 个请到后台账单页面查看`);
++      lines.push(botText`- 其余 ${createdCodes.length - preview.length} 个请到后台账单页面查看`);
+     }
+     return lines.join("\n");
+   }
+ 
+   const targetUserId = Number(pending.targetUserId || 0);
+   if (!Number.isFinite(targetUserId) || targetUserId <= 0) {
+-    throw new Error("目标用户无效。");
++    throw new Error(botLabel("目标用户无效。"));
+   }
+   const target = await db.getUserById(targetUserId);
+-  if (!target) throw new Error("目标用户不存在或已被删除。");
++  if (!target) throw new Error(botLabel("目标用户不存在或已被删除。"));
+   if (String(actor?.role) !== "admin" && Number(target.id) !== Number(actor.id)) {
+-    throw new Error("普通用户仅可操作自己的账号。");
++    throw new Error(botLabel("普通用户仅可操作自己的账号。"));
+   }
+ 
+   switch (pending.action) {
+     case "balance_set": {
+       const amountCents = Math.round(Number(pending.amountCents || 0));
+-      if (!Number.isFinite(amountCents) || amountCents < 0) throw new Error("余额金额无效。");
++      if (!Number.isFinite(amountCents) || amountCents < 0) throw new Error(botLabel("余额金额无效。"));
+       const result = await setUserBalanceCommand({
+         actor,
+         targetUserId: Number(target.id),
+         balanceCents: amountCents,
+-        description: `机器人余额设置：${sourceText}`,
++        description: botText`机器人余额设置：${sourceText}`,
+         reasonPrefix: "telegram-balance-set",
+       });
+       return [
+-        "<b>执行成功</b>",
+-        `用户：${formatUserLabel(target)}`,
+-        "操作：设置余额",
+-        `当前余额：<b>${formatMoneyCny(result.balanceCents)}</b>`,
++        botLabel("<b>执行成功</b>"),
++        botText`用户：${formatUserLabel(target)}`,
++        botLabel("操作：设置余额"),
++        botText`当前余额：<b>${formatMoneyCny(result.balanceCents)}</b>`,
+       ].join("\n");
+     }
+     case "balance_adjust": {
+       const amountCents = Math.round(Number(pending.amountCents || 0));
+-      if (!Number.isFinite(amountCents) || amountCents === 0) throw new Error("调整金额无效。");
++      if (!Number.isFinite(amountCents) || amountCents === 0) throw new Error(botLabel("调整金额无效。"));
+       const result = await adjustUserBalanceCommand({
+         actor,
+         targetUserId: Number(target.id),
+         amountCents,
+-        description: `机器人余额调整：${sourceText}`,
++        description: botText`机器人余额调整：${sourceText}`,
+         reasonPrefix: "telegram-balance-adjust",
+       });
+       return [
+-        "<b>执行成功</b>",
+-        `用户：${formatUserLabel(target)}`,
+-        "操作：调整余额",
+-        `变更金额：<b>${amountCents >= 0 ? "+" : ""}${formatMoneyCny(amountCents)}</b>`,
+-        `当前余额：<b>${formatMoneyCny(result.balanceCents)}</b>`,
++        botLabel("<b>执行成功</b>"),
++        botText`用户：${formatUserLabel(target)}`,
++        botLabel("操作：调整余额"),
++        botText`变更金额：<b>${amountCents >= 0 ? "+" : ""}${formatMoneyCny(amountCents)}</b>`,
++        botText`当前余额：<b>${formatMoneyCny(result.balanceCents)}</b>`,
+       ].join("\n");
+     }
+     case "renew": {
+       const durationValue = Math.max(1, Math.floor(Number(pending.durationValue || 1)));
+       const durationUnit: ManageDurationUnit = pending.durationUnit || "month";
+-      const { nextExpiresAt } = getRenewalDatesByDuration(target, durationValue, durationUnit);
++      const nextExpiresAt = new Date(pending.renewalExpiresAt!);
+       await renewUserCommand({ actor, targetUserId: Number(target.id), expiresAt: nextExpiresAt, reasonPrefix: "telegram-user-renewed" });
+       return [
+-        "<b>执行成功</b>",
+-        `用户：${formatUserLabel(target)}`,
+-        `操作：续费 ${escapeHtml(formatManageDuration(durationValue, durationUnit))}`,
+-        `新到期时间：<b>${escapeHtml(formatDateTime(nextExpiresAt))}</b>`,
++        botLabel("<b>执行成功</b>"),
++        botText`用户：${formatUserLabel(target)}`,
++        botText`操作：续费 ${escapeHtml(formatManageDuration(durationValue, durationUnit))}`,
++        botText`新到期时间：<b>${escapeHtml(formatDateTime(nextExpiresAt))}</b>`,
+       ].join("\n");
+     }
+     case "account_disable": {
+       await setUserAccountEnabledCommand({ actor, targetUserId: Number(target.id), enabled: false, reasonPrefix: "telegram-user-account" });
+       return [
+-        "<b>执行成功</b>",
+-        `用户：${formatUserLabel(target)}`,
+-        "操作：停用账号",
++        botLabel("<b>执行成功</b>"),
++        botText`用户：${formatUserLabel(target)}`,
++        botLabel("操作：停用账号"),
+       ].join("\n");
+     }
+     case "account_enable": {
+       await setUserAccountEnabledCommand({ actor, targetUserId: Number(target.id), enabled: true, reasonPrefix: "telegram-user-account" });
+       return [
+-        "<b>执行成功</b>",
+-        `用户：${formatUserLabel(target)}`,
+-        "操作：启用账号",
++        botLabel("<b>执行成功</b>"),
++        botText`用户：${formatUserLabel(target)}`,
++        botLabel("操作：启用账号"),
+       ].join("\n");
+     }
+     case "forward_disable": {
+       await setUserForwardAccessCommand({ actor, targetUserId: Number(target.id), enabled: false, reasonPrefix: "telegram-user-forward" });
+       return [
+-        "<b>执行成功</b>",
+-        `用户：${formatUserLabel(target)}`,
+-        "操作：关闭转发",
++        botLabel("<b>执行成功</b>"),
++        botText`用户：${formatUserLabel(target)}`,
++        botLabel("操作：关闭转发"),
+       ].join("\n");
+     }
+     case "forward_enable": {
+       await setUserForwardAccessCommand({ actor, targetUserId: Number(target.id), enabled: true, reasonPrefix: "telegram-user-forward" });
+       return [
+-        "<b>执行成功</b>",
+-        `用户：${formatUserLabel(target)}`,
+-        "操作：启用转发",
++        botLabel("<b>执行成功</b>"),
++        botText`用户：${formatUserLabel(target)}`,
++        botLabel("操作：启用转发"),
+       ].join("\n");
+     }
+     case "traffic_reset": {
+       await resetUserTrafficCommand({ actor, targetUserId: Number(target.id), reasonPrefix: "telegram-user-traffic-reset" });
+       return [
+-        "<b>执行成功</b>",
+-        `用户：${formatUserLabel(target)}`,
+-        "操作：重置流量",
++        botLabel("<b>执行成功</b>"),
++        botText`用户：${formatUserLabel(target)}`,
++        botLabel("操作：重置流量"),
+       ].join("\n");
+     }
+     default:
+-      throw new Error("暂不支持的管理操作。");
++      throw new Error(botLabel("暂不支持的管理操作。"));
+   }
+ }
+ 
+@@ -3693,7 +3745,9 @@
+ function botWorkflowProgress(session: PendingManageClarifySession) {
+   const done = session.completedActions?.length || 0;
+   const total = done + 1 + (session.remainingIntents?.length || 0);
+-  return `<b>目标：</b>${escapeHtml(session.goal || String(session.sourceText || "待确认操作").slice(0, 180))}\n步骤 ${done + 1}/${total}（已完成 ${done}）\n`;
++  return botText`<b>目标：</b>${escapeHtml(session.goal || String(session.sourceText || botLabel("待确认操作")).slice(0, 180))}\n步骤 ${done + 1}/${total}（已完成 ${done}）\n`
++    + (session.completedResults?.length ? botLabel("<b>已完成结果：</b>\n") + session.completedResults.map(result => escapeHtml(result.replace(/<[^>]*>/g, "").slice(0, 100))).join("\n") + "\n" : "")
++    + botText`待处理：${escapeHtml(manageActionLabel(session.action))}（另有 ${session.remainingIntents?.length || 0} 项）\n`;
+ }
+ 
+ async function presentBotOperation(message: TelegramMessage, user: any, session: PendingManageClarifySession, options: { editMessageId?: number | string; page?: number } = {}) {
+@@ -3701,6 +3755,7 @@
+   session = { ...session, intent, action: intent.action };
+   await saveBotDraft(manageScope(message.chat.id, user.id), session);
+   const respond = async (text: string, keyboard?: InlineKeyboardMarkup) => {
++    if (keyboard) keyboard = await protectClarifyKeyboard(message.chat.id, user.id, keyboard);
+     if (options.editMessageId !== undefined) {
+       await editMessage(message.chat.id, options.editMessageId, text, keyboard);
+       return options.editMessageId;
+@@ -3715,7 +3770,7 @@
+     return;
+   }
+   if (!prepared.prepared) {
+-    const sent = await respond(botWorkflowProgress(session) + (prepared.error || "信息不足，请补充。") + "\n待办已保存，可继续补充或发送“取消”。", manageClarifyCancelKeyboard());
++    const sent = await respond(botWorkflowProgress(session) + (prepared.error || botLabel("信息不足，请补充。")) + "\n" + botLabel("待办已保存，可继续补充或发送“取消”。"), manageClarifyCancelKeyboard());
+     await scheduleAiMessageAutoRecall(message.chat.id, message.message_id, sent);
+     return;
+   }
+@@ -3736,25 +3791,24 @@
+     session = { ...session, intent, action: intent.action };
+   }
+   if (!session && /^(继续|恢复|查看待办|操作进度|resume|status)$/i.test(query)) {
+-    await sendMessage(message.chat.id, "当前没有未完成的 AI 操作，可以直接发送新的请求。", backMenuKeyboard());
++    await sendMessage(message.chat.id, botLabel("当前没有未完成的 AI 操作，可以直接发送新的请求。"), backMenuKeyboard());
+     return true;
+   }
+   if (/^(取消|放弃|算了|退出|cancel)$/i.test(query)) {
+     await clearPendingManageClarifySession(message.chat.id, user.id);
+-    await sendMessage(message.chat.id, "已结束本次待办。已提交或已完成的操作不会停止或撤销，请核实实际结果。", backMenuKeyboard());
++    await sendMessage(message.chat.id, botLabel("已结束本次待办。已提交或已完成的操作不会停止或撤销，请核实实际结果。"), backMenuKeyboard());
+     return true;
+   }
+   if (session?.confirmationKey) {
+     const action = await readBotAction<PendingManageAction>(scope, session.confirmationKey);
+     if (action?.status === "executing" || action?.status === "uncertain") {
+-      await sendMessage(message.chat.id, botWorkflowProgress(session) + "上次操作已开始执行，但结果尚未确认。为避免重复充值、创建或续期，不会自动重试。请先在面板核实结果，再取消此待办或发起新操作。");
++      await sendMessage(message.chat.id, botWorkflowProgress(session) + botLabel("上次操作已开始执行，但结果尚未确认。为避免重复充值、创建或续期，不会自动重试。请先在面板核实结果，再取消此待办或发起新操作。") + (action.result ? "\n" + botText`待核实原因：${escapeHtml(action.result.slice(0, 600))}` : ""));
+       return true;
+     }
+     if (action?.status === "pending" && action.payload.expiresAt > Date.now()) {
+       if (/^(继续|恢复|查看待办|操作进度|确认|resume|status|confirm|yes)$/i.test(query)) {
+-        const pending = { ...action.payload, key: action.id };
+-        const sent = await sendMessage(message.chat.id, botWorkflowProgress(session) + manageActionConfirmText(pending, user), manageActionConfirmKeyboard(pending.key));
+-        await scheduleAiMessageAutoRecall(message.chat.id, message.message_id, sent);
++        if (!(await finishBotAction(scope, action.id, "cancelled", "预览已更新"))) throw new PanelPreflightError("操作状态已变化，请发送“继续”查看。");
++        await presentBotOperation(message, user, { ...session, stage: "collecting", confirmationKey: undefined });
+         return true;
+       }
+     }
+@@ -3789,7 +3843,7 @@
+       // Do not turn a failed model response into a guessed write. Existing
+       // guided fields can still be filled by the local parser below.
+       if (!session) {
+-        await sendMessage(message.chat.id, "AI 服务暂时不可用，本次未执行任何修改，请稍后重试。");
++        await sendMessage(message.chat.id, botLabel("AI 服务暂时不可用，本次未执行任何修改，请稍后重试。"));
+         return true;
+       }
+     }
+@@ -3801,7 +3855,7 @@
+     return true;
+   }
+   if (plan?.kind === "unsupported") {
+-    await sendMessage(message.chat.id, escapeHtml(plan.question) + (session ? "\n原待办仍保留，发送“继续”可恢复。" : ""));
++    await sendMessage(message.chat.id, escapeHtml(plan.question) + (session ? "\n" + botLabel("原待办仍保留，发送“继续”可恢复。") : ""));
+     return true;
+   }
+   if (plan?.kind === "clarify") {
+@@ -3811,17 +3865,17 @@
+     session = { ...session, goal: plan.goal, question: plan.question,
+       sourceText: session.sourceText === query ? session.sourceText : `${session.sourceText}\n补充：${query}`.slice(-6000) };
+     await saveBotDraft(scope, session);
+-    const sent = await sendMessage(message.chat.id, escapeHtml(plan.question) + "\n待办已保存，补充信息或发送“取消”即可。", manageClarifyCancelKeyboard());
++    const sent = await sendMessage(message.chat.id, escapeHtml(plan.question) + "\n" + botLabel("待办已保存，补充信息或发送“取消”即可。"), await protectClarifyKeyboard(message.chat.id, user.id, manageClarifyCancelKeyboard()));
+     await scheduleAiMessageAutoRecall(message.chat.id, message.message_id, sent);
+     return true;
+   }
+   if (session?.plannerOnly && plan?.kind !== "manage") {
+-    await sendMessage(message.chat.id, escapeHtml(session.question || "请补充具体希望进行的操作。"), manageClarifyCancelKeyboard());
++    await sendMessage(message.chat.id, escapeHtml(session.question || botLabel("请补充具体希望进行的操作。")), await protectClarifyKeyboard(message.chat.id, user.id, manageClarifyCancelKeyboard()));
+     return true;
+   }
+   if (plan?.kind === "manage") {
+     if (user.role !== "admin" && settings.telegramUserManageEnabled === false) {
+-      await sendMessage(message.chat.id, "当前仅管理员可使用 AI 对话管理功能。");
++      await sendMessage(message.chat.id, botLabel("当前仅管理员可使用 AI 对话管理功能。"));
+       return true;
+     }
+     const actions = plan.actions.map((action) => normalizeRuleCreateIntent(normalizeManageActionIntent(action, { action: "none" }), query));
+@@ -3829,11 +3883,11 @@
+       actions[0] = normalizeManagePresetCustomPatch({ action: session.action, sourceText: session.sourceText, missingFields: session.missingFields }, actions[0]);
+     }
+     if (session && !session.plannerOnly && actions[0].action !== session.action) {
+-      await sendMessage(message.chat.id, "当前还有未完成操作。请先发送“取消”结束原待办，再发起新的操作；原步骤不会被静默替换。", manageClarifyCancelKeyboard());
++      await sendMessage(message.chat.id, botLabel("当前还有未完成操作。请先发送“取消”结束原待办，再发起新的操作；原步骤不会被静默替换。"), await protectClarifyKeyboard(message.chat.id, user.id, manageClarifyCancelKeyboard()));
+       return true;
+     }
+     if (session?.intent.tool && actions[0].tool && session.intent.tool !== actions[0].tool) {
+-      await sendMessage(message.chat.id, "当前待办的工具不能被静默替换，请先取消原操作。", manageClarifyCancelKeyboard());
++      await sendMessage(message.chat.id, botLabel("当前待办的工具不能被静默替换，请先取消原操作。"), await protectClarifyKeyboard(message.chat.id, user.id, manageClarifyCancelKeyboard()));
+       return true;
+     }
+     session = {
+@@ -3854,7 +3908,7 @@
+     const local = localManageActionIntent(query);
+     if (!local.writeLike || local.intent.action === "none") return false;
+     if (user.role !== "admin" && settings.telegramUserManageEnabled === false) {
+-      await sendMessage(message.chat.id, "当前仅管理员可使用 AI 对话管理功能。");
++      await sendMessage(message.chat.id, botLabel("当前仅管理员可使用 AI 对话管理功能。"));
+       return true;
+     }
+     session = { actorUserId: user.id, actorRole: user.role, action: local.intent.action, intent: local.intent, goal: query.slice(0, 500), sourceText: query.slice(0, 6000), missingFields: [], createdAt: Date.now(), expiresAt: 0, stage: "collecting" };
+@@ -4403,9 +4457,9 @@
+     `状态：<b>${escapeHtml(effectiveRuleStatusText(rule, traffic))}</b>`,
+     statusInfo.detail ? `说明：${escapeHtml(statusInfo.detail)}` : "",
+     `类型：${aiCode(`${rule.forwardType || "-"} / ${formatForwardRuleProtocol(rule.protocol)}`)}`,
+-    `入口端口：${aiCode(`:${rule.sourcePort ?? "-"}`)}`,
++    botText`入口端口：${aiCode(`:${rule.sourcePort ?? "-"}`)}`,
+     `目标：${aiCode(`${rule.targetIp || "-"}:${rule.targetPort ?? "-"}`)}`,
+-    rule.tunnelId ? `隧道：${aiCode(`#${rule.tunnelId}`)}` : `主机：${aiCode(`#${rule.hostId}`)}`,
++    rule.tunnelId ? botText`隧道：${aiCode(`#${rule.tunnelId}`)}` : `主机：${aiCode(`#${rule.hostId}`)}`,
+     formatRuleTrafficSummary(traffic),
+     rule.remark || rule.remarks || rule.description ? `备注：${escapeHtml(rule.remark || rule.remarks || rule.description)}` : "",
+   ].filter(Boolean).join("\n");
+@@ -4733,7 +4787,7 @@
+       "",
+       `类型：余额`,
+       `入账金额：${formatMoneyCny(result.amountCents)}`,
+-      `当前余额：${formatMoneyCny(result.balanceCents)}`,
++      botText`当前余额：${formatMoneyCny(result.balanceCents)}`,
+     ].join("\n");
+   }
+   if (result.type === "plan") {
+@@ -4850,14 +4904,15 @@
+   }
+ }
+ 
+-async function handleRenew(message: TelegramMessage, userIdRaw: string | undefined) {
++async function handleRenew(message: TelegramMessage, user: any, userIdRaw: string | undefined) {
+   const userId = Number(userIdRaw);
+   if (!Number.isFinite(userId) || userId <= 0) {
+     await sendMessage(message.chat.id, "请发送 /renew 用户ID，例如：/renew 8。该操作需要二次确认。");
+     return;
+   }
+   const detail = await renewalConfirmText(userId);
+-  await sendMessage(message.chat.id, detail.text, detail.target ? renewalConfirmKeyboard(userId, 0) : undefined);
++  const actionKey = await createMenuRenewal(message.chat.id, user, detail);
++  await sendMessage(message.chat.id, detail.text, actionKey ? renewalConfirmKeyboard(userId, actionKey) : undefined);
+ }
+ 
+ async function handleUpdatePanel(message: TelegramMessage, user: any) {
+@@ -5142,7 +5197,7 @@
+ 
+   if (user.role === "admin" && command === "/users") return handleUsers(message);
+   if (user.role === "admin" && command === "/reset") return handleReset(message, user, args[0]);
+-  if (user.role === "admin" && command === "/renew") return handleRenew(message, args[0]);
++  if (user.role === "admin" && command === "/renew") return handleRenew(message, user, args[0]);
+   if (user.role === "admin" && command === "/updatepanel") return handleUpdatePanel(message, user);
+   if (user.role === "admin" && command === "/updateagent") return handleUpdateAgent(message, user);
+ 
+@@ -5161,7 +5216,7 @@
+   const user = identity.user;
+   const chatId = query.message.chat.id;
+   const messageId = query.message.message_id;
+-  const data = query.data || "";
++  let data = query.data || "";
+   if (isDiscordBotContext() && data.startsWith("fx:app-login")) return;
+   if (data === "fx:bind:start") {
+     if (user) {
+@@ -5189,6 +5244,17 @@
+     return;
+   }
+ 
++  if (data.startsWith("fx:op:clarify:")) {
++    const draft = await getPendingManageClarifySession(chatId, user.id);
++    const match = data.match(/^fx:op:clarify:choice:([a-f0-9]{18}):(\d+)$/);
++    const original = match && draft?.clarifySelection?.key === match[1] ? draft.clarifySelection.callbacks[Number(match[2])] : null;
++    if (!original) {
++      await editMessage(chatId, messageId, botLabel("该补充选项已经变化，请发送“继续”查看当前待办。"), backMenuKeyboard());
++      return;
++    }
++    data = original;
++  }
++
+   if (data.startsWith("fx:app-login:")) {
+     await confirmMobileLogin(chatId, messageId, data.slice("fx:app-login:".length), user);
+     return;
+@@ -5341,15 +5407,42 @@
+     await editMessage(chatId, messageId, `已${enabled ? "启用" : "停用"}用户 #${userId} 的转发权限。\n\n${detail.text}`, await adminUserKeyboard(userId, page));
+     return;
+   }
++  if (data.startsWith("fx:admin:renew:cancel:")) {
++    const [, , , , key, pageRaw] = data.split(":");
++    const scope = renewalScope(chatId, user.id);
++    const draft = await readBotDraft<{ confirmationKey: string }>(scope);
++    if (draft?.confirmationKey === key && await finishBotAction(scope, key, "cancelled", "用户取消续期")) await clearBotDraft(scope);
++    await editMessage(chatId, messageId, "续期确认已取消。", userManageBackKeyboard(Number(pageRaw || 0)));
++    return;
++  }
+   if (data.startsWith("fx:admin:renew:confirm:")) {
+     if (user.role !== "admin") {
+       await editMessage(chatId, messageId, "你没有管理员权限。", backMenuKeyboard());
+       return;
+     }
+-    const [, , , , userIdRaw, pageRaw] = data.split(":");
+-    const userId = Number(userIdRaw);
++    const [, , , , actionKey, pageRaw] = data.split(":");
+     const page = Number(pageRaw || 0);
+-    const result = await renewUserOneMonth(user, userId);
++    const scope = renewalScope(chatId, user.id);
++    const current = await readBotDraft<{ confirmationKey: string }>(scope);
++    const stored = await readBotAction<MenuRenewal>(scope, actionKey);
++    if (current?.confirmationKey !== actionKey || !stored || stored.status !== "pending" || stored.payload.kind !== "menu_renew" || stored.payload.expiresAt <= Date.now()) {
++      await editMessage(chatId, messageId, "确认已失效或已被处理。请重新打开用户详情并预览续期。", userManageBackKeyboard(page));
++      return;
++    }
++    const pending = await claimBotAction<MenuRenewal>(scope, actionKey);
++    if (!pending) return;
++    const userId = pending.targetUserId;
++    let result: { nextExpiresAt: Date };
++    try {
++      const target = await db.getUserById(userId);
++      if (!target || (target.expiresAt?.getTime() ?? null) !== pending.previousExpiresAt) throw new PanelPreflightError("用户到期时间已变化，请重新预览续期");
++      result = { nextExpiresAt: new Date(pending.nextExpiresAt) };
++      await renewUserCommand({ actor: user, targetUserId: userId, expiresAt: result.nextExpiresAt, reasonPrefix: "telegram-command-user-renewed" });
++      await finishBotAction(scope, actionKey, "succeeded", `expiresAt=${result.nextExpiresAt.toISOString()}`);
++    } catch (error) {
++      await finishBotAction(scope, actionKey, error instanceof PanelPreflightError ? "rejected" : "uncertain", error instanceof Error ? error.message : String(error));
++      throw error;
++    }
+     const detail = await adminUserText(userId);
+     await editMessage(
+       chatId,
+@@ -5368,7 +5461,8 @@
+     const userId = Number(userIdRaw);
+     const page = Number(pageRaw || 0);
+     const detail = await renewalConfirmText(userId);
+-    await editMessage(chatId, messageId, detail.text, detail.target ? renewalConfirmKeyboard(userId, page) : userManageBackKeyboard(page));
++    const actionKey = await createMenuRenewal(chatId, user, detail);
++    await editMessage(chatId, messageId, detail.text, actionKey ? renewalConfirmKeyboard(userId, actionKey, page) : userManageBackKeyboard(page));
+     return;
+   }
+ 
+@@ -5377,13 +5471,13 @@
+     const match = data.match(/^fx:op:choose:([a-f0-9]{18}):(\d+|cancel|page:\d+)$/);
+     if (!match || !session?.selection || session.selection.key !== match[1] || session.stage !== "collecting" || session.intent.action !== "panel_operation" || !["rules.create", "settings.set"].includes(session.intent.tool || "")) {
+       // A delayed duplicate click must not overwrite the newly displayed menu.
+-      await sendMessage(chatId, "该选项已失效，请使用最新选项，或发送“继续”查看当前待办。", backMenuKeyboard());
++      await sendMessage(chatId, botLabel("该选项已失效，请使用最新选项，或发送“继续”查看当前待办。"), backMenuKeyboard());
+       return;
+     }
+     const selection = match[2];
+     if (selection === "cancel") {
+       await clearPendingManageClarifySession(chatId, user.id);
+-      await editMessage(chatId, messageId, "已取消本次操作，没有创建规则。", backMenuKeyboard());
++      await editMessage(chatId, messageId, botLabel("已取消本次操作，没有创建规则。"), backMenuKeyboard());
+       return;
+     }
+     let page = 0;
+@@ -5411,7 +5505,7 @@
+     const action = data.slice("fx:op:clarify:".length);
+     if (action === "cancel") {
+       await clearPendingManageClarifySession(chatId, user.id);
+-      await editMessage(chatId, messageId, "已结束本次待办。已提交或已完成的操作不会停止或撤销，请核实实际结果。", backMenuKeyboard());
++      await editMessage(chatId, messageId, botLabel("已结束本次待办。已提交或已完成的操作不会停止或撤销，请核实实际结果。"), backMenuKeyboard());
+       await scheduleAiMessageAutoRecall(chatId, undefined, messageId);
+       return;
+     }
+@@ -5424,7 +5518,7 @@
+       const field = action.slice("custom:".length) as ManagePresetField;
+       const presetUi = managePresetClarifyUi(session.action, session.sourceText, session.missingFields);
+       if (!presetUi || presetUi.field !== field) {
+-        await editMessage(chatId, messageId, "该输入项已经变化，请根据当前提示重新选择。", manageClarifyCancelKeyboard());
++        await editMessage(chatId, messageId, "该输入项已经变化，请根据当前提示重新选择。", await protectClarifyKeyboard(chatId, user.id, manageClarifyCancelKeyboard()));
+         await scheduleAiMessageAutoRecall(chatId, undefined, messageId);
+         return;
+       }
+@@ -5439,7 +5533,7 @@
+         chatId,
+         messageId,
+         `${presetUi.customPrompt}\n\n发送“取消”可结束本次操作，待办会保留至完成或取消。`,
+-        manageClarifyCancelKeyboard(),
++        await protectClarifyKeyboard(chatId, user.id, manageClarifyCancelKeyboard()),
+       );
+       await scheduleAiMessageAutoRecall(chatId, undefined, messageId);
+       return;
+@@ -5455,7 +5549,7 @@
+         && presetUi.choices.some((choice) => choice.value === value);
+       const patch = isCurrentChoice ? parseManagePresetSelection(field, value) : null;
+       if (!patch) {
+-        await editMessage(chatId, messageId, "预设选项无效或已经过期，请根据当前提示重新选择。", manageClarifyCancelKeyboard());
++        await editMessage(chatId, messageId, "预设选项无效或已经过期，请根据当前提示重新选择。", await protectClarifyKeyboard(chatId, user.id, manageClarifyCancelKeyboard()));
+         await scheduleAiMessageAutoRecall(chatId, undefined, messageId);
+         return;
+       }
+@@ -5464,7 +5558,7 @@
+       if (!session.missingFields.includes("forwardMode")) return;
+       const modeRaw = action.slice("mode:".length);
+       if (modeRaw !== "host" && modeRaw !== "tunnel") {
+-        await editMessage(chatId, messageId, "转发模式选项无效，请重新选择。", manageClarifyModeKeyboard());
++        await editMessage(chatId, messageId, "转发模式选项无效，请重新选择。", await protectClarifyKeyboard(chatId, user.id, manageClarifyModeKeyboard()));
+         await scheduleAiMessageAutoRecall(chatId, undefined, messageId);
+         return;
+       }
+@@ -5475,7 +5569,7 @@
+       if (!session.missingFields.includes("tunnel")) return;
+       const tunnelId = Number(action.slice("tunnel:".length));
+       if (!Number.isFinite(tunnelId) || tunnelId <= 0) {
+-        await editMessage(chatId, messageId, "隧道选项无效，请重新选择。", manageClarifyCancelKeyboard());
++        await editMessage(chatId, messageId, "隧道选项无效，请重新选择。", await protectClarifyKeyboard(chatId, user.id, manageClarifyCancelKeyboard()));
+         await scheduleAiMessageAutoRecall(chatId, undefined, messageId);
+         return;
+       }
+@@ -5486,7 +5580,7 @@
+       if (!session.missingFields.includes("host")) return;
+       const hostId = Number(action.slice("host:".length));
+       if (!Number.isFinite(hostId) || hostId <= 0) {
+-        await editMessage(chatId, messageId, "主机选项无效，请重新选择。", manageClarifyCancelKeyboard());
++        await editMessage(chatId, messageId, "主机选项无效，请重新选择。", await protectClarifyKeyboard(chatId, user.id, manageClarifyCancelKeyboard()));
+         await scheduleAiMessageAutoRecall(chatId, undefined, messageId);
+         return;
+       }
+@@ -5497,7 +5591,7 @@
+       if (!session.missingFields.includes("ruleId")) return;
+       const ruleId = Number(action.slice("rule:".length));
+       if (!Number.isFinite(ruleId) || ruleId <= 0) {
+-        await editMessage(chatId, messageId, "规则选项无效，请重新选择。", manageClarifyCancelKeyboard());
++        await editMessage(chatId, messageId, "规则选项无效，请重新选择。", await protectClarifyKeyboard(chatId, user.id, manageClarifyCancelKeyboard()));
+         await scheduleAiMessageAutoRecall(chatId, undefined, messageId);
+         return;
+       }
+@@ -5508,34 +5602,7 @@
+       return;
+     }
+ 
+-    const prepared = await prepareManageAction(user, session.sourceText, nextIntent);
+-    if (prepared.clarify) {
+-      await createPendingManageClarifySession(
+-        chatId,
+-        prepared.clarify.actor || user,
+-        session.sourceText,
+-        prepared.clarify.intent,
+-        prepared.clarify.missingFields,
+-      );
+-      await editMessage(chatId, messageId, prepared.clarify.text, prepared.clarify.keyboard || manageClarifyCancelKeyboard());
+-      await scheduleAiMessageAutoRecall(chatId, undefined, messageId);
+-      return;
+-    }
+-
+-    if (!prepared.prepared) {
+-      await editMessage(chatId, messageId, prepared.error || "未识别到可执行的管理操作。", backMenuKeyboard());
+-      await scheduleAiMessageAutoRecall(chatId, undefined, messageId);
+-      return;
+-    }
+-    await createPendingManageClarifySession(chatId, user, session.sourceText, nextIntent, []);
+-    const actionPending = await createPendingManageAction(prepared.prepared.pending, chatId);
+-    await editMessage(
+-      chatId,
+-      messageId,
+-      manageActionConfirmText(actionPending, prepared.prepared.actor, prepared.prepared.target),
+-      manageActionConfirmKeyboard(actionPending.key),
+-    );
+-    await scheduleAiMessageAutoRecall(chatId, undefined, messageId);
++    await presentBotOperation(query.message!, user, { ...session, intent: nextIntent }, { editMessageId: messageId });
+     return;
+   }
+ 
+@@ -5543,7 +5610,7 @@
+     const actionKey = data.slice("fx:op:confirm:".length).trim().toLowerCase();
+     const pending = await getPendingManageAction(actionKey, chatId, Number(user.id));
+     if (!pending) {
+-      await editMessage(chatId, messageId, "确认已失效或已被处理。待办如未结束，可发送“继续”恢复并重新校验。", backMenuKeyboard());
++      await editMessage(chatId, messageId, botLabel("确认已失效或已被处理。待办如未结束，可发送“继续”恢复并重新校验。"), backMenuKeyboard());
+       await scheduleAiMessageAutoRecall(chatId, undefined, messageId);
+       return;
+     }
+@@ -5555,7 +5622,7 @@
+     const scope = manageScope(chatId, user.id);
+     const consumed = await claimBotAction<PendingManageAction>(scope, actionKey);
+     if (!consumed) {
+-      await editMessage(chatId, messageId, "确认已失效或已被处理。待办如未结束，可发送“继续”恢复并重新校验。", backMenuKeyboard());
++      await editMessage(chatId, messageId, botLabel("确认已失效或已被处理。待办如未结束，可发送“继续”恢复并重新校验。"), backMenuKeyboard());
+       await scheduleAiMessageAutoRecall(chatId, undefined, messageId);
+       return;
+     }
+@@ -5566,11 +5633,11 @@
+     } catch (error) {
+       if (error instanceof PanelPreflightError) {
+         await finishBotAction(scope, actionKey, "rejected", error.message);
+-        await editMessage(chatId, messageId, `本次未执行：${escapeHtml(error.message)}。待办仍保留，发送“继续”重新预览。`, backMenuKeyboard());
++        await editMessage(chatId, messageId, botText`本次未执行：${escapeHtml(error.message)}。待办仍保留，发送“继续”重新预览。`, backMenuKeyboard());
+         return;
+       }
+       await finishBotAction(scope, actionKey, "uncertain", error instanceof Error ? error.message : String(error));
+-      throw new Error(`操作未确认完成：${error instanceof Error ? error.message : String(error)}。待办仍保留，请先核实面板中的实际结果；不会自动重复执行。`);
++      throw new Error(botText`操作未确认完成：${error instanceof Error ? error.message : String(error)}。待办仍保留，请先核实面板中的实际结果；不会自动重复执行。`);
+     }
+     await withDatabaseTransaction(async () => {
+       await finishBotAction(scope, actionKey, "succeeded", result);
+@@ -5579,7 +5646,8 @@
+       const [next, ...remaining] = draft.remainingIntents || [];
+       if (next) {
+         nextSession = { ...draft, action: next.action, intent: next, remainingIntents: remaining,
+-          completedActions: [...(draft.completedActions || []), consumed.panelCall?.tool || consumed.action], missingFields: [],
++          completedActions: [...(draft.completedActions || []), consumed.panelCall?.tool || consumed.action],
++          completedResults: [...(draft.completedResults || []), result], missingFields: [],
+           confirmationKey: undefined, stage: "collecting", plannerOnly: false };
+         await saveBotDraft(scope, nextSession);
+       } else await clearBotDraft(scope);
+@@ -5593,7 +5661,7 @@
+     const actionKey = data.slice("fx:op:cancel:".length).trim().toLowerCase();
+     const pending = await getPendingManageAction(actionKey, chatId, Number(user.id));
+     if (!pending) {
+-      await editMessage(chatId, messageId, "确认已失效或已被处理。待办如未结束，可发送“继续”恢复并重新校验。", backMenuKeyboard());
++      await editMessage(chatId, messageId, botLabel("确认已失效或已被处理。待办如未结束，可发送“继续”恢复并重新校验。"), backMenuKeyboard());
+       await scheduleAiMessageAutoRecall(chatId, undefined, messageId);
+       return;
+     }
+@@ -5603,7 +5671,7 @@
+       return;
+     }
+     await clearPendingManageClarifySession(chatId, user.id);
+-    await editMessage(chatId, messageId, "已结束本次待办。已提交或已完成的操作不会停止或撤销，请核实实际结果。", backMenuKeyboard());
++    await editMessage(chatId, messageId, botLabel("已结束本次待办。已提交或已完成的操作不会停止或撤销，请核实实际结果。"), backMenuKeyboard());
+     await scheduleAiMessageAutoRecall(chatId, undefined, messageId);
+     return;
+   }
+@@ -5663,6 +5731,7 @@
+   const chat = update.message?.chat || update.callback_query?.message?.chat;
+   if (!chat || chat.type !== "private") return;
+   if (!isDiscordBotContext() && !(await getTelegramSettings()).enabled) return;
++  return withBotLocale(isDiscordBotContext() ? "discord" : "telegram", update.message?.from || update.callback_query?.from, async () => {
+   try {
+     const chatId = update.message?.chat.id || update.callback_query?.message?.chat.id || update.update_id;
+     await withKeyedTaskLock(`bot-conversation:${isDiscordBotContext() ? "discord" : "telegram"}:${chatId}`, async () => {
+@@ -5673,8 +5742,9 @@
+   } catch (error) {
+     console.error(`[${isDiscordBotContext() ? "Discord" : "Telegram"}] Failed to handle message:`, error);
+     const chatId = update.message?.chat.id || update.callback_query?.message?.chat.id;
+-    if (chatId) await sendMessage(chatId, `操作失败：${escapeHtml(error instanceof Error ? error.message : String(error))}`).catch(() => undefined);
+-  }
++    if (chatId) await sendMessage(chatId, botText`操作失败：${escapeHtml(error instanceof Error ? error.message : String(error))}`).catch(() => undefined);
++  }
++  });
+ }
+ 
+ // Discord Gateway events use the same permission checks, confirmation flows,

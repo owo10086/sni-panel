@@ -1,14 +1,16 @@
+import { t as translateText } from "@/i18n";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   getRuleBulkCheckboxState, getRuleBulkSelectability, pruneRuleBulkSelection, toggleRuleBulkSelection,
   type RuleBulkRule,
 } from "@/lib/ruleBulkSelection";
 
-export function useRuleBulkSelection<T extends RuleBulkRule>({ rules, scopeKey, ready, isSupported }: {
+export function useRuleBulkSelection<T extends RuleBulkRule>({ rules, scopeKey, ready, isSupported, getUnselectableReason }: {
   rules: readonly T[];
   scopeKey: string;
   ready: boolean;
   isSupported: (rule: T) => boolean;
+  getUnselectableReason?: (rule: T) => string | null;
 }) {
   const [selection, setSelection] = useState({ scopeKey, ids: new Set<number>() });
   const [busy, setBusy] = useState(false);
@@ -34,9 +36,9 @@ export function useRuleBulkSelection<T extends RuleBulkRule>({ rules, scopeKey, 
   }, []);
   const getCheckboxProps = (items: readonly T[]) => {
     const state = getRuleBulkCheckboxState(items, selectedIds, isSupported);
-    const reason = !ready ? "正在加载当前页规则" : busy ? "正在执行批量操作"
-      : items.length === 1 ? getRuleBulkSelectability(items[0], isSupported(items[0])).reason
-      : state.disabled ? "该范围内没有可批量修改的规则" : null;
+    const reason = !ready ? translateText("正在加载当前页规则") : busy ? translateText("正在执行批量操作")
+      : items.length === 1 ? getUnselectableReason?.(items[0]) ?? getRuleBulkSelectability(items[0], isSupported(items[0])).reason
+      : state.disabled ? translateText("该范围内没有可批量修改的规则") : null;
     return {
       ...state, disabled: state.disabled || !ready || busy, reason,
       onCheckedChange: (checked: boolean) => {

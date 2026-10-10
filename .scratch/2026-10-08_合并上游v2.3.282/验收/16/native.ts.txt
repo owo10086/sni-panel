@@ -1,0 +1,6 @@
+const params=new URL(location.href).searchParams;
+const record=(event:string,value:unknown={})=>fetch('/__ticket16/event',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({event,value})});
+export const App={getInfo:async()=>({version:params.get('scenario')==='current'?'2.4.0':params.get('platform')==='ios'?'1.0.0':'2.3.99',build:'fixture',id:'com.forwardx.app',name:'sni-panel'}),addListener:async()=>({remove:async()=>{}}),minimizeApp:async()=>{}};
+export const Browser={open:async(value:unknown)=>{await record('open',value)}};
+export const Preferences={get:async({key}:{key:string})=>({value:localStorage.getItem(key)}),set:async({key,value}:{key:string,value:string})=>localStorage.setItem(key,value),remove:async({key}:{key:string})=>localStorage.removeItem(key)};
+export const LocalNotifications={checkPermissions:async()=>({display:params.get('permission')==='denied'?'denied':'granted'}),requestPermissions:async()=>{await record('permission');return {display:'denied'}},cancel:async(value:unknown)=>{await record('cancel',value)},schedule:async(value:unknown)=>{await record('schedule',value)}};

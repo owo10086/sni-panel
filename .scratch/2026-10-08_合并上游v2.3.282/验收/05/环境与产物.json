@@ -1,0 +1,77 @@
+{
+  "date": "2026-10-09",
+  "head": "b258398e55ab1bee06eedcc1475a96bd7a79ff83",
+  "architecture": "linux-arm64",
+  "image": "forwardx-sni-test:20261006",
+  "imageId": "sha256:b191d6dbc4898969d6ea13b5f7a71ec68dca066facad4a6b20542eb36491e063",
+  "realRuntime": "GOST 3.2.6",
+  "initSystem": "真实面板生成的SysV服务脚本；容器使用--init回收退出进程",
+  "network": "--network none；NET_ADMIN仅用于隔离容器回环测试地址",
+  "artifacts": {
+    "forwardx-agent": "c1d7bdda5d2d93a4344f5ac5fa99a931e0385491b3f424e007b10bbe339baed9",
+    "released-agent": "fd783c076476e49d2db4097e2f0a486ad87a7c1e14376cec83da8e1a3bbeabff",
+    "gost": "343c3e003996ca0437b9cc47dd1500cd0475ba09f5a5f17e50851854e06a1ca7",
+    "agent-tests": "0e18b35f71a44ef7c731dc94003d799ce6efdf98ad53dc56860aa2bebf99daa3"
+  },
+  "verificationScriptSha256": "b7445cb559898e4c81f2e9f45547f1c87701661a3095c157c6ef9bdfa1fce6d5",
+  "tests": {
+    "agent-full": {
+      "pass": 459,
+      "skip": 1,
+      "fail": 0
+    },
+    "gost-real-baseline": {
+      "pass": 13,
+      "skip": 0,
+      "fail": 0
+    },
+    "panel-focused": {
+      "pass": 46,
+      "skip": 0,
+      "fail": 0
+    },
+    "agentCLIRealScenarios": [
+      "first-api-activation",
+      "add",
+      "port-conflict",
+      "dependency-failure",
+      "later-application-failure",
+      "second-config-validation-failure",
+      "edit",
+      "delete",
+      "process-fault-recovery",
+      "agent-restart",
+      "legacy-agent-fallback",
+      "entry-add-dependencies",
+      "entry-conflict-dependency-rollback"
+    ],
+    "agent-focused-final": {
+      "pass": 21,
+      "skip": 0,
+      "fail": 0
+    }
+  },
+  "sourceCheck": {
+    "baselineFileCount": 789,
+    "changedExistingFiles": [
+      "agent/managed_configs.go",
+      "agent/gost_additive_sync.go",
+      "docs/guide/agent.md"
+    ],
+    "newFiles": [
+      "scripts/verify-gost-agent-sync.mjs"
+    ]
+  },
+  "productionOperations": "无；隔离测试未使用生产数据库、凭据或网络",
+  "commitArrangement": "19统一提交；20上线发布",
+  "linuxVetExitCode": 0,
+  "typecheckExitCode": {
+    "start": 0,
+    "final": 0
+  },
+  "baselineManagedConfigProof": {
+    "method": "反向撤销本单已记录修正后重建修改前副本，并与开工前SHA-256逐字节核对相同",
+    "expectedSha256": "86703e144a8dd11b9883435c4566bb307df62fe007008fa25b61abc6dcfbc635",
+    "restoredSha256": "86703e144a8dd11b9883435c4566bb307df62fe007008fa25b61abc6dcfbc635"
+  }
+}

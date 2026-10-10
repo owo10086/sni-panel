@@ -1,0 +1,43 @@
+{"event":"releases","scenario":"missing","platform":"android","requestedSource":"https://api.github.com/repos/owo10086/sni-panel/releases?per_page=20"}
+{"event":"releases","scenario":"missing","platform":"android","requestedSource":"https://api.github.com/repos/owo10086/sni-panel/releases?per_page=20"}
+{"event":"releases","scenario":"update","platform":"android","requestedSource":"https://api.github.com/repos/owo10086/sni-panel/releases?per_page=20"}
+{"event":"open","value":{"url":"https://github.com/owo10086/sni-panel/releases/tag/v3.3.0"}}
+{"event":"releases","scenario":"update","platform":"android","requestedSource":"https://api.github.com/repos/owo10086/sni-panel/releases?per_page=20"}
+{"event":"open","value":{"url":"https://github.com/owo10086/sni-panel/releases/tag/v3.3.0"}}
+{"event":"releases","scenario":"current","platform":"android","requestedSource":"https://api.github.com/repos/owo10086/sni-panel/releases?per_page=20"}
+{"event":"releases","scenario":"error","platform":"android","requestedSource":"https://api.github.com/repos/owo10086/sni-panel/releases?per_page=20"}
+{"event":"releases","scenario":"update","platform":"android","requestedSource":"https://api.github.com/repos/owo10086/sni-panel/releases?per_page=20"}
+{"event":"releases","scenario":"update","platform":"android","requestedSource":"https://api.github.com/repos/owo10086/sni-panel/releases?per_page=20"}
+{"event":"open","value":{"url":"https://github.com/owo10086/sni-panel/releases/tag/v3.3.0"}}
+{"event":"cancel","value":{"notifications":[{"id":40101},{"id":40102}]}}
+{"event":"cancel","value":{"notifications":[{"id":40101},{"id":40102}]}}
+{"event":"cancel","value":{"notifications":[{"id":40101},{"id":40102}]}}
+{"event":"cancel","value":{"notifications":[{"id":40101},{"id":40102}]}}
+{"event":"schedule","value":{"notifications":[{"id":40101,"title":"sni-panel 流量提醒","body":"套餐流量剩余约 15%，请及时关注。","schedule":{"at":"2026-10-11T01:00:00.000Z"}}]}}
+{"event":"schedule","value":{"notifications":[{"id":40101,"title":"sni-panel 流量提醒","body":"套餐流量剩余约 15%，请及时关注。","schedule":{"at":"2026-10-11T01:00:00.000Z"}}]}}
+{"event":"cancel","value":{"notifications":[{"id":40101},{"id":40102}]}}
+{"event":"cancel","value":{"notifications":[{"id":40101},{"id":40102}]}}
+{"event":"schedule","value":{"notifications":[{"id":40101,"title":"sni-panel 流量提醒","body":"套餐流量剩余约 15%，请及时关注。","schedule":{"at":"2026-10-11T01:00:00.000Z"}},{"id":40102,"title":"sni-panel 套餐到期提醒","body":"套餐将在 3 天内到期，请及时续费或联系管理员。","schedule":{"at":"2026-10-10T04:09:27.047Z"}}]}}
+{"event":"schedule","value":{"notifications":[{"id":40101,"title":"sni-panel 流量提醒","body":"套餐流量剩余约 15%，请及时关注。","schedule":{"at":"2026-10-11T01:00:00.000Z"}},{"id":40102,"title":"sni-panel 套餐到期提醒","body":"套餐将在 3 天内到期，请及时续费或联系管理员。","schedule":{"at":"2026-10-10T04:09:27.048Z"}}]}}
+{"event":"cancel","value":{"notifications":[{"id":40101},{"id":40102}]}}
+{"event":"cancel","value":{"notifications":[{"id":40101},{"id":40102}]}}
+{"event":"schedule","value":{"notifications":[{"id":40101,"title":"sni-panel 流量提醒","body":"套餐流量剩余约 15%，请及时关注。","schedule":{"at":"2026-10-11T01:00:00.000Z"}},{"id":40102,"title":"sni-panel 套餐到期提醒","body":"套餐将在 3 天内到期，请及时续费或联系管理员。","schedule":{"at":"2026-10-10T04:09:27.309Z"}}]}}
+{"event":"schedule","value":{"notifications":[{"id":40101,"title":"sni-panel 流量提醒","body":"套餐流量剩余约 15%，请及时关注。","schedule":{"at":"2026-10-11T01:00:00.000Z"}},{"id":40102,"title":"sni-panel 套餐到期提醒","body":"套餐将在 3 天内到期，请及时续费或联系管理员。","schedule":{"at":"2026-10-10T04:09:27.309Z"}}]}}
+{"event":"cancel","value":{"notifications":[{"id":40101},{"id":40102}]}}
+{"event":"cancel","value":{"notifications":[{"id":40101},{"id":40102}]}}
+{"event":"schedule","value":{"notifications":[{"id":40101,"title":"sni-panel traffic reminder","body":"About 15% of your plan traffic remains. Monitor your usage.","schedule":{"at":"2026-10-11T01:00:00.000Z"}},{"id":40102,"title":"sni-panel plan expiry reminder","body":"Your plan expires within 3 days. Renew it or contact an administrator.","schedule":{"at":"2026-10-10T04:09:40.157Z"}}]}}
+{"event":"cancel","value":{"notifications":[{"id":40101},{"id":40102}]}}
+{"event":"cancel","value":{"notifications":[{"id":40101},{"id":40102}]}}
+{"event":"schedule","value":{"notifications":[{"id":40101,"title":"sni-panel traffic reminder","body":"About 15% of your plan traffic remains. Monitor your usage.","schedule":{"at":"2026-10-11T01:00:00.000Z"}},{"id":40102,"title":"sni-panel plan expiry reminder","body":"Your plan expires within 3 days. Renew it or contact an administrator.","schedule":{"at":"2026-10-10T04:10:06.645Z"}}]}}
+{"event":"cancel","value":{"notifications":[{"id":40101},{"id":40102}]}}
+{"event":"cancel","value":{"notifications":[{"id":40101},{"id":40102}]}}
+{"event":"schedule","value":{"notifications":[{"id":40101,"title":"sni-panel traffic reminder","body":"About 15% of your plan traffic remains. Monitor your usage.","schedule":{"at":"2026-10-11T01:00:00.000Z"}},{"id":40102,"title":"sni-panel plan expiry reminder","body":"Your plan expires within 3 days. Renew it or contact an administrator.","schedule":{"at":"2026-10-10T04:10:07.459Z"}}]}}
+{"event":"schedule","value":{"notifications":[{"id":40101,"title":"sni-panel traffic reminder","body":"About 15% of your plan traffic remains. Monitor your usage.","schedule":{"at":"2026-10-11T01:00:00.000Z"}},{"id":40102,"title":"sni-panel plan expiry reminder","body":"Your plan expires within 3 days. Renew it or contact an administrator.","schedule":{"at":"2026-10-10T04:10:07.459Z"}}]}}
+{"event":"cancel","value":{"notifications":[{"id":40101},{"id":40102}]}}
+{"event":"cancel","value":{"notifications":[{"id":40101},{"id":40102}]}}
+{"event":"permission","value":{}}
+{"event":"cancel","value":{"notifications":[{"id":40101},{"id":40102}]}}
+{"event":"cancel","value":{"notifications":[{"id":40101},{"id":40102}]}}
+{"event":"permission","value":{}}
+{"event":"releases","scenario":"update","platform":"android","requestedSource":"https://api.github.com/repos/owo10086/sni-panel/releases?per_page=20"}
+{"event":"open","value":{"url":"https://github.com/owo10086/sni-panel/releases/tag/v3.3.0"}}

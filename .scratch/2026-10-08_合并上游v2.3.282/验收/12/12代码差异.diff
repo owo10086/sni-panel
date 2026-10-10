@@ -1,0 +1,320 @@
+--- a/server/ai/client.test.ts
++++ b/server/ai/client.test.ts
+@@ -138,3 +138,24 @@
+   await assert.rejects(oversized.requestStructuredJson({ operation: "oversized", settings: settings(), systemPrompt: "s", userText: "u", schema: z.object({ ok: z.boolean() }) }),
+     (error) => error instanceof AiClientError && error.code === "invalid_response");
+ });
++
++test("provider failures keep useful diagnostics without exposing the configured API key", async () => {
++  const apiKey = "test-secret/with+symbols";
++  for (const failure of ["http", "network"] as const) {
++    const client = new ForwardxAiClient({ transientRetries: 0, fetchImpl: (async () => {
++      const message = `invalid credential ${apiKey} encoded=${encodeURIComponent(apiKey)} request=test-12`;
++      if (failure === "network") throw new Error(message);
++      return new Response(message, { status: 401 });
++    }) as typeof fetch });
++    await assert.rejects(client.requestStructuredJson({ operation: "safe-error", settings: settings({ apiKey }), systemPrompt: "s", userText: "u", schema: z.object({ ok: z.boolean() }) }), (error) => {
++      assert.ok(error instanceof AiClientError);
++      assert.equal(error.code, failure);
++      assert.ok(!error.message.includes(apiKey));
++      assert.ok(!error.message.includes(encodeURIComponent(apiKey)));
++      assert.match(error.message, /invalid credential/);
++      assert.match(error.message, /request=test-12/);
++      if (failure === "http") assert.equal(error.options.status, 401);
++      return true;
++    });
++  }
++});
+--- a/server/ai/client.ts
++++ b/server/ai/client.ts
+@@ -55,6 +55,13 @@
+ 
+ const TRANSIENT_HTTP_STATUS = new Set([408, 425, 429, 500, 502, 503, 504]);
+ const RESPONSE_FORMAT_UNSUPPORTED_STATUS = new Set([400, 404, 415, 422]);
++
++function redactApiKey(message: string, apiKey: string) {
++  for (const secret of new Set([apiKey, encodeURIComponent(apiKey), JSON.stringify(apiKey).slice(1, -1)])) {
++    if (secret) message = message.split(secret).join("[REDACTED]");
++  }
++  return message;
++}
+ 
+ function emptyMetrics(): AiClientMetrics {
+   return {
+@@ -240,7 +247,7 @@
+         }, remainingMs);
+ 
+         if (!response.ok) {
+-          const responseText = response.text;
++          const responseText = redactApiKey(response.text, settings.apiKey);
+           if (includeResponseFormat && RESPONSE_FORMAT_UNSUPPORTED_STATUS.has(response.status)) {
+             includeResponseFormat = false;
+             this.metrics.compatibilityFallbacks += 1;
+@@ -272,9 +279,11 @@
+         return validated.data;
+       }
+     } catch (error) {
+-      const clientError = error instanceof AiClientError
+-        ? error
+-        : new AiClientError(error instanceof Error ? error.message : "AI 请求失败", "network", { retryable: true });
++      const clientError = new AiClientError(
++        redactApiKey(error instanceof Error ? error.message : "AI 请求失败", settings.apiKey),
++        error instanceof AiClientError ? error.code : "network",
++        error instanceof AiClientError ? error.options : { retryable: true },
++      );
+       if (clientError.code === "timeout") this.metrics.timeouts += 1;
+       this.metrics.failures += 1;
+       this.recordFailure(key);
+--- a/server/ai/panelTools.fixture.ts
++++ b/server/ai/panelTools.fixture.ts
+@@ -72,15 +72,61 @@
+   assert.equal(subscriptions.total, 1);
+   assert.equal((await queryPanelCall(1, "subscriptions.list", { scope: "self" }, resources)).total, 0);
+   const subscriptionId = subscriptions.items[0].id;
++  const oldExpiry = new Date(subscriptions.items[0].expiresAt).getTime();
+   await executePanelCall(1, await preparePanelCall(1, "subscriptions.extend", { id: subscriptionId, days: 1 }));
++  const { syncUserSubscriptionEntitlements } = await import("../repositories/billingRepository");
++  await syncUserSubscriptionEntitlements(2);
++  const extended = await queryPanelCall(1, "subscriptions.list", { userId: 2 }, resources);
++  assert.equal(new Date(extended.items[0].expiresAt).getTime(), oldExpiry + 86400000);
++  assert.equal((await db.getUserById(2))!.expiresAt!.getTime(), oldExpiry + 86400000);
++  await runtime.closeDatabase();
++  await runtime.connectDatabase({ type: "sqlite", sqlite: { path: process.env.FORWARDX_TEST_DB! } });
++  await syncUserSubscriptionEntitlements(2);
++  assert.equal((await db.getUserById(2))!.expiresAt!.getTime(), oldExpiry + 86400000);
+   await executePanelCall(1, await preparePanelCall(1, "subscriptions.cancel", { id: subscriptionId }));
+   const tunnel = await executePanelCall(1, await preparePanelCall(1, "tunnels.create", { name: "AI隧道", mode: "forwardx", entryHostId: 1, exitHostId: 2, listenPort: 23002, forwardxVersion: "v1" }));
+   assert.ok(tunnel.result.id);
+   assert.doesNotMatch(JSON.stringify(tunnel), /secret|certKeyPem/);
+   await executePanelCall(1, await preparePanelCall(1, "tunnels.update", { id: tunnel.result.id, rateLimitMbps: 100 }));
+   assert.equal((await db.getTunnelById(tunnel.result.id))!.rateLimitMbps, 100);
++  const { appRouter } = await import("../routers");
++  const adminCaller = appRouter.createCaller({ user: (await db.getUserById(1))!, authSession: null, authFailureReason: null,
++    req: { headers: {}, socket: {}, protocol: "https", get: () => undefined }, res: { clearCookie: () => undefined } } as any);
++  const billing = await adminCaller.trafficBilling.saveConfig({ resourceType: "host", resourceId: 1, enabled: true, requiresPermission: true,
++    description: "保留用户原计费说明", pricePerGbMilliCents: 125000, multiplier: 175 });
++  await executePanelCall(1, await preparePanelCall(1, "traffic_billing.save", { id: billing.id, resourceType: "host", resourceId: 1,
++    enabled: false, requiresPermission: true }));
++  const billingAfter = (await adminCaller.trafficBilling.configs()).configs.find((row: any) => row.id === billing.id)!;
++  assert.equal(billingAfter.enabled, false);
++  assert.equal(billingAfter.description, "保留用户原计费说明");
++  assert.equal(billingAfter.pricePerGbMilliCents, 125000);
++  assert.equal(billingAfter.multiplier, 175);
++  await executePanelCall(1, await preparePanelCall(1, "traffic_billing.save", { resourceType: "host", resourceId: 1,
++    enabled: true, requiresPermission: true }));
++  const billingByResource = (await adminCaller.trafficBilling.configs()).configs.find((row: any) => row.id === billing.id)!;
++  assert.equal(billingByResource.description, "保留用户原计费说明");
++  assert.equal(billingByResource.pricePerGbMilliCents, 125000);
++  assert.equal(billingByResource.multiplier, 175);
++  await executePanelCall(1, await preparePanelCall(1, "traffic_billing.save", { id: billing.id, resourceType: "host", resourceId: 1,
++    enabled: true, requiresPermission: true, pricePerGbMilliCents: 0, description: "" }));
++  const billingCleared = (await adminCaller.trafficBilling.configs()).configs.find((row: any) => row.id === billing.id)!;
++  assert.equal(billingCleared.pricePerGbMilliCents, 0);
++  assert.equal(billingCleared.description, null);
++  assert.equal(billingCleared.multiplier, 175);
++  assert.deepEqual(await adminCaller.trafficBilling.records(), []);
++  await runtime.executeRaw(`INSERT INTO forward_rules (id,name,"hostId","userId","sourcePort","targetIp","targetPort","adminManaged") VALUES (99,'管理员托管',1,2,23100,'192.0.2.99',443,1)`);
++  await assert.rejects(preparePanelCall(2, "rules.update", { id: 99, name: "禁止改名" }), /仅可查看/);
++  await assert.rejects(preparePanelCall(2, "rules.update", { id: 99, isEnabled: false }), /仅可查看/);
++  await runtime.executeRaw(`UPDATE forward_rules SET "adminManaged"=0 WHERE id=99`);
++  const newlyManaged = await preparePanelCall(2, "rules.update", { id: 99, name: "预览后被托管" });
++  await runtime.executeRaw(`UPDATE forward_rules SET "adminManaged"=1 WHERE id=99`);
++  await assert.rejects(executePanelCall(2, newlyManaged), error => error instanceof PanelPreflightError && /仅可查看/.test(error.message));
++  assert.equal((await adminCaller.rules.getById({ id: 99 }))!.name, "管理员托管");
+   const downgrade = await preparePanelCall(1, "settings.set", { key: "pluginsEnabled", value: true });
+   await runtime.executeRaw("UPDATE users SET role='user' WHERE id=1");
+   await assert.rejects(executePanelCall(1, downgrade), /管理员/);
+   assert.equal(await db.getSetting("pluginsEnabled"), "false");
++  console.log(JSON.stringify({ subscriptionExtendedDays: 1, entitlementSyncAndReopenPreserved: true,
++    billingPricePreserved: 125000, billingMultiplierPreserved: 175, explicitZeroAndEmptyClear: true,
++    billingRecordsCreated: 0, managedPreviewRejected: true, managementChangeRejectedBeforeRoute: true }));
+ } finally { await runtime.closeDatabase(); }
+--- a/server/ai/panelTools.permissions.fixture.ts
++++ b/server/ai/panelTools.permissions.fixture.ts
+@@ -0,0 +1,80 @@
++import assert from "node:assert/strict";
++import * as runtime from "../dbRuntime";
++import { ensureDatabaseSchema } from "../dbSchema";
++import * as db from "../db";
++import { appRouter } from "../routers";
++import { preparePanelCall, executePanelCall, PanelPreflightError } from "./panelTools";
++import { toggleForwardRuleForActor, deleteForwardRuleForActor } from "../routers/rules.crud";
++
++await runtime.connectDatabase({ type: "sqlite", sqlite: { path: process.env.FORWARDX_TEST_DB! } });
++const insert = (table: string, values: Record<string, unknown>) => runtime.executeRaw(
++  `INSERT INTO "${table}" (${Object.keys(values).map(key => `"${key}"`).join(",")}) VALUES (${Object.keys(values).map(() => "?").join(",")})`, Object.values(values));
++const caller = async (id: number) => appRouter.createCaller({
++  user: (await db.getUserById(id))!, authSession: null, authFailureReason: null,
++  req: { headers: {}, socket: {}, protocol: "https", get: () => undefined }, res: { clearCookie: () => undefined },
++} as any);
++const run = async (actor: number, tool: string, input: unknown) => executePanelCall(actor, await preparePanelCall(actor, tool, input));
++try {
++  await ensureDatabaseSchema();
++  for (const id of [1, 2, 3]) await insert("users", { id, username: `actor${id}`, password: "test-only", role: id === 1 ? "admin" : "user",
++    accountEnabled: 1, canAddRules: 1, manualCanAddRules: 1, balanceCents: 1000 });
++  for (const id of [1, 2]) await insert("hosts", { id, name: `主机${id}`, ip: `198.51.100.${id}`, ipv4: `198.51.100.${id}`, userId: 1,
++    isOnline: 1, lastHeartbeat: Math.floor(Date.now() / 1000), agentVersion: "3.3.0", portRangeStart: id === 1 ? 18000 : 24000, portRangeEnd: id === 1 ? 19000 : 24100 });
++  for (const id of [10, 11]) await insert("forward_groups", { id, name: `资源${id}`, groupType: "host", groupMode: id === 10 ? "port" : "chain",
++    forwardType: "nftables", domain: "", targetIp: "0.0.0.0", targetPort: 1, userId: 1, isEnabled: 1 });
++  await insert("forward_group_members", { id: 101, groupId: 10, memberType: "host", hostId: 1, priority: 0, isEnabled: 1 });
++  for (const id of [1, 2]) await insert("forward_group_members", { id: 110 + id, groupId: 11, memberType: "host", hostId: id, priority: id, isEnabled: 1 });
++  await db.setUserForwardGroupPermissions(2, [10, 11]);
++  const admin = await caller(1);
++  const owner = await caller(2);
++  const base = { name: "用户自建 <&>", forwardGroupId: 10, forwardType: "nftables", protocol: "tcp", sourcePort: 18500, targetIp: "203.0.113.20", targetPort: 443 } satisfies Parameters<typeof admin.rules.create>[0];
++  const own = (await run(2, "rules.create", base)).result.id;
++  await run(2, "rules.update", { id: own, targetPort: 8443 });
++  const read = (await owner.rules.getById({ id: own }))!;
++  assert.equal(read.userId, 2);
++  assert.equal(read.name, "用户自建 <&>");
++  assert.equal(read.sourcePort, 18500);
++  assert.equal(read.targetIp, "203.0.113.20");
++  assert.equal(read.targetPort, 8443);
++  assert.equal(read.protocol, "tcp");
++  assert.equal(read.forwardGroupId, 10);
++  assert.equal(read.adminManaged, false);
++  await run(2, "rules.update", { id: own, isEnabled: false });
++  assert.equal((await owner.rules.getById({ id: own }))!.isEnabled, false);
++  await run(2, "rules.update", { id: own, isEnabled: true });
++  await assert.rejects(preparePanelCall(3, "rules.update", { id: own, name: "跨用户" }), /无权/);
++  await assert.rejects(preparePanelCall(2, "rules.update", { id: own, trafficLimit: 1 }), /仅管理员/);
++  await assert.rejects(run(1, "rules.create", { ...base, userId: 3, sourcePort: 18501 }), /无权使用该转发组/);
++  await assert.rejects(run(1, "rules.create", { ...base, userId: 2, sourcePort: 19500 }), /端口范围|允许范围/);
++  const managed = (await run(1, "rules.create", { ...base, userId: 2, sourcePort: 18502, trafficLimit: 500, trafficMode: "outbound" })).result.id;
++  await assert.rejects(preparePanelCall(2, "rules.update", { id: managed, name: "禁止" }), /仅可查看/);
++  await assert.rejects(preparePanelCall(2, "rules.update", { id: managed, isEnabled: false }), /仅可查看/);
++  await assert.rejects(toggleForwardRuleForActor({ id: 2, role: "user" }, managed, false), /仅可查看/);
++  await assert.rejects(deleteForwardRuleForActor({ id: 2, role: "user" }, managed), /仅可查看/);
++  const sni = await admin.rules.create({ ...base, userId: 2, forwardGroupId: 11, sourcePort: 18503, sni: "managed.example.test" });
++  await assert.rejects(preparePanelCall(2, "rules.update", { id: Number(sni.id), targetPort: 80 }), /仅可查看/);
++  const children = await db.getForwardGroupChildRulesForTemplate(Number(sni.id));
++  assert.equal(children.length, 2);
++  await assert.rejects(preparePanelCall(1, "rules.update", { id: children[0].id, name: "绕过模板" }), /系统维护/);
++  const revoked = await preparePanelCall(2, "rules.update", { id: own, targetPort: 9443 });
++  await admin.users.setForwardGroupPermissions({ userId: 2, forwardGroupIds: [] });
++  await assert.rejects(executePanelCall(2, revoked), error => error instanceof PanelPreflightError && /配置已.*变化/.test(error.message));
++  await assert.rejects(run(2, "rules.update", { id: own, targetPort: 9443 }), /无权使用该转发组/);
++  assert.equal((await owner.rules.getById({ id: own }))!.targetPort, 8443);
++  await admin.users.setForwardGroupPermissions({ userId: 2, forwardGroupIds: [10, 11] });
++  const paused = await preparePanelCall(2, "rules.update", { id: own, name: "暂停后禁止" });
++  await runtime.executeRaw(`UPDATE users SET "accountEnabled"=0 WHERE id=2`);
++  await assert.rejects(executePanelCall(2, paused), error => error instanceof PanelPreflightError && /停用/.test(error.message));
++  await assert.rejects(run(1, "rules.create", { ...base, userId: 2, sourcePort: 18504 }), /停用|禁用/);
++  await runtime.executeRaw(`UPDATE users SET "accountEnabled"=1,"maxRules"=1,"manualMaxRules"=1 WHERE id=2`);
++  await assert.rejects(run(1, "rules.create", { ...base, userId: 2, sourcePort: 18504 }), /最大规则数量限制/);
++  await runtime.closeDatabase();
++  await runtime.connectDatabase({ type: "sqlite", sqlite: { path: process.env.FORWARDX_TEST_DB! } });
++  const persisted = (await (await caller(2)).rules.getById({ id: own }))!;
++  assert.equal(persisted.name, "用户自建 <&>");
++  assert.equal(persisted.targetPort, 8443);
++  assert.equal(persisted.protocol, "tcp");
++  assert.equal(persisted.forwardGroupId, 10);
++  console.log(JSON.stringify({ ordinaryRule: own, managedRule: managed, sniRule: Number(sni.id), derivedRules: children.length,
++    partialUpdatePreserved: true, ownerChecksPassed: true, executionRevocationRejected: true, reopenPreserved: true }));
++} finally { await runtime.closeDatabase(); }
+--- a/server/ai/panelTools.test.ts
++++ b/server/ai/panelTools.test.ts
+@@ -39,3 +39,13 @@
+     assert.equal(result.status, 0, result.stderr || result.stdout);
+   } finally { fs.rmSync(directory, { recursive: true, force: true }); }
+ });
++test("real AI rule tools enforce owner resources, managed policies and permissions changed before execution", () => {
++  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "forwardx-ai-permissions-"));
++  try {
++    const result = spawnSync(process.execPath, ["--import", "tsx", "server/ai/panelTools.permissions.fixture.ts"], {
++      cwd: process.cwd(), encoding: "utf8", timeout: 60_000,
++      env: { ...process.env, DATABASE_TYPE: "sqlite", FORWARDX_TEST_DB: path.join(directory, "tools.db"), FORWARDX_LOG_DIR: path.join(directory, "logs"), JWT_SECRET: "panel-tools-test-only-32-character-secret", TELEGRAM_BOT_TOKEN: "", DISCORD_BOT_TOKEN: "" },
++    });
++    assert.equal(result.status, 0, result.stderr || result.stdout);
++  } finally { fs.rmSync(directory, { recursive: true, force: true }); }
++});
+--- a/server/ai/panelTools.ts
++++ b/server/ai/panelTools.ts
+@@ -3,6 +3,7 @@
+ import { FORWARD_TYPES, TUNNEL_PROTOCOLS, normalizeForwardProtocolSettings } from "../../shared/forwardTypes";
+ import type { TrpcContext } from "../_core/context";
+ import { SIDEBAR_MENU_KEYS, SIDEBAR_MENU_LABELS, DEFAULT_SIDEBAR_MENU_SETTINGS, normalizeSidebarMenuSettings } from "../../shared/sidebarMenu";
++import { assertRuleWritable } from "../../shared/ruleLimits";
+ 
+ const id = z.number().int().positive();
+ const count = z.number().int().min(0).max(Number.MAX_SAFE_INTEGER);
+@@ -267,6 +268,7 @@
+   if (def.resource && !row) throw new Error("操作对象不存在，请重新指定");
+   // Owning a visible resource and owning its configuration are different rights.
+   if (row && user.role !== "admin" && Number(row.userId) !== Number(user.id)) throw new Error("无权修改其他用户的资源");
++  if (def.resource === "rule") assertRuleWritable(user, row);
+   if (def.resource === "rule" && row.forwardGroupRuleId) throw new Error("转发组成员规则由系统维护，请修改模板规则或转发组");
+   if (call.tool === "rules.create" && call.input.userId && user.role !== "admin" && call.input.userId !== user.id) throw new Error("普通用户只能给自己添加规则");
+   const fields = Object.keys(objectSchema(def.schema).shape).filter(k => !["id", "userId", "hostId"].includes(k));
+--- a/server/repositories/trafficBillingRepository.ts
++++ b/server/repositories/trafficBillingRepository.ts
+@@ -615,40 +615,39 @@
+   if (!isTrafficBillingResourceType(resourceType)) throw new Error("资源类型无效");
+   if (resourceId <= 0) throw new Error("资源无效");
+   await assertBillingResourceExists(resourceType, resourceId);
+-  const existingById = id > 0
++  const existing = id > 0
+     ? (await db.select().from(trafficBillingConfigs).where(eq(trafficBillingConfigs.id, id)).limit(1))[0]
+-    : null;
+-  const pricePerGbMilliCents = normalizePriceMilliCents(
+-    Number((data as any).pricePerGbMilliCents || 0) || normalizePrice(Number((data as any).pricePerGbCents || 0)) * MILLI_CENTS_PER_CENT,
+-  );
++    : (await db.select().from(trafficBillingConfigs).where(and(
++      eq(trafficBillingConfigs.resourceType, resourceType),
++      eq(trafficBillingConfigs.resourceId, resourceId),
++    )).limit(1))[0];
++  if (id > 0 && !existing) throw new Error("计费配置不存在");
++  const pricePerGbMilliCents = (data as any).pricePerGbMilliCents !== undefined
++    ? normalizePriceMilliCents(Number((data as any).pricePerGbMilliCents))
++    : (data as any).pricePerGbCents !== undefined
++      ? normalizePrice(Number((data as any).pricePerGbCents)) * MILLI_CENTS_PER_CENT
++      : configPriceMilliCents(existing);
+   const multiplier = await getBillingResourceMultiplier(
+     resourceType,
+     resourceId,
+-    Number((data as any).multiplier || (existingById as any)?.multiplier || 100),
++    Number((data as any).multiplier ?? existing?.multiplier ?? 100),
+   );
+   const payload = {
+     resourceType,
+     resourceId,
+     enabled: !!(data as any).enabled,
+     requiresPermission: !!(data as any).requiresPermission,
+-    description: String((data as any).description || "").trim() || null,
++    description: (data as any).description === undefined
++      ? existing?.description ?? null
++      : String((data as any).description || "").trim() || null,
+     pricePerGbCents: Math.floor(pricePerGbMilliCents / MILLI_CENTS_PER_CENT),
+     pricePerGbMilliCents,
+     multiplier,
+     updatedAt: nowDate(),
+   };
+-  if (id > 0) {
+-    if (!existingById) throw new Error("计费配置不存在");
+-    await db.update(trafficBillingConfigs).set(payload as any).where(eq(trafficBillingConfigs.id, id));
+-    return { ...existingById, ...payload };
+-  }
+-  const existing = await db.select().from(trafficBillingConfigs).where(and(
+-    eq(trafficBillingConfigs.resourceType, resourceType),
+-    eq(trafficBillingConfigs.resourceId, resourceId),
+-  )).limit(1);
+-  if (existing[0]) {
+-    await db.update(trafficBillingConfigs).set(payload as any).where(eq(trafficBillingConfigs.id, existing[0].id));
+-    return { ...existing[0], ...payload };
++  if (existing) {
++    await db.update(trafficBillingConfigs).set(payload as any).where(eq(trafficBillingConfigs.id, existing.id));
++    return { ...existing, ...payload };
+   }
+   const createdId = await insertAndGetId("traffic_billing_configs", { ...payload, createdAt: nowDate() });
+   return { id: createdId, ...payload };
+--- a/server/routers/trafficBilling.ts
++++ b/server/routers/trafficBilling.ts
+@@ -71,7 +71,7 @@
+       );
+       appendPanelLog(
+         reconciliation.failures.length > 0 ? "warn" : "info",
+-        `[TrafficBilling] config saved ${input.resourceType}=${input.resourceId} priceMilli=${input.pricePerGbMilliCents ?? 0} requiresPermission=${input.requiresPermission} affectedUsers=${reconciliation.affectedUsers} disabledRules=${reconciliation.disabledRules} failures=${reconciliation.failures.length}`,
++        `[TrafficBilling] config saved ${input.resourceType}=${input.resourceId} priceMilli=${config.pricePerGbMilliCents} requiresPermission=${config.requiresPermission} affectedUsers=${reconciliation.affectedUsers} disabledRules=${reconciliation.disabledRules} failures=${reconciliation.failures.length}`,
+       );
+       return config;
+     }),

@@ -1,0 +1,25 @@
+Browser tab: 3, Title: "sni-panel 09验收", URL: "http://127.0.0.1:18829/rules".
+1 AXWebArea sni-panel 09验收, URL: 127.0.0.1:18829/rules
+	2 container forwardx-overlay-root
+		3 container Notifications alt+T
+			4 content list
+				5 container
+					6 image
+					7 text Prepared 504 rules in 2 files. Download each file.
+		8 container Download rule files, ID: radix-_r_15_
+			9 heading Download rule files, Value: 2, ID: radix-_r_16_
+				10 text Download rule files
+			11 text The rules are split into 2 files. Download each file separately so your browser can save every part.
+			12 container
+				13 button Download file 1/2 (500 rules)
+					14 image
+					15 text Download file 1/2 (500 rules)
+				16 button Download file 2/2 (4 rules)
+					17 image
+					18 text Download file 2/2 (4 rules)
+			19 button Close
+			20 button Close
+				21 image
+				22 text Close
+
+The focused UI element is 13 button Download file 1/2 (500 rules)

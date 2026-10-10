@@ -1,0 +1,346 @@
+[
+  {
+    "stage": "healthy",
+    "payload": {
+      "force": true,
+      "forwardGroups": [],
+      "results": [
+        {
+          "isTimeout": false,
+          "latencyMs": 1,
+          "method": "ping",
+          "probeCount": 5,
+          "probeCounterEpoch": "cec02062a723ecb4ffa6c1281d8e6628",
+          "probeCounterStartedAt": 1791559085097801,
+          "probeKey": "rule:2:tunnel:1:127.0.0.1:31001:ping",
+          "probeSuccesses": 5,
+          "probeTotalCount": 5,
+          "probeTotalSuccesses": 5,
+          "ruleId": 2,
+          "sourcePort": 0,
+          "targetIp": "127.0.0.1",
+          "targetPort": 31001,
+          "tunnelId": 1
+        },
+        {
+          "isTimeout": false,
+          "latencyMs": 1,
+          "method": "tcping",
+          "probeCount": 3,
+          "probeCounterEpoch": "9553ddfab9e23496b66d162c97a5a6cc",
+          "probeCounterStartedAt": 1791559085097802,
+          "probeKey": "rule:1:tunnel:1:127.0.0.1:31001:tcping",
+          "probeSuccesses": 3,
+          "probeTotalCount": 3,
+          "probeTotalSuccesses": 3,
+          "ruleId": 1,
+          "sourcePort": 0,
+          "targetIp": "127.0.0.1",
+          "targetPort": 31001,
+          "tunnelId": 1
+        }
+      ],
+      "services": null,
+      "tunnels": []
+    }
+  },
+  {
+    "stage": "healthy",
+    "payload": {
+      "force": true,
+      "forwardGroups": [],
+      "results": [
+        {
+          "isTimeout": false,
+          "latencyMs": 1,
+          "method": "ping",
+          "probeCount": 5,
+          "probeCounterEpoch": "cec02062a723ecb4ffa6c1281d8e6628",
+          "probeCounterStartedAt": 1791559085097801,
+          "probeKey": "rule:2:tunnel:1:127.0.0.1:31001:ping",
+          "probeSuccesses": 5,
+          "probeTotalCount": 10,
+          "probeTotalSuccesses": 10,
+          "ruleId": 2,
+          "sourcePort": 0,
+          "targetIp": "127.0.0.1",
+          "targetPort": 31001,
+          "tunnelId": 1
+        },
+        {
+          "isTimeout": false,
+          "latencyMs": 1,
+          "method": "tcping",
+          "probeCount": 3,
+          "probeCounterEpoch": "9553ddfab9e23496b66d162c97a5a6cc",
+          "probeCounterStartedAt": 1791559085097802,
+          "probeKey": "rule:1:tunnel:1:127.0.0.1:31001:tcping",
+          "probeSuccesses": 3,
+          "probeTotalCount": 6,
+          "probeTotalSuccesses": 6,
+          "ruleId": 1,
+          "sourcePort": 0,
+          "targetIp": "127.0.0.1",
+          "targetPort": 31001,
+          "tunnelId": 1
+        }
+      ],
+      "services": null,
+      "tunnels": []
+    }
+  },
+  {
+    "stage": "tcp-failed",
+    "payload": {
+      "force": true,
+      "forwardGroups": [],
+      "results": [
+        {
+          "isTimeout": false,
+          "latencyMs": 1,
+          "method": "ping",
+          "probeCount": 5,
+          "probeCounterEpoch": "cec02062a723ecb4ffa6c1281d8e6628",
+          "probeCounterStartedAt": 1791559085097801,
+          "probeKey": "rule:2:tunnel:1:127.0.0.1:31001:ping",
+          "probeSuccesses": 5,
+          "probeTotalCount": 15,
+          "probeTotalSuccesses": 15,
+          "ruleId": 2,
+          "sourcePort": 0,
+          "targetIp": "127.0.0.1",
+          "targetPort": 31001,
+          "tunnelId": 1
+        },
+        {
+          "isTimeout": true,
+          "latencyMs": 0,
+          "method": "tcping",
+          "probeCount": 3,
+          "probeCounterEpoch": "9553ddfab9e23496b66d162c97a5a6cc",
+          "probeCounterStartedAt": 1791559085097802,
+          "probeKey": "rule:1:tunnel:1:127.0.0.1:31001:tcping",
+          "probeSuccesses": 0,
+          "probeTotalCount": 9,
+          "probeTotalSuccesses": 6,
+          "ruleId": 1,
+          "sourcePort": 0,
+          "targetIp": "127.0.0.1",
+          "targetPort": 31001,
+          "tunnelId": 1
+        }
+      ],
+      "services": null,
+      "tunnels": []
+    }
+  },
+  {
+    "stage": "tcp-recovered",
+    "payload": {
+      "force": true,
+      "forwardGroups": [],
+      "results": [
+        {
+          "isTimeout": false,
+          "latencyMs": 1,
+          "method": "ping",
+          "probeCount": 5,
+          "probeCounterEpoch": "cec02062a723ecb4ffa6c1281d8e6628",
+          "probeCounterStartedAt": 1791559085097801,
+          "probeKey": "rule:2:tunnel:1:127.0.0.1:31001:ping",
+          "probeSuccesses": 5,
+          "probeTotalCount": 20,
+          "probeTotalSuccesses": 20,
+          "ruleId": 2,
+          "sourcePort": 0,
+          "targetIp": "127.0.0.1",
+          "targetPort": 31001,
+          "tunnelId": 1
+        },
+        {
+          "isTimeout": false,
+          "latencyMs": 1,
+          "method": "tcping",
+          "probeCount": 3,
+          "probeCounterEpoch": "9553ddfab9e23496b66d162c97a5a6cc",
+          "probeCounterStartedAt": 1791559085097802,
+          "probeKey": "rule:1:tunnel:1:127.0.0.1:31001:tcping",
+          "probeSuccesses": 3,
+          "probeTotalCount": 12,
+          "probeTotalSuccesses": 9,
+          "ruleId": 1,
+          "sourcePort": 0,
+          "targetIp": "127.0.0.1",
+          "targetPort": 31001,
+          "tunnelId": 1
+        }
+      ],
+      "services": null,
+      "tunnels": []
+    }
+  },
+  {
+    "stage": "restarted",
+    "payload": {
+      "force": true,
+      "forwardGroups": [],
+      "results": [
+        {
+          "isTimeout": false,
+          "latencyMs": 1,
+          "method": "ping",
+          "probeCount": 5,
+          "probeCounterEpoch": "59e9189a59495e6ad5d2890bba389fa8",
+          "probeCounterStartedAt": 1791559089455891,
+          "probeKey": "rule:2:tunnel:1:127.0.0.1:31001:ping",
+          "probeSuccesses": 5,
+          "probeTotalCount": 5,
+          "probeTotalSuccesses": 5,
+          "ruleId": 2,
+          "sourcePort": 0,
+          "targetIp": "127.0.0.1",
+          "targetPort": 31001,
+          "tunnelId": 1
+        },
+        {
+          "isTimeout": false,
+          "latencyMs": 1,
+          "method": "tcping",
+          "probeCount": 3,
+          "probeCounterEpoch": "cfc241b2c9264f70f02b4c9a2bb956bd",
+          "probeCounterStartedAt": 1791559089455892,
+          "probeKey": "rule:1:tunnel:1:127.0.0.1:31001:tcping",
+          "probeSuccesses": 3,
+          "probeTotalCount": 3,
+          "probeTotalSuccesses": 3,
+          "ruleId": 1,
+          "sourcePort": 0,
+          "targetIp": "127.0.0.1",
+          "targetPort": 31001,
+          "tunnelId": 1
+        }
+      ],
+      "services": null,
+      "tunnels": []
+    }
+  },
+  {
+    "stage": "restarted",
+    "payload": {
+      "force": true,
+      "forwardGroups": [],
+      "results": [
+        {
+          "isTimeout": false,
+          "latencyMs": 1,
+          "method": "ping",
+          "probeCount": 5,
+          "probeCounterEpoch": "59e9189a59495e6ad5d2890bba389fa8",
+          "probeCounterStartedAt": 1791559089455891,
+          "probeKey": "rule:2:tunnel:1:127.0.0.1:31001:ping",
+          "probeSuccesses": 5,
+          "probeTotalCount": 10,
+          "probeTotalSuccesses": 10,
+          "ruleId": 2,
+          "sourcePort": 0,
+          "targetIp": "127.0.0.1",
+          "targetPort": 31001,
+          "tunnelId": 1
+        },
+        {
+          "isTimeout": false,
+          "latencyMs": 1,
+          "method": "tcping",
+          "probeCount": 3,
+          "probeCounterEpoch": "cfc241b2c9264f70f02b4c9a2bb956bd",
+          "probeCounterStartedAt": 1791559089455892,
+          "probeKey": "rule:1:tunnel:1:127.0.0.1:31001:tcping",
+          "probeSuccesses": 3,
+          "probeTotalCount": 6,
+          "probeTotalSuccesses": 6,
+          "ruleId": 1,
+          "sourcePort": 0,
+          "targetIp": "127.0.0.1",
+          "targetPort": 31001,
+          "tunnelId": 1
+        }
+      ],
+      "services": null,
+      "tunnels": []
+    }
+  },
+  {
+    "stage": "released-3.2.0",
+    "payload": {
+      "force": true,
+      "forwardGroups": [],
+      "results": [
+        {
+          "isTimeout": false,
+          "latencyMs": 1,
+          "method": "tcping",
+          "probeCount": 3,
+          "probeKey": "rule:1:tunnel:1:127.0.0.1:31001:tcping",
+          "probeSuccesses": 3,
+          "ruleId": 1,
+          "sourcePort": 0,
+          "targetIp": "127.0.0.1",
+          "targetPort": 31001,
+          "tunnelId": 1
+        },
+        {
+          "isTimeout": false,
+          "latencyMs": 1,
+          "method": "ping",
+          "probeCount": 5,
+          "probeKey": "rule:2:tunnel:1:127.0.0.1:31001:ping",
+          "probeSuccesses": 5,
+          "ruleId": 2,
+          "sourcePort": 0,
+          "targetIp": "127.0.0.1",
+          "targetPort": 31001,
+          "tunnelId": 1
+        }
+      ],
+      "services": null,
+      "tunnels": []
+    }
+  },
+  {
+    "stage": "released-3.2.0",
+    "payload": {
+      "force": true,
+      "forwardGroups": [],
+      "results": [
+        {
+          "isTimeout": false,
+          "latencyMs": 1,
+          "method": "ping",
+          "probeCount": 5,
+          "probeKey": "rule:2:tunnel:1:127.0.0.1:31001:ping",
+          "probeSuccesses": 5,
+          "ruleId": 2,
+          "sourcePort": 0,
+          "targetIp": "127.0.0.1",
+          "targetPort": 31001,
+          "tunnelId": 1
+        },
+        {
+          "isTimeout": false,
+          "latencyMs": 1,
+          "method": "tcping",
+          "probeCount": 3,
+          "probeKey": "rule:1:tunnel:1:127.0.0.1:31001:tcping",
+          "probeSuccesses": 3,
+          "ruleId": 1,
+          "sourcePort": 0,
+          "targetIp": "127.0.0.1",
+          "targetPort": 31001,
+          "tunnelId": 1
+        }
+      ],
+      "services": null,
+      "tunnels": []
+    }
+  }
+]

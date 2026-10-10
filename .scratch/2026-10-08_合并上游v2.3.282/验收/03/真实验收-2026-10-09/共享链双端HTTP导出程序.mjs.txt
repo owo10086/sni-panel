@@ -1,0 +1,983 @@
+
+    import assert from "node:assert/strict";
+    import http from "node:http";
+    import fs from "node:fs";
+    import path from "node:path";
+    import { pathToFileURL } from "node:url";
+    import express from "/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx/node_modules/.pnpm/express@4.22.1/node_modules/express/index.js";
+
+    const moduleUrl = (file) => pathToFileURL(path.join(process.cwd(), file)).href;
+    const runtime = await import(moduleUrl("server/dbRuntime.ts"));
+    const schema = await import(moduleUrl("server/dbSchema.ts"));
+    const heartbeat = await import(moduleUrl("server/agentHeartbeatRoute.ts"));
+    const { registerAgentReportRoutes } = await import(moduleUrl("server/agentReportRoutes.ts"));
+    const rulesCrud = await import(moduleUrl("server/routers/rules.crud.ts"));
+    const { rulesRouter } = await import(moduleUrl("server/routers/rules.ts"));
+    const q = (name) => '"' + name + '"';
+    const insert = async (table, columns, values) => {
+      await runtime.executeRaw(
+        "INSERT INTO " + q(table) + " (" + columns.map(q).join(", ") + ") VALUES (" + values.map(() => "?").join(", ") + ")",
+        values,
+      );
+    };
+    const heartbeatBody = {
+      agentVersion: "2.2.195",
+      agentBootId: "boot-sni-shared",
+      agentProcessId: 1001,
+      agentProcessStartedAt: Math.floor(Date.now() / 1000),
+      forceReconcile: true,
+    };
+    const entryHostIp = "198.51.100.10";
+    const refreshedEntryHostIp = "198.51.100.11";
+    const exitHostIp = "198.51.100.20";
+    const entryGroupHostIps = ["198.51.100.30", "198.51.100.40"];
+    const entryGroupRelayHostIp = "198.51.100.50";
+    const entryGroupThreeHop = {
+      groupId: 60,
+      templateId: 600,
+      entryARuleId: 601,
+      relayRuleId: 602,
+      entryBRuleId: 603,
+      exitRuleId: 604,
+      relayMemberId: 6001,
+      exitMemberId: 6002,
+      sourcePort: 18444,
+      relayPort: 23000,
+      splitterPort: 24004,
+      sni: "group-three-hop.example.com",
+    };
+    const routes = [
+      { templateId: 100, entryRuleId: 101, exitRuleId: 102, name: "api", sni: "api.example.com", targetIp: "203.0.113.20", targetPort: 443 },
+      { templateId: 110, entryRuleId: 111, exitRuleId: 112, name: "web", sni: "web.example.com", targetIp: "203.0.113.21", targetPort: 8443 },
+    ];
+    const runtimeGroups = [
+      {
+        groupId: 20,
+        forwardType: "gost",
+        sourcePort: 18443,
+        splitterPort: 24001,
+        entryMemberId: 2001,
+        exitMemberId: 2002,
+        routes: [
+          { templateId: 200, entryRuleId: 201, exitRuleId: 202, name: "gost-api", sni: "gost-api.example.com", targetIp: "203.0.113.30", targetPort: 443 },
+          { templateId: 210, entryRuleId: 211, exitRuleId: 212, name: "gost-web", sni: "gost-web.example.com", targetIp: "203.0.113.31", targetPort: 8443 },
+        ],
+      },
+      {
+        groupId: 30,
+        forwardType: "nginx",
+        sourcePort: 18443,
+        splitterPort: 24002,
+        entryMemberId: 3001,
+        exitMemberId: 3002,
+        routes: [
+          { templateId: 300, entryRuleId: 301, exitRuleId: 302, name: "nginx-api", sni: "nginx-api.example.com", targetIp: "203.0.113.40", targetPort: 443 },
+          { templateId: 310, entryRuleId: 311, exitRuleId: 312, name: "nginx-web", sni: "nginx-web.example.com", targetIp: "203.0.113.41", targetPort: 8443 },
+        ],
+      },
+    ];
+    let server;
+    const lastDesiredState = new Map();
+
+    async function postHeartbeat(baseUrl, token, body = {}) {
+      const response = await fetch(baseUrl + "/api/agent/heartbeat", {
+        method: "POST",
+        headers: {
+          authorization: "Bearer " + token,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ ...heartbeatBody, ...body }),
+      });
+      const payload = await response.json();
+      // Agents retain their last manifest when an unchanged plan is omitted.
+      if (payload.desiredState) lastDesiredState.set(token, payload.desiredState);
+      return { status: response.status, payload };
+    }
+
+    function decodedManagedConfigText(actions) {
+      return actions
+        .flatMap((action) => action.managedConfigs || [])
+        .map((config) => Buffer.from(String(config.contentBase64 || ""), "base64").toString("utf8"))
+        .join("\n");
+    }
+
+    function findManagedConfig(actions, suffix) {
+      for (const action of actions) {
+        for (const config of action.managedConfigs || []) {
+          if (String(config.path || "").endsWith(suffix)) {
+            return Buffer.from(String(config.contentBase64 || ""), "base64").toString("utf8");
+          }
+        }
+      }
+      return "";
+    }
+
+    async function insertSniRule(route, options = {}) {
+      const groupId = Number(options.groupId || 10);
+      const forwardType = String(options.forwardType || "nftables");
+      const sourcePort = Number(options.sourcePort || 18443);
+      const splitterPort = Number(options.splitterPort || 24000);
+      const entryMemberId = Number(options.entryMemberId || 1001);
+      const exitMemberId = Number(options.exitMemberId || 1002);
+      await insert("forward_rules", [
+        "id", "hostId", "name", "forwardType", "protocol", "forwardGroupId", "isForwardGroupTemplate",
+        "sourcePort", "sni", "sniSplitterPort", "targetIp", "targetPort", "userId", "isEnabled", "isRunning"
+      ], [route.templateId, 1, route.name + "-template", forwardType, "tcp", groupId, 1, sourcePort, route.sni, splitterPort, route.targetIp, route.targetPort, 1, 1, 0]);
+      await insert("forward_rules", [
+        "id", "hostId", "name", "forwardType", "protocol", "forwardGroupId", "forwardGroupRuleId", "forwardGroupMemberId", "isForwardGroupTemplate",
+        "sourcePort", "sni", "sniSplitterPort", "targetIp", "targetPort", "userId", "isEnabled", "isRunning"
+      ], [route.entryRuleId, 1, route.name + "-entry-child", forwardType, "tcp", groupId, route.templateId, entryMemberId, 0, sourcePort, route.sni, splitterPort, exitHostIp, splitterPort, 1, 1, 0]);
+      await insert("forward_rules", [
+        "id", "hostId", "name", "forwardType", "protocol", "forwardGroupId", "forwardGroupRuleId", "forwardGroupMemberId", "isForwardGroupTemplate",
+        "sourcePort", "sni", "sniSplitterPort", "targetIp", "targetPort", "userId", "isEnabled", "isRunning"
+      ], [route.exitRuleId, 2, route.name + "-exit-child", forwardType, "tcp", groupId, route.templateId, exitMemberId, 0, splitterPort, route.sni, splitterPort, route.targetIp, route.targetPort, 1, 1, 0]);
+    }
+
+    try {
+      await runtime.connectDatabase({ type: "sqlite", sqlite: { path: process.env.FORWARDX_TEST_DB } });
+      await schema.ensureDatabaseSchema();
+      const now = Math.floor(Date.now() / 1000);
+      await insert("users", ["id", "username", "password", "role", "canAddRules", "manualCanAddRules"], [1, "admin", "x", "admin", 1, 1]);
+      await insert("system_settings", ["key", "value"], ["forwardProtocols", JSON.stringify({ nginx: true })]);
+      await insert("hosts", ["id", "name", "ip", "ipv4", "agentToken", "userId", "blockHttp", "isOnline", "lastHeartbeat", "agentVersion", "portRangeStart", "portRangeEnd"], [1, "entry", entryHostIp, entryHostIp, "entry-token", 1, 1, 1, now, "2.2.195", 18000, 19000]);
+      await insert("hosts", ["id", "name", "ip", "ipv4", "agentToken", "userId", "isOnline", "lastHeartbeat", "agentVersion", "portRangeStart", "portRangeEnd"], [2, "exit", exitHostIp, exitHostIp, "exit-token", 1, 1, now, "2.2.195", 24000, 24010]);
+      await insert("hosts", ["id", "name", "ip", "ipv4", "agentToken", "userId", "isOnline", "lastHeartbeat", "agentVersion", "portRangeStart", "portRangeEnd"], [3, "entry-a", entryGroupHostIps[0], entryGroupHostIps[0], "entry-a-token", 1, 1, now, "2.2.195", 18000, 19000]);
+      await insert("hosts", ["id", "name", "ip", "ipv4", "agentToken", "userId", "isOnline", "lastHeartbeat", "agentVersion", "portRangeStart", "portRangeEnd"], [4, "entry-b", entryGroupHostIps[1], entryGroupHostIps[1], "entry-b-token", 1, 1, now, "2.2.195", 18000, 19000]);
+      await insert("hosts", ["id", "name", "ip", "ipv4", "agentToken", "userId", "isOnline", "lastHeartbeat", "agentVersion", "portRangeStart", "portRangeEnd"], [5, "entry-group-relay", entryGroupRelayHostIp, entryGroupRelayHostIp, "entry-group-relay-token", 1, 1, now, "2.2.195", 23000, 23999]);
+      await insert("forward_groups", ["id", "name", "groupType", "groupMode", "forwardType", "domain", "targetIp", "targetPort", "userId", "isEnabled"], [10, "shared-chain", "host", "chain", "nftables", "", "0.0.0.0", 1, 1, 1]);
+      await insert("forward_group_members", ["id", "groupId", "memberType", "hostId", "priority", "isEnabled"], [1001, 10, "host", 1, 10, 1]);
+      await insert("forward_group_members", ["id", "groupId", "memberType", "hostId", "priority", "isEnabled"], [1002, 10, "host", 2, 20, 1]);
+      for (const route of routes) {
+        await insertSniRule(route);
+      }
+      await insert("forward_groups", ["id", "name", "groupType", "groupMode", "forwardType", "domain", "targetIp", "targetPort", "userId", "isEnabled"], [40, "sni-entry-group", "host", "entry", "nftables", "", "0.0.0.0", 1, 1, 1]);
+      await insert("forward_group_members", ["id", "groupId", "memberType", "hostId", "priority", "isEnabled"], [4001, 40, "host", 3, 10, 1]);
+      await insert("forward_group_members", ["id", "groupId", "memberType", "hostId", "priority", "isEnabled"], [4002, 40, "host", 4, 20, 1]);
+      await insert("forward_groups", ["id", "name", "groupType", "groupMode", "entryGroupId", "forwardType", "domain", "targetIp", "targetPort", "userId", "isEnabled"], [50, "entry-group-chain", "host", "chain", 40, "nftables", "", "0.0.0.0", 1, 1, 1]);
+      await insert("forward_group_members", ["id", "groupId", "memberType", "hostId", "priority", "isEnabled"], [5002, 50, "host", 2, 10, 1]);
+      await insert("forward_rules", [
+        "id", "hostId", "name", "forwardType", "protocol", "forwardGroupId", "forwardGroupMemberId", "isForwardGroupTemplate",
+        "sourcePort", "sni", "sniSplitterPort", "targetIp", "targetPort", "userId", "isEnabled", "isRunning"
+      ], [502, 2, "entry-group-exit-child", "nftables", "tcp", 50, 5002, 0, 24003, "group.example.com", 24003, "203.0.113.50", 443, 1, 1, 0]);
+      await insert("forward_groups", ["id", "name", "groupType", "groupMode", "entryGroupId", "forwardType", "domain", "targetIp", "targetPort", "userId", "isEnabled"], [entryGroupThreeHop.groupId, "entry-group-three-hop-chain", "host", "chain", 40, "gost", "", "0.0.0.0", 1, 1, 1]);
+      await insert("forward_group_members", ["id", "groupId", "memberType", "hostId", "priority", "isEnabled"], [entryGroupThreeHop.relayMemberId, entryGroupThreeHop.groupId, "host", 5, 10, 1]);
+      await insert("forward_group_members", ["id", "groupId", "memberType", "hostId", "priority", "isEnabled"], [entryGroupThreeHop.exitMemberId, entryGroupThreeHop.groupId, "host", 2, 20, 1]);
+      await insert("forward_rules", [
+        "id", "hostId", "name", "forwardType", "protocol", "forwardGroupId", "isForwardGroupTemplate",
+        "sourcePort", "sni", "sniSplitterPort", "targetIp", "targetPort", "userId", "isEnabled", "isRunning"
+      ], [entryGroupThreeHop.templateId, 3, "entry-group-three-hop-template", "gost", "tcp", entryGroupThreeHop.groupId, 1, entryGroupThreeHop.sourcePort, entryGroupThreeHop.sni, entryGroupThreeHop.splitterPort, "203.0.113.60", 443, 1, 1, 0]);
+      for (const [id, hostId, name] of [
+        [entryGroupThreeHop.entryARuleId, 3, "entry-group-three-hop-entry-a"],
+        [entryGroupThreeHop.entryBRuleId, 4, "entry-group-three-hop-entry-b"],
+      ]) {
+        await insert("forward_rules", [
+          "id", "hostId", "name", "forwardType", "protocol", "forwardGroupId", "forwardGroupRuleId", "forwardGroupMemberId", "isForwardGroupTemplate",
+          "sourcePort", "sni", "sniSplitterPort", "targetIp", "targetPort", "userId", "isEnabled", "isRunning"
+        ], [id, hostId, name, "gost", "tcp", entryGroupThreeHop.groupId, entryGroupThreeHop.templateId, entryGroupThreeHop.relayMemberId, 0, entryGroupThreeHop.sourcePort, entryGroupThreeHop.sni, entryGroupThreeHop.splitterPort, entryGroupRelayHostIp, entryGroupThreeHop.relayPort, 1, 1, 0]);
+      }
+      await insert("forward_rules", [
+        "id", "hostId", "name", "forwardType", "protocol", "forwardGroupId", "forwardGroupRuleId", "forwardGroupMemberId", "isForwardGroupTemplate",
+        "sourcePort", "sni", "sniSplitterPort", "targetIp", "targetPort", "userId", "isEnabled", "isRunning"
+      ], [entryGroupThreeHop.relayRuleId, 5, "entry-group-three-hop-relay", "gost", "tcp", entryGroupThreeHop.groupId, entryGroupThreeHop.templateId, entryGroupThreeHop.relayMemberId, 0, entryGroupThreeHop.relayPort, entryGroupThreeHop.sni, entryGroupThreeHop.splitterPort, exitHostIp, entryGroupThreeHop.splitterPort, 1, 1, 0]);
+      await insert("forward_rules", [
+        "id", "hostId", "name", "forwardType", "protocol", "forwardGroupId", "forwardGroupRuleId", "forwardGroupMemberId", "isForwardGroupTemplate",
+        "sourcePort", "sni", "sniSplitterPort", "targetIp", "targetPort", "userId", "isEnabled", "isRunning"
+      ], [entryGroupThreeHop.exitRuleId, 2, "entry-group-three-hop-exit", "gost", "tcp", entryGroupThreeHop.groupId, entryGroupThreeHop.templateId, entryGroupThreeHop.exitMemberId, 0, entryGroupThreeHop.splitterPort, entryGroupThreeHop.sni, entryGroupThreeHop.splitterPort, "203.0.113.60", 443, 1, 1, 0]);
+      for (const group of runtimeGroups) {
+        await insert("forward_groups", ["id", "name", "groupType", "groupMode", "forwardType", "domain", "targetIp", "targetPort", "userId", "isEnabled"], [group.groupId, group.forwardType + "-shared-chain", "host", "chain", group.forwardType, "", "0.0.0.0", 1, 1, 1]);
+        await insert("forward_group_members", ["id", "groupId", "memberType", "hostId", "priority", "isEnabled"], [group.entryMemberId, group.groupId, "host", 1, 10, 1]);
+        await insert("forward_group_members", ["id", "groupId", "memberType", "hostId", "priority", "isEnabled"], [group.exitMemberId, group.groupId, "host", 2, 20, 1]);
+        for (const route of group.routes) {
+          await insertSniRule(route, group);
+        }
+      }
+
+      const app = express();
+      app.use(express.json());
+      app.use((req, _res, next) => {
+        const authorization = String(req.headers.authorization || "");
+        req.agentToken = authorization.startsWith("Bearer ") ? authorization.slice(7) : "";
+        next();
+      });
+      heartbeat.registerAgentHeartbeatRoute(app);
+      registerAgentReportRoutes(app);
+      server = http.createServer(app);
+      await new Promise((resolve, reject) => {
+        server.once("error", reject);
+        server.listen(0, "127.0.0.1", resolve);
+      });
+      const address = server.address();
+      assert.ok(address && typeof address === "object");
+      const baseUrl = "http://127.0.0.1:" + address.port;
+
+      const entry = await postHeartbeat(baseUrl, "entry-token", { agentBootId: "boot-entry-shared", agentProcessId: 2001 });
+      assert.equal(entry.status, 200);
+      assert.equal(entry.payload.success, true);
+      const entryActions = entry.payload.desiredState.actions;
+      const entryApplies = entryActions.filter((action) => action.op === "apply" && action.sourcePort === 18443);
+      assert.equal(entryApplies.length, 1);
+      assert.equal(entryApplies[0].forwardType, "forwardx");
+      assert.equal(entryApplies[0].protocol, "tcp");
+      assert.equal(entryApplies[0].fxp.role, "sni-splitter");
+      assert.equal(entryApplies[0].fxp.listenPort, 18443);
+      assert.deepEqual(entryApplies[0].fxp.sourceAllowIps, []);
+      assert.deepEqual(entryApplies[0].fxp.sniRoutes, [
+        { sni: "api.example.com", ruleId: 101, targetIp: exitHostIp, targetPort: 24000 },
+        { sni: "gost-api.example.com", ruleId: 201, targetIp: exitHostIp, targetPort: 24001 },
+        { sni: "gost-web.example.com", ruleId: 211, targetIp: exitHostIp, targetPort: 24001 },
+        { sni: "nginx-api.example.com", ruleId: 301, targetIp: exitHostIp, targetPort: 24002 },
+        { sni: "nginx-web.example.com", ruleId: 311, targetIp: exitHostIp, targetPort: 24002 },
+        { sni: "web.example.com", ruleId: 111, targetIp: exitHostIp, targetPort: 24000 },
+      ]);
+      assert.doesNotMatch(JSON.stringify(entryActions), /203\.0\.113\./);
+      assert.doesNotMatch(decodedManagedConfigText(entryActions), /203\.0\.113\./);
+      assert.doesNotMatch((entryApplies[0].commands || []).join("\n"), /fwx-stat-|forwardx_traffic/);
+      assert.doesNotMatch((entryApplies[0].commands || []).join("\n"), /\bcounter\b/);
+
+
+      const gostConfigText = findManagedConfig(entryActions, "/runtime/gost.json");
+      if (gostConfigText) assert.equal(JSON.parse(gostConfigText).services.filter((service) => service.addr === ":18443").length, 0);
+      assert.doesNotMatch(findManagedConfig(entryActions, "/nginx/nginx.conf"), /listen \[::\]:18443\b/);
+
+      for (const [token, ruleId, bootId, processId] of [
+        ["entry-a-token", entryGroupThreeHop.entryARuleId, "boot-entry-a", 2003],
+        ["entry-b-token", entryGroupThreeHop.entryBRuleId, "boot-entry-b", 2004],
+      ]) {
+        const entryGroupHeartbeat = await postHeartbeat(baseUrl, token, { agentBootId: bootId, agentProcessId: processId });
+        assert.equal(entryGroupHeartbeat.status, 200);
+        const entryGroupApply = entryGroupHeartbeat.payload.desiredState.actions.find(
+          (action) => action.op === "apply" && action.fxp?.role === "sni-splitter" && Number(action.sourcePort) === entryGroupThreeHop.sourcePort,
+        );
+        assert.ok(entryGroupApply, "missing entry-group public entry splitter");
+        assert.equal(entryGroupApply.ruleId, ruleId);
+        assert.deepEqual(entryGroupApply.fxp.sourceAllowIps, []);
+        assert.deepEqual(entryGroupApply.fxp.sniRoutes, [{
+          sni: entryGroupThreeHop.sni,
+          ruleId,
+          targetIp: entryGroupRelayHostIp,
+          targetPort: entryGroupThreeHop.relayPort,
+        }]);
+      }
+
+      const entryGroupRelay = await postHeartbeat(baseUrl, "entry-group-relay-token", { agentBootId: "boot-entry-group-relay", agentProcessId: 2005 });
+      assert.equal(entryGroupRelay.status, 200);
+      const entryGroupRelayApply = entryGroupRelay.payload.desiredState.actions.find(
+        (action) => action.op === "apply" && action.ruleId === entryGroupThreeHop.relayRuleId,
+      );
+      assert.ok(entryGroupRelayApply, "missing entry-group chain relay action");
+      assert.equal(entryGroupRelayApply.forwardType, "gost");
+      assert.equal(entryGroupRelayApply.sourcePort, entryGroupThreeHop.relayPort);
+      assert.equal(entryGroupRelayApply.targetIp, exitHostIp);
+      assert.equal(entryGroupRelayApply.targetPort, entryGroupThreeHop.splitterPort);
+      assert.equal(entryGroupRelayApply.fxp, undefined);
+
+      const exit = await postHeartbeat(baseUrl, "exit-token", { agentBootId: "boot-exit-shared", agentProcessId: 2002 });
+      assert.equal(exit.status, 200);
+      assert.equal(exit.payload.success, true);
+      const splitterApplies = exit.payload.desiredState.actions.filter((action) => action.op === "apply" && action.fxp?.role === "sni-splitter" && Number(action.sourcePort) === 24000);
+      assert.equal(splitterApplies.length, 1);
+      assert.equal(splitterApplies[0].sourcePort, 24000);
+      assert.equal(splitterApplies[0].fxp.sniRouteVersion, 1);
+      assert.deepEqual(splitterApplies[0].fxp.sourceAllowIps, []);
+      const splitterCommandText = (splitterApplies[0].commands || []).join("\n");
+      assert.match(splitterCommandText, /fwx-sni-splitter-24000/);
+      assert.doesNotMatch(splitterCommandText, /nft add rule|-[AI] INPUT/);
+      assert.deepEqual(splitterApplies[0].fxp.sniRoutes, [
+        {
+          sni: "api.example.com",
+          ruleId: 102,
+          targetIp: "203.0.113.20",
+          targetPort: 443,
+          limitIn: 0,
+          limitOut: 0,
+          maxConnections: 0,
+          maxIPs: 0,
+          accessScope: "u1_h2",
+        },
+        {
+          sni: "web.example.com",
+          ruleId: 112,
+          targetIp: "203.0.113.21",
+          targetPort: 8443,
+          limitIn: 0,
+          limitOut: 0,
+          maxConnections: 0,
+          maxIPs: 0,
+          accessScope: "u1_h2",
+        },
+      ]);
+      const entryGroupSplitterApply = exit.payload.desiredState.actions.find(
+        (action) => action.op === "apply" && action.fxp?.role === "sni-splitter" && Number(action.sourcePort) === 24003,
+      );
+      assert.ok(entryGroupSplitterApply, "missing entry-group sni splitter apply");
+      assert.deepEqual(entryGroupSplitterApply.fxp.sourceAllowIps, []);
+      const entryGroupCommandText = (entryGroupSplitterApply.commands || []).join("\n");
+      assert.doesNotMatch(entryGroupCommandText, /nft add rule|-[AI] INPUT/);
+      const entryGroupThreeHopExit = exit.payload.desiredState.actions.find(
+        (action) => action.op === "apply" && action.fxp?.role === "sni-splitter" && Number(action.sourcePort) === entryGroupThreeHop.splitterPort,
+      );
+      assert.ok(entryGroupThreeHopExit, "missing entry-group three-hop exit splitter");
+      assert.deepEqual(entryGroupThreeHopExit.fxp.sourceAllowIps, []);
+      assert.deepEqual(entryGroupThreeHopExit.fxp.sniRoutes, [{
+        sni: entryGroupThreeHop.sni,
+        ruleId: entryGroupThreeHop.exitRuleId,
+        targetIp: "203.0.113.60",
+        targetPort: 443,
+        limitIn: 0,
+        limitOut: 0,
+        maxConnections: 0,
+        maxIPs: 0,
+        accessScope: "u1_h2",
+      }]);
+
+      await postHeartbeat(baseUrl, "exit-token", {
+        agentBootId: "boot-exit-shared",
+        agentProcessId: 2002,
+        localState: {
+          rules: [{
+            port: entryGroupThreeHop.splitterPort,
+            ruleId: entryGroupThreeHop.exitRuleId,
+            forwardType: "forwardx",
+            sni: entryGroupThreeHop.sni,
+            targetIp: "203.0.113.60",
+            targetPort: 443,
+            protocol: "tcp",
+            sniRouteVersion: 1,
+            sourceAllowIps: [],
+            ready: true,
+          }],
+          tunnels: [],
+          services: [],
+        },
+      });
+      await postHeartbeat(baseUrl, "entry-a-token", {
+        agentBootId: "boot-entry-a",
+        agentProcessId: 2003,
+        localState: {
+          rules: [{
+            port: entryGroupThreeHop.sourcePort,
+            ruleId: entryGroupThreeHop.entryARuleId,
+            forwardType: "forwardx",
+            sni: entryGroupThreeHop.sni,
+            targetIp: entryGroupRelayHostIp,
+            targetPort: entryGroupThreeHop.relayPort,
+            protocol: "tcp",
+            sniRouteVersion: 1,
+            sourceAllowIps: [],
+            ready: true,
+          }],
+          tunnels: [],
+          services: [],
+        },
+      });
+      const partialEntryStates = await runtime.queryRaw(
+        'SELECT "id", "isRunning" FROM "forward_rules" WHERE "id" BETWEEN 600 AND 604 ORDER BY "id"',
+      );
+      assert.deepEqual(partialEntryStates.map((row) => [Number(row.id), Number(row.isRunning)]), [
+        [600, 0], [601, 0], [602, 0], [603, 0], [604, 0],
+      ]);
+      await postHeartbeat(baseUrl, "entry-b-token", {
+        agentBootId: "boot-entry-b",
+        agentProcessId: 2004,
+        localState: {
+          rules: [{
+            port: entryGroupThreeHop.sourcePort,
+            ruleId: entryGroupThreeHop.entryBRuleId,
+            forwardType: "forwardx",
+            sni: entryGroupThreeHop.sni,
+            targetIp: entryGroupRelayHostIp,
+            targetPort: entryGroupThreeHop.relayPort,
+            protocol: "tcp",
+            sniRouteVersion: 1,
+            sourceAllowIps: [],
+            ready: true,
+          }],
+          tunnels: [],
+          services: [],
+        },
+      });
+      const completeEntryStates = await runtime.queryRaw(
+        'SELECT "id", "isRunning" FROM "forward_rules" WHERE "id" BETWEEN 600 AND 604 ORDER BY "id"',
+      );
+      assert.deepEqual(completeEntryStates.map((row) => [Number(row.id), Number(row.isRunning)]), [
+        [600, 1], [601, 1], [602, 0], [603, 1], [604, 1],
+      ]);
+
+      for (const route of routes) {
+        await runtime.executeRaw('UPDATE "forward_rules" SET "isRunning" = 1 WHERE "id" = ?', [route.exitRuleId]);
+      }
+      const exitWithoutDrift = await postHeartbeat(baseUrl, "exit-token", {
+        agentBootId: "boot-exit-shared",
+        agentProcessId: 2002,
+        localState: {
+          rules: [
+            {
+              port: 24000,
+              ruleId: 102,
+              forwardType: "forwardx",
+              sni: "api.example.com",
+              targetIp: "203.0.113.20",
+              targetPort: 443,
+              accessScope: "u1_h2",
+              protocol: "tcp",
+              sniRouteVersion: 1,
+              sourceAllowIps: [],
+              ready: true,
+            },
+            {
+              port: 24000,
+              ruleId: 112,
+              forwardType: "forwardx",
+              sni: "web.example.com",
+              targetIp: "203.0.113.21",
+              targetPort: 8443,
+              accessScope: "u1_h2",
+              protocol: "tcp",
+              sniRouteVersion: 1,
+              sourceAllowIps: [],
+              ready: true,
+            },
+          ],
+          tunnels: [],
+          services: [],
+        },
+      });
+      assert.equal(exitWithoutDrift.status, 200);
+      assert.equal(exitWithoutDrift.payload.success, true);
+      const repeatedSplitterApplies = exitWithoutDrift.payload.desiredState.actions
+        .filter((action) => action.op === "apply" && action.fxp?.role === "sni-splitter" && Number(action.sourcePort) === 24000);
+      assert.equal(repeatedSplitterApplies.length, 0);
+
+      await runtime.executeRaw('UPDATE "hosts" SET "ip" = ?, "ipv4" = ? WHERE "id" = 1', [refreshedEntryHostIp, refreshedEntryHostIp]);
+      const exitAfterEntryAddressChange = await postHeartbeat(baseUrl, "exit-token", {
+        agentBootId: "boot-exit-shared",
+        agentProcessId: 2002,
+        forceReconcile: true,
+        localState: {
+          rules: [
+            {
+              port: 24000,
+              ruleId: 102,
+              forwardType: "forwardx",
+              sni: "api.example.com",
+              targetIp: "203.0.113.20",
+              targetPort: 443,
+              accessScope: "u1_h2",
+              protocol: "tcp",
+              sniRouteVersion: 1,
+              sourceAllowIps: [],
+              ready: true,
+            },
+            {
+              port: 24000,
+              ruleId: 112,
+              forwardType: "forwardx",
+              sni: "web.example.com",
+              targetIp: "203.0.113.21",
+              targetPort: 8443,
+              accessScope: "u1_h2",
+              protocol: "tcp",
+              sniRouteVersion: 1,
+              sourceAllowIps: [],
+              ready: true,
+            },
+          ],
+          tunnels: [],
+          services: [],
+        },
+      });
+      assert.equal(exitAfterEntryAddressChange.status, 200);
+      assert.equal(exitAfterEntryAddressChange.payload.success, true);
+      const refreshedSourceRestrictionApplies = (exitAfterEntryAddressChange.payload.desiredState?.actions || [])
+        .filter((action) => action.op === "apply" && action.fxp?.role === "sni-splitter" && Number(action.sourcePort) === 24000);
+      assert.equal(refreshedSourceRestrictionApplies.length, 0, "entry IP changes do not rewrite source firewall rules");
+      await runtime.executeRaw('UPDATE "hosts" SET "ip" = ?, "ipv4" = ? WHERE "id" = 1', [entryHostIp, entryHostIp]);
+
+      const gostGroup = runtimeGroups[0];
+      const initialGostSplitterApply = exit.payload.desiredState.actions.find(
+        (action) => action.op === "apply" && action.fxp?.role === "sni-splitter" && Number(action.sourcePort) === gostGroup.splitterPort,
+      );
+      assert.ok(initialGostSplitterApply, "missing initial gost sni splitter apply");
+      for (const route of gostGroup.routes) {
+        await runtime.executeRaw('UPDATE "forward_rules" SET "isRunning" = 1 WHERE "id" = ?', [route.exitRuleId]);
+      }
+      const nonRepresentativeDeletion = await rulesCrud.deleteForwardRuleForActor({ id: 1, role: "admin" }, 210);
+      assert.equal(nonRepresentativeDeletion.success, true);
+      const exitAfterNonRepresentativeDelete = await postHeartbeat(baseUrl, "exit-token", {
+        agentBootId: "boot-exit-shared",
+        agentProcessId: 2002,
+        forceReconcile: true,
+        localState: {
+          rules: [
+            {
+              port: gostGroup.splitterPort,
+              ruleId: 202,
+              forwardType: "forwardx",
+              sni: "gost-api.example.com",
+              targetIp: "203.0.113.30",
+              targetPort: 443,
+              accessScope: "u1_h2",
+              protocol: "tcp",
+              sniRouteVersion: 9,
+              sourceAllowIps: [],
+              ready: true,
+            },
+            {
+              port: gostGroup.splitterPort,
+              ruleId: 212,
+              forwardType: "forwardx",
+              sni: "gost-web.example.com",
+              targetIp: "203.0.113.31",
+              targetPort: 8443,
+              accessScope: "u1_h2",
+              protocol: "tcp",
+              sniRouteVersion: 9,
+              sourceAllowIps: [],
+              ready: true,
+            },
+          ],
+          tunnels: [],
+          services: [],
+        },
+      });
+      assert.equal(exitAfterNonRepresentativeDelete.status, 200);
+      assert.equal(exitAfterNonRepresentativeDelete.payload.success, true);
+      const shrinkSplitterApplies = exitAfterNonRepresentativeDelete.payload.desiredState.actions
+        .filter((action) => action.op === "apply" && action.fxp?.role === "sni-splitter" && Number(action.sourcePort) === gostGroup.splitterPort);
+      assert.equal(shrinkSplitterApplies.length, 1);
+      assert.equal(shrinkSplitterApplies[0].ruleId, 202);
+      assert.equal(shrinkSplitterApplies[0].fxp.ruleId, 202);
+      assert.ok(Number(shrinkSplitterApplies[0].fxp.sniRouteVersion) > Number(initialGostSplitterApply.fxp.sniRouteVersion));
+      assert.ok(Number(shrinkSplitterApplies[0].fxp.sniRouteVersion) > 9);
+      assert.deepEqual(shrinkSplitterApplies[0].fxp.sniRoutes, [{
+        sni: "gost-api.example.com",
+        ruleId: 202,
+        targetIp: "203.0.113.30",
+        targetPort: 443,
+        limitIn: 0,
+        limitOut: 0,
+        maxConnections: 0,
+        maxIPs: 0,
+        accessScope: "u1_h2",
+      }]);
+
+      const deletion = await rulesCrud.deleteForwardRuleForActor({ id: 1, role: "admin" }, 100);
+      assert.equal(deletion.success, true);
+      const exitAfterDelete = await postHeartbeat(baseUrl, "exit-token", {
+        agentBootId: "boot-exit-shared",
+        agentProcessId: 2002,
+        forceReconcile: true,
+        localState: {
+          rules: [
+            {
+              port: 24000,
+              ruleId: 102,
+              forwardType: "forwardx",
+              sni: "api.example.com",
+              targetIp: "203.0.113.20",
+              targetPort: 443,
+              accessScope: "u1_h2",
+              protocol: "tcp",
+              sniRouteVersion: 1,
+              sourceAllowIps: [],
+              ready: true,
+            },
+            {
+              port: 24000,
+              ruleId: 112,
+              forwardType: "forwardx",
+              sni: "web.example.com",
+              targetIp: "203.0.113.21",
+              targetPort: 8443,
+              accessScope: "u1_h2",
+              protocol: "tcp",
+              sniRouteVersion: 1,
+              sourceAllowIps: [],
+              ready: true,
+            },
+          ],
+          tunnels: [],
+          services: [],
+        },
+      });
+      assert.equal(exitAfterDelete.status, 200);
+      assert.equal(exitAfterDelete.payload.success, true);
+      const refreshedSplitterApplies = exitAfterDelete.payload.desiredState.actions
+        .filter((action) => action.op === "apply" && action.fxp?.role === "sni-splitter" && Number(action.sourcePort) === 24000);
+      assert.equal(refreshedSplitterApplies.length, 1);
+      assert.equal(refreshedSplitterApplies[0].ruleId, 112);
+      assert.equal(refreshedSplitterApplies[0].fxp.ruleId, 112);
+      assert.ok(Number(refreshedSplitterApplies[0].fxp.sniRouteVersion) > Number(splitterApplies[0].fxp.sniRouteVersion));
+      assert.deepEqual(refreshedSplitterApplies[0].fxp.sniRoutes, [{
+        sni: "web.example.com",
+        ruleId: 112,
+        targetIp: "203.0.113.21",
+        targetPort: 8443,
+        limitIn: 0,
+        limitOut: 0,
+        maxConnections: 0,
+        maxIPs: 0,
+        accessScope: "u1_h2",
+      }]);
+
+      const entryAfterDelete = await postHeartbeat(baseUrl, "entry-token", { agentBootId: "boot-entry-shared", agentProcessId: 2001 });
+      const remainingEntryApply = entryAfterDelete.payload.desiredState.actions.find(
+        (action) => action.op === "apply" && action.fxp?.role === "sni-splitter" && Number(action.sourcePort) === 18443,
+      );
+      assert.ok(remainingEntryApply, "missing entry splitter after deleting the smallest rule");
+      const entryBaseConfig = ({ ruleId, sniRouteVersion, sniRoutes, ...config }) => config;
+      assert.deepEqual(entryBaseConfig(remainingEntryApply.fxp), entryBaseConfig(entryApplies[0].fxp));
+      assert.deepEqual(remainingEntryApply.fxp.sniRoutes, [
+        { sni: "gost-api.example.com", ruleId: 201, targetIp: exitHostIp, targetPort: 24001 },
+        { sni: "nginx-api.example.com", ruleId: 301, targetIp: exitHostIp, targetPort: 24002 },
+        { sni: "nginx-web.example.com", ruleId: 311, targetIp: exitHostIp, targetPort: 24002 },
+        { sni: "web.example.com", ruleId: 111, targetIp: exitHostIp, targetPort: 24000 },
+      ]);
+      const route = { templateId: 120, entryRuleId: 121, exitRuleId: 122, name: "new", sni: "new.example.com", targetIp: "203.0.113.22", targetPort: 443 };
+      await insertSniRule(route);
+      const entryAfterAdd = await postHeartbeat(baseUrl, "entry-token", { agentBootId: "boot-entry-shared", agentProcessId: 2001 });
+      const expandedEntryApply = entryAfterAdd.payload.desiredState.actions.find(
+        (action) => action.op === "apply" && action.fxp?.role === "sni-splitter" && Number(action.sourcePort) === 18443,
+      );
+      assert.ok(expandedEntryApply, "missing entry splitter after adding a domain");
+      assert.deepEqual(entryBaseConfig(expandedEntryApply.fxp), entryBaseConfig(remainingEntryApply.fxp));
+      assert.deepEqual(expandedEntryApply.fxp.sniRoutes.filter((route) => route.sni !== "new.example.com"), remainingEntryApply.fxp.sniRoutes);
+      assert.deepEqual(expandedEntryApply.fxp.sniRoutes.find((route) => route.sni === "new.example.com"), {
+        sni: "new.example.com", ruleId: 121, targetIp: exitHostIp, targetPort: 24000,
+      });
+      const caller = rulesRouter.createCaller({ req: { headers: {} }, res: { clearCookie() {} },
+        user: { id: 1, username: "admin", role: "admin", accountEnabled: true },
+        authSession: null, authFailureReason: null });
+      await caller.update({ id: 120, targetIp: "203.0.113.99", targetPort: 9443 });
+      const entryAfterTargetChange = await postHeartbeat(baseUrl, "entry-token", { agentBootId: "boot-entry-shared", agentProcessId: 2001 });
+      const unchangedEntryApply = entryAfterTargetChange.payload.desiredState.actions.find(
+        (action) => action.op === "apply" && action.fxp?.role === "sni-splitter" && Number(action.sourcePort) === 18443,
+      );
+      assert.ok(unchangedEntryApply, "missing entry splitter after changing a landing target");
+      assert.deepEqual(entryBaseConfig(unchangedEntryApply.fxp), entryBaseConfig(expandedEntryApply.fxp));
+      assert.deepEqual(unchangedEntryApply.fxp.sniRoutes, expandedEntryApply.fxp.sniRoutes);
+      const exitAfterTargetChange = await postHeartbeat(baseUrl, "exit-token", { agentBootId: "boot-exit-shared", agentProcessId: 2002 });
+      const changedExitApply = exitAfterTargetChange.payload.desiredState.actions.find(
+        (action) => action.op === "apply" && action.fxp?.role === "sni-splitter" && Number(action.sourcePort) === 24000,
+      );
+      assert.ok(changedExitApply, "missing exit splitter after changing a landing target");
+      const changedRoute = changedExitApply.fxp.sniRoutes.find((route) => route.sni === "new.example.com");
+      assert.equal(changedRoute.targetIp, "203.0.113.99");
+      assert.equal(changedRoute.targetPort, 9443);
+
+      const currentEntryLocalRules = [
+        { ruleId: 111, sni: "web.example.com", targetPort: 24000 },
+        { ruleId: 121, sni: "new.example.com", targetPort: 24000 },
+        { ruleId: 201, sni: "gost-api.example.com", targetPort: 24001 },
+        { ruleId: 211, sni: "gost-web.example.com", targetPort: 24001 },
+        { ruleId: 301, sni: "nginx-api.example.com", targetPort: 24002 },
+        { ruleId: 311, sni: "nginx-web.example.com", targetPort: 24002 },
+      ].map((localRoute) => ({
+        port: 18443,
+        ruleId: localRoute.ruleId,
+        forwardType: "forwardx",
+        sni: localRoute.sni,
+        targetIp: exitHostIp,
+        targetPort: localRoute.targetPort,
+        protocol: "tcp",
+        sniRouteVersion: 5,
+        sourceAllowIps: [],
+        ready: true,
+      }));
+      const oldVersionWithCurrentIdentity = await postHeartbeat(baseUrl, "entry-token", {
+        agentVersion: "2.2.194",
+        agentBootId: "boot-entry-shared",
+        agentProcessId: 2001,
+        localState: { rules: currentEntryLocalRules, tunnels: [], services: [] },
+      });
+      assert.equal(oldVersionWithCurrentIdentity.payload.runningRules.some(
+        (rule) => Number(rule.sourcePort) === 18443,
+      ), false);
+      const currentIdentityRemovals = oldVersionWithCurrentIdentity.payload.desiredState.actions.filter(
+        (action) => action.op === "remove" && Number(action.sourcePort) === 18443 && action.ruleId > 0,
+      );
+      assert.equal(oldVersionWithCurrentIdentity.status, 200);
+      assert.equal(oldVersionWithCurrentIdentity.payload.success, true);
+      assert.deepEqual(currentIdentityRemovals.map((action) => action.ruleId), [111, 121, 201, 211, 301, 311]);
+      for (const action of currentIdentityRemovals) {
+        assert.equal(action.forwardType, "forwardx");
+        assert.equal(action.fxp?.role, "sni-splitter");
+        assert.equal(action.fxp?.ruleId, action.ruleId);
+      }
+      assert.equal(oldVersionWithCurrentIdentity.payload.desiredState.actions.filter(
+        (action) => action.op === "remove" && Number(action.sourcePort) === 18443,
+      ).length, 7);
+
+      const oldVersionWithStaleIdentity = await postHeartbeat(baseUrl, "entry-token", {
+        agentVersion: "2.2.194",
+        agentBootId: "boot-entry-shared",
+        agentProcessId: 2001,
+        localState: {
+          rules: [{
+            port: 18443,
+            ruleId: 101,
+            forwardType: "forwardx",
+            sni: "api.example.com",
+            targetIp: exitHostIp,
+            targetPort: 24000,
+            protocol: "tcp",
+            sniRouteVersion: 1,
+            sourceAllowIps: [],
+            ready: true,
+          }, ...currentEntryLocalRules],
+          tunnels: [],
+          services: [],
+        },
+      });
+      const staleIdentityRemovals = oldVersionWithStaleIdentity.payload.desiredState.actions.filter(
+        (action) => action.op === "remove" && Number(action.sourcePort) === 18443 && action.ruleId > 0,
+      );
+      assert.deepEqual(staleIdentityRemovals.map((action) => action.ruleId), [101, 111, 121, 201, 211, 301, 311]);
+      assert.equal(staleIdentityRemovals[0].fxp?.role, "sni-splitter");
+      assert.equal(oldVersionWithStaleIdentity.payload.desiredState.actions.filter(
+        (action) => action.op === "remove" && Number(action.sourcePort) === 18443,
+      ).length, 8);
+
+      for (const localRules of [currentEntryLocalRules, [{
+        port: 18443,
+        ruleId: 311,
+        tunnelId: 77,
+        forwardType: "gost",
+        targetIp: exitHostIp,
+        targetPort: 24002,
+        protocol: "tcp",
+        ready: true,
+      }]]) {
+        for (let attempt = 0; attempt < 2; attempt++) {
+          const repeatedRemoval = await postHeartbeat(baseUrl, "entry-token", {
+            agentVersion: "2.2.194",
+            agentBootId: "boot-entry-shared",
+            agentProcessId: 2001,
+            localState: { rules: localRules, tunnels: [], services: [] },
+          });
+          assert.equal(repeatedRemoval.status, 200);
+          assert.equal(repeatedRemoval.payload.success, true);
+          assert.equal(repeatedRemoval.payload.runningRules.some((rule) => Number(rule.sourcePort) === 18443), false);
+          if (attempt === 1 && !repeatedRemoval.payload.desiredState) {
+            assert.deepEqual(repeatedRemoval.payload.actions, []);
+            continue;
+          }
+          assert.equal(repeatedRemoval.payload.desiredState.actions.some(
+            (action) => action.op === "apply" && Number(action.sourcePort) === 18443,
+          ), false);
+          const removals = repeatedRemoval.payload.desiredState.actions.filter(
+            (action) => action.op === "remove" && Number(action.sourcePort) === 18443,
+          );
+          const localRemovals = removals.filter((action) => action.ruleId > 0);
+          if (localRules === currentEntryLocalRules) {
+            assert.deepEqual(localRemovals.map((action) => action.ruleId), [111, 121, 201, 211, 301, 311]);
+            assert.equal(removals.length, 7, "orphan cleanup must not duplicate the complete entry removal batch");
+          } else {
+            assert.deepEqual(localRemovals.map((action) => [action.ruleId, action.tunnelId, action.forwardType, action.protocol]), [
+              [311, 77, "gost", "tcp"],
+            ]);
+            assert.equal(localRemovals[0].fxp, undefined);
+            assert.equal(removals.length, 2, "old gost state must receive one local removal and one splitter removal");
+          }
+          const portRemovals = removals.filter((action) => action.ruleId === 0);
+          assert.equal(portRemovals.length, 1);
+          assert.notEqual(portRemovals[0].statusType, "rule");
+          assert.equal(portRemovals[0].fxp?.role, "sni-splitter");
+          assert.equal(portRemovals[0].fxp?.tunnelId, 0);
+        }
+      }
+
+      const zeroIdentityBothRemoval = await postHeartbeat(baseUrl, "entry-token", {
+        agentVersion: "2.2.194",
+        agentBootId: "boot-entry-shared",
+        agentProcessId: 2001,
+        localState: {
+          rules: [{ port: 18443, ruleId: 0, forwardType: "gost", targetIp: exitHostIp, targetPort: 24002, protocol: "both", ready: true }],
+          tunnels: [],
+          services: [],
+        },
+      });
+      assert.equal(zeroIdentityBothRemoval.status, 200);
+      assert.equal(zeroIdentityBothRemoval.payload.success, true);
+      const zeroIdentityBothActions = zeroIdentityBothRemoval.payload.desiredState.actions.filter(
+        (action) => action.op === "remove" && Number(action.sourcePort) === 18443,
+      );
+      const zeroIdentityBothLocalActions = zeroIdentityBothActions.filter((action) => action.statusType === "rule");
+      assert.deepEqual(zeroIdentityBothLocalActions.map((action) => [action.ruleId, action.tunnelId, action.forwardType, action.protocol]), [
+        [0, 0, "gost", "both"],
+      ]);
+      assert.equal(zeroIdentityBothActions.length, 2, "the original local protocol must cover the record without an orphan removal");
+      const zeroIdentityBothSplitter = zeroIdentityBothActions.find((action) => action.fxp?.role === "sni-splitter");
+      assert.ok(zeroIdentityBothSplitter);
+      assert.equal(zeroIdentityBothSplitter.ruleId, 0);
+      assert.notEqual(zeroIdentityBothSplitter.statusType, "rule");
+      assert.equal(zeroIdentityBothSplitter.protocol, "tcp");
+      assert.equal(zeroIdentityBothSplitter.fxp.protocol, "tcp");
+
+      const missingProtocolRemoval = await postHeartbeat(baseUrl, "entry-token", {
+        agentVersion: "2.2.194",
+        agentBootId: "boot-entry-shared",
+        agentProcessId: 2001,
+        localState: {
+          rules: [{ port: 18443, ruleId: 0, forwardType: "gost", targetIp: exitHostIp, targetPort: 24001, ready: true }],
+          tunnels: [],
+          services: [],
+        },
+      });
+      assert.equal(missingProtocolRemoval.status, 200);
+      assert.equal(missingProtocolRemoval.payload.success, true);
+      const missingProtocolActions = missingProtocolRemoval.payload.desiredState.actions.filter(
+        (action) => action.op === "remove" && Number(action.sourcePort) === 18443,
+      );
+      assert.deepEqual(missingProtocolActions.filter((action) => action.statusType === "rule")
+        .map((action) => [action.ruleId, action.forwardType, action.protocol]), [[0, "gost", "both"]]);
+      assert.equal(missingProtocolActions.length, 2, "missing local protocol must default to both without an orphan removal");
+      assert.equal(missingProtocolActions.filter((action) => action.fxp?.role === "sni-splitter").length, 1);
+
+      const kernelBothRemoval = await postHeartbeat(baseUrl, "entry-token", {
+        agentVersion: "2.2.194",
+        agentBootId: "boot-entry-shared",
+        agentProcessId: 2001,
+        localState: {
+          rules: [{ port: 18443, ruleId: 0, forwardType: "nftables", targetIp: exitHostIp, targetPort: 24000, protocol: "both", ready: true }],
+          tunnels: [],
+          services: [],
+        },
+      });
+      assert.equal(kernelBothRemoval.status, 200);
+      assert.equal(kernelBothRemoval.payload.success, true);
+      const kernelBothActions = kernelBothRemoval.payload.desiredState.actions.filter(
+        (action) => action.op === "remove" && Number(action.sourcePort) === 18443,
+      );
+      const kernelBothLocalActions = kernelBothActions.filter((action) => action.statusType === "rule");
+      assert.deepEqual(kernelBothLocalActions.map((action) => [action.ruleId, action.forwardType, action.protocol]), [
+        [0, "nftables", "both"],
+      ]);
+      assert.equal(kernelBothActions.length, 2, "kernel forwarding cleanup must cover both protocols without an orphan removal");
+      const kernelCleanupCommands = kernelBothLocalActions[0].commands.join("\n");
+      assert.match(kernelCleanupCommands, / -p tcp /);
+      assert.match(kernelCleanupCommands, / -p udp /);
+      assert.match(kernelCleanupCommands, /-v proto='tcp'/);
+      assert.match(kernelCleanupCommands, /-v proto='udp'/);
+      const excludeTraffic = (id, value) => runtime.executeRaw('UPDATE "hosts" SET "trafficLimit"=1000,"trafficFailoverEnabled"=1,"trafficFailoverExcluded"=? WHERE "id"=?', [value, id]);
+      const routesOn = async (token, port, exportName) => {
+        const result = await postHeartbeat(baseUrl, token);
+        assert.equal(result.status, 200);
+        const manifest = result.payload.desiredState || lastDesiredState.get(token);
+        assert.ok(manifest, "Agent must have received a manifest");
+        const actions = manifest.actions.filter(a => a.op === "apply" && a.fxp?.role === "sni-splitter" && Number(a.sourcePort) === port);
+        if (exportName && process.env.FORWARDX_SNI_TRAFFIC_VERIFY_OUTPUT) {
+          const directory = process.env.FORWARDX_SNI_TRAFFIC_VERIFY_OUTPUT;
+          fs.mkdirSync(directory, { recursive: true });
+          assert.equal(actions.length, 1);
+          fs.writeFileSync(path.join(directory, exportName + ".json"), JSON.stringify(actions[0].fxp));
+        }
+        return actions.flatMap(a => a.fxp.sniRoutes);
+      };
+      const captureBoth = async (stage) => {
+        fs.mkdirSync(process.env.FORWARDX_CHAIN_NETWORK_OUTPUT, { recursive: true });
+        for (const [role, token, port] of [["entry","entry-token",18443],["exit","exit-token",24001]]) {
+          const result = await postHeartbeat(baseUrl, token);
+          assert.equal(result.status,200);
+          const manifest = result.payload.desiredState || lastDesiredState.get(token);
+          const action = manifest.actions.find(value => value.op === "apply" && value.fxp?.role === "sni-splitter" && Number(value.sourcePort) === port);
+          assert.ok(action,stage+" "+role+" splitter required");
+          fs.writeFileSync(path.join(process.env.FORWARDX_CHAIN_NETWORK_OUTPUT,stage+"-"+role+".json"),JSON.stringify(action.fxp,null,2));
+        }
+      };
+      await postHeartbeat(baseUrl, "entry-token", { agentVersion: "2.2.195" });
+      await caller.create({ forwardGroupId: 20, name: "限额验收健康域名", forwardType: "gost", protocol: "tcp", sourcePort: 18443,
+        sni: "quota-healthy.example.com", targetIp: "203.0.113.31", targetPort: 8443 });
+      const chainBusiness = () => runtime.queryRaw('SELECT "id","hostId","sourcePort","sniSplitterPort","targetIp","targetPort","isEnabled","forwardGroupId","forwardGroupRuleId","forwardGroupMemberId" FROM "forward_rules" WHERE "id" IN (200,201,202) ORDER BY "id"');
+      await caller.update({ id: 200, trafficLimit: 1000, trafficMode: "both", rateLimitMbps: 1, maxConnections: 2 });
+      const beforePolicy = await chainBusiness();
+      await captureBoth("before");
+      const entryLimited = (await routesOn("entry-token", 18443)).find(r => r.sni === "gost-api.example.com");
+      const exitLimited = (await routesOn("exit-token", 24001)).find(r => r.sni === "gost-api.example.com");
+      assert.equal(entryLimited.limitIn, undefined);
+      assert.equal(entryLimited.maxConnections, undefined);
+      assert.equal(exitLimited.limitIn, 125000);
+      assert.equal(exitLimited.limitOut, 125000);
+      assert.equal(exitLimited.maxConnections, 2);
+      const chainReport = async (token, reportId, ruleId) => {
+        const response = await fetch(baseUrl + "/api/agent/traffic", { method: "POST",
+          headers: { authorization: "Bearer " + token, "content-type": "application/json" },
+          body: JSON.stringify({ reportId, reportProducerId: "chain-quota-process", stats: [{ ruleId, bytesIn: 600, bytesOut: 500, connections: 1 }] }) });
+        assert.equal(response.status, 200);
+        return response.json();
+      };
+      await chainReport("entry-token", "chain-entry-ignored", 201);
+      assert.equal((await caller.getById({ id: 200 })).quotaUsedIn, 0);
+      await chainReport("exit-token", "chain-exit-quota", 202);
+      assert.equal((await chainReport("exit-token", "chain-exit-quota", 202)).duplicate, true);
+      assert.equal((await caller.getById({ id: 200 })).quotaUsedIn, 600);
+      assert.equal((await caller.getById({ id: 200 })).quotaUsedOut, 500);
+      await captureBoth("excluded");
+      for (const [token, port] of [["entry-token",18443],["exit-token",24001]]) {
+        const available = await routesOn(token, port);
+        assert.ok(!available.some(r => r.sni === "gost-api.example.com"));
+        assert.ok(available.some(r => r.sni === "quota-healthy.example.com"));
+      }
+      // Host exclusion and root-rule quota must remain separate gates.
+      await excludeTraffic(2, 1);
+      await caller.resetTraffic({ scope: "rule", ruleId: 200 });
+      assert.equal((await caller.getById({ id: 200 })).ruleLimitReason, null);
+      assert.deepEqual(await routesOn("entry-token", 18443), []);
+      await excludeTraffic(2, 0);
+      assert.ok((await routesOn("entry-token", 18443)).some(r => r.sni === "gost-api.example.com"));
+      assert.ok((await routesOn("exit-token", 24001)).some(r => r.sni === "gost-api.example.com"));
+      assert.deepEqual(await chainBusiness(), beforePolicy);
+      await captureBoth("restored");
+      await caller.update({ id:200, createdAt:new Date(Date.now()-86400000), expiresAt:new Date(Date.now()-1000) });
+      await captureBoth("expired");
+      await caller.update({ id:200, expiresAt:new Date(Date.now()+86400000) });
+      await captureBoth("extended");
+
+
+      // Both entries and the shared relay/exit inherit an entry-group root's expiry.
+      await caller.update({ id: 600, createdAt: new Date(Date.now()-86400000), expiresAt: new Date(Date.now()-1000), rateLimitMbps: 1 });
+      assert.deepEqual(await routesOn("entry-a-token", entryGroupThreeHop.sourcePort), []);
+      assert.deepEqual(await routesOn("entry-b-token", entryGroupThreeHop.sourcePort), []);
+      const expiredRelay = await postHeartbeat(baseUrl, "entry-group-relay-token");
+      assert.ok(!expiredRelay.payload.runningRules.some(r => Number(r.ruleId) === entryGroupThreeHop.relayRuleId));
+      assert.deepEqual(await routesOn("exit-token", entryGroupThreeHop.splitterPort), []);
+      await caller.update({ id: 600, expiresAt: null });
+      for (const token of ["entry-a-token", "entry-b-token"]) {
+        const route = (await routesOn(token, entryGroupThreeHop.sourcePort)).find(r => r.sni === entryGroupThreeHop.sni);
+        assert.ok(route);
+        assert.equal(route.limitIn, undefined);
+      }
+      assert.equal((await routesOn("exit-token", entryGroupThreeHop.splitterPort)).find(r => r.sni === entryGroupThreeHop.sni).limitIn, 125000);
+
+      await excludeTraffic(3, 1);
+      assert.deepEqual(await routesOn("entry-a-token", entryGroupThreeHop.sourcePort), []);
+      assert.ok((await routesOn("entry-b-token", entryGroupThreeHop.sourcePort)).some(r => r.sni === entryGroupThreeHop.sni), "healthy entry must retain its shared chain");
+      assert.ok((await routesOn("exit-token", entryGroupThreeHop.splitterPort)).some(r => r.sni === entryGroupThreeHop.sni), "excluding only entry A must not remove the common exit");
+      await excludeTraffic(3, 0);
+      assert.ok((await routesOn("entry-a-token", entryGroupThreeHop.sourcePort)).some(r => r.sni === entryGroupThreeHop.sni));
+      await excludeTraffic(5, 1);
+      assert.deepEqual(await routesOn("entry-a-token", entryGroupThreeHop.sourcePort), []);
+      assert.deepEqual(await routesOn("entry-b-token", entryGroupThreeHop.sourcePort), []);
+      assert.ok((await routesOn("entry-token", 18443)).some(r => r.sni === "gost-api.example.com"));
+      await excludeTraffic(5, 0);
+      assert.ok((await routesOn("entry-b-token", entryGroupThreeHop.sourcePort)).some(r => r.sni === entryGroupThreeHop.sni));
+      // 把一条共享端口的链改用独立出口：只有该出口超量时撤除该链的域名。
+      await insert("hosts", ["id","name","ip","ipv4","agentToken","userId","isOnline","lastHeartbeat","agentVersion","portRangeStart","portRangeEnd"], [6,"独立出口","198.51.100.66","198.51.100.66","other-exit-token",1,1,now,"3.2.0",24000,24010]);
+      await runtime.executeRaw('UPDATE "forward_group_members" SET "hostId"=6 WHERE "id"=3002');
+      await runtime.executeRaw('UPDATE "forward_rules" SET "hostId"=6 WHERE "forwardGroupId"=30 AND "forwardGroupMemberId"=3002');
+      await routesOn("entry-token", 18443, "before");
+      await excludeTraffic(6, 1);
+      const healthyRoutes = await routesOn("entry-token", 18443, "excluded");
+      assert.ok(healthyRoutes.some(r => r.sni === "gost-api.example.com"));
+      assert.ok(!healthyRoutes.some(r => r.sni === "nginx-api.example.com"));
+      const saved = await runtime.queryRaw('SELECT "sourcePort","isEnabled" FROM "forward_rules" WHERE "id"=300');
+      assert.deepEqual(saved, [{ sourcePort: 18443, isEnabled: 1 }]);
+      await excludeTraffic(6, 0);
+      assert.ok((await routesOn("entry-token", 18443, "restored")).some(r => r.sni === "nginx-api.example.com"));
+      await runtime.executeRaw('UPDATE "forward_group_members" SET "hostId"=2 WHERE "id"=3002');
+      await runtime.executeRaw('UPDATE "forward_rules" SET "hostId"=2 WHERE "forwardGroupId"=30 AND "forwardGroupMemberId"=3002');
+    } finally {
+      if (server) await new Promise((resolve) => server.close(resolve));
+      await runtime.closeDatabase();
+    }
+console.log("PASS: real HTTP entry and exit configs exported for chain quota, host exclusion, expiry and recovery");

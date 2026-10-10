@@ -1,0 +1,217 @@
+{
+  "process": {
+    "pid": 1067,
+    "start": "73138910"
+  },
+  "live": {
+    "services": [
+      {
+        "name": "fwx-100-tcp",
+        "addr": ":22001",
+        "handler": {
+          "type": "tcp",
+          "chain": "chain-tunnel-100"
+        },
+        "listener": {
+          "type": "tcp"
+        },
+        "forwarder": {
+          "nodes": [
+            {
+              "name": "target-100",
+              "addr": "198.51.100.30:30001"
+            }
+          ]
+        },
+        "status": {
+          "createTime": 1791557147,
+          "state": "ready",
+          "events": [
+            {
+              "time": 1791557147,
+              "msg": "service fwx-100-tcp is running"
+            },
+            {
+              "time": 1791557147,
+              "msg": "service fwx-100-tcp is ready"
+            },
+            {
+              "time": 1791557147,
+              "msg": "service fwx-100-tcp is listening on [::]:22001"
+            }
+          ]
+        }
+      },
+      {
+        "name": "fwx-101-tcp",
+        "addr": ":22002",
+        "handler": {
+          "type": "tcp",
+          "chain": "chain-tunnel-101"
+        },
+        "listener": {
+          "type": "tcp"
+        },
+        "forwarder": {
+          "nodes": [
+            {
+              "name": "target-101",
+              "addr": "198.51.100.30:30001"
+            }
+          ]
+        },
+        "status": {
+          "createTime": 1791557147,
+          "state": "ready",
+          "events": [
+            {
+              "time": 1791557147,
+              "msg": "service fwx-101-tcp is running"
+            },
+            {
+              "time": 1791557147,
+              "msg": "service fwx-101-tcp is ready"
+            },
+            {
+              "time": 1791557147,
+              "msg": "service fwx-101-tcp is listening on [::]:22002"
+            }
+          ]
+        }
+      },
+      {
+        "name": "fwx-102-tcp",
+        "addr": ":22003",
+        "limiter": "fwx-rule-102-host-2-20",
+        "handler": {
+          "type": "tcp",
+          "chain": "chain-tunnel-102"
+        },
+        "listener": {
+          "type": "tcp"
+        },
+        "forwarder": {
+          "nodes": [
+            {
+              "name": "target-102",
+              "addr": "198.51.100.30:30001"
+            }
+          ]
+        },
+        "status": {
+          "createTime": 1791557153,
+          "state": "ready",
+          "events": [
+            {
+              "time": 1791557153,
+              "msg": "service fwx-102-tcp is running"
+            },
+            {
+              "time": 1791557153,
+              "msg": "service fwx-102-tcp is ready"
+            },
+            {
+              "time": 1791557153,
+              "msg": "service fwx-102-tcp is listening on [::]:22003"
+            }
+          ]
+        }
+      }
+    ],
+    "chains": [
+      {
+        "name": "chain-tunnel-100",
+        "hops": [
+          {
+            "name": "hop-tunnel-100",
+            "nodes": [
+              {
+                "name": "exit-100-0",
+                "addr": "198.51.100.10:23000",
+                "connector": {
+                  "type": "relay",
+                  "auth": {
+                    "username": "fwx-7-100",
+                    "password": "e69538ea58df7c3b5e12da5451df036d2e204c826e8158c32065632f1244b3bf"
+                  },
+                  "metadata": {
+                    "nodelay": true
+                  }
+                },
+                "dialer": {
+                  "type": "tcp"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "chain-tunnel-101",
+        "hops": [
+          {
+            "name": "hop-tunnel-101",
+            "nodes": [
+              {
+                "name": "exit-101-0",
+                "addr": "198.51.100.10:23002",
+                "connector": {
+                  "type": "relay",
+                  "auth": {
+                    "username": "fwx-7-101",
+                    "password": "27c91ee5a6fbb039af4824ccd5a3bcf024d6b4b065b08b85d923dc5e27a270a9"
+                  },
+                  "metadata": {
+                    "nodelay": true
+                  }
+                },
+                "dialer": {
+                  "type": "tcp"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "chain-tunnel-102",
+        "hops": [
+          {
+            "name": "hop-tunnel-102",
+            "nodes": [
+              {
+                "name": "exit-102-0",
+                "addr": "198.51.100.10:23003",
+                "connector": {
+                  "type": "relay",
+                  "auth": {
+                    "username": "fwx-7-102",
+                    "password": "971901de49c8c3169bc42d1be3ee552c35016cb9b1c30cded2a68a6a71a2ed4b"
+                  },
+                  "metadata": {
+                    "nodelay": true
+                  }
+                },
+                "dialer": {
+                  "type": "tcp"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "limiters": [
+      {
+        "name": "fwx-rule-102-host-2-20",
+        "limits": [
+          "$ 2500000B 2500000B"
+        ]
+      }
+    ],
+    "api": {
+      "addr": "unix:///run/forwardx-agent/gost-api/forwardx-runtime.sock"
+    }
+  },
+  "establishedConnectionsPreserved": 2
+}

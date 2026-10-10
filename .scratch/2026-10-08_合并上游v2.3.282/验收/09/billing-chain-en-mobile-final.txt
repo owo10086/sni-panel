@@ -1,0 +1,31 @@
+Browser tab: 3, Title: "sni-panel 09验收", URL: "http://127.0.0.1:18829/traffic-billing".
+1 AXWebArea sni-panel 09验收, URL: 127.0.0.1:18829/traffic-billing
+	2 container forwardx-overlay-root
+		3 container Notifications alt+T
+		4 container Edit billing resource, ID: radix-_r_i_
+			5 heading Edit billing resource, Value: 2, ID: radix-_r_j_
+				6 text Edit billing resource
+			7 text Choose a resource and set its price per GB. The multiplier follows the resource settings.
+			8 container
+				9 text Resource type
+				10 combo box (collapsed) Value: Forwarding Chain, Secondary Actions: Expand
+					11 text Forwarding Chain
+				12 text Resource
+				26 combo box (collapsed) Value: 用户转发链 / Long chain resource unchanged Forwarding Chain 1x, Secondary Actions: Expand
+					27 container
+						28 text 用户转发链 / Long chain resource unchanged Forwarding Chain 1x
+				13 text Price / GB
+				14 stepper (settable, float) Value: 0.012000000104308128, Details: 0.012
+				15 text Link Multiplier 1x Description
+				16 text entry area (settable) 用户说明 <&> unchanged #20
+				17 text Enable billing resource When disabled, this resource is no longer available for traffic billing.
+				18 switch 1
+				19 text Require resource permission When off, users with a balance can use this resource. When on, grant access in user management.
+				20 switch 0
+			21 button Cancel
+			22 button Save
+			23 button Close
+				24 image
+				25 text Close
+
+The focused UI element is 10 combo box (collapsed) Value: Forwarding Chain, Secondary Actions: Expand

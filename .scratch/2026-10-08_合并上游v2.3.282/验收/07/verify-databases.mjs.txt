@@ -1,0 +1,58 @@
+import assert from 'node:assert/strict';
+import path from 'node:path';
+import fs from 'node:fs';
+import {pathToFileURL} from 'node:url';
+const kind=process.argv[2],stage=process.argv[3];
+process.env.DATABASE_TYPE=kind;
+const source=file=>import(pathToFileURL(path.join(process.cwd(),file)).href);
+const r=await source('server/dbRuntime.ts');const {quoteIdentifier:q}=await source('server/dbCompat.ts');
+const config=kind==='sqlite'?{type:kind,sqlite:{path:'/private/tmp/forwardx-282-ticket07/upgrade.db'}}:{type:kind,[kind]:{host:'127.0.0.1',port:kind==='mysql'?33317:35438,database:'probe',user:'probe',password:'isolated-probe-password'}};
+await r.connectDatabase(config);
+const tests=await source('server/repositories/forwardTestRepository.ts');const manual=await source('server/tunnelManualProbe.ts');const chain=await source('server/forwardChainManualProbe.ts');const metrics=await source('server/repositories/metricsRepository.ts');
+const load=id=>r.queryRaw(`SELECT * FROM ${q('tunnels')} WHERE ${q('id')}=?`,[id]).then(rows=>rows[0]);
+const rows=batch=>r.queryRaw(`SELECT * FROM ${q('forward_tests')} WHERE ${q('batchId')}=? ORDER BY ${q('id')}`,[batch]);
+const probes=[{fromHostId:1,toHostId:2,targetIp:'192.0.2.2',targetPort:4002,hopIndex:0,hopCount:2,pathKeys:['main'],routeLabel:'A -> B',hopLabel:'1/2 1->2'},{fromHostId:2,toHostId:3,targetIp:'192.0.2.3',targetPort:4003,hopIndex:1,hopCount:2,pathKeys:['main'],routeLabel:'B -> C',hopLabel:'2/2 2->3'}];
+const tunnel={id:1,name:'manual-restart',entryHostId:1,exitHostId:3,listenPort:4003,mode:'tls',userId:1,isRunning:true};
+try {
+ if(stage==='seed') {
+  const id=kind==='mysql'?'INT AUTO_INCREMENT PRIMARY KEY':kind==='postgresql'?'SERIAL PRIMARY KEY':'INTEGER PRIMARY KEY AUTOINCREMENT';
+  const epoch=kind==='mysql'?'(UNIX_TIMESTAMP())':kind==='postgresql'?'(EXTRACT(EPOCH FROM NOW())::integer)':'(unixepoch())';
+  await r.executeRaw(`CREATE TABLE ${q('forward_tests')} (${q('id')} ${id},${q('ruleId')} INTEGER NOT NULL,${q('hostId')} INTEGER NOT NULL,${q('userId')} INTEGER NOT NULL,${q('status')} VARCHAR(32) NOT NULL DEFAULT 'pending',${q('message')} TEXT,${q('createdAt')} INTEGER NOT NULL DEFAULT ${epoch},${q('updatedAt')} INTEGER NOT NULL DEFAULT ${epoch})`);
+  await (await source('server/dbSchema.ts')).ensureDatabaseSchema();await (await source('server/dbSchema.ts')).ensureDatabaseSchema();
+  await r.insertAndGetId('tunnels',tunnel);
+  await assert.rejects(r.withDatabaseTransaction(async()=>{await manual.queueManualTunnelProbeBatch(tunnel,probes);throw new Error('rollback');}),/rollback/);
+  assert.equal((await r.queryRaw(`SELECT * FROM ${q('forward_tests')}`)).length,0);
+  const batch=await manual.queueManualTunnelProbeBatch(tunnel,probes);
+  assert.equal((await manual.queueManualTunnelProbeBatch(tunnel,probes)).batchId,batch.batchId);
+  const batchRows=await rows(batch.batchId);assert.equal(batchRows.length,2);
+  await tests.completeForwardTestIfActive(batchRows[0].id,{status:'success',latencyMs:17,message:'成功'.repeat(25000)});
+  assert.equal((await tests.getForwardTestById(batchRows[0].id)).message.length,50000,'probe report capacity');
+  const now=Math.floor(Date.now()/1000);
+  await tests.markForwardTestRunning(batchRows[1].id);
+  await r.executeRaw(`UPDATE ${q('forward_tests')} SET ${q('firstDispatchedAt')}=?,${q('updatedAt')}=? WHERE ${q('id')}=?`,[now-15,now-10,batchRows[1].id]);
+  fs.writeFileSync(`/private/tmp/forwardx-282-ticket07/${kind}-seed.json`,JSON.stringify({batchId:batch.batchId,testIds:batchRows.map(row=>row.id),partialReportCommitted:true}));
+ } else {
+  await manual.recoverManualTunnelProbeBatches();
+  let current=await load(1);let pending=JSON.parse(current.lastTestMessage);
+  assert.equal(pending.details[0].latencyMs,17);assert.equal(pending.details[0].pending,false);assert.equal(pending.details[1].pending,true);
+  await metrics.insertTunnelLatencyStat({tunnelId:1,latencyMs:4,isTimeout:false},{preserveMessage:true});assert.equal((await load(1)).lastTestStatus,'pending');
+  const batchRows=await rows(pending.batchId);const first=(await tests.getForwardTestById(batchRows[1].id)).firstDispatchedAt;
+  const lease=await tests.markForwardTestRunning(batchRows[1].id);assert.equal(lease,true);
+  assert.equal((await tests.getForwardTestById(batchRows[1].id)).firstDispatchedAt.getTime(),first.getTime());
+  const now=Math.floor(Date.now()/1000);
+  await r.executeRaw(`UPDATE ${q('forward_tests')} SET ${q('firstDispatchedAt')}=? WHERE ${q('id')}=?`,[now-46,batchRows[1].id]);
+  assert.equal(await tests.markForwardTestRunning(batchRows[1].id),false);
+  await metrics.timeoutStaleForwardTests(8,()=>45);await manual.recoverManualTunnelProbeBatches();
+  current=await load(1);assert.equal(current.lastTestStatus,'failed');assert.equal(Number(current.isRunning),1);
+  assert.equal(JSON.parse(current.lastTestMessage).details[1].pending,false);
+  assert.equal(await tests.completeForwardTestIfActive(batchRows[1].id,{status:'success',latencyMs:2}),false);
+  const newer=await manual.queueManualTunnelProbeBatch(tunnel,probes);const newerRows=await rows(newer.batchId);
+  await Promise.all(newerRows.map(row=>tests.completeForwardTestIfActive(row.id,{status:'success',latencyMs:7})));
+  await Promise.all([manual.settleManualTunnelProbeBatch(newer.batchId),manual.settleManualTunnelProbeBatch(newer.batchId)]);
+  const samples=(await r.queryRaw(`SELECT * FROM ${q('tunnel_latency_stats')}`)).length;
+  assert.equal((await load(1)).lastLatencyMs,14);
+  await manual.settleManualTunnelProbeBatch(pending.batchId);assert.equal((await load(1)).lastLatencyMs,14);
+  assert.equal((await r.queryRaw(`SELECT * FROM ${q('tunnel_latency_stats')}`)).length,samples);
+  console.log(JSON.stringify({kind,upgradedTwice:true,transactionRollback:true,separateProcessRestart:true,durablePartialProgress:true,automaticSamplePreservesManual:true,fixedFirstDeadline:true,timeoutVisible:true,lateReportIgnored:true,concurrentFinalization:true,oldBatchCannotOverwrite:true,runtimePreserved:true,messageCharacters:50000}));
+ }
+}finally{await r.closeDatabase();}

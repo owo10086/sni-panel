@@ -1,0 +1,442 @@
+--- a/client/src/i18n/en.json
++++ b/client/src/i18n/en.json
+@@ -2873,7 +2873,7 @@
+   "削峰": "Peak",
+   "延迟": "Latency",
+   "延迟检测": "Latency Probe",
+-  "延迟探测": "Delayed detection",
++  "延迟探测": "Latency probe",
+   "沿用旧配置": "Continue old configuration",
+   "验证并登录": "Verify and Login",
+   "验证连接与权限": "Validate Connections and Permissions",
+--- a/server/tunnelManualProbe.test.ts
++++ b/server/tunnelManualProbe.test.ts
+@@ -113,8 +113,19 @@
+             message: JSON.stringify({ kind: "forward-chain", groupId: 9, hopLabel: String(hop), routeLabel: hop ? "B -> C" : "A -> B", method: "tcp" }) });
+           await tests.completeForwardTestIfActive(id, { status: "success", latencyMs: 7 });
+         }
++        await runtime.insertAndGetId("tunnels", { ...tunnel, id: 2, name: "partial-restart" });
++        const interrupted = await manual.queueManualTunnelProbeBatch({ ...tunnel, id: 2 }, probes);
++        const interruptedRows = await batchRows(interrupted.batchId);
++        await tests.completeForwardTestIfActive(interruptedRows[0].id, { status: "success", latencyMs: 17 });
++        // Exit after the report commits, before its visible summary is updated.
+       } else {
+         await manual.recoverManualTunnelProbeBatches();
++        const interrupted = (await runtime.queryRaw('SELECT * FROM "tunnels" WHERE "id" = 2'))[0];
++        assert.equal(interrupted.lastTestStatus, "pending");
++        const interruptedDetails = JSON.parse(interrupted.lastTestMessage).details;
++        assert.equal(interruptedDetails[0].latencyMs, 17);
++        assert.equal(interruptedDetails[0].pending, false);
++        assert.equal(interruptedDetails[1].pending, true);
+         const recovered = await loadTunnel();
+         assert.equal(recovered.lastTestStatus, "success");
+         assert.equal(recovered.lastLatencyMs, 26);
+--- a/server/tunnelManualProbe.ts
++++ b/server/tunnelManualProbe.ts
+@@ -202,6 +202,12 @@
+   const candidates = await queryRaw<any>(`SELECT ${q("id")}, ${q("lastTestAt")}, ${q("lastTestMessage")} FROM ${q("tunnels")}
+     WHERE ${q("lastTestStatus")} IN ('pending', 'running') OR ${q("lastTestMessage")} LIKE '%"kind":"tunnel-hop-pending"%'`);
+   if (candidates.length) selfTestSweepActivity.markActive();
++  // A process can stop after committing a single report but before publishing
++  // its progress. Recover the visible current batches as well as final ones.
++  for (const row of candidates) {
++    let pending: any; try { pending = JSON.parse(row.lastTestMessage || "{}"); } catch { pending = {}; }
++    if (String(pending.batchId || "").startsWith("tp-")) await settleManualTunnelProbeBatch(pending.batchId);
++  }
+   const stale = candidates.filter(row => {
+     let old: any; try { old = JSON.parse(row.lastTestMessage || "{}"); } catch { old = {}; }
+     if (String(old.batchId || "").startsWith("tp-")) return false;
+--- a/agent/main.go
++++ b/agent/main.go
+@@ -3874,15 +3874,6 @@
+ 		heartbeatStaticChanged(currentStatic, previousStatic) ||
+ 		time.Since(previousStatic.ReportedAt) >= heartbeatStaticReportInterval
+ 	payload := map[string]any{}
+-	payload["agentBootId"] = agentBootID
+-	payload["agentBootedAt"] = time.Now().Unix() - uptimeValue
+-	payload["agentProcessId"] = os.Getpid()
+-	payload["agentProcessStartedAt"] = agentProcessStartedAt.Unix()
+-	payload["agentLastReceivedRevision"] = receivedRevision
+-	payload["agentLastAppliedRevision"] = appliedRevision
+-	payload["agentLastReceivedHash"] = receivedHash
+-	payload["agentLastAppliedHash"] = appliedHash
+-	payload["fxpEndpointEvents"] = fxpEndpointEventsSnapshot()
+ 	if compactEnabled {
+ 		payload["m"] = []any{
+ 			cpuUsageValue,
+@@ -3918,6 +3909,15 @@
+ 			"agentVersion": Version,
+ 		}
+ 	}
++	payload["agentBootId"] = agentBootID
++	payload["agentBootedAt"] = time.Now().Unix() - uptimeValue
++	payload["agentProcessId"] = os.Getpid()
++	payload["agentProcessStartedAt"] = agentProcessStartedAt.Unix()
++	payload["agentLastReceivedRevision"] = receivedRevision
++	payload["agentLastAppliedRevision"] = appliedRevision
++	payload["agentLastReceivedHash"] = receivedHash
++	payload["agentLastAppliedHash"] = appliedHash
++	payload["fxpEndpointEvents"] = fxpEndpointEventsSnapshot()
+ 	if len(forceReconcile) > 0 && forceReconcile[0] {
+ 		payload["forceReconcile"] = true
+ 	}
+--- a/client/src/pages/Rules.tsx
++++ b/client/src/pages/Rules.tsx
+@@ -9315,7 +9315,7 @@
+   const [activeTestId, setActiveTestId] = useState<number | null>(null);
+   const manualTestRef = useRef(false);
+   const { data: latest } = trpc.rules.latestTest.useQuery(
+-    { ruleId, includeActive: optimisticTesting },
++    { ruleId, includeActive: true },
+     {
+       enabled: open,
+       refetchInterval: pollingInterval("interactive", open),
+--- a/package.json
++++ b/package.json
+@@ -31,7 +31,7 @@
+     "test:migration": "node --import tsx --test server/legacyMigration.test.ts",
+     "test:seamless-migration": "node --import tsx --test server/seamlessMigration.test.ts",
+     "test:mimic": "node --import tsx --test server/mimicEnvironment.test.ts server/mimicRuntimeLifecycle.test.ts",
+-    "test:selftest-dispatch": "node --import tsx --test server/forwardTestDispatch.test.ts server/tunnelManualProbe.test.ts server/hopTestState.test.ts client/src/lib/manualProbe.test.ts client/src/components/LinkTestLatencySummary.test.tsx",
++    "test:selftest-dispatch": "node --import tsx --test server/forwardTestDispatch.test.ts server/manualForwardChain.test.ts server/tunnelManualProbe.test.ts server/hopTestState.test.ts client/src/lib/manualProbe.test.ts client/src/components/LinkTestLatencySummary.test.tsx",
+     "test:smtp": "node --import tsx --test server/smtpTransport.test.ts",
+     "pretest:server": "node --import tsx --test server/billingTime.test.ts server/ruleResourceAuthorization.test.ts server/userTrafficBillingReset.test.ts server/subscriptionBillingState.test.ts server/subscriptionExpiryRuntime.test.ts server/subscriptionTrafficReset.test.ts server/userForwardAccessRecovery.test.ts server/paymentOrderState.test.ts server/resetAdminPasswordCli.test.ts client/src/lib/nginxPemFiles.test.ts client/src/lib/trafficQuota.test.ts client/src/lib/publicMonitor.test.ts server/publicHostMonitor.test.ts server/seamlessMigration.test.ts",
+     "test:server": "node --import tsx --test server/panelClock.test.ts server/setupFlow.test.ts server/panelDockerInstaller.test.ts server/panelInstallerAccelerator.test.ts server/lookingGlassAccess.test.ts server/lookingGlassAgentTasks.test.ts server/agentCrypto.test.ts server/agentEncryptionMiddleware.test.ts server/agentEvents.test.ts server/agentTrafficRoute.test.ts server/linkAccessView.test.ts server/hostUserSortOrder.test.ts server/hostDdns.test.ts server/smtpTransport.test.ts server/configAudit.test.ts server/dnsRuntimeGeneration.test.ts server/mimicRemovalGuard.test.ts server/supportBundle.test.ts server/agentAssets.test.ts server/agentInstallScripts.test.ts server/agentActionCommands.test.ts server/databaseTransaction.test.ts server/databaseSwitch.test.ts server/securityConcurrency.test.ts server/trafficBatch.test.ts server/scheduledTask.test.ts server/historyCleanupIndexes.test.ts server/metricsRepositorySqlite.test.ts server/tunnelRuntimeStatus.test.ts server/tunnelExitStrategy.test.ts server/hopTestState.test.ts server/ruleLatency.test.ts server/paginationQueries.test.ts server/agentFastLiveness.test.ts server/hostOfflineNotificationDebouncer.test.ts server/agentHeartbeatGate.test.ts server/agentTcpingReportGate.test.ts server/agentUpgradeRollout.test.ts server/agentRuntimeRuleState.test.ts server/latencySeries.test.ts server/latencyAggregation.test.ts server/tunnelAutoLatencyState.test.ts server/tunnelLatencyDetails.test.ts server/tunnelLatencyRefresh.test.ts server/tunnelMultiEntryLatencyState.test.ts server/probeTopology.test.ts server/agentStatusOrdering.test.ts server/agentPanelUrl.test.ts server/agentPluginInventory.test.ts server/ai/client.test.ts server/ai/managePresets.test.ts server/ai/rateLimiter.test.ts server/ai/settings.test.ts server/ai/skills/forwardxCore.test.ts server/asyncPool.test.ts server/accountDisableSessions.test.ts server/authCaptcha.test.ts server/authRateLimit.test.ts server/boundedCache.test.ts server/sniRuntimeObservability.test.ts server/forwardRuleErrorNotifier.test.ts server/logFileStore.test.ts server/session.test.ts server/loginSessionService.test.ts server/twoFactorChallenges.test.ts server/telegramApiTimeout.test.ts server/telegramMobilePollToken.test.ts server/customSidebarPages.test.ts server/dashboardTrafficIdentity.test.ts server/forwardGroupFailover.test.ts server/forwardGroupHealthRecheck.test.ts server/forwardGroupLiveness.test.ts server/forwardGroupListeners.test.ts server/forwardGroupRuleIntegrity.test.ts server/forwardGroupRename.test.ts server/forwardGroupRuntimeStatus.test.ts server/forwardGroupToggle.test.ts server/forwardXWireGuard.test.ts server/gmPay.test.ts server/gostProxyProtocol.test.ts server/gostTunnelProtocol.test.ts server/keyedTaskDispatcher.test.ts server/keyedTaskLock.test.ts server/migration.test.ts server/mysqlLongTextSchema.test.ts server/panelMigrationAgentState.test.ts server/paymentUrls.test.ts server/pluginAgentTasks.test.ts server/pluginPanelApi.test.ts server/pluginSchema.test.ts server/portForwardRuleHosts.test.ts server/portReservations.test.ts server/portOccupancyHeartbeat.test.ts server/rulesPortAvailability.test.ts server/sniRuleRouter.test.ts server/sniDesiredState.test.ts server/ruleQuotaReservations.test.ts server/pluginManifest.test.ts server/tunnelRelay.test.ts server/tunnelRuntimePlan.test.ts shared/latencyProbe.test.ts shared/githubAccelerator.test.ts client/src/lib/agentTokenStatus.test.ts client/src/lib/batchOperations.test.ts client/src/lib/fileDownload.test.ts client/src/lib/htmlContent.test.ts client/src/lib/ruleEntryDisplay.test.ts client/src/lib/ruleTransfer.test.ts client/src/lib/forwardRuleStatus.test.ts client/src/lib/linkAvailability.test.ts client/src/lib/linkTestNodeMeta.test.ts client/src/lib/multiHopAddress.test.ts client/src/lib/panelUpgrade.test.ts client/src/lib/ruleProbeCache.test.ts client/src/lib/ruleStatusCache.test.ts client/src/lib/sniRuleForm.test.ts client/src/lib/ruleBulkSelection.test.ts client/src/lib/tunnelDisplay.test.ts client/src/components/hosts/hostDisplay.test.ts client/src/components/LatencyTimeRangeSelect.test.ts client/src/components/LinkTestLatencySummary.test.tsx client/src/components/plugins/agentResourceState.test.ts client/src/components/plugins/PluginResultRenderer.test.tsx server/hostTrafficPolicy.test.ts server/databaseHealth.test.ts client/src/components/DatabaseHealthGate.test.tsx server/ruleOperationOwner.test.ts server/ruleOwnerSniPermissions.test.ts server/panelSslCache.test.ts server/tunnelEndpointRefresh.test.ts server/probeCounter.test.ts client/src/lib/latencyChart.test.ts client/src/components/LatencyStabilityStats.test.tsx server/discordNotifications.test.ts server/ruleLimits.test.ts client/src/components/rules/RuleLimitsForm.test.tsx",
+--- a/server/agentRouteUtils.ts
++++ b/server/agentRouteUtils.ts
+@@ -117,6 +117,10 @@
+   test: { id?: unknown; ruleId?: unknown },
+   meta: SelfTestMeta | null,
+ ) {
++  if (meta?.kind === "direct") {
++    const method = normalizeLinkProbeMethod(meta.method);
++    return { ...buildRuleAgentSelfTestPayload(test, meta), protocol: method, method };
++  }
+   const tunnelPayload = buildTunnelAgentSelfTestPayload(test, meta);
+   if (tunnelPayload) return tunnelPayload;
+ 
+--- a/server/agentSelfTestRoutes.ts
++++ b/server/agentSelfTestRoutes.ts
+@@ -514,7 +514,7 @@
+         `[SelfTest] forward-chain test=${testId} group=${meta.groupId} success=${success} latency=${success && cleanLatency !== null ? `${cleanLatency}ms` : "-"} entry=${entryTarget} target=${finalTarget}${cleanMessage && !success ? ` message=${cleanMessage}` : ""}`,
+       );
+     }
+-    if (!meta) {
++    if (!meta || meta.kind === "direct") {
+       await db.insertTcpingStat({
+         ruleId: Number(t.ruleId),
+         hostId: Number(host.id),
+--- a/server/repositories/forwardTestRepository.ts
++++ b/server/repositories/forwardTestRepository.ts
+@@ -1,8 +1,9 @@
+ import { and, desc, eq, isNull, or } from "drizzle-orm";
+ import { forwardTests, InsertForwardTest, tunnelLatencyStats } from "../../drizzle/schema";
+ import { executeRaw, getDb, insertAndGetId, nowDate, queryRaw, rawAffectedRows } from "../dbRuntime";
+-import { quoteIdentifier } from "../dbCompat";
++import { quoteIdentifier, boolLiteral } from "../dbCompat";
+ import { selfTestSweepActivity, SELF_TEST_MAX_LIFETIME_SECONDS, selfTestTimeoutSeconds } from "../selfTestTiming";
++import { structuredLinkTestMessage } from "../linkTestMessages";
+ 
+ // ==================== Forward Tests ====================
+ 
+@@ -148,18 +149,37 @@
+   const ruleCol = quoteIdentifier("ruleId");
+   const statusCol = quoteIdentifier("status");
+   const idCol = quoteIdentifier("id");
+-  const updatedCol = quoteIdentifier("updatedAt");
+-  const createdCol = quoteIdentifier("createdAt");
+-  const messageCol = quoteIdentifier("message");
++  const batchCol = quoteIdentifier("batchId");
++  const [newest] = await queryRaw<any>(`SELECT * FROM ${table} WHERE ${ruleCol} = ? ORDER BY ${idCol} DESC LIMIT 1`, [ruleId]);
++  if (!newest) return undefined;
+   if (options.includeActive !== false) {
++    if (String(newest.batchId || "").startsWith("fc-")) {
++      const batch = await queryRaw<any>(`SELECT * FROM ${table} WHERE ${ruleCol} = ? AND ${batchCol} = ? ORDER BY ${idCol}`, [ruleId, newest.batchId]);
++      if (batch.some(row => ["pending", "running"].includes(row.status))) {
++        const meta = JSON.parse(batch[0].requestMessage);
++        const details = batch.map(row => {
++          const request = JSON.parse(row.requestMessage);
++          const pending = ["pending", "running"].includes(row.status);
++          const success = row.status === "success" && Number(row.latencyMs) > 0;
++          return { ...request, pending, success, latencyMs: success ? Number(row.latencyMs) : null,
++            message: pending ? null : row.status === "timeout" ? "探测超时：未收到 Agent 结果" : row.message };
++        });
++        return { ...newest, status: "pending", latencyMs: null,
++          message: structuredLinkTestMessage({ kind: "forward-chain-hop-pending", groupId: Number(meta.groupId), details,
++            message: `转发链逐跳探测中：${details.filter(detail => !detail.pending).length}/${details.length} 段已完成` }) };
++      }
++    }
+     const pendingRows = await queryRaw<any>(
+-      `SELECT * FROM ${table} WHERE ${ruleCol} = ? AND ${statusCol} IN ('pending', 'running') ORDER BY ${updatedCol} DESC, ${createdCol} DESC, ${idCol} DESC LIMIT 1`,
+-      [ruleId],
++      `SELECT * FROM ${table} WHERE ${ruleCol} = ? AND ${statusCol} IN ('pending', 'running')
++       AND (${idCol} = ? OR (${batchCol} = ? AND ${batchCol} IS NOT NULL)) ORDER BY ${idCol} DESC LIMIT 1`,
++      [ruleId, newest.id, newest.batchId],
+     );
+     if (pendingRows[0]) return pendingRows[0];
+   }
+   const rows = await queryRaw<any>(
+-    `SELECT * FROM ${table} WHERE ${ruleCol} = ? AND ${statusCol} IN ('success', 'failed', 'timeout') ORDER BY ${updatedCol} DESC, CASE WHEN ${messageCol} LIKE '%forward-chain-hop-summary%' OR ${messageCol} LIKE '%"kind":"forward-via-tunnel"%' THEN 0 ELSE 1 END, ${createdCol} DESC, ${idCol} DESC LIMIT 1`,
++    `SELECT * FROM ${table} WHERE ${ruleCol} = ? AND ${statusCol} IN ('success', 'failed', 'timeout')
++     AND (${batchCol} IS NULL OR ${batchCol} NOT LIKE 'fc-%' OR ${quoteIdentifier("batchSettled")} = ${boolLiteral(true)})
++     ORDER BY ${idCol} DESC LIMIT 1`,
+     [ruleId],
+   );
+   return rows[0];
+--- a/server/repositories/metricsRepository.ts
++++ b/server/repositories/metricsRepository.ts
+@@ -2283,13 +2283,13 @@
+               ft.${q("createdAt")} AS ${q("createdAt")}
+          FROM ${q("forward_tests")} ft
+          INNER JOIN (
+-           SELECT ${q("ruleId")}, MAX(${q("updatedAt")}) AS ${q("updatedAt")}
++           SELECT ${q("ruleId")}, MAX(${q("id")}) AS ${q("id")}
+              FROM ${q("forward_tests")}
+             WHERE ${q("ruleId")} IN (${chainParentIds.map(() => "?").join(",")})
+               AND ${q("status")} IN ('success', 'failed', 'timeout')
++              AND (${q("batchId")} IS NULL OR ${q("batchId")} NOT LIKE 'fc-%' OR ${q("batchSettled")} = ${boolLiteral(true)})
+             GROUP BY ${q("ruleId")}
+-         ) latest ON latest.${q("ruleId")} = ft.${q("ruleId")} AND latest.${q("updatedAt")} = ft.${q("updatedAt")}
+-        ORDER BY ft.${q("updatedAt")} DESC, CASE WHEN ft.${q("message")} LIKE '%forward-chain-hop-summary%' THEN 0 ELSE 1 END, ft.${q("createdAt")} DESC`,
++         ) latest ON latest.${q("ruleId")} = ft.${q("ruleId")} AND latest.${q("id")} = ft.${q("id")}`,
+       chainParentIds,
+     )
+     : [];
+--- a/server/routers/rules.selfTest.ts
++++ b/server/routers/rules.selfTest.ts
+@@ -49,7 +49,9 @@
+       }
+       await requireRuleProtocolEnabled(rule);
+       let hostId = rule.hostId;
+-      let message: string | null = null;
++      let message: string | null = JSON.stringify({ kind: "direct", ruleId: rule.id,
++        forwardType: rule.forwardType, sourcePort: rule.sourcePort,
++        targetIp: rule.targetIp, targetPort: rule.targetPort, method: linkProbeMethodForRule(rule) });
+       if ((rule as any).isForwardGroupTemplate && (rule as any).forwardGroupId) {
+         const group = await db.getForwardGroupById(Number((rule as any).forwardGroupId)) as any;
+         if (String(group?.groupMode || "failover") === "chain") {
+--- a/server/scheduler.ts
++++ b/server/scheduler.ts
+@@ -306,7 +306,7 @@
+         const meta = parseSelfTestMeta(test.requestMessage ?? test.message);
+         if (test.batchId?.startsWith("tp-") || test.batchId?.startsWith("fc-")) continue;
+         if (meta?.kind === "tunnel" || meta?.kind === "tunnel-hop") continue;
+-        if (!meta || meta.kind === "forward-via-tunnel") {
++        if (!meta || meta.kind === "direct" || meta.kind === "forward-via-tunnel") {
+           await db.insertTcpingStat({
+             ruleId: Number(test.ruleId),
+             hostId: Number(test.hostId),
+--- a/shared/agentDtos.ts
++++ b/shared/agentDtos.ts
+@@ -140,6 +140,15 @@
+ 
+ export type SelfTestMeta =
+   | {
++      kind: "direct";
++      ruleId: number;
++      forwardType: string;
++      sourcePort: number;
++      targetIp: string;
++      targetPort: number;
++      method: "tcp" | "ping";
++    }
++  | {
+       kind: "tunnel";
+       tunnelId: number;
+       targetIp?: string;
+@@ -276,6 +285,7 @@
+ export function isSelfTestMeta(value: unknown): value is SelfTestMeta {
+   const meta = value as Partial<SelfTestMeta>;
+   if (!meta || typeof meta.kind !== "string") return false;
++  if (meta.kind === "direct") return Number.isFinite(Number(meta.ruleId));
+   if (meta.kind === "forward-chain") return Number.isFinite(Number((meta as any).groupId));
+   return Number.isFinite(Number((meta as any).tunnelId));
+ }
+--- /dev/null
++++ b/server/manualForwardChain.test.ts
+@@ -0,0 +1,99 @@
++import assert from "node:assert/strict";
++import test from "node:test";
++import { spawnSync } from "node:child_process";
++import fs from "node:fs";
++import os from "node:os";
++import path from "node:path";
++
++test("chain results preserve the newest generation and show durable partial progress", () => {
++  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "forwardx-chain-generation-"));
++  const script = String.raw`
++    import assert from "node:assert/strict";
++    import { pathToFileURL } from "node:url";
++    import path from "node:path";
++    const source = name => import(pathToFileURL(path.join(process.cwd(), name)).href);
++    const runtime = await source("server/dbRuntime.ts");
++    await runtime.connectDatabase({ type: "sqlite", sqlite: { path: process.env.FORWARDX_TEST_DB } });
++    await (await source("server/dbSchema.ts")).ensureDatabaseSchema();
++    const tests = await source("server/repositories/forwardTestRepository.ts");
++    const chain = await source("server/forwardChainManualProbe.ts");
++    const metrics = await source("server/repositories/metricsRepository.ts");
++    await runtime.insertAndGetId("forward_groups", { id: 9, name: "chain", groupType: "host", groupMode: "chain",
++      forwardType: "nftables", domain: "", targetIp: "0.0.0.0", targetPort: 1, userId: 1, isEnabled: true });
++    await runtime.insertAndGetId("forward_rules", { id: 19, hostId: 1, name: "chain", sourcePort: 24019,
++      targetIp: "192.0.2.99", targetPort: 443, userId: 1, forwardGroupId: 9, isForwardGroupTemplate: true });
++    await runtime.insertAndGetId("forward_rules", { id: 20, hostId: 1, name: "chain-member", sourcePort: 24020,
++      targetIp: "192.0.2.99", targetPort: 443, userId: 1, forwardGroupId: 9, forwardGroupRuleId: 19 });
++    const createBatch = async batchId => {
++      const ids = [];
++      for (let hop = 0; hop < 2; hop++) ids.push(await tests.createForwardTest({
++        ruleId: 19, hostId: hop + 1, userId: 1, batchId,
++        message: JSON.stringify({ kind: "forward-chain", groupId: 9, hopLabel: String(hop),
++          routeLabel: hop ? "B -> C" : "A -> B", method: "tcp" }),
++      }));
++      return ids;
++    };
++    try {
++      const old = await createBatch("fc-old");
++      const current = await createBatch("fc-current");
++      for (const id of current) await tests.completeForwardTestIfActive(id, { status: "success", latencyMs: 7 });
++      await chain.settleManualForwardChainBatch("fc-current");
++      for (const id of old) await tests.completeForwardTestIfActive(id, { status: "failed", message: "old failure" });
++      // Different seconds make the ordering problem deterministic.
++      await runtime.executeRaw('UPDATE "forward_tests" SET "updatedAt" = ? WHERE "batchId" = ?',
++        [Math.floor(Date.now() / 1000) + 5, "fc-old"]);
++      await chain.settleManualForwardChainBatch("fc-old");
++      const latest = await tests.getLatestForwardTest(19);
++      assert.equal(latest.batchId, "fc-current");
++      assert.equal(latest.status, "success");
++      assert.equal(latest.latencyMs, 14);
++      assert.equal((await metrics.getTrafficSummaryByRule({ ruleIds: [19] }))[0].latestLatencyMs, 14,
++        "the rule list must also keep the newest completed chain batch");
++      const partial = await createBatch("fc-partial");
++      await tests.completeForwardTestIfActive(partial[0], { status: "success", latencyMs: 9 });
++      await runtime.closeDatabase();
++      await runtime.connectDatabase({ type: "sqlite", sqlite: { path: process.env.FORWARDX_TEST_DB } });
++      const progress = await tests.getLatestForwardTest(19);
++      assert.equal(progress.status, "pending");
++      const details = JSON.parse(progress.message).details;
++      assert.equal(details.length, 2);
++      assert.equal(details[0].latencyMs, 9);
++      assert.equal(details[0].pending, false);
++      assert.equal(details[1].pending, true);
++      assert.equal((await tests.getLatestForwardTest(19, { includeActive: false })).batchId, "fc-current",
++        "a partial sample must not be published as a completed batch");
++      assert.equal((await metrics.getTrafficSummaryByRule({ ruleIds: [19] }))[0].latestLatencyMs, 14,
++        "an unfinished chain segment must not replace a complete chain result");
++      await runtime.executeRaw('INSERT INTO users (id,username,password,name,role) VALUES (1,?,?,?,?)', ['admin','unused','Admin','admin']);
++      await runtime.executeRaw('INSERT INTO hosts (id,name,ip,"userId","agentToken") VALUES (1,?, ?,1,?)', ['entry','127.0.0.1','probe-fixture-token']);
++      await runtime.executeRaw('INSERT INTO forward_rules (id,"hostId",name,protocol,"sourcePort","targetIp","targetPort","userId") VALUES (99,1,?,\'udp\',24001,?,443,1)', ['direct','192.0.2.20']);
++      const { rulesRouter } = await source("server/routers/rules.ts");
++      const caller = rulesRouter.createCaller({ user: { id: 1, role: "admin" }, req: { headers: {} }, res: {} });
++      const direct = await caller.startSelfTest({ ruleId: 99 });
++      await runtime.executeRaw('UPDATE "forward_rules" SET "targetIp" = ?, "targetPort" = ? WHERE "id" = 99', ["192.0.2.30", 8443]);
++      const { default: express } = await import("express");
++      const app = express(); app.use(express.json());
++      app.use((req, _res, next) => { req.agentToken = "probe-fixture-token"; next(); });
++      (await source("server/agentSelfTestRoutes.ts")).registerAgentSelfTestRoutes(app);
++      const server = app.listen(0, "127.0.0.1");
++      await new Promise(resolve => server.once("listening", resolve));
++      try {
++        const response = await fetch("http://127.0.0.1:" + server.address().port + "/api/agent/selftest-pull", {
++          method: "POST", headers: { "Content-Type": "application/json" }, body: "{}",
++        });
++        assert.equal(response.status, 200);
++        const probe = (await response.json()).selfTests.find(probe => probe.testId === direct.id);
++        assert.equal(probe.targetIp, "192.0.2.20", "a queued request keeps its original target");
++        assert.equal(probe.targetPort, 443);
++        assert.equal(probe.method, "ping");
++      } finally { await new Promise(resolve => server.close(resolve)); }
++    } finally { await runtime.closeDatabase(); }
++  `;
++  try {
++    const result = spawnSync(process.execPath, ["--import", "tsx", "--input-type=module", "-e", script], {
++      cwd: process.cwd(), env: { ...process.env, DATABASE_TYPE: "sqlite", FORWARDX_TEST_DB: path.join(directory, "panel.db"),
++        FORWARDX_LOG_DIR: directory }, encoding: "utf8", timeout: 60_000,
++    });
++    assert.equal(result.status, 0, result.stderr || result.stdout);
++  } finally { fs.rmSync(directory, { recursive: true, force: true }); }
++});
+--- /dev/null
++++ b/agent/heartbeat_identity_test.go
+@@ -0,0 +1,83 @@
++package main
++
++import (
++	"encoding/json"
++	"net/http"
++	"net/http/httptest"
++	"os"
++	"testing"
++)
++
++func TestFullHeartbeatPreservesRuntimeIdentityInBothReportFormats(t *testing.T) {
++	resetAgentStressState()
++	oldCompact := compactAgentReports.Load()
++	received, applied, receivedHash, appliedHash := desiredRevisionSnapshot()
++	t.Cleanup(func() {
++		compactAgentReports.Store(oldCompact)
++		desiredRevisionMu.Lock()
++		desiredLastReceivedRevision, desiredLastAppliedRevision = received, applied
++		desiredLastReceivedHash, desiredLastAppliedHash = receivedHash, appliedHash
++		desiredRevisionMu.Unlock()
++	})
++	desiredRevisionMu.Lock()
++	desiredLastReceivedRevision, desiredLastAppliedRevision = 71, 70
++	desiredLastReceivedHash, desiredLastAppliedHash = "pending-plan", "running-plan"
++	desiredRevisionMu.Unlock()
++
++	for _, compact := range []bool{false, true} {
++		name := "ordinary"
++		if compact {
++			name = "compact"
++		}
++		t.Run(name, func(t *testing.T) {
++			compactAgentReports.Store(compact)
++			const token = "isolated-heartbeat-token"
++			captured := make(chan map[string]any, 1)
++			panel := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
++				var request envelope
++				if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
++					t.Errorf("decode envelope: %v", err)
++					http.Error(w, "bad request", http.StatusBadRequest)
++					return
++				}
++				plain, err := decrypt(request, token)
++				if err != nil {
++					t.Errorf("decrypt request: %v", err)
++					http.Error(w, "bad request", http.StatusBadRequest)
++					return
++				}
++				var body struct {
++					Path    string         `json:"path"`
++					Payload map[string]any `json:"payload"`
++				}
++				if err := json.Unmarshal(plain, &body); err != nil || body.Path != "/api/agent/heartbeat" {
++					t.Errorf("unexpected heartbeat request: %s, %v", body.Path, err)
++					http.Error(w, "bad request", http.StatusBadRequest)
++					return
++				}
++				captured <- body.Payload
++				response, err := encrypt(heartbeatResp{NextInterval: 1, RequestLocalState: true, CompactReports: compact}, token)
++				if err != nil {
++					t.Errorf("encrypt response: %v", err)
++					http.Error(w, "response failed", http.StatusInternalServerError)
++					return
++				}
++				_ = json.NewEncoder(w).Encode(response)
++			}))
++			defer panel.Close()
++			if _, err := heartbeat(Config{PanelURL: panel.URL, Token: token, Interval: 1}); err != nil {
++				t.Fatal(err)
++			}
++			payload := <-captured
++			for field, want := range map[string]any{
++				"agentLastReceivedRevision": float64(71), "agentLastAppliedRevision": float64(70),
++				"agentLastReceivedHash": "pending-plan", "agentLastAppliedHash": "running-plan",
++				"agentBootId": agentBootID, "agentProcessId": float64(os.Getpid()),
++			} {
++				if got := payload[field]; got != want {
++					t.Errorf("%s = %v, want %v", field, got, want)
++				}
++			}
++		})
++	}
++}

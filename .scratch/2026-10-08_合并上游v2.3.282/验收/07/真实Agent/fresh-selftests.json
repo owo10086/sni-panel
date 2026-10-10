@@ -1,0 +1,28 @@
+{
+  "ids": [
+    9,
+    10
+  ],
+  "selfTests": [
+    {
+      "testId": 9,
+      "ruleId": 101,
+      "forwardType": "nftables",
+      "protocol": "tcp",
+      "method": "tcp",
+      "sourcePort": 23001,
+      "targetIp": "198.51.100.30",
+      "targetPort": 30001
+    },
+    {
+      "testId": 10,
+      "ruleId": 103,
+      "forwardType": "nftables",
+      "protocol": "tcp",
+      "method": "tcp",
+      "sourcePort": 23003,
+      "targetIp": "198.51.100.30",
+      "targetPort": 30999
+    }
+  ]
+}

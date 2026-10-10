@@ -1,0 +1,35 @@
+Browser tab: 3, Title: "sni-panel 09验收", URL: "http://127.0.0.1:18829/rules".
+1 AXWebArea sni-panel 09验收, URL: 127.0.0.1:18829/rules
+	2 container forwardx-overlay-root
+		3 container Notifications alt+T
+		4 container 批量编辑 2 条规则, ID: radix-_r_t_
+			5 heading 批量编辑 2 条规则, Value: 2, ID: radix-_r_u_
+				6 text 批量编辑 2 条规则
+			7 text 将应用到 2 条规则
+			8 container
+				9 heading 替换入口资源, Value: 3
+					10 text 替换入口资源
+				11 text 保持原入口 入口类型
+				12 combo box (collapsed) 入口类型, Value: 选择入口类型, Secondary Actions: Expand
+					13 text 选择入口类型
+				14 text 所选包含 2 种入口类型，保持原入口
+			15 container
+				16 heading 替换转发出口, Value: 3
+					17 text 替换转发出口
+				18 text 保持原目标 目标地址
+				19 text field (settable) 目标地址
+				20 text 目标端口
+				21 stepper (settable) 目标端口
+			22 text 端口冲突处理
+			23 combo box (disabled, collapsed) 端口冲突处理, Value: 保持原端口，冲突则该条失败, Secondary Actions: Expand
+				24 text 保持原端口，冲突则该条失败
+			25 text SNI 分流规则共用同一入口端口，自动分配新端口会使同组规则分散到多个端口。
+			26 button 取消
+			27 button (disabled) 应用
+				28 image
+				29 text 应用
+			30 button Close
+				31 image
+				32 text Close
+
+The focused UI element is 12 combo box (collapsed) 入口类型, Value: 选择入口类型, Secondary Actions: Expand

@@ -1,0 +1,7 @@
+{
+  "channel": "discord",
+  "telegramId": "1001",
+  "discordId": "123456789012345678",
+  "bindCodeConsumed": true,
+  "sockets": 2
+}

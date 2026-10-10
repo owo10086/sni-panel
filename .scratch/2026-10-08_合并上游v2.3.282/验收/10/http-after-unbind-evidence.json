@@ -1,0 +1,18 @@
+{
+  "stage": "after-unbind",
+  "checks": [
+    {
+      "name": "confirmed unlink persists; password sign-in still works",
+      "passed": true
+    },
+    {
+      "name": "all Google identity fields cleared in SQLite",
+      "passed": true
+    }
+  ],
+  "googleFields": {
+    "googleSubject": null,
+    "googleEmail": null,
+    "googleLinkedAt": null
+  }
+}

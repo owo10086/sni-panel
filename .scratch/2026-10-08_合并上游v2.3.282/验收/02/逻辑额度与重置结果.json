@@ -1,0 +1,38 @@
+{
+  "upgraded": {
+    "id": 99,
+    "enabled": true,
+    "reason": "traffic_limit",
+    "bytesIn": 440,
+    "bytesOut": 560
+  },
+  "resetScope": [
+    100,
+    102,
+    105
+  ],
+  "transactionRollbackVerified": true,
+  "accountLedgersPreserved": true,
+  "persisted": {
+    "id": 112,
+    "bytesIn": 500,
+    "bytesOut": 20
+  },
+  "entryLimits": [
+    {
+      "hostId": 1,
+      "ruleId": 117,
+      "limiter": "fwx-rule-115-host-1-10"
+    },
+    {
+      "hostId": 2,
+      "ruleId": 118,
+      "limiter": "fwx-rule-115-host-2-10"
+    },
+    {
+      "hostId": 3,
+      "ruleId": 116,
+      "limiter": null
+    }
+  ]
+}

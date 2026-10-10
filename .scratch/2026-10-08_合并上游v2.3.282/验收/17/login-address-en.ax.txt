@@ -1,0 +1,31 @@
+- generic: Language
+- combobox "Language":
+  - option "Automatic (browser / IP)"
+  - option "Simplified Chinese"
+  - option "English" [selected]
+- button "Set Panel Address":
+- button "Toggle Theme":
+- main:
+  - img "sni-panel"
+  - generic: sni-panel
+  - generic: Welcome Back
+  - generic: Sign in to your account to continue
+  - text: Username or email
+  - textbox "Username or email":
+    - /placeholder: Please enter a username or email
+  - text: Password
+  - textbox "Password":
+    - /placeholder: Please enter the password.
+  - button:
+  - button "Log In":
+    - text: Log In
+  - generic: or
+  - text: Log In with Telegram
+  - button "Open Telegram Login":
+    - text: Open Telegram Login
+  - paragraph: Available to linked accounts. Click to connect and verify your account.
+  - button "Don't have an account? Sign up"
+- region "Notifications alt+T":
+  - list:
+    - generic: Panel Address Saved
+    - generic: Please enter the full panel address, e.g. https://panel.example.com

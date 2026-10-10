@@ -1,0 +1,13 @@
+{
+  "archivedFilesBeforeReports": 54,
+  "jwtRawHits": 0,
+  "currentChangedFiles": 12,
+  "diffUnmodified": true,
+  "excluded": [
+    "完整数据库",
+    "jwt.txt",
+    "login-url.txt",
+    "开工源码副本"
+  ],
+  "loginCodesRedacted": true
+}

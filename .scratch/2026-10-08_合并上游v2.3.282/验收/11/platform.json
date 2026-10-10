@@ -1,0 +1,2014 @@
+[
+  {
+    "provider": "telegram",
+    "method": "getMe",
+    "body": {}
+  },
+  {
+    "provider": "telegram",
+    "method": "setMyCommands",
+    "body": {
+      "commands": [
+        {
+          "command": "start",
+          "description": "打开菜单或完成账号绑定"
+        },
+        {
+          "command": "menu",
+          "description": "打开功能菜单"
+        },
+        {
+          "command": "usage",
+          "description": "查询流量和额度"
+        },
+        {
+          "command": "rules",
+          "description": "查看和管理转发规则"
+        },
+        {
+          "command": "ask",
+          "description": "自然语言查询面板信息"
+        },
+        {
+          "command": "redeem",
+          "description": "兑换余额或套餐兑换码"
+        },
+        {
+          "command": "bind",
+          "description": "使用绑定码绑定后台账号"
+        },
+        {
+          "command": "login",
+          "description": "生成网页登录链接"
+        },
+        {
+          "command": "webapp",
+          "description": "在 Telegram 内打开面板"
+        },
+        {
+          "command": "unbind",
+          "description": "解除机器人绑定"
+        },
+        {
+          "command": "users",
+          "description": "管理员用户管理"
+        },
+        {
+          "command": "reset",
+          "description": "管理员重置用户流量"
+        },
+        {
+          "command": "renew",
+          "description": "管理员续期用户套餐"
+        },
+        {
+          "command": "updatepanel",
+          "description": "管理员更新面板（需确认）"
+        },
+        {
+          "command": "updateagent",
+          "description": "管理员更新 Agent（需确认）"
+        },
+        {
+          "command": "help",
+          "description": "查看帮助"
+        }
+      ],
+      "scope": {
+        "type": "default"
+      }
+    }
+  },
+  {
+    "provider": "telegram",
+    "method": "sendMessage",
+    "body": {
+      "chat_id": "1001",
+      "text": "ForwardX Telegram 测试消息\n\n接收用户：通知验收用户1 unchanged\n机器人：@ticket11_tg_bot\n时间：2026/10/10 02:57:09",
+      "parse_mode": "HTML",
+      "disable_web_page_preview": true
+    }
+  },
+  {
+    "provider": "discord",
+    "method": "/users/@me",
+    "body": null
+  },
+  {
+    "provider": "discord",
+    "method": "/applications/999999999999999999/commands",
+    "body": [
+      {
+        "name": "start",
+        "description": "打开菜单或完成账号绑定",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "menu",
+        "description": "打开功能菜单",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "usage",
+        "description": "查询流量和额度",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "rules",
+        "description": "查看和管理转发规则",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "ask",
+        "description": "自然语言查询面板信息",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "redeem",
+        "description": "兑换余额或套餐兑换码",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "bind",
+        "description": "使用绑定码绑定后台账号",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "login",
+        "description": "生成网页登录链接",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "webapp",
+        "description": "获取一次性网页登录链接",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "unbind",
+        "description": "解除机器人绑定",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "users",
+        "description": "管理员用户管理",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "reset",
+        "description": "管理员重置用户流量",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "renew",
+        "description": "管理员续期用户套餐",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "updatepanel",
+        "description": "管理员更新面板（需确认）",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "updateagent",
+        "description": "管理员更新 Agent（需确认）",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "help",
+        "description": "查看帮助",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "provider": "discord",
+    "method": "/channels/234567890123456789/messages",
+    "body": {
+      "content": "已绑定到 ForwardX 账户：通知验收用户1 unchanged\n之后可以使用 /usage、/rules 和功能菜单。",
+      "allowed_mentions": {
+        "parse": []
+      },
+      "components": []
+    }
+  },
+  {
+    "provider": "discord",
+    "method": "/channels/234567890123456789/messages",
+    "body": {
+      "content": "ForwardX 管理菜单\n\n当前账户：通知验收用户1 unchanged\n角色：管理员\n\n请选择下面的功能按钮。",
+      "allowed_mentions": {
+        "parse": []
+      },
+      "components": [
+        {
+          "type": 1,
+          "components": [
+            {
+              "type": 2,
+              "style": 1,
+              "label": "👤 账户",
+              "custom_id": "fx:user"
+            },
+            {
+              "type": 2,
+              "style": 1,
+              "label": "📊 流量",
+              "custom_id": "fx:usage"
+            },
+            {
+              "type": 2,
+              "style": 1,
+              "label": "⚙️ 规则",
+              "custom_id": "fx:rules"
+            },
+            {
+              "type": 2,
+              "style": 1,
+              "label": "👥 用户",
+              "custom_id": "fx:users:0"
+            },
+            {
+              "type": 2,
+              "style": 5,
+              "label": "🌐 面板",
+              "url": "http://127.0.0.1:18831"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "provider": "discord",
+    "method": "/users/@me",
+    "body": null
+  },
+  {
+    "provider": "discord",
+    "method": "/users/@me",
+    "body": null
+  },
+  {
+    "provider": "discord",
+    "method": "/applications/999999999999999999/commands",
+    "body": [
+      {
+        "name": "start",
+        "description": "打开菜单或完成账号绑定",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "menu",
+        "description": "打开功能菜单",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "usage",
+        "description": "查询流量和额度",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "rules",
+        "description": "查看和管理转发规则",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "ask",
+        "description": "自然语言查询面板信息",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "redeem",
+        "description": "兑换余额或套餐兑换码",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "bind",
+        "description": "使用绑定码绑定后台账号",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "login",
+        "description": "生成网页登录链接",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "webapp",
+        "description": "获取一次性网页登录链接",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "unbind",
+        "description": "解除机器人绑定",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "users",
+        "description": "管理员用户管理",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "reset",
+        "description": "管理员重置用户流量",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "renew",
+        "description": "管理员续期用户套餐",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "updatepanel",
+        "description": "管理员更新面板（需确认）",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "updateagent",
+        "description": "管理员更新 Agent（需确认）",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "help",
+        "description": "查看帮助",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "provider": "discord",
+    "method": "/users/@me",
+    "body": null
+  },
+  {
+    "provider": "discord",
+    "method": "/applications/999999999999999999/commands",
+    "body": [
+      {
+        "name": "start",
+        "description": "打开菜单或完成账号绑定",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "menu",
+        "description": "打开功能菜单",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "usage",
+        "description": "查询流量和额度",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "rules",
+        "description": "查看和管理转发规则",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "ask",
+        "description": "自然语言查询面板信息",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "redeem",
+        "description": "兑换余额或套餐兑换码",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "bind",
+        "description": "使用绑定码绑定后台账号",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "login",
+        "description": "生成网页登录链接",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "webapp",
+        "description": "获取一次性网页登录链接",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "unbind",
+        "description": "解除机器人绑定",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "users",
+        "description": "管理员用户管理",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "reset",
+        "description": "管理员重置用户流量",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "renew",
+        "description": "管理员续期用户套餐",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "updatepanel",
+        "description": "管理员更新面板（需确认）",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "updateagent",
+        "description": "管理员更新 Agent（需确认）",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "help",
+        "description": "查看帮助",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "provider": "discord",
+    "method": "/users/@me/channels",
+    "body": {
+      "recipient_id": "123456789012345678"
+    }
+  },
+  {
+    "provider": "discord",
+    "method": "/channels/234567890123456789/messages",
+    "body": {
+      "content": "ForwardX Discord 测试消息\n通知渠道连接正常。",
+      "allowed_mentions": {
+        "parse": []
+      },
+      "components": []
+    }
+  },
+  {
+    "provider": "discord",
+    "method": "/users/@me",
+    "body": null
+  },
+  {
+    "provider": "discord",
+    "method": "/applications/999999999999999999/commands",
+    "body": [
+      {
+        "name": "start",
+        "description": "打开菜单或完成账号绑定",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "menu",
+        "description": "打开功能菜单",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "usage",
+        "description": "查询流量和额度",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "rules",
+        "description": "查看和管理转发规则",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "ask",
+        "description": "自然语言查询面板信息",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "redeem",
+        "description": "兑换余额或套餐兑换码",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "bind",
+        "description": "使用绑定码绑定后台账号",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "login",
+        "description": "生成网页登录链接",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "webapp",
+        "description": "获取一次性网页登录链接",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "unbind",
+        "description": "解除机器人绑定",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "users",
+        "description": "管理员用户管理",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "reset",
+        "description": "管理员重置用户流量",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "renew",
+        "description": "管理员续期用户套餐",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "updatepanel",
+        "description": "管理员更新面板（需确认）",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "updateagent",
+        "description": "管理员更新 Agent（需确认）",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "help",
+        "description": "查看帮助",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "provider": "discord",
+    "method": "/users/@me/channels",
+    "body": {
+      "recipient_id": "123456789012345678"
+    }
+  },
+  {
+    "provider": "discord",
+    "method": "/channels/234567890123456789/messages",
+    "body": {
+      "content": "ForwardX Discord 测试消息\n通知渠道连接正常。",
+      "allowed_mentions": {
+        "parse": []
+      },
+      "components": []
+    }
+  },
+  {
+    "provider": "discord",
+    "method": "/users/@me/channels",
+    "body": {
+      "recipient_id": "123456789012345678"
+    }
+  },
+  {
+    "provider": "discord",
+    "method": "/channels/234567890123456789/messages",
+    "body": {
+      "content": "ForwardX Discord 测试消息\n通知渠道连接正常。",
+      "allowed_mentions": {
+        "parse": []
+      },
+      "components": []
+    }
+  },
+  {
+    "provider": "discord",
+    "method": "/channels/234567890123456789/messages",
+    "body": {
+      "content": "已绑定到 ForwardX 账户：通知验收用户2 unchanged\n之后可以使用 /usage、/rules 和功能菜单。",
+      "allowed_mentions": {
+        "parse": []
+      },
+      "components": []
+    }
+  },
+  {
+    "provider": "discord",
+    "method": "/channels/234567890123456789/messages",
+    "body": {
+      "content": "ForwardX 用户菜单\n\n当前账户：通知验收用户2 unchanged\n角色：用户\n\n请选择下面的功能按钮。",
+      "allowed_mentions": {
+        "parse": []
+      },
+      "components": [
+        {
+          "type": 1,
+          "components": [
+            {
+              "type": 2,
+              "style": 1,
+              "label": "👤 账户",
+              "custom_id": "fx:user"
+            },
+            {
+              "type": 2,
+              "style": 1,
+              "label": "📊 流量",
+              "custom_id": "fx:usage"
+            },
+            {
+              "type": 2,
+              "style": 1,
+              "label": "⚙️ 规则",
+              "custom_id": "fx:rules"
+            },
+            {
+              "type": 2,
+              "style": 1,
+              "label": "🎟 兑换",
+              "custom_id": "fx:redeem"
+            },
+            {
+              "type": 2,
+              "style": 5,
+              "label": "🌐 面板",
+              "url": "http://127.0.0.1:18831"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "provider": "discord",
+    "method": "/channels/234567890123456789/messages",
+    "body": {
+      "content": "ForwardX 用户菜单\n\n当前账户：通知验收用户2 unchanged\n角色：用户\n\n请选择下面的功能按钮。",
+      "allowed_mentions": {
+        "parse": []
+      },
+      "components": [
+        {
+          "type": 1,
+          "components": [
+            {
+              "type": 2,
+              "style": 1,
+              "label": "👤 账户",
+              "custom_id": "fx:user"
+            },
+            {
+              "type": 2,
+              "style": 1,
+              "label": "📊 流量",
+              "custom_id": "fx:usage"
+            },
+            {
+              "type": 2,
+              "style": 1,
+              "label": "⚙️ 规则",
+              "custom_id": "fx:rules"
+            },
+            {
+              "type": 2,
+              "style": 1,
+              "label": "🎟 兑换",
+              "custom_id": "fx:redeem"
+            },
+            {
+              "type": 2,
+              "style": 5,
+              "label": "🌐 面板",
+              "url": "http://127.0.0.1:18831"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "provider": "discord",
+    "method": "/channels/234567890123456789/messages",
+    "body": {
+      "content": "流量用量\n已用流量：0 B\n流量额度：不限\n剩余流量：不限\n规则/端口：0 条，0 个端口",
+      "allowed_mentions": {
+        "parse": []
+      },
+      "components": []
+    }
+  },
+  {
+    "provider": "discord",
+    "method": "/channels/234567890123456789/messages",
+    "body": {
+      "content": "转发规则\n\n暂无转发规则。",
+      "allowed_mentions": {
+        "parse": []
+      },
+      "components": [
+        {
+          "type": 1,
+          "components": [
+            {
+              "type": 2,
+              "style": 1,
+              "label": "🏠 返回菜单",
+              "custom_id": "fx:menu"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "provider": "discord",
+    "method": "/channels/234567890123456789/messages",
+    "body": {
+      "content": "ForwardX 通知机器人\n\n可用命令：\n/usage - 查询我的用量\n/rules - 查看我的转发规则\n/ask 问题 - 用自然语言查询面板信息\n/redeem 兑换码 - 兑换余额或套餐\n/login - 生成网页一次性登录链接\n/webapp - 获取一次性网页登录链接\n/enable 规则ID - 启用规则\n/disable 规则ID - 停用规则\n/unbind - 解除当前通知机器人 绑定（需要确认）",
+      "allowed_mentions": {
+        "parse": []
+      },
+      "components": []
+    }
+  },
+  {
+    "provider": "discord",
+    "method": "/channels/234567890123456789/messages",
+    "body": {
+      "content": "已绑定到 ForwardX 账户：通知验收用户2 unchanged\n之后可以使用 /usage、/rules 和功能菜单。",
+      "allowed_mentions": {
+        "parse": []
+      },
+      "components": []
+    }
+  },
+  {
+    "provider": "discord",
+    "method": "/channels/234567890123456789/messages",
+    "body": {
+      "content": "ForwardX 用户菜单\n\n当前账户：通知验收用户2 unchanged\n角色：用户\n\n请选择下面的功能按钮。",
+      "allowed_mentions": {
+        "parse": []
+      },
+      "components": [
+        {
+          "type": 1,
+          "components": [
+            {
+              "type": 2,
+              "style": 1,
+              "label": "👤 账户",
+              "custom_id": "fx:user"
+            },
+            {
+              "type": 2,
+              "style": 1,
+              "label": "📊 流量",
+              "custom_id": "fx:usage"
+            },
+            {
+              "type": 2,
+              "style": 1,
+              "label": "⚙️ 规则",
+              "custom_id": "fx:rules"
+            },
+            {
+              "type": 2,
+              "style": 1,
+              "label": "🎟 兑换",
+              "custom_id": "fx:redeem"
+            },
+            {
+              "type": 2,
+              "style": 5,
+              "label": "🌐 面板",
+              "url": "http://127.0.0.1:18831"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "provider": "discord",
+    "method": "/channels/234567890123456789/messages",
+    "body": {
+      "content": "ForwardX 用户菜单\n\n当前账户：通知验收用户2 unchanged\n角色：用户\n\n请选择下面的功能按钮。",
+      "allowed_mentions": {
+        "parse": []
+      },
+      "components": [
+        {
+          "type": 1,
+          "components": [
+            {
+              "type": 2,
+              "style": 1,
+              "label": "👤 账户",
+              "custom_id": "fx:user"
+            },
+            {
+              "type": 2,
+              "style": 1,
+              "label": "📊 流量",
+              "custom_id": "fx:usage"
+            },
+            {
+              "type": 2,
+              "style": 1,
+              "label": "⚙️ 规则",
+              "custom_id": "fx:rules"
+            },
+            {
+              "type": 2,
+              "style": 1,
+              "label": "🎟 兑换",
+              "custom_id": "fx:redeem"
+            },
+            {
+              "type": 2,
+              "style": 5,
+              "label": "🌐 面板",
+              "url": "http://127.0.0.1:18831"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "provider": "discord",
+    "method": "/channels/234567890123456789/messages",
+    "body": {
+      "content": "流量用量\n已用流量：0 B\n流量额度：不限\n剩余流量：不限\n规则/端口：0 条，0 个端口",
+      "allowed_mentions": {
+        "parse": []
+      },
+      "components": []
+    }
+  },
+  {
+    "provider": "discord",
+    "method": "/channels/234567890123456789/messages",
+    "body": {
+      "content": "转发规则\n\n暂无转发规则。",
+      "allowed_mentions": {
+        "parse": []
+      },
+      "components": [
+        {
+          "type": 1,
+          "components": [
+            {
+              "type": 2,
+              "style": 1,
+              "label": "🏠 返回菜单",
+              "custom_id": "fx:menu"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "provider": "discord",
+    "method": "/channels/234567890123456789/messages",
+    "body": {
+      "content": "ForwardX 通知机器人\n\n可用命令：\n/usage - 查询我的用量\n/rules - 查看我的转发规则\n/ask 问题 - 用自然语言查询面板信息\n/redeem 兑换码 - 兑换余额或套餐\n/login - 生成网页一次性登录链接\n/webapp - 获取一次性网页登录链接\n/enable 规则ID - 启用规则\n/disable 规则ID - 停用规则\n/unbind - 解除当前通知机器人 绑定（需要确认）",
+      "allowed_mentions": {
+        "parse": []
+      },
+      "components": []
+    }
+  },
+  {
+    "provider": "discord",
+    "method": "/channels/234567890123456789/messages",
+    "body": {
+      "content": "已绑定到 ForwardX 账户：通知验收用户2 unchanged\n之后可以使用 /usage、/rules 和功能菜单。",
+      "allowed_mentions": {
+        "parse": []
+      },
+      "components": []
+    }
+  },
+  {
+    "provider": "discord",
+    "method": "/channels/234567890123456789/messages",
+    "body": {
+      "content": "ForwardX 用户菜单\n\n当前账户：通知验收用户2 unchanged\n角色：用户\n\n请选择下面的功能按钮。",
+      "allowed_mentions": {
+        "parse": []
+      },
+      "components": [
+        {
+          "type": 1,
+          "components": [
+            {
+              "type": 2,
+              "style": 1,
+              "label": "👤 账户",
+              "custom_id": "fx:user"
+            },
+            {
+              "type": 2,
+              "style": 1,
+              "label": "📊 流量",
+              "custom_id": "fx:usage"
+            },
+            {
+              "type": 2,
+              "style": 1,
+              "label": "⚙️ 规则",
+              "custom_id": "fx:rules"
+            },
+            {
+              "type": 2,
+              "style": 1,
+              "label": "🎟 兑换",
+              "custom_id": "fx:redeem"
+            },
+            {
+              "type": 2,
+              "style": 5,
+              "label": "🌐 面板",
+              "url": "http://127.0.0.1:18831"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "provider": "discord",
+    "method": "/channels/234567890123456789/messages",
+    "body": {
+      "content": "ForwardX 用户菜单\n\n当前账户：通知验收用户2 unchanged\n角色：用户\n\n请选择下面的功能按钮。",
+      "allowed_mentions": {
+        "parse": []
+      },
+      "components": [
+        {
+          "type": 1,
+          "components": [
+            {
+              "type": 2,
+              "style": 1,
+              "label": "👤 账户",
+              "custom_id": "fx:user"
+            },
+            {
+              "type": 2,
+              "style": 1,
+              "label": "📊 流量",
+              "custom_id": "fx:usage"
+            },
+            {
+              "type": 2,
+              "style": 1,
+              "label": "⚙️ 规则",
+              "custom_id": "fx:rules"
+            },
+            {
+              "type": 2,
+              "style": 1,
+              "label": "🎟 兑换",
+              "custom_id": "fx:redeem"
+            },
+            {
+              "type": 2,
+              "style": 5,
+              "label": "🌐 面板",
+              "url": "http://127.0.0.1:18831"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "provider": "discord",
+    "method": "/channels/234567890123456789/messages",
+    "body": {
+      "content": "流量用量\n已用流量：0 B\n流量额度：不限\n剩余流量：不限\n规则/端口：0 条，0 个端口",
+      "allowed_mentions": {
+        "parse": []
+      },
+      "components": []
+    }
+  },
+  {
+    "provider": "discord",
+    "method": "/channels/234567890123456789/messages",
+    "body": {
+      "content": "转发规则\n\n暂无转发规则。",
+      "allowed_mentions": {
+        "parse": []
+      },
+      "components": [
+        {
+          "type": 1,
+          "components": [
+            {
+              "type": 2,
+              "style": 1,
+              "label": "🏠 返回菜单",
+              "custom_id": "fx:menu"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "provider": "discord",
+    "method": "/channels/234567890123456789/messages",
+    "body": {
+      "content": "ForwardX 通知机器人\n\n可用命令：\n/usage - 查询我的用量\n/rules - 查看我的转发规则\n/ask 问题 - 用自然语言查询面板信息\n/redeem 兑换码 - 兑换余额或套餐\n/login - 生成网页一次性登录链接\n/webapp - 获取一次性网页登录链接\n/enable 规则ID - 启用规则\n/disable 规则ID - 停用规则\n/unbind - 解除当前通知机器人 绑定（需要确认）",
+      "allowed_mentions": {
+        "parse": []
+      },
+      "components": []
+    }
+  },
+  {
+    "provider": "telegram",
+    "method": "sendMessage",
+    "body": {
+      "chat_id": 1002,
+      "text": "<b>网页登录</b>\n一次性登录链接 5 分钟内有效：\nhttp://127.0.0.1:18831/login?tg=770D635E6D1D41D982C9ACF32AB9DEC8",
+      "parse_mode": "HTML",
+      "disable_web_page_preview": true
+    }
+  },
+  {
+    "provider": "telegram",
+    "method": "sendMessage",
+    "body": {
+      "chat_id": 1002,
+      "text": "已绑定到 ForwardX 账户：<b>通知验收用户2 unchanged</b>\n之后可以使用 /usage、/rules 和功能菜单。",
+      "parse_mode": "HTML",
+      "disable_web_page_preview": true
+    }
+  },
+  {
+    "provider": "telegram",
+    "method": "sendMessage",
+    "body": {
+      "chat_id": 1002,
+      "text": "<b>ForwardX 用户菜单</b>\n\n当前账户：<b>通知验收用户2 unchanged</b>\n角色：用户\n\n请选择下面的功能按钮。",
+      "parse_mode": "HTML",
+      "disable_web_page_preview": true,
+      "reply_markup": {
+        "inline_keyboard": [
+          [
+            {
+              "text": "👤 账户",
+              "callback_data": "fx:user"
+            },
+            {
+              "text": "📊 流量",
+              "callback_data": "fx:usage"
+            },
+            {
+              "text": "⚙️ 规则",
+              "callback_data": "fx:rules"
+            }
+          ],
+          [
+            {
+              "text": "🎟 兑换",
+              "callback_data": "fx:redeem"
+            },
+            {
+              "text": "🌐 面板",
+              "web_app": {
+                "url": "http://127.0.0.1:18831/login?tgWebApp=1&wa=40ca61e98c794305becd1f8286e75c24899bee9dd50b42a28b809680f0ee28fb"
+              }
+            }
+          ]
+        ]
+      }
+    }
+  },
+  {
+    "provider": "discord",
+    "method": "/users/@me",
+    "body": null
+  },
+  {
+    "provider": "discord",
+    "method": "/applications/999999999999999999/commands",
+    "body": [
+      {
+        "name": "start",
+        "description": "打开菜单或完成账号绑定",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "menu",
+        "description": "打开功能菜单",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "usage",
+        "description": "查询流量和额度",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "rules",
+        "description": "查看和管理转发规则",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "ask",
+        "description": "自然语言查询面板信息",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "redeem",
+        "description": "兑换余额或套餐兑换码",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "bind",
+        "description": "使用绑定码绑定后台账号",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "login",
+        "description": "生成网页登录链接",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "webapp",
+        "description": "获取一次性网页登录链接",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "unbind",
+        "description": "解除机器人绑定",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "users",
+        "description": "管理员用户管理",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "reset",
+        "description": "管理员重置用户流量",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "renew",
+        "description": "管理员续期用户套餐",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "updatepanel",
+        "description": "管理员更新面板（需确认）",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "updateagent",
+        "description": "管理员更新 Agent（需确认）",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      },
+      {
+        "name": "help",
+        "description": "查看帮助",
+        "contexts": [
+          1
+        ],
+        "options": [
+          {
+            "type": 3,
+            "name": "args",
+            "description": "指令参数，例如绑定码、规则 ID 或自然语言问题",
+            "required": false
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "provider": "discord",
+    "method": "/channels/234567890123456789/messages",
+    "body": {
+      "content": "网页登录\n一次性登录链接 5 分钟内有效：\nhttp://127.0.0.1:18831/login?discord=[REDACTED-LOGIN-CODE]",
+      "allowed_mentions": {
+        "parse": []
+      },
+      "components": []
+    }
+  },
+  {
+    "provider": "discord",
+    "method": "/channels/234567890123456789/messages",
+    "body": {
+      "content": "网页登录\n一次性登录链接 5 分钟内有效：\nhttp://127.0.0.1:18831/login?discord=[REDACTED-LOGIN-CODE]",
+      "allowed_mentions": {
+        "parse": []
+      },
+      "components": []
+    }
+  },
+  {
+    "provider": "discord",
+    "method": "/users/@me/channels",
+    "body": {
+      "recipient_id": "123456789012345678"
+    }
+  },
+  {
+    "provider": "discord",
+    "method": "/channels/234567890123456789/messages",
+    "body": {
+      "content": "ForwardX Discord 测试消息\n通知渠道连接正常。",
+      "allowed_mentions": {
+        "parse": []
+      },
+      "components": []
+    }
+  }
+]

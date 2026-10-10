@@ -1,0 +1,10 @@
+Browser tab: 1, Title: "sni-panel 迁移验收", URL: "http://127.0.0.1:18851/login".
+1 AXWebArea sni-panel 迁移验收, URL: 127.0.0.1:18851/login
+	2 container
+		3 container
+			4 heading 面板已迁移，旧数据保留, Value: 1
+				6 text 面板已迁移，旧数据保留
+			7 text 迁移不会要求重启 Agent 或现有转发进程。旧面板数据库不会自动删除。 此地址继续转交 Agent 和支付回调，请勿停止或卸载旧面板。
+			5 link Description: 打开新面板, Value: 127.0.0.1:18851/
+
+The focused UI element is 1 AXWebArea sni-panel 迁移验收, URL: 127.0.0.1:18851/login

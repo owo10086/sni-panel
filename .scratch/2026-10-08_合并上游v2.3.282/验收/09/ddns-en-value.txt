@@ -1,0 +1,314 @@
+Browser tab: 3, Title: "sni-panel 09验收", URL: "http://127.0.0.1:18829/settings".
+1 AXWebArea sni-panel 09验收, URL: 127.0.0.1:18829/settings
+	2 container
+		3 container root
+			4 container
+				5 image sni-panel 09验收
+				6 text sni-panel 09验收
+				7 button Description: Toggle theme, Help: Switch to Dark Mode
+					8 image
+				9 button Toggle navigation
+					10 image
+				11 text MAIN MENU
+				12 content list
+					13 button Dashboard
+						14 image
+						15 text Dashboard
+					16 button Hosts
+						17 image
+						18 text Hosts
+					19 button Links
+						20 image
+						21 text Links
+					22 button Forwarding Rules
+						23 image
+						24 text Forwarding Rules
+					25 button Announcements
+						26 image
+						27 text Announcements
+				28 text MANAGEMENT
+				29 content list
+					30 button Profile
+						31 image
+						32 text Profile
+					33 button SNI entry ports
+						34 image
+						35 text SNI entry ports
+					36 button Payment Integrations
+						37 image
+						38 text Payment Integrations
+					39 button Billing & Redemption
+						40 image
+						41 text Billing & Redemption
+					42 button Plans
+						43 image
+						44 text Plans
+					45 button Users
+						46 image
+						47 text Users
+					48 button Network Tests
+						49 image
+						50 text Network Tests
+					51 button Settings
+						52 image
+						53 text Settings
+				54 pop up button (collapsed) 中文管理员 <&> English Admin · Telegram Not Linked, Help: 中文管理员 <&> English, ID: radix-_r_21_, Secondary Actions: Expand
+					55 image Created with getavataaars.com
+					56 text 中文管理员 <&> English
+					57 container
+						58 text Admin  ·  Telegram Not Linked
+			59 container
+				60 button Toggle Sidebar
+					61 image
+					62 text Toggle Sidebar
+				63 text Settings
+				64 button Toggle theme
+					65 image
+				66 heading Settings, Value: 1
+					67 text Settings
+				68 tab group Settings
+					69 tab (selected, settable, boolean) System, ID: radix-_r_i_-trigger-system, Value: 1
+System
+					70 tab (selectable, settable, boolean) Notifications, ID: radix-_r_i_-trigger-telegram, Value: 0
+Notifications
+					71 tab (selectable, settable, boolean) Email, ID: radix-_r_i_-trigger-email, Value: 0
+Email
+					72 tab (selectable, settable, boolean) Appearance, ID: radix-_r_i_-trigger-personalization, Value: 0
+Appearance
+					73 tab (selectable, settable, boolean) Backup & Restore, ID: radix-_r_i_-trigger-backup, Value: 0
+Backup & Restore
+					74 tab (selectable, settable, boolean) Logs, ID: radix-_r_i_-trigger-logs, Value: 0
+Logs
+				75 container Description: System, ID: radix-_r_i_-content-system
+					76 image
+					77 text Network Tests
+					78 text Configure whether ordinary users are able to see the web test portal.
+					79 text Visual network testing for ordinary users
+					80 text The entry and interface to the sidebar behind you will be disabled for normal users.
+					81 switch 1
+					82 button Save
+					83 image
+					84 text Forwarding Protocols
+					85 text Controls the transmission protocols available to users.
+					86 button Manage Protocols
+						87 image
+						88 text Manage Protocols
+					89 text All Protocols
+					90 container
+						91 text 12  /  14
+					92 text Port Forwarding
+					93 container
+						94 text 5  /  6
+					95 text Tunnel protocol
+					96 container
+						97 text 7  /  8
+					98 image
+					99 text Public Panel URL
+					100 text Agent installs and calls back to this address.
+					101 text field (settable)
+					102 button Save
+					103 text Leave empty the current access address. Start with http:// or https://.
+					104 text Inverted agent or Docker deployment please fill out an externally accessible panel address, otherwise Agent may not be able to return to contact.
+					105 image
+					106 text Web Service listening port
+					107 text Modifys the web access port for the local deployment panel.
+					108 stepper (settable, integer) 9810
+					109 button Modify Port
+					110 text Current listening port:9810. The service will be restarted with a new port.
+					111 image
+					112 text Panel SSL Access
+					113 text Enables HTTPS at the current port.
+					114 text Enable HTTPS
+					115 container
+						116 text Current protocol: HTTP , port: 9810
+					117 switch 0
+					118 image
+					119 container
+						120 text Current certificate source: Server File Path
+					121 text Only the currently selected certificate source is used.
+					122 text Start with this source when enabled
+					123 text Server File Path
+					124 text Current Use
+					125 text Reads certificates and private key files on the server.
+					126 button (disabled) In use
+					127 text Certificate File Path
+					128 text field (settable) Certificate File Path, ID: panel-ssl-cert-path
+					129 text Path to Private Key File
+					130 text field (settable) Path to Private Key File, ID: panel-ssl-key-path
+					131 button Generate Self-Signed Certificate
+					132 text Paste PEM Content
+					133 text Not Configured
+					134 text Saves the certificate and private key PEM content directly.
+					135 button Use this source
+					136 text Certificate PEM
+					137 text entry area (settable) Certificate PEM, ID: panel-ssl-cert-pem
+					138 text Private Key PEM
+					139 text entry area (settable) Private Key PEM, ID: panel-ssl-key-pem
+					140 text Default closes. The certificate of authentication and the private key are checked while you save it, and the configuration takes effect to restart the panel; the port remains the same.
+					141 button Save SSL Configuration
+					142 image
+					143 text Sign-in / sign-up verification
+					144 text Enabled by default. Use HTTPS: some browsers cannot verify over HTTP.
+					145 text Enable human verification
+					146 text Disables human verification only. Passwords, sign-in rate limits, email verification and 2FA still apply. Keep enabled for public deployments.
+					147 switch Description: Enable human verification, Value: 1
+					148 button Save verification settings
+					149 image
+					150 text User Registration
+					151 text Controls the self-service registration of new users.
+					152 text Open Registration
+					153 text Only administrators can add users after closing.
+					154 switch 1
+					155 button Save Registration Settings
+					156 image
+					157 text Two-Factor Authentication
+					158 text Account can bind 2FA dynamic authentication codes.
+					159 text Enable 2FA software support
+					160 text Close and hide the bound entrance.
+					161 switch 0
+					162 button Save Dual Authentication Settings
+					163 image
+					164 text DDNS Servicer
+					165 text Synchronizes the update of domain names on the transfer group switch.
+					166 text Enable DDNS
+					167 text Do not update the domain name after closing.
+					168 switch 0
+					169 text Service provider
+					170 text Select the DDNS service for synchronizing domain names.
+					171 combo box (collapsed) Value: DNSPod, Secondary Actions: Expand
+						172 text DNSPod
+					173 link Description: View Configuration Tutor, Value: owo10086.github.io/sni-panel/guide/ddns#tencentcloud
+					174 text TTL
+					175 text field (settable) 600
+					176 text TTL range: 60-86400 seconds. Webhook will pass the value as it is.
+					177 text SecretId
+					178 text field (settable)
+					179 text SecretKey
+					180 text field (settable)
+					181 text Main Domain Name
+					182 text field (settable)
+					183 text Default Line Name
+					184 text field (settable) 默认
+					185 text Default Line ID
+					186 text field (settable)
+					187 button Save DDNS Configuration
+					188 image
+					189 text Host Monitor Configuration
+					190 text Allow login free to view the host monitor
+					191 switch 0
+					192 text Show Title
+					193 text field (settable)
+					194 text Host Monitor Panel Path
+					195 text field (settable) dev
+					196 text Letters, numbers, short lines and underlined are supported.
+					197 text Access Addresses
+					198 text field http://127.0.0.1:18829/dev
+					199 link Description: Open host monitor panel, Value: 127.0.0.1:18829/dev
+					200 button Save Host Monitor Configuration
+					201 image
+					202 text Login Session Configuration
+					203 text Controls back-office access strategies for the same account on multiple devices.
+					204 text Allow Multiple Devices Online
+					205 text The equipment that is logged in immediately after closing will be taken over and the old session that is in use will be withdrawn; retaining only Cookie, but not the equipment in use, will not prevent new login.
+					206 switch 0
+					207 button Save Login Session Configuration
+					208 image
+					209 text Sidebar Navigation
+					210 text Controls the display of a common entrance to the left navigation bar.
+					211 button Manage Menus
+						212 image
+						213 text Manage Menus
+					214 text Opened Menu
+					215 container
+						216 text 9  /  10
+					217 image
+					218 text Version Upgrade
+					219 text Check and upgrade ForwardX.
+					220 text When front panel version
+					221 container
+						222 text v 3.3.0
+					223 text Current Agent destination version
+					224 container
+						225 text v 3.3.0
+					226 text Automatically check updates
+					227 text Check regularly for panels and Agent updates after opening.
+					228 switch 1
+					229 container
+						230 image
+						231 heading The current environment has not yet enabled a single-key upgrade, Value: 5
+							232 text The current environment has not yet enabled a single-key upgrade
+						233 text Configuration
+						234 text FORWARDX_UPGRADE_COMMAND
+						235 text to upgrade with one click.
+					236 container
+						237 text It's the latest version, last checked: 10/10/2026, 1:38:05 AM
+					238 button Check for updates
+						239 image
+						240 text Check for updates
+					241 button (disabled) Upgrade and Restart
+						242 image
+						243 text Upgrade and Restart
+					244 button Version Back
+						245 image
+						246 text Version Back
+					247 link Description: Upgrade Log, Value: github.com/owo10086/sni-panel/releases/tag/v3.2.5
+					248 image
+					249 text GitHub Download Accelerator
+					250 text Configure the way Agent installs, upgrades and panels update access to GitHub.
+					251 text Enable GitHub Accelerating Address
+					252 text After opening and filling out the address, GitHub's real address will collide behind the acceleration address.
+					253 switch 0
+					254 text Prefer connect panel installation Agent
+					255 text Starts the panel and pulls installed scripts and Agent programs, fails and turns back on GitHub.
+					256 switch 0
+					257 text Panel Update Accelerator Station
+					258 text Version check, Release Installer, Version Reversal and Upgrade Scripts give priority to the Accelerator Address, and automatically backslides when they fail.
+					259 switch 0
+					260 text GitHub Accelerator URL
+					261 text field (settable)
+					262 text Example of format: https://mirror.example.com. Use the direct connection GitHub when the corresponding switch is not filled in or opened.
+					263 button Save GitHub Download Configuration
+					264 image
+					265 text Open Source & Contact
+					266 text Project addresses and channels of communication.
+					267 link Description: GitHub Repository https://github.com/owo10086/sni-panel, Value: github.com/owo10086/sni-panel
+					268 link Description: Two-way Telegram Bot https://t.me/miyin_private_bot, Value: t.me/miyin_private_bot
+					269 link Description: Telegram Group https://t.me/ForwardX_panel, Value: t.me/ForwardX_panel
+					270 link Value: github.com/owo10086/sni-panel/releases/download/v3.3.0/forwardx-android-v2.4.0.apk, Description: Android APK Download https://github.com/owo10086/sni-panel/releases/download/v3.3.0/forwardx-android-v2.4.0.apk
+					271 link Value: github.com/owo10086/sni-panel/releases/download/v3.3.0/forwardx-ios-v1.0.0-unsigned.ipa, Description: iOS IPA download (self-signed) https://github.com/owo10086/sni-panel/releases/download/v3.3.0/forwardx-ios-v1.0.0-unsigned.ipa
+					272 text Current Version
+					273 container
+						274 text v 3.3.0
+					275 text Android APP
+					276 container
+						277 text v 2.4.0
+					278 text iOS APP
+					279 container
+						280 text v 1.0.0
+					281 text Google sign-in
+					282 text Configure a Google OAuth web client for sign-up and sign-in. Password sign-in remains available.
+					283 text Not enabled
+					284 text Enable Google sign-in
+					285 switch Description: Enable Google sign-in, Value: 0, ID: google-enabled
+					286 text Client ID
+					287 text field (settable) Client ID, ID: google-client-id
+					288 text Client Secret
+					289 text field (settable) Client Secret
+					290 text Callback URL
+					291 text field (settable) Callback URL, Value: http://127.0.0.1:18829/api/auth/google/callback, ID: google-redirect-uri
+					292 text Add this exact URL to Authorized redirect URIs in Google Cloud. Use HTTPS in production; localhost may use HTTP. Start sign-in from this same panel domain.
+					293 text When registration is closed, only linked accounts can sign in. New accounts are regular users without forwarding access and must meet the registration email allowlist.
+					294 text Existing users must sign in first, then link Google in their profile. Matching emails never merge accounts automatically. Two-factor authentication still applies.
+					295 text Both the browser and panel server need access to Google. Google sign-in is available on the web; mobile apps keep their existing sign-in methods.
+					296 link Description: Configure client in Google Cloud, Value: console.cloud.google.com/apis/credentials
+					297 button Save Google sign-in
+				298 link Description: Project Address, Value: github.com/owo10086/sni-panel
+				299 text |
+				300 link Description: Documentation, Value: owo10086.github.io/sni-panel/
+				301 text |
+				302 link Description: Contact via Telegram, Value: t.me/miyin_private_bot
+				303 text |
+				304 link Description: Telegram Group, Value: t.me/ForwardX_panel
+		305 container Notifications alt+T
+
+The focused UI element is 171 combo box (collapsed) Value: DNSPod, Secondary Actions: Expand

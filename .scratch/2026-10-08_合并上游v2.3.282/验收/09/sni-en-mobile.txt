@@ -1,0 +1,30 @@
+Browser tab: 3, Title: "sni-panel 09验收", URL: "http://127.0.0.1:18829/rules".
+The following is a diff from the previous accessibility tree with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
+~						121 button (expanded) 用户转发链 / Long chain resource unchanged · SNI splitting Pending activation 1 rules Entry Port18510, Secondary Actions: Collapse
++						226 container
++							227 checkbox (settable, integer) Description: Select rule 用户 SNI 规则 unchanged, Value: 0
++							228 text 用户 SNI 规则 unchanged User:  中文管理员 <&> English 用户转发链 / Long chain resource unchanged SNI domain api.example.test
++							229 switch Description: Disable forwarding rule 用户 SNI 规则 unchanged, Help: Disable this rule to stop deployment and forwarding, Value: 1
++							230 text Entry
++							231 button 192.0.2.1:18510, Help: Copy Forwarding Chain entry: 192.0.2.1:18510
++								232 text 192.0.2.1:18510
++								233 image
++							234 image
++							235 text Exit 203.0.113.10:443 Link
++							236 image
++							237 text Forwarding Chain
++							238 container Forwarding tool: nftables
++								239 image
++								240 text nftables
++							241 text Protocol TCP 24H Inbound — 24H Outbound — Total Traffic — Latency Not tested
++							242 button View link latency
++								243 image
++							244 button Forwarding Link Test
++								245 image
++							246 button Reset rule data
++								247 image
++							248 button
++								249 image
++							250 button
++								251 image
+The focused UI element is 121 button (expanded) 用户转发链 / Long chain resource unchanged · SNI splitting Pending activation 1 rules Entry Port18510, Secondary Actions: Collapse

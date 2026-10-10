@@ -1,0 +1,14 @@
+- banner:
+  - heading "08监控验收" [level=1]
+  - link "登录":
+    - /url: /login
+    - text: 登录
+- main:
+  - status:
+    - generic: 最近刷新 2026-10-10 00:44:12
+    - button "刷新":
+      - text: 刷新
+  - alert: 主机不存在
+  - button "返回主机列表"
+  - button "刷新"
+- region "Notifications alt+T"

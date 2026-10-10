@@ -1,0 +1,13 @@
+{
+  "id": 1501,
+  "name": "用户导入规则 unchanged <&>",
+  "userId": 1,
+  "forwardGroupId": 20,
+  "sourcePort": 18511,
+  "sni": "import09.example.test",
+  "targetIp": "203.0.113.20",
+  "targetPort": 443,
+  "forwardType": "nftables",
+  "protocol": "tcp",
+  "isEnabled": 1
+}

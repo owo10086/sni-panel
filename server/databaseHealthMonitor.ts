@@ -1,7 +1,7 @@
 import mysql from "mysql2/promise";
 import pg from "pg";
 import { databaseHealth } from "./databaseHealthState";
-import { getSqlite, readDatabaseConfig, withSqliteExclusive, type DatabaseConfig } from "./dbRuntime";
+import { getSqlite, queryRaw, readDatabaseConfig, type DatabaseConfig } from "./dbRuntime";
 
 export async function probeDatabase(config: DatabaseConfig) {
   // Separate, bounded diagnostic connections cannot queue behind business
@@ -18,9 +18,7 @@ export async function probeDatabase(config: DatabaseConfig) {
     return;
   }
   // Reuse the SQLite handle and its transaction-safe connection lock.
-  if (getSqlite()) await withSqliteExclusive((sqlite) => {
-    sqlite.prepare("SELECT 1").get();
-  });
+  if (getSqlite()) await queryRaw("SELECT 1");
 }
 
 export function startDatabaseHealthMonitor(options: {

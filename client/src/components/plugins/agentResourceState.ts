@@ -1,3 +1,4 @@
+import { t as translateText } from "@/i18n";
 export type ResourceOperationKind = "read" | "create" | "update" | "delete" | "execute";
 
 export type ResourceSourceSnapshot = {
@@ -48,11 +49,11 @@ export function failedResourceSnapshot(
 
 const ERROR_KEYS = new Set([
   "error", "errormessage", "message", "detail", "reason",
-  "错误", "错误信息", "原因",
+  translateText("错误"), translateText("错误信息"), translateText("原因"),
 ]);
 const ADVICE_KEYS = new Set([
   "suggestion", "advice", "resolution", "hint",
-  "处理建议", "建议", "解决方案",
+  translateText("处理建议"), translateText("建议"), translateText("解决方案"),
 ]);
 const META_KEYS = new Set(["success", "status", "code", ...ERROR_KEYS, ...ADVICE_KEYS]);
 
@@ -126,7 +127,7 @@ export function pluginTaskFailureInfo(row: any): PluginTaskFailureInfo {
     || reportedError
     || String(row?.stderr || "").trim()
     || processError
-    || "插件操作执行失败";
+    || translateText("插件操作执行失败");
   return { message, advice, detail, processError, data };
 }
 

@@ -1,0 +1,26 @@
+{
+  "date": "2026-10-10",
+  "branch": "v2.3.282",
+  "reviewBase": "b258398e55ab1bee06eedcc1475a96bd7a79ff83",
+  "node": "22.22.3",
+  "pnpm": "10.28.1",
+  "beforeFiles": 819,
+  "changedExistingFiles": 3,
+  "newProductFiles": 0,
+  "isolatedPanel": "http://127.0.0.1:18828/dev",
+  "database": "temporary SQLite; full database retained only in /private/tmp/forwardx-282-ticket08",
+  "syntheticMetricsAndHistory": true,
+  "realWebpageAndEncryptedRoutes": true,
+  "productionOperations": false,
+  "focusedTests": {
+    "pass": 23,
+    "fail": 0,
+    "skipped": 0
+  },
+  "typecheckExitCode": 0,
+  "diffCheckExitCode": 0,
+  "panelStopped": true,
+  "browserTabClosed": true,
+  "viewportReset": true,
+  "jwtOriginalAbsentFromArchivedFiles": true
+}

@@ -1,0 +1,47 @@
+{
+  "scope": "Isolated amd64 Linux panel/SQLite, real local registry and Compose; same code across distinct image IDs, not an old-version schema migration",
+  "initialSetup": {
+    "databaseConfigured": false,
+    "databaseConnected": false,
+    "databaseType": null,
+    "activeDatabaseType": null,
+    "schemaReady": false,
+    "hasAdmin": false,
+    "hasExistingData": false,
+    "existingData": null,
+    "setupDataChoice": null,
+    "setupComplete": false,
+    "setupLocked": false,
+    "config": null,
+    "needsRestart": false,
+    "defaultSqlitePath": "/data/forwardx.db",
+    "error": null
+  },
+  "initialLanguage": {
+    "country": null,
+    "setupLanguage": "en"
+  },
+  "adminId": 1,
+  "oldImageId": "sha256:1ca48a967265cbb6835f198b42f77382fa90a3b85a282ece28c6f6a322942cd4",
+  "newImageId": "sha256:f90b6186792424003965b86ba088cd41ba3a88482eefc98acfc6e423a7f3d738",
+  "manualUpgrade": {
+    "configPreserved": true,
+    "sessionAndAdminPreserved": true,
+    "oldTagRemoved": true,
+    "currentAndAliasRetained": true,
+    "otherRepositoryRetained": true,
+    "version": "3.3.0"
+  },
+  "restore": {
+    "fullDataCopy": true,
+    "sameAdminAndMobileSession": true,
+    "sqliteQuickCheck": "ok"
+  },
+  "iosCors": {
+    "status": 204,
+    "origin": "capacitor://localhost",
+    "credentials": "true",
+    "untrustedOriginDenied": true
+  },
+  "success": true
+}

@@ -1,0 +1,17 @@
+[
+  "client/src/i18n/en.json",
+  "client/src/lib/latencyChart.ts",
+  "client/src/lib/latencyChart.test.ts",
+  "client/src/components/rules/TcpingDetailDialog.tsx",
+  "client/src/components/LatencyStabilityStats.test.tsx",
+  "client/src/components/LatencyStabilityStats.tsx",
+  "shared/probeStatistics.ts",
+  "shared/agentDtos.ts",
+  "agent/tcping_report_gate.go",
+  "server/agentProbeCounterReportGate.ts",
+  "server/probeCounter.test.ts",
+  "server/repositories/probeCounterRepository.ts",
+  "server/migration.ts",
+  "server/dbSchema.ts",
+  "scripts/verify-probe-agent-counters.mjs"
+]

@@ -436,6 +436,7 @@ test("SNI forward chains share one entry splitter and keep per-chain next hops",
     const runtime = await import(moduleUrl("server/dbRuntime.ts"));
     const schema = await import(moduleUrl("server/dbSchema.ts"));
     const heartbeat = await import(moduleUrl("server/agentHeartbeatRoute.ts"));
+    const { registerAgentReportRoutes } = await import(moduleUrl("server/agentReportRoutes.ts"));
     const rulesCrud = await import(moduleUrl("server/routers/rules.crud.ts"));
     const { rulesRouter } = await import(moduleUrl("server/routers/rules.ts"));
     const q = (name) => '"' + name + '"';
@@ -502,6 +503,7 @@ test("SNI forward chains share one entry splitter and keep per-chain next hops",
       },
     ];
     let server;
+    const lastDesiredState = new Map();
 
     async function postHeartbeat(baseUrl, token, body = {}) {
       const response = await fetch(baseUrl + "/api/agent/heartbeat", {
@@ -513,6 +515,8 @@ test("SNI forward chains share one entry splitter and keep per-chain next hops",
         body: JSON.stringify({ ...heartbeatBody, ...body }),
       });
       const payload = await response.json();
+      // Agents retain their last manifest when an unchanged plan is omitted.
+      if (payload.desiredState) lastDesiredState.set(token, payload.desiredState);
       return { status: response.status, payload };
     }
 
@@ -622,6 +626,7 @@ test("SNI forward chains share one entry splitter and keep per-chain next hops",
         next();
       });
       heartbeat.registerAgentHeartbeatRoute(app);
+      registerAgentReportRoutes(app);
       server = http.createServer(app);
       await new Promise((resolve, reject) => {
         server.once("error", reject);
@@ -1284,7 +1289,9 @@ test("SNI forward chains share one entry splitter and keep per-chain next hops",
       const routesOn = async (token, port, exportName) => {
         const result = await postHeartbeat(baseUrl, token);
         assert.equal(result.status, 200);
-        const actions = result.payload.desiredState.actions.filter(a => a.op === "apply" && a.fxp?.role === "sni-splitter" && Number(a.sourcePort) === port);
+        const manifest = result.payload.desiredState || lastDesiredState.get(token);
+        assert.ok(manifest, "Agent must have received a manifest");
+        const actions = manifest.actions.filter(a => a.op === "apply" && a.fxp?.role === "sni-splitter" && Number(a.sourcePort) === port);
         if (exportName && process.env.FORWARDX_SNI_TRAFFIC_VERIFY_OUTPUT) {
           const directory = process.env.FORWARDX_SNI_TRAFFIC_VERIFY_OUTPUT;
           fs.mkdirSync(directory, { recursive: true });
@@ -1293,6 +1300,62 @@ test("SNI forward chains share one entry splitter and keep per-chain next hops",
         }
         return actions.flatMap(a => a.fxp.sniRoutes);
       };
+      await postHeartbeat(baseUrl, "entry-token", { agentVersion: "2.2.195" });
+      await caller.create({ forwardGroupId: 20, name: "限额验收健康域名", forwardType: "gost", protocol: "tcp", sourcePort: 18443,
+        sni: "quota-healthy.example.com", targetIp: "203.0.113.31", targetPort: 8443 });
+      const chainBusiness = () => runtime.queryRaw('SELECT "id","hostId","sourcePort","sniSplitterPort","targetIp","targetPort","isEnabled","forwardGroupId","forwardGroupRuleId","forwardGroupMemberId" FROM "forward_rules" WHERE "id" IN (200,201,202) ORDER BY "id"');
+      await caller.update({ id: 200, trafficLimit: 1000, trafficMode: "both", rateLimitMbps: 1, maxConnections: 2 });
+      const beforePolicy = await chainBusiness();
+      const entryLimited = (await routesOn("entry-token", 18443)).find(r => r.sni === "gost-api.example.com");
+      const exitLimited = (await routesOn("exit-token", 24001)).find(r => r.sni === "gost-api.example.com");
+      assert.equal(entryLimited.limitIn, undefined);
+      assert.equal(entryLimited.maxConnections, undefined);
+      assert.equal(exitLimited.limitIn, 125000);
+      assert.equal(exitLimited.limitOut, 125000);
+      assert.equal(exitLimited.maxConnections, 2);
+      const chainReport = async (token, reportId, ruleId) => {
+        const response = await fetch(baseUrl + "/api/agent/traffic", { method: "POST",
+          headers: { authorization: "Bearer " + token, "content-type": "application/json" },
+          body: JSON.stringify({ reportId, reportProducerId: "chain-quota-process", stats: [{ ruleId, bytesIn: 600, bytesOut: 500, connections: 1 }] }) });
+        assert.equal(response.status, 200);
+        return response.json();
+      };
+      await chainReport("entry-token", "chain-entry-ignored", 201);
+      assert.equal((await caller.getById({ id: 200 })).quotaUsedIn, 0);
+      await chainReport("exit-token", "chain-exit-quota", 202);
+      assert.equal((await chainReport("exit-token", "chain-exit-quota", 202)).duplicate, true);
+      assert.equal((await caller.getById({ id: 200 })).quotaUsedIn, 600);
+      assert.equal((await caller.getById({ id: 200 })).quotaUsedOut, 500);
+      for (const [token, port] of [["entry-token",18443],["exit-token",24001]]) {
+        const available = await routesOn(token, port);
+        assert.ok(!available.some(r => r.sni === "gost-api.example.com"));
+        assert.ok(available.some(r => r.sni === "quota-healthy.example.com"));
+      }
+      // Host exclusion and root-rule quota must remain separate gates.
+      await excludeTraffic(2, 1);
+      await caller.resetTraffic({ scope: "rule", ruleId: 200 });
+      assert.equal((await caller.getById({ id: 200 })).ruleLimitReason, null);
+      assert.deepEqual(await routesOn("entry-token", 18443), []);
+      await excludeTraffic(2, 0);
+      assert.ok((await routesOn("entry-token", 18443)).some(r => r.sni === "gost-api.example.com"));
+      assert.ok((await routesOn("exit-token", 24001)).some(r => r.sni === "gost-api.example.com"));
+      assert.deepEqual(await chainBusiness(), beforePolicy);
+
+      // Both entries and the shared relay/exit inherit an entry-group root's expiry.
+      await caller.update({ id: 600, createdAt: new Date(Date.now()-86400000), expiresAt: new Date(Date.now()-1000), rateLimitMbps: 1 });
+      assert.deepEqual(await routesOn("entry-a-token", entryGroupThreeHop.sourcePort), []);
+      assert.deepEqual(await routesOn("entry-b-token", entryGroupThreeHop.sourcePort), []);
+      const expiredRelay = await postHeartbeat(baseUrl, "entry-group-relay-token");
+      assert.ok(!expiredRelay.payload.runningRules.some(r => Number(r.ruleId) === entryGroupThreeHop.relayRuleId));
+      assert.deepEqual(await routesOn("exit-token", entryGroupThreeHop.splitterPort), []);
+      await caller.update({ id: 600, expiresAt: null });
+      for (const token of ["entry-a-token", "entry-b-token"]) {
+        const route = (await routesOn(token, entryGroupThreeHop.sourcePort)).find(r => r.sni === entryGroupThreeHop.sni);
+        assert.ok(route);
+        assert.equal(route.limitIn, undefined);
+      }
+      assert.equal((await routesOn("exit-token", entryGroupThreeHop.splitterPort)).find(r => r.sni === entryGroupThreeHop.sni).limitIn, 125000);
+
       await excludeTraffic(3, 1);
       assert.deepEqual(await routesOn("entry-a-token", entryGroupThreeHop.sourcePort), []);
       assert.ok((await routesOn("entry-b-token", entryGroupThreeHop.sourcePort)).some(r => r.sni === entryGroupThreeHop.sni), "healthy entry must retain its shared chain");
@@ -1349,6 +1412,7 @@ test("SNI chain running state waits for entry and exit snapshots", () => {
     const runtime = await import(moduleUrl("server/dbRuntime.ts"));
     const schema = await import(moduleUrl("server/dbSchema.ts"));
     const heartbeat = await import(moduleUrl("server/agentHeartbeatRoute.ts"));
+    const db = await import(moduleUrl("server/db.ts"));
     const q = (name) => '"' + name + '"';
     const insert = async (table, columns, values) => {
       await runtime.executeRaw(
@@ -1373,7 +1437,7 @@ test("SNI chain running state waits for entry and exit snapshots", () => {
           agentProcessStartedAt: Math.floor(Date.now() / 1000),
           forceReconcile: true,
           ...(localRule === undefined ? {} : {
-            localState: { rules: localRule ? [localRule] : [], tunnels: [], services: [] },
+            localState: { rules: Array.isArray(localRule) ? localRule : localRule ? [localRule] : [], tunnels: [], services: [] },
           }),
         }),
       });
@@ -1581,6 +1645,33 @@ test("SNI chain running state waits for entry and exit snapshots", () => {
         ready: true,
       }, 2001);
       assert.deepEqual(await runningStates(), [[100, 1], [101, 1], [102, 1]]);
+      const healthyRule = await caller.create({ forwardGroupId: 10, name: "共享监听健康域名", forwardType: "nftables", protocol: "tcp",
+        sourcePort: 18443, sni: "healthy-status.example.com", targetIp: "203.0.113.21", targetPort: 443 });
+      const healthyChildren = await db.getForwardGroupChildRulesForTemplate(Number(healthyRule.id));
+      const healthyEntryId = Number(healthyChildren.find(r => Number(r.hostId) === 1).id);
+      const healthyExitId = Number(healthyChildren.find(r => Number(r.hostId) === 2).id);
+      const entrySnapshot = (ruleId, domain) => ({ port: 18443, ruleId, forwardType: "forwardx", sni: domain,
+        targetIp: exitHostIp, targetPort: 24000, protocol: "tcp", sniRouteVersion: 5, sourceAllowIps: [], ready: true });
+      const exitSnapshot = (ruleId, domain, targetIp) => ({ port: 24000, ruleId, forwardType: "forwardx", sni: domain,
+        targetIp, targetPort: 443, protocol: "tcp", sniRouteVersion: 5, sourceAllowIps: [], ready: true });
+      const bothEntries = [entrySnapshot(101, sni), entrySnapshot(healthyEntryId, "healthy-status.example.com")];
+      const bothExits = [exitSnapshot(102, sni, "203.0.113.20"), exitSnapshot(healthyExitId, "healthy-status.example.com", "203.0.113.21")];
+      await postHeartbeat(baseUrl, "entry-token", bothEntries, 2001);
+      await postHeartbeat(baseUrl, "exit-token", bothExits, 2002);
+      assert.equal((await caller.getById({ id: 100 })).isRunning, true);
+      assert.equal((await caller.getById({ id: Number(healthyRule.id) })).isRunning, true);
+      await caller.update({ id: 100, createdAt: new Date(Date.now()-86400000), expiresAt: new Date(Date.now()-1000) });
+      await postHeartbeat(baseUrl, "entry-token", [bothEntries[1]], 2001);
+      await postHeartbeat(baseUrl, "exit-token", [bothExits[1]], 2002);
+      assert.equal((await caller.getById({ id: 100 })).isRunning, false);
+      assert.equal((await caller.getById({ id: Number(healthyRule.id) })).isRunning, true,
+        "a shared listener cannot make the removed domain look running or stop the healthy domain");
+      await caller.update({ id: 100, expiresAt: null });
+      assert.equal((await caller.getById({ id: 100 })).isRunning, false, "restored policy still waits for the domain in both applied snapshots");
+      await postHeartbeat(baseUrl, "entry-token", bothEntries, 2001);
+      await postHeartbeat(baseUrl, "exit-token", bothExits, 2002);
+      assert.equal((await caller.getById({ id: 100 })).isRunning, true);
+      assert.equal((await caller.getById({ id: Number(healthyRule.id) })).isRunning, true);
     } finally {
       if (server) await new Promise((resolve) => server.close(resolve));
       await runtime.closeDatabase();
@@ -1709,12 +1800,13 @@ test("SNI chain relay status does not overwrite splitter observability when port
   assert.equal(result.status, 0, result.stderr || result.stdout);
 });
 
-test("a tunnel SNI rule update reaches the very next heartbeat", () => {
+test("SNI updates, exit quotas, statistics resets and expiry preserve other domains on a shared port", () => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), "forwardx-sni-update-order-"));
   const databasePath = path.join(directory, "sni-update-order.db");
   const script = String.raw`
     import assert from "node:assert/strict";
     import http from "node:http";
+    import fs from "node:fs";
     import path from "node:path";
     import { pathToFileURL } from "node:url";
     import express from "express";
@@ -1723,6 +1815,7 @@ test("a tunnel SNI rule update reaches the very next heartbeat", () => {
     const runtime = await import(moduleUrl("server/dbRuntime.ts"));
     const schema = await import(moduleUrl("server/dbSchema.ts"));
     const heartbeat = await import(moduleUrl("server/agentHeartbeatRoute.ts"));
+    const { registerAgentReportRoutes } = await import(moduleUrl("server/agentReportRoutes.ts"));
     const { rulesRouter } = await import(moduleUrl("server/routers/rules.ts"));
     const q = (name) => '"' + name + '"';
     const insert = async (table, columns, values) => {
@@ -1744,6 +1837,7 @@ test("a tunnel SNI rule update reaches the very next heartbeat", () => {
       authFailureReason: null,
     });
     let server;
+    let lastExitDesiredState;
 
     async function postExitHeartbeat(baseUrl) {
       const response = await fetch(baseUrl + "/api/agent/heartbeat", {
@@ -1760,6 +1854,8 @@ test("a tunnel SNI rule update reaches the very next heartbeat", () => {
       const payload = await response.json();
       assert.equal(response.status, 200);
       assert.equal(payload.success, true);
+      if (payload.desiredState) lastExitDesiredState = payload.desiredState;
+      else payload.desiredState = lastExitDesiredState;
       return payload;
     }
 
@@ -1797,6 +1893,7 @@ test("a tunnel SNI rule update reaches the very next heartbeat", () => {
         next();
       });
       heartbeat.registerAgentHeartbeatRoute(app);
+      registerAgentReportRoutes(app);
       server = http.createServer(app);
       await new Promise((resolve, reject) => {
         server.once("error", reject);
@@ -1841,6 +1938,92 @@ test("a tunnel SNI rule update reaches the very next heartbeat", () => {
       assert.ok(webAfter, "updating one rule dropped the other rule from the sni route table");
       assert.equal(webAfter.targetIp, "203.0.113.21");
       assert.equal(webAfter.limitIn, 0);
+
+      await caller.update({ id: 101, trafficLimit: 1000, trafficMode: "both" });
+      const savedBusiness = rule => ({ hostId: rule.hostId, tunnelId: rule.tunnelId, sourcePort: rule.sourcePort,
+        sni: rule.sni, sniSplitterPort: rule.sniSplitterPort, tunnelExitPort: rule.tunnelExitPort,
+        targetIp: rule.targetIp, targetPort: rule.targetPort, isEnabled: rule.isEnabled,
+        rateLimitMbps: rule.rateLimitMbps, maxConnections: rule.maxConnections });
+      const businessBefore = savedBusiness(await caller.getById({ id: 101 }));
+      const beforeQuota = (await postExitHeartbeat(baseUrl)).desiredState.actions;
+      async function report(token, reportId, bytesIn, bytesOut) {
+        const response = await fetch(baseUrl + "/api/agent/traffic", {
+          method: "POST", headers: { authorization: "Bearer " + token, "content-type": "application/json" },
+          body: JSON.stringify({ reportId, reportProducerId: "quota-process", stats: [{ ruleId: 101, bytesIn, bytesOut, connections: 1 }] }),
+        });
+        assert.equal(response.status, 200);
+        return response.json();
+      }
+      await report("entry-token", "entry-ignored", 9000, 9000);
+      assert.equal((await caller.getById({ id: 101 })).quotaUsedIn, 0);
+      await report("exit-token", "exit-quota", 600, 500);
+      assert.equal((await report("exit-token", "exit-quota", 600, 500)).duplicate, true);
+      const limited = await caller.getById({ id: 101 });
+      assert.equal(limited.quotaUsedIn, 600);
+      assert.equal(limited.quotaUsedOut, 500);
+      assert.equal(limited.ruleLimitReason, "traffic_limit");
+      assert.equal(limited.isEnabled, true);
+      const excludedQuota = (await postExitHeartbeat(baseUrl)).desiredState.actions;
+      assert.deepEqual(splitterRoutes(excludedQuota).map(route => route.sni), ["web.example.com"]);
+      await caller.resetTraffic({ scope: "rule", ruleId: 101 });
+      const restoredQuota = (await postExitHeartbeat(baseUrl)).desiredState.actions;
+      assert.deepEqual(splitterRoutes(restoredQuota).map(route => route.sni).sort(), ["api.example.com", "web.example.com"]);
+      assert.equal((await caller.getById({ id: 101 })).quotaUsedIn, 0);
+      assert.deepEqual(savedBusiness(await caller.getById({ id: 101 })), businessBefore);
+      // Raising the quota restores immediately without changing business fields.
+      await report("exit-token", "exit-quota-second", 600, 500);
+      assert.equal((await caller.getById({ id: 101 })).ruleLimitReason, "traffic_limit");
+      await caller.update({ id: 101, trafficLimit: 2000 });
+      const raisedQuota = (await postExitHeartbeat(baseUrl)).desiredState.actions;
+      assert.deepEqual(splitterRoutes(raisedQuota).map(route => route.sni).sort(), ["api.example.com", "web.example.com"]);
+      assert.equal((await caller.getById({ id: 101 })).quotaUsedIn, 600);
+      assert.deepEqual(savedBusiness(await caller.getById({ id: 101 })), businessBefore);
+
+      await caller.update({ id: 101, createdAt: new Date(Date.now() - 86400000), expiresAt: new Date(Date.now() - 1000) });
+      assert.equal((await caller.getById({ id: 101 })).ruleLimitReason, "expired");
+      const expired = (await postExitHeartbeat(baseUrl)).desiredState.actions;
+      assert.deepEqual(splitterRoutes(expired).map(route => route.sni), ["web.example.com"]);
+      await caller.resetTraffic({ scope: "rule", ruleId: 101 });
+      assert.equal((await caller.getById({ id: 101 })).ruleLimitReason, "expired");
+      assert.deepEqual(splitterRoutes((await postExitHeartbeat(baseUrl)).desiredState.actions).map(route => route.sni), ["web.example.com"]);
+      await caller.update({ id: 101, expiresAt: new Date(Date.now() + 86400000) });
+      const extended = (await postExitHeartbeat(baseUrl)).desiredState.actions;
+      assert.deepEqual(splitterRoutes(extended).map(route => route.sni).sort(), ["api.example.com", "web.example.com"]);
+      assert.deepEqual(savedBusiness(await caller.getById({ id: 101 })), businessBefore);
+
+      // Clearing expiry must retain traffic-limit suspension when both apply.
+      await caller.update({ id: 101, trafficLimit: 1000, expiresAt: new Date(Date.now() - 1000) });
+      await report("exit-token", "exit-quota-with-expiry", 600, 500);
+      const random = Math.random;
+      try {
+        Math.random = () => 0;
+        await caller.update({ id: 101, expiresAt: null });
+      } finally { Math.random = random; }
+      assert.equal((await caller.getById({ id: 101 })).ruleLimitReason, "traffic_limit");
+      assert.deepEqual(splitterRoutes((await postExitHeartbeat(baseUrl)).desiredState.actions).map(route => route.sni), ["web.example.com"]);
+      await caller.update({ id: 101, trafficLimit: 2000 });
+      const cleared = (await postExitHeartbeat(baseUrl)).desiredState.actions;
+      assert.deepEqual(splitterRoutes(cleared).map(route => route.sni).sort(), ["api.example.com", "web.example.com"]);
+      assert.deepEqual(savedBusiness(await caller.getById({ id: 101 })), businessBefore);
+
+      // Raising quota alone cannot remove an expired rule's other blocker.
+      await caller.update({ id: 101, trafficLimit: 1000, expiresAt: new Date(Date.now() - 1000) });
+      await caller.update({ id: 101, trafficLimit: 2000 });
+      assert.equal((await caller.getById({ id: 101 })).ruleLimitReason, "expired");
+      await caller.update({ id: 101, expiresAt: null });
+      assert.deepEqual(splitterRoutes((await postExitHeartbeat(baseUrl)).desiredState.actions).map(route => route.sni).sort(), ["api.example.com", "web.example.com"]);
+
+      if (process.env.FORWARDX_SNI_QUOTA_VERIFY_OUTPUT) {
+        const output = process.env.FORWARDX_SNI_QUOTA_VERIFY_OUTPUT;
+        fs.mkdirSync(output, { recursive: true });
+        for (const [name, actions] of [["before", beforeQuota], ["excluded", excludedQuota], ["restored", restoredQuota],
+          ["raised", raisedQuota], ["expired", expired], ["extended", extended], ["cleared", cleared]]) {
+          const config = actions.find(action => action.op === "apply" && action.fxp?.role === "sni-splitter" && Number(action.sourcePort) === splitterPort).fxp;
+          fs.writeFileSync(path.join(output, name + ".json"), JSON.stringify(config, null, 2));
+        }
+        fs.writeFileSync(path.join(output, "business-state.json"), JSON.stringify({ before: businessBefore,
+          after: savedBusiness(await caller.getById({ id: 101 })), quotaUsedIn: (await caller.getById({ id: 101 })).quotaUsedIn }, null, 2));
+      }
     } finally {
       if (server) await new Promise((resolve) => server.close(resolve));
       await runtime.closeDatabase();

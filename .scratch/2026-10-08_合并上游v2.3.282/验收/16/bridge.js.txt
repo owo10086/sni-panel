@@ -1,0 +1,9 @@
+const params=new URL(location.href).searchParams;
+const platform=params.get('platform')||'android';
+window.Capacitor={isNativePlatform:()=>true,getPlatform:()=>platform};
+localStorage.setItem('forwardx.language',params.get('lang')||'zh-CN');
+localStorage.setItem('forwardx.mobile.panelUrl',location.origin);
+const actualFetch=window.fetch.bind(window);
+window.fetch=(input,init)=>{const url=String(input);return actualFetch(url.startsWith('https://api.github.com/repos/owo10086/sni-panel/releases')?'/__ticket16/releases?scenario='+encodeURIComponent(params.get('scenario')||'missing')+'&platform='+platform+'&source='+encodeURIComponent(url):input,init)};
+
+if(params.get("safe")==="1"){document.documentElement.style.setProperty("--forwardx-safe-area-top","24px");document.documentElement.style.setProperty("--forwardx-safe-area-bottom","34px");}

@@ -1,15 +1,16 @@
+import { t as translateText } from "@/i18n";
 import { trpc } from "@/lib/trpc";
 import { ACCOUNT_DISABLED_ERR_MSG, SESSION_REPLACED_ERR_MSG, UNAUTHED_ERR_MSG } from '@shared/const';
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { httpBatchLink, httpLink, splitLink, TRPCClientError } from "@trpc/client";
 import { createRoot } from "react-dom/client";
 import superjson from "superjson";
-import App from "./App";
+import { initializeLanguage } from "./i18n";
 import { mobileAuth } from "./lib/mobileAuth";
 import "./index.css";
 import { DATABASE_UNAVAILABLE_MESSAGE } from "@shared/databaseHealth";
-
-const LOGIN_EXPIRED_NOTICE = "登录状态已失效，请重新登录";
+import { fetchPublicMonitor, PUBLIC_MONITOR_QUERY_PATHS } from "./lib/publicMonitor";
+import { fetchManualProbe, MANUAL_PROBE_QUERY_PATHS } from "./lib/manualProbe";
 
 const cachedSiteTitle = (() => {
   if (typeof window === "undefined") return "";
@@ -57,7 +58,7 @@ const redirectToLoginIfUnauthorized = (error: unknown) => {
   if (!isUnauthorized) return;
   const notice = error.message === ACCOUNT_DISABLED_ERR_MSG || error.message === SESSION_REPLACED_ERR_MSG
     ? error.message
-    : LOGIN_EXPIRED_NOTICE;
+    : translateText("登录状态已失效，请重新登录");
   if (mobileAuth.isNative || error.message === ACCOUNT_DISABLED_ERR_MSG) {
     mobileAuth.clear();
   }
@@ -135,16 +136,29 @@ const trpcFetch = (input: RequestInfo | URL, init?: RequestInit) => {
 const trpcClient = trpc.createClient({
   links: [
     splitLink({
-      condition: (op) => op.type === "query" && criticalQueryPaths.has(op.path),
-      true: httpLink({
-        url: "/api/trpc",
-        transformer: superjson,
-        fetch: trpcFetch,
-      }),
-      false: httpBatchLink({
-        url: "/api/trpc",
-        transformer: superjson,
-        fetch: trpcFetch,
+      condition: (op) => MANUAL_PROBE_QUERY_PATHS.has(op.path),
+      true: httpLink({ url: "/api/trpc", transformer: superjson,
+        fetch: (input, init) => fetchManualProbe(trpcFetch, input, init) }),
+      false: splitLink({
+        condition: (op) => op.type === "query" && PUBLIC_MONITOR_QUERY_PATHS.has(op.path),
+        true: httpLink({
+          url: "/api/trpc",
+          transformer: superjson,
+          fetch: (input, init) => fetchPublicMonitor(trpcFetch, input, init),
+        }),
+        false: splitLink({
+          condition: (op) => op.type === "query" && criticalQueryPaths.has(op.path),
+          true: httpLink({
+            url: "/api/trpc",
+            transformer: superjson,
+            fetch: trpcFetch,
+          }),
+          false: httpBatchLink({
+            url: "/api/trpc",
+            transformer: superjson,
+            fetch: trpcFetch,
+          }),
+        }),
       }),
     }),
   ],
@@ -152,6 +166,9 @@ const trpcClient = trpc.createClient({
 
 async function bootstrap() {
   await mobileAuth.hydrateNative();
+  await initializeLanguage(mobileAuth.isNative ? mobileAuth.getPanelUrl() : "");
+  // Initialize module-level presentation labels only after locale detection.
+  const { default: App } = await import("./App");
 
   if (mobileAuth.isNative) {
     document.documentElement.classList.add("capacitor-native");

@@ -1,0 +1,343 @@
+// Run only in an isolated Linux container with actual panel heartbeat plans.
+// Usage: node verify-gost-agent-sync.mjs INPUT_DIR [AGENT_BINARY]
+import assert from "node:assert/strict";
+import { spawn, spawnSync } from "node:child_process";
+import crypto from "node:crypto";
+import fs from "node:fs";
+import http from "node:http";
+import net from "node:net";
+import dgram from "node:dgram";
+import path from "node:path";
+
+assert.equal(process.platform, "linux");
+assert.ok(fs.existsSync("/.dockerenv"), "use an isolated Docker container");
+const input = process.argv[2];
+const agentBinary = process.argv[3] || path.join(input, "forwardx-agent");
+const plans = JSON.parse(fs.readFileSync(path.join(input, "plans.json"), "utf8"));
+const work = "/tmp/gost-agent-sync";
+const evidence = path.join(input, "gost-evidence");
+const token = "isolated-gost-token";
+const services = ["forwardx-runtime", "forwardx-tunnel-runtime"];
+const marker = "# forwardx-gost-additive-sync ";
+const connections = new Set();
+const children = new Set();
+const backends = [];
+const checks = [];
+let agent;
+let occupied;
+let udpBackend;
+let udpClient;
+let currentState;
+let agentLog;
+let heartbeatCount = 0;
+let stageCounter = 0;
+fs.mkdirSync(work, { recursive: true });
+fs.mkdirSync(evidence, { recursive: true });
+const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
+function execute(binary, args) {
+  const result = spawnSync(binary, args, { encoding: "utf8", timeout: 15000 });
+  assert.equal(result.status, 0, result.stderr || String(result.error));
+  return result.stdout;
+}
+function configFor(plan, service) {
+  const spec = plan.managedConfigs.find(item => item.serviceName === service);
+  assert.ok(spec, `missing ${service}`);
+  return JSON.parse(Buffer.from(spec.contentBase64, "base64"));
+}
+function identity(service) {
+  const pid = Number(fs.readFileSync(`/run/${service}.pid`, "utf8"));
+  const stat = fs.readFileSync(`/proc/${pid}/stat`, "utf8");
+  const start = stat.slice(stat.lastIndexOf(")") + 2).split(" ")[19];
+  return { pid, start };
+}
+function identities() { return Object.fromEntries(services.map(service => [service, identity(service)])); }
+function privateConfig(service) {
+  return new Promise((resolve, reject) => {
+    const req = http.get({ socketPath: `/run/forwardx-agent/gost-api/${service}.sock`, path: "/config", timeout: 3000 }, res => {
+      let text = "";
+      res.on("data", data => { text += data; });
+      res.on("end", () => {
+        try { assert.equal(res.statusCode, 200); resolve(JSON.parse(text)); } catch (err) { reject(err); }
+      });
+    });
+    req.on("error", reject);
+    req.on("timeout", () => req.destroy(new Error("GOST API timed out")));
+  });
+}
+async function waitFor(check, description, limit = 20000) {
+  const until = Date.now() + limit;
+  while (Date.now() < until) {
+    try { if (await check()) return; } catch { /* Process/socket can be between states. */ }
+    if (agent) assert.ok(agent.exitCode === null && agent.signalCode === null, fs.readFileSync(agentLog, "utf8"));
+    await pause(50);
+  }
+  throw new Error(`Timed out: ${description}\n${agentLog ? fs.readFileSync(agentLog, "utf8") : ""}`);
+}
+async function connect(port) {
+  return new Promise((resolve, reject) => {
+    const conn = net.connect(port, "127.0.0.1");
+    conn.setTimeout(3000, () => conn.destroy(new Error(`port ${port} timed out`)));
+    conn.once("connect", () => { conn.setTimeout(0); connections.add(conn); resolve(conn); });
+    conn.once("error", reject);
+    conn.on("error", () => {});
+    conn.on("close", () => connections.delete(conn));
+  });
+}
+async function echo(conn, message, expected = message) {
+  assert.ok(!conn.destroyed, "established connection was closed");
+  const data = await new Promise((resolve, reject) => {
+    const chunks = [];
+    let size = 0;
+    const onData = chunk => {
+      chunks.push(chunk); size += chunk.length;
+      if (size >= Buffer.byteLength(expected)) { cleanup(); resolve(Buffer.concat(chunks).toString()); }
+    };
+    const onError = err => { cleanup(); reject(err); };
+    const onClose = () => onError(new Error("established connection closed while waiting"));
+    const timer = setTimeout(() => onError(new Error("echo timed out")), 3000);
+    const cleanup = () => { clearTimeout(timer); conn.off("data", onData); conn.off("error", onError); conn.off("close", onClose); };
+    conn.on("data", onData); conn.once("error", onError); conn.once("close", onClose);
+    conn.write(message);
+  });
+  assert.equal(data, expected);
+}
+async function newEcho(port, expectedPrefix = "") {
+  const conn = await connect(port);
+  try { await echo(conn, `new-${port}`, expectedPrefix + `new-${port}`); } finally { conn.destroy(); }
+}
+async function closed(port) {
+  return new Promise(resolve => {
+    const conn = net.connect(port, "127.0.0.1");
+    conn.once("connect", () => { conn.destroy(); resolve(false); });
+    conn.once("error", () => resolve(true));
+    conn.setTimeout(500, () => { conn.destroy(); resolve(true); });
+  });
+}
+async function udpEcho() {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => { udpClient.off("message", onMessage); reject(new Error("UDP echo timed out")); }, 3000);
+    const onMessage = data => { clearTimeout(timer); assert.equal(data.toString(), "udp-alive"); resolve(); };
+    udpClient.once("message", onMessage);
+    udpClient.send("udp-alive", 21001, "127.0.0.1");
+  });
+}
+// Replay actual panel-generated plans over the Agent's public encrypted HTTP
+// boundary. Authentication/encryption is tested separately by the panel export.
+const key = salt => crypto.createHash("sha256").update(`${token}|${salt}`).digest();
+function envelope(payload) {
+  const iv = crypto.randomBytes(16);
+  const cipher = crypto.createCipheriv("aes-256-ctr", key("forwardx-agent-v1"), iv);
+  const ct = Buffer.concat([cipher.update(JSON.stringify(payload)), cipher.final()]);
+  const ts = Date.now(); const tsBytes = Buffer.alloc(8); tsBytes.writeBigUInt64BE(BigInt(ts));
+  const mac = crypto.createHmac("sha256", key("forwardx-agent-mac")).update(Buffer.concat([Buffer.from("v1"), iv, ct, tsBytes])).digest("hex");
+  return { v: 1, iv: iv.toString("hex"), ct: ct.toString("hex"), ts, mac };
+}
+const panel = http.createServer(async (req, res) => {
+  const chunks = [];
+  for await (const chunk of req) chunks.push(chunk);
+  let requestPath = req.url;
+  if (requestPath === "/api/sync") {
+    const request = JSON.parse(Buffer.concat(chunks));
+    const decipher = crypto.createDecipheriv("aes-256-ctr", key("forwardx-agent-v1"), Buffer.from(request.iv, "hex"));
+    const payload = JSON.parse(Buffer.concat([decipher.update(Buffer.from(request.ct, "hex")), decipher.final()]));
+    requestPath = payload.path;
+  }
+  res.setHeader("content-type", "application/json");
+  if (requestPath === "/api/agent/heartbeat") {
+    heartbeatCount++;
+    const state = currentState;
+    currentState = undefined;
+    res.end(JSON.stringify(envelope({ nextInterval: 1, desiredState: state })));
+  } else if (req.method === "GET") { res.writeHead(404); res.end("{}"); }
+  else { res.end(JSON.stringify(envelope({ success: true }))); }
+});
+async function stopChild(child) {
+  if (child?.exitCode === null && child.signalCode === null) {
+    const stopped = new Promise(resolve => child.once("exit", resolve));
+    child.kill("SIGTERM"); await stopped;
+  }
+  if (child === agent) agent = undefined;
+}
+async function startAgent(stage, binary = agentBinary) {
+  agentLog = path.join(work, `agent-${stage}.log`);
+  const fd = fs.openSync(agentLog, "w");
+  agent = spawn(binary, ["-config", path.join(work, "agent.json")], { stdio: ["ignore", fd, fd] });
+  fs.closeSync(fd); children.add(agent);
+  await waitFor(() => fs.readFileSync(agentLog, "utf8").includes("local runtime restore complete"), "Agent startup");
+}
+async function dispatch(stage, plan, success = true) {
+  const action = structuredClone(plan);
+  const revision = ++stageCounter;
+  action.configHash = `${stage}-${revision}`;
+  action.issuedAt = Date.now(); action.forceRuntimeSync = true;
+  const before = fs.readFileSync(agentLog, "utf8").length;
+  currentState = { version: 1, issuedAt: action.issuedAt, configRevision: revision, configHash: action.configHash, actions: [action] };
+  await waitFor(() => fs.readFileSync(agentLog, "utf8").slice(before).includes(`runtime action complete forwardType=gost-runtime-sync ok=${success}`), `${stage} result`, 30000);
+  currentState = undefined;
+  // Failure actions complete their disk/runtime rollback before logging result.
+  fs.copyFileSync(agentLog, path.join(evidence, `agent-${stage}.log`));
+}
+async function record(stage, extra = {}) {
+  const configs = {};
+  for (const service of services) configs[service] = await privateConfig(service);
+  fs.writeFileSync(path.join(evidence, `${stage}.json`), JSON.stringify({ stage, processes: identities(), configs, listeners: execute("ss", ["-lntup"]), ...extra }, null, 2));
+  checks.push(stage); console.log(`PASS: ${stage}`);
+}
+try {
+  for (const ip of ["198.51.100.10", "198.51.100.20", "198.51.100.30"]) execute("ip", ["address", "add", `${ip}/32`, "dev", "lo"]);
+  fs.copyFileSync(path.join(input, "gost"), "/usr/local/bin/gost"); fs.chmodSync("/usr/local/bin/gost", 0o755);
+  for (const [port, prefix] of [[30001, ""], [30002, "edited:"]]) {
+    const backend = net.createServer(conn => { connections.add(conn); conn.on("error", () => {}); conn.on("close", () => connections.delete(conn)); conn.on("data", data => conn.write(prefix + data.toString())); });
+    await new Promise(resolve => backend.listen(port, "198.51.100.30", resolve)); backends.push(backend);
+  }
+  udpBackend = dgram.createSocket("udp4"); udpBackend.on("message", (data, remote) => udpBackend.send(data, remote.port, remote.address));
+  await new Promise(resolve => udpBackend.bind(30001, "198.51.100.30", resolve));
+  udpClient = dgram.createSocket("udp4");
+  await new Promise(resolve => panel.listen(0, "127.0.0.1", resolve));
+  fs.writeFileSync(path.join(work, "agent.json"), JSON.stringify({ panelUrl: `http://127.0.0.1:${panel.address().port}`, token, interval: 1 }));
+  // Install the actual panel-generated SysV service definitions, then start
+  // legacy configs without the private API to check first activation.
+  fs.mkdirSync("/etc/init.d", { recursive: true });
+  for (const command of plans.base.commands.filter(command => command.includes("script_tmp="))) execute("sh", ["-c", command]);
+  fs.copyFileSync(path.join(input, "gost"), "/usr/local/bin/forwardx-runtime"); fs.chmodSync("/usr/local/bin/forwardx-runtime", 0o755);
+  for (const spec of plans.base.managedConfigs) {
+    const config = JSON.parse(Buffer.from(spec.contentBase64, "base64")); delete config.api;
+    fs.mkdirSync(path.dirname(spec.path), { recursive: true }); fs.writeFileSync(spec.path, JSON.stringify(config));
+    execute(`/etc/init.d/${spec.serviceName}`, ["start"]);
+  }
+  await waitFor(async () => { await newEcho(21001); return true; }, "legacy GOST listeners");
+  const legacyIdentities = identities();
+  const legacyConnection = await connect(21001); await echo(legacyConnection, "legacy-before");
+  await startAgent("candidate");
+  await dispatch("first-api-activation", plans.base);
+  for (const service of services) assert.notDeepEqual(identity(service), legacyIdentities[service]);
+  await waitFor(() => legacyConnection.destroyed, "first activation closes old connection");
+  await record("first-api-activation", { before: legacyIdentities, oldConnectionClosed: true });
+  const entryConfig = configFor(plans.entry, "forwardx-runtime"); delete entryConfig.api;
+  fs.writeFileSync(path.join(work, "entry.json"), JSON.stringify(entryConfig));
+  const fd = fs.openSync(path.join(work, "entry.log"), "w");
+  const entry = spawn("/usr/local/bin/gost", ["-C", path.join(work, "entry.json")], { stdio: ["ignore", fd, fd] });
+  fs.closeSync(fd); children.add(entry);
+  await waitFor(async () => { await newEcho(22001); return true; }, "real authenticated GOST entry");
+  const original = identities();
+  const c1 = await connect(21001), c2 = await connect(21002), tunnelConnection = await connect(22001);
+  const healthy = async stage => {
+    assert.deepEqual(identities(), original, `${stage}: shared processes changed`);
+    await echo(c1, stage + "-main1"); await echo(c2, stage + "-main2"); await echo(tunnelConnection, stage + "-tunnel"); await udpEcho();
+  };
+  await dispatch("add", plans.add); await newEcho(21003); await healthy("add");
+  assert.ok((await privateConfig("forwardx-tunnel-runtime")).services.some(s => s.addr === ":23003"));
+  const apiDirMode = fs.statSync("/run/forwardx-agent/gost-api").mode & 0o777;
+  assert.equal(apiDirMode, 0o700);
+  execute("sh", ["-c", "command -v su && command -v curl"]);
+  const unprivileged = spawnSync("su", ["-s", "/bin/sh", "nobody", "-c", "curl --unix-socket /run/forwardx-agent/gost-api/forwardx-runtime.sock http://localhost/config"], {encoding: "utf8", timeout: 5000});
+  assert.notEqual(unprivileged.status, 0, "private API accessible to ordinary user");
+  assert.match(unprivileged.stderr, /connect|Permission denied/i);
+  await record("add", { establishedConnectionsPreserved: 3, udp: true, apiDirMode, ordinaryUserDenied: true, deniedAccess: unprivileged.stderr });
+  occupied = net.createServer(); await new Promise(resolve => occupied.listen(23005, "0.0.0.0", resolve));
+  const committed = Object.fromEntries(plans.add.managedConfigs.map(spec => [spec.path, fs.readFileSync(spec.path, "utf8")]));
+  const verifyRollback = async stage => {
+    await healthy(stage);
+    for (const [file, text] of Object.entries(committed)) assert.equal(fs.readFileSync(file, "utf8"), text, `${stage}: disk rollback failed`);
+    assert.equal(await closed(21004), true); assert.equal(await closed(23004), true);
+    const live = await privateConfig("forwardx-runtime");
+    assert.equal(live.limiters.length, 1, `${stage}: extra limiter remained`);
+  };
+  await dispatch("port-conflict", plans.conflict, false); await verifyRollback("port-conflict");
+  await record("port-conflict", { establishedConnectionsPreserved: 3, udp: true, onlyAdditionsRemoved: true });
+  const dependencyFailure = structuredClone(plans.conflict);
+  dependencyFailure.commands.unshift("echo '[verification] dependency installation failed'; exit 1");
+  await dispatch("dependency-failure", dependencyFailure, false); await verifyRollback("dependency-failure");
+  await record("dependency-failure", { establishedConnectionsPreserved: 3, udp: true });
+  const applyFailure = structuredClone(plans.conflict);
+  const firstMarker = applyFailure.commands.findIndex(command => command.startsWith(marker));
+  applyFailure.commands.splice(firstMarker + 1, 0, "echo '[verification] later application failed'; exit 1");
+  await dispatch("later-application-failure", applyFailure, false); await verifyRollback("later-application-failure");
+  await record("later-application-failure", { establishedConnectionsPreserved: 3, udp: true });
+  const invalidConfig = structuredClone(plans.conflict);
+  invalidConfig.managedConfigs[1].contentBase64 = Buffer.from("{invalid-json").toString("base64");
+  await dispatch("second-config-validation-failure", invalidConfig, false);
+  await verifyRollback("second-config-validation-failure");
+  await record("second-config-validation-failure", { establishedConnectionsPreserved: 3, udp: true });
+  occupied.close(); occupied = undefined;
+  const beforeEdit = identities();
+  await dispatch("edit", plans.edit);
+  assert.notDeepEqual(identity("forwardx-runtime"), beforeEdit["forwardx-runtime"]);
+  assert.deepEqual(identity("forwardx-tunnel-runtime"), beforeEdit["forwardx-tunnel-runtime"]);
+  await waitFor(() => c1.destroyed && c2.destroyed, "edit closes rebuilt runtime connections");
+  await echo(tunnelConnection, "edit-keeps-tunnel"); await newEcho(21001, "edited:");
+  await record("edit", { before: beforeEdit, oldMainConnectionsClosed: true, tunnelConnectionPreserved: true });
+  const beforeDelete = identities();
+  await dispatch("delete", plans.delete);
+  for (const service of services) assert.notDeepEqual(identity(service), beforeDelete[service]);
+  assert.equal(await closed(21002), true); assert.equal(await closed(23002), true);
+  await newEcho(21001, "edited:"); await newEcho(21003); await newEcho(22001);
+  await record("delete", { before: beforeDelete, removedPortsClosed: [21002,23002] });
+  const beforeFault = identities();
+  for (const service of services) execute("kill", ["-TERM", String(beforeFault[service].pid)]);
+  // Allow the normal service health refresh to observe the stopped processes.
+  // Use docker --init so exited orphan services are reaped as on a Linux host.
+  await pause(6000);
+  await dispatch("process-fault-recovery", plans.delete);
+  for (const service of services) assert.notDeepEqual(identity(service), beforeFault[service]);
+  await newEcho(21001, "edited:"); await newEcho(21003); await newEcho(22001);
+  await record("process-fault-recovery", { before: beforeFault });
+  // Agent restart alone retains already-running GOST services and connections.
+  const beforeRestart = identities(); const restartConnection = await connect(21003);
+  await stopChild(agent); await startAgent("restart");
+  assert.deepEqual(identities(), beforeRestart); await echo(restartConnection, "agent-restart");
+  await record("agent-restart", { establishedConnectionPreserved: true });
+  restartConnection.destroy();
+  if (fs.existsSync(path.join(input, "released-agent"))) {
+    await stopChild(agent);
+    const beforeLegacy = identities();
+    await startAgent("released", path.join(input, "released-agent"));
+    const oldConnection = await connect(21001); await echo(oldConnection, "old-agent-before", "edited:old-agent-before");
+    await dispatch("legacy-agent-fallback", plans.legacy);
+    for (const service of services) assert.notDeepEqual(identity(service), beforeLegacy[service]);
+    await waitFor(() => oldConnection.destroyed, "old Agent fallback closes rebuilt connection");
+    await newEcho(21001); await newEcho(21002); assert.equal(await closed(21003), true);
+    await record("legacy-agent-fallback", { reportedAgentVersion: "3.2.0", incrementalSupported: false, before: beforeLegacy, fallbackRebuilt: true });
+  }
+  // Exercise chains and limiters on the actual tunnel entry plans as well.
+  // An independent real GOST exit supplies the authenticated relay endpoint.
+  await stopChild(agent); await stopChild(entry);
+  for (const service of services) execute(`/etc/init.d/${service}`, ["stop"]);
+  const exitConfig = configFor(plans.add, "forwardx-tunnel-runtime"); delete exitConfig.api;
+  const exitPath = path.join(work, "independent-exit.json"); fs.writeFileSync(exitPath, JSON.stringify(exitConfig));
+  const exitFd = fs.openSync(path.join(work, "independent-exit.log"), "w");
+  const exitRuntime = spawn("/usr/local/bin/gost", ["-C", exitPath], {stdio: ["ignore", exitFd, exitFd]});
+  fs.closeSync(exitFd); children.add(exitRuntime);
+  await waitFor(async () => !await closed(23000), "independent GOST exit");
+  await startAgent("entry-candidate"); await dispatch("entry-bootstrap", plans.entry);
+  const entryIdentity = identity("forwardx-runtime");
+  const entryConnection1 = await connect(22001), entryConnection2 = await connect(22002);
+  await echo(entryConnection1, "entry-before"); await echo(entryConnection2, "entry2-before");
+  await dispatch("entry-add-dependencies", plans.entryAdd);
+  assert.deepEqual(identity("forwardx-runtime"), entryIdentity);
+  await echo(entryConnection1, "entry-add"); await echo(entryConnection2, "entry2-add"); await newEcho(22003);
+  const entryLive = await privateConfig("forwardx-runtime");
+  assert.equal(entryLive.chains.length, 3); assert.equal(entryLive.limiters.length, 1);
+  fs.writeFileSync(path.join(evidence, "entry-add-dependencies.json"), JSON.stringify({process: entryIdentity, live: entryLive, establishedConnectionsPreserved: 2}, null, 2));
+  checks.push("entry-add-dependencies"); console.log("PASS: entry-add-dependencies");
+  occupied = net.createServer(); await new Promise(resolve => occupied.listen(22005, "0.0.0.0", resolve));
+  await dispatch("entry-conflict-dependency-rollback", plans.entryConflict, false);
+  assert.deepEqual(identity("forwardx-runtime"), entryIdentity);
+  await echo(entryConnection1, "entry-rollback"); await echo(entryConnection2, "entry2-rollback"); await newEcho(22003);
+  assert.equal(await closed(22004), true);
+  const restoredEntry = await privateConfig("forwardx-runtime");
+  assert.equal(restoredEntry.chains.length, 3); assert.equal(restoredEntry.limiters.length, 1);
+  fs.writeFileSync(path.join(evidence, "entry-conflict-dependency-rollback.json"), JSON.stringify({process: entryIdentity, live: restoredEntry, establishedConnectionsPreserved: 2, rolledBackPort: 22004}, null, 2));
+  checks.push("entry-conflict-dependency-rollback"); console.log("PASS: entry-conflict-dependency-rollback");
+  fs.writeFileSync(path.join(input, "gost-result.json"), JSON.stringify({ checks, heartbeatCount, gostVersion: execute("/usr/local/bin/gost", ["-V"]).trim() }, null, 2));
+} finally {
+  currentState = undefined;
+  for (const child of children) await stopChild(child);
+  for (const service of services) {
+    if (fs.existsSync(`/etc/init.d/${service}`)) spawnSync(`/etc/init.d/${service}`, ["stop"], {timeout: 5000});
+  }
+  for (const conn of connections) conn.destroy();
+  occupied?.close(); udpClient?.close(); udpBackend?.close();
+  for (const backend of backends) backend.close();
+  panel.closeAllConnections(); await new Promise(resolve => panel.close(resolve));
+}

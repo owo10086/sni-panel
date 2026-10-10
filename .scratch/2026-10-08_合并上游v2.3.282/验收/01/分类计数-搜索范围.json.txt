@@ -1,0 +1,4 @@
+Script ran on page and returned:
+```json
+{"search":"user-import","tabs":["全部1","端口转发1","隧道转发0","转发链0","转发组0"],"rules":["选择规则 user-import.example.test:443"]}
+```

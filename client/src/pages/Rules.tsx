@@ -1,5 +1,10 @@
+import { getFormatLocale } from "@/i18n";
+import { t as translateText } from "@/i18n";
 import { useAuth } from "@/_core/hooks/useAuth";
 import AnimatedStatValue from "@/components/AnimatedStatValue";
+import { RuleLimitsForm, newRuleLimitsForm, ruleLimitsPayload, type RuleLimitsFormValue } from "@/components/rules/RuleLimitsForm";
+import { RuleUsageSummary } from "@/components/rules/RuleUsageSummary";
+import { isAdminManagedRule } from "../../../shared/ruleLimits";
 import AutoAnimateContainer from "@/components/AutoAnimateContainer";
 import DashboardLayout from "@/components/DashboardLayout";
 import { LatencyRating } from "@/components/LatencyRating";
@@ -48,6 +53,7 @@ import {
 } from "@/components/ui/table";
 import DataSectionLoading from "@/components/DataSectionLoading";
 import { trpc } from "@/lib/trpc";
+import { downloadTextFile } from "@/lib/fileDownload";
 import { pollingInterval } from "@/lib/polling";
 import { handoffManualTestResult } from "@/lib/manualTestCache";
 import {
@@ -134,7 +140,7 @@ import { getSniRuleGroupKey, isSniEntryAgentVersionSupported, SNI_SPLITTER_MIN_A
 import { formatTrafficMultiplier } from "@shared/trafficMultiplier";
 import { Fragment, lazy, Suspense, useState, useMemo, useEffect, useCallback, useRef, type ReactNode } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { toast } from "sonner";
+import { toast } from "@/lib/localizedToast";
 import { useLocation, useSearch } from "wouter";
 import { TcpingDetailDialog } from "@/components/rules/TcpingDetailDialog";
 import { RuleBulkCheckbox } from "@/components/rules/RuleBulkCheckbox";
@@ -210,6 +216,7 @@ function isForwardGroupBackedRouteModeValue(mode: RuleRouteMode, forwardGroupId?
 }
 
 type RuleFormData = {
+  limits: RuleLimitsFormValue;
   hostId: number | null;
   name: string;
   routeMode: RuleRouteMode;
@@ -253,17 +260,17 @@ type FailoverStrategy = "fallback" | "round_robin" | "random" | "ip_hash";
 type FailoverMode = "disabled" | FailoverStrategy;
 
 const failoverModeOptions: Array<{ value: FailoverMode; label: string }> = [
-  { value: "disabled", label: "不使用" },
-  { value: "fallback", label: "主备模式 - 自上而下" },
-  { value: "round_robin", label: "轮询模式 - 依次轮换" },
-  { value: "random", label: "随机模式 - 随机选择" },
-  { value: "ip_hash", label: "哈希模式 - IP哈希" },
+  { value: "disabled", label: translateText("不使用") },
+  { value: "fallback", label: translateText("主备模式 - 自上而下") },
+  { value: "round_robin", label: translateText("轮询模式 - 依次轮换") },
+  { value: "random", label: translateText("随机模式 - 随机选择") },
+  { value: "ip_hash", label: translateText("哈希模式 - IP哈希") },
 ];
 const failoverStrategyLabels: Record<FailoverStrategy, string> = {
-  fallback: "主备",
-  round_robin: "轮询",
-  random: "随机",
-  ip_hash: "IP哈希",
+  fallback: translateText("主备"),
+  round_robin: translateText("轮询"),
+  random: translateText("随机"),
+  ip_hash: translateText("IP哈希"),
 };
 const normalizeFailoverStrategy = (value: unknown): FailoverStrategy => {
   return value === "round_robin" || value === "random" || value === "ip_hash" || value === "fallback"
@@ -272,6 +279,7 @@ const normalizeFailoverStrategy = (value: unknown): FailoverStrategy => {
 };
 
 const defaultForm: RuleFormData = {
+  limits: newRuleLimitsForm(),
   hostId: null,
   name: "",
   routeMode: "local",
@@ -311,19 +319,19 @@ const defaultForm: RuleFormData = {
 
 const gostTunnelModes = new Set(["tls", "wss", "tcp", "mtls", "mwss", "mtcp"]);
 const nginxTunnelModes = new Set(["nginx_stream"]);
-const unsupportedProtocolTitle = "当前转发方式已停用，请编辑并切换到可用资源";
-const revokedResourceTitle = "资源授权已失效，请编辑规则并选择当前有权限的端口转发或隧道";
+const unsupportedProtocolTitle = translateText("当前转发方式已停用，请编辑并切换到可用资源");
+const revokedResourceTitle = translateText("资源授权已失效，请编辑规则并选择当前有权限的端口转发或隧道");
 const desktopRuleTypeLabels = {
-  local: "端口转发",
-  tunnel: "隧道转发",
-  chain: "转发链",
-  group: "转发组",
+  local: translateText("端口转发"),
+  tunnel: translateText("隧道转发"),
+  chain: translateText("转发链"),
+  group: translateText("转发组"),
 } as const;
 const ruleTypeDescriptions = {
-  local: "使用已保存端口转发",
-  tunnel: "通过隧道出口转发",
-  chain: "按转发链顺序转发",
-  group: "使用转发组入口",
+  local: translateText("使用已保存端口转发"),
+  tunnel: translateText("通过隧道出口转发"),
+  chain: translateText("按转发链顺序转发"),
+  group: translateText("使用转发组入口"),
 } as const;
 
 type RuleViewMode = "card" | "table" | "globe";
@@ -356,41 +364,41 @@ const SNI_RULE_GROUP_STATUS_CONFIG: Record<SniRuleGroupStatus, {
 }> = {
   running: {
     dotClass: "bg-emerald-500 shadow-[0_0_0_3px_rgba(16,185,129,0.16)]",
-    text: () => "全部生效",
+    text: () => translateText("全部生效"),
   },
   error: {
     dotClass: "bg-rose-500 shadow-[0_0_0_3px_rgba(244,63,94,0.14)]",
     text: ({ endpointOffline, entryVersionUnsupported }) => endpointOffline
-      ? "分流器主机离线"
+      ? translateText("分流器主机离线")
       : entryVersionUnsupported
-        ? "入口 Agent 版本不足"
-        : "配置应用失败",
+        ? translateText("入口 Agent 版本不足")
+        : translateText("配置应用失败"),
   },
   pending: {
     dotClass: "bg-amber-400 shadow-[0_0_0_3px_rgba(251,191,36,0.14)]",
     text: ({ activeRuleCount, appliedCount }) => appliedCount > 0
-      ? `${appliedCount} / ${activeRuleCount} 已生效`
-      : "等待生效",
+      ? translateText("{0} / {1} 已生效", [appliedCount, activeRuleCount])
+      : translateText("等待生效"),
   },
   disabled: {
     dotClass: "bg-muted-foreground/30",
-    text: () => "已停用",
+    text: () => translateText("已停用"),
   },
 };
 
 const RULE_CATEGORIES = ["all", "local", "tunnel", "chain", "group"] as const;
 const ruleTransferScopeLabels: Record<RuleTransferScopeType, string> = {
-  local: "端口转发",
-  tunnel: "隧道",
-  chain: "转发链",
-  group: "转发组",
+  local: translateText("端口转发"),
+  tunnel: translateText("隧道"),
+  chain: translateText("转发链"),
+  group: translateText("转发组"),
 };
 
 const ruleTransferScopeOptions: Array<{ value: RuleTransferScopeType; label: string }> = [
-  { value: "local", label: "端口转发" },
-  { value: "tunnel", label: "隧道" },
-  { value: "chain", label: "转发链" },
-  { value: "group", label: "转发组" },
+  { value: "local", label: translateText("端口转发") },
+  { value: "tunnel", label: translateText("隧道") },
+  { value: "chain", label: translateText("转发链") },
+  { value: "group", label: translateText("转发组") },
 ];
 const importRuleTransferScopeOptions = ruleTransferScopeOptions;
 // 分流器与链路类型无关（ADR-0001）：端口转发、隧道、转发链都能挂在它前面。
@@ -432,7 +440,7 @@ const RULE_SORT_CATEGORY_RANK = new Map<RuleTransferScopeType, number>(
 );
 const RULE_PAGE_SIZE_OPTIONS: RulePageSize[] = [12, 24, 36, 48];
 const EMPTY_RULE_CATEGORY_COUNTS: RuleCategoryCounts = { all: 0, local: 0, tunnel: 0, chain: 0, group: 0 };
-const RULE_CATEGORY_COUNTS_CACHE_PREFIX = "forwardx.rules.categoryCounts.";
+const RULE_CATEGORY_COUNTS_CACHE_PREFIX = "forwardx.rules.categoryCounts.v2.";
 const RULE_GLOBE_EARTH_IMAGE_URL = "/globe/earth-dark.jpg";
 const RULE_GLOBE_COUNTRIES_URL = "/globe/ne_110m_admin_0_countries.geojson";
 const RULE_GLOBE_PATH_SURFACE_ALTITUDE = 0.028;
@@ -800,14 +808,14 @@ function addRuleSearchUserParts(parts: string[], owner: any | null | undefined) 
   addRuleSearchPart(parts, owner.username);
   addRuleSearchPart(parts, owner.displayRemark);
   addRuleSearchPart(parts, owner.email);
-  addRuleSearchPart(parts, owner.id ? `用户 #${owner.id}` : "");
+  addRuleSearchPart(parts, owner.id ? translateText("用户 #{0}", [owner.id]) : "");
 }
 
 function addRuleSearchTunnelParts(parts: string[], tunnel: any | null | undefined, filters: RuleFilterState) {
   if (!tunnel) return;
   addRuleSearchPart(parts, tunnel.name);
   addRuleSearchPart(parts, tunnel.mode);
-  addRuleSearchPart(parts, tunnel.id ? `隧道 #${tunnel.id}` : "");
+  addRuleSearchPart(parts, tunnel.id ? translateText("隧道 #{0}", [tunnel.id]) : "");
   try {
     addRuleSearchPart(parts, getTunnelRouteText(tunnel, Array.from(filters.hostById.values())));
   } catch {
@@ -855,7 +863,7 @@ function buildRuleSearchText(rule: any, filters: RuleFilterState) {
   const entryHostId = filters.getRuleEntryHostId(rule);
 
   addRuleSearchPart(parts, rule?.name);
-  addRuleSearchPart(parts, rule?.id ? `规则 #${rule.id}` : "");
+  addRuleSearchPart(parts, rule?.id ? translateText("规则 #{0}", [rule.id]) : "");
   addRuleSearchPart(parts, desktopRuleTypeLabels[category]);
   addRuleSearchPart(parts, ruleTypeDescriptions[category]);
   addRuleSearchPart(parts, rule?.forwardType);
@@ -863,8 +871,8 @@ function buildRuleSearchText(rule: any, filters: RuleFilterState) {
   addRuleSearchPart(parts, FORWARD_TYPE_LABELS[rule?.forwardType as ForwardType]);
   addRuleSearchPart(parts, formatForwardRuleProtocol(rule?.protocol));
   addRuleSearchPart(parts, rule?.protocol);
-  addRuleSearchPort(parts, sourcePort, "入口端口");
-  addRuleSearchPort(parts, targetPort, "目标端口");
+  addRuleSearchPort(parts, sourcePort, translateText("入口端口"));
+  addRuleSearchPort(parts, targetPort, translateText("目标端口"));
   addRuleSearchPart(parts, targetIp);
   if (targetIp && targetPort > 0) addRuleSearchPart(parts, formatAddressWithPort(targetIp, targetPort));
   if (sourcePort > 0 && targetIp && targetPort > 0) addRuleSearchPart(parts, `${sourcePort}->${formatAddressWithPort(targetIp, targetPort)}`);
@@ -881,7 +889,7 @@ function buildRuleSearchText(rule: any, filters: RuleFilterState) {
 
   parseRuleFailoverTargets(rule?.failoverTargets).forEach((target) => {
     addRuleSearchPart(parts, target.targetIp);
-    addRuleSearchPort(parts, target.targetPort, "备用端口");
+    addRuleSearchPort(parts, target.targetPort, translateText("备用端口"));
     if (target.targetIp && target.targetPort > 0) addRuleSearchPart(parts, formatAddressWithPort(target.targetIp, target.targetPort));
   });
 
@@ -927,35 +935,35 @@ function getTunnelDisplay(tunnel: any | null | undefined, showNginxLabel = true)
   if (mode === "forwardx") {
     return {
       shortLabel: "ForwardX",
-      badgeLabel: "隧道 / ForwardX",
-      toolLabel: "ForwardX 加密隧道",
+      badgeLabel: translateText("隧道 / ForwardX"),
+      toolLabel: translateText("ForwardX 加密隧道"),
     };
   }
   if (gostTunnelModes.has(mode)) {
     return {
       shortLabel: "GOST",
-      badgeLabel: "隧道 / GOST",
-      toolLabel: "GOST 隧道",
+      badgeLabel: translateText("隧道 / GOST"),
+      toolLabel: translateText("GOST 隧道"),
     };
   }
   if (nginxTunnelModes.has(mode)) {
     if (!showNginxLabel) {
       return {
-        shortLabel: "\u96a7\u9053",
-        badgeLabel: "\u96a7\u9053",
-        toolLabel: "\u96a7\u9053\u8f6c\u53d1",
+        shortLabel: translateText("隧道"),
+        badgeLabel: translateText("隧道"),
+        toolLabel: translateText("隧道转发"),
       };
     }
     return {
       shortLabel: "Nginx",
-      badgeLabel: "\u96a7\u9053 / Nginx",
-      toolLabel: "Nginx Stream \u96a7\u9053",
+      badgeLabel: translateText("隧道 / Nginx"),
+      toolLabel: translateText("Nginx Stream 隧道"),
     };
   }
   return {
-    shortLabel: mode ? mode.toUpperCase() : "隧道",
-    badgeLabel: mode ? `隧道 / ${mode.toUpperCase()}` : "隧道",
-    toolLabel: "隧道转发",
+    shortLabel: mode ? mode.toUpperCase() : translateText("隧道"),
+    badgeLabel: mode ? translateText("隧道 / {0}", [mode.toUpperCase()]) : translateText("隧道"),
+    toolLabel: translateText("隧道转发"),
   };
 }
 
@@ -996,13 +1004,13 @@ function getHostEntryAddresses(host: any | null | undefined): EntryAddress[] {
   const ipv6 = hostAutoIpv6(host);
   const manualIsDomain = addressFamily(manualEntry) === "hostname";
   if (manualEntry && manualIsDomain) {
-    pushUniqueEntryAddress(rows, "自定义", manualEntry);
+    pushUniqueEntryAddress(rows, translateText("自定义"), manualEntry);
   }
   if (ddnsDomain) {
     pushUniqueEntryAddress(rows, "DDNS", ddnsDomain);
   }
   if (manualEntry && !manualIsDomain) {
-    pushUniqueEntryAddress(rows, "入口", manualEntry);
+    pushUniqueEntryAddress(rows, translateText("入口"), manualEntry);
   }
   if (!manualEntry && !ddnsDomain) {
     pushUniqueEntryAddress(rows, ipv4 ? "IPv4" : ipv6 ? "IPv6" : "IP", ipv4 || ipv6 || host?.ip);
@@ -1042,9 +1050,9 @@ function isForwardChainGroup(group: any | null | undefined) {
 
 function getForwardGroupRouteLabel(group: any | null | undefined) {
   const mode = normalizeForwardGroupModeForRule(group);
-  if (mode === "port") return "端口转发";
-  if (mode === "chain") return "转发链";
-  return "转发组";
+  if (mode === "port") return translateText("端口转发");
+  if (mode === "chain") return translateText("转发链");
+  return translateText("转发组");
 }
 
 function isGostTunnelForMainBackup(tunnel: any | null | undefined) {
@@ -1070,8 +1078,8 @@ function isKernelForwardType(type: unknown) {
 function familyLabel(family: EntryAddressFamily) {
   if (family === "ipv4") return "IPv4";
   if (family === "ipv6") return "IPv6";
-  if (family === "hostname") return "域名";
-  return "未知协议族";
+  if (family === "hostname") return translateText("域名");
+  return translateText("未知协议族");
 }
 
 function literalFamilySet(value: unknown) {
@@ -1137,12 +1145,12 @@ function kernelFamilyWarning(toolLabel: string, fromLabel: string, sourceFamilie
   const families = Array.from(sourceFamilies);
   if (families.length === 0) return null;
   if (!families.includes(targetFamily)) {
-    return `${toolLabel} 属于内核 NAT/防火墙规则，不能把 ${familyLabel(families[0])} 入口直接转成 ${familyLabel(targetFamily)} 目标；${fromLabel} 到 ${targetLabel} 需要改用 realm/socat/gost 等用户态转发，或把两端统一到同一协议族。`;
+    return translateText("{0} 属于内核 NAT/防火墙规则，不能把 {1} 入口直接转成 {2} 目标；{3} 到 {4} 需要改用 realm/socat/gost 等用户态转发，或把两端统一到同一协议族。", [toolLabel, familyLabel(families[0]), familyLabel(targetFamily), fromLabel, targetLabel]);
   }
   if (families.length > 1) {
     const otherFamily = families.find((family) => family !== targetFamily);
     if (otherFamily) {
-      return `${toolLabel} 属于内核 NAT/防火墙规则，${fromLabel} 同时暴露 IPv4/IPv6，但 ${targetLabel} 只明确为 ${familyLabel(targetFamily)}；使用 ${familyLabel(otherFamily)} 入口访问时可能不通，跨 IPv4/IPv6 建议改用用户态转发。`;
+      return translateText("{0} 属于内核 NAT/防火墙规则，{1} 同时暴露 IPv4/IPv6，但 {2} 只明确为 {3}；使用 {4} 入口访问时可能不通，跨 IPv4/IPv6 建议改用用户态转发。", [toolLabel, fromLabel, targetLabel, familyLabel(targetFamily), familyLabel(otherFamily)]);
     }
   }
   return null;
@@ -1171,15 +1179,15 @@ function buildKernelChainForwardWarning(input: Required<Pick<KernelForwardWarnin
 
   if (entryMembers.length > 0) {
     const firstConnectFamily = addressFamily(firstConnectHost);
-    const firstName = warningHostName(firstHost, `主机${Number(firstMember.hostId || 0) || ""}`);
+    const firstName = warningHostName(firstHost, translateText("主机{0}", [Number(firstMember.hostId || 0) || ""]));
     for (const entryMember of entryMembers) {
       const entryHost = getHost(Number(entryMember.hostId || 0));
-      const entryName = warningHostName(entryHost, `入口主机${Number(entryMember.hostId || 0) || ""}`);
+      const entryName = warningHostName(entryHost, translateText("入口主机{0}", [Number(entryMember.hostId || 0) || ""]));
       const warning = kernelFamilyWarning(
         toolLabel,
-        `${entryName} 入口`,
+        translateText("{0} 入口", [entryName]),
         hostEntryFamilies(entryHost),
-        `${firstName} 连接地址`,
+        translateText("{0} 连接地址", [firstName]),
         firstConnectFamily,
       );
       if (warning) return warning;
@@ -1193,13 +1201,13 @@ function buildKernelChainForwardWarning(input: Required<Pick<KernelForwardWarnin
     const currentHost = getHost(Number(current.hostId || 0));
     const nextHost = getHost(Number(next.hostId || 0));
     const nextConnectHost = resolveChainConnectHostForWarning(next, nextHost);
-    const currentName = warningHostName(currentHost, `主机${Number(current.hostId || 0) || ""}`);
-    const nextName = warningHostName(nextHost, `主机${Number(next.hostId || 0) || ""}`);
+    const currentName = warningHostName(currentHost, translateText("主机{0}", [Number(current.hostId || 0) || ""]));
+    const nextName = warningHostName(nextHost, translateText("主机{0}", [Number(next.hostId || 0) || ""]));
     const warning = kernelFamilyWarning(
       toolLabel,
-      `${currentName} 入口`,
+      translateText("{0} 入口", [currentName]),
       inboundFamilies,
-      `${nextName} 连接地址`,
+      translateText("{0} 连接地址", [nextName]),
       addressFamily(nextConnectHost),
     );
     if (warning) return warning;
@@ -1211,9 +1219,9 @@ function buildKernelChainForwardWarning(input: Required<Pick<KernelForwardWarnin
   const lastHost = getHost(Number(lastMember.hostId || 0));
   return kernelFamilyWarning(
     toolLabel,
-    `${warningHostName(lastHost, `主机${Number(lastMember.hostId || 0) || ""}`)} 入口`,
+    translateText("{0} 入口", [warningHostName(lastHost, translateText("主机{0}", [Number(lastMember.hostId || 0) || ""]))]),
     inboundFamilies,
-    `最终目标 ${String(rule?.targetIp || "").trim() || "-"}`,
+    translateText("最终目标 {0}", [String(rule?.targetIp || "").trim() || "-"]),
     addressFamily(rule?.targetIp),
   );
 }
@@ -1231,9 +1239,9 @@ function buildKernelForwardWarning({ rule, host, group, hosts = [], hostById, fo
       const memberHost = lookupHostForWarning(hosts, hostById, Number(member.hostId || 0));
       const warning = kernelFamilyWarning(
         toolLabel,
-        `${warningHostName(memberHost, `成员主机${Number(member.hostId || 0) || ""}`)} 入口`,
+        translateText("{0} 入口", [warningHostName(memberHost, translateText("成员主机{0}", [Number(member.hostId || 0) || ""]))]),
         hostEntryFamilies(memberHost),
-        `最终目标 ${String(rule?.targetIp || "").trim() || "-"}`,
+        translateText("最终目标 {0}", [String(rule?.targetIp || "").trim() || "-"]),
         addressFamily(rule?.targetIp),
       );
       if (warning) return warning;
@@ -1244,9 +1252,9 @@ function buildKernelForwardWarning({ rule, host, group, hosts = [], hostById, fo
   if (!entryHost) return null;
   return kernelFamilyWarning(
     toolLabel,
-    `${warningHostName(entryHost, "入口主机")} 入口`,
+    translateText("{0} 入口", [warningHostName(entryHost, translateText("入口主机"))]),
     hostEntryFamilies(entryHost),
-    `目标 ${String(rule?.targetIp || "").trim() || "-"}`,
+    translateText("目标 {0}", [String(rule?.targetIp || "").trim() || "-"]),
     addressFamily(rule?.targetIp),
   );
 }
@@ -1257,11 +1265,11 @@ function isSelectableForwardRuleGroup(group: any | null | undefined) {
 
 function getForwardGroupKindLabel(group: any | null | undefined) {
   const mode = normalizeForwardGroupModeForRule(group);
-  if (mode === "port") return "端口转发";
-  if (mode === "chain") return "转发链";
-  if (mode === "entry") return "入口组";
-  if (mode === "exit") return "出口组";
-  return group?.groupType === "tunnel" ? "隧道组" : "主机组";
+  if (mode === "port") return translateText("端口转发");
+  if (mode === "chain") return translateText("转发链");
+  if (mode === "entry") return translateText("入口组");
+  if (mode === "exit") return translateText("出口组");
+  return group?.groupType === "tunnel" ? translateText("隧道组") : translateText("主机组");
 }
 
 type RuleTrafficSummary = {
@@ -1524,11 +1532,11 @@ function ruleGlobeTargetOffset(anchor: RuleGlobePoint, rule: any, targetText: st
 
 function renderRuleGlobePointTooltip(point: RuleGlobePoint) {
   const rows = [
-    { label: "类型", value: point.kind === "target" ? "目标端口" : "转发节点" },
-    { label: "地址", value: point.addressText || "-" },
-    { label: "地区", value: point.regionText || "未定位" },
-    ...(point.targetText ? [{ label: "目标", value: point.targetText }] : []),
-    ...(point.note ? [{ label: "说明", value: point.note }] : []),
+    { label: translateText("类型"), value: point.kind === "target" ? translateText("目标端口") : translateText("转发节点") },
+    { label: translateText("地址"), value: point.addressText || "-" },
+    { label: translateText("地区"), value: point.regionText || translateText("未定位") },
+    ...(point.targetText ? [{ label: translateText("目标"), value: point.targetText }] : []),
+    ...(point.note ? [{ label: translateText("说明"), value: point.note }] : []),
   ];
   return `
     <div style="min-width:250px;max-width:360px;border:1px solid rgba(255,255,255,.14);border-radius:8px;background:rgba(8,13,24,.94);box-shadow:0 18px 44px rgba(0,0,0,.42);backdrop-filter:blur(10px);color:#f8fafc;padding:12px;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
@@ -1548,33 +1556,21 @@ function renderRuleGlobePointTooltip(point: RuleGlobePoint) {
 
 function renderRuleGlobePathTooltip(path: RuleGlobePath) {
   const rows = [
-    { label: "规则", value: path.rule?.name || `规则 #${path.rule?.id}` },
-    { label: "入口", value: `:${path.rule?.sourcePort || "-"}` },
-    { label: "目标", value: path.targetText },
-    { label: "路径", value: path.routeText },
-    { label: "末跳", value: path.finalHopText },
-    { label: "入向", value: formatBytes(path.bytesIn) },
-    { label: "出向", value: formatBytes(path.bytesOut) },
-    { label: "连接", value: String(path.connections || 0) },
+    { label: translateText("规则"), value: path.rule?.name || translateText("规则 #{0}", [path.rule?.id]) },
+    { label: translateText("入口"), value: `:${path.rule?.sourcePort || "-"}` },
+    { label: translateText("目标"), value: path.targetText },
+    { label: translateText("路径"), value: path.routeText },
+    { label: translateText("末跳"), value: path.finalHopText },
+    { label: translateText("入向"), value: formatBytes(path.bytesIn) },
+    { label: translateText("出向"), value: formatBytes(path.bytesOut) },
+    { label: translateText("连接"), value: String(path.connections || 0) },
   ];
-  return `
-    <div style="min-width:290px;max-width:390px;border:1px solid rgba(255,255,255,.14);border-radius:8px;background:rgba(8,13,24,.94);box-shadow:0 18px 44px rgba(0,0,0,.42);backdrop-filter:blur(10px);color:#f8fafc;padding:12px;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;">
-        <div style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px;font-weight:700;">${escapeTooltipHtml(path.rule?.name || `规则 #${path.rule?.id}`)}</div>
-        <div style="display:flex;align-items:center;gap:6px;color:#cbd5e1;font-size:12px;">
-          <span style="width:8px;height:8px;border-radius:999px;background:${path.color};box-shadow:0 0 14px ${hexToRgba(path.color, .8)};"></span>
-          ${escapeTooltipHtml(formatBytes(path.totalBytes))}
-        </div>
-      </div>
-      ${rows.map((row) => `
+  return translateText("\n    <div style=\"min-width:290px;max-width:390px;border:1px solid rgba(255,255,255,.14);border-radius:8px;background:rgba(8,13,24,.94);box-shadow:0 18px 44px rgba(0,0,0,.42);backdrop-filter:blur(10px);color:#f8fafc;padding:12px;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;\">\n      <div style=\"display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;\">\n        <div style=\"min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px;font-weight:700;\">{0}</div>\n        <div style=\"display:flex;align-items:center;gap:6px;color:#cbd5e1;font-size:12px;\">\n          <span style=\"width:8px;height:8px;border-radius:999px;background:{1};box-shadow:0 0 14px {2};\"></span>\n          {3}\n        </div>\n      </div>\n      {4}\n      <div style=\"margin-top:10px;color:#93c5fd;font-size:12px;\">点击编辑规则</div>\n    </div>\n  ", [escapeTooltipHtml(path.rule?.name || translateText("规则 #{0}", [path.rule?.id])), path.color, hexToRgba(path.color, .8), escapeTooltipHtml(formatBytes(path.totalBytes)), rows.map((row) => `
         <div style="display:grid;grid-template-columns:42px minmax(0,1fr);gap:8px;align-items:start;margin-top:6px;font-size:12px;line-height:1.45;">
           <span style="color:#94a3b8;">${escapeTooltipHtml(row.label)}</span>
           <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;color:#e2e8f0;">${escapeTooltipHtml(row.value)}</span>
         </div>
-      `).join("")}
-      <div style="margin-top:10px;color:#93c5fd;font-size:12px;">点击编辑规则</div>
-    </div>
-  `;
+      `).join("")]);
 }
 
 function ruleGlobeRouteHostIds(rule: any, tunnelById: Map<number, any>, forwardGroupById: Map<number, any>) {
@@ -1638,7 +1634,7 @@ function buildRuleGlobeData(
     const point: RuleGlobePoint = {
       id: `host:${hostId}`,
       kind: "host",
-      name: String(host.name || `主机 #${hostId}`),
+      name: String(host.name || translateText("主机 #{0}", [hostId])),
       lat: coord.lat,
       lng: coord.lng,
       color: "#e0f2fe",
@@ -1718,16 +1714,16 @@ function buildRuleGlobeData(
       ? targetGeoCountryCode(targetGeo)
       : "";
     const targetNote = shouldOffsetTargetHost
-      ? "目标端口位于出口节点，已偏移显示末跳"
+      ? translateText("目标端口位于出口节点，已偏移显示末跳")
       : targetHostPoint
-      ? "目标地址匹配已登记主机"
+      ? translateText("目标地址匹配已登记主机")
       : targetGeoCoord
-      ? `目标地址已定位${targetGeo?.resolvedAddress && normalizeAddressKey(targetGeo.resolvedAddress) !== normalizeAddressKey(rule.targetIp) ? `，解析到 ${targetGeo.resolvedAddress}` : ""}`
-      : "目标地址未定位，临时放置在出口附近";
+      ? translateText("目标地址已定位{0}", [targetGeo?.resolvedAddress && normalizeAddressKey(targetGeo.resolvedAddress) !== normalizeAddressKey(rule.targetIp) ? translateText("，解析到 {0}", [targetGeo.resolvedAddress]) : ""])
+      : translateText("目标地址未定位，临时放置在出口附近");
     const targetPoint: RuleGlobePoint = {
       id: `target:${rule.id}`,
       kind: "target",
-      name: `目标 ${targetText}`,
+      name: translateText("目标 {0}", [targetText]),
       lat: targetCoord.lat,
       lng: targetCoord.lng,
       color,
@@ -1939,9 +1935,7 @@ function RuleTrafficGlobe({
           <Suspense
             fallback={
               <div className="absolute inset-0 flex items-center justify-center bg-[#030712] text-sm text-white/70">
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                正在加载流量转发图
-              </div>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />{translateText("正在加载流量转发图")}</div>
             }
           >
             <ReactGlobe
@@ -2010,18 +2004,16 @@ function RuleTrafficGlobe({
           </Suspense>
 
           <div className="pointer-events-none absolute left-4 top-4 rounded-md border border-white/10 bg-black/35 px-3 py-2 text-xs text-white shadow-lg backdrop-blur-md">
-            <div className="font-medium">流量转发图</div>
-            <div className="mt-1 text-white/70">
-              规则 {rules.length} 条 · 已定位 {globeData.summaries.length} 条
-            </div>
+            <div className="font-medium">{translateText("流量转发图")}</div>
+            <div className="mt-1 text-white/70">{translateText("规则 ")}{rules.length}{translateText(" 条 · 已定位 ")}{globeData.summaries.length}{translateText(" 条")}</div>
             {globeData.skipped > 0 && (
-              <div className="mt-1 text-amber-200/85">待定位 {globeData.skipped} 条</div>
+              <div className="mt-1 text-amber-200/85">{translateText("待定位 ")}{globeData.skipped}{translateText(" 条")}</div>
             )}
           </div>
 
           <div className="pointer-events-none absolute right-4 top-4 flex max-h-[calc(100%-2rem)] w-[min(360px,calc(100%-2rem))] flex-col gap-2 overflow-hidden rounded-md border border-white/10 bg-black/35 p-3 text-xs text-white shadow-lg backdrop-blur-md">
             <div className="flex items-center justify-between gap-3">
-              <span className="font-medium">{trafficRangeLabel} 流量走向</span>
+              <span className="font-medium">{trafficRangeLabel}{translateText(" 流量走向")}</span>
               <span className="text-white/60">{formatBytes(globeData.summaries.reduce((sum, item) => sum + item.totalBytes, 0))}</span>
             </div>
             <div className="min-h-0 space-y-2 overflow-y-auto pr-1">
@@ -2029,31 +2021,27 @@ function RuleTrafficGlobe({
                 <div key={item.rule.id} className="grid grid-cols-[10px_minmax(0,1fr)_auto] items-center gap-2">
                   <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: item.color, boxShadow: `0 0 12px ${hexToRgba(item.color, .75)}` }} />
                   <div className="min-w-0">
-                    <div className="truncate font-medium">{item.rule.name || `规则 #${item.rule.id}`}</div>
+                    <div className="truncate font-medium">{item.rule.name || translateText("规则 #{0}", [item.rule.id])}</div>
                     <div className="truncate text-white/55">{item.targetText}</div>
                   </div>
                   <div className="text-right tabular-nums text-white/75">{formatBytes(item.totalBytes)}</div>
                 </div>
               ))}
               {globeData.summaries.length === 0 && (
-                <div className="py-2 text-white/60">暂无可定位流量路径</div>
+                <div className="py-2 text-white/60">{translateText("暂无可定位流量路径")}</div>
               )}
             </div>
           </div>
 
           {globeData.summaries.length === 0 && (
             <div className="pointer-events-none absolute inset-0 flex items-center justify-center px-6 text-center">
-              <div className="rounded-md border border-white/10 bg-black/35 px-4 py-3 text-sm text-white/80 shadow-lg backdrop-blur-md">
-                暂无可定位转发路径
-              </div>
+              <div className="rounded-md border border-white/10 bg-black/35 px-4 py-3 text-sm text-white/80 shadow-lg backdrop-blur-md">{translateText("暂无可定位转发路径")}</div>
             </div>
           )}
         </div>
       </div>
       <Card className="border-border/40 bg-card/60 md:hidden">
-        <CardContent className="p-6 text-center text-sm text-muted-foreground">
-          3D 流量转发图仅在 PC 端显示。
-        </CardContent>
+        <CardContent className="p-6 text-center text-sm text-muted-foreground">{translateText("3D 流量转发图仅在 PC 端显示。")}</CardContent>
       </Card>
     </>
   );
@@ -2113,10 +2101,10 @@ function splitFailoverTargetLine(line: string) {
     if (end > 1 && value[end + 1] === ":") {
       return { targetIp: value.slice(1, end).trim(), targetPort: Number(value.slice(end + 2).trim()) };
     }
-    return { error: "IPv6 地址请使用 [地址]:端口 格式" };
+    return { error: translateText("IPv6 地址请使用 [地址]:端口 格式") };
   }
   const index = value.lastIndexOf(":");
-  if (index <= 0 || index === value.length - 1) return { error: "请按 地址:端口 格式填写" };
+  if (index <= 0 || index === value.length - 1) return { error: translateText("请按 地址:端口 格式填写") };
   return { targetIp: value.slice(0, index).trim(), targetPort: Number(value.slice(index + 1).trim()) };
 }
 
@@ -2150,7 +2138,7 @@ function formatFailoverTargetsText(raw: unknown) {
 function exportRuleForTransfer(rule: any): RuleTransferFileRule {
   const sni = normalizeSniImportDomain(rule?.sni);
   return {
-    name: String(rule?.name || "导入规则"),
+    name: String(rule?.name || translateText("导入规则")),
     forwardType: normalizeRuleForwardType(rule?.forwardType),
     protocol: normalizeRuleProtocol(rule?.protocol),
     sourcePort: Number(rule?.sourcePort || 0),
@@ -2181,13 +2169,13 @@ function exportRuleForTransfer(rule: any): RuleTransferFileRule {
   };
 }
 
-function downloadRuleTransferFiles(
+function buildRuleTransferFiles(
   rules: readonly any[],
   scope: Record<string, unknown>,
   fileNameBase: string,
 ) {
   const chunks = chunkBatchItems(rules, RULE_TRANSFER_MAX_IMPORT_COUNT);
-  chunks.forEach((chunk, index) => {
+  return chunks.map((chunk, index) => {
     const payload = {
       kind: RULE_TRANSFER_FILE_KIND,
       version: RULE_TRANSFER_FILE_VERSION,
@@ -2195,35 +2183,26 @@ function downloadRuleTransferFiles(
       scope,
       rules: chunk.map(exportRuleForTransfer),
     };
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
     const partSuffix = chunks.length > 1 ? `-part-${index + 1}-of-${chunks.length}` : "";
-    anchor.href = url;
-    anchor.download = `${fileNameBase}${partSuffix}.json`;
-    document.body.appendChild(anchor);
-    anchor.click();
-    document.body.removeChild(anchor);
-    globalThis.setTimeout(() => URL.revokeObjectURL(url), 0);
+    return { filename: `${fileNameBase}${partSuffix}.json`, content: JSON.stringify(payload, null, 2), ruleCount: chunk.length };
   });
-  return chunks.length;
 }
 
 function normalizeFailoverTargetsForSubmit(text: string) {
   const targets: Array<{ targetIp: string; targetPort: number }> = [];
   const lines = String(text || "").split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
-  if (lines.length > 10) return { error: "备用出站最多支持 10 个" };
+  if (lines.length > 10) return { error: translateText("备用出站最多支持 10 个") };
   for (let index = 0; index < lines.length; index += 1) {
     const parsed = splitFailoverTargetLine(lines[index]);
     if (!parsed) continue;
-    if ("error" in parsed) return { error: `第 ${index + 1} 行：${parsed.error}` };
+    if ("error" in parsed) return { error: translateText("第 {0} 行：{1}", [index + 1, parsed.error]) };
     const targetIp = parsed.targetIp;
     const targetPort = parsed.targetPort;
     if (!isValidTargetHost(targetIp)) {
-      return { error: `第 ${index + 1} 行：地址格式不正确` };
+      return { error: translateText("第 {0} 行：地址格式不正确", [index + 1]) };
     }
     if (!isValidPort(targetPort)) {
-      return { error: `第 ${index + 1} 行：端口必须在 1-65535 之间` };
+      return { error: translateText("第 {0} 行：端口必须在 1-65535 之间", [index + 1]) };
     }
     targets.push({ targetIp, targetPort });
   }
@@ -2299,6 +2278,9 @@ function RulesContent() {
   const [resetTrafficTarget, setResetTrafficTarget] = useState<{ scope: "all" } | { scope: "rule"; rule: any } | null>(null);
   const [showCopyDialog, setShowCopyDialog] = useState(false);
   const [form, setForm] = useState<RuleFormData>(defaultForm);
+  useEffect(() => {
+    if (showDialog && !editingId) setForm(prev => ({ ...prev, limits: newRuleLimitsForm() }));
+  }, [showDialog, editingId]);
   const filterResourceStorageKey = ruleFilterStorageKey(RULE_FILTER_RESOURCE_STORAGE_KEY, user);
   const filterUserStorageKey = ruleFilterStorageKey(RULE_FILTER_USER_STORAGE_KEY, user);
   const ruleCategoryStorageKey = ruleFilterStorageKey(RULE_CATEGORY_STORAGE_KEY, user);
@@ -2394,6 +2376,7 @@ function RulesContent() {
     targetPort: 0,
   });
   const [showExportDialog, setShowExportDialog] = useState(false);
+  const [exportDownloads, setExportDownloads] = useState<ReturnType<typeof buildRuleTransferFiles>>([]);
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [exportScopeType, setExportScopeType] = useState<RuleTransferScopeType>("local");
   const [exportResourceId, setExportResourceId] = useState("");
@@ -2531,10 +2514,10 @@ function RulesContent() {
       utils.rules.listSummary.invalidate();
       setShowDialog(false);
       resetForm();
-      const msg = data.sourcePort ? `规则创建成功，源端口: ${data.sourcePort}` : "规则创建成功";
+      const msg = data.sourcePort ? translateText("规则创建成功，源端口: {0}", [data.sourcePort]) : translateText("规则创建成功");
       toast.success(msg);
     },
-    onError: (err) => toast.error(err.message || "创建失败"),
+    onError: (err) => toast.error(err.message || translateText("创建失败")),
   });
 
   const updateMutation = trpc.rules.update.useMutation({
@@ -2546,9 +2529,9 @@ function RulesContent() {
       utils.rules.listSummary.invalidate();
       setShowDialog(false);
       resetForm();
-      toast.success("规则更新成功");
+      toast.success(translateText("规则更新成功"));
     },
-    onError: (err) => toast.error(err.message || "更新失败"),
+    onError: (err) => toast.error(err.message || translateText("更新失败")),
   });
 
   const deleteMutation = trpc.rules.delete.useMutation({
@@ -2558,13 +2541,13 @@ function RulesContent() {
       utils.rules.listPage.invalidate();
       utils.rules.mapItems.invalidate();
       utils.rules.listSummary.invalidate();
-      toast.success("规则已删除");
+      toast.success(translateText("规则已删除"));
     },
-    onError: (err) => toast.error(err.message || "删除失败"),
+    onError: (err) => toast.error(err.message || translateText("删除失败")),
   });
 
   const reorderRulesMutation = trpc.rules.reorder.useMutation({
-    onError: (err) => toast.error(err.message || "排序保存失败"),
+    onError: (err) => toast.error(err.message || translateText("排序保存失败")),
   });
   const ruleReorderPending = reorderRulesMutation.isPending;
 
@@ -2670,7 +2653,7 @@ function RulesContent() {
 
   const toggleRuleEnabled = async (rule: any, checked: boolean) => {
     const id = Number(rule?.id || 0);
-    if (!id) throw new Error("规则不存在");
+    if (!id) throw new Error(translateText("规则不存在"));
     if (
       checked &&
       user?.role !== "admin" &&
@@ -2679,30 +2662,33 @@ function RulesContent() {
       walletBalanceKnown &&
       Number(wallet?.balanceCents || 0) <= 0
     ) {
-      throw new Error("流量计费余额不足，请充值后再启用规则");
+      throw new Error(translateText("流量计费余额不足，请充值后再启用规则"));
     }
     await toggleMutation.mutateAsync({ id, isEnabled: checked });
   };
 
   const renderRuleEnabledSwitch = (rule: any) => {
+    if (user?.role !== "admin" && isAdminManagedRule(rule)) {
+      return <span title={translateText("管理员自定义规则仅可查看，请联系管理员修改")}><Switch checked={isRuleSupported(rule) && rule.resourceAccessAllowed !== false && !!rule.isEnabled && !rule.ruleLimitReason} disabled className="scale-75" aria-label={translateText("仅可查看")} /></span>;
+    }
     const supported = isRuleSupported(rule);
     const resourceAccessAllowed = rule.resourceAccessAllowed !== false;
     const enabled = !!rule.isEnabled;
     const canToggle = enabled || (supported && resourceAccessAllowed);
-    const title = enabled ? "关闭后该转发规则将停止下发和转发" : "开启后该转发规则将重新下发并恢复转发";
+    const title = enabled ? translateText("关闭后该转发规则将停止下发和转发") : translateText("开启后该转发规则将重新下发并恢复转发");
     const content = canToggle ? (
       <OptimisticSwitch
         checked={enabled}
         onCheckedChangeAsync={(checked) => toggleRuleEnabled(rule, checked)}
-        onToggleSuccess={(checked) => toast.success(checked ? "规则已开启" : "规则已关闭")}
-        onToggleError={(error) => toast.error(error instanceof Error ? error.message : "切换规则状态失败")}
+        onToggleSuccess={(checked) => toast.success(checked ? translateText("规则已开启") : translateText("规则已关闭"))}
+        onToggleError={(error) => toast.error(error instanceof Error ? error.message : translateText("切换规则状态失败"))}
         className="scale-75"
         title={title}
-        aria-label={`${enabled ? "停用" : "启用"}转发规则 ${rule.name || ""}`}
+        aria-label={translateText("{0}转发规则 {1}", [enabled ? translateText("停用") : translateText("启用"), rule.name || ""])}
       />
     ) : (
       <span className="inline-flex shrink-0" title={resourceAccessAllowed ? unsupportedProtocolTitle : revokedResourceTitle}>
-        <Switch checked={false} disabled className="scale-75" aria-label={resourceAccessAllowed ? "当前协议不支持，规则已停用" : "资源授权已失效，规则已停用"} />
+        <Switch checked={false} disabled className="scale-75" aria-label={resourceAccessAllowed ? translateText("当前协议不支持，规则已停用") : translateText("资源授权已失效，规则已停用")} />
       </span>
     );
     return canToggle ? content : renderUnsupportedHint(content, resourceAccessAllowed ? unsupportedProtocolTitle : revokedResourceTitle);
@@ -2759,7 +2745,7 @@ function RulesContent() {
         setShowDialog(true);
         return;
       }
-      toast.error("暂无可用端口转发，请检查链路配置、授权或计费余额");
+      toast.error(translateText("暂无可用端口转发，请检查链路配置、授权或计费余额"));
       return;
     }
     if (hasSavedLocalForward || hasBillingHostLocalForward || firstTunnel || firstChain || firstGroup) {
@@ -2787,7 +2773,7 @@ function RulesContent() {
         forwardGroupId: routeMode === "local" && localUsesSavedForward && firstPortGroup ? Number(firstPortGroup.id) : routeMode === "chain" && firstChain ? Number(firstChain.id) : routeMode === "group" && firstGroup ? Number(firstGroup.id) : null,
       });
     } else {
-      toast.error("暂无可用转发资源，请检查链路配置、授权或计费余额。");
+      toast.error(translateText("暂无可用转发资源，请检查链路配置、授权或计费余额。"));
       return;
     }
     setShowDialog(true);
@@ -2821,9 +2807,9 @@ function RulesContent() {
     setShowCopyDialog(true);
   };
 
-  const canEditRuleConfig = (rule: any) => user?.role === "admin" || !String(rule.sni || "").trim();
+  const canEditRuleConfig = (rule: any) => user?.role === "admin" || (!isAdminManagedRule(rule) && !String(rule.sni || "").trim());
   const openEdit = (rule: any) => {
-    if (!canEditRuleConfig(rule)) { toast.error("SNI 分流规则的配置由管理员修改，你可以启停或删除自己的规则"); return; }
+    if (!canEditRuleConfig(rule)) { toast.error(translateText("管理员托管规则仅可查看，请联系管理员修改")); return; }
     const editForwardGroup = rule.forwardGroupId
       ? (forwardGroups || []).find((group: any) => Number(group.id) === Number(rule.forwardGroupId))
       : null;
@@ -2832,13 +2818,14 @@ function RulesContent() {
       editForwardGroup ? normalizeForwardGroupModeForRule(editForwardGroup) : null,
     );
     if (!editRouteMode) {
-      toast.error("关联的转发资源尚未加载或已不可用，请刷新资源后再编辑");
+      toast.error(translateText("关联的转发资源尚未加载或已不可用，请刷新资源后再编辑"));
       return;
     }
     const isLegacyLocalRule = !Number(rule.forwardGroupId || 0)
       && !(rule.forwardType === "gost" && Number(rule.tunnelId || 0) > 0);
     setForm({
       hostId: rule.hostId,
+      limits: newRuleLimitsForm(rule),
       name: rule.name,
       routeMode: editRouteMode,
       forwardType: rule.forwardType,
@@ -2899,7 +2886,7 @@ function RulesContent() {
   );
   const nginxTunnelEnabled = forwardProtocolSettings.nginx_stream !== false;
   const protocolUnsupportedLabel = useCallback((protocolKey: ForwardProtocolKey | null | undefined) => {
-    const genericLabel = "\u8be5\u534f\u8bae";
+    const genericLabel = translateText("该协议");
     if (!protocolKey) return genericLabel;
     if (protocolKey === "nginx" && forwardProtocolSettings.nginx === false) return genericLabel;
     if (protocolKey === "nginx_stream" && !nginxTunnelEnabled) return genericLabel;
@@ -2907,7 +2894,7 @@ function RulesContent() {
   }, [forwardProtocolSettings.nginx, nginxTunnelEnabled]);
   const forwardTypeDisplayLabel = useCallback((forwardType: unknown) => {
     const type = String(forwardType || "");
-    if (type === "nginx" && forwardProtocolSettings.nginx === false) return "\u8f6c\u53d1\u5de5\u5177";
+    if (type === "nginx" && forwardProtocolSettings.nginx === false) return translateText("转发工具");
     return FORWARD_TYPE_LABELS[type as ForwardType] || type || "-";
   }, [forwardProtocolSettings.nginx]);
 
@@ -2954,21 +2941,21 @@ function RulesContent() {
     refetchOnWindowFocus: false,
   });
   const sourcePortRangeText = hasSelectedPortResource
-    ? effectivePortPolicy?.rangeText || (effectivePortPolicyLoading ? "读取中..." : effectivePortPolicyError ? "暂不可用" : "读取中...")
-    : "请选择链路";
+    ? effectivePortPolicy?.rangeText || (effectivePortPolicyLoading ? translateText("读取中...") : effectivePortPolicyError ? translateText("暂不可用") : translateText("读取中..."))
+    : translateText("请选择链路");
   const portStatusHint = useMemo(() => {
     if (portStatus === "used") {
       return {
         type: "used" as const,
-        text: portRangeError ? "超范围" : "不可用",
-        title: portRangeError || "端口已被占用",
+        text: portRangeError ? translateText("超范围") : translateText("不可用"),
+        title: portRangeError || translateText("端口已被占用"),
       };
     }
     if (portStatus === "available") {
       return {
         type: "available" as const,
-        text: "可用",
-        title: `允许端口范围: ${sourcePortRangeText}`,
+        text: translateText("可用"),
+        title: translateText("允许端口范围: {0}", [sourcePortRangeText]),
       };
     }
     return null;
@@ -2990,7 +2977,7 @@ function RulesContent() {
     return map;
   }, [users]);
   const ruleOperationOwner = createOwnerUserId ? userById.get(createOwnerUserId) : user;
-  const ruleOperationOwnerLabel = ruleOperationOwner?.name || ruleOperationOwner?.username || `用户 #${createOwnerUserId || user?.id}`;
+  const ruleOperationOwnerLabel = ruleOperationOwner?.name || ruleOperationOwner?.username || translateText("用户 #{0}", [createOwnerUserId || user?.id]);
   const forwardGroupById = useMemo(() => {
     const map = new Map<number, any>();
     (forwardGroups || []).forEach((group: any) => map.set(Number(group.id), group));
@@ -3172,25 +3159,25 @@ function RulesContent() {
   const routeModeTabItems: SlidingTabItem<RuleRouteMode>[] = [
     {
       value: "local",
-      label: "端口转发",
+      label: translateText("端口转发"),
       icon: ArrowRightLeft,
       disabled: !canUseLocalForward || (routeModeLocked && form.routeMode !== "local"),
     },
     {
       value: "tunnel",
-      label: "隧道转发",
+      label: translateText("隧道转发"),
       icon: Network,
       disabled: !canUseGost || (routeModeLocked && form.routeMode !== "tunnel"),
     },
     {
       value: "chain",
-      label: "转发链",
+      label: translateText("转发链"),
       icon: GitBranch,
       disabled: !canUseForwardChain || (routeModeLocked && form.routeMode !== "chain"),
     },
     {
       value: "group",
-      label: "转发组",
+      label: translateText("转发组"),
       icon: Layers3,
       disabled: !canUseFailoverGroup || (routeModeLocked && form.routeMode !== "group"),
     },
@@ -3203,13 +3190,14 @@ function RulesContent() {
     const nextSearch = params.toString();
     setLocation(`/rules${nextSearch ? `?${nextSearch}` : ""}`, { replace: true });
     if (!canAdd) {
-      toast.error("当前账号没有添加转发规则的权限");
+      toast.error(translateText("当前账号没有添加转发规则的权限"));
       return;
     }
     openCreate("local");
   }, [search, setLocation, rulePermissionLoading, hostsFetched, systemSettingsFetched, canAdd, canUseLocalForward, canUseSavedLocalForward, canUseBillingHostLocalForward, availablePortForwardGroups, availableTrafficBillingHosts, usableForwardTypes]);
 
-  const telegramBotReady = !!systemSettings?.telegram?.enabled && !!systemSettings?.telegram?.configured;
+  const notificationConfig = systemSettings?.notificationChannel === "discord" ? systemSettings.discord : systemSettings?.telegram;
+  const telegramBotReady = !!notificationConfig?.enabled && !!notificationConfig?.configured;
   const selectedForwardGroupIsChain = form.routeMode === "chain" || isForwardChainGroup(selectedForwardGroup);
   const selectedForwardGroupIsPort = normalizeForwardGroupModeForRule(selectedForwardGroup) === "port";
   const sniSupport = useMemo(() => sniToggleSupport({
@@ -3269,15 +3257,15 @@ function RulesContent() {
       || canAutoSwitchMainBackupToGost
     );
   const mainBackupDisabledText = selectedForwardGroupIsChain
-    ? "转发链不支持出站策略。"
+    ? translateText("转发链不支持出站策略。")
     : mainBackupUsesTunnelRoute && !mainBackupIsTunnelRoute
-    ? "当前隧道或转发工具不支持出站策略。"
+    ? translateText("当前隧道或转发工具不支持出站策略。")
     : mainBackupForwardType !== "gost" && !canAutoSwitchMainBackupToGost
-    ? "仅支持 GOST 的隧道或转发工具可以使用出站策略。"
+    ? translateText("仅支持 GOST 的隧道或转发工具可以使用出站策略。")
     : user?.role !== "admin" && !mainBackupUsesTunnelRoute && !selectedForwardGroupIsPort
-    ? "普通用户的普通端口转发不支持出站策略，请使用已保存的 GOST 端口转发或 GOST 隧道。"
+    ? translateText("普通用户的普通端口转发不支持出站策略，请使用已保存的 GOST 端口转发或 GOST 隧道。")
     : effectiveFormProtocol !== "tcp"
-    ? "出站策略仅支持 TCP 协议。"
+    ? translateText("出站策略仅支持 TCP 协议。")
     : "";
   const showMainBackupConfig = canUseMainBackup;
   const kernelForwardWarning = useMemo(() => buildKernelForwardWarning({
@@ -3299,7 +3287,7 @@ function RulesContent() {
     if (!sourcePort || sourcePort < 1) return;
     if (isForwardGroupRouteMode ? !forwardGroupId : !hostId) return;
     if (!isValidPort(sourcePort)) {
-      setPortRangeError("端口必须在 1-65535 之间");
+      setPortRangeError(translateText("端口必须在 1-65535 之间"));
       setPortStatus("used");
       return;
     }
@@ -3382,7 +3370,7 @@ function RulesContent() {
           excludeRuleId: editingId || undefined,
         });
         if (latestSniCheckRef.current !== checkId) return;
-        setSniDomainConflict(result.ok ? null : result.reason || "该 SNI 域名不可用");
+        setSniDomainConflict(result.ok ? null : result.reason || translateText("该 SNI 域名不可用"));
       } catch {
         if (latestSniCheckRef.current !== checkId) return;
         setSniDomainConflict(null);
@@ -3438,11 +3426,11 @@ function RulesContent() {
   const handleRandomPort = async () => {
     if (isForwardGroupRouteMode) {
       if (!form.forwardGroupId) {
-        toast.error(form.routeMode === "local" ? "请先选择端口转发" : form.routeMode === "chain" ? "请先选择转发链" : "请先选择转发组");
+        toast.error(form.routeMode === "local" ? translateText("请先选择端口转发") : form.routeMode === "chain" ? translateText("请先选择转发链") : translateText("请先选择转发组"));
         return;
       }
     } else if (!form.hostId) {
-      toast.error("请先选择主机");
+      toast.error(translateText("请先选择主机"));
       return;
     }
     try {
@@ -3452,9 +3440,9 @@ function RulesContent() {
       const result = await utils.rules.randomPort.fetch({ ...randomPortInput, userId: editingId ? undefined : createOwnerUserId });
       setForm({ ...form, sourcePort: result.port });
       setPortStatus("idle");
-      toast.success(`已分配随机端口: ${result.port}`);
+      toast.success(translateText("已分配随机端口: {0}", [result.port]));
     } catch (err: any) {
-      toast.error(err.message || "无法获取随机端口");
+      toast.error(err.message || translateText("无法获取随机端口"));
     }
   };
 
@@ -3520,7 +3508,7 @@ function RulesContent() {
     return {
       hostId: isTunnelTarget ? Number(resource.entryHostId) : undefined,
       userId: createOwnerUserId,
-      name: String(rule.name || "复制规则").trim().slice(0, 128) || "复制规则",
+      name: String(rule.name || translateText("复制规则")).trim().slice(0, 128) || translateText("复制规则"),
       forwardType,
       protocol: normalizeRuleProtocol(rule.protocol),
       gostMode: "direct" as const,
@@ -3530,7 +3518,7 @@ function RulesContent() {
       forwardGroupId: isForwardGroupTarget ? Number(resource.id) : null,
       sourcePort,
       sni: String(rule.sni || "").trim() || null,
-      rateLimitMbps: Number(rule.rateLimitMbps || 0),
+      ...(user?.role === "admin" ? { rateLimitMbps: Number(rule.rateLimitMbps || 0) } : {}),
       maxConnections: Number(rule.maxConnections || 0),
       targetIp: String(rule.targetIp || ""),
       targetPort: Number(rule.targetPort || 0),
@@ -3580,7 +3568,7 @@ function RulesContent() {
   };
 
   const createBatchCopyRule = async (rule: any, targetType: RuleTransferScopeType, resource: any) => {
-    if (!canEditRuleConfig(rule)) throw new Error("SNI 分流规则仅管理员可复制");
+    if (!canEditRuleConfig(rule)) throw new Error(translateText("SNI 分流规则仅管理员可复制"));
     const sourcePort = Number(rule.sourcePort || 0);
     try {
       await batchCreateMutation.mutateAsync(buildBatchCopyRulePayload(rule, targetType, resource, sourcePort) as any);
@@ -3596,7 +3584,7 @@ function RulesContent() {
   };
 
   const updateBatchRuleTarget = async (rule: any, override?: RuleBulkEditInput) => {
-    if (!canEditRuleConfig(rule)) throw new Error("SNI 分流规则仅管理员可修改");
+    if (!canEditRuleConfig(rule)) throw new Error(translateText("SNI 分流规则仅管理员可修改"));
     const conflictStrategy = override ? override.conflictStrategy : copyConflictStrategy;
     const hasRouteSelection = override ? !!(override.routeMode === "tunnel" ? override.tunnelId : override.forwardGroupId) : hasBatchEditRouteSelection;
     const sourcePort = Number(rule.sourcePort || 0);
@@ -3615,11 +3603,11 @@ function RulesContent() {
 
   const handleCopyRules = async () => {
     if (!canAdd) {
-      toast.error("当前账号没有添加转发规则的权限");
+      toast.error(translateText("当前账号没有添加转发规则的权限"));
       return;
     }
     if (copySelectedRules.length === 0) {
-      toast.error("请选择要复制的规则");
+      toast.error(translateText("请选择要复制的规则"));
       return;
     }
     // Read the eagerly-updated selection snapshot instead of relying solely
@@ -3639,7 +3627,7 @@ function RulesContent() {
     const selectedTargetIds = new Set(targetSelection.resourceIds.map(Number));
     const selectedTargets = targetResources.filter((resource: any) => selectedTargetIds.has(Number(resource.id)));
     if (selectedTargets.length === 0) {
-      toast.error("请选择目标" + ruleTransferScopeLabels[targetType]);
+      toast.error(translateText("请选择目标") + ruleTransferScopeLabels[targetType]);
       return;
     }
     const targetNames = selectedTargets.map((resource: any) => (
@@ -3647,7 +3635,7 @@ function RulesContent() {
     ));
     const targetSummary = targetNames.length <= 3
       ? targetNames.join("、")
-      : `${targetNames.slice(0, 3).join("、")} 等 ${targetNames.length} 个目标`;
+      : translateText("{0} 等 {1} 个目标", [targetNames.slice(0, 3).join("、"), targetNames.length]);
     setCopyWorking(true);
     let copied = 0;
     let skipped = 0;
@@ -3673,13 +3661,15 @@ function RulesContent() {
       if (showCopyDialog) await fullRulesQuery.refetch();
       const failures = results.filter((result) => result.status === "rejected");
       if (failures.length > 0) {
-        toast.error(`批量复制完成：成功 ${copied} 条，跳过 ${skipped} 条，失败 ${failures.length} 条。${batchOperationErrorMessage(failures[0].reason)}`);
+        toast.error(translateText("批量复制完成：成功 {0} 条，跳过 {1} 条，失败 {2} 条。{3}", [copied, skipped, failures.length, batchOperationErrorMessage(failures[0].reason)]));
       } else {
-        toast.success(`已复制 ${copied} 条规则到 ${targetSummary}${skipped ? "，跳过 " + skipped + " 条" : ""}`);
+        toast.success(skipped
+          ? translateText("已复制 {0} 条规则到 {1}，跳过 {2} 条", [copied, targetSummary, skipped])
+          : translateText("已复制 {0} 条规则到 {1}", [copied, targetSummary]));
         if (copied > 0) setShowCopyDialog(false);
       }
     } catch (error: any) {
-      toast.error("批量复制处理失败：" + (error?.message || "请检查目标配置"));
+      toast.error(translateText("批量复制处理失败：") + (error?.message || translateText("请检查目标配置")));
     } finally {
       setCopyWorking(false);
     }
@@ -3687,27 +3677,27 @@ function RulesContent() {
 
   const handleBatchEditRules = async () => {
     if (copySelectedRules.length === 0) {
-      toast.error("请选择要批量编辑的规则");
+      toast.error(translateText("请选择要批量编辑的规则"));
       return;
     }
     if (!hasBatchEditChanges) {
-      toast.error("请至少选择要替换的入口资源，或填写目标地址/端口");
+      toast.error(translateText("请至少选择要替换的入口资源，或填写目标地址/端口"));
       return;
     }
     if (batchEditForm.routeMode === "tunnel" && !selectedBatchEditTunnel && !hasBatchEditTargetIpChange && !hasBatchEditTargetPortChange) {
-      toast.error("请选择要替换到的隧道");
+      toast.error(translateText("请选择要替换到的隧道"));
       return;
     }
     if (batchEditForm.routeMode !== "tunnel" && !selectedBatchEditForwardGroup && !hasBatchEditTargetIpChange && !hasBatchEditTargetPortChange) {
-      toast.error(batchEditForm.routeMode === "local" ? "请选择要替换到的端口转发" : batchEditForm.routeMode === "chain" ? "请选择要替换到的转发链" : "请选择要替换到的转发组");
+      toast.error(batchEditForm.routeMode === "local" ? translateText("请选择要替换到的端口转发") : batchEditForm.routeMode === "chain" ? translateText("请选择要替换到的转发链") : translateText("请选择要替换到的转发组"));
       return;
     }
     if (hasBatchEditTargetIpChange && !isValidTargetHost(batchEditTargetIp)) {
-      toast.error("请输入有效的目标地址");
+      toast.error(translateText("请输入有效的目标地址"));
       return;
     }
     if (batchEditForm.targetPort && !hasBatchEditTargetPortChange) {
-      toast.error("请输入有效的目标端口");
+      toast.error(translateText("请输入有效的目标端口"));
       return;
     }
     setCopyWorking(true);
@@ -3733,13 +3723,15 @@ function RulesContent() {
       if (showCopyDialog) await fullRulesQuery.refetch();
       const failures = results.filter((result) => result.status === "rejected");
       if (failures.length > 0) {
-        toast.error(`批量编辑完成：成功 ${updated} 条，跳过 ${skipped} 条，失败 ${failures.length} 条。${batchOperationErrorMessage(failures[0].reason)}`);
+        toast.error(translateText("批量编辑完成：成功 {0} 条，跳过 {1} 条，失败 {2} 条。{3}", [updated, skipped, failures.length, batchOperationErrorMessage(failures[0].reason)]));
       } else {
-        toast.success("已批量编辑 " + updated + " 条规则" + (skipped ? "，跳过 " + skipped + " 条" : ""));
+        toast.success(skipped
+          ? translateText("已批量编辑 {0} 条，跳过 {1} 条", [updated, skipped])
+          : translateText("已批量编辑 {0} 条规则", [updated]));
         if (updated > 0) setShowCopyDialog(false);
       }
     } catch (error: any) {
-      toast.error("批量编辑处理失败：" + (error?.message || "请检查目标配置"));
+      toast.error(translateText("批量编辑处理失败：") + (error?.message || translateText("请检查目标配置")));
     } finally {
       setCopyWorking(false);
     }
@@ -3747,27 +3739,30 @@ function RulesContent() {
 
   const handleBatchExportRules = () => {
     if (copySelectedRules.length === 0) {
-      toast.error("请选择要导出的规则");
+      toast.error(translateText("请选择要导出的规则"));
       return;
     }
     const date = new Date().toISOString().slice(0, 10).replace(/-/g, "");
     const partCount = downloadRuleTransferFiles(
       copySelectedRules,
-      { type: "batch", name: "批量管理选中规则" },
+      { type: "batch", name: translateText("批量管理选中规则") },
       `forwardx-rules-batch-${date}`,
     );
-    toast.success(`已导出 ${copySelectedRules.length} 条规则${partCount > 1 ? `，共 ${partCount} 个文件` : ""}`);
+    if (!partCount) return;
+    toast.success(partCount > 1
+      ? translateText("已生成 {0} 条规则，共 {1} 个文件，请逐个下载", [copySelectedRules.length, partCount])
+      : translateText("已导出 {0} 条规则", [copySelectedRules.length]));
   };
 
   const handleBatchDeleteRules = async () => {
     if (copySelectedRules.length === 0) {
-      toast.error("请选择要删除的规则");
+      toast.error(translateText("请选择要删除的规则"));
       return;
     }
     if (!(await confirmDialog({
-      title: "删除转发规则",
-      description: `确认删除选中的 ${copySelectedRules.length} 条转发规则？`,
-      confirmText: "删除",
+      title: translateText("删除转发规则"),
+      description: translateText("确认删除选中的 {0} 条转发规则？", [copySelectedRules.length]),
+      confirmText: translateText("删除"),
       tone: "destructive",
     }))) return;
     setCopyWorking(true);
@@ -3783,7 +3778,7 @@ function RulesContent() {
           deletedIdList.push(...(chunkResult.value.deletedIds || []).map(Number));
           failures.push(...(chunkResult.value.failures || []).map((failure) => ({
             id: Number(failure.id),
-            error: String(failure.error || "删除失败"),
+            error: String(failure.error || translateText("删除失败")),
           })));
           continue;
         }
@@ -3802,12 +3797,12 @@ function RulesContent() {
       ]);
       if (showCopyDialog) await fullRulesQuery.refetch();
       if (failures.length > 0) {
-        toast.error(`批量删除完成：成功 ${deletedIdList.length} 条，失败 ${failures.length} 条。${failures[0]?.error || "请稍后重试"}`);
+        toast.error(translateText("批量删除完成：成功 {0} 条，失败 {1} 条。{2}", [deletedIdList.length, failures.length, failures[0]?.error || translateText("请稍后重试")]));
       } else {
-        toast.success("已删除 " + deletedIdList.length + " 条规则");
+        toast.success(translateText("已删除 {0} 条规则", [deletedIdList.length]));
       }
     } catch (error: any) {
-      toast.error("批量删除失败：" + (error?.message || "请稍后重试"));
+      toast.error(translateText("批量删除失败：") + (error?.message || translateText("请稍后重试")));
     } finally {
       setCopyWorking(false);
     }
@@ -3831,6 +3826,11 @@ function RulesContent() {
   };
 
   const handleSubmit = async () => {
+    let limitPayload: Partial<ReturnType<typeof ruleLimitsPayload>> = {};
+    if (user?.role === "admin") {
+      try { limitPayload = ruleLimitsPayload(form.limits); }
+      catch (error) { toast.error(error instanceof Error ? error.message : String(error)); return; }
+    }
     const submitForwardType = effectiveRouteForwardType;
     const submitSni = sniModeOn ? form.sni.trim() : "";
     const submitProtocol = submitSni ? "tcp" : effectiveFormProtocol;
@@ -3838,31 +3838,31 @@ function RulesContent() {
       ? submitSni || null
       : undefined;
     if (!form.name || !form.targetIp || !form.targetPort || (!isForwardGroupRouteMode && !form.hostId)) {
-      toast.error("请填写所有必填字段（目标端口必须填写）");
+      toast.error(translateText("请填写所有必填字段（目标端口必须填写）"));
       return;
     }
     if (isForwardGroupRouteMode && !form.forwardGroupId) {
-      toast.error(form.routeMode === "local" ? "请选择端口转发" : form.routeMode === "chain" ? "请选择转发链" : "请选择转发组");
+      toast.error(form.routeMode === "local" ? translateText("请选择端口转发") : form.routeMode === "chain" ? translateText("请选择转发链") : translateText("请选择转发组"));
       return;
     }
     if (form.routeMode === "local" && !canUseLocalForward) {
-      toast.error("暂无可用端口转发或按量计费资源");
+      toast.error(translateText("暂无可用端口转发或按量计费资源"));
       return;
     }
     if (form.routeMode === "chain" && !canUseForwardChain) {
-      toast.error("暂无可用转发链");
+      toast.error(translateText("暂无可用转发链"));
       return;
     }
     if (form.routeMode === "group" && !canUseFailoverGroup) {
-      toast.error("暂无可用转发组");
+      toast.error(translateText("暂无可用转发组"));
       return;
     }
     if (form.routeMode === "tunnel" && !canUseGost) {
-      toast.error("当前账号没有隧道转发权限");
+      toast.error(translateText("当前账号没有隧道转发权限"));
       return;
     }
     if (form.routeMode === "tunnel" && !form.tunnelId) {
-      toast.error("请选择要使用的隧道");
+      toast.error(translateText("请选择要使用的隧道"));
       return;
     }
     if (form.routeMode === "local" && !isProtocolEnabled(form.forwardType)) {
@@ -3882,16 +3882,16 @@ function RulesContent() {
       return;
     }
     if (!isValidPort(form.sourcePort, !editingId)) {
-      toast.error(editingId ? "源端口必须在 1-65535 之间" : "源端口必须为 0 或 1-65535，0 表示随机分配");
+      toast.error(editingId ? translateText("源端口必须在 1-65535 之间") : translateText("源端口必须为 0 或 1-65535，0 表示随机分配"));
       return;
     }
     if (!isValidPort(form.targetPort)) {
-      toast.error("目标端口必须在 1-65535 之间");
+      toast.error(translateText("目标端口必须在 1-65535 之间"));
       return;
     }
     // 开关开着就必须有域名：没有域名的「SNI 规则」存下来只是一条占着入口端口的普通规则。
     if (sniModeOn && !submitSni) {
-      toast.error("请填写 SNI 域名，或关闭 SNI 分流转发");
+      toast.error(translateText("请填写 SNI 域名，或关闭 SNI 分流转发"));
       return;
     }
     if (sniModeOn && sniDomainFormatError(submitSni)) {
@@ -3899,15 +3899,15 @@ function RulesContent() {
       return;
     }
     if (submitSni && (!Number.isInteger(form.rateLimitMbps) || form.rateLimitMbps < 0 || form.rateLimitMbps > 1_000_000)) {
-      toast.error("规则限速必须是 0-1000000 之间的整数");
+      toast.error(translateText("规则限速必须是 0-1000000 之间的整数"));
       return;
     }
     if (submitSni && (!Number.isInteger(form.maxConnections) || form.maxConnections < 0 || form.maxConnections > 1_000_000)) {
-      toast.error("最大连接数必须是 0-1000000 之间的整数");
+      toast.error(translateText("最大连接数必须是 0-1000000 之间的整数"));
       return;
     }
     if (form.telegramErrorNotifyEnabled && !telegramBotReady) {
-      toast.error("请先在系统设置中配置并启用 Telegram 机器人，再开启异常TG提醒");
+      toast.error(translateText("请先在系统设置中配置并启用所选通知渠道，再开启异常通知"));
       return;
     }
     const failoverSubmit = normalizeFailoverTargetsForSubmit(form.failoverTargetsText);
@@ -3918,23 +3918,23 @@ function RulesContent() {
     const failoverTargets = failoverSubmit.targets || [];
     if (form.failoverEnabled) {
       if (!canUseMainBackup) {
-        toast.error(mainBackupDisabledText || "当前规则类型不支持出站策略");
+        toast.error(mainBackupDisabledText || translateText("当前规则类型不支持出站策略"));
         return;
       }
       if (submitProtocol !== "tcp") {
-        toast.error("出站策略当前仅支持 TCP 协议");
+        toast.error(translateText("出站策略当前仅支持 TCP 协议"));
         return;
       }
       if (failoverTargets.length === 0) {
-        toast.error("启用出站策略后至少需要填写一个备用出站");
+        toast.error(translateText("启用出站策略后至少需要填写一个备用出站"));
         return;
       }
       if (!Number.isInteger(form.failoverSeconds) || form.failoverSeconds < 10 || form.failoverSeconds > 3600) {
-        toast.error("健康检查切换时间必须在 10-3600 秒之间");
+        toast.error(translateText("健康检查切换时间必须在 10-3600 秒之间"));
         return;
       }
       if (!Number.isInteger(form.recoverSeconds) || form.recoverSeconds < 10 || form.recoverSeconds > 3600) {
-        toast.error("恢复观察时间必须在 10-3600 秒之间");
+        toast.error(translateText("恢复观察时间必须在 10-3600 秒之间"));
         return;
       }
     }
@@ -3948,11 +3948,11 @@ function RulesContent() {
     };
     // SNI 分流不做端口探测，因此这两道闸门在分流形态下没有可依据的状态。
     if (!sniModeOn && !isForwardGroupRouteMode && portStatus === "used") {
-      toast.error("源端口已被占用，请更换端口或使用随机分配");
+      toast.error(translateText("源端口已被占用，请更换端口或使用随机分配"));
       return;
     }
     if (!sniModeOn && !editingId && !isForwardGroupRouteMode && form.sourcePort > 0 && portStatus !== "available") {
-      toast.error("请等待端口可用后再保存");
+      toast.error(translateText("请等待端口可用后再保存"));
       return;
     }
     if (kernelForwardWarning) {
@@ -3960,9 +3960,9 @@ function RulesContent() {
     }
     if (editingId && editingOriginalProtocol === "both" && submitProtocol !== "both") {
       const confirmed = await confirmDialog({
-        title: "确认缩小协议范围",
-        description: `当前规则同时转发 TCP 和 UDP。保存后将只保留 ${submitProtocol.toUpperCase()}，另一协议的监听会被停止。`,
-        confirmText: "继续保存",
+        title: translateText("确认缩小协议范围"),
+        description: translateText("当前规则同时转发 TCP 和 UDP。保存后将只保留 {0}，另一协议的监听会被停止。", [submitProtocol.toUpperCase()]),
+        confirmText: translateText("继续保存"),
       });
       if (!confirmed) return;
     }
@@ -3980,13 +3980,13 @@ function RulesContent() {
         forwardGroupId: isForwardGroupRouteMode ? form.forwardGroupId : null,
         sourcePort: form.sourcePort,
         sni: submitSniPayload,
-        rateLimitMbps: submitSni ? form.rateLimitMbps : 0,
         maxConnections: submitSni ? form.maxConnections : 0,
         isEnabled: portStatus === "available" ? true : undefined,
         targetIp: form.targetIp,
         targetPort: form.targetPort,
         telegramErrorNotifyEnabled: form.telegramErrorNotifyEnabled,
         ...failoverPayload,
+        ...limitPayload,
       });
     } else {
       createMutation.mutate({
@@ -4002,12 +4002,12 @@ function RulesContent() {
         forwardGroupId: isForwardGroupRouteMode ? form.forwardGroupId : null,
         sourcePort: form.sourcePort,
         sni: submitSniPayload,
-        rateLimitMbps: submitSni ? form.rateLimitMbps : 0,
         maxConnections: submitSni ? form.maxConnections : 0,
         targetIp: form.targetIp,
         targetPort: form.targetPort,
         telegramErrorNotifyEnabled: form.telegramErrorNotifyEnabled,
         ...failoverPayload,
+        ...limitPayload,
       });
     }
   };
@@ -4041,11 +4041,12 @@ function RulesContent() {
   const filteredRules = stableFilteredRules;
   // Batch tools need all matching source rules, while the page itself stays
   // on its current server page.  Keep these two data sources separate.
-  const transferSourceRules = selectedScopeQueryEnabled
+  const transferSourceRuleCandidates = selectedScopeQueryEnabled
     ? selectedScopedRules || []
     : needsFullRuleList
       ? (fullRulesQuery.data as any[] | undefined) || []
       : baseScopedRules;
+  const transferSourceRules = useMemo(() => transferSourceRuleCandidates.filter((rule: any) => user?.role === "admin" || !isAdminManagedRule(rule)), [transferSourceRuleCandidates, user?.role]);
   const copyableSourceRules = useMemo(() => {
     const batchFilters: RuleFilterState = {
       ...ruleFilters,
@@ -4110,19 +4111,19 @@ function RulesContent() {
   const allVisibleCopyTargetsSelected = filteredCopyTargetResources.length > 0
     && filteredCopyTargetResources.every((resource: any) => copyTargetResourceIds.includes(Number(resource.id)));
   const batchFlowHintLabel = isBatchEditMode
-    ? "按右侧设置处理"
+    ? translateText("按右侧设置处理")
     : isBatchExportMode
-      ? "导出左侧已选规则"
-      : "复制到右侧目标";
+      ? translateText("导出左侧已选规则")
+      : translateText("复制到右侧目标");
   const batchRuleSelectionPanel = (
-    <div className="space-y-3 rounded-md border border-border/60 bg-background/55 p-3">
+    <div className="min-w-0 space-y-3 rounded-md border border-border/60 bg-background/55 p-3">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
-          <Label>规则筛选</Label>
-          <div className="text-xs text-muted-foreground">先选择规则，再根据上方模式填写对应内容。</div>
+          <Label>{translateText("规则筛选")}</Label>
+          <div className="text-xs text-muted-foreground">{translateText("先选择规则，再根据上方模式填写对应内容。")}</div>
         </div>
         <div className="inline-flex items-center gap-2 self-start rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-          <span>已选规则</span>
+          <span>{translateText("已选规则")}</span>
           <span className="rounded-full bg-background/90 px-2 py-0.5 tabular-nums">{selectedBatchRuleCount}</span>
           <span className="text-primary/70">/ {copyableSourceRules.length}</span>
         </div>
@@ -4131,11 +4132,11 @@ function RulesContent() {
         <Select value={copyRuleCategory} onValueChange={(value) => setCopyRuleCategory(value as RuleCategory)}>
           <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">全部规则</SelectItem>
-            <SelectItem value="local">端口转发</SelectItem>
-            <SelectItem value="tunnel">隧道转发</SelectItem>
-            <SelectItem value="chain">转发链</SelectItem>
-            <SelectItem value="group">转发组</SelectItem>
+            <SelectItem value="all">{translateText("全部规则")}</SelectItem>
+            <SelectItem value="local">{translateText("端口转发")}</SelectItem>
+            <SelectItem value="tunnel">{translateText("隧道转发")}</SelectItem>
+            <SelectItem value="chain">{translateText("转发链")}</SelectItem>
+            <SelectItem value="group">{translateText("转发组")}</SelectItem>
           </SelectContent>
         </Select>
         <div className="relative">
@@ -4143,13 +4144,13 @@ function RulesContent() {
           <Input
             value={copyRuleSearch}
             onChange={(event) => setCopyRuleSearch(event.target.value)}
-            placeholder="查找规则名称、端口或目标地址"
+            placeholder={translateText("查找规则名称、端口或目标地址")}
             className="h-9 pl-8 pr-8 text-xs"
           />
           {copyRuleSearch ? (
             <button
               type="button"
-              aria-label="清空查找"
+              aria-label={translateText("清空查找")}
               className="absolute right-2 top-1/2 inline-flex h-4 w-4 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground"
               onClick={() => setCopyRuleSearch("")}
             >
@@ -4175,11 +4176,10 @@ function RulesContent() {
           }}
           disabled={copyableSourceRules.length === 0 || copyActionPending}
         >
-          {allVisibleCopyRulesSelected ? "取消" : "全选"}
+          {allVisibleCopyRulesSelected ? translateText("取消") : translateText("全选")}
         </Button>
         <span className="text-xs text-muted-foreground tabular-nums">
-          {copyableSourceRules.length} 项
-        </span>
+          {copyableSourceRules.length}{translateText(" 项")}</span>
       </div>
       <div className="max-h-[24rem] space-y-2 overflow-y-auto rounded-md border border-border/60 p-2">
         {copyableSourceRules.length > 0 ? copyableSourceRules.map((rule: any) => {
@@ -4213,7 +4213,7 @@ function RulesContent() {
             </label>
           );
         }) : (
-          <div className="py-10 text-center text-sm text-muted-foreground">没有匹配的转发规则</div>
+          <div className="py-10 text-center text-sm text-muted-foreground">{translateText("没有匹配的转发规则")}</div>
         )}
       </div>
     </div>
@@ -4259,55 +4259,48 @@ function RulesContent() {
   const ruleFilterCacheScope = user?.role === "admin"
     ? `admin-${user?.id || "self"}-${filterUser}`
     : `user-${user?.id || "self"}`;
-  const ruleCategoryCountsCacheKey = useMemo(() => [
+  const ruleCategoryCountsCacheKey = useMemo(() => encodeURIComponent(JSON.stringify([
     ruleFilterCacheScope,
-    filterResource,
-    ruleSearchQuery.trim() || "search-all",
-  ].map((value) => encodeURIComponent(String(value))).join("."), [filterResource, ruleFilterCacheScope, ruleSearchQuery]);
+    ruleSearchQuery.trim(),
+  ])), [ruleFilterCacheScope, ruleSearchQuery]);
   const [stableRuleCategoryCounts, setStableRuleCategoryCounts] = useState(() => {
     const cached = readCachedRuleCategoryCounts(ruleCategoryCountsCacheKey);
-    return { counts: cached || EMPTY_RULE_CATEGORY_COUNTS, ready: !!cached };
+    return { cacheKey: ruleCategoryCountsCacheKey, counts: cached || EMPTY_RULE_CATEGORY_COUNTS, ready: !!cached };
   });
   const previousRuleCategoryCountsCacheKey = useRef(ruleCategoryCountsCacheKey);
   useEffect(() => {
     if (previousRuleCategoryCountsCacheKey.current === ruleCategoryCountsCacheKey) return;
     previousRuleCategoryCountsCacheKey.current = ruleCategoryCountsCacheKey;
     const cached = readCachedRuleCategoryCounts(ruleCategoryCountsCacheKey);
-    setStableRuleCategoryCounts({ counts: cached || EMPTY_RULE_CATEGORY_COUNTS, ready: !!cached });
+    setStableRuleCategoryCounts({ cacheKey: ruleCategoryCountsCacheKey, counts: cached || EMPTY_RULE_CATEGORY_COUNTS, ready: !!cached });
   }, [ruleCategoryCountsCacheKey]);
   const liveRuleCategoryCounts = useMemo<RuleCategoryCounts>(() => {
     if (rulePageQuery.data?.categoryCounts) {
       return normalizeRuleCategoryCounts(rulePageQuery.data.categoryCounts);
     }
-    const sourceRules = selectedScopeQueryEnabled ? selectedScopedRules || [] : baseScopedRules;
-    const baseFilters = {
-      ...ruleFilters,
-      ruleCategory: "all" as RuleCategory,
-    };
-    const counts: RuleCategoryCounts = { ...EMPTY_RULE_CATEGORY_COUNTS };
-    sourceRules
-      .filter((rule: any) => isForwardRuleVisibleByFilters(rule, baseFilters))
-      .forEach((rule: any) => {
-        const category = getRuleCategory(rule, forwardGroupById);
-        counts.all += 1;
-        counts[category] += 1;
-      });
-    return counts;
-  }, [baseScopedRules, forwardGroupById, ruleFilters, rulePageQuery.data?.categoryCounts, selectedScopeQueryEnabled, selectedScopedRules]);
-  const hasFreshRuleCategoryCounts = rulePageQuery.data !== undefined && !rulePageQuery.isPlaceholderData;
+    // A filtered/paged list cannot reconstruct global category totals.
+    // Keep the last full counts while a new page is loading instead.
+    return EMPTY_RULE_CATEGORY_COUNTS;
+  }, [rulePageQuery.data?.categoryCounts]);
+  const hasFreshRuleCategoryCounts = rulePageQuery.data?.categoryCounts !== undefined && !rulePageQuery.isPlaceholderData;
   useEffect(() => {
     if (!hasFreshRuleCategoryCounts) return;
     setStableRuleCategoryCounts((previous) => (
-      previous.ready && ruleCategoryCountsEqual(previous.counts, liveRuleCategoryCounts)
+      previous.cacheKey === ruleCategoryCountsCacheKey && previous.ready && ruleCategoryCountsEqual(previous.counts, liveRuleCategoryCounts)
         ? previous
-        : { counts: liveRuleCategoryCounts, ready: true }
+        : { cacheKey: ruleCategoryCountsCacheKey, counts: liveRuleCategoryCounts, ready: true }
     ));
     writeCachedRuleCategoryCounts(ruleCategoryCountsCacheKey, liveRuleCategoryCounts);
   }, [hasFreshRuleCategoryCounts, liveRuleCategoryCounts, ruleCategoryCountsCacheKey]);
-  const ruleCategoryCountsReady = hasFreshRuleCategoryCounts || stableRuleCategoryCounts.ready;
-  const ruleCategoryCounts = hasFreshRuleCategoryCounts ? liveRuleCategoryCounts : stableRuleCategoryCounts.counts;
+  // Do not show the previous owner's/search's counts during the render
+  // before the cache-reset effect runs.
+  const matchingCachedRuleCategoryCounts = stableRuleCategoryCounts.cacheKey === ruleCategoryCountsCacheKey
+    ? stableRuleCategoryCounts
+    : { counts: EMPTY_RULE_CATEGORY_COUNTS, ready: false };
+  const ruleCategoryCountsReady = hasFreshRuleCategoryCounts || matchingCachedRuleCategoryCounts.ready;
+  const ruleCategoryCounts = hasFreshRuleCategoryCounts ? liveRuleCategoryCounts : matchingCachedRuleCategoryCounts.counts;
   const ruleCategoryItems = useMemo<SlidingTabItem<RuleCategory>[]>(() => [
-    { value: "all", label: "全部", icon: LayoutGrid, badge: ruleCategoryCountsReady ? ruleCategoryCounts.all : null },
+    { value: "all", label: translateText("全部"), icon: LayoutGrid, badge: ruleCategoryCountsReady ? ruleCategoryCounts.all : null },
     { value: "local", label: desktopRuleTypeLabels.local, icon: ArrowRightLeft, badge: ruleCategoryCountsReady ? ruleCategoryCounts.local : null },
     { value: "tunnel", label: desktopRuleTypeLabels.tunnel, icon: Network, badge: ruleCategoryCountsReady ? ruleCategoryCounts.tunnel : null },
     { value: "chain", label: desktopRuleTypeLabels.chain, icon: GitBranch, badge: ruleCategoryCountsReady ? ruleCategoryCounts.chain : null },
@@ -4357,8 +4350,8 @@ function RulesContent() {
     });
     return map;
   }, [ruleTargetGeoRows]);
-  const trafficRangeLabel = "近 24h";
-  const trafficMetricHeaderLabels = ["累计", "24H", "延迟"];
+  const trafficRangeLabel = translateText("近 24h");
+  const trafficMetricHeaderLabels = [translateText("累计"), "24H", translateText("延迟")];
 
   const { data: totalTrafficSummary } = trpc.rules.trafficSummary.useQuery(
     { hours: 24, range: "total", ruleIds: visibleRuleIdsForMetrics },
@@ -4401,9 +4394,9 @@ function RulesContent() {
         utils.dashboard.trafficBreakdown.invalidate(),
       ]);
       setResetTrafficTarget(null);
-      toast.success("规则统计数据已重置");
+      toast.success(translateText("规则统计数据已重置"));
     },
-    onError: (err) => toast.error(err.message || "重置数据失败"),
+    onError: (err) => toast.error(err.message || translateText("重置数据失败")),
   });
   useEffect(() => {
     if (visibleRuleIdsForMetrics.length === 0) {
@@ -4625,7 +4618,9 @@ function RulesContent() {
     () => pagedRuleItems.flatMap((item) => item.kind === "rule" ? [item.rule] : item.group.rules),
     [pagedRuleItems],
   );
-  const bulkSelection = useRuleBulkSelection({ rules: pagedRules, isSupported: isRuleSupported,
+  const bulkSelection = useRuleBulkSelection({ rules: pagedRules, isSupported: (rule) => isRuleSupported(rule) && (user?.role === "admin" || !isAdminManagedRule(rule)),
+    getUnselectableReason: (rule) => user?.role !== "admin" && isAdminManagedRule(rule)
+      ? translateText("管理员自定义规则仅可查看，请联系管理员修改") : null,
     scopeKey: JSON.stringify([user?.id, user?.role, rulePageRequest.page, filterUser, filterResource, ruleCategory, ruleSearchQuery, rulePageSize]),
     ready: ruleListDataReady && !rulePageQuery.isPlaceholderData && !isRuleGlobeView,
   });
@@ -4641,6 +4636,7 @@ function RulesContent() {
     ]); },
   });
   const ruleSortingEnabled = ruleCategory !== "all"
+    && (user?.role === "admin" || rulePageQuery.data?.hasAdminManagedRules === false)
     && effectiveViewMode !== "globe"
     && filterResource === "all"
     && ruleSearchQuery.trim().length === 0
@@ -4699,15 +4695,13 @@ function RulesContent() {
   const shouldGroupRuleCards = ruleCategory === "all";
 
   const getHostName = (hostId: number) => {
-    return hosts?.find((h: any) => h.id === hostId)?.name || `主机 #${hostId}`;
+    return hosts?.find((h: any) => h.id === hostId)?.name || translateText("主机 #{0}", [hostId]);
   };
-  const getHostOptionName = (host: any) => host?.name || `主机 #${host?.id || "-"}`;
+  const getHostOptionName = (host: any) => host?.name || translateText("主机 #{0}", [host?.id || "-"]);
   const renderTrafficBillingResourceBadge = (enabled = true) => enabled ? (
-    <span className="shrink-0 rounded border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium leading-none text-amber-700 dark:text-amber-300">
-      按量计费资源
-    </span>
+    <span className="shrink-0 rounded border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium leading-none text-amber-700 dark:text-amber-300">{translateText("按量计费资源")}</span>
   ) : null;
-  const getHostOptionText = (host: any) => `${getHostOptionName(host)}（${host?.isOnline ? "在线" : "离线"}）${trafficBillingHostIds.has(Number(host?.id)) ? " / 按量计费资源" : ""}`;
+  const getHostOptionText = (host: any) => translateText("{0}（{1}）{2}", [getHostOptionName(host), host?.isOnline ? translateText("在线") : translateText("离线"), trafficBillingHostIds.has(Number(host?.id)) ? translateText(" / 按量计费资源") : ""]);
   const renderHostStatusLabel = (host: any) => {
     const online = !!host?.isOnline;
     return (
@@ -4722,7 +4716,7 @@ function RulesContent() {
         />
         <span className="min-w-0 truncate">{getHostOptionName(host)}</span>
         {renderTrafficBillingResourceBadge(trafficBillingHostIds.has(Number(host?.id)))}
-        <span className="sr-only">{online ? "在线" : "离线"}</span>
+        <span className="sr-only">{online ? translateText("在线") : translateText("离线")}</span>
       </span>
     );
   };
@@ -4737,14 +4731,14 @@ function RulesContent() {
       {formatTrafficMultiplier(value)}
     </span>
   );
-  const getTunnelSelectName = (tunnel: any) => String(tunnel?.name || `隧道 #${tunnel?.id || "-"}`);
+  const getTunnelSelectName = (tunnel: any) => String(tunnel?.name || translateText("隧道 #{0}", [tunnel?.id || "-"]));
   const getTunnelSelectModeLabel = (tunnel: any) => getTunnelDisplay(tunnel, true).shortLabel;
   const getTunnelSelectText = (tunnel: any) => [
     getTunnelSelectName(tunnel),
     getTunnelSelectModeLabel(tunnel),
     getPortRangeText(tunnel),
     formatTrafficMultiplier((tunnel as any)?.trafficMultiplier),
-    trafficBillingTunnelIds.has(Number(tunnel?.id)) ? "按量计费资源" : "",
+    trafficBillingTunnelIds.has(Number(tunnel?.id)) ? translateText("按量计费资源") : "",
   ].filter(Boolean).join(" / ");
   const renderTunnelModeBadge = (tunnel: any) => (
     <span className="shrink-0 rounded border border-chart-4/30 bg-chart-4/10 px-1.5 py-0.5 text-[11px] font-medium leading-none text-chart-4">
@@ -4753,11 +4747,11 @@ function RulesContent() {
   );
   const getTunnelStatusText = (tunnel: any) => {
     const state = tunnelAvailabilityById.get(Number(tunnel?.id || 0));
-    if (state?.status === "available") return "可用";
-    if (state?.status === "degraded") return "部分可用";
-    if (state?.status === "pending") return "等待检测";
-    if (state?.status === "unavailable") return "不可用";
-    return state?.message || "已停用";
+    if (state?.status === "available") return translateText("可用");
+    if (state?.status === "degraded") return translateText("部分可用");
+    if (state?.status === "pending") return translateText("等待检测");
+    if (state?.status === "unavailable") return translateText("不可用");
+    return state?.message || translateText("已停用");
   };
   const renderTunnelSelectStatusDot = (tunnel: any) => {
     const state = tunnelAvailabilityById.get(Number(tunnel?.id || 0));
@@ -4791,16 +4785,17 @@ function RulesContent() {
   };
   const getForwardGroupSelectText = (group: any) => {
     const mode = normalizeForwardGroupModeForRule(group);
-    const billingText = isTrafficBillingForwardGroup(group) ? " / 按量计费资源" : "";
+    const billingText = isTrafficBillingForwardGroup(group) ? translateText(" / 按量计费资源") : "";
     if (isForwardChainGroup(group) || mode === "port") {
       return [getForwardGroupSelectName(group), formatTrafficMultiplier((group as any)?.trafficMultiplier)].join(" / ") + billingText;
     }
-    return `${getForwardGroupSelectName(group)} / ${getForwardGroupKindLabel(group)} / ${group?.members?.length || 0} 成员${billingText}`;
+    return translateText("{0} / {1} / {2} 成员{3}", [getForwardGroupSelectName(group), getForwardGroupKindLabel(group), group?.members?.length || 0, billingText]);
   };
   const getForwardGroupConfigStatus = useCallback((group: any): "available" | "degraded" | "pending" | "unavailable" | "disabled" => (
     groupAvailabilityById.get(Number(group?.id || 0))?.status || "unavailable"
   ), [groupAvailabilityById]);
   const resolveRuleVisualStatus = useCallback((rule: any): ReturnType<typeof resolveForwardRuleVisualStatus> => {
+    if (rule.ruleLimitReason) return { state: "disabled", title: rule.ruleLimitReason === "expired" ? translateText("规则已到期") : translateText("规则流量额度已用尽") };
     const latest = stableProbeByRule.get(Number(rule.id));
     const sni = String(rule?.sni || "").trim();
     if (sni) {
@@ -4817,51 +4812,51 @@ function RulesContent() {
       });
       const exitHost = hostById.get(Number(exitRuntime?.hostId || 0));
       if (rule.resourceAccessAllowed === false) return { state: "error", title: revokedResourceTitle };
-      if (!rule.isEnabled || group?.isEnabled === false) return { state: "disabled", title: "规则已停用" };
+      if (!rule.isEnabled || group?.isEnabled === false) return { state: "disabled", title: translateText("规则已停用") };
       if (unsupportedEntryRuntime) {
         const entryHost = hostById.get(Number(unsupportedEntryRuntime.hostId || 0));
         const agentVersion = String(entryHost?.agentVersion || "").trim();
         return {
           state: "error",
-          title: `入口主机 ${getHostOptionName(entryHost || { id: unsupportedEntryRuntime.hostId })} 的 Agent ${agentVersion ? `v${agentVersion}` : "版本未上报"}，需要 ${SNI_SPLITTER_MIN_AGENT_VERSION} 或更高版本`,
+          title: translateText("入口主机 {0} 的 Agent {1}，需要 {2} 或更高版本", [getHostOptionName(entryHost || { id: unsupportedEntryRuntime.hostId }), agentVersion ? `v${agentVersion}` : translateText("版本未上报"), SNI_SPLITTER_MIN_AGENT_VERSION]),
         };
       }
-      if (entryOfflineHost) return { state: "error", title: `入口主机 ${getHostOptionName(entryOfflineHost)} 离线` };
-      if (exitHost && !exitHost.isOnline) return { state: "error", title: "出口主机离线，整组落地机不可达" };
+      if (entryOfflineHost) return { state: "error", title: translateText("入口主机 {0} 离线", [getHostOptionName(entryOfflineHost)]) };
+      if (exitHost && !exitHost.isOnline) return { state: "error", title: translateText("出口主机离线，整组落地机不可达") };
       if (runtime?.applied) {
         const entryVersions = Array.from(new Set(entryRuntimes
           .map((entry: any) => Number(entry?.currentVersion || 0))
           .filter((version: number) => version > 0)));
         const exitVersion = Number(exitRuntime?.currentVersion || 0);
         const versionText = [
-          entryVersions.length > 0 ? `入口 ${entryVersions.join("、")}` : "",
-          exitVersion > 0 ? `出口 ${exitVersion}` : "",
+          entryVersions.length > 0 ? translateText("入口 {0}", [entryVersions.join("、")]) : "",
+          exitVersion > 0 ? translateText("出口 {0}", [exitVersion]) : "",
         ].filter(Boolean).join("，");
         return {
           state: "running",
           title: versionText
-            ? `域名已${entryRuntimes.length > 0 ? "在入口与出口" : "在出口主机"}生效，配置版本：${versionText}`
-            : `域名已${entryRuntimes.length > 0 ? "在入口与出口" : "在出口主机"}生效`,
+            ? translateText("域名已{0}生效，配置版本：{1}", [entryRuntimes.length > 0 ? translateText("在入口与出口") : translateText("在出口主机"), versionText])
+            : translateText("域名已{0}生效", [entryRuntimes.length > 0 ? translateText("在入口与出口") : translateText("在出口主机")]),
         };
       }
       const entryConfigError = entryRuntimes.find((entry: any) => String(entry?.lastConfigError || "").trim());
       const exitConfigError = String(exitRuntime?.lastConfigError || "").trim();
       if (entryConfigError) {
         const entryHost = hostById.get(Number(entryConfigError.hostId || 0));
-        return { state: "error", title: `入口 ${getHostOptionName(entryHost)} 配置应用失败：${String(entryConfigError.lastConfigError).trim()}` };
+        return { state: "error", title: translateText("入口 {0} 配置应用失败：{1}", [getHostOptionName(entryHost), String(entryConfigError.lastConfigError).trim()]) };
       }
-      if (exitConfigError) return { state: "error", title: `出口配置应用失败：${exitConfigError}` };
+      if (exitConfigError) return { state: "error", title: translateText("出口配置应用失败：{0}", [exitConfigError]) };
       if (entryRuntimes.some((entry: any) => !entry?.observed || !entry?.applied)) {
         const pendingEntry = entryRuntimes.find((entry: any) => !entry?.observed || !entry?.applied);
         const pendingHost = hostById.get(Number(pendingEntry?.hostId || 0));
         return {
           state: "pending",
           title: pendingHost
-            ? `规则已启用但域名尚未在入口主机 ${getHostOptionName(pendingHost)} 生效`
-            : "规则已启用但域名尚未在入口主机生效",
+            ? translateText("规则已启用但域名尚未在入口主机 {0} 生效", [getHostOptionName(pendingHost)])
+            : translateText("规则已启用但域名尚未在入口主机生效"),
         };
       }
-      return { state: "pending", title: "规则已启用但域名尚未在出口主机生效" };
+      return { state: "pending", title: translateText("规则已启用但域名尚未在出口主机生效") };
     }
     if (rule.forwardGroupId) {
       const group = forwardGroupById.get(Number(rule.forwardGroupId));
@@ -4948,11 +4943,11 @@ function RulesContent() {
   }, [ruleVisualStatuses, user?.id]);
   const getForwardGroupStatusText = (group: any) => {
     const status = getForwardGroupConfigStatus(group);
-    if (status === "disabled") return "已停用";
-    if (status === "available") return "可用";
-    if (status === "degraded") return "部分可用";
-    if (status === "pending") return "等待检测";
-    return "不可用";
+    if (status === "disabled") return translateText("已停用");
+    if (status === "available") return translateText("可用");
+    if (status === "degraded") return translateText("部分可用");
+    if (status === "pending") return translateText("等待检测");
+    return translateText("不可用");
   };
   const renderForwardGroupSelectStatusDot = (group: any) => {
     const status = getForwardGroupConfigStatus(group);
@@ -4977,8 +4972,7 @@ function RulesContent() {
         {renderTrafficBillingResourceBadge(isTrafficBillingForwardGroup(group))}
         {mode === "failover" && (
           <span className="shrink-0 rounded border border-border/50 bg-background/60 px-1.5 py-0.5 text-[11px] leading-none text-muted-foreground">
-            {memberCount} 成员
-          </span>
+            {memberCount}{translateText(" 成员")}</span>
         )}
         <span className="sr-only">{getForwardGroupStatusText(group)}</span>
       </span>
@@ -5010,7 +5004,7 @@ function RulesContent() {
                   {exitGroupName}
                   {exitNames.length > 0 && (
                     <span className="text-muted-foreground">
-                      {"\uFF1B\u51FA\u53E3\uFF1A"}{exitNames.join(" / ")}
+                      {translateText("；出口：")}{exitNames.join(" / ")}
                     </span>
                   )}
                 </>
@@ -5041,7 +5035,7 @@ function RulesContent() {
     const meta: Record<string, any> = {};
     const rule = selfTestRuleDetail;
     if (!rule) {
-      return { nodeMeta: meta, sourceLabel: selfTestRule?.name || "源节点", targetLabel: selfTestRule?.name || "目标", plannedSegments: [] as LinkTestPlannedSegment[] };
+      return { nodeMeta: meta, sourceLabel: selfTestRule?.name || translateText("源节点"), targetLabel: selfTestRule?.name || translateText("目标"), plannedSegments: [] as LinkTestPlannedSegment[] };
     }
 
     const hostById = new Map<number, any>((hosts || []).map((host: any) => [Number(host.id), host]));
@@ -5079,50 +5073,50 @@ function RulesContent() {
       return hostDisplayName(host)
         || String(member?.name || member?.remark || "").trim()
         || (tunnel ? tunnelHopHostName(tunnel, hostId, hosts) : "")
-        || `主机 #${hostId}`;
+        || translateText("主机 #{0}", [hostId]);
     };
     const routeHostIds = ruleGlobeRouteHostIds(rule, tunnelById, forwardGroupById);
     routeHostIds.forEach((hostId: number, index: number) => {
       const host = hostForRouteId(Number(hostId));
       addHostNodeMeta(meta, host, [
-        index === 0 ? "入口" : "",
-        index === routeHostIds.length - 1 ? "出口" : "",
+        index === 0 ? translateText("入口") : "",
+        index === routeHostIds.length - 1 ? translateText("出口") : "",
         tunnel ? labelForRouteHostId(hostId) : "",
         tunnel ? tunnelHopHostName(tunnel, hostId, hosts) : "",
-        `主机${hostId}`,
-        `主机 #${hostId}`,
+        translateText("主机{0}", [hostId]),
+        translateText("主机 #{0}", [hostId]),
       ]);
     });
 
     const sourceHost = hostForRouteId(Number(routeHostIds[0] || rule.hostId || 0)) || getRuleEntryHost(rule);
     const exitHost = hostForRouteId(Number(routeHostIds[routeHostIds.length - 1] || 0));
-    if (sourceHost) addHostNodeMeta(meta, sourceHost, ["入口", "源节点"]);
+    if (sourceHost) addHostNodeMeta(meta, sourceHost, [translateText("入口"), translateText("源节点")]);
     chainEntryMembers.forEach((entryMember: any) => {
       const entryHost = hostForRouteId(Number(entryMember.hostId || 0));
       addHostNodeMeta(meta, entryHost, [
-        "入口",
-        "源节点",
-        `主机${entryMember.hostId || ""}`,
-        `主机 #${entryMember.hostId || ""}`,
+        translateText("入口"),
+        translateText("源节点"),
+        translateText("主机{0}", [entryMember.hostId || ""]),
+        translateText("主机 #{0}", [entryMember.hostId || ""]),
       ]);
     });
     tunnelEntryMembers.forEach((entryMember: any) => {
       const entryHostId = Number(entryMember.hostId || 0);
       const entryHost = hostForRouteId(entryHostId);
       addHostNodeMeta(meta, entryHost, [
-        "入口",
-        "源节点",
+        translateText("入口"),
+        translateText("源节点"),
         labelForRouteHostId(entryHostId),
         entryMember.entryAddress,
-        `主机${entryHostId || ""}`,
-        `主机 #${entryHostId || ""}`,
+        translateText("主机{0}", [entryHostId || ""]),
+        translateText("主机 #{0}", [entryHostId || ""]),
       ]);
     });
-    if (exitHost) addHostNodeMeta(meta, exitHost, ["出口"]);
+    if (exitHost) addHostNodeMeta(meta, exitHost, [translateText("出口")]);
 
     const targetIp = String(rule.targetIp || "").trim();
-    const targetText = formatAddressWithPort(targetIp || "-", Number(rule.targetPort || 0) || "-") || "目标";
-    const ruleLabel = String(rule.name || selfTestRule?.name || `规则 #${rule.id || "-"}`).trim();
+    const targetText = formatAddressWithPort(targetIp || "-", Number(rule.targetPort || 0) || "-") || translateText("目标");
+    const ruleLabel = String(rule.name || selfTestRule?.name || translateText("规则 #{0}", [rule.id || "-"])).trim();
     const targetHost = findHostByAddress(hosts, targetIp);
     if (targetHost) {
       addHostNodeMeta(meta, targetHost);
@@ -5134,10 +5128,10 @@ function RulesContent() {
         ruleLabel,
         targetIp,
         targetText,
-        `目标 ${targetText}`,
-        `目标 ${targetIp}:${rule.targetPort || "-"}`,
-        "目标",
-        "目的节点",
+        translateText("目标 {0}", [targetText]),
+        translateText("目标 {0}:{1}", [targetIp, rule.targetPort || "-"]),
+        translateText("目标"),
+        translateText("目的节点"),
       ], hostMeta);
     } else {
       const targetGeo = targetGeoByAddress.get(normalizeAddressKey(targetIp));
@@ -5146,10 +5140,10 @@ function RulesContent() {
         ruleLabel,
         targetIp,
         targetText,
-        `目标 ${targetText}`,
-        `目标 ${targetIp}:${rule.targetPort || "-"}`,
-        "目标",
-        "目的节点",
+        translateText("目标 {0}", [targetText]),
+        translateText("目标 {0}:{1}", [targetIp, rule.targetPort || "-"]),
+        translateText("目标"),
+        translateText("目的节点"),
       ], targetMeta);
     }
 
@@ -5169,7 +5163,7 @@ function RulesContent() {
         const entryHostId = Number(entryMember.hostId || 0);
         const entryHost = hostForRouteId(entryHostId);
         plannedSegments.push({
-          from: hostDisplayName(entryHost) || `入口主机 #${entryMember.hostId || "-"}`,
+          from: hostDisplayName(entryHost) || translateText("入口主机 #{0}", [entryMember.hostId || "-"]),
           to: hostDisplayName(firstChainHost),
           fromHostId: entryHostId || null,
           toHostId: firstChainHostId || null,
@@ -5210,7 +5204,7 @@ function RulesContent() {
           ? false
           : undefined,
       latencyMs: tunnelLatencyMs !== null && useTunnelLatencyFallback ? tunnelLatencyMs : null,
-      message: tunnelLatencyIsTimeout && useTunnelLatencyFallback ? "隧道段失败" : null,
+      message: tunnelLatencyIsTimeout && useTunnelLatencyFallback ? translateText("隧道段失败") : null,
       method: null,
       pending: false,
     });
@@ -5270,7 +5264,7 @@ function RulesContent() {
       nodeMeta: meta,
       sourceLabel: chainEntryMembers.length > 0
         ? chainEntryMembers
-          .map((member: any) => hostDisplayName(hostForRouteId(Number(member.hostId || 0))) || `入口主机 #${member.hostId || "-"}`)
+          .map((member: any) => hostDisplayName(hostForRouteId(Number(member.hostId || 0))) || translateText("入口主机 #{0}", [member.hostId || "-"]))
           .filter(Boolean)
           .join(" / ")
         : tunnelEntryHostIds.length > 1
@@ -5283,7 +5277,7 @@ function RulesContent() {
 
   const getTransferResourceLabel = (type: RuleTransferScopeType, resource: any) => {
     if (!resource) return "";
-    if (type === "local") return resource.name || `端口转发 #${resource.id}`;
+    if (type === "local") return resource.name || translateText("端口转发 #{0}", [resource.id]);
     if (type === "tunnel") return `${resource.name || `#${resource.id}`} / ${getTunnelRouteText(resource, hosts || [])}`;
     return resource.name || `#${resource.id}`;
   };
@@ -5357,20 +5351,20 @@ function RulesContent() {
       const state = tunnelAvailabilityById.get(Number(resource?.id || 0));
       if (state?.status === "available") {
         return {
-          label: "可用",
+          label: translateText("可用"),
           dotClassName: "bg-emerald-500",
           textClassName: "text-muted-foreground",
         };
       }
       if (state?.status === "degraded" || state?.status === "pending") {
         return {
-          label: state.status === "degraded" ? "部分可用" : "检测中",
+          label: state.status === "degraded" ? translateText("部分可用") : translateText("检测中"),
           dotClassName: "bg-amber-500",
           textClassName: "text-muted-foreground",
         };
       }
       return {
-        label: state?.status === "disabled" ? "停用" : "不可用",
+        label: state?.status === "disabled" ? translateText("停用") : translateText("不可用"),
         dotClassName: state?.status === "disabled" ? "bg-muted-foreground/60" : "bg-destructive",
         textClassName: "text-muted-foreground",
       };
@@ -5379,27 +5373,27 @@ function RulesContent() {
     const status = getForwardGroupConfigStatus(resource);
     if (status === "available") {
       return {
-        label: "可用",
+        label: translateText("可用"),
         dotClassName: "bg-emerald-500",
         textClassName: "text-muted-foreground",
       };
     }
     if (status === "pending" || status === "degraded") {
       return {
-        label: status === "degraded" ? "部分可用" : "检测中",
+        label: status === "degraded" ? translateText("部分可用") : translateText("检测中"),
         dotClassName: "bg-amber-500",
         textClassName: "text-muted-foreground",
       };
     }
     if (status === "disabled") {
       return {
-        label: "停用",
+        label: translateText("停用"),
         dotClassName: "bg-muted-foreground/60",
         textClassName: "text-muted-foreground",
       };
     }
     return {
-      label: "离线",
+      label: translateText("离线"),
       dotClassName: "bg-muted-foreground/60",
       textClassName: "text-muted-foreground",
     };
@@ -5420,10 +5414,10 @@ function RulesContent() {
         <div className="flex min-w-0 flex-col gap-0.5">
           <span className="flex min-w-0 items-center gap-2">
             {statusBadge}
-            <span className="truncate">{resource.name || `端口转发 #${resource.id}`}</span>
+            <span className="truncate">{resource.name || translateText("端口转发 #{0}", [resource.id])}</span>
           </span>
           <span className="truncate text-xs text-muted-foreground">
-            {members.length > 0 ? members.map((member: any) => member.entryAddress || member.connectHost || (member.hostId ? `主机 #${member.hostId}` : "所属主机")).join(" / ") : getForwardGroupKindLabel(resource)}
+            {members.length > 0 ? members.map((member: any) => member.entryAddress || member.connectHost || (member.hostId ? translateText("主机 #{0}", [member.hostId]) : translateText("所属主机"))).join(" / ") : getForwardGroupKindLabel(resource)}
           </span>
         </div>
       );
@@ -5487,7 +5481,7 @@ function RulesContent() {
               value={search}
               onChange={(event) => onSearch(event.target.value)}
               disabled={resources.length === 0}
-              placeholder={`搜索${label}`}
+              placeholder={translateText("搜索{0}", [label])}
               className="h-9 border-0 pl-9 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
             />
           </div>
@@ -5543,14 +5537,14 @@ function RulesContent() {
               })
             ) : (
               <div className="px-3 py-8 text-center text-sm text-muted-foreground">
-                {resources.length === 0 ? `暂无可选择的${label}` : `没有匹配的${label}`}
+                {resources.length === 0 ? translateText("暂无可选择的{0}", [label]) : translateText("没有匹配的{0}", [label])}
               </div>
             )}
           </div>
         </div>
         {selectedResource && !selectedVisible ? (
           <div className="rounded-md bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-            {"已选择："}{getTransferResourceLabel(type, selectedResource)}
+            {translateText("已选择：")}{getTransferResourceLabel(type, selectedResource)}
           </div>
         ) : null}
       </div>
@@ -5579,25 +5573,25 @@ function RulesContent() {
       .map((line, index) => ({ text: line.trim(), lineNumber: index + 1 }))
       .filter((line) => !!line.text);
     if (lines.length === 0) {
-      return { ok: false, message: "请输入目标地址，每行一个 地址:端口", rules: [] };
+      return { ok: false, message: translateText("请输入目标地址，每行一个 地址:端口"), rules: [] };
     }
     if (lines.length > RULE_TRANSFER_MAX_IMPORT_COUNT) {
-      return { ok: false, message: `单次最多导入 ${RULE_TRANSFER_MAX_IMPORT_COUNT} 条规则`, rules: [] };
+      return { ok: false, message: translateText("单次最多导入 {0} 条规则", [RULE_TRANSFER_MAX_IMPORT_COUNT]), rules: [] };
     }
     const rules: RuleBulkImportRule[] = [];
     for (let index = 0; index < lines.length; index += 1) {
       const parsed = splitFailoverTargetLine(lines[index].text);
       if (!parsed) continue;
       if ("error" in parsed) {
-        return { ok: false, message: `第 ${lines[index].lineNumber} 行：${parsed.error}`, rules: [] };
+        return { ok: false, message: translateText("第 {0} 行：{1}", [lines[index].lineNumber, parsed.error]), rules: [] };
       }
       const targetIp = String(parsed.targetIp || "").trim();
       const targetPort = Number(parsed.targetPort || 0);
       if (!isValidTargetHost(targetIp)) {
-        return { ok: false, message: `第 ${lines[index].lineNumber} 行：地址格式不正确`, rules: [] };
+        return { ok: false, message: translateText("第 {0} 行：地址格式不正确", [lines[index].lineNumber]), rules: [] };
       }
       if (!isValidPort(targetPort)) {
-        return { ok: false, message: `第 ${lines[index].lineNumber} 行：端口必须在 1-65535 之间`, rules: [] };
+        return { ok: false, message: translateText("第 {0} 行：端口必须在 1-65535 之间", [lines[index].lineNumber]), rules: [] };
       }
       rules.push({
         sourceLineNumber: lines[index].lineNumber,
@@ -5626,24 +5620,24 @@ function RulesContent() {
         autoFailback: true,
       });
     }
-    return { ok: true, message: `已识别 ${rules.length} 条手动输入规则`, rules };
+    return { ok: true, message: translateText("已识别 {0} 条手动输入规则", [rules.length]), rules };
   }, [defaultForm.forwardType, defaultForm.protocol, importManualText]);
 
   const sniImportValidation = useMemo<{ ok: boolean; message: string; rules: RuleBulkImportRule[] }>(() => {
     if (user?.role !== "admin") {
-      return { ok: false, message: "SNI 分流仅管理员可导入", rules: [] };
+      return { ok: false, message: translateText("SNI 分流仅管理员可导入"), rules: [] };
     }
     if (!SNI_IMPORT_SCOPE_TYPES.includes(importScopeType)) {
-      return { ok: false, message: "SNI 分流规则不能导入到转发组，请选择端口转发、隧道或转发链", rules: [] };
+      return { ok: false, message: translateText("SNI 分流规则不能导入到转发组，请选择端口转发、隧道或转发链"), rules: [] };
     }
     return parseSniBulkImportText(importManualText, importSniSourcePort);
   }, [importManualText, importScopeType, importSniSourcePort, user?.role]);
 
   const importValidation = useMemo<{ ok: boolean; message: string; rules: RuleBulkImportRule[] }>(() => {
-    if (!importResourceId) return { ok: false, message: `请选择${ruleTransferScopeLabels[importScopeType]}`, rules: [] };
+    if (!importResourceId) return { ok: false, message: translateText("请选择{0}", [ruleTransferScopeLabels[importScopeType]]), rules: [] };
     if (importSourceMode === "sni") {
       if (!SNI_IMPORT_SCOPE_TYPES.includes(importScopeType) || !selectedImportResource) {
-        return { ok: false, message: `请选择${ruleTransferScopeLabels[importScopeType]}`, rules: [] };
+        return { ok: false, message: translateText("请选择{0}", [ruleTransferScopeLabels[importScopeType]]), rules: [] };
       }
       return sniImportValidation;
     }
@@ -5652,8 +5646,8 @@ function RulesContent() {
       return manualImportValidation;
     }
     if (importFileError) return { ok: false, message: importFileError, rules: [] };
-    if (!importFile) return { ok: false, message: "请选择导入文件", rules: [] };
-    return { ok: true, message: `已识别 ${importFile.rules.length} 条${ruleTransferScopeLabels[importScopeType]}规则`, rules: importFile.rules };
+    if (!importFile) return { ok: false, message: translateText("请选择导入文件"), rules: [] };
+    return { ok: true, message: translateText("已识别 {0} 条{1}规则", [importFile.rules.length, ruleTransferScopeLabels[importScopeType]]), rules: importFile.rules };
   }, [importFile, importFileError, importResourceId, importScopeType, importSourceMode, manualImportValidation, selectedImportResource, sniImportValidation]);
 
   const resetImportDialog = () => {
@@ -5673,7 +5667,7 @@ function RulesContent() {
 
   const openImportDialog = () => {
     if (!canAdd) {
-      toast.error("当前没有添加规则权限");
+      toast.error(translateText("当前没有添加规则权限"));
       return;
     }
     const categoryAvailable = ruleCategory === "local"
@@ -5697,7 +5691,7 @@ function RulesContent() {
               ? "group"
               : null;
     if (!preferredType) {
-      toast.error("请先创建可用端口转发、隧道、转发链或转发组后再导入规则。");
+      toast.error(translateText("请先创建可用端口转发、隧道、转发链或转发组后再导入规则。"));
       return;
     }
     setImportScopeType(preferredType as RuleTransferScopeType);
@@ -5713,7 +5707,7 @@ function RulesContent() {
     setImportFileName(file?.name || "");
     if (!file) return;
     if (Number(file.size || 0) > RULE_TRANSFER_MAX_FILE_SIZE) {
-      setImportFileError("规则文件不能超过 5 MiB");
+      setImportFileError(translateText("规则文件不能超过 5 MiB"));
       return;
     }
     try {
@@ -5726,7 +5720,7 @@ function RulesContent() {
       }
       setImportFile({ ...result.file, rules: result.file.rules.map((rule, index) => ({ ...rule, sourceLineNumber: index + 1 })) });
     } catch {
-      setImportFileError("文件无法解析，请选择 JSON 格式的规则文件");
+      setImportFileError(translateText("文件无法解析，请选择 JSON 格式的规则文件"));
     }
   };
 
@@ -5751,7 +5745,7 @@ function RulesContent() {
       forwardGroupId: importScopeType === "tunnel" ? null : resourceId,
       sourcePort: rule.sourcePort,
       sni: sni || null,
-      rateLimitMbps: sni ? Number(rule.rateLimitMbps || 0) : 0,
+      ...(user?.role === "admin" ? { rateLimitMbps: Number(rule.rateLimitMbps || 0) } : {}),
       maxConnections: sni ? Number(rule.maxConnections || 0) : 0,
       targetIp: rule.targetIp,
       targetPort: rule.targetPort,
@@ -5831,31 +5825,48 @@ function RulesContent() {
         const firstFailure = failures[0];
         const firstMessage = batchOperationErrorMessage(firstFailure.reason);
         const firstPrefix = firstFailure.item.sourceLineNumber
-          ? `第 ${firstFailure.item.sourceLineNumber} 行：`
+          ? translateText("第 {0} 行：", [firstFailure.item.sourceLineNumber])
           : "";
-        toast.error(`批量导入完成：成功 ${importedCount} 条，失败 ${failures.length} 条，已仅保留失败项供重试。${firstMessage.startsWith(firstPrefix) ? firstMessage : `${firstPrefix}${firstMessage}`}`);
+        toast.error(translateText("批量导入完成：成功 {0} 条，失败 {1} 条，已仅保留失败项供重试。{2}", [importedCount, failures.length, firstMessage.startsWith(firstPrefix) ? firstMessage : `${firstPrefix}${firstMessage}`]));
       } else {
-        toast.success(`已导入 ${importedCount} 条规则`);
+        toast.success(translateText("已导入 {0} 条规则", [importedCount]));
         setShowImportDialog(false);
         setShowCopyDialog(false);
         resetImportDialog();
       }
     } catch (error: any) {
-      toast.error(`批量导入处理失败：${error?.message || "请检查规则配置"}`);
+      toast.error(translateText("批量导入处理失败：{0}", [error?.message || translateText("请检查规则配置")]));
     } finally {
       importingRulesRef.current = false;
       setImportingRules(false);
     }
   };
 
+  const downloadRuleTransferFile = (file: ReturnType<typeof buildRuleTransferFiles>[number]) => {
+    try {
+      downloadTextFile(file.filename, file.content, "application/json;charset=utf-8");
+      return true;
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : translateText("浏览器未能保存文件，请检查下载权限后重试"));
+      return false;
+    }
+  };
+  const downloadRuleTransferFiles = (rules: readonly any[], scope: Record<string, unknown>, fileNameBase: string) => {
+    const files = buildRuleTransferFiles(rules, scope, fileNameBase);
+    if (files.length === 1) return downloadRuleTransferFile(files[0]) ? 1 : 0;
+    setShowCopyDialog(false);
+    setExportDownloads(files);
+    return files.length;
+  };
+
   const handleExportRules = () => {
     const resource = exportResources.find((item: any) => String(item.id) === exportResourceId);
     if (!resource) {
-      toast.error(`请选择${ruleTransferScopeLabels[exportScopeType]}`);
+      toast.error(translateText("请选择{0}", [ruleTransferScopeLabels[exportScopeType]]));
       return;
     }
     if (exportableRules.length === 0) {
-      toast.error("当前选择没有可导出的规则");
+      toast.error(translateText("当前选择没有可导出的规则"));
       return;
     }
     const resourceLabel = getTransferResourceLabel(exportScopeType, resource);
@@ -5869,12 +5880,15 @@ function RulesContent() {
       },
       `forwardx-rules-${exportScopeType}-${sanitizeRuleTransferFilePart(resourceLabel)}-${date}`,
     );
-    toast.success(`已导出 ${exportableRules.length} 条规则${partCount > 1 ? `，共 ${partCount} 个文件` : ""}`);
+    if (!partCount) return;
+    toast.success(partCount > 1
+      ? translateText("已生成 {0} 条规则，共 {1} 个文件，请逐个下载", [exportableRules.length, partCount])
+      : translateText("已导出 {0} 条规则", [exportableRules.length]));
     setShowExportDialog(false);
   };
   const getRuleOwnerName = (rule: any) => {
     const owner = userById.get(Number(rule.userId));
-    return owner?.name || owner?.username || `用户 #${rule.userId}`;
+    return owner?.name || owner?.username || translateText("用户 #{0}", [rule.userId]);
   };
 
   /** 获取主机入口展示地址：优先展示自定义域名 / DDNS，最后回退自动检测 IP */
@@ -5895,10 +5909,10 @@ function RulesContent() {
   };
   const getForwardGroupMemberLabel = (member: any) => {
     if (member.memberType === "host") {
-      return member.hostId ? getHostName(member.hostId) : "主机成员";
+      return member.hostId ? getHostName(member.hostId) : translateText("主机成员");
     }
     const tunnel = member.tunnelId ? tunnelById.get(Number(member.tunnelId)) : null;
-    return tunnel ? `${tunnel.name} / ${getTunnelRouteText(tunnel, hosts)}` : member.tunnelId ? `隧道 #${member.tunnelId}` : "隧道成员";
+    return tunnel ? `${tunnel.name} / ${getTunnelRouteText(tunnel, hosts)}` : member.tunnelId ? translateText("隧道 #{0}", [member.tunnelId]) : translateText("隧道成员");
   };
 
   const getHostEntry = (hostId: number): string => {
@@ -5945,7 +5959,7 @@ function RulesContent() {
       : null;
     const entryGroupDomain = String(entryGroup?.domain || "").trim();
     if (entryGroupDomain) {
-      pushUniqueEntryAddress(rows, "入口组", entryGroupDomain);
+      pushUniqueEntryAddress(rows, translateText("入口组"), entryGroupDomain);
       return rows;
     }
     const entryMembers = entryGroup && normalizeForwardGroupModeForRule(entryGroup) === "entry"
@@ -6006,7 +6020,7 @@ function RulesContent() {
     for (const entry of getHostEntryAddresses(entryHost)) {
       pushUniqueEntryAddress(rows, entry.label, entry.value);
     }
-    pushUniqueEntryAddress(rows, "入口", member?.entryAddress);
+    pushUniqueEntryAddress(rows, translateText("入口"), member?.entryAddress);
   };
 
   const getForwardGroupEntryAddresses = (group: any | null | undefined): EntryAddress[] => {
@@ -6042,7 +6056,7 @@ function RulesContent() {
       : null;
     const domain = entryDomainForForwardGroup(group);
     if (domain) {
-      pushUniqueEntryAddress(rows, "入口组", domain);
+      pushUniqueEntryAddress(rows, translateText("入口组"), domain);
       return rows;
     }
     const entryMembers = entryGroup && normalizeForwardGroupModeForRule(entryGroup) === "entry"
@@ -6072,35 +6086,35 @@ function RulesContent() {
       if (isForwardChainGroup(group)) {
         const entry = String(entryValue || getForwardChainEntryAddresses(group)[0]?.value || "").trim();
         if (!entry) {
-          toast.error("该转发链未配置可用入口地址");
+          toast.error(translateText("该转发链未配置可用入口地址"));
           return;
         }
         const text = formatAddressWithPort(entry, rule.sourcePort);
         try {
           await navigator.clipboard.writeText(text);
-          toast.success(`已复制入口地址: ${text}`);
+          toast.success(translateText("已复制入口地址: {0}", [text]));
         } catch {
-          toast.error("复制失败，请手动复制");
+          toast.error(translateText("复制失败，请手动复制"));
         }
         return;
       }
       const entry = String(entryValue || getForwardGroupEntryAddresses(group)[0]?.value || "").trim();
       if (!entry) {
-        toast.error(`该${getForwardGroupRouteLabel(group)}未配置可用入口地址`);
+        toast.error(translateText("该{0}未配置可用入口地址", [getForwardGroupRouteLabel(group)]));
         return;
       }
       const text = formatAddressWithPort(entry, rule.sourcePort);
       try {
         await navigator.clipboard.writeText(text);
-        toast.success(`已复制入口地址: ${text}`);
+        toast.success(translateText("已复制入口地址: {0}", [text]));
       } catch {
-        toast.error("复制失败，请手动复制");
+        toast.error(translateText("复制失败，请手动复制"));
       }
       return;
     }
     const entry = String(entryValue || getRuleEntry(rule)).trim();
     if (!entry) {
-      toast.error("未获取到主机入口地址");
+      toast.error(translateText("未获取到主机入口地址"));
       return;
     }
     const text = formatAddressWithPort(entry, rule.sourcePort);
@@ -6118,9 +6132,9 @@ function RulesContent() {
         document.execCommand("copy");
         document.body.removeChild(ta);
       }
-      toast.success(`已复制入口地址: ${text}`);
+      toast.success(translateText("已复制入口地址: {0}", [text]));
     } catch {
-      toast.error("复制失败，请手动复制");
+      toast.error(translateText("复制失败，请手动复制"));
     }
   };
 
@@ -6145,9 +6159,9 @@ function RulesContent() {
     // 这里合并成一个图标，逐台明细放进 tooltip。
     const occupancyTitle = notices
       .map((notice) => {
-        const collected = notice.collectedAt ? `；采集时间 ${new Date(notice.collectedAt).toLocaleString()}` : "";
-        const verified = notice.verifiedAt ? `；最近核实 ${new Date(notice.verifiedAt).toLocaleString()}` : "";
-        return `主机 ${notice.hostId}：${notice.message}${collected}${verified}`;
+        const collected = notice.collectedAt ? translateText("；采集时间 {0}", [new Date(notice.collectedAt).toLocaleString()]) : "";
+        const verified = notice.verifiedAt ? translateText("；最近核实 {0}", [new Date(notice.verifiedAt).toLocaleString()]) : "";
+        return translateText("主机 {0}：{1}{2}{3}", [notice.hostId, notice.message, collected, verified]);
       })
       .join("\n");
     return (
@@ -6157,7 +6171,7 @@ function RulesContent() {
           <span
             className="inline-flex shrink-0 items-center text-amber-600"
             title={occupancyTitle}
-            aria-label="端口占用"
+            aria-label={translateText("端口占用")}
           >
             <AlertCircle className="h-3.5 w-3.5" />
           </span>
@@ -6179,10 +6193,10 @@ function RulesContent() {
     const chainEntryItems = isForwardChainGroup(group) ? getForwardChainEntryAddresses(group) : [];
     const groupEntryItems = rule.forwardGroupId && !isForwardChainGroup(group) ? getForwardGroupEntryAddresses(group) : [];
     const entryItems = rule.forwardGroupId
-      ? (isForwardChainGroup(group) ? (chainEntryItems.length > 0 ? chainEntryItems : [{ label: "转发链", value: groupEntry }]) : (groupEntryItems.length > 0 ? groupEntryItems : [{ label: groupRouteLabel, value: groupEntry }]))
+      ? (isForwardChainGroup(group) ? (chainEntryItems.length > 0 ? chainEntryItems : [{ label: translateText("转发链"), value: groupEntry }]) : (groupEntryItems.length > 0 ? groupEntryItems : [{ label: groupRouteLabel, value: groupEntry }]))
       : (getRuleEntries(rule).length > 0
         ? getRuleEntries(rule)
-        : [{ label: "入口", value: "" }]);
+        : [{ label: translateText("入口"), value: "" }]);
     const resolvedEntryAddresses = filterRuleEntryAddressesForDisplay(entryItems)
       .filter((entry) => String(entry.value || "").trim())
       .map((entry) => ({
@@ -6192,12 +6206,12 @@ function RulesContent() {
       }));
     const entryAddresses = resolvedEntryAddresses.length > 0
       ? resolvedEntryAddresses
-      : [{ label: "入口", value: "", text: "入口地址暂不可用", copyable: false }];
+      : [{ label: translateText("入口"), value: "", text: translateText("入口地址暂不可用"), copyable: false }];
     const entryAddress = resolvedEntryAddresses.map((entry) => entry.text).join(" / ");
     const targetAddress = `${rule.targetIp}:${rule.targetPort}`;
     const entryTitle = rule.forwardGroupId
-      ? `复制${groupRouteLabel}入口: ${entryAddress}`
-      : `复制入口地址: ${entryAddress}`;
+      ? translateText("复制{0}入口: {1}", [groupRouteLabel, entryAddress])
+      : translateText("复制入口地址: {0}", [entryAddress]);
     const failoverCount = parseRuleFailoverTargets(rule.failoverTargets).filter((target) => target.targetIp && target.targetPort > 0).length;
     return {
       entryAddresses,
@@ -6236,7 +6250,7 @@ function RulesContent() {
     return (
       <div className="min-w-0 space-y-1.5 font-mono text-xs">
         <div className={panelClass}>
-          <div className={labelClass}>入口</div>
+          <div className={labelClass}>{translateText("入口")}</div>
           <div className="flex min-w-0 flex-col gap-1">
             {entryAddresses.map((entry) => (
               <button
@@ -6259,7 +6273,7 @@ function RulesContent() {
           </span>
         </div>
         <div className={panelClass}>
-          <div className={labelClass}>出口</div>
+          <div className={labelClass}>{translateText("出口")}</div>
           <div className="flex min-w-0 items-start gap-1.5">
             <code className={`${valueClass} flex-1 rounded bg-muted/35 px-1.5 py-1`} title={targetAddress}>
               {targetAddress}
@@ -6326,7 +6340,7 @@ function RulesContent() {
       <Badge
         variant="outline"
         className={`w-fit whitespace-nowrap text-[10px] ${forwardToolBadgeClass(forwardType)}`}
-        title={`转发工具：${label}`}
+        title={translateText("转发工具：{0}", [label])}
       >
         {forwardType === "iptables" || forwardType === "nftables" ? (
           <Shield className="mr-1 h-3 w-3" />
@@ -6359,9 +6373,7 @@ function RulesContent() {
         className="h-5 w-fit border-amber-500/35 bg-amber-500/10 px-1.5 text-[10px] text-amber-700 dark:text-amber-300"
         title={warning}
       >
-        <AlertCircle className="mr-1 h-3 w-3" />
-        跨 IPv4/IPv6 风险
-      </Badge>
+        <AlertCircle className="mr-1 h-3 w-3" />{translateText("跨 IPv4/IPv6 风险")}</Badge>
     );
   };
   const renderRouteBadge = (rule: any, compactRow = false) => {
@@ -6497,7 +6509,7 @@ function RulesContent() {
     return (
       <span
         className="flex items-center gap-1 whitespace-nowrap text-xs font-medium tabular-nums text-foreground"
-        title={`累计入向 ${formatBytes(Number(t.bytesIn || 0))} / 出向 ${formatBytes(Number(t.bytesOut || 0))}`}
+        title={translateText("累计入向 {0} / 出向 {1}", [formatBytes(Number(t.bytesIn || 0)), formatBytes(Number(t.bytesOut || 0))])}
       >
         <ArrowRightLeft className="h-3 w-3 shrink-0 text-muted-foreground" />
         {formatBytes(total)}
@@ -6508,16 +6520,15 @@ function RulesContent() {
   const renderRuleTotalTraffic = (rule: any) => {
     const t = totalTrafficByRule.get(rule.id);
     if (!t) {
-      return <span className="text-xs text-muted-foreground">累计 —</span>;
+      return <span className="text-xs text-muted-foreground">{translateText("累计 —")}</span>;
     }
     const total = Number(t.bytesIn || 0) + Number(t.bytesOut || 0);
     return (
       <span
         className="flex items-center gap-1 whitespace-nowrap text-xs font-medium tabular-nums text-foreground"
-        title={`累计入向 ${formatBytes(t.bytesIn)} / 出向 ${formatBytes(t.bytesOut)}`}
+        title={translateText("累计入向 {0} / 出向 {1}", [formatBytes(t.bytesIn), formatBytes(t.bytesOut)])}
       >
-        <ArrowRightLeft className="h-3 w-3 shrink-0 text-muted-foreground" />
-        累计 {formatBytes(total)}
+        <ArrowRightLeft className="h-3 w-3 shrink-0 text-muted-foreground" />{translateText("累计 ")}{formatBytes(total)}
       </span>
     );
   };
@@ -6554,17 +6565,23 @@ function RulesContent() {
 
   const renderLatestLatency = (rule: any) => {
     const t = stableProbeByRule.get(Number(rule.id));
-    if (!t?.latestLatencyAt) return <span className="whitespace-nowrap text-xs text-muted-foreground">未测试</span>;
+    if (!t?.latestLatencyAt) return <span className="whitespace-nowrap text-xs text-muted-foreground">{translateText("未测试")}</span>;
     if (t.latestLatencyIsTimeout) {
-      return <LatencyRating isTimeout timeoutText="超时" className="whitespace-nowrap" />;
+      return <LatencyRating isTimeout timeoutText={translateText("超时")} className="whitespace-nowrap" />;
     }
     if (typeof t.latestLatencyMs === "number" && Number.isFinite(t.latestLatencyMs)) {
       return <LatencyRating latencyMs={t.latestLatencyMs} className="whitespace-nowrap" />;
     }
-    return <span className="whitespace-nowrap text-xs text-muted-foreground">未测试</span>;
+    return <span className="whitespace-nowrap text-xs text-muted-foreground">{translateText("未测试")}</span>;
   };
 
   const renderRuleActions = (rule: any) => {
+    if (user?.role !== "admin" && isAdminManagedRule(rule)) {
+      return <div className="flex items-center justify-end gap-1">
+        <span className="text-[11px] text-muted-foreground">{translateText("仅可查看")}</span>
+        <Button variant="ghost" size="icon" className="h-8 w-8" title={translateText("查看流量和延迟")} onClick={() => setTrafficDetailRule({ id: rule.id, name: rule.name, isForwardChain: getRuleCategory(rule, forwardGroupById) === "chain", probeMethod: ruleLatencyProbeMethodForRule(rule) })}><Activity className="h-3.5 w-3.5" /></Button>
+      </div>;
+    }
     const supported = isRuleSupported(rule);
     if (!supported) {
       return (
@@ -6575,7 +6592,7 @@ function RulesContent() {
             className="h-8 w-8"
             disabled={!canEditRuleConfig(rule)}
             onClick={() => openEdit(rule)}
-            title="编辑并切换到可用转发资源"
+            title={translateText("编辑并切换到可用转发资源")}
           >
             <Pencil className="h-3.5 w-3.5" />
           </Button>
@@ -6584,7 +6601,7 @@ function RulesContent() {
             size="icon"
             className="h-8 w-8 text-destructive hover:text-destructive"
             onClick={() => setDeleteRule(rule)}
-            title="删除规则"
+            title={translateText("删除规则")}
           >
             <Trash2 className="h-3.5 w-3.5" />
           </Button>
@@ -6601,7 +6618,7 @@ function RulesContent() {
           size="icon"
           className="h-8 w-8"
           onClick={() => setTrafficDetailRule({ id: rule.id, name: rule.name, isForwardChain: isForwardChainRule, probeMethod })}
-          title={isForwardChainRule ? "查看链路延迟" : probeMethod === "ping" ? "查看 Ping 延迟" : "查看 TCPing 延迟"}
+          title={isForwardChainRule ? translateText("查看链路延迟") : probeMethod === "ping" ? translateText("查看 Ping 延迟") : translateText("查看 TCPing 延迟")}
         >
           <Activity className="h-3.5 w-3.5" />
         </Button>
@@ -6610,7 +6627,7 @@ function RulesContent() {
           size="icon"
           className="h-8 w-8"
           onClick={() => setSelfTestRule({ id: rule.id, name: rule.name })}
-          title="转发链路自测"
+          title={translateText("转发链路自测")}
         >
           <Stethoscope className="h-3.5 w-3.5" />
         </Button>
@@ -6620,7 +6637,7 @@ function RulesContent() {
           className="h-8 w-8"
           onClick={() => setResetTrafficTarget({ scope: "rule", rule })}
           disabled={resetTrafficMutation.isPending}
-          title={resetTrafficMutation.isPending ? "正在重置统计数据" : "重置规则数据"}
+          title={resetTrafficMutation.isPending ? translateText("正在重置统计数据") : translateText("重置规则数据")}
         >
           {resetTrafficMutation.isPending && resetTrafficTarget?.scope === "rule" && Number(resetTrafficTarget.rule?.id) === Number(rule.id)
             ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -6772,7 +6789,7 @@ function RulesContent() {
       <div className="flex w-full min-w-0 items-center">
         <RuleBulkCheckbox
           {...bulkSelection.getCheckboxProps(group.rules)}
-          label={`选择${group.label}本页全部可选规则`}
+          label={translateText("选择{0}本页全部可选规则", [group.label])}
           compact={compact}
           className="mx-1"
         />
@@ -6880,47 +6897,47 @@ function RulesContent() {
     const statusDotClass = SNI_RULE_GROUP_STATUS_CONFIG[meta.status].dotClass;
     const endpointLabel = (endpoint: any, side: "入口" | "出口") => {
       const host = hostById.get(Number(endpoint.hostId || 0));
-      return `${side} ${getHostOptionName(host || { id: endpoint.hostId })}:${endpoint.port}`;
+      return `${translateText(side)} ${getHostOptionName(host || { id: endpoint.hostId })}:${endpoint.port}`;
     };
     const configErrorText = meta.configErrorEndpoints.map((endpoint: any) => {
       const normalizedError = String(endpoint.lastConfigError || "").trim().replace(/[。.!！]+$/, "");
       const version = Number(endpoint.currentVersion || 0);
       return version > 0
-        ? `${endpointLabel(endpoint, endpoint.side)} 配置应用失败：${normalizedError}。当前仍生效版本 ${version}，业务继续使用上一版本。`
-        : `${endpointLabel(endpoint, endpoint.side)} 配置应用失败：${normalizedError}。当前尚无生效版本。`;
+        ? translateText("{0} 配置应用失败：{1}。当前仍生效版本 {2}，业务继续使用上一版本。", [endpointLabel(endpoint, endpoint.side), normalizedError, version])
+        : translateText("{0} 配置应用失败：{1}。当前尚无生效版本。", [endpointLabel(endpoint, endpoint.side), normalizedError]);
     });
-    const offlineText = meta.offlineEndpoints.map((endpoint: any) => `${endpointLabel(endpoint, endpoint.side)} 所在主机离线。`);
+    const offlineText = meta.offlineEndpoints.map((endpoint: any) => translateText("{0} 所在主机离线。", [endpointLabel(endpoint, endpoint.side)]));
     const unsupportedEntryText = meta.unsupportedEntryEndpoints.map((endpoint: any) => {
       const host = hostById.get(Number(endpoint.hostId || 0));
       const agentVersion = String(host?.agentVersion || "").trim();
-      return `${endpointLabel(endpoint, "入口")} 的 Agent ${agentVersion ? `v${agentVersion}` : "版本未上报"}，需要 ${SNI_SPLITTER_MIN_AGENT_VERSION} 或更高版本。`;
+      return translateText("{0} 的 Agent {1}，需要 {2} 或更高版本。", [endpointLabel(endpoint, "入口"), agentVersion ? `v${agentVersion}` : translateText("版本未上报"), SNI_SPLITTER_MIN_AGENT_VERSION]);
     });
     const renderEndpointRuntime = (endpoint: any, side: "入口" | "出口") => {
       const host = hostById.get(Number(endpoint.hostId || 0));
       const stateText = meta.activeRuleCount === 0
-        ? "规则已停用"
+        ? translateText("规则已停用")
         : side === "入口" && meta.unsupportedEntryEndpoints.some((entry) => entry.hostId === endpoint.hostId && entry.port === endpoint.port)
-          ? "Agent 版本不足"
+          ? translateText("Agent 版本不足")
           : host && !host.isOnline
-            ? "主机离线"
+            ? translateText("主机离线")
             : !endpoint.observed
-              ? "尚未观测到"
+              ? translateText("尚未观测到")
               : endpoint.applied
-                ? "域名已生效"
-                : "域名尚未全部生效";
+                ? translateText("域名已生效")
+                : translateText("域名尚未全部生效");
       return (
         <div key={`${endpoint.hostId}:${endpoint.port}`} className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-0.5">
           <span className="min-w-0 break-words">{endpointLabel(endpoint, side)}</span>
           <span className="text-muted-foreground">{stateText}</span>
-          <span className="text-muted-foreground">版本 {Number(endpoint.currentVersion || 0) || "-"}</span>
-          <span className="text-muted-foreground">未匹配连接 {Math.max(0, Number(endpoint.unmatchedConnections || 0)).toLocaleString()}</span>
+          <span className="text-muted-foreground">{translateText("版本")}{Number(endpoint.currentVersion || 0) || "-"}</span>
+          <span className="text-muted-foreground">{translateText("未匹配连接")}{Math.max(0, Number(endpoint.unmatchedConnections || 0)).toLocaleString()}</span>
         </div>
       );
     };
     return (
       <div className={cn("group/sortable border-y border-border/50 bg-muted/20", compact ? "px-1" : "px-2")}>
         <div className="flex min-w-0 items-center">
-          <RuleBulkCheckbox {...bulkSelection.getCheckboxProps(group.rules)} label="选择 SNI 组内全部可选规则" className="mx-1" />
+          <RuleBulkCheckbox {...bulkSelection.getCheckboxProps(group.rules)} label={translateText("选择 SNI 组内全部可选规则")} className="mx-1" />
           {sortable && (
             <SortableDragHandle
               dragHandleProps={sortable.handleProps}
@@ -6938,26 +6955,25 @@ function RulesContent() {
             <ChevronRight className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 ${open ? "rotate-90" : ""}`} />
             <Globe className="h-4 w-4 shrink-0 text-primary" />
             <span className="min-w-0 max-w-full truncate text-sm font-semibold" title={getRuleResourceName(meta.representative)}>
-              {getRuleResourceName(meta.representative)} · SNI 分流
-            </span>
+              {getRuleResourceName(meta.representative)} {translateText("· SNI 分流")}</span>
             <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${statusDotClass}`} aria-hidden="true" />
             <span className="shrink-0 text-xs font-medium">{meta.statusText}</span>
-            <Badge variant="secondary" className="h-5 shrink-0 px-1.5 text-[10px]">{group.rules.length} 条规则</Badge>
-            <span className="shrink-0 text-xs text-muted-foreground">入口端口 {meta.representative?.sourcePort || "-"}</span>
+            <Badge variant="secondary" className="h-5 shrink-0 px-1.5 text-[10px]">{group.rules.length} {translateText("条规则")}</Badge>
+            <span className="shrink-0 text-xs text-muted-foreground">{translateText("入口端口")}{meta.representative?.sourcePort || "-"}</span>
           </button>
         </div>
         <div className={cn("grid gap-2 border-t border-border/40 px-7 py-2 text-xs leading-5", meta.entryEndpoints.length > 0 && "md:grid-cols-2")}>
           {meta.entryEndpoints.length > 0 && (
             <div className="min-w-0">
-              <p className="font-medium">入口分流器</p>
+              <p className="font-medium">{translateText("入口分流器")}</p>
               {meta.entryEndpoints.map((endpoint) => renderEndpointRuntime(endpoint, "入口"))}
-              <p className="text-muted-foreground">客户端使用了入口主机没有配置的域名，可能是域名拼写、DNS 指向或端口扫描。</p>
+              <p className="text-muted-foreground">{translateText("客户端使用了入口主机没有配置的域名，可能是域名拼写、DNS 指向或端口扫描。")}</p>
             </div>
           )}
           <div className="min-w-0">
-            <p className="font-medium">出口分流器</p>
+            <p className="font-medium">{translateText("出口分流器")}</p>
             {meta.exitEndpoints.map((endpoint) => renderEndpointRuntime(endpoint, "出口"))}
-            <p className="text-muted-foreground">{meta.entryEndpoints.length > 0 ? "入口与出口配置可能尚未同步。" : "客户端使用的域名尚未配置在出口分流表中。"}</p>
+            <p className="text-muted-foreground">{meta.entryEndpoints.length > 0 ? translateText("入口与出口配置可能尚未同步。") : translateText("客户端使用的域名尚未配置在出口分流表中。")}</p>
           </div>
         </div>
         {(offlineText.length > 0 || unsupportedEntryText.length > 0 || configErrorText.length > 0) && (
@@ -6986,7 +7002,7 @@ function RulesContent() {
         )}
         title={!supported ? unsupportedProtocolTitle : undefined}
       >
-        <TableCell className="w-[44px] px-2 py-2 text-center"><RuleBulkCheckbox {...bulkSelection.getCheckboxProps([rule])} label={`选择规则 ${rule.name}`} /></TableCell>
+        <TableCell className="w-[44px] px-2 py-2 text-center"><RuleBulkCheckbox {...bulkSelection.getCheckboxProps([rule])} label={translateText("选择规则 {0}", [rule.name])} /></TableCell>
         {(sortable || reserveSortColumn) && (
           <TableCell className="w-[44px] px-2 py-2">
             {sortable && (
@@ -7008,8 +7024,7 @@ function RulesContent() {
           <span className="block truncate font-medium" title={rule.name}>{rule.name}</span>
           {!supported && (
             <span className="mt-1 block text-[11px] text-destructive">
-              {protocolUnsupportedLabel(protocolKey)} 当前不支持
-            </span>
+              {protocolUnsupportedLabel(protocolKey)}{translateText(" 当前不支持")}</span>
           )}
           {(rule.protocolBlockReason || rule.resourceAccessAllowed === false) && (
             <span className="mt-1 block text-[11px] leading-4 text-destructive">
@@ -7042,7 +7057,7 @@ function RulesContent() {
         <TableCell className="px-3 py-2 text-center">
           <Badge variant="secondary" className="whitespace-nowrap text-[10px]">{formatForwardRuleProtocol(rule.protocol)}</Badge>
         </TableCell>
-        <TableCell className="px-3 py-2">{renderTableRuleTotalTraffic(rule)}</TableCell>
+        <TableCell className="px-3 py-2">{renderTableRuleTotalTraffic(rule)}<RuleUsageSummary rule={rule} totals={totalTrafficByRule.get(rule.id)} /></TableCell>
         <TableCell className="overflow-hidden px-3 py-2">{renderTableRuleDailyTraffic(rule)}</TableCell>
         <TableCell className="overflow-hidden px-3 py-2">{renderTableRuleLatency(rule)}</TableCell>
         <TableCell className="px-3 py-2">
@@ -7074,7 +7089,7 @@ function RulesContent() {
           <CardContent className="action-card-content space-y-2.5 p-3">
             <div className="flex min-w-0 items-start justify-between gap-2">
               <div className="flex min-w-0 items-start gap-2">
-                <RuleBulkCheckbox {...bulkSelection.getCheckboxProps([rule])} label={`选择规则 ${rule.name}`} compact className="mt-0.5" />
+                <RuleBulkCheckbox {...bulkSelection.getCheckboxProps([rule])} label={translateText("选择规则 {0}", [rule.name])} compact className="mt-0.5" />
                 <div className="mt-1.5 flex h-3.5 min-w-3.5 shrink-0 items-center justify-center">
                   {supported ? renderStatusDot(rule) : <span className="h-2.5 w-2.5 rounded-full bg-destructive/60" />}
                 </div>
@@ -7114,8 +7129,7 @@ function RulesContent() {
               </Badge>
               {!supported && (
                 <Badge variant="outline" className="h-5 border-destructive/30 px-1.5 text-[10px] text-destructive">
-                  {protocolUnsupportedLabel(protocolKey)} 不支持
-                </Badge>
+                  {protocolUnsupportedLabel(protocolKey)}{translateText(" 不支持")}</Badge>
               )}
             </div>
 
@@ -7127,7 +7141,7 @@ function RulesContent() {
 
             <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-2 border-t border-border/40 pt-1.5 text-xs">
               <div className="min-w-0">
-                <div className="mb-0.5 text-[10px] text-muted-foreground">累计流量</div>
+                <div className="mb-0.5 text-[10px] text-muted-foreground">{translateText("累计流量")}</div>
                 {renderMobileRuleTotalTraffic(rule)}
               </div>
               <div className="min-w-0 text-right">
@@ -7139,6 +7153,7 @@ function RulesContent() {
               </div>
             </div>
 
+            <RuleUsageSummary rule={rule} totals={totalTrafficByRule.get(rule.id)} />
             <div className="action-card-footer flex justify-end border-t border-border/40 pt-1.5">
               {renderRuleActions(rule)}
             </div>
@@ -7161,28 +7176,27 @@ function RulesContent() {
         <CardContent className="action-card-content space-y-3 p-4">
           <div className="flex items-start justify-between gap-3">
             <div className="flex min-w-0 items-start gap-2">
-              <RuleBulkCheckbox {...bulkSelection.getCheckboxProps([rule])} label={`选择规则 ${rule.name}`} className="mt-0.5" />
+              <RuleBulkCheckbox {...bulkSelection.getCheckboxProps([rule])} label={translateText("选择规则 {0}", [rule.name])} className="mt-0.5" />
               <div className="mt-2 flex h-4 min-w-4 flex-shrink-0 items-center justify-center">
                 {supported ? renderStatusDot(rule) : <span className="h-2.5 w-2.5 rounded-full bg-destructive/60" />}
               </div>
               <div className="min-w-0">
                 <div className="truncate font-medium">{rule.name}</div>
                 {user?.role === "admin" && (
-                  <div className="mt-1 text-xs text-muted-foreground">用户: {getRuleOwnerName(rule)}</div>
+                  <div className="mt-1 text-xs text-muted-foreground">{translateText("用户: ")}{getRuleOwnerName(rule)}</div>
                 )}
                 <div className="mt-1 text-xs text-muted-foreground">
                   {getRuleResourceName(rule)}
                 </div>
                 {rule.sni && (
                   <div className="mt-1 min-w-0">
-                    <div className="mb-0.5 text-xs text-muted-foreground">SNI 域名</div>
+                    <div className="mb-0.5 text-xs text-muted-foreground">{translateText("SNI 域名")}</div>
                     <div className="truncate font-mono text-xs" title={String(rule.sni)}>{rule.sni}</div>
                   </div>
                 )}
                 {!supported && (
                   <div className="mt-1 text-[11px] text-destructive">
-                    {protocolUnsupportedLabel(protocolKey)} 当前不支持
-                  </div>
+                    {protocolUnsupportedLabel(protocolKey)}{translateText(" 当前不支持")}</div>
                 )}
                 {(rule.protocolBlockReason || rule.resourceAccessAllowed === false) && (
                   <div className="mt-1 text-[11px] leading-4 text-destructive">
@@ -7209,32 +7223,33 @@ function RulesContent() {
           </div>
           <div className="grid grid-cols-2 gap-3 text-xs">
             <div className="min-w-0">
-              <div className="mb-1 text-muted-foreground">链路</div>
+              <div className="mb-1 text-muted-foreground">{translateText("链路")}</div>
               {renderRouteBadge(rule)}
             </div>
             <div className="min-w-0">
-              <div className="mb-1 text-muted-foreground">协议</div>
+              <div className="mb-1 text-muted-foreground">{translateText("协议")}</div>
               <Badge variant="secondary" className="whitespace-nowrap text-[10px]">{formatForwardRuleProtocol(rule.protocol)}</Badge>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-x-3 gap-y-2 border-t border-border/40 pt-2 text-xs">
             <div className="min-w-0">
-              <div className="mb-1 text-muted-foreground">24H 入向</div>
+              <div className="mb-1 text-muted-foreground">{translateText("24H 入向")}</div>
               {renderRuleDailyTrafficValue(rule, "in")}
             </div>
             <div className="min-w-0">
-              <div className="mb-1 text-muted-foreground">24H 出向</div>
+              <div className="mb-1 text-muted-foreground">{translateText("24H 出向")}</div>
               {renderRuleDailyTrafficValue(rule, "out")}
             </div>
             <div className="min-w-0">
-              <div className="mb-1 text-muted-foreground">累计流量</div>
+              <div className="mb-1 text-muted-foreground">{translateText("累计流量")}</div>
               {renderMobileRuleTotalTraffic(rule)}
             </div>
             <div className="min-w-0">
-              <div className="mb-1 text-muted-foreground">延迟</div>
+              <div className="mb-1 text-muted-foreground">{translateText("延迟")}</div>
               {renderLatestLatency(rule)}
             </div>
           </div>
+          <RuleUsageSummary rule={rule} totals={totalTrafficByRule.get(rule.id)} />
           <div className="action-card-footer flex justify-end border-t border-border/40 pt-2">
             {renderRuleActions(rule)}
           </div>
@@ -7313,19 +7328,17 @@ function RulesContent() {
     <div className="space-y-6">
       <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
         <div className="min-w-0">
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">转发规则</h1>
-          <p className="text-muted-foreground mt-1 text-xs sm:text-sm">
-            管理转发规则和运行状态
-          </p>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">{translateText("转发规则")}</h1>
+          <p className="text-muted-foreground mt-1 text-xs sm:text-sm">{translateText("管理转发规则和运行状态")}</p>
         </div>
-        <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:justify-end">
+        <div className="responsive-actions grid min-w-0 w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:justify-end">
           <Badge variant="outline" className="justify-center gap-1.5 px-3 py-1.5 text-xs">
             <Zap className="h-3 w-3 text-chart-2" />
             <AnimatedStatValue
-              value={`${activeCount} / ${filteredRuleTotal} 已启用`}
+              value={translateText("{0} / {1} 已启用", [activeCount, filteredRuleTotal])}
               loading={rulesHeaderLoading}
               cacheKey={`rules.header.active.${trafficTotalsCacheScope}`}
-              fallbackValue="0 / 0 已启用"
+              fallbackValue={translateText("0 / 0 已启用")}
             />
           </Badge>
           <div className="hidden items-center overflow-hidden rounded-md border border-border/40 md:flex">
@@ -7334,7 +7347,7 @@ function RulesContent() {
               size="icon"
               className="h-8 w-8 rounded-none"
               onClick={() => handleDisplayModeChange("compact")}
-              title="精简卡片"
+              title={translateText("精简卡片")}
             >
               <Rows3 className="h-4 w-4" />
             </Button>
@@ -7343,7 +7356,7 @@ function RulesContent() {
               size="icon"
               className="h-8 w-8 rounded-none"
               onClick={() => handleDisplayModeChange("standard")}
-              title="标准卡片"
+              title={translateText("标准卡片")}
             >
               <LayoutGrid className="h-4 w-4" />
             </Button>
@@ -7352,7 +7365,7 @@ function RulesContent() {
               size="icon"
               className="h-8 w-8 rounded-none"
               onClick={() => handleDisplayModeChange("table")}
-              title="列表"
+              title={translateText("列表")}
             >
               <List className="h-4 w-4" />
             </Button>
@@ -7361,7 +7374,7 @@ function RulesContent() {
               size="icon"
               className="h-8 w-8 rounded-none"
               onClick={() => handleDisplayModeChange("globe")}
-              title="3D 流量转发图"
+              title={translateText("3D 流量转发图")}
             >
               <Globe className="h-4 w-4" />
             </Button>
@@ -7374,39 +7387,29 @@ function RulesContent() {
           >
             {resetTrafficMutation.isPending && resetTrafficTarget?.scope === "all"
               ? <Loader2 className="h-4 w-4 animate-spin" />
-              : <RotateCcw className="h-4 w-4" />}
-            重置数据
-          </Button>
+              : <RotateCcw className="h-4 w-4" />}{translateText("重置数据")}</Button>
           <Button
             variant="outline"
             onClick={() => openCopyDialog()}
             className="gap-2"
             disabled={!transferSourceRules.length && !canAdd}
-            title={!transferSourceRules.length && !canAdd ? "暂无可批量管理或导入的规则" : undefined}
+            title={!transferSourceRules.length && !canAdd ? translateText("暂无可批量管理或导入的规则") : undefined}
           >
-            <ClipboardCopy className="h-4 w-4" />
-            批量管理
-          </Button>
+            <ClipboardCopy className="h-4 w-4" />{translateText("批量管理")}</Button>
           {rulePermissionLoading ? (
             <Button disabled className="col-span-2 gap-2 sm:col-span-1">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              权限加载中
-            </Button>
+              <Loader2 className="h-4 w-4 animate-spin" />{translateText("权限加载中")}</Button>
           ) : canAdd ? (
             <Button
               onClick={() => openCreate()}
               className="col-span-2 gap-2 sm:col-span-1"
               disabled={!canCreateRule}
-              title={!canCreateRule ? "暂无可用转发资源" : undefined}
+              title={!canCreateRule ? translateText("暂无可用转发资源") : undefined}
             >
-              <Plus className="h-4 w-4" />
-              添加规则
-            </Button>
+              <Plus className="h-4 w-4" />{translateText("添加规则")}</Button>
           ) : (
-            <Button disabled className="col-span-2 gap-2 sm:col-span-1" title="需要管理员授权后才能添加规则">
-              <Plus className="h-4 w-4" />
-              添加规则
-            </Button>
+            <Button disabled className="col-span-2 gap-2 sm:col-span-1" title={translateText("需要管理员授权后才能添加规则")}>
+              <Plus className="h-4 w-4" />{translateText("添加规则")}</Button>
           )}
         </div>
       </div>
@@ -7414,7 +7417,7 @@ function RulesContent() {
       {!canAdd && !rulePermissionLoading && (
         <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-sm text-amber-700 dark:text-amber-400">
           <AlertCircle className="h-4 w-4 flex-shrink-0" />
-          <span>当前账号没有添加转发规则的权限</span>
+          <span>{translateText("当前账号没有添加转发规则的权限")}</span>
         </div>
       )}
 
@@ -7423,20 +7426,20 @@ function RulesContent() {
           <div className="grid gap-2 sm:flex sm:flex-wrap sm:items-center sm:gap-3">
             <div className="flex items-center gap-2">
               <Filter className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">筛选：</span>
+              <span className="text-sm text-muted-foreground">{translateText("筛选：")}</span>
             </div>
             <div className="relative w-full sm:w-[260px] lg:w-[320px]">
               <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
               <Input
                 value={ruleSearchQuery}
                 onChange={(event) => setRuleSearchQuery(event.target.value)}
-                placeholder="搜索端口、IP、域名或备注"
+                placeholder={translateText("搜索端口、IP、域名或备注")}
                 className="h-8 w-full pl-8 pr-8 text-xs"
               />
               {ruleSearchQuery ? (
                 <button
                   type="button"
-                  aria-label="清空搜索"
+                  aria-label={translateText("清空搜索")}
                   className="absolute right-2 top-1/2 inline-flex h-4 w-4 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                   onClick={() => setRuleSearchQuery("")}
                 >
@@ -7447,11 +7450,11 @@ function RulesContent() {
             {user?.role === "admin" && (
               <Select value={filterUser} onValueChange={handleFilterUserChange}>
                 <SelectTrigger className="h-8 w-full text-xs sm:w-[160px]">
-                  <SelectValue placeholder="我的规则" />
+                  <SelectValue placeholder={translateText("我的规则")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="self">我的规则</SelectItem>
-                  <SelectItem value="all">所有用户</SelectItem>
+                  <SelectItem value="self">{translateText("我的规则")}</SelectItem>
+                  <SelectItem value="all">{translateText("所有用户")}</SelectItem>
                   {(users || []).map((item: any) => (
                     <SelectItem key={item.id} value={String(item.id)}>
                       {item.name || item.username}
@@ -7470,8 +7473,8 @@ function RulesContent() {
                 >
                   {(() => {
                     const selected = parseRuleResourceFilter(filterResource);
-                    if (!selected.type) return "所有链路";
-                    if (!selected.id) return `全部${ruleTransferScopeLabels[selected.type]}`;
+                    if (!selected.type) return translateText("所有链路");
+                    if (!selected.id) return translateText("全部{0}", [ruleTransferScopeLabels[selected.type]]);
                     const resource = getRuleFilterResources(selected.type).find((item: any) => Number(item.id) === selected.id);
                     return resource?.name || `${ruleTransferScopeLabels[selected.type]} #${selected.id}`;
                   })()}
@@ -7486,9 +7489,7 @@ function RulesContent() {
                       onClick={() => handleFilterResourceChange("all")}
                       className={`flex h-8 w-full items-center gap-2 rounded px-2 text-left text-xs transition-colors ${filterResource === "all" ? "bg-accent text-accent-foreground" : "hover:bg-muted"}`}
                     >
-                      <LayoutGrid className="h-3.5 w-3.5" />
-                      全部
-                    </button>
+                      <LayoutGrid className="h-3.5 w-3.5" />{translateText("全部")}</button>
                     {ruleTransferScopeOptions.map((option) => {
                       const Icon = option.value === "local" ? ArrowRightLeft : option.value === "tunnel" ? Network : option.value === "chain" ? GitBranch : Layers3;
                       const active = ruleResourceMenuType === option.value;
@@ -7513,8 +7514,7 @@ function RulesContent() {
                       type="button"
                       onClick={() => handleFilterResourceChange(ruleResourceMenuType)}
                       className={`flex h-8 w-full items-center rounded px-2 text-left text-xs font-medium transition-colors ${filterResource === ruleResourceMenuType ? "bg-accent text-accent-foreground" : "hover:bg-muted"}`}
-                    >
-                      全部{ruleTransferScopeLabels[ruleResourceMenuType]}
+                    >{translateText("全部")}{ruleTransferScopeLabels[ruleResourceMenuType]}
                     </button>
                     <div className="mt-1 max-h-64 overflow-y-auto">
                       {getRuleFilterResources(ruleResourceMenuType).length > 0 ? getRuleFilterResources(ruleResourceMenuType).map((resource: any) => {
@@ -7534,7 +7534,7 @@ function RulesContent() {
                           </button>
                         );
                       }) : (
-                        <div className="px-2 py-6 text-center text-xs text-muted-foreground">暂无可筛选的{ruleTransferScopeLabels[ruleResourceMenuType]}</div>
+                        <div className="px-2 py-6 text-center text-xs text-muted-foreground">{translateText("暂无可筛选的")}{ruleTransferScopeLabels[ruleResourceMenuType]}</div>
                       )}
                     </div>
                   </div>
@@ -7543,20 +7543,19 @@ function RulesContent() {
             </DropdownMenu>
             <Select value={String(rulePageSize)} onValueChange={handleRulePageSizeChange}>
               <SelectTrigger className="h-8 w-full text-xs sm:w-[120px]">
-                <SelectValue placeholder="每页数量" />
+                <SelectValue placeholder={translateText("每页数量")} />
               </SelectTrigger>
               <SelectContent>
                 {RULE_PAGE_SIZE_OPTIONS.map((pageSize) => (
                   <SelectItem key={pageSize} value={String(pageSize)}>
-                    每页 {pageSize} 项
-                  </SelectItem>
+                    {translateText("每页")}{pageSize} {translateText("项")}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
 
           <Tabs value={ruleCategory} onValueChange={handleRuleCategoryChange}>
-            <SlidingTabsList items={ruleCategoryItems} activeValue={ruleCategory} ariaLabel="转发规则分类" minItemWidthRem={8.5} />
+            <SlidingTabsList items={ruleCategoryItems} activeValue={ruleCategory} ariaLabel={translateText("转发规则分类")} minItemWidthRem={8.5} />
           </Tabs>
         </div>
       )}
@@ -7567,12 +7566,12 @@ function RulesContent() {
           <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-[0.035] transition-opacity group-hover:opacity-[0.07]" />
           <CardContent className="relative flex min-w-0 items-center justify-between p-2 sm:gap-3 sm:p-4">
             <div className="w-full min-w-0 sm:flex-1">
-              <p className="whitespace-nowrap text-[10px] text-muted-foreground sm:text-xs">入向流量</p>
+              <p className="whitespace-nowrap text-[10px] text-muted-foreground sm:text-xs">{translateText("入向流量")}</p>
               <div className="mt-1 grid min-w-0 gap-0.5 sm:mt-0.5 sm:flex sm:flex-wrap sm:items-baseline sm:gap-x-2 sm:gap-y-1">
                 <div className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-baseline gap-1 sm:inline-flex">
                   <span className="shrink-0 whitespace-nowrap text-[8px] font-medium uppercase text-muted-foreground sm:text-[10px]">
-                    <span className="sm:hidden">总</span>
-                    <span className="hidden sm:inline">累计</span>
+                    <span className="sm:hidden">{translateText("总")}</span>
+                    <span className="hidden sm:inline">{translateText("累计")}</span>
                   </span>
                   <AnimatedStatValue
                     as="span"
@@ -7607,12 +7606,12 @@ function RulesContent() {
           <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-[0.035] transition-opacity group-hover:opacity-[0.07]" />
           <CardContent className="relative flex min-w-0 items-center justify-between p-2 sm:gap-4 sm:p-4">
             <div className="w-full min-w-0 sm:flex-1">
-              <p className="whitespace-nowrap text-[10px] text-muted-foreground sm:text-xs">出向流量</p>
+              <p className="whitespace-nowrap text-[10px] text-muted-foreground sm:text-xs">{translateText("出向流量")}</p>
               <div className="mt-1 grid min-w-0 gap-0.5 sm:mt-0.5 sm:flex sm:flex-wrap sm:items-baseline sm:gap-x-2 sm:gap-y-1">
                 <div className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-baseline gap-1 sm:inline-flex">
                   <span className="shrink-0 whitespace-nowrap text-[8px] font-medium uppercase text-muted-foreground sm:text-[10px]">
-                    <span className="sm:hidden">总</span>
-                    <span className="hidden sm:inline">累计</span>
+                    <span className="sm:hidden">{translateText("总")}</span>
+                    <span className="hidden sm:inline">{translateText("累计")}</span>
                   </span>
                   <AnimatedStatValue
                     as="span"
@@ -7647,16 +7646,16 @@ function RulesContent() {
           <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-[0.035] transition-opacity group-hover:opacity-[0.07]" />
           <CardContent className="relative flex min-w-0 items-center justify-between p-2 sm:gap-4 sm:p-4">
             <div className="w-full min-w-0 sm:flex-1">
-              <p className="whitespace-nowrap text-[10px] text-muted-foreground sm:text-xs">连接次数</p>
+              <p className="whitespace-nowrap text-[10px] text-muted-foreground sm:text-xs">{translateText("连接次数")}</p>
               <div className="mt-1 grid min-w-0 gap-0.5 sm:mt-0.5 sm:flex sm:flex-wrap sm:items-baseline sm:gap-x-2 sm:gap-y-1">
                 <div className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-baseline gap-1 sm:inline-flex">
                   <span className="shrink-0 whitespace-nowrap text-[8px] font-medium uppercase text-muted-foreground sm:text-[10px]">
-                    <span className="sm:hidden">总</span>
-                    <span className="hidden sm:inline">累计</span>
+                    <span className="sm:hidden">{translateText("总")}</span>
+                    <span className="hidden sm:inline">{translateText("累计")}</span>
                   </span>
                   <AnimatedStatValue
                     as="span"
-                    value={totalTrafficTotals.connections.toLocaleString()}
+                    value={totalTrafficTotals.connections.toLocaleString(getFormatLocale())}
                     loading={totalTrafficTotalsLoading}
                     cacheKey={`rules.traffic.${trafficTotalsCacheScope}.total.connections`}
                     fallbackCacheKeys={[`rules.traffic.${trafficTotalsLastCacheScope}.total.last.connections`, "rules.traffic.total.last.connections"]}
@@ -7669,7 +7668,7 @@ function RulesContent() {
                   <span className="shrink-0 whitespace-nowrap text-[8px] font-medium uppercase text-muted-foreground sm:text-[10px]">24H</span>
                   <AnimatedStatValue
                     as="span"
-                    value={dailyTrafficTotals.connections.toLocaleString()}
+                    value={dailyTrafficTotals.connections.toLocaleString(getFormatLocale())}
                     loading={dailyTrafficTotalsLoading}
                     cacheKey={`rules.traffic.${trafficTotalsCacheScope}.daily.connections`}
                     fallbackCacheKeys={[`rules.traffic.${trafficTotalsLastCacheScope}.daily.last.connections`, "rules.traffic.daily.last.connections"]}
@@ -7691,9 +7690,8 @@ function RulesContent() {
           "flex w-fit cursor-pointer items-center gap-1.5 px-1 text-xs text-muted-foreground",
           effectiveViewMode === "table" && "sm:hidden",
         )}>
-          <RuleBulkCheckbox {...bulkSelection.getCheckboxProps(pagedRules)} label="选择本页全部可选规则" />
-          全选本页
-        </label>
+          <RuleBulkCheckbox {...bulkSelection.getCheckboxProps(pagedRules)} label={translateText("选择本页全部可选规则")} />
+          {translateText("全选本页")}</label>
       )}
       {!isRuleGlobeView && <RuleBulkActionBar count={bulkSelection.selectedIds.size} disabled={bulkActions.disabled} busy={bulkSelection.busy}
         editDisabled={!bulkSelection.selectedRules.some(canEditRuleConfig)}
@@ -7705,12 +7703,12 @@ function RulesContent() {
         getResourceText={(mode, resource) => mode === "tunnel" ? getTunnelSelectText(resource) : getForwardGroupSelectText(resource)} />
       <RuleContentTransition transitionKey={ruleContentTransitionKey}>
       {isLoading || (!ruleStatusSnapshotReady && !hasCachedRuleStatus) ? (
-        <DataSectionLoading label={isLoading ? "正在加载转发规则" : "正在加载规则状态"} />
+        <DataSectionLoading label={isLoading ? translateText("正在加载转发规则") : translateText("正在加载规则状态")} />
       ) : filteredRules.length > 0 ? (
         <>
           {effectiveViewMode === "globe" ? (
             (!hosts || !tunnels || !forwardGroups) ? (
-              <DataSectionLoading label="正在加载转发流量地图" />
+              <DataSectionLoading label={translateText("正在加载转发流量地图")} />
             ) : (
               <RuleTrafficGlobe
                 rules={filteredRules}
@@ -7797,22 +7795,22 @@ function RulesContent() {
                       </colgroup>
                       <TableHeader>
                         <TableRow className="hover:bg-transparent">
-                          <TableHead className="w-[44px] px-2 text-center"><RuleBulkCheckbox {...bulkSelection.getCheckboxProps(pagedRules)} label="选择本页全部可选规则" /></TableHead>
-                          {ruleSortingEnabled && <TableHead className="w-[44px] px-2" aria-label="排序" />}
-                          <TableHead className="whitespace-nowrap text-center">状态</TableHead>
-                          <TableHead>规则</TableHead>
-                          <TableHead>SNI 域名</TableHead>
-                          {user?.role === "admin" && <TableHead>用户</TableHead>}
-                          <TableHead>所属资源</TableHead>
-                          <TableHead>转发入口</TableHead>
-                          <TableHead>转发出口</TableHead>
-                          <TableHead>链路</TableHead>
-                          <TableHead className="text-center">协议</TableHead>
+                          <TableHead className="w-[44px] px-2 text-center"><RuleBulkCheckbox {...bulkSelection.getCheckboxProps(pagedRules)} label={translateText("选择本页全部可选规则")} /></TableHead>
+                          {ruleSortingEnabled && <TableHead className="w-[44px] px-2" aria-label={translateText("排序")} />}
+                          <TableHead className="whitespace-nowrap text-center">{translateText("状态")}</TableHead>
+                          <TableHead>{translateText("规则")}</TableHead>
+                          <TableHead>{translateText("SNI 域名")}</TableHead>
+                          {user?.role === "admin" && <TableHead>{translateText("用户")}</TableHead>}
+                          <TableHead>{translateText("所属资源")}</TableHead>
+                          <TableHead>{translateText("转发入口")}</TableHead>
+                          <TableHead>{translateText("转发出口")}</TableHead>
+                          <TableHead>{translateText("链路")}</TableHead>
+                          <TableHead className="text-center">{translateText("协议")}</TableHead>
                           {trafficMetricHeaderLabels.map((label) => (
                             <TableHead key={label} className="whitespace-nowrap">{label}</TableHead>
                           ))}
-                          <TableHead className="text-center">开关</TableHead>
-                          <TableHead className="text-right">操作</TableHead>
+                          <TableHead className="text-center">{translateText("开关")}</TableHead>
+                          <TableHead className="text-right">{translateText("操作")}</TableHead>
                         </TableRow>
                       </TableHeader>
                       {shouldGroupRuleCards ? (
@@ -7844,7 +7842,7 @@ function RulesContent() {
               </Card>
             </>
           )}
-          <PersistentPagination pagination={rulePagination} itemName="项" />
+          <PersistentPagination pagination={rulePagination} itemName={translateText("项")} />
         </>
       ) : (
         <Card className="border-border/40 bg-card/60 backdrop-blur-md">
@@ -7852,13 +7850,11 @@ function RulesContent() {
             {(rules && rules.length > 0) || ruleScopeTotal > 0 || hasActiveRuleFilter ? (
               <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
                 <Filter className="h-10 w-10 mb-3 opacity-30" />
-                <p className="text-base font-medium">没有匹配的规则</p>
-                <p className="text-sm mt-1 text-muted-foreground/60">尝试调整筛选条件</p>
+                <p className="text-base font-medium">{translateText("没有匹配的规则")}</p>
+                <p className="text-sm mt-1 text-muted-foreground/60">{translateText("尝试调整筛选条件")}</p>
                 {hasActiveRuleFilter && (
                   <Button type="button" variant="outline" className="mt-4 gap-2" onClick={clearRuleFilters}>
-                    <XCircle className="h-4 w-4" />
-                    清除筛选
-                  </Button>
+                    <XCircle className="h-4 w-4" />{translateText("清除筛选")}</Button>
                 )}
               </div>
             ) : (
@@ -7866,17 +7862,15 @@ function RulesContent() {
                 <div className="h-16 w-16 rounded-2xl bg-muted/30 flex items-center justify-center mb-4">
                   <ArrowRightLeft className="h-8 w-8 opacity-40" />
                 </div>
-                <p className="text-lg font-medium">暂无转发规则</p>
+                <p className="text-lg font-medium">{translateText("暂无转发规则")}</p>
                 <p className="text-sm mt-1 text-muted-foreground/60">
                   {canCreateRule
-                    ? "创建第一条转发规则"
-                    : "当前账号没有可用的转发资源"}
+                    ? translateText("创建第一条转发规则")
+                    : translateText("当前账号没有可用的转发资源")}
                 </p>
                 {canAdd && canCreateRule && (
                   <Button onClick={() => openCreate()} variant="outline" className="mt-4 gap-2">
-                    <Plus className="h-4 w-4" />
-                    创建第一条规则
-                  </Button>
+                    <Plus className="h-4 w-4" />{translateText("创建第一条规则")}</Button>
                 )}
               </div>
             )}
@@ -7920,8 +7914,8 @@ function RulesContent() {
       >
         <DialogContent className="flex max-h-[96svh] w-[calc(100vw-1rem)] flex-col gap-3 overflow-hidden p-4 sm:max-w-2xl sm:p-5">
           <DialogHeader>
-            <DialogTitle>{editingId ? "编辑规则" : "添加转发规则"}</DialogTitle>
-            {!editingId && user?.role === "admin" && <DialogDescription>新增规则归属：{ruleOperationOwnerLabel}</DialogDescription>}
+            <DialogTitle>{editingId ? translateText("编辑规则") : translateText("添加转发规则")}</DialogTitle>
+            {!editingId && user?.role === "admin" && <DialogDescription>{translateText("新增规则归属：")}{ruleOperationOwnerLabel}</DialogDescription>}
           </DialogHeader>
           <div className="min-h-0 flex-1 scroll-pb-28 space-y-3 overflow-y-auto pb-5 pr-1">
             <Tabs
@@ -7932,7 +7926,7 @@ function RulesContent() {
               <SlidingTabsList
                 items={routeModeTabItems}
                 activeValue={form.routeMode}
-                ariaLabel="转发规则类型"
+                ariaLabel={translateText("转发规则类型")}
                 minItemWidthRem={5.75}
               />
             </Tabs>
@@ -7945,7 +7939,7 @@ function RulesContent() {
                 <div className="space-y-2 rounded-md border border-chart-4/20 bg-chart-4/5 p-2.5">
                   <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
                     <div className="space-y-2">
-                      <Label>使用隧道</Label>
+                      <Label>{translateText("使用隧道")}</Label>
                       <Select
                         value={form.tunnelId ? String(form.tunnelId) : undefined}
                         disabled={availableTunnels.length === 0}
@@ -7959,7 +7953,7 @@ function RulesContent() {
                           });
                         }}
                       >
-                        <SelectTrigger><SelectValue placeholder="请选择隧道" /></SelectTrigger>
+                        <SelectTrigger><SelectValue placeholder={translateText("请选择隧道")} /></SelectTrigger>
                         <SelectContent>
                           {availableTunnels.map((t: any) => (
                             <SelectItem key={t.id} value={String(t.id)} textValue={getTunnelSelectText(t)}>
@@ -7975,7 +7969,7 @@ function RulesContent() {
                     </Badge>
                   </div>
                   {availableTunnels.length === 0 && (
-                    <p className="text-xs text-amber-600">暂无可用隧道，请先在链路管理中创建隧道。</p>
+                    <p className="text-xs text-amber-600">{translateText("暂无可用隧道，请先在链路管理中创建隧道。")}</p>
                   )}
                   {selectedTunnel && (
                     <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
@@ -7990,7 +7984,7 @@ function RulesContent() {
                 <div className="space-y-2 rounded-md border border-emerald-500/20 bg-emerald-500/5 p-2.5">
                   <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
                     <div className="space-y-2">
-                      <Label>{form.routeMode === "local" ? (isLegacyLocalRuleEdit ? "迁移到新版端口转发" : "使用端口转发") : form.routeMode === "chain" ? "使用转发链" : "使用转发组"}</Label>
+                      <Label>{form.routeMode === "local" ? (isLegacyLocalRuleEdit ? translateText("迁移到新版端口转发") : translateText("使用端口转发")) : form.routeMode === "chain" ? translateText("使用转发链") : translateText("使用转发组")}</Label>
                       <Select
                         value={form.forwardGroupId ? String(form.forwardGroupId) : undefined}
                         disabled={(form.routeMode === "local" ? availablePortForwardGroups : form.routeMode === "chain" ? availableForwardChainGroups : availableFailoverForwardGroups).length === 0}
@@ -8013,7 +8007,7 @@ function RulesContent() {
                           });
                         }}
                       >
-                        <SelectTrigger><SelectValue placeholder={form.routeMode === "local" ? "请选择端口转发" : form.routeMode === "chain" ? "请选择转发链" : "请选择转发组"} /></SelectTrigger>
+                        <SelectTrigger><SelectValue placeholder={form.routeMode === "local" ? translateText("请选择端口转发") : form.routeMode === "chain" ? translateText("请选择转发链") : translateText("请选择转发组")} /></SelectTrigger>
                         <SelectContent>
                           {(form.routeMode === "local" ? availablePortForwardGroups : form.routeMode === "chain" ? availableForwardChainGroups : availableFailoverForwardGroups).map((group: any) => (
                             <SelectItem key={group.id} value={String(group.id)} textValue={getForwardGroupSelectText(group)}>
@@ -8025,16 +8019,14 @@ function RulesContent() {
                     </div>
                     <Badge variant="outline" className="h-9 justify-center gap-1.5 border-emerald-500/30 px-3 text-emerald-600">
                       {form.routeMode === "local" ? <ArrowRightLeft className="h-3.5 w-3.5" /> : form.routeMode === "chain" ? <GitBranch className="h-3.5 w-3.5" /> : <Layers3 className="h-3.5 w-3.5" />}
-                      {isLegacyLocalRuleEdit && !selectedForwardGroup ? "待选择" : FORWARD_TYPE_LABELS[effectiveRouteForwardType] || effectiveRouteForwardType}
+                      {isLegacyLocalRuleEdit && !selectedForwardGroup ? translateText("待选择") : FORWARD_TYPE_LABELS[effectiveRouteForwardType] || effectiveRouteForwardType}
                     </Badge>
                   </div>
                   {isLegacyLocalRuleEdit && form.routeMode === "local" && (
-                    <p className="text-xs text-amber-600">
-                      旧版端口转发规则需要选择新版端口转发，保存后会保留当前目标地址和端口配置。
-                    </p>
+                    <p className="text-xs text-amber-600">{translateText("旧版端口转发规则需要选择新版端口转发，保存后会保留当前目标地址和端口配置。")}</p>
                   )}
                   {form.routeMode === "local" && availablePortForwardGroups.length === 0 && (
-                    <p className="text-xs text-amber-600">暂无可用端口转发，请先在链路管理中创建并启用。</p>
+                    <p className="text-xs text-amber-600">{translateText("暂无可用端口转发，请先在链路管理中创建并启用。")}</p>
                   )}
                   {selectedForwardGroup && (
                     <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
@@ -8053,7 +8045,7 @@ function RulesContent() {
                 <div className="space-y-2 rounded-md border border-emerald-500/20 bg-emerald-500/5 p-2.5">
                   <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
                     <div className="space-y-2">
-                      <Label>使用按量计费资源</Label>
+                      <Label>{translateText("使用按量计费资源")}</Label>
                       <Select
                         value={form.hostId ? String(form.hostId) : undefined}
                         disabled={availableTrafficBillingHosts.length === 0}
@@ -8070,7 +8062,7 @@ function RulesContent() {
                           });
                         }}
                       >
-                        <SelectTrigger><SelectValue placeholder="请选择按量计费资源" /></SelectTrigger>
+                        <SelectTrigger><SelectValue placeholder={translateText("请选择按量计费资源")} /></SelectTrigger>
                         <SelectContent>
                           {availableTrafficBillingHosts.map((host: any) => (
                             <SelectItem key={host.id} value={String(host.id)} textValue={getHostOptionText(host)}>
@@ -8081,17 +8073,15 @@ function RulesContent() {
                       </Select>
                     </div>
                     <Badge variant="outline" className="h-9 justify-center gap-1.5 border-emerald-500/30 px-3 text-emerald-600">
-                      <ArrowRightLeft className="h-3.5 w-3.5" />
-                      按量计费
-                    </Badge>
+                      <ArrowRightLeft className="h-3.5 w-3.5" />{translateText("按量计费")}</Badge>
                   </div>
                   {availableTrafficBillingHosts.length === 0 && (
-                    <p className="text-xs text-amber-600">暂无可用按量计费资源，请确认资源授权和余额。</p>
+                    <p className="text-xs text-amber-600">{translateText("暂无可用按量计费资源，请确认资源授权和余额。")}</p>
                   )}
                   {selectedHost && (
                     <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                       {renderHostStatusLabel(selectedHost)}
-                      <span className="rounded bg-background/60 px-1.5 py-0.5">端口 {sourcePortRangeText}</span>
+                      <span className="rounded bg-background/60 px-1.5 py-0.5">{translateText("端口 ")}{sourcePortRangeText}</span>
                     </div>
                   )}
                 </div>
@@ -8099,19 +8089,19 @@ function RulesContent() {
             </RuleRouteTransition>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label>规则名称</Label>
+                <Label>{translateText("规则名称")}</Label>
                 <Input
-                  placeholder="例如: Web 服务转发"
+                  placeholder={translateText("例如: Web 服务转发")}
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
                 />
               </div>
               <div className="space-y-2">
-                <Label>协议</Label>
+                <Label>{translateText("协议")}</Label>
                 {sniProtocolLocked ? (
                   <div className="flex h-10 items-center justify-between gap-2 rounded-md border border-border/60 bg-muted/30 px-3 text-sm">
                     <span className="truncate">TCP</span>
-                    <Badge variant="outline" className="shrink-0 text-[10px]">SNI 分流</Badge>
+                    <Badge variant="outline" className="shrink-0 text-[10px]">{translateText("SNI 分流")}</Badge>
                   </div>
                 ) : (
                   <Select
@@ -8133,7 +8123,7 @@ function RulesContent() {
               </div>
               {!isForwardGroupRouteMode && form.routeMode === "local" && (
                 <div className="space-y-2">
-                  <Label>转发工具</Label>
+                  <Label>{translateText("转发工具")}</Label>
                   {!routeModeLocked && form.routeMode === "local" ? (
                     <Select
                       value={form.forwardType}
@@ -8157,7 +8147,7 @@ function RulesContent() {
                     <div className="flex h-10 items-center justify-between gap-2 rounded-md border border-border/60 bg-muted/30 px-3 text-sm">
                       <span className="truncate">{FORWARD_TYPE_LABELS[effectiveRouteForwardType] || effectiveRouteForwardType}</span>
                       <Badge variant="outline" className="shrink-0 text-[10px]">
-                        {isForwardGroupRouteMode ? "上级决定" : "已锁定"}
+                        {isForwardGroupRouteMode ? translateText("上级决定") : translateText("已锁定")}
                       </Badge>
                     </div>
                   )}
@@ -8170,19 +8160,19 @@ function RulesContent() {
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 text-sm font-medium">
                       <Globe className={`h-4 w-4 shrink-0 ${sniModeOn ? "text-primary" : "text-muted-foreground"}`} />
-                      <span className="truncate">SNI 分流转发</span>
+                      <span className="truncate">{translateText("SNI 分流转发")}</span>
                     </div>
                     <p className="mt-0.5 text-xs text-muted-foreground">
                       {sniSupport.reason || (selectedForwardGroupIsChain
-                        ? "多条规则共用一个入口端口，入口按 TLS 域名选择转发链，出口再选择对应落地机。"
-                        : "多条规则共用一个入口端口，由出口主机按 TLS 域名分流到各自目标。")}
+                        ? translateText("多条规则共用一个入口端口，入口按 TLS 域名选择转发链，出口再选择对应落地机。")
+                        : translateText("多条规则共用一个入口端口，由出口主机按 TLS 域名分流到各自目标。"))}
                     </p>
                   </div>
                   <Switch
                     checked={sniModeOn}
                     disabled={!!sniSupport.reason}
                     onCheckedChange={setSniModeEnabled}
-                    aria-label="SNI 分流转发"
+                    aria-label={translateText("SNI 分流转发")}
                   />
                 </div>
               </div>
@@ -8190,9 +8180,9 @@ function RulesContent() {
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-2">
                 <div className="flex items-center justify-between gap-2">
-                <Label>源端口</Label>
-                  <span className="truncate text-xs text-muted-foreground" title={`允许端口范围: ${sourcePortRangeText}`}>
-                    {sniSourcePortLocked ? "SNI 分流入口" : sourcePortRangeText}
+                <Label>{translateText("源端口")}</Label>
+                  <span className="truncate text-xs text-muted-foreground" title={translateText("允许端口范围: {0}", [sourcePortRangeText])}>
+                    {sniSourcePortLocked ? translateText("SNI 分流入口") : sourcePortRangeText}
                   </span>
                 </div>
                 <div className="flex gap-2">
@@ -8204,15 +8194,14 @@ function RulesContent() {
                         className="shrink-0 text-[11px] text-muted-foreground underline-offset-2 transition-colors hover:text-foreground hover:underline"
                         onClick={() => setSniToggle((prev) => ({ ...prev, portUnlocked: true }))}
                       >
-                        修改入口端口
-                      </button>
+                        {translateText("修改入口端口")}</button>
                     </div>
                   ) : (
                   <div className="relative min-w-0 flex-1">
                     <Input
                       type="text"
                       pattern="[0-9]*"
-                      placeholder={isForwardGroupRouteMode ? "例如 8080" : "0=随机"}
+                      placeholder={isForwardGroupRouteMode ? translateText("例如 8080") : translateText("0=随机")}
                       value={form.sourcePort || ""}
                       inputMode="numeric"
                       onChange={(e) => {
@@ -8226,7 +8215,7 @@ function RulesContent() {
                     {portStatus === "used" && (
                       <div className="absolute right-2.5 top-1/2 inline-flex max-w-[5.5rem] -translate-y-1/2 items-center gap-1 text-[11px] font-medium text-destructive" title={portStatusHint?.title}>
                         <XCircle className="h-3.5 w-3.5 shrink-0" />
-                        <span className="truncate">{portStatusHint?.text || "不可用"}</span>
+                        <span className="truncate">{portStatusHint?.text || translateText("不可用")}</span>
                       </div>
                     )}
                   </div>
@@ -8238,7 +8227,7 @@ function RulesContent() {
                     size="icon"
                     className="h-10 w-10 shrink-0"
                     onClick={handleRandomPort}
-                    title="随机分配端口"
+                    title={translateText("随机分配端口")}
                     disabled={isForwardGroupRouteMode ? !form.forwardGroupId : !form.hostId}
                   >
                     <Shuffle className="h-4 w-4" />
@@ -8247,16 +8236,16 @@ function RulesContent() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label>目标地址</Label>
+                <Label>{translateText("目标地址")}</Label>
                 <Input
-                  placeholder="例如: 10.0.0.1 或 example.com"
+                  placeholder={translateText("例如: 10.0.0.1 或 example.com")}
                   value={form.targetIp}
                   onChange={(e) => setForm({ ...form, targetIp: e.target.value })}
                 />
               </div>
               {sniModeOn && (
                 <div className="space-y-2">
-                  <Label>SNI 域名 <span className="text-destructive">*</span></Label>
+                  <Label>{translateText("SNI 域名")}<span className="text-destructive">*</span></Label>
                   <Input
                     placeholder="api.example.com"
                     value={form.sni}
@@ -8271,19 +8260,7 @@ function RulesContent() {
               {sniProtocolLocked && (
                 <>
                   <div className="space-y-2">
-                    <Label>规则限速 Mbps</Label>
-                    <Input
-                      type="number"
-                      min={0}
-                      max={1_000_000}
-                      step={1}
-                      value={form.rateLimitMbps || ""}
-                      placeholder="0"
-                      onChange={(e) => setForm({ ...form, rateLimitMbps: parseInt(e.target.value) || 0 })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>最大连接数</Label>
+                    <Label>{translateText("最大连接数")}</Label>
                     <Input
                       type="number"
                       min={0}
@@ -8299,22 +8276,22 @@ function RulesContent() {
               <div className="space-y-2 sm:col-span-2">
                 <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(220px,0.9fr)] sm:items-end">
                   <div className="space-y-2">
-                    <Label>目标端口 <span className="text-destructive">*</span></Label>
+                    <Label>{translateText("目标端口 ")}<span className="text-destructive">*</span></Label>
                     <Input
                       type="number"
                       min={1}
                       max={65535}
                       step={1}
-                      placeholder="例如: 80"
+                      placeholder={translateText("例如: 80")}
                       value={form.targetPort || ""}
                       onChange={(e) => setForm({ ...form, targetPort: parseInt(e.target.value) || 0 })}
                     />
                   </div>
                   <div className="flex min-h-10 flex-col gap-2 rounded-md bg-muted/35 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
                     <div className="min-w-0 space-y-0.5">
-                      <Label className="text-sm font-medium">异常TG提醒</Label>
+                      <Label className="text-sm font-medium">{translateText("异常通知")}</Label>
                       <p className="text-xs text-muted-foreground">
-                        {telegramBotReady ? "规则运行异常时提醒已绑定 Telegram 的管理员。" : "请先在系统设置中配置并启用 TG 机器人。"}
+                        {telegramBotReady ? translateText("规则运行异常时提醒已绑定所选通知渠道的管理员。") : translateText("请先在系统设置中配置并启用所选通知渠道。")}
                       </p>
                     </div>
                     <Switch
@@ -8338,7 +8315,7 @@ function RulesContent() {
             <div className="space-y-2 rounded-md border border-border/60 bg-muted/20 p-2.5">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0">
-                  <Label className="text-sm">出站策略</Label>
+                  <Label className="text-sm">{translateText("出站策略")}</Label>
                 </div>
                 <Select
                   value={form.failoverEnabled ? form.failoverStrategy : "disabled"}
@@ -8367,7 +8344,7 @@ function RulesContent() {
               {form.failoverEnabled && (
                 <div className="space-y-2">
                   <div className="space-y-2">
-                    <Label>备用出站（每行一个，最多 10 个）</Label>
+                    <Label>{translateText("备用出站（每行一个，最多 10 个）")}</Label>
                     <Textarea
                       value={form.failoverTargetsText}
                       onChange={(event) => setForm({ ...form, failoverTargetsText: event.target.value })}
@@ -8378,7 +8355,7 @@ function RulesContent() {
                   </div>
                   <div className="grid gap-2 sm:grid-cols-3">
                     <div className="space-y-2">
-                      <Label>切换时间（秒）</Label>
+                      <Label>{translateText("切换时间（秒）")}</Label>
                       <Input
                         type="number"
                         min={10}
@@ -8389,7 +8366,7 @@ function RulesContent() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label>恢复观察（秒）</Label>
+                      <Label>{translateText("恢复观察（秒）")}</Label>
                       <Input
                         type="number"
                         min={10}
@@ -8402,7 +8379,7 @@ function RulesContent() {
                     {form.failoverStrategy === "fallback" && (
                       <div className="flex items-center justify-between gap-3 rounded-md border border-border/50 bg-background/55 px-2.5 py-2">
                         <div>
-                          <Label className="text-sm">恢复后切回</Label>
+                          <Label className="text-sm">{translateText("恢复后切回")}</Label>
                         </div>
                         <Switch
                           checked={form.autoFailback}
@@ -8415,17 +8392,36 @@ function RulesContent() {
               )}
             </div>
             )}
+            {user?.role === "admin" && <RuleLimitsForm key={`${showDialog}-${editingId}`} value={form.limits} onChange={limits => setForm(prev => ({ ...prev, limits }))} />}
           </div>
           <DialogFooter className="shrink-0 gap-2 border-t border-border/60 bg-background/95 pt-3">
-            <Button variant="outline" onClick={() => setShowDialog(false)}>
-              取消
-            </Button>
+            <Button variant="outline" onClick={() => setShowDialog(false)}>{translateText("取消")}</Button>
             <Button
               onClick={handleSubmit}
               disabled={isPending || !form.name || (!isForwardGroupRouteMode && !form.hostId) || !form.targetIp || !form.targetPort || portStatus === "used" || (form.routeMode === "local" && !canUseLocalForward) || (form.routeMode === "tunnel" && !form.tunnelId) || (isForwardGroupRouteMode && !form.forwardGroupId) || (form.failoverEnabled && effectiveFormProtocol !== "tcp")}
             >
-              {isPending ? "处理中..." : editingId ? "保存" : "创建"}
+              {isPending ? translateText("处理中...") : editingId ? translateText("保存") : translateText("创建")}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={exportDownloads.length > 0} onOpenChange={(open) => { if (!open) setExportDownloads([]); }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{translateText("下载规则文件")}</DialogTitle>
+            <DialogDescription>{translateText("规则已拆分为 {0} 个文件，请逐个点击下载，避免浏览器拦截连续下载。", [exportDownloads.length])}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 overflow-y-auto">
+            {exportDownloads.map((file, index) => (
+              <Button key={file.filename} variant="outline" className="w-full justify-start gap-2" onClick={() => downloadRuleTransferFile(file)}>
+                <Download className="h-4 w-4" />
+                {translateText("下载第 {0}/{1} 个文件（{2} 条规则）", [index + 1, exportDownloads.length, file.ruleCount])}
+              </Button>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setExportDownloads([])}>{translateText("关闭")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -8435,14 +8431,14 @@ function RulesContent() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Download className="h-5 w-5" />
-              {"导出规则"}
+              {translateText("导出规则")}
             </DialogTitle>
-            <DialogDescription>{"选择范围后导出规则"}</DialogDescription>
+            <DialogDescription>{translateText("选择范围后导出规则")}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="grid gap-4 sm:grid-cols-[minmax(0,11rem)_minmax(0,1fr)]">
               <div className="space-y-2">
-                <Label>{"类型"}</Label>
+                <Label>{translateText("类型")}</Label>
                 <Select
                   value={exportScopeType}
                   onValueChange={(value) => {
@@ -8476,16 +8472,16 @@ function RulesContent() {
             </div>
             <div className="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
               {exportResourceId
-                ? `将导出 ${exportableRules.length} 条${ruleTransferScopeLabels[exportScopeType]}规则`
-                : `请选择${ruleTransferScopeLabels[exportScopeType]}`}
+                ? translateText("将导出 {0} 条{1}规则", [exportableRules.length, ruleTransferScopeLabels[exportScopeType]])
+                : translateText("请选择{0}", [ruleTransferScopeLabels[exportScopeType]])}
             </div>
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setShowExportDialog(false)}>
-              {"取消"}
+              {translateText("取消")}
             </Button>
             <Button type="button" onClick={handleExportRules} disabled={!exportResourceId || exportableRules.length === 0}>
-              {"确定导出"}
+              {translateText("确定导出")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -8498,18 +8494,18 @@ function RulesContent() {
           if (!open) resetImportDialog();
         }}
       >
-        <DialogContent className="sm:max-w-2xl">
+        <DialogContent className="grid-rows-[auto_minmax(0,1fr)_auto] sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Upload className="h-5 w-5" />
-              {"导入规则"}
+              {translateText("导入规则")}
             </DialogTitle>
-            <DialogDescription>{"选择范围和规则文件后导入"}</DialogDescription>
+            <DialogDescription>{translateText("选择范围和规则文件后导入")}</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-2">
+          <div className="min-h-0 min-w-0 space-y-4 overflow-y-auto py-2 pr-1">
             <div className="grid gap-4 sm:grid-cols-[minmax(0,11rem)_minmax(0,1fr)]">
               <div className="space-y-2">
-                <Label>{"类型"}</Label>
+                <Label>{translateText("类型")}</Label>
                 <Select
                   value={importScopeType}
                   onValueChange={(value) => {
@@ -8545,7 +8541,7 @@ function RulesContent() {
               })}
             </div>
             <div className="space-y-2">
-              <Label>{"规则文件"}</Label>
+              <Label>{translateText("规则文件")}</Label>
               <Input key={importFileInputKey} type="file" accept=".json,application/json" onChange={handleImportFileChange} />
             </div>
             <div
@@ -8562,25 +8558,23 @@ function RulesContent() {
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setShowImportDialog(false)} disabled={importingRules}>
-              {"取消"}
+              {translateText("取消")}
             </Button>
             <Button type="button" onClick={handleImportRules} disabled={!importValidation.ok || importingRules}>
               {importingRules && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {"导入"}
+              {translateText("导入")}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
       <Dialog open={showCopyDialog} onOpenChange={(open) => !copyActionPending && setShowCopyDialog(open)}>
-        <DialogContent className="sm:max-w-4xl">
+        <DialogContent className="grid-rows-[auto_minmax(0,1fr)_auto] sm:max-w-4xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <ClipboardCopy className="h-5 w-5" />
-              批量管理转发规则
-            </DialogTitle>
-            <DialogDescription>管理当前用户筛选范围内的规则；复制或导入的新规则归属：{ruleOperationOwnerLabel}。编辑不会改变规则归属。</DialogDescription>
+              <ClipboardCopy className="h-5 w-5" />{translateText("批量管理转发规则")}</DialogTitle>
+            <DialogDescription>{translateText("管理当前用户筛选范围内的规则；复制或导入的新规则归属：")}{ruleOperationOwnerLabel}{translateText("。编辑不会改变规则归属。")}</DialogDescription>
           </DialogHeader>
-          <div className="max-h-[72vh] space-y-4 overflow-y-auto pr-1">
+          <div className="min-h-0 min-w-0 space-y-4 overflow-y-auto pr-1">
             <div className={segmentedControlClassName}>
               <div className="grid grid-cols-2 gap-1 sm:grid-cols-4">
                 <button
@@ -8591,7 +8585,7 @@ function RulesContent() {
                   disabled={copyActionPending || !transferSourceRules.length}
                 >
                   <ClipboardCopy className="h-4 w-4 shrink-0" />
-                  <span className="truncate">批量复制</span>
+                  <span className="truncate">{translateText("批量复制")}</span>
                 </button>
                 <button
                   type="button"
@@ -8601,7 +8595,7 @@ function RulesContent() {
                   disabled={copyActionPending || !transferSourceRules.length}
                 >
                   <Pencil className="h-4 w-4 shrink-0" />
-                  <span className="truncate">批量编辑</span>
+                  <span className="truncate">{translateText("批量编辑")}</span>
                 </button>
                 <button
                   type="button"
@@ -8611,7 +8605,7 @@ function RulesContent() {
                   disabled={copyActionPending || !transferSourceRules.length}
                 >
                   <Download className="h-4 w-4 shrink-0" />
-                  <span className="truncate">批量导出</span>
+                  <span className="truncate">{translateText("批量导出")}</span>
                 </button>
                 <button
                   type="button"
@@ -8621,7 +8615,7 @@ function RulesContent() {
                   disabled={copyActionPending || importingRules || !canAdd}
                 >
                   <Upload className="h-4 w-4 shrink-0" />
-                  <span className="truncate">批量导入</span>
+                  <span className="truncate">{translateText("批量导入")}</span>
                 </button>
               </div>
             </div>
@@ -8629,23 +8623,23 @@ function RulesContent() {
             {isBatchImportMode ? (
               <>
               <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_3.5rem_minmax(0,0.82fr)] lg:items-start">
-                <div className="space-y-3 rounded-md border border-border/60 bg-background/55 p-3">
+                <div className="min-w-0 space-y-3 rounded-md border border-border/60 bg-background/55 p-3">
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div className="space-y-1">
-                      <Label>导入内容</Label>
+                      <Label>{translateText("导入内容")}</Label>
                       <div className="text-xs text-muted-foreground">
                         {importSourceMode === "sni"
-                          ? "填写一次入口端口，按行粘贴 SNI 分流规则。"
-                          : "支持从文件导入，或手动输入目标地址与端口后批量导入。"}
+                          ? translateText("填写一次入口端口，按行粘贴 SNI 分流规则。")
+                          : translateText("支持从文件导入，或手动输入目标地址与端口后批量导入。")}
                       </div>
                     </div>
                     <div className="inline-flex shrink-0 items-center gap-2 self-start whitespace-nowrap rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-                      <span>待导入</span>
+                      <span>{translateText("待导入")}</span>
                       <span className="rounded-full bg-background/90 px-2 py-0.5 tabular-nums">{importValidation.rules.length}</span>
                     </div>
                   </div>
                   <div className={segmentedControlClassName}>
-                    <div className={`grid gap-1 ${user?.role === "admin" ? "grid-cols-3" : "grid-cols-2"}`}>
+                    <div className={`grid grid-cols-1 gap-1 ${user?.role === "admin" ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}>
                       <button
                         type="button"
                         className={routeModeOptionClass(importSourceMode === "file", importingRules)}
@@ -8658,7 +8652,7 @@ function RulesContent() {
                         disabled={importingRules}
                       >
                         <Upload className="h-4 w-4 shrink-0" />
-                        <span className="truncate">文件导入</span>
+                        <span className="truncate">{translateText("文件导入")}</span>
                       </button>
                       <button
                         type="button"
@@ -8675,7 +8669,7 @@ function RulesContent() {
                         disabled={importingRules}
                       >
                         <Pencil className="h-4 w-4 shrink-0" />
-                        <span className="truncate">手动输入</span>
+                        <span className="truncate">{translateText("手动输入")}</span>
                       </button>
                       {user?.role === "admin" && (
                         <button
@@ -8695,7 +8689,7 @@ function RulesContent() {
                           disabled={importingRules}
                         >
                           <GitBranch className="h-4 w-4 shrink-0" />
-                          <span className="truncate">SNI 分流</span>
+                          <span className="truncate">{translateText("SNI 分流")}</span>
                         </button>
                       )}
                     </div>
@@ -8703,7 +8697,7 @@ function RulesContent() {
                   {importSourceMode === "sni" && (
                     <div className="grid gap-3 sm:grid-cols-[12rem_minmax(0,1fr)]">
                       <div className="space-y-2">
-                        <Label>入口端口</Label>
+                        <Label>{translateText("入口端口")}</Label>
                         <Input
                           type="number"
                           min={1}
@@ -8714,12 +8708,11 @@ function RulesContent() {
                         />
                       </div>
                       <div className="rounded-md border border-border/60 bg-muted/20 px-3 py-2 text-xs leading-5 text-muted-foreground">
-                        同一批 SNI 分流规则共用该入口端口，端口占用时会返回错误供修正。
-                      </div>
+                        {translateText("同一批 SNI 分流规则共用该入口端口，端口占用时会返回错误供修正。")}</div>
                     </div>
                   )}
                   <div className="space-y-2">
-                    <Label>{importSourceMode === "file" ? "规则文件" : importSourceMode === "sni" ? "SNI 规则列表" : "目标地址列表"}</Label>
+                    <Label>{importSourceMode === "file" ? translateText("规则文件") : importSourceMode === "sni" ? translateText("SNI 规则列表") : translateText("目标地址列表")}</Label>
                     {importSourceMode === "file" ? (
                       <Input key={importFileInputKey} type="file" accept=".json,application/json" onChange={handleImportFileChange} />
                     ) : (
@@ -8727,8 +8720,8 @@ function RulesContent() {
                         value={importManualText}
                         onChange={(event) => setImportManualText(event.target.value)}
                         placeholder={importSourceMode === "sni"
-                          ? `${SNI_BULK_IMPORT_LINE_FORMAT}\n官网#www.example.com#203.0.113.10#443\nIPv6站点#ipv6.example.com#[2408:xxxx::1]#8443`
-                          : "每行一个目标地址，格式如：\nexample.com:443\n10.0.0.8:8080\n[2408:xxxx::1]:8443"}
+                          ? translateText("{0}\n官网#www.example.com#203.0.113.10#443\nIPv6站点#ipv6.example.com#[2408:xxxx::1]#8443", [translateText(SNI_BULK_IMPORT_LINE_FORMAT)])
+                          : translateText("每行一个目标地址，格式如：\nexample.com:443\n10.0.0.8:8080\n[2408:xxxx::1]:8443")}
                         className={importSourceMode === "sni" ? "min-h-[11rem] resize-y font-mono text-sm" : "min-h-[7.5rem] resize-y"}
                       />
                     )}
@@ -8761,7 +8754,7 @@ function RulesContent() {
                             <div className="mt-1 truncate text-xs text-muted-foreground">
                               {sni
                                 ? `:${rule.sourcePort} / ${sni} -> ${formatAddressWithPort(rule.targetIp, rule.targetPort)} / ${forwardTypeDisplayLabel(rule.forwardType)}`
-                                : `${rule.sourcePort > 0 ? `:${rule.sourcePort}` : "随机端口"} -> ${formatAddressWithPort(rule.targetIp, rule.targetPort)} / ${forwardTypeDisplayLabel(rule.forwardType)}`}
+                                : translateText("{0} -> {1} / {2}", [rule.sourcePort > 0 ? `:${rule.sourcePort}` : translateText("随机端口"), formatAddressWithPort(rule.targetIp, rule.targetPort), forwardTypeDisplayLabel(rule.forwardType)])}
                             </div>
                           </div>
                         );
@@ -8775,22 +8768,20 @@ function RulesContent() {
                     <div className="rounded-full border border-primary/20 bg-primary/5 p-3 text-primary shadow-sm">
                       <ArrowRight className="h-5 w-5" />
                     </div>
-                    <div className="text-center text-[11px] font-medium leading-4 text-muted-foreground">
-                      导入到右侧目标
-                    </div>
+                    <div className="text-center text-[11px] font-medium leading-4 text-muted-foreground">{translateText("导入到右侧目标")}</div>
                   </div>
                 </div>
 
-                <div className="space-y-3 rounded-md border border-border/60 bg-background/55 p-3">
+                <div className="min-w-0 space-y-3 rounded-md border border-border/60 bg-background/55 p-3">
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div className="space-y-1">
-                      <Label>导入目标</Label>
+                      <Label>{translateText("导入目标")}</Label>
                       <div className="text-xs text-muted-foreground">
-                        {importSourceMode === "sni" ? "选择承载这批 SNI 分流规则的转发链。" : "选择要导入到哪个端口转发、隧道、转发链或转发组。"}
+                        {importSourceMode === "sni" ? translateText("选择承载这批 SNI 分流规则的转发链。") : translateText("选择要导入到哪个端口转发、隧道、转发链或转发组。")}
                       </div>
                     </div>
                     <div className="inline-flex shrink-0 items-center gap-2 self-start whitespace-nowrap rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-700 dark:text-emerald-300">
-                      <span>已选择</span>
+                      <span>{translateText("已选择")}</span>
                       <span className="rounded-full bg-background/90 px-2 py-0.5 tabular-nums">{selectedImportResource ? 1 : 0}</span>
                     </div>
                   </div>
@@ -8818,13 +8809,13 @@ function RulesContent() {
                       <Input
                         value={importResourceSearch}
                         onChange={(event) => setImportResourceSearch(event.target.value)}
-                        placeholder={`查找${ruleTransferScopeLabels[importScopeType]}`}
+                        placeholder={translateText("查找{0}", [ruleTransferScopeLabels[importScopeType]])}
                         className="h-9 pl-8 pr-8 text-xs"
                       />
                       {importResourceSearch ? (
                         <button
                           type="button"
-                          aria-label="清空导入目标查找"
+                          aria-label={translateText("清空导入目标查找")}
                           className="absolute right-2 top-1/2 inline-flex h-4 w-4 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground"
                           onClick={() => setImportResourceSearch("")}
                         >
@@ -8835,8 +8826,7 @@ function RulesContent() {
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-xs text-muted-foreground tabular-nums">
-                      {filteredImportResources.length} 项
-                    </span>
+                      {filteredImportResources.length}{translateText(" 项")}</span>
                   </div>
                   <div className="max-h-[19rem] space-y-2 overflow-y-auto rounded-md border border-border/60 p-2">
                     {filteredImportResources.length > 0 ? filteredImportResources.map((resource: any) => {
@@ -8863,20 +8853,18 @@ function RulesContent() {
                         </button>
                       );
                     }) : (
-                      <div className="py-10 text-center text-sm text-muted-foreground">没有可选择的{ruleTransferScopeLabels[importScopeType]}</div>
+                      <div className="py-10 text-center text-sm text-muted-foreground">{translateText("没有可选择的")}{ruleTransferScopeLabels[importScopeType]}</div>
                     )}
                   </div>
                   <div className="rounded-md border border-border/60 bg-muted/20 px-3 py-3 text-sm text-muted-foreground">
                     {selectedImportResource
-                      ? `将导入到 ${getTransferResourceLabel(importScopeType, selectedImportResource)}`
-                      : `请选择${ruleTransferScopeLabels[importScopeType]}`}
+                      ? translateText("将导入到 {0}", [getTransferResourceLabel(importScopeType, selectedImportResource)])
+                      : translateText("请选择{0}", [ruleTransferScopeLabels[importScopeType]])}
                   </div>
                 </div>
               </div>
               {importSourceMode === "file" && (
-                <div className="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-xs leading-5 text-muted-foreground">
-                  导入会保留文件中的规则配置，并应用到右侧当前选择的目标资源。
-                </div>
+                <div className="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-xs leading-5 text-muted-foreground">{translateText("导入会保留文件中的规则配置，并应用到右侧当前选择的目标资源。")}</div>
               )}
               </>
             ) : (
@@ -8895,21 +8883,21 @@ function RulesContent() {
                 </div>
               </div>
 
-              <div className="space-y-3">
+              <div className="min-w-0 space-y-3">
                 {isBatchExportMode ? (
                 <div className="space-y-3 rounded-md border border-border/60 bg-background/55 p-3">
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div className="space-y-1">
-                      <Label>导出内容</Label>
-                      <div className="text-xs text-muted-foreground">将左侧选中的规则导出为 JSON 文件，便于备份或迁移。</div>
+                      <Label>{translateText("导出内容")}</Label>
+                      <div className="text-xs text-muted-foreground">{translateText("将左侧选中的规则导出为 JSON 文件，便于备份或迁移。")}</div>
                     </div>
                     <div className="inline-flex shrink-0 items-center gap-2 self-start whitespace-nowrap rounded-full bg-sky-500/10 px-3 py-1 text-xs font-medium text-sky-700 dark:text-sky-300">
-                      <span>待导出</span>
+                      <span>{translateText("待导出")}</span>
                       <span className="rounded-full bg-background/90 px-2 py-0.5 tabular-nums">{selectedBatchRuleCount}</span>
                     </div>
                   </div>
                   <div className="rounded-md border border-border/60 bg-muted/20 px-3 py-3 text-sm text-muted-foreground">
-                    {selectedBatchRuleCount > 0 ? `将导出 ${selectedBatchRuleCount} 条选中规则` : "请先在左侧选择要导出的规则"}
+                    {selectedBatchRuleCount > 0 ? translateText("将导出 {0} 条选中规则", [selectedBatchRuleCount]) : translateText("请先在左侧选择要导出的规则")}
                   </div>
                   {copySelectedRules.length > 0 ? (
                     <div className="max-h-[19rem] space-y-2 overflow-y-auto rounded-md border border-border/60 p-2">
@@ -8935,25 +8923,23 @@ function RulesContent() {
                 <div className="space-y-3 rounded-md border border-border/60 bg-background/55 p-3">
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div className="space-y-1">
-                      <Label>批量编辑内容</Label>
-                      <div className="text-xs text-muted-foreground">
-                        入口资源和目标地址可独立替换；未填写的项会保留每条规则原来的值。
-                      </div>
+                      <Label>{translateText("批量编辑内容")}</Label>
+                      <div className="text-xs text-muted-foreground">{translateText("入口资源和目标地址可独立替换；未填写的项会保留每条规则原来的值。")}</div>
                     </div>
                     <div className="inline-flex shrink-0 items-center gap-2 self-start whitespace-nowrap rounded-full bg-amber-500/10 px-3 py-1 text-xs font-medium text-amber-700 dark:text-amber-300">
-                      {hasBatchEditChanges ? "按填写项替换" : "未设置替换项"}
+                      {hasBatchEditChanges ? translateText("按填写项替换") : translateText("未设置替换项")}
                     </div>
                   </div>
 
                   <div className="space-y-3 rounded-md border border-border/60 bg-muted/20 p-3">
                     <div className="flex items-center justify-between gap-2">
-                      <Label className="text-sm">替换入口资源</Label>
+                      <Label className="text-sm">{translateText("替换入口资源")}</Label>
                       <span className="text-xs text-muted-foreground">
-                        {hasBatchEditRouteSelection ? "已设置新入口" : "保持原入口"}
+                        {hasBatchEditRouteSelection ? translateText("已设置新入口") : translateText("保持原入口")}
                       </span>
                     </div>
                     <div className="space-y-2">
-                      <Label>入口类型</Label>
+                      <Label>{translateText("入口类型")}</Label>
                       <Select
                         value={batchEditForm.routeMode}
                         onValueChange={(value) => setBatchEditRouteMode(value as RuleRouteMode)}
@@ -8963,17 +8949,17 @@ function RulesContent() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="local" disabled={!canUseSavedLocalForward}>端口转发</SelectItem>
-                          <SelectItem value="tunnel" disabled={!canUseGost}>隧道转发</SelectItem>
-                          <SelectItem value="chain" disabled={!canUseForwardChain}>转发链</SelectItem>
-                          <SelectItem value="group" disabled={!canUseFailoverGroup}>转发组</SelectItem>
+                          <SelectItem value="local" disabled={!canUseSavedLocalForward}>{translateText("端口转发")}</SelectItem>
+                          <SelectItem value="tunnel" disabled={!canUseGost}>{translateText("隧道转发")}</SelectItem>
+                          <SelectItem value="chain" disabled={!canUseForwardChain}>{translateText("转发链")}</SelectItem>
+                          <SelectItem value="group" disabled={!canUseFailoverGroup}>{translateText("转发组")}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
 
                     {batchEditForm.routeMode === "tunnel" ? (
                       <div className="space-y-2">
-                        <Label>使用隧道</Label>
+                        <Label>{translateText("使用隧道")}</Label>
                         <Select
                           value={batchEditForm.tunnelId ? String(batchEditForm.tunnelId) : "none"}
                           disabled={copyActionPending}
@@ -8988,7 +8974,7 @@ function RulesContent() {
                         >
                           <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="none">不替换入口</SelectItem>
+                            <SelectItem value="none">{translateText("不替换入口")}</SelectItem>
                             {supportedTunnels.map((tunnel: any) => (
                               <SelectItem key={tunnel.id} value={String(tunnel.id)} textValue={getTunnelSelectText(tunnel)}>
                                 {renderTunnelSelectLabel(tunnel)}
@@ -9006,7 +8992,7 @@ function RulesContent() {
                       </div>
                     ) : (
                       <div className="space-y-2">
-                        <Label>{batchEditForm.routeMode === "local" ? "使用端口转发" : batchEditForm.routeMode === "chain" ? "使用转发链" : "使用转发组"}</Label>
+                        <Label>{batchEditForm.routeMode === "local" ? translateText("使用端口转发") : batchEditForm.routeMode === "chain" ? translateText("使用转发链") : translateText("使用转发组")}</Label>
                         <Select
                           value={batchEditForm.forwardGroupId ? String(batchEditForm.forwardGroupId) : "none"}
                           disabled={copyActionPending}
@@ -9023,7 +9009,7 @@ function RulesContent() {
                         >
                           <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="none">不替换入口</SelectItem>
+                            <SelectItem value="none">{translateText("不替换入口")}</SelectItem>
                             {batchEditAvailableGroups.map((group: any) => (
                               <SelectItem key={group.id} value={String(group.id)} textValue={getForwardGroupSelectText(group)}>
                                 {renderForwardGroupSelectLabel(group)}
@@ -9047,29 +9033,29 @@ function RulesContent() {
 
                   <div className="space-y-3 rounded-md border border-border/60 bg-muted/20 p-3">
                     <div className="flex items-center justify-between gap-2">
-                      <Label className="text-sm">替换目标地址</Label>
+                      <Label className="text-sm">{translateText("替换目标地址")}</Label>
                       <span className="text-xs text-muted-foreground">
-                        {hasBatchEditTargetIpChange || hasBatchEditTargetPortChange ? "按填写项替换" : "保持原目标"}
+                        {hasBatchEditTargetIpChange || hasBatchEditTargetPortChange ? translateText("按填写项替换") : translateText("保持原目标")}
                       </span>
                     </div>
                     <div className="grid gap-3 sm:grid-cols-2">
                       <div className="space-y-2">
-                        <Label>目标地址</Label>
+                        <Label>{translateText("目标地址")}</Label>
                         <Input
-                          placeholder="留空则保持原目标地址"
+                          placeholder={translateText("留空则保持原目标地址")}
                           value={batchEditForm.targetIp}
                           onChange={(event) => setBatchEditForm((prev) => ({ ...prev, targetIp: event.target.value }))}
                           disabled={copyActionPending}
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label>目标端口</Label>
+                        <Label>{translateText("目标端口")}</Label>
                         <Input
                           type="number"
                           min={1}
                           max={65535}
                           step={1}
-                          placeholder="留空则保持原目标端口"
+                          placeholder={translateText("留空则保持原目标端口")}
                           value={batchEditForm.targetPort || ""}
                           onChange={(event) => setBatchEditForm((prev) => ({ ...prev, targetPort: parseInt(event.target.value) || 0 }))}
                           disabled={copyActionPending}
@@ -9079,27 +9065,27 @@ function RulesContent() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label>端口冲突处理</Label>
+                    <Label>{translateText("端口冲突处理")}</Label>
                     <Select value={copyConflictStrategy} onValueChange={(value) => setCopyConflictStrategy(value as any)} disabled={!hasBatchEditRouteSelection}>
                       <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="skip">跳过冲突规则</SelectItem>
-                        <SelectItem value="auto">自动分配新端口</SelectItem>
-                        <SelectItem value="error">遇到冲突时报错</SelectItem>
+                        <SelectItem value="skip">{translateText("跳过冲突规则")}</SelectItem>
+                        <SelectItem value="auto">{translateText("自动分配新端口")}</SelectItem>
+                        <SelectItem value="error">{translateText("遇到冲突时报错")}</SelectItem>
                       </SelectContent>
                     </Select>
-                    <p className="text-xs text-muted-foreground">仅在替换入口资源且原源端口冲突时生效。</p>
+                    <p className="text-xs text-muted-foreground">{translateText("仅在替换入口资源且原源端口冲突时生效。")}</p>
                   </div>
                 </div>
                 ) : (
                 <div className="space-y-3 rounded-md border border-border/60 bg-background/55 p-3">
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div className="space-y-1">
-                      <Label>复制目标</Label>
-                      <div className="text-xs text-muted-foreground">可同时选择多个{copyTargetScopeLabel}；搜索仅筛选显示，不会取消已选目标。</div>
+                      <Label>{translateText("复制目标")}</Label>
+                      <div className="text-xs text-muted-foreground">{translateText("可同时选择多个")}{copyTargetScopeLabel}{translateText("；搜索仅筛选显示，不会取消已选目标。")}</div>
                     </div>
                     <div className="inline-flex items-center gap-2 self-start rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-700 dark:text-emerald-300">
-                      <span>已选目标</span>
+                      <span>{translateText("已选目标")}</span>
                       <span className="rounded-full bg-background/90 px-2 py-0.5 tabular-nums">{selectedBatchTargetCount}</span>
                     </div>
                   </div>
@@ -9124,14 +9110,14 @@ function RulesContent() {
                       <Input
                         value={copyTargetSearch}
                         onChange={(event) => setCopyTargetSearch(event.target.value)}
-                        placeholder={"查找" + copyTargetScopeLabel}
+                        placeholder={translateText("查找") + copyTargetScopeLabel}
                         className="h-9 pl-8 pr-8 text-xs"
                         disabled={copyActionPending}
                       />
                       {copyTargetSearch ? (
                         <button
                           type="button"
-                          aria-label="清空目标查找"
+                          aria-label={translateText("清空目标查找")}
                           className="absolute right-2 top-1/2 inline-flex h-4 w-4 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground"
                           onClick={() => setCopyTargetSearch("")}
                           disabled={copyActionPending}
@@ -9142,13 +9128,13 @@ function RulesContent() {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label>端口冲突处理</Label>
+                    <Label>{translateText("端口冲突处理")}</Label>
                     <Select value={copyConflictStrategy} onValueChange={(value) => setCopyConflictStrategy(value as any)} disabled={copyActionPending}>
                       <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="skip">跳过冲突规则</SelectItem>
-                        <SelectItem value="auto">自动分配新端口</SelectItem>
-                        <SelectItem value="error">遇到冲突时报错</SelectItem>
+                        <SelectItem value="skip">{translateText("跳过冲突规则")}</SelectItem>
+                        <SelectItem value="auto">{translateText("自动分配新端口")}</SelectItem>
+                        <SelectItem value="error">{translateText("遇到冲突时报错")}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -9173,7 +9159,7 @@ function RulesContent() {
                       }}
                       disabled={filteredCopyTargetResources.length === 0 || copyActionPending}
                     >
-                      {allVisibleCopyTargetsSelected ? "取消" : "全选"}
+                      {allVisibleCopyTargetsSelected ? translateText("取消") : translateText("全选")}
                     </Button>
                     <Button
                       type="button"
@@ -9182,12 +9168,9 @@ function RulesContent() {
                       className="h-8 px-2 text-xs"
                       onClick={() => commitCopyTargetSelection(copyTargetScopeType, [])}
                       disabled={copyTargetResourceIds.length === 0 || copyActionPending}
-                    >
-                      清空目标
-                    </Button>
+                    >{translateText("清空目标")}</Button>
                     <span className="text-xs text-muted-foreground tabular-nums">
-                      {filteredCopyTargetResources.length} 项
-                    </span>
+                      {filteredCopyTargetResources.length}{translateText(" 项")}</span>
                   </div>
                   <div className="max-h-[19rem] space-y-2 overflow-y-auto rounded-md border border-border/60 p-2">
                     {filteredCopyTargetResources.length > 0 ? filteredCopyTargetResources.map((resource: any) => (
@@ -9209,24 +9192,24 @@ function RulesContent() {
                         <span className="min-w-0 flex-1">{renderTransferResourceOption(copyTargetScopeType, resource, { showStatus: true })}</span>
                       </label>
                     )) : (
-                      <div className="py-10 text-center text-sm text-muted-foreground">没有可选择的{copyTargetScopeLabel}</div>
+                      <div className="py-10 text-center text-sm text-muted-foreground">{translateText("没有可选择的")}{copyTargetScopeLabel}</div>
                     )}
                   </div>
-                  <div className="rounded-md border border-emerald-500/20 bg-emerald-500/5 px-3 py-2 text-xs leading-5 text-emerald-800 dark:text-emerald-200">
+                  <div className="break-words rounded-md border border-emerald-500/20 bg-emerald-500/5 px-3 py-2 text-xs leading-5 text-emerald-800 dark:text-emerald-200">
                     {selectedCopyTargetResources.length > 0 ? (
                       <>
-                        <span className="font-medium">本次复制目标：</span>
+                        <span className="font-medium">{translateText("本次复制目标：")}</span>
                         <span>
                           {selectedCopyTargetResources.slice(0, 4).map((resource: any, index: number) => (
                             <span key={`${copyTargetScopeType}-summary-${resource.id}`}>
                               {index > 0 ? "、" : ""}{getTransferResourceLabel(copyTargetScopeType, resource)} (#{Number(resource.id)})
                             </span>
                           ))}
-                          {selectedCopyTargetResources.length > 4 ? ` 等 ${selectedCopyTargetResources.length} 个目标` : ""}
+                          {selectedCopyTargetResources.length > 4 ? translateText(" 等 {0} 个目标", [selectedCopyTargetResources.length]) : ""}
                         </span>
                       </>
                     ) : (
-                      <span>尚未选择复制目标</span>
+                      <span>{translateText("尚未选择复制目标")}</span>
                     )}
                   </div>
                 </div>
@@ -9235,10 +9218,10 @@ function RulesContent() {
             </div>
             <div className="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-xs leading-5 text-muted-foreground">
               {isBatchExportMode
-                ? "批量导出会按左侧当前选中的规则生成 JSON 文件，不会受右侧资源范围限制。"
+                ? translateText("批量导出会按左侧当前选中的规则生成 JSON 文件，不会受右侧资源范围限制。")
                 : isBatchEditMode
-                ? "批量编辑会按你实际填写的项逐条覆盖：入口资源未选择则保留原入口，目标地址或端口留空则保留原目标值。"
-                : "复制会保留原规则基础配置，并按当前选择的目标资源生成副本。"}
+                ? translateText("批量编辑会按你实际填写的项逐条覆盖：入口资源未选择则保留原入口，目标地址或端口留空则保留原目标值。")
+                : translateText("复制会保留原规则基础配置，并按当前选择的目标资源生成副本。")}
             </div>
             </>
             )}
@@ -9248,34 +9231,28 @@ function RulesContent() {
               <>
                 <div />
                 <div className="flex flex-wrap gap-2">
-                  <Button variant="outline" onClick={() => setShowCopyDialog(false)} disabled={importingRules}>取消</Button>
+                  <Button variant="outline" onClick={() => setShowCopyDialog(false)} disabled={importingRules}>{translateText("取消")}</Button>
                   <Button type="button" onClick={handleImportRules} disabled={!importValidation.ok || importingRules}>
-                    {importingRules && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    导入规则
-                  </Button>
+                    {importingRules && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}{translateText("导入规则")}</Button>
                 </div>
               </>
             ) : isBatchExportMode ? (
               <>
                 <div />
                 <div className="flex flex-wrap gap-2">
-                  <Button variant="outline" onClick={() => setShowCopyDialog(false)}>取消</Button>
+                  <Button variant="outline" onClick={() => setShowCopyDialog(false)}>{translateText("取消")}</Button>
                   <Button type="button" onClick={handleBatchExportRules} disabled={selectedBatchRuleCount === 0 || copyActionPending}>
-                    <Download className="mr-2 h-4 w-4" />
-                    导出规则
-                  </Button>
+                    <Download className="mr-2 h-4 w-4" />{translateText("导出规则")}</Button>
                 </div>
               </>
             ) : (
               <>
                 <div className="flex flex-wrap gap-2">
                   <Button type="button" variant="destructive" onClick={handleBatchDeleteRules} disabled={selectedBatchRuleCount === 0 || copyActionPending}>
-                    {copyWorking ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
-                    删除所选
-                  </Button>
+                    {copyWorking ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}{translateText("删除所选")}</Button>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <Button variant="outline" onClick={() => setShowCopyDialog(false)} disabled={copyActionPending}>取消</Button>
+                  <Button variant="outline" onClick={() => setShowCopyDialog(false)} disabled={copyActionPending}>{translateText("取消")}</Button>
                   <Button
                     type="button"
                     variant={isBatchEditMode ? "default" : "outline"}
@@ -9283,7 +9260,7 @@ function RulesContent() {
                     disabled={isBatchEditMode ? batchEditDisabled : batchCopyDisabled}
                   >
                     {copyActionPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : isBatchEditMode ? <Pencil className="mr-2 h-4 w-4" /> : <ClipboardCopy className="mr-2 h-4 w-4" />}
-                    {isBatchEditMode ? "应用批量编辑" : "复制所选规则"}
+                    {isBatchEditMode ? translateText("应用批量编辑") : translateText("复制所选规则")}
                   </Button>
                 </div>
               </>
@@ -9295,24 +9272,27 @@ function RulesContent() {
       <Dialog open={!!resetTrafficTarget} onOpenChange={(open) => !open && !resetTrafficMutation.isPending && setResetTrafficTarget(null)}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>{resetTrafficTarget?.scope === "all" ? "重置全部规则数据" : "重置规则数据"}</DialogTitle>
+            <DialogTitle>{resetTrafficTarget?.scope === "all" ? translateText("重置全部规则数据") : translateText("重置规则数据")}</DialogTitle>
             <DialogDescription>
               {resetTrafficTarget?.scope === "all"
-                ? `确认重置${filterUser === "all" ? "所有用户" : filterUser === "self" ? "我的规则" : "所选用户"}的全部规则统计数据？此操作包含其他分页中的规则，不受链路和搜索筛选影响。`
-                : `确认重置规则 "${resetTrafficTarget?.rule?.name || ""}" 的所有统计数据？`}
+                ? translateText("确认重置{0}范围内的全部规则统计数据？此操作覆盖所有分页，不受搜索、链路、分类或勾选影响。", [translateText(filterUser === "all" ? "所有用户" : filterUser === "self" ? "我的规则" : "所选用户")])
+                : translateText("确认重置规则 \"{0}\" 的所有统计数据？", [resetTrafficTarget?.rule?.name || ""])}
             </DialogDescription>
           </DialogHeader>
           <div className="rounded-md border border-amber-500/20 bg-amber-500/10 p-3 text-xs leading-5 text-amber-700 dark:text-amber-300">
-            这里只清除规则页面展示的统计数据，不会清除用户套餐已用流量、余额或流量按量计费记录。
+            <p>{user?.role === "admin"
+              ? translateText("重置统计会同时清零规则已用额度。因额度用尽而暂停的规则，在账户和其他运行条件允许时可能恢复；已到期的规则仍会暂停。")
+              : translateText(resetTrafficTarget?.scope === "all"
+                ? "重置会清除可操作规则的统计数据，并跳过管理员自定义规则。"
+                : "重置会清除这条规则的统计数据。")}</p>
+            <p className="mt-2">{translateText("此操作不会重置账户套餐已用流量、余额或流量按量计费记录，也不会改变规则到期时间。")}</p>
           </div>
           <DialogFooter>
             <Button
               variant="outline"
               onClick={() => setResetTrafficTarget(null)}
               disabled={resetTrafficMutation.isPending}
-            >
-              取消
-            </Button>
+            >{translateText("取消")}</Button>
             <Button
               variant="destructive"
               onClick={handleConfirmResetTraffic}
@@ -9320,7 +9300,7 @@ function RulesContent() {
               className="gap-2"
             >
               {resetTrafficMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}
-              {resetTrafficMutation.isPending ? "重置中..." : "确认重置"}
+              {resetTrafficMutation.isPending ? translateText("重置中...") : translateText("确认重置")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -9329,13 +9309,12 @@ function RulesContent() {
       <Dialog open={!!deleteRule} onOpenChange={(open) => !open && setDeleteRule(null)}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>删除转发规则</DialogTitle>
-            <DialogDescription>
-              确认删除 "{deleteRule?.name}"？
+            <DialogTitle>{translateText("删除转发规则")}</DialogTitle>
+            <DialogDescription>{translateText("确认删除规则 \"{0}\"？", [deleteRule?.name || ""])}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteRule(null)}>取消</Button>
+            <Button variant="outline" onClick={() => setDeleteRule(null)}>{translateText("取消")}</Button>
             <Button
               variant="destructive"
               disabled={!deleteRule || deleteMutation.isPending}
@@ -9344,9 +9323,7 @@ function RulesContent() {
                 deleteMutation.mutate({ id: deleteRule.id });
                 setDeleteRule(null);
               }}
-            >
-              删除
-            </Button>
+            >{translateText("删除")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -9378,7 +9355,7 @@ function SelfTestDialog({
   const [activeTestId, setActiveTestId] = useState<number | null>(null);
   const manualTestRef = useRef(false);
   const { data: latest } = trpc.rules.latestTest.useQuery(
-    { ruleId, includeActive: optimisticTesting },
+    { ruleId, includeActive: true },
     {
       enabled: open,
       refetchInterval: pollingInterval("interactive", open),
@@ -9401,7 +9378,7 @@ function SelfTestDialog({
       setOptimisticTesting(false);
       setActiveTestId(null);
       manualTestRef.current = false;
-      toast.error(e?.message || "下发失败");
+      toast.error(e?.message || translateText("下发失败"));
     },
   });
 
@@ -9459,7 +9436,7 @@ function SelfTestDialog({
       if (lastFailureToastKey.current !== key) {
         lastFailureToastKey.current = key;
         manualTestRef.current = false;
-        toast.error(isTimeout ? "转发链路自测超时" : "转发链路自测失败", { duration: 5000 });
+        toast.error(isTimeout ? translateText("转发链路自测超时") : translateText("转发链路自测失败"), { duration: 5000 });
       }
     }
   }, [open, isTesting, isSuccess, isTerminalStatus, isTimeout, latest, latest?.updatedAt, parsedMessage.message, ruleId, status]);
@@ -9468,9 +9445,7 @@ function SelfTestDialog({
       <DialogContent className={`${probeDialogSizeClass} min-w-0`}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Activity className="h-5 w-5" />
-            延迟探测
-          </DialogTitle>
+            <Activity className="h-5 w-5" />{translateText("延迟探测")}</DialogTitle>
           <DialogDescription>{ruleName}</DialogDescription>
         </DialogHeader>
 
@@ -9504,7 +9479,7 @@ function SelfTestDialog({
             <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center">
               {isTesting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Activity className="h-4 w-4" />}
             </span>
-            {isTesting ? "探测中..." : "链路测试"}
+            {isTesting ? translateText("探测中...") : translateText("链路测试")}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -1,3 +1,4 @@
+import { t as translateText } from "@/i18n";
 import { normalizeCountryCode } from "@/lib/countryFeatures";
 
 export type LinkTestNodeMeta = {
@@ -24,7 +25,7 @@ export function normalizeLinkTestNodeKey(value: unknown) {
 
 export function hostDisplayName(host: any | null | undefined) {
   const id = Number(host?.id || 0);
-  return String(host?.name || (id > 0 ? `主机 #${id}` : "")).trim();
+  return String(host?.name || (id > 0 ? translateText("主机 #{0}", [id]) : "")).trim();
 }
 
 export function hostAddressCandidates(host: any | null | undefined) {
@@ -71,7 +72,7 @@ export function targetGeoNodeMeta(
     .join(" / ");
   const resolvedAddress = String(geo?.resolvedAddress || "").trim();
   return {
-    label: String(label || address || "目标").trim(),
+    label: String(label || address || translateText("目标")).trim(),
     emoji: String(geo?.geoEmoji || "").trim() || countryCodeToEmoji(geo?.geoCountryCode) || null,
     countryCode: countryCode || null,
     region: region || null,
@@ -111,8 +112,8 @@ export function addHostNodeMeta(
   const meta = hostNodeMeta(host);
   if (!meta) return;
   addNodeMetaAliases(metaMap, [
-    host?.id ? `主机 #${host.id}` : "",
-    host?.id ? `主机${host.id}` : "",
+    host?.id ? translateText("主机 #{0}", [host.id]) : "",
+    host?.id ? translateText("主机{0}", [host.id]) : "",
     host?.id ? String(host.id) : "",
     ...hostAddressCandidates(host),
     ...aliases,

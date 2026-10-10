@@ -1,0 +1,33 @@
+from pathlib import Path
+from html.parser import HTMLParser
+from urllib.parse import urlsplit,unquote
+import json
+root=Path('docs/.vitepress/dist').resolve()
+class P(HTMLParser):
+ def __init__(self):super().__init__();self.links=[];self.ids=set()
+ def handle_starttag(self,t,a):
+  d=dict(a)
+  if 'id' in d:self.ids.add(d['id'])
+  if t=='a' and 'href' in d:self.links.append(d['href'])
+parsed={}
+for f in root.rglob('*.html'):
+ p=P();p.feed(f.read_text());parsed[f]=p
+errors=[];count=0
+for f,p in parsed.items():
+ for link in p.links:
+  u=urlsplit(link)
+  if u.scheme or u.netloc:continue
+  target=unquote(u.path)
+  if not target:dest=f
+  else:
+   dest=(root/target.lstrip('/')) if target.startswith('/') else (f.parent/target)
+   if dest.is_dir():dest=dest/'index.html'
+   elif not dest.suffix:dest=dest.with_suffix('.html')
+   dest=dest.resolve()
+  count+=1
+  if not dest.exists():errors.append({'from':str(f.relative_to(root)),'href':link,'reason':'missing file'})
+  elif u.fragment and dest in parsed and unquote(u.fragment) not in parsed[dest].ids:errors.append({'from':str(f.relative_to(root)),'href':link,'reason':'missing anchor'})
+result={'htmlPages':len(parsed),'localLinks':count,'errors':errors}
+Path('/private/tmp/forwardx-282-ticket18/links-result-final.json').write_text(json.dumps(result,ensure_ascii=False,indent=2))
+print(json.dumps(result,ensure_ascii=False))
+raise SystemExit(bool(errors))

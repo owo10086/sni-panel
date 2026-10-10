@@ -1,3 +1,4 @@
+import { t as translateText } from "@/i18n";
 // 行内批量选择的判断与结果归纳，规格见 .scratch/2026-09-18_规则批量选择/spec.md。
 export type RuleBulkRule = {
   id: number;
@@ -7,9 +8,9 @@ export type RuleBulkRule = {
 
 export function getRuleBulkSelectability(rule: RuleBulkRule, supported: boolean) {
   if (rule.forwardGroupRuleId || rule.forwardGroupMemberId) {
-    return { selectable: false, reason: "转发组派生规则不支持批量修改" };
+    return { selectable: false, reason: translateText("转发组派生规则不支持批量修改") };
   }
-  if (!supported) return { selectable: false, reason: "当前运行时不支持该规则的协议" };
+  if (!supported) return { selectable: false, reason: translateText("当前运行时不支持该规则的协议") };
   return { selectable: true, reason: null };
 }
 
@@ -74,13 +75,16 @@ export function summarizeRuleBulkResult(outcomes: readonly RuleBulkOutcome[]) {
   const failures = outcomes.filter((result) => result.outcome === "failed");
   const failed = failures.length;
   const keepSelectedIds = outcomes.filter((result) => result.outcome !== "updated").map((result) => result.ruleId);
-  let message = `已批量编辑 ${updated} 条规则`;
+  let message = translateText("已批量编辑 {0} 条规则", [updated]);
   if (failed > 0) {
-    message = `${updated === 0 && skipped === 0 ? "" : `成功 ${updated} 条，跳过 ${skipped} 条，`}失败 ${failed} 条：${failures[0].error || "未知错误"}`;
+    const error = failures[0].error || translateText("未知错误");
+    message = updated === 0 && skipped === 0
+      ? translateText("失败 {0} 条：{1}", [failed, error])
+      : translateText("成功 {0} 条，跳过 {1} 条，失败 {2} 条：{3}", [updated, skipped, failed, error]);
   } else if (updated === 0 && skipped > 0) {
-    message = `${skipped} 条规则因端口冲突全部跳过，未做任何修改`;
+    message = translateText("{0} 条规则因端口冲突全部跳过，未做任何修改", [skipped]);
   } else if (skipped > 0) {
-    message = `已批量编辑 ${updated} 条，跳过 ${skipped} 条（端口冲突）`;
+    message = translateText("已批量编辑 {0} 条，跳过 {1} 条（端口冲突）", [updated, skipped]);
   }
   return {
     updated, skipped, failed, tone: (failed > 0 || updated === 0 ? "error" : "success") as "success" | "error",
@@ -90,11 +94,11 @@ export function summarizeRuleBulkResult(outcomes: readonly RuleBulkOutcome[]) {
 
 export function summarizeRuleBulkDeleteResult(outcomes: readonly RuleBulkOutcome[]) {
   const summary = summarizeRuleBulkResult(outcomes);
-  const error = outcomes.find((result) => result.outcome === "failed")?.error || "删除失败";
+  const error = outcomes.find((result) => result.outcome === "failed")?.error || translateText("删除失败");
   return {
     ...summary,
     message: summary.failed > 0
-      ? `成功 ${summary.updated} 条，失败 ${summary.failed} 条：${error}`
-      : `已删除 ${summary.updated} 条规则`,
+      ? translateText("成功 {0} 条，失败 {1} 条：{2}", [summary.updated, summary.failed, error])
+      : translateText("已删除 {0} 条规则", [summary.updated]),
   };
 }

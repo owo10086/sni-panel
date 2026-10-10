@@ -1,3 +1,4 @@
+import { t as translateText } from "@/i18n";
 import { normalizeExitGroupStrategy } from "@shared/exitStrategy";
 import {
   LINK_PROBE_FRESH_MS,
@@ -120,21 +121,21 @@ export function resolveLinkAvailability(input: {
   requiredNodes?: AvailabilityNode[];
   alternativeNodeSets?: AlternativeNodeSet[];
 }, now = Date.now()): LinkAvailabilityResult {
-  if (!input.enabled) return result("disabled", "config", `${input.label}已停用`);
+  if (!input.enabled) return result("disabled", "config", translateText("{0}已停用", [input.label]));
   if (input.configurationValid === false) {
-    return result("unavailable", "config", input.configurationMessage || `${input.label}配置不完整`);
+    return result("unavailable", "config", input.configurationMessage || translateText("{0}配置不完整", [input.label]));
   }
 
   const probe = resolveFreshLinkProbe(input.probe, now);
   if (probe === "available") {
     const latency = Math.round(Number(input.probe?.latestLatencyMs) || 0);
-    return result("available", "probe", `最近一次独立探测可达（${latency}ms）`);
+    return result("available", "probe", translateText("最近一次独立探测可达（{0}ms）", [latency]));
   }
   if (probe === "unavailable") {
-    return result("unavailable", "probe", "最近一次独立探测不可达");
+    return result("unavailable", "probe", translateText("最近一次独立探测不可达"));
   }
 
-  if (!input.hostsLoaded) return result("pending", "hosts", "等待主机状态同步");
+  if (!input.hostsLoaded) return result("pending", "hosts", translateText("等待主机状态同步"));
 
   const required = input.requiredNodes || [];
   const alternatives = input.alternativeNodeSets || [];
@@ -144,25 +145,25 @@ export function resolveLinkAvailability(input: {
 
   const offlineRequired = required.filter((node) => !node.available);
   if (offlineRequired.length > 0) {
-    return result("unavailable", "hosts", `${input.label}包含离线的必经主机`, usableHostIds);
+    return result("unavailable", "hosts", translateText("{0}包含离线的必经主机", [input.label]), usableHostIds);
   }
 
   let hasUnavailableAlternative = false;
   for (const set of alternatives) {
     if (set.nodes.length === 0) {
-      return result("unavailable", "config", `${set.label}没有已启用主机`, usableHostIds);
+      return result("unavailable", "config", translateText("{0}没有已启用主机", [set.label]), usableHostIds);
     }
     const onlineCount = set.nodes.filter((node) => node.available).length;
     if (onlineCount === 0) {
-      return result("unavailable", "hosts", `${set.label}主机均离线`, usableHostIds);
+      return result("unavailable", "hosts", translateText("{0}主机均离线", [set.label]), usableHostIds);
     }
     if (onlineCount < set.nodes.length) hasUnavailableAlternative = true;
   }
 
   if (hasUnavailableAlternative) {
-    return result("degraded", "hosts", `${input.label}可用，部分备用主机离线`, usableHostIds);
+    return result("degraded", "hosts", translateText("{0}可用，部分备用主机离线", [input.label]), usableHostIds);
   }
-  return result("available", "hosts", `${input.label}包含的主机均在线`, usableHostIds);
+  return result("available", "hosts", translateText("{0}包含的主机均在线", [input.label]), usableHostIds);
 }
 
 function normalizeGroupMode(group: any): "port" | "chain" | "failover" | "entry" | "exit" {
@@ -298,39 +299,39 @@ export function buildLinkAvailabilityIndex(input: {
     const entryGroup = entryGroupId > 0 ? groupById.get(entryGroupId) : null;
     const exitGroup = exitGroupId > 0 ? groupById.get(exitGroupId) : null;
     let configurationValid = routeHostIds.length >= 2;
-    let configurationMessage = "隧道至少需要入口和出口主机";
+    let configurationMessage = translateText("隧道至少需要入口和出口主机");
 
     if (String(tunnel?.relayMode || "").toLowerCase() === "failover" && routeHostIds.length >= 4) {
       const relayHostIds = routeHostIds.slice(1, -1);
       relayHostIds.forEach((id) => requiredHostIds.delete(id));
-      alternativeNodeSets.push({ label: "中转", nodes: relayHostIds.map(hostNode) });
+      alternativeNodeSets.push({ label: translateText("中转"), nodes: relayHostIds.map(hostNode) });
     }
 
     if (entryGroupId > 0 && !entryGroup) {
       configurationValid = false;
-      configurationMessage = "关联入口组不存在";
+      configurationMessage = translateText("关联入口组不存在");
     } else if (entryGroup) {
       const members = endpointHostMembers(entryGroup, hostById, tunnelById);
       if (!entryGroup.isEnabled || normalizeGroupMode(entryGroup) !== "entry" || !String(entryGroup.domain || "").trim()) {
         configurationValid = false;
-        configurationMessage = "关联入口组配置不可用";
+        configurationMessage = translateText("关联入口组配置不可用");
       }
       if (routeHostIds.length > 0) requiredHostIds.delete(routeHostIds[0]);
-      alternativeNodeSets.push({ label: "入口组", nodes: members.map((member: any) => hostNode(Number(member.hostId))) });
+      alternativeNodeSets.push({ label: translateText("入口组"), nodes: members.map((member: any) => hostNode(Number(member.hostId))) });
     }
 
     if (exitGroupId > 0 && !exitGroup) {
       configurationValid = false;
-      configurationMessage = "关联出口组不存在";
+      configurationMessage = translateText("关联出口组不存在");
     } else if (exitGroup) {
       const groupMembers = endpointHostMembers(exitGroup, hostById, tunnelById);
       const members = normalizeExitGroupStrategy(exitGroup.exitStrategy) === "none" ? groupMembers.slice(0, 1) : groupMembers;
       if (!exitGroup.isEnabled || normalizeGroupMode(exitGroup) !== "exit") {
         configurationValid = false;
-        configurationMessage = "关联出口组配置不可用";
+        configurationMessage = translateText("关联出口组配置不可用");
       }
       if (routeHostIds.length > 0) requiredHostIds.delete(routeHostIds[routeHostIds.length - 1]);
-      alternativeNodeSets.push({ label: "出口组", nodes: members.map((member: any) => hostNode(Number(member.hostId))) });
+      alternativeNodeSets.push({ label: translateText("出口组"), nodes: members.map((member: any) => hostNode(Number(member.hostId))) });
     } else if (tunnel?.loadBalanceEnabled && normalizeExitGroupStrategy(tunnel?.loadBalanceStrategy) !== "none") {
       const rawExitIds: number[] = [
         Number(routeHostIds[routeHostIds.length - 1] || tunnel?.exitHostId || 0),
@@ -340,11 +341,11 @@ export function buildLinkAvailabilityIndex(input: {
       ];
       const exitIds = Array.from(new Set(rawExitIds.filter((id) => Number.isFinite(id) && id > 0)));
       exitIds.forEach((id) => requiredHostIds.delete(id));
-      alternativeNodeSets.push({ label: "多出口", nodes: exitIds.map(hostNode) });
+      alternativeNodeSets.push({ label: translateText("多出口"), nodes: exitIds.map(hostNode) });
     }
 
     const state = resolveLinkAvailability({
-      label: "隧道",
+      label: translateText("隧道"),
       enabled: tunnel?.isEnabled !== false && input.isTunnelSupported?.(tunnel) !== false,
       configurationValid,
       configurationMessage,
@@ -383,19 +384,19 @@ export function buildLinkAvailabilityIndex(input: {
       const alternatives: AlternativeNodeSet[] = [];
       if (entryGroup) {
         alternatives.push({
-          label: "入口组",
+          label: translateText("入口组"),
           nodes: endpointHostMembers(entryGroup, hostById, tunnelById).map((member: any) => hostNode(Number(member.hostId))),
         });
       }
       state = resolveLinkAvailability({
-        label: "转发链",
+        label: translateText("转发链"),
         enabled: group?.isEnabled !== false,
         configurationValid,
         configurationMessage: entryGroupId > 0 && !entryGroup
-          ? "关联入口组不存在"
+          ? translateText("关联入口组不存在")
           : entryGroup
-            ? "转发链至少需要一个链路成员及可用入口组"
-            : "转发链至少需要两个链路成员",
+            ? translateText("转发链至少需要一个链路成员及可用入口组")
+            : translateText("转发链至少需要两个链路成员"),
         probe: group,
         hostsLoaded,
         requiredNodes: Array.from(memberNodes.values()),
@@ -403,26 +404,26 @@ export function buildLinkAvailabilityIndex(input: {
       }, now);
     } else if (mode === "port") {
       state = resolveLinkAvailability({
-        label: "端口转发",
+        label: translateText("端口转发"),
         enabled: group?.isEnabled !== false,
         configurationValid: members.length === 1 && memberNodes.size === 1,
-        configurationMessage: "端口转发需要一台所属主机",
+        configurationMessage: translateText("端口转发需要一台所属主机"),
         hostsLoaded,
         requiredNodes: Array.from(memberNodes.values()),
       }, now);
     } else {
       let candidates = members;
       let configurationValid = members.length > 0;
-      let configurationMessage = `${mode === "entry" ? "入口组" : mode === "exit" ? "出口组" : "转发组"}没有已启用成员`;
+      let configurationMessage = translateText("{0}没有已启用成员", [mode === "entry" ? translateText("入口组") : mode === "exit" ? translateText("出口组") : translateText("转发组")]);
       if ((mode === "entry" || mode === "failover") && !String(group?.domain || "").trim()) {
         configurationValid = false;
-        configurationMessage = mode === "entry" ? "入口组需要指定入口域名" : "转发组需要指定 DDNS 域名";
+        configurationMessage = mode === "entry" ? translateText("入口组需要指定入口域名") : translateText("转发组需要指定 DDNS 域名");
       }
       if (mode === "entry" || mode === "failover") {
         candidates = candidates.filter((member: any) => memberRecordAvailable(group, member, hostById, tunnelById));
         if (members.length > 0 && candidates.length === 0) {
           configurationValid = false;
-          configurationMessage = `${String(group?.recordType || "A").toUpperCase()} 记录缺少可用成员地址`;
+          configurationMessage = translateText("{0} 记录缺少可用成员地址", [String(group?.recordType || "A").toUpperCase()]);
         }
       }
       if (mode === "exit" && normalizeExitGroupStrategy(group?.exitStrategy) === "none") {
@@ -430,7 +431,7 @@ export function buildLinkAvailabilityIndex(input: {
       }
       if (String(group?.lastStatus || "").toLowerCase() === "error") {
         configurationValid = false;
-        configurationMessage = String(group?.lastMessage || "DDNS 同步异常");
+        configurationMessage = String(group?.lastMessage || translateText("DDNS 同步异常"));
       }
       if (group?.chinaHealthCheckEnabled) {
         const healthy = candidates.filter((member: any) => String(member?.chinaHealthStatus || "unknown").toLowerCase() === "healthy");
@@ -441,12 +442,12 @@ export function buildLinkAvailabilityIndex(input: {
             healthSelectedMemberIds = new Set(healthy.map((member: any) => Number(member.id)));
           }
         } else if (pending && configurationValid && group?.isEnabled !== false) {
-          state = result("pending", "probe", "等待入口健康度检测结果");
+          state = result("pending", "probe", translateText("等待入口健康度检测结果"));
           groupAvailabilityById.set(Number(group.id), state);
           continue;
         } else if (configurationValid) {
           configurationValid = false;
-          configurationMessage = "入口健康度检测未通过";
+          configurationMessage = translateText("入口健康度检测未通过");
         }
       }
       eligibleMemberIds = new Set<number>(candidates.map((member: any) => Number(member.id)));
@@ -465,13 +466,13 @@ export function buildLinkAvailabilityIndex(input: {
           },
         }));
       state = resolveLinkAvailability({
-        label: mode === "entry" ? "入口组" : mode === "exit" ? "出口组" : "转发组",
+        label: mode === "entry" ? translateText("入口组") : mode === "exit" ? translateText("出口组") : translateText("转发组"),
         enabled: group?.isEnabled !== false,
         configurationValid: configurationValid && candidateNodes.length > 0,
         configurationMessage,
         hostsLoaded,
         alternativeNodeSets: [{
-          label: mode === "entry" ? "入口组" : mode === "exit" ? "出口组" : "转发组",
+          label: mode === "entry" ? translateText("入口组") : mode === "exit" ? translateText("出口组") : translateText("转发组"),
           nodes: candidateNodes.map((item: any) => item.node),
         }],
       }, now);

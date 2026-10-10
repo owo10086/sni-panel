@@ -1,0 +1,813 @@
+--- a/client/src/i18n/en.json
++++ b/client/src/i18n/en.json
+@@ -357,7 +357,7 @@
+   "按出口组顺序使用成员，首个成员为主出口。": "Members are used in the order in which they are exported, with the first member being the main exit.",
+   "按当前策略为新连接选择已启用的出口主机。": "Select the active exit host for the new connection according to the current policy.",
+   "按当前登录账号统计": "Statistics for the current account",
+-  "按各跳实际探测计数，不等于端到端业务丢包；仅包含支持累计计数且已上报的 Agent 探测。": "Based on the actual detection of each jump, this does not equal the end-to-end business package; only Agent detection, which supports the cumulative count and has been reported, is included.",
++  "按各跳实际探测计数，不等于端到端业务丢包；仅包含支持累计计数且已上报的 Agent 探测。": "Counts actual probes for each hop. This is not end-to-end traffic packet loss. Includes only reported probes from Agents that support cumulative counts.",
+   "按健康状态切换入口和出口": "Switch entrances and exits according to state of health",
+   "按量计费": "Pay-as-you-go",
+   "按量计费已关闭": "It's closed on a volume charge.",
+@@ -370,7 +370,7 @@
+   "按提供商分别保存 API Key，切换提供商时会自动带出对应配置。": "Save API Key by provider and switch providers with the corresponding configuration automatically.",
+   "按填写项替换": "Replace with the entry",
+   "按业务、地区或用途整理主机，分组顺序可直接拖动调整。": "The grouping order can be dragged directly by operation, area or use to organize the mainframe.",
+-  "按已上报的累计探测次数统计；截至 {0}。": "Based on the cumulative number of observations reported; as at{0}。",
++  "按已上报的累计探测次数统计；截至 {0}。": "Based on reported cumulative probe counts, as of {0}.",
+   "按用户分配转发资源、流量和有效期。": "Retransmitting resources, traffic and validity by user.",
+   "按用户分配转发资源和使用额度": "Distribution of forwarding resources and level of use by user",
+   "按右侧设置处理": "Deal with right",
+@@ -1398,7 +1398,7 @@
+   "今天": "Today",
+   "金额": "Amount",
+   "仅 GOST 和 Realm 支持": "Only GOST and Realm support",
+-  "仅包含支持累计计数的 Agent 自首次上报后可观察到的探测；不补算旧数据，时间边界受上报间隔影响。": "Only Agent, which supports the cumulative count, has observed detection since the first report; no old data is added, and the time boundary is affected by the interval reported.",
++  "仅包含支持累计计数的 Agent 自首次上报后可观察到的探测；不补算旧数据，时间边界受上报间隔影响。": "Includes only observable probes from Agents that support cumulative counts, starting with their first report. Older data is not backfilled; time boundaries depend on reporting intervals.",
+   "仅出向": "Outbound Only",
+   "仅对 AI 相关聊天内容生效，默认关闭。": "Only effective for AI-related chat content, closed by default.",
+   "仅发送给已绑定 Telegram 的管理员。": "Sends only to the attached Telegram administrator.",
+@@ -1769,7 +1769,7 @@
+   "批量删除失败：": "Batch deletion failed:",
+   "批量删除完成：成功 {0} 条，失败 {1} 条。{2}": "Batch deletion complete: successful{0}Article. Failure.{1}Article.{2}",
+   "批量下发升级任务失败": "Batch down upgrade failed",
+-  "平均延迟": "Average delay",
++  "平均延迟": "Average Latency",
+   "平面地图视图": "Plane Map View",
+   "平面主机地图": "Plane Host Map",
+   "普通公告": "General bulletins",
+@@ -2480,7 +2480,7 @@
+   "探测服务已关闭": "The detection service is closed.",
+   "探测服务已开启": "The detection service is on.",
+   "探测失败率": "Probe Failure Rate",
+-  "探测稳定性": "Detect stability",
++  "探测稳定性": "Probe Stability",
+   "探测严重异常": "Detection of serious abnormalities.",
+   "探测中": "Probing",
+   "探测中...": "Probing...",
+@@ -2601,7 +2601,7 @@
+   "同意迁移请求失败": "Failed to agree to move request",
+   "同组规则共享限制。": "The rules of the same group share limitations.",
+   "统计次数": "Probe Count",
+-  "统计当前目标的实际探测，不代表业务丢包；隧道路径健康状态另行判断。旧数据不补算，统计边界受上报间隔影响。": "The actual detection of the current target does not mean that the business is lost; the health of the tunnel path is determined separately.",
++  "统计当前目标的实际探测，不代表业务丢包；隧道路径健康状态另行判断。旧数据不补算，统计边界受上报间隔影响。": "Counts actual probes to the current target, not traffic packet loss. Tunnel path health is assessed separately. Older data is not backfilled; time boundaries depend on reporting intervals.",
+   "统计各跳实际 TCP/Ping 探测，包含已上报的备用路径，不等于端到端业务丢包；旧 Agent 或未上报的探测不计入。延迟为路径健康样本，稳定性仅供参考。": "The statistical jump actual TCP/Ping detection, which contains the reported alternative path, is not equivalent to end-to-end business disposal; old Agent or unreported detection is excluded. Delay is a path health sample, stability only for reference.",
+   "统计各跳实际连接探测，包含已上报的备用入口/出口，不等于可用路径的业务丢包；旧 Agent 或未上报的探测不计入。延迟为路径健康样本，稳定性仅供参考。": "Aggregates per-hop connection probes, including reported standby entries/exits. This is not application packet loss on the active path; probes from older Agents or missing reports are excluded. Latency reflects path health samples; stability is indicative only.",
+   "统一管理转发、隧道、用户和流量。": "Integrated management of relays, tunnels, users and traffic.",
+@@ -3221,7 +3221,7 @@
+   "暂无可用转发资源": "Relaying resources not available",
+   "暂无可用转发资源，请检查链路配置、授权或计费余额。": "For the time being, there are no available forwarding resources, please check the chain configuration, authorization or billing balance.",
+   "暂无可用转发组": "Not available for forwarding group",
+-  "暂无累计探测统计，请升级 Agent 并等待上报。旧记录省略了稳定成功探测，无法准确计算失败率与稳定性。": "There are no cumulative detection statistics, please upgrade Agent and wait for it to be reported. The old records omit stable detection success and fail to accurately calculate the failure rate and stability.",
++  "暂无累计探测统计，请升级 Agent 并等待上报。旧记录省略了稳定成功探测，无法准确计算失败率与稳定性。": "Accurate statistics are unavailable. Upgrade the Agent and wait for a report. Older records omit steady successful probes, so they cannot accurately calculate failure rate or stability.",
+   "暂无流量数据": "No traffic data available",
+   "暂无其他用户": "No other users at this time",
+   "暂无日志": "There's no log.",
+@@ -3632,7 +3632,7 @@
+   "最大连接数": "Maximum number of connections",
+   "最大输出": "Maximum output",
+   "最大速度": "Maximum speed",
+-  "最大延迟": "Maximum delay",
++  "最大延迟": "Maximum Latency",
+   "最低金额": "Minimum amount",
+   "最多 {0} 级": "Up to {0} hops",
+   "最多保留 6 张，单张最大 1.5MB，超过会自动压缩。": "Keep a maximum of 6 sheets and a single one-size-size-size-fits-all 1.5 MB, exceeding which will automatically compress.",
+@@ -3657,7 +3657,7 @@
+   "最近一次独立探测可达（{0}ms）": "Last independent probe succeeded ({0}ms)",
+   "最近一次端到端探测超时": "Last-to-end detection timeout",
+   "最近一次端到端探测可达（{0}ms）": "Last end-to-end detection can be achieved ({0}ms）",
+-  "最小延迟": "Minimal delay",
++  "最小延迟": "Minimum Latency",
+   "最新版本": "Latest version",
+   "左侧导航栏菜单展示设置": "Sidebar Navigation",
+   "作为新面板使用": "Use as a new panel",
+@@ -3750,7 +3750,7 @@
+   "Native 扫码": "Native QR Payment",
+   "Nginx 自定义证书和私钥需要同时填写": "Nginx Custom Certificates and Private Keys need to be filled in simultaneously",
+   "Nginx Stream 隧道": "Nginx Stream Tunnel",
+-  "Ping 丢包": "Ping Packet Loss",
++  "Ping 丢包": "Ping packet loss",
+   "Ping 丢包率": "Ping Packet Loss Rate",
+   "PostgreSQL 外部数据库": "PostgreSQL External Database",
+   "PROXY Protocol 仅支持 TCP 且转发工具为 GOST 或 Realm。": "PROXY Protocol requires TCP and GOST or Realm.",
+@@ -4179,5 +4179,9 @@
+   "此操作不会重置账户套餐已用流量、余额或流量按量计费记录，也不会改变规则到期时间。": "This does not reset account plan traffic usage, balances or usage billing records, or change rule expiry dates.",
+   "0 或留空表示不限制。规则流量额度单独计算，不影响可创建的规则数、端口数或账户套餐流量；账户限制仍同时生效。": "Use 0 or leave blank for no limit. Rule traffic quotas are counted separately from rule and port creation quotas and account plan traffic; account limits still apply.",
+   "首次设置额度时计入已有累计流量；切换链路或修改日期不会清零用量。": "Existing cumulative traffic counts when a quota is first set. Changing links or dates does not reset usage.",
+-  "两方向累计值取最大值": "Maximum of cumulative inbound and outbound traffic"
++  "两方向累计值取最大值": "Maximum of cumulative inbound and outbound traffic",
++  "延迟曲线保留历史记录；稳定性只使用累计计数和对应的真实探测延迟。": "Latency charts retain historical records; stability uses only cumulative counts and their real probe latencies.",
++  "稳定性延迟样本仅覆盖最近 2880 个已上报批次；累计次数和失败率仍覆盖所选时间内的全部有效报告。": "Stability latency samples cover only the latest 2880 reported batches; cumulative attempts and failure rate still cover all valid reports in the selected period.",
++  "稳定性延迟样本覆盖所选时间内已上报的有效批次。": "Stability latency samples cover valid reported batches in the selected period.",
++  "TCP 连接失败": "TCP connection failures"
+ }
+--- a/client/src/lib/latencyChart.ts
++++ b/client/src/lib/latencyChart.ts
+@@ -189,6 +189,17 @@
+ }
+ 
+ export function getLatencyStabilityStats(samples: LatencyStabilitySample[], actual?: ProbeStatistics | null): LatencyStabilityStats {
++  const stats = calculateLatencyStabilityStats(samples, actual);
++  if (actual !== undefined) {
++    // Keep legacy delay cards and curves, but never use their sampled/cached
++    // rows for the score. Its latency inputs come from accepted real counters.
++    stats.score = calculateLatencyStabilityStats(actual?.successes === 0 ? [] : actual?.latencySamples ?? [], actual).score;
++    stats.rating = getLatencyStabilityRating(stats.score);
++  }
++  return stats;
++}
++
++function calculateLatencyStabilityStats(samples: LatencyStabilitySample[], actual?: ProbeStatistics | null): LatencyStabilityStats {
+   const weightedSamples = samples.map((sample) => {
+     const counts = normalizeLatencyProbeCounts(sample);
+     return { sample, ...counts };
+--- a/client/src/lib/latencyChart.test.ts
++++ b/client/src/lib/latencyChart.test.ts
+@@ -33,7 +33,8 @@
+     { latency: 8, probeCount: 3, probeSuccesses: 3 },
+   ];
+   assert.equal(getLatencyStabilityStats(chart).score, 10, "old biased samples reproduce the reported issue");
+-  const stats = getLatencyStabilityStats(chart, { total: 3000, successes: 2997, available: true, observedSince: null, latestAt: null });
++  const stats = getLatencyStabilityStats(chart, { total: 3000, successes: 2997, available: true, observedSince: null, latestAt: null,
++    latencySamples: [{ latency: 8, probeCount: 3, probeSuccesses: 3 }] });
+   assert.equal(stats.total, 3000);
+   assert.equal(stats.timeout, 3);
+   assert.equal(stats.lossRate, 0.1);
+@@ -53,10 +54,11 @@
+ });
+ 
+ test("real partial failures remain visible and all failed probes still receive a low score", () => {
+-  const actual = { total: 300, successes: 200, available: true, observedSince: null, latestAt: null };
++  const actual = { total: 300, successes: 200, available: true, observedSince: null, latestAt: null,
++    latencySamples: [{ latency: 8, probeCount: 3, probeSuccesses: 2 }] };
+   assert.equal(getLatencyStabilityStats([{ latency: 8 }], actual).score, 10);
+   assert.equal(getLatencyStabilityStats([], { ...actual, successes: 0 }).score, 0);
+-  assert.equal(getLatencyStabilityStats([], actual).score, null, "missing latency is not total unreachability");
++  assert.equal(getLatencyStabilityStats([], { ...actual, latencySamples: [] }).score, null, "missing latency is not total unreachability");
+ });
+ 
+ test("compacted multi-batch rows keep counts larger than a single wire batch", () => {
+@@ -65,3 +67,11 @@
+   assert.equal(stats.timeout, 1);
+ });
+ 
++test("legacy chart latency stays visible without affecting cumulative stability scoring", () => {
++  const actual = { total: 3000, successes: 2997, available: true, observedSince: null, latestAt: null,
++    latencySamples: [{ latency: 8, probeCount: 3, probeSuccesses: 3 }] };
++  const stats = getLatencyStabilityStats([{ latency: 2000, probeCount: 1500, probeSuccesses: 1500 }], actual);
++  assert.equal(stats.avg, 2000, "old delay records remain available to the chart");
++  assert.equal(stats.score, 100, "only the observed real probes contribute to cumulative stability");
++});
++
+--- a/client/src/components/rules/TcpingDetailDialog.tsx
++++ b/client/src/components/rules/TcpingDetailDialog.tsx
+@@ -171,7 +171,7 @@
+                 {isForwardChain ? translateText("转发链路延迟") : translateText("转发链路延迟 ({0})", [methodLabel])} - {ruleName}
+               </DialogTitle>
+               <DialogDescription className="text-xs sm:text-sm">
+-                {isForwardChain ? translateText("最近 {0} 链路延迟与逐跳探测统计。", [latencyTimeRangeLabel(timeRangeHours)]) : translateText("最近 {0} 延迟与{1}统计。", [latencyTimeRangeLabel(timeRangeHours), probeMethod === "ping" ? "Ping 丢包" : "TCP 连接失败"])}
++                {isForwardChain ? translateText("最近 {0} 链路延迟与逐跳探测统计。", [latencyTimeRangeLabel(timeRangeHours)]) : translateText("最近 {0} 延迟与{1}统计。", [latencyTimeRangeLabel(timeRangeHours), translateText(probeMethod === "ping" ? "Ping 丢包" : "TCP 连接失败")])}
+               </DialogDescription>
+             </div>
+             <div className="flex flex-wrap items-center gap-2 self-start sm:justify-end">
+--- a/client/src/components/LatencyStabilityStats.test.tsx
++++ b/client/src/components/LatencyStabilityStats.test.tsx
+@@ -3,6 +3,7 @@
+ import { renderToStaticMarkup } from "react-dom/server";
+ import { LatencyStabilityStats } from "./LatencyStabilityStats";
+ import { getLatencyStabilityStats } from "../lib/latencyChart";
++import { initializeLanguage, setLanguagePreference, t } from "../i18n";
+ 
+ test("legacy health rows show latency without claiming accurate loss or serious unavailability", () => {
+   const stats = getLatencyStabilityStats([{ latency: 8, probeCount: 3, probeSuccesses: 2 }], null);
+@@ -32,3 +33,23 @@
+   assert.match(html, /20\.00%/);
+   assert.doesNotMatch(html, /请升级 Agent/);
+ });
++
++test("English distinguishes Ping, TCP and hop failures and declares bounded latency coverage", async () => {
++  setLanguagePreference("en"); await initializeLanguage();
++  try {
++    const counters = { total: 9000, successes: 8997, available: true, observedSince: new Date(), latestAt: new Date(),
++      latencySamples: [{ latency: 8, probeCount: 3, probeSuccesses: 3 }], latencySamplesTruncated: true };
++    const stats = getLatencyStabilityStats([{ latency: 8 }], counters);
++    for (const label of ["Ping 丢包率", "TCP 连接失败率", "逐跳探测失败率"]) {
++      const html = renderToStaticMarkup(<LatencyStabilityStats stats={stats} failureLabel={t(label)} counterStatistics={counters} />);
++      assert.match(html, /9000|9,000/);
++      assert.match(html, /0\.03%/);
++      assert.match(html, /2880|2,880/);
++      assert.match(html, /all valid reports/);
++      assert.doesNotMatch(html, /[\u4e00-\u9fff]/);
++    }
++    const legacy = renderToStaticMarkup(<LatencyStabilityStats stats={getLatencyStabilityStats([{ latency: 8 }], null)} counterStatistics={null} />);
++    assert.match(legacy, /cannot accurately calculate|accurate.*unavailable/i);
++    assert.doesNotMatch(legacy, /[\u4e00-\u9fff]/);
++  } finally { setLanguagePreference("zh-CN"); await initializeLanguage(); }
++});
+--- a/client/src/components/LatencyStabilityStats.tsx
++++ b/client/src/components/LatencyStabilityStats.tsx
+@@ -67,6 +67,9 @@
+             ? translateText("按已上报的累计探测次数统计；截至 {0}。", [counterStatistics.latestAt ? new Date(counterStatistics.latestAt).toLocaleString(getFormatLocale()) : "最后上报"])
+             : translateText("暂无累计探测统计，请升级 Agent 并等待上报。旧记录省略了稳定成功探测，无法准确计算失败率与稳定性。")}
+           {" "}{description || translateText("仅包含支持累计计数的 Agent 自首次上报后可观察到的探测；不补算旧数据，时间边界受上报间隔影响。")}
++          {counterStatistics?.available && <> {translateText("延迟曲线保留历史记录；稳定性只使用累计计数和对应的真实探测延迟。")} {counterStatistics.latencySamplesTruncated
++            ? translateText("稳定性延迟样本仅覆盖最近 2880 个已上报批次；累计次数和失败率仍覆盖所选时间内的全部有效报告。")
++            : translateText("稳定性延迟样本覆盖所选时间内已上报的有效批次。")}</>}
+         </p>
+       )}
+     </div>
+--- a/shared/probeStatistics.ts
++++ b/shared/probeStatistics.ts
+@@ -5,4 +5,7 @@
+   available: boolean;
+   observedSince: Date | null;
+   latestAt: Date | null;
++  /** Real reported batches only; historical health caches never enter this set. */
++  latencySamples?: Array<{ latency: number; probeCount: number; probeSuccesses: number }>;
++  latencySamplesTruncated?: boolean;
+ };
+--- a/shared/agentDtos.ts
++++ b/shared/agentDtos.ts
+@@ -12,6 +12,8 @@
+ /** Monotonic real-probe counters; independent of the current health sample. */
+ export type AgentProbeCounter = {
+   probeCounterEpoch?: string;
++  /** Epoch creation time in microseconds, for ordering restarted counters. */
++  probeCounterStartedAt?: number;
+   probeTotalCount?: number;
+   probeTotalSuccesses?: number;
+ };
+@@ -19,6 +21,7 @@
+ export function hasAgentProbeCounter(value: AgentProbeCounter | null | undefined): boolean {
+   return !!value && typeof value.probeCounterEpoch === "string"
+     && /^[a-zA-Z0-9_-]{1,64}$/.test(value.probeCounterEpoch)
++    && (value.probeCounterStartedAt === undefined || (Number.isSafeInteger(value.probeCounterStartedAt) && Number(value.probeCounterStartedAt) > 0))
+     && Number.isSafeInteger(value.probeTotalCount) && Number(value.probeTotalCount) >= 1
+     && Number(value.probeTotalCount) <= 1_000_000_000
+     && Number.isSafeInteger(value.probeTotalSuccesses) && Number(value.probeTotalSuccesses) >= 0
+@@ -260,7 +263,7 @@
+   if (item.method !== undefined && !validShortString(item.method, 32)) return false;
+   if (item.probeKey !== undefined && !validShortString(item.probeKey, 1024)) return false;
+   if (item.topologyKey !== undefined && !validShortString(item.topologyKey, 2048)) return false;
+-  if ((item.probeCounterEpoch !== undefined || item.probeTotalCount !== undefined || item.probeTotalSuccesses !== undefined)
++  if ((item.probeCounterEpoch !== undefined || item.probeCounterStartedAt !== undefined || item.probeTotalCount !== undefined || item.probeTotalSuccesses !== undefined)
+     && !hasAgentProbeCounter(item)) return false;
+   if (hasAgentProbeCounter(item)) {
+     const counts = normalizeAgentProbeCounts(item, { legacyZeroAsSuccess: false });
+--- a/agent/tcping_report_gate.go
++++ b/agent/tcping_report_gate.go
+@@ -25,6 +25,7 @@
+ 	key, epoch       string
+ 	count, successes int
+ 	seenAt           time.Time
++	startedAt        int64
+ }
+ 
+ type tcpingReportGateState struct {
+@@ -38,6 +39,7 @@
+ 	states       map[string]tcpingReportGateState
+ 	counters     map[string]*list.Element
+ 	counterOrder *list.List
++	lastEpochAt  int64
+ }
+ 
+ type tcpingReportGatePlan struct {
+@@ -103,7 +105,12 @@
+ 				output = append(output, report)
+ 				continue
+ 			}
+-			element = gate.counterOrder.PushBack(&tcpingProbeCounter{key: key, epoch: hex.EncodeToString(random[:])})
++			startedAt := now.UnixMicro()
++			if startedAt <= gate.lastEpochAt {
++				startedAt = gate.lastEpochAt + 1
++			}
++			gate.lastEpochAt = startedAt
++			element = gate.counterOrder.PushBack(&tcpingProbeCounter{key: key, epoch: hex.EncodeToString(random[:]), startedAt: startedAt})
+ 			gate.counters[key] = element
+ 		}
+ 		counter := element.Value.(*tcpingProbeCounter)
+@@ -116,6 +123,7 @@
+ 			clone[field] = value
+ 		}
+ 		clone["probeCounterEpoch"] = counter.epoch
++		clone["probeCounterStartedAt"] = counter.startedAt
+ 		clone["probeTotalCount"] = counter.count
+ 		clone["probeTotalSuccesses"] = counter.successes
+ 		output = append(output, clone)
+--- a/server/agentProbeCounterReportGate.ts
++++ b/server/agentProbeCounterReportGate.ts
+@@ -1,18 +1,18 @@
+ import type { ProbeCounterSnapshot } from "./repositories/probeCounterRepository";
+ import { pruneMapEntries, setBoundedMapValue } from "./boundedCache";
+ 
+-type State = { count: number; signature: string; savedAt: number; seenAt: number };
++type State = { count: number; seenAt: number };
+ 
+-/** Independent from the health gate: a new epoch must get a baseline even
+- * when health is unchanged. Tunnel-rule target probes arrive every cycle,
+- * but stable cumulative snapshots need only one database write per five
+- * minutes. Cumulative totals preserve the suppressed attempts. */
++/** Independent from sampled health: persist every received advancement.
++ * Suppressing a healthy snapshot would permanently lose its tail if the
++ * Agent restarts before the next report. This cache only skips retries;
++ * the persisted head still enforces ordering after eviction or reconnect. */
+ export class AgentProbeCounterReportGate {
+   private readonly states = new Map<string, State>();
+   private lastPruneAt = 0;
+   constructor(private readonly capacity = 32768, private readonly ttlMs = 30 * 60_000) {}
+ 
+-  plan(rows: ProbeCounterSnapshot[], force = false, now = Date.now()) {
++  plan(rows: ProbeCounterSnapshot[], _force = false, now = Date.now()) {
+     if (now - this.lastPruneAt >= 60_000) {
+       pruneMapEntries(this.states, (state) => now - state.seenAt > this.ttlMs);
+       this.lastPruneAt = now;
+@@ -22,10 +22,8 @@
+       const key = `${row.hostId}:${row.kind}:${row.refId}:${row.probeKey}:${row.epoch}`;
+       const previous = this.states.get(key);
+       if (previous) previous.seenAt = now;
+-      const signature = `${row.batchCount}/${row.batchSuccesses}`;
+-      if (previous && (row.totalCount <= previous.count
+-        || (!force && signature === previous.signature && now - previous.savedAt < 5 * 60_000))) return false;
+-      updates.set(key, { count: row.totalCount, signature, savedAt: now, seenAt: now });
++      if (previous && row.totalCount <= previous.count) return false;
++      updates.set(key, { count: row.totalCount, seenAt: now });
+       return true;
+     });
+     return { rows: selected, commit: () => {
+--- a/server/probeCounter.test.ts
++++ b/server/probeCounter.test.ts
+@@ -8,16 +8,18 @@
+ import { probeCounterInsertSql, probeCounterSnapshot } from "./repositories/probeCounterRepository";
+ import { AgentProbeCounterReportGate } from "./agentProbeCounterReportGate";
+ 
+-test("counter persistence stays throttled without losing epoch baselines or failure/recovery transitions", () => {
++test("counter persistence retains every received advancement and skips only retries", () => {
+   const gate = new AgentProbeCounterReportGate(2, 30 * 60_000);
+   const row = (count: number, successes = count, epoch = "epoch-1", batchSuccesses = 3) => probeCounterSnapshot("rule", 1, 1,
+-    { probeCounterEpoch: epoch, probeTotalCount: count, probeTotalSuccesses: successes,
++    { probeCounterEpoch: epoch, probeCounterStartedAt: 1000, probeTotalCount: count, probeTotalSuccesses: successes,
+       probeCount: 3, probeSuccesses: batchSuccesses })!;
+   const first = gate.plan([row(3)], false, 1_000);
+   assert.equal(first.rows.length, 1);
+   assert.equal(gate.plan([row(3)], false, 2_000).rows.length, 1, "failed DB writes must be retried");
+   first.commit();
+-  assert.equal(gate.plan([row(6)], false, 3_000).rows.length, 0);
++  const healthy = gate.plan([row(6)], false, 3_000);
++  assert.equal(healthy.rows.length, 1);
++  healthy.commit();
+   const failed = gate.plan([row(9, 8, "epoch-1", 2)], false, 4_000);
+   assert.equal(failed.rows.length, 1);
+   failed.commit();
+@@ -39,7 +41,7 @@
+ });
+ 
+ test("cumulative telemetry is optional, bounded and cannot reinterpret current health counters", () => {
+-  const report = { ruleId: 1, probeCount: 3, probeSuccesses: 2, probeCounterEpoch: "epoch-1", probeTotalCount: 30, probeTotalSuccesses: 28 };
++  const report = { ruleId: 1, probeCount: 3, probeSuccesses: 2, probeCounterEpoch: "epoch-1", probeCounterStartedAt: 1000, probeTotalCount: 30, probeTotalSuccesses: 28 };
+   assert.ok(isAgentTcpingResult({ ruleId: 1 }));
+   assert.ok(isAgentTcpingResult(report));
+   for (const overrides of [{ probeTotalCount: 1 }, { probeTotalSuccesses: 30 }, { probeTotalSuccesses: -1 },
+@@ -82,7 +84,7 @@
+     const now = Math.floor(Date.now() / 1000);
+     const since = new Date((now - 1200) * 1000);
+     const row = (kind, refId, hostId, count, successes, extra = {}) => counters.probeCounterSnapshot(kind, refId, hostId, {
+-      probeCounterEpoch: "epoch-1", probeCount: 3, probeSuccesses: 3,
++      probeCounterEpoch: "epoch-1", probeCounterStartedAt: 1000, probeCount: 3, probeSuccesses: 3,
+       probeTotalCount: count, probeTotalSuccesses: successes, ...extra,
+     });
+     const save = (items, seconds) => counters.insertProbeCounterSnapshots(items.filter(Boolean), new Date(seconds * 1000));
+@@ -99,23 +101,41 @@
+     assert.equal(stats.total, 3000);
+     assert.equal(stats.successes, 2997);
+     assert.equal((stats.total - stats.successes) / stats.total * 100, 0.1);
+-    assert.equal((await runtime.queryRaw('SELECT COUNT(*) AS n FROM "probe_counter_snapshots" WHERE "refId"=1'))[0].n, 5);
++    assert.equal((await runtime.queryRaw('SELECT COUNT(*) AS n FROM "probe_counter_snapshots" WHERE "refId"=1'))[0].n, 4);
+     // Existing stream: count difference since the latest pre-window baseline.
+     await save([row("rule", 2, 1, 600, 590)], now - 1300);
+     await save([row("rule", 2, 1, 900, 885)], now - 1100);
+     stats = await counters.getProbeCounterStatistics("rule", 2, since);
+     assert.equal(stats.total, 300);
+     assert.equal(stats.successes, 295);
++    // An old payload arriving in this window is not a newly observed batch.
++    await save([row("rule", 4, 1, 600, 590)], now - 1300);
++    await save([row("rule", 4, 1, 300, 295)], now - 1100);
++    stats = await counters.getProbeCounterStatistics("rule", 4, since);
++    assert.equal(stats.available, false, "late lower snapshots must not invent new coverage");
+     // New observation of an old epoch: do not count unobserved lifetime.
+     await save([row("rule", 3, 1, 90000, 89997)], now - 100);
+     stats = await counters.getProbeCounterStatistics("rule", 3, since);
+     assert.equal(stats.total, 3);
+     assert.equal(stats.successes, 3);
+     // Restart resets must not subtract earlier traffic or merge streams.
+-    await save([row("rule", 3, 1, 3, 2, { probeCounterEpoch: "epoch-2", probeSuccesses: 2 })], now - 10);
++    await save([row("rule", 3, 1, 3, 2, { probeCounterEpoch: "epoch-2", probeCounterStartedAt: 2000, probeSuccesses: 2 })], now - 10);
+     stats = await counters.getProbeCounterStatistics("rule", 3, since);
+     assert.equal(stats.total, 6);
+     assert.equal(stats.successes, 5);
++    // A retired epoch, even with a larger count, must stay retired after the
++    // panel reconnects to the persisted database.
++    await runtime.closeDatabase();
++    await runtime.connectDatabase({ type: "sqlite", sqlite: { path: process.env.FORWARDX_TEST_DB } });
++    await save([row("rule", 3, 1, 90003, 90000)], now - 1);
++    assert.equal((await counters.getProbeCounterStatistics("rule", 3, since)).total, 6);
++    await Promise.all([
++      save([row("rule", 3, 1, 9, 8, { probeCounterEpoch: "epoch-2", probeCounterStartedAt: 2000 })], now),
++      save([row("rule", 3, 1, 6, 5, { probeCounterEpoch: "epoch-2", probeCounterStartedAt: 2000 })], now),
++    ]);
++    stats = await counters.getProbeCounterStatistics("rule", 3, since);
++    assert.equal(stats.total, 12);
++    assert.equal(stats.successes, 11, "concurrent snapshots advance a single persisted head");
+     // Cached failing hop affects path health but not independent counters.
+     const hop = (hopIndex, probeSuccesses) => ({ groupId: 10, hopIndex, hopCount: 2, latencyMs: 4, isTimeout: false,
+       probeCount: 3, probeSuccesses, generation: "g1" });
+@@ -155,7 +175,7 @@
+     await new Promise(resolve => server.listen(0, "127.0.0.1", resolve));
+     const endpoint = "http://127.0.0.1:" + server.address().port + "/api/agent/tcping";
+     const wire = {ruleId:50,sourcePort:10050,targetIp:"localhost",targetPort:443,method:"tcping",
+-      latencyMs:8,isTimeout:false,probeCount:3,probeSuccesses:3,probeCounterEpoch:"wire-1",probeTotalCount:3,probeTotalSuccesses:3};
++      latencyMs:8,isTimeout:false,probeCount:3,probeSuccesses:3,probeCounterEpoch:"wire-1",probeCounterStartedAt:1000,probeTotalCount:3,probeTotalSuccesses:3};
+     const post = async (hostId, body) => {
+       const response = await fetch(endpoint,{method:"POST",headers:{"content-type":"application/json",authorization:"Bearer probe-token-"+hostId},body:JSON.stringify(body)});
+       const result = await response.json();
+@@ -165,18 +185,27 @@
+       await post(1,{results:[wire]});
+       await post(1,{results:[{...wire,probeTotalCount:6,probeTotalSuccesses:6}]});
+       assert.equal((await runtime.queryRaw('SELECT COUNT(*) AS n FROM "tcping_stats" WHERE "ruleId"=50'))[0].n,1,"healthy rows stay throttled");
+-      assert.equal((await runtime.queryRaw('SELECT COUNT(*) AS n FROM "probe_counter_snapshots" WHERE "refId"=50'))[0].n,1,"stable target snapshots do not add per-cycle database writes");
+-      await post(1,{results:[{...wire,probeCounterEpoch:"wire-restarted"}]});
+-      assert.equal((await runtime.queryRaw('SELECT COUNT(*) AS n FROM "probe_counter_snapshots" WHERE "refId"=50'))[0].n,2,"restarted counter baseline survives unchanged health gate");
+-      const complete = {...wire,probeTotalCount:3000,probeTotalSuccesses:2997,probeSuccesses:2};
++      assert.equal((await owner.probeStatistics({ruleId:50,hours:24})).total,6,"every received healthy batch survives a later Agent restart");
++      assert.equal((await runtime.queryRaw('SELECT COUNT(*) AS n FROM "probe_counter_snapshots" WHERE "refId"=50'))[0].n,2,"received cumulative progress is persisted independently of sampled health");
++      await runtime.closeDatabase();
++      await runtime.connectDatabase({ type: "sqlite", sqlite: { path: process.env.FORWARDX_TEST_DB } });
++      await post(1,{results:[{...wire,isTimeout:true,probeSuccesses:0,probeTotalSuccesses:0,probeCounterEpoch:"wire-restarted",probeCounterStartedAt:2000}]});
++      stats = await owner.probeStatistics({ruleId:50,hours:24});
++      assert.equal(stats.total,9);
++      assert.equal(stats.successes,6);
++      assert.equal((stats.total-stats.successes)/stats.total,1/3,"six received successes plus three failures have 33.33% failures");
++      assert.equal((await runtime.queryRaw('SELECT COUNT(*) AS n FROM "probe_counter_snapshots" WHERE "refId"=50'))[0].n,3,"restarted counter baseline survives unchanged health gate");
++      await post(1,{results:[{...wire,probeTotalCount:9,probeTotalSuccesses:9}]});
++      assert.equal((await owner.probeStatistics({ruleId:50,hours:24})).total,9,"a late retired epoch cannot reopen its counter");
++      const complete = {...wire,probeCounterEpoch:"wire-restarted",probeCounterStartedAt:2000,probeTotalCount:3000,probeTotalSuccesses:2997,probeSuccesses:2};
+       await post(1,{results:[complete]});
+       await post(1,{results:[complete]});
+       await post(2,{results:[{...wire,probeCounterEpoch:"unauthorized"}]});
+       await post(1,{results:[{...wire,targetPort:444,probeCounterEpoch:"wrong-port"}]});
+       stats = await counters.getProbeCounterStatistics("rule",50,since);
+-      assert.equal(stats.total,3003);
+-      assert.equal(stats.successes,3000);
+-      assert.equal((await runtime.queryRaw('SELECT COUNT(*) AS n FROM "probe_counter_snapshots" WHERE "refId"=50'))[0].n,3,"HTTP duplicates and unauthorized reports are not real attempts");
++      assert.equal(stats.total,3006);
++      assert.equal(stats.successes,3003);
++      assert.equal((await runtime.queryRaw('SELECT COUNT(*) AS n FROM "probe_counter_snapshots" WHERE "refId"=50'))[0].n,4,"HTTP duplicates and unauthorized reports are not real attempts");
+       const tunnelWire = {...wire,ruleId:undefined,sourcePort:undefined,tunnelId:20,targetIp:"127.0.0.2",targetPort:20020,method:"tcp",probeCounterEpoch:"tunnel-wire"};
+       await post(1,{tunnels:[tunnelWire]});
+       await post(2,{tunnels:[{...tunnelWire,probeCounterEpoch:"wrong-source"}]});
+--- a/server/repositories/probeCounterRepository.ts
++++ b/server/repositories/probeCounterRepository.ts
+@@ -1,8 +1,8 @@
+ import { createHash } from "node:crypto";
+ import { hasAgentProbeCounter, normalizeAgentProbeCounts, type AgentProbeCounter } from "../../shared/agentDtos";
+ import type { ProbeStatistics } from "../../shared/probeStatistics";
+-import { executeRaw, getDatabaseKind, queryRaw } from "../dbRuntime";
+-import { quoteIdentifier as q } from "../dbCompat";
++import { executeRaw, getDatabaseKind, queryRaw, withDatabaseTransaction } from "../dbRuntime";
++import { limitOffset, quoteIdentifier as q } from "../dbCompat";
+ 
+ export type ProbeCounterKind = "rule" | "tunnel" | "forwardGroup";
+ export type ProbeCounterSnapshot = {
+@@ -11,17 +11,19 @@
+   hostId: number;
+   probeKey: string;
+   epoch: string;
++  epochStartedAt: number;
+   totalCount: number;
+   totalSuccesses: number;
+   batchCount: number;
+   batchSuccesses: number;
++  latencyMs: number | null;
+ };
+ 
+ /** Call only after host, entity, target and topology authorization. Never
+  * call for an aggregate assembled from cached hops or tunnel health. */
+ export function probeCounterSnapshot(kind: ProbeCounterKind, refId: number, hostId: number,
+   report: AgentProbeCounter & { probeCount?: number; probeSuccesses?: number; isTimeout?: boolean } & Record<string, any>): ProbeCounterSnapshot | null {
+-  if (!hasAgentProbeCounter(report) || report.method === "self") return null;
++  if (!hasAgentProbeCounter(report) || !report.probeCounterStartedAt || report.method === "self") return null;
+   const counts = normalizeAgentProbeCounts(report, { legacyZeroAsSuccess: false });
+   if (Number(report.probeTotalCount) < counts.probeCount || Number(report.probeTotalSuccesses) < counts.probeSuccesses
+     || Number(report.probeTotalCount) - Number(report.probeTotalSuccesses) < counts.probeCount - counts.probeSuccesses) return null;
+@@ -31,25 +33,54 @@
+     report.method || "", report.hopIndex ?? -1, report.hopCount || 0, report.seriesKey || "", report.memberId || 0, report.probeType || ""];
+   return { kind, refId, hostId, probeKey: createHash("sha256").update(JSON.stringify(identity)).digest("hex"),
+     epoch: report.probeCounterEpoch!, totalCount: report.probeTotalCount!, totalSuccesses: report.probeTotalSuccesses!,
+-    batchCount: counts.probeCount, batchSuccesses: counts.probeSuccesses };
++    epochStartedAt: report.probeCounterStartedAt,
++    batchCount: counts.probeCount, batchSuccesses: counts.probeSuccesses,
++    latencyMs: counts.probeSuccesses > 0 && Number.isFinite(report.latencyMs) && Number(report.latencyMs) > 0
++      ? Math.round(Number(report.latencyMs)) : null };
+ }
+ 
+ export function probeCounterInsertSql(rowCount: number, kind = getDatabaseKind()) {
+-  const columns = ["kind", "refId", "hostId", "probeKey", "epoch", "totalCount", "totalSuccesses", "batchCount", "batchSuccesses", "recordedAt"];
++  const columns = ["kind", "refId", "hostId", "probeKey", "epoch", "totalCount", "totalSuccesses", "batchCount", "batchSuccesses", "recordedAt",
++    "epochStartedAt", "countDelta", "successDelta", "latencyMs"];
+   const unique = ["hostId", "kind", "refId", "probeKey", "epoch", "totalCount"];
+-  return `INSERT INTO ${q("probe_counter_snapshots")} (${columns.map(q).join(", ")}) VALUES ${Array.from({ length: rowCount }, () => "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").join(", ")}`
++  return `INSERT INTO ${q("probe_counter_snapshots")} (${columns.map(q).join(", ")}) VALUES ${Array.from({ length: rowCount }, () => `(${columns.map(() => "?").join(", ")})`).join(", ")}`
+     + (kind === "mysql" ? ` ON DUPLICATE KEY UPDATE ${q("totalCount")} = ${q("totalCount")}`
+       : ` ON CONFLICT (${unique.map(q).join(", ")}) DO NOTHING`);
+ }
+ 
+ export async function insertProbeCounterSnapshots(rows: ProbeCounterSnapshot[], recordedAt = new Date()) {
+-  // Keep SQLite bind counts and each write bounded. Duplicate HTTP delivery
+-  // keeps the original timestamp rather than moving an old sample forward.
++  // Lock the persisted stream head before advancing it. This also protects
++  // concurrent deliveries and survives a panel restart or health-gate eviction.
++  // A first observation counts only its batch, not an unobserved lifetime.
+   const at = Math.floor(recordedAt.getTime() / 1000);
+-  for (let offset = 0; offset < rows.length; offset += 80) {
+-    const batch = rows.slice(offset, offset + 80);
+-    await executeRaw(probeCounterInsertSql(batch.length), batch.flatMap((row) => [row.kind, row.refId, row.hostId,
+-      row.probeKey, row.epoch, row.totalCount, row.totalSuccesses, row.batchCount, row.batchSuccesses, at]));
++  const ordered = [...rows].sort((a, b) => `${a.hostId}:${a.kind}:${a.refId}:${a.probeKey}`.localeCompare(`${b.hostId}:${b.kind}:${b.refId}:${b.probeKey}`)
++    || a.epochStartedAt - b.epochStartedAt || a.totalCount - b.totalCount);
++  for (let offset = 0; offset < ordered.length; offset += 60) {
++    await withDatabaseTransaction(async () => {
++      const values: unknown[] = [];
++      for (const row of ordered.slice(offset, offset + 60)) {
++        const identity = [row.hostId, row.kind, row.refId, row.probeKey];
++        const where = ["hostId", "kind", "refId", "probeKey"].map(column => `${q(column)} = ?`).join(" AND ");
++        const conflict = getDatabaseKind() === "mysql" ? ` ON DUPLICATE KEY UPDATE ${q("probeKey")} = ${q("probeKey")}`
++          : ` ON CONFLICT (${["hostId", "kind", "refId", "probeKey"].map(q).join(", ")}) DO NOTHING`;
++        await executeRaw(`INSERT INTO ${q("probe_counter_heads")} (${["hostId", "kind", "refId", "probeKey", "epoch", "epochStartedAt", "totalCount", "totalSuccesses", "recordedAt"].map(q).join(", ")})
++          VALUES (?, ?, ?, ?, '', 0, 0, 0, ?)${conflict}`, [...identity, at]);
++        const [head] = await queryRaw<{ epoch: string; epochStartedAt: number; totalCount: number; totalSuccesses: number }>(
++          `SELECT * FROM ${q("probe_counter_heads")} WHERE ${where}${getDatabaseKind() === "sqlite" ? "" : " FOR UPDATE"}`, identity);
++        const sameEpoch = head.epoch === row.epoch;
++        if (row.epochStartedAt < Number(head.epochStartedAt)
++          || (!sameEpoch && row.epochStartedAt === Number(head.epochStartedAt))
++          || (sameEpoch && (row.epochStartedAt !== Number(head.epochStartedAt) || row.totalCount <= Number(head.totalCount)))) continue;
++        const countDelta = sameEpoch ? row.totalCount - Number(head.totalCount) : row.batchCount;
++        const successDelta = sameEpoch ? row.totalSuccesses - Number(head.totalSuccesses) : row.batchSuccesses;
++        if (successDelta < 0 || successDelta > countDelta) continue;
++        await executeRaw(`UPDATE ${q("probe_counter_heads")} SET ${["epoch", "epochStartedAt", "totalCount", "totalSuccesses", "recordedAt"].map(column => `${q(column)} = ?`).join(", ")} WHERE ${where}`,
++          [row.epoch, row.epochStartedAt, row.totalCount, row.totalSuccesses, at, ...identity]);
++        values.push(row.kind, row.refId, row.hostId, row.probeKey, row.epoch, row.totalCount, row.totalSuccesses,
++          row.batchCount, row.batchSuccesses, at, row.epochStartedAt, countDelta, successDelta, row.latencyMs);
++      }
++      if (values.length) await executeRaw(probeCounterInsertSql(values.length / 14), values);
++    });
+   }
+ }
+ 
+@@ -58,35 +89,28 @@
+   const empty: ProbeStatistics = { total: 0, successes: 0, available: false, observedSince: null, latestAt: null };
+   if (!ids.length) return empty;
+   const start = Math.floor(since.getTime() / 1000);
+-  // Retention is 72h. The latest pre-window snapshot is the baseline; for a
+-  // newly observed stream count only its first batch + subsequent deltas,
+-  // never its unobserved lifetime. MAX tolerates retries and out-of-order POSTs.
+-  const rows = await queryRaw<any>(`
+-    SELECT ${q("hostId")}, ${q("refId")}, ${q("probeKey")}, ${q("epoch")},
+-      MAX(CASE WHEN ${q("recordedAt")} < ? THEN ${q("totalCount")} END) AS ${q("baseCount")},
+-      MAX(CASE WHEN ${q("recordedAt")} < ? THEN ${q("totalSuccesses")} END) AS ${q("baseSuccesses")},
+-      MIN(CASE WHEN ${q("recordedAt")} >= ? THEN ${q("totalCount")} - ${q("batchCount")} END) AS ${q("initialCount")},
+-      MIN(CASE WHEN ${q("recordedAt")} >= ? THEN ${q("totalSuccesses")} - ${q("batchSuccesses")} END) AS ${q("initialSuccesses")},
+-      MAX(CASE WHEN ${q("recordedAt")} >= ? THEN ${q("totalCount")} END) AS ${q("endCount")},
+-      MAX(CASE WHEN ${q("recordedAt")} >= ? THEN ${q("totalSuccesses")} END) AS ${q("endSuccesses")},
+-      MIN(CASE WHEN ${q("recordedAt")} >= ? THEN ${q("recordedAt")} END) AS ${q("firstAt")},
+-      MAX(CASE WHEN ${q("recordedAt")} >= ? THEN ${q("recordedAt")} END) AS ${q("lastAt")}
+-    FROM ${q("probe_counter_snapshots")}
+-    WHERE ${q("kind")} = ? AND ${q("refId")} IN (${ids.map(() => "?").join(", ")})
+-      AND ${q("recordedAt")} >= ?
+-    GROUP BY ${q("hostId")}, ${q("refId")}, ${q("probeKey")}, ${q("epoch")}`,
+-  [start, start, start, start, start, start, start, start, kind, ...ids, start - 72 * 3600]);
+-  for (const row of rows) {
+-    if (row.endCount === null || row.endCount === undefined) continue;
+-    const count = Math.max(0, Number(row.endCount) - Number(row.baseCount ?? row.initialCount));
+-    const successes = Math.max(0, Math.min(count, Number(row.endSuccesses) - Number(row.baseSuccesses ?? row.initialSuccesses)));
+-    empty.total += count;
+-    empty.successes += successes;
++  const predicate = `${q("kind")} = ? AND ${q("refId")} IN (${ids.map(() => "?").join(", ")}) AND ${q("recordedAt")} >= ? AND ${q("countDelta")} IS NOT NULL`;
++  const params = [kind, ...ids, start];
++  const [row] = await queryRaw<any>(`SELECT SUM(${q("countDelta")}) AS ${q("total")}, SUM(${q("successDelta")}) AS ${q("successes")},
++    MIN(${q("recordedAt")}) AS ${q("firstAt")}, MAX(${q("recordedAt")}) AS ${q("lastAt")}
++    FROM ${q("probe_counter_snapshots")} WHERE ${predicate}`, params);
++  if (row?.total !== null && row?.total !== undefined) {
++    empty.total = Number(row.total);
++    empty.successes = Number(row.successes);
+     empty.available = true;
+-    const first = new Date(Number(row.firstAt) * 1000);
+-    const last = new Date(Number(row.lastAt) * 1000);
+-    if (!empty.observedSince || first < empty.observedSince) empty.observedSince = first;
+-    if (!empty.latestAt || last > empty.latestAt) empty.latestAt = last;
++    empty.observedSince = new Date(Number(row.firstAt) * 1000);
++    empty.latestAt = new Date(Number(row.lastAt) * 1000);
+   }
++  // This bound applies to latency batches only. Exact attempt totals above
++  // span every retained snapshot, independently of chart/query downsampling.
++  const limit = 2880;
++  const page = limitOffset(limit + 1);
++  const samples = await queryRaw<{ latencyMs: number; batchCount: number; batchSuccesses: number }>(
++    `SELECT ${q("latencyMs")}, ${q("batchCount")}, ${q("batchSuccesses")} FROM ${q("probe_counter_snapshots")}
++    WHERE ${predicate} AND ${q("latencyMs")} > 0 AND ${q("batchSuccesses")} > 0
++    ORDER BY ${q("recordedAt")} DESC, ${q("id")} DESC ${page.sql}`, [...params, ...page.params]);
++  empty.latencySamplesTruncated = samples.length > limit;
++  empty.latencySamples = samples.slice(0, limit).map(sample => ({ latency: Number(sample.latencyMs),
++    probeCount: Number(sample.batchCount), probeSuccesses: Number(sample.batchSuccesses) }));
+   return empty;
+ }
+--- a/server/migration.ts
++++ b/server/migration.ts
+@@ -217,6 +217,7 @@
+   "traffic_stat_buckets",
+   "tcping_stats",
+   "probe_counter_snapshots",
++  "probe_counter_heads",
+   "forward_tests",
+   "forward_group_events",
+   "ip_geo_cache",
+@@ -723,6 +724,7 @@
+   "agent_traffic_reports",
+   "tcping_stats",
+   "probe_counter_snapshots",
++  "probe_counter_heads",
+   "forward_tests",
+   "forward_group_events",
+   "ip_geo_cache",
+@@ -766,6 +768,7 @@
+   "ip_geo_cache",
+   "tcping_stats",
+   "probe_counter_snapshots",
++  "probe_counter_heads",
+   "forward_tests",
+   "forward_group_events",
+   "config_audit_events",
+@@ -1248,14 +1251,17 @@
+       row.hostId = mapRequiredId(maps, "hosts", source.hostId);
+       return { row };
+ 
++    case "probe_counter_heads":
+     case "probe_counter_snapshots": {
+       const refTable = source.kind === "rule" ? "forward_rules"
+         : source.kind === "tunnel" ? "tunnels" : source.kind === "forwardGroup" ? "forward_groups" : null;
+       if (!refTable) return null;
+       row.refId = mapRequiredId(maps, refTable, source.refId);
+       row.hostId = mapRequiredId(maps, "hosts", source.hostId);
+-      return { row, existingWhere: { hostId: row.hostId, kind: row.kind, refId: row.refId,
+-        probeKey: row.probeKey, epoch: row.epoch, totalCount: row.totalCount } };
++      return { row, existingWhere: table === "probe_counter_heads"
++        ? { hostId: row.hostId, kind: row.kind, refId: row.refId, probeKey: row.probeKey }
++        : { hostId: row.hostId, kind: row.kind, refId: row.refId,
++          probeKey: row.probeKey, epoch: row.epoch, totalCount: row.totalCount } };
+     }
+ 
+     case "forward_tests":
+--- a/server/dbSchema.ts
++++ b/server/dbSchema.ts
+@@ -52,6 +52,7 @@
+   "agent_tokens",
+   "tcping_stats",
+   "probe_counter_snapshots",
++  "probe_counter_heads",
+   "forward_tests",
+   "user_host_permissions",
+   "user_tunnel_permissions",
+@@ -140,10 +141,20 @@
+       c("probeKey", "varchar", { length: 64, notNull: true }), c("epoch", "varchar", { length: 64, notNull: true }),
+       c("totalCount", "int", { notNull: true }), c("totalSuccesses", "int", { notNull: true }),
+       c("batchCount", "int", { notNull: true }), c("batchSuccesses", "int", { notNull: true }),
++      c("epochStartedAt", "bigint"), c("countDelta", "int"), c("successDelta", "int"), c("latencyMs", "int"),
+       c("recordedAt", "epoch", { notNull: true, default: "now" }),
+     ],
+     unique: [["hostId", "kind", "refId", "probeKey", "epoch", "totalCount"]],
+     indexes: [["kind", "refId", "recordedAt"], ["recordedAt"]],
++  },
++  {
++    name: "probe_counter_heads",
++    columns: [c("kind", "varchar", { length: 16, notNull: true }), c("refId", "int", { notNull: true }),
++      c("hostId", "int", { notNull: true }), c("probeKey", "varchar", { length: 64, notNull: true }),
++      c("epoch", "varchar", { length: 64, notNull: true }), c("epochStartedAt", "bigint", { notNull: true }),
++      c("totalCount", "int", { notNull: true }), c("totalSuccesses", "int", { notNull: true }),
++      c("recordedAt", "epoch", { notNull: true })],
++    unique: [["hostId", "kind", "refId", "probeKey"]], indexes: [["recordedAt"]],
+   },
+   {
+     name: "users",
+--- /dev/null
++++ b/scripts/verify-probe-agent-counters.mjs
+@@ -0,0 +1,112 @@
++// Usage: node verify-probe-agent-counters.mjs OUTPUT_DIR AGENT [RELEASED_AGENT]
++// Run inside an isolated Linux container; all probe targets are loopback.
++import assert from "node:assert/strict";
++import crypto from "node:crypto";
++import fs from "node:fs";
++import http from "node:http";
++import net from "node:net";
++import path from "node:path";
++import { spawn } from "node:child_process";
++
++assert.equal(process.platform, "linux");
++assert.ok(fs.existsSync("/.dockerenv"));
++const [output, binary, released] = process.argv.slice(2);
++fs.mkdirSync(output, { recursive: true });
++const token = "isolated-probe-agent-token";
++const reports = [];
++let agent;
++let stage = "healthy";
++let backend;
++let collect = true;
++const key = salt => crypto.createHash("sha256").update(`${token}|${salt}`).digest();
++function envelope(payload) {
++  const iv = crypto.randomBytes(16);
++  const cipher = crypto.createCipheriv("aes-256-ctr", key("forwardx-agent-v1"), iv);
++  const ct = Buffer.concat([cipher.update(JSON.stringify(payload)), cipher.final()]);
++  const ts = Date.now(); const bytes = Buffer.alloc(8); bytes.writeBigUInt64BE(BigInt(ts));
++  const mac = crypto.createHmac("sha256", key("forwardx-agent-mac"))
++    .update(Buffer.concat([Buffer.from("v1"), iv, ct, bytes])).digest("hex");
++  return { v: 1, iv: iv.toString("hex"), ct: ct.toString("hex"), ts, mac };
++}
++const probes = [{ ruleId: 1, tunnelId: 1, targetIp: "127.0.0.1", targetPort: 31001, method: "tcping" },
++  { ruleId: 2, tunnelId: 1, targetIp: "127.0.0.1", targetPort: 31001, method: "ping" }];
++const panel = http.createServer(async (req, res) => {
++  if (req.method === "GET") { res.writeHead(404); res.end(); return; }
++  const chunks = []; for await (const chunk of req) chunks.push(chunk);
++  const body = JSON.parse(Buffer.concat(chunks));
++  const decipher = crypto.createDecipheriv("aes-256-ctr", key("forwardx-agent-v1"), Buffer.from(body.iv, "hex"));
++  const message = JSON.parse(Buffer.concat([decipher.update(Buffer.from(body.ct, "hex")), decipher.final()]));
++  let response = { success: true };
++  if (message.path === "/api/agent/heartbeat") response = { nextInterval: 1, forceTcping: collect,
++    runningRules: [], ruleLatencyProbes: probes };
++  if (message.path === "/api/agent/tcping") {
++    reports.push({ stage, payload: message.payload });
++    fs.writeFileSync(path.join(output, "reports.json"), JSON.stringify(reports, null, 2));
++  }
++  res.setHeader("content-type", "application/json"); res.end(JSON.stringify(envelope(response)));
++});
++const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
++async function waitFor(check) {
++  const until = Date.now() + 45000;
++  while (Date.now() < until) {
++    if (check()) return;
++    assert.ok(agent?.exitCode === null && agent?.signalCode === null, "Agent exited early");
++    await pause(100);
++  }
++  throw new Error(`Timed out at ${stage}`);
++}
++async function startBackend() {
++  backend = net.createServer(conn => conn.end());
++  await new Promise(resolve => backend.listen(31001, "127.0.0.1", resolve));
++}
++async function stopAgent() {
++  if (agent?.exitCode === null && agent.signalCode === null) {
++    const done = new Promise(resolve => agent.once("exit", resolve)); agent.kill("SIGTERM"); await done;
++  }
++  agent = undefined;
++}
++function startAgent(executable) {
++  const fd = fs.openSync(path.join(output, `agent-${stage}.log`), "w");
++  agent = spawn(executable, ["-config", "/tmp/probe-agent.json"], { stdio: ["ignore", fd, fd] }); fs.closeSync(fd);
++}
++const current = () => reports.filter(item => item.stage === stage);
++try {
++  await startBackend(); await new Promise(resolve => panel.listen(0, "127.0.0.1", resolve));
++  fs.writeFileSync("/tmp/probe-agent.json", JSON.stringify({ panelUrl: `http://127.0.0.1:${panel.address().port}`, token, interval: 1 }));
++  startAgent(binary);
++  await waitFor(() => current().length >= 2);
++  const healthy = current().at(-1).payload.results;
++  assert.ok(healthy.every(row => row.probeTotalCount >= row.probeCount * 2 && row.probeTotalSuccesses === row.probeTotalCount));
++  assert.equal(healthy.find(row => row.ruleId === 1).probeCount, 3);
++  assert.equal(healthy.find(row => row.ruleId === 2).probeCount, 5);
++  const originalEpoch = healthy.find(row => row.ruleId === 1);
++  stage = "tcp-failed"; await new Promise(resolve => backend.close(resolve)); backend = undefined;
++  await waitFor(() => current().some(item => item.payload.results.some(row => row.ruleId === 1 && row.probeSuccesses === 0)));
++  const failed = current().at(-1).payload.results.find(row => row.ruleId === 1);
++  assert.equal(failed.probeCounterEpoch, originalEpoch.probeCounterEpoch);
++  assert.ok(failed.probeTotalCount > originalEpoch.probeTotalCount);
++  assert.ok(failed.probeTotalCount > failed.probeTotalSuccesses);
++  stage = "tcp-recovered"; await startBackend();
++  await waitFor(() => current().some(item => item.payload.results.some(row => row.ruleId === 1 && row.probeSuccesses === 3)));
++  const recovered = current().at(-1).payload.results.find(row => row.ruleId === 1);
++  assert.equal(recovered.probeCounterEpoch, originalEpoch.probeCounterEpoch);
++  await stopAgent(); stage = "restarted"; startAgent(binary);
++  await waitFor(() => current().length > 0);
++  const restarted = current()[0].payload.results.find(row => row.ruleId === 1);
++  assert.notEqual(restarted.probeCounterEpoch, originalEpoch.probeCounterEpoch);
++  assert.ok(restarted.probeCounterStartedAt > originalEpoch.probeCounterStartedAt);
++  assert.equal(restarted.probeTotalCount, 3);
++  await stopAgent();
++  if (released) {
++    stage = "released-3.2.0"; startAgent(released); await waitFor(() => current().length > 0);
++    assert.ok(current()[0].payload.results.every(row => row.probeCounterEpoch === undefined && row.probeCounterStartedAt === undefined));
++    await stopAgent();
++  }
++  collect = false;
++  console.log(JSON.stringify({ tcpBatch: 3, pingBatch: 5, healthyCumulative: true, failureAndRecovery: true,
++    restartIdentity: true, releasedLegacy: !!released, reports: reports.length }));
++} finally {
++  await stopAgent();
++  if (backend) await new Promise(resolve => backend.close(resolve));
++  panel.closeAllConnections(); await new Promise(resolve => panel.close(resolve));
++}

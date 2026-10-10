@@ -1,3 +1,4 @@
+import { t as translateText } from "@/i18n";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
@@ -18,7 +19,7 @@ export function SniEntryVersionPreflight({ enabled = true }: { enabled?: boolean
     return (
       <div className="flex items-center gap-2 border-t border-border/50 pt-3 text-xs text-muted-foreground">
         <Loader2 className="forwardx-icon-spin h-4 w-4 shrink-0" />
-        <span>正在检查 SNI 入口 Agent 版本</span>
+        <span>{translateText("正在检查 SNI 入口 Agent 版本")}</span>
       </div>
     );
   }
@@ -26,7 +27,7 @@ export function SniEntryVersionPreflight({ enabled = true }: { enabled?: boolean
     return (
       <Alert variant="destructive">
         <AlertTriangle className="h-4 w-4" />
-        <AlertTitle>SNI 入口版本检查失败</AlertTitle>
+        <AlertTitle>{translateText("SNI 入口版本检查失败")}</AlertTitle>
         <AlertDescription className="break-words text-xs">{overview.error.message}</AlertDescription>
       </Alert>
     );
@@ -39,8 +40,8 @@ export function SniEntryVersionPreflight({ enabled = true }: { enabled?: boolean
     .map((entry) => [entry.entryHost.id, entry.entryHost] as const)).values());
   const migrationNotice = (
     <div className="space-y-1 text-xs text-muted-foreground">
-      <p>升级面板后，现有转发链 SNI 入口监听统一切换为入口分流器，切换时现有连接会发生一次中断。</p>
-      <p>完成切换后，新增、修改和删除规则采用分流表热更新，仅实际变更规则的连接可能受到影响。</p>
+      <p>{translateText("升级面板后，现有转发链 SNI 入口监听统一切换为入口分流器，切换时现有连接会发生一次中断。")}</p>
+      <p>{translateText("完成切换后，新增、修改和删除规则采用分流表热更新，仅实际变更规则的连接可能受到影响。")}</p>
     </div>
   );
 
@@ -49,7 +50,7 @@ export function SniEntryVersionPreflight({ enabled = true }: { enabled?: boolean
       <div className="space-y-2 border-t border-border/50 pt-3">
         <div className="flex items-center gap-2 text-xs text-emerald-700 dark:text-emerald-300">
           <CheckCircle2 className="h-4 w-4 shrink-0" />
-          <span>SNI 入口 Agent 均满足最低版本 {minimumVersion}</span>
+          <span>{translateText("SNI 入口 Agent 均满足最低版本")}{minimumVersion}</span>
         </div>
         {migrationNotice}
       </div>
@@ -59,20 +60,20 @@ export function SniEntryVersionPreflight({ enabled = true }: { enabled?: boolean
   return (
     <Alert className="min-w-0 border-amber-500/30 bg-amber-500/5">
       <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-      <AlertTitle>SNI 入口 Agent 需要升级</AlertTitle>
+      <AlertTitle>{translateText("SNI 入口 Agent 需要升级")}</AlertTitle>
       <AlertDescription className="min-w-0 space-y-2 text-xs">
-        <p>以下入口主机需要 Agent {minimumVersion} 或更高版本；版本不足时，SNI 分流规则将停止运行。</p>
+        <p>{translateText("以下入口主机需要 Agent")}{minimumVersion} {translateText("或更高版本；版本不足时，SNI 分流规则将停止运行。")}</p>
         {migrationNotice}
         <div className="space-y-1">
           {unsupportedHosts.map((host) => (
             <div key={host.id} className="flex min-w-0 flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
-              <span className="min-w-0 break-words font-medium">{host.name || `主机 #${host.id}`}</span>
-              <span className="min-w-0 max-w-full shrink-0 break-all font-mono text-muted-foreground">{host.agentVersion ? `v${host.agentVersion}` : "版本未上报"}</span>
+              <span className="min-w-0 break-words font-medium">{host.name || translateText("主机 #{0}", [host.id])}</span>
+              <span className="min-w-0 max-w-full shrink-0 break-all font-mono text-muted-foreground">{host.agentVersion ? `v${host.agentVersion}` : translateText("版本未上报")}</span>
             </div>
           ))}
         </div>
         <Button asChild variant="link" size="sm" className="h-auto justify-start gap-1 px-0 py-0 text-xs">
-          <Link href="/sni-entry-ports">查看 SNI 入口<ArrowRight className="h-3.5 w-3.5" /></Link>
+          <Link href="/sni-entry-ports">{translateText("查看 SNI 入口")}<ArrowRight className="h-3.5 w-3.5" /></Link>
         </Button>
       </AlertDescription>
     </Alert>

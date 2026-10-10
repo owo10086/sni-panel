@@ -1,0 +1,12 @@
+Browser tab: 3, Title: "sni-panel 09验收", URL: "http://127.0.0.1:18829/rules".
+The following is a diff from the previous accessibility tree with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
+~				22 text Rule Filter Select the rules first, and then fill in the corresponding contents according to the above pattern. Selected rules 1 /  4
+~				54 checkbox (settable, integer) Description: 用户规则 A <&> unchanged Forwarding Group :18501 -> 203.0.113.10:443 / nftables / TCP, Value: 1
+~				62 text 用户规则 B unchanged Forwarding Group : 18502  ->  203.0.113.10 : 443  /  nftables  /  TCP Copy Target You can choose more than one at a time. Forwarding Group ; searching only shows the filter and does not cancel the selected target. Selected Targets 1
+~				70 button Cancel
+~				71 button Clear the target.
+~				73 checkbox (settable, integer) Description: Available 用户转发组 / unchanged failover group, Value: 1
+~				75 text 用户转发组 / unchanged failover group This copying target: 用户转发组 / unchanged failover group  (# 30 ) Copies keep the original rule settings and use the selected target resource.
+~			76 button Delete Selected
+~			41 button Copy the selected rule
+The focused UI element is 73 checkbox (settable, integer) Description: Available 用户转发组 / unchanged failover group, Value: 1

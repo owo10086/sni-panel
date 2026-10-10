@@ -1,0 +1,37 @@
+- generic: 语言
+- combobox
+- button:
+- button:
+- main:
+  - generic: sni-panel
+  - generic: 欢迎回来
+  - generic: 登录账号以继续
+  - text: 用户名或邮箱
+  - textbox:
+    - /placeholder: 请输入用户名或邮箱
+    - text: <redacted>
+  - text: 密码
+  - textbox:
+    - /placeholder: 请输入密码
+    - text: <redacted>
+  - button:
+  - button:
+    - text: 登录
+  - generic: 或
+  - text: Telegram 快捷登录
+  - button:
+    - text: 打开 Telegram 登录
+  - paragraph: 已绑定账户可用，点击后再连接后端校验。
+  - button: 没有账号？点击注册
+- region "Notifications alt+T"
+- dialog "面板地址":
+  - heading "面板地址" [level=2]
+  - paragraph: APP 将连接这个面板地址。
+  - text: 服务器地址
+  - textbox "服务器地址" [active]:
+    - /placeholder: https://panel.example.com
+    - text: <redacted>
+  - button "取消"
+  - button "保存"
+  - button "Close":
+    - generic: Close

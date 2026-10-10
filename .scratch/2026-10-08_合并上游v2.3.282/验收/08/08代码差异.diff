@@ -1,0 +1,108 @@
+--- a/client/src/i18n/en.json
++++ b/client/src/i18n/en.json
+@@ -203,7 +203,7 @@
+   "，资产来源 Release v": "Release v.",
+   "，Agent 目标：v{0}": ", target Agent: v{0}",
+   "；出口：": "; exit:",
+-  "；当前展示上次数据": ";current display of last data",
++  "；当前展示上次数据": "; showing previous data",
+   "；搜索仅筛选显示，不会取消已选目标。": "; searching only shows the filter and does not cancel the selected target.",
+   "。编辑不会改变规则归属。": ". The editor will not change the attribution of the rule.",
+   "· {0} 个兼容资源": "· {0} compatible resources",
+@@ -2384,7 +2384,7 @@
+   "刷新插件商店失败": "Failed to refresh plugin store",
+   "刷新全部插件商店": "Refresh All Plugins",
+   "刷新失败，当前保留上次成功数据：": "Refresh failed; showing the last successful data:",
+-  "刷新失败，正在自动重试": "Refreshing failed, autotrying",
++  "刷新失败，正在自动重试": "Refresh failed. Retrying automatically",
+   "刷新验证码": "Refresh Verification",
+   "刷新页面": "Refresh Page",
+   "刷新中": "Refreshing",
+@@ -4183,5 +4183,7 @@
+   "延迟曲线保留历史记录；稳定性只使用累计计数和对应的真实探测延迟。": "Latency charts retain historical records; stability uses only cumulative counts and their real probe latencies.",
+   "稳定性延迟样本仅覆盖最近 2880 个已上报批次；累计次数和失败率仍覆盖所选时间内的全部有效报告。": "Stability latency samples cover only the latest 2880 reported batches; cumulative attempts and failure rate still cover all valid reports in the selected period.",
+   "稳定性延迟样本覆盖所选时间内已上报的有效批次。": "Stability latency samples cover valid reported batches in the selected period.",
+-  "TCP 连接失败": "TCP connection failures"
++  "TCP 连接失败": "TCP connection failures",
++  "返回主机列表": "Back to host list",
++  "主机不存在": "Host not found"
+ }
+--- a/client/src/lib/publicMonitor.test.ts
++++ b/client/src/lib/publicMonitor.test.ts
+@@ -115,3 +115,39 @@
+     onlineManager.setOnline(true);
+   }
+ });
++
++test("a late host response cannot replace the selected host or block an independent monitor request", async () => {
++  const client = new QueryClient();
++  const flush = () => new Promise<void>((resolve) => setImmediate(resolve));
++  let finishOld: ((response: Response) => void) | undefined;
++  const fetcher: typeof fetch = async (input) => {
++    if (String(input).endsWith("/1")) return new Promise<Response>((resolve) => { finishOld = resolve; });
++    return new Response(JSON.stringify({ hostId: 2, cpuUsage: 57 }));
++  };
++  const options = (hostId: number) => ({
++    ...PUBLIC_MONITOR_REFRESH_OPTIONS,
++    queryKey: ["public-monitor-host", hostId],
++    queryFn: async () => (await fetchPublicMonitor(fetcher, "https://panel.test/" + hostId)).json() as Promise<{ hostId: number; cpuUsage: number }>,
++  });
++  const observer = new QueryObserver(client, options(1));
++  const unsubscribe = observer.subscribe(() => {});
++  try {
++    await flush();
++    assert.ok(finishOld, "the first host request is still waiting");
++    observer.setOptions(options(2));
++    await observer.refetch();
++    assert.deepEqual(observer.getCurrentResult().data, { hostId: 2, cpuUsage: 57 });
++    finishOld(new Response(JSON.stringify({ hostId: 1, cpuUsage: 23 })));
++    await flush();
++    assert.deepEqual(observer.getCurrentResult().data, { hostId: 2, cpuUsage: 57 });
++    const timeout = fetchPublicMonitor(async (_input, init) => new Promise<Response>((_resolve, reject) => {
++      init?.signal?.addEventListener("abort", () => reject(init.signal?.reason), { once: true });
++    }), "https://panel.test/summary", undefined, 20);
++    const independent = await fetchPublicMonitor(fetcher, "https://panel.test/2");
++    assert.deepEqual(await independent.json(), { hostId: 2, cpuUsage: 57 });
++    await assert.rejects(timeout, { name: "TimeoutError" });
++  } finally {
++    unsubscribe();
++    client.clear();
++  }
++});
+--- a/client/src/pages/HostMonitor.tsx
++++ b/client/src/pages/HostMonitor.tsx
+@@ -90,10 +90,11 @@
+   isFetching: boolean;
+   onRetry: () => void;
+ }) {
++  const errorMessage = error instanceof Error ? error.message : "";
+   return (
+     <div className="flex flex-wrap items-center justify-end gap-2 text-xs text-muted-foreground" role="status">
+-      {error ? <span className="text-amber-600 dark:text-amber-400">{translateText("刷新失败，正在自动重试")}{refreshedAt ? translateText("；当前展示上次数据") : ""}</span>
+-        : <span>{refreshedAt ? translateText("最近刷新 {0}", [formatFullDateTime(refreshedAt)]) : translateText("等待监控数据")}</span>}
++      {error ? <span className="break-words text-amber-600 dark:text-amber-400">{translateText("刷新失败，正在自动重试")}{refreshedAt ? translateText("；当前展示上次数据") : ""}{errorMessage ? `: ${translateText(errorMessage)}` : ""}</span> : null}
++      <span>{refreshedAt ? translateText("最近刷新 {0}", [formatFullDateTime(refreshedAt)]) : translateText("等待监控数据")}</span>
+       <Button variant="ghost" size="sm" className="h-7 gap-1 px-2 text-xs" disabled={isFetching} onClick={onRetry}>
+         <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? "animate-spin" : ""}`} />
+         {isFetching ? translateText("刷新中") : translateText("刷新")}
+@@ -759,6 +760,20 @@
+     });
+   };
+ 
++  if (isMonitorNotFound(detail.error)) {
++    return (
++      <Card className="border-border/40 bg-card/70">
++        <CardContent className="space-y-4 p-6">
++          <p role="alert" className="text-sm text-muted-foreground">{translateText("主机不存在")}</p>
++          <div className="flex flex-wrap gap-2">
++            <Button variant="outline" onClick={onBack}>{translateText("返回主机列表")}</Button>
++            <Button variant="outline" disabled={detail.isFetching} onClick={() => { void detail.refetch(); }}>{translateText("刷新")}</Button>
++          </div>
++        </CardContent>
++      </Card>
++    );
++  }
++
+   return (
+     <div className="animate-in fade-in-0 slide-in-from-right-2 duration-200">
+       <MonitorRefreshStatus error={detail.error} refreshedAt={detail.data?.refreshedAt} isFetching={detail.isFetching} onRetry={() => { void detail.refetch(); }} />

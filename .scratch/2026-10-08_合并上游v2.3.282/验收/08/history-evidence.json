@@ -1,0 +1,18 @@
+{
+  "syntheticHistory": true,
+  "realDatabaseAndPublicHTTPQuery": true,
+  "serviceCount": 32,
+  "rawRows": 64000,
+  "expectedProbeCount": 192000,
+  "probeCount": 192000,
+  "expectedProbeSuccesses": 115200,
+  "probeSuccesses": 115200,
+  "responsePoints": 9216,
+  "maxPoints": 20000,
+  "requestedHours": 24,
+  "firstRawAt": "2026-10-08T16:54:41.000Z",
+  "lastRawAt": "2026-10-09T16:48:41.000Z",
+  "firstAggregateAt": "2026-10-08T16:50:00.000Z",
+  "lastAggregateAt": "2026-10-09T16:45:00.000Z",
+  "retainsWholeTimeWindow": true
+}

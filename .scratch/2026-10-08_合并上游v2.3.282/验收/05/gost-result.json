@@ -1,0 +1,19 @@
+{
+  "checks": [
+    "first-api-activation",
+    "add",
+    "port-conflict",
+    "dependency-failure",
+    "later-application-failure",
+    "second-config-validation-failure",
+    "edit",
+    "delete",
+    "process-fault-recovery",
+    "agent-restart",
+    "legacy-agent-fallback",
+    "entry-add-dependencies",
+    "entry-conflict-dependency-rollback"
+  ],
+  "heartbeatCount": 38,
+  "gostVersion": "gost v3.2.6 (go1.25.4 linux/arm64)"
+}

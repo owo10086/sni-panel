@@ -1,0 +1,9 @@
+{
+  "checks": [
+    "login challenge and redeem via real HTTP; repeated redeem denied",
+    "password sign-in succeeds after real HTTP Cap verification",
+    "register challenge and redeem via real HTTP; repeated redeem denied",
+    "registration succeeds after real HTTP Cap verification",
+    "redeemed registration token cannot register a second account"
+  ]
+}

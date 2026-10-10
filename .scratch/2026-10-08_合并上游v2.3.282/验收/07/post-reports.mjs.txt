@@ -1,0 +1,8 @@
+import fs from'node:fs';import path from'node:path';import {pathToFileURL}from'node:url';import assert from'node:assert/strict';
+const source=f=>import(pathToFileURL(path.join(process.cwd(),f)).href);const {encryptPayload,decryptPayload}=await source('server/agentCrypto.ts');const token='isolated-manual-token-1';
+const reports=JSON.parse(fs.readFileSync('/private/tmp/forwardx-282-ticket07/selftest-reports.json','utf8'));const results=[];
+for(const payload of reports){for(let repeat=0;repeat<2;repeat++){
+ const response=await fetch('http://127.0.0.1:18827/api/agent/selftest-result',{method:'POST',headers:{'content-type':'application/json','x-agent-encrypted':'1',authorization:'Bearer '+token},body:JSON.stringify(encryptPayload(payload,token))});
+ assert.equal(response.status,200);const result=decryptPayload(await response.json(),token);assert.equal(!!result.ignored,repeat===1);results.push({testId:payload.testId,repeat,result});
+}}
+fs.writeFileSync('/private/tmp/forwardx-282-ticket07/report-http-results.json',JSON.stringify(results,null,2));console.log(JSON.stringify({realAgentReports:reports.length,encryptedProductionRoutes:true,duplicatesIgnored:true,results}));

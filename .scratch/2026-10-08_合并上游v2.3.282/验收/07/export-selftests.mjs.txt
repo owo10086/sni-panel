@@ -1,0 +1,14 @@
+import fs from 'node:fs';import path from 'node:path';import {pathToFileURL}from'node:url';import assert from'node:assert/strict';
+process.env.DATABASE_TYPE='sqlite';process.env.JWT_SECRET=fs.readFileSync('/private/tmp/forwardx-282-ticket07/jwt.txt','utf8');
+const source=file=>import(pathToFileURL(path.join(process.cwd(),file)).href);
+const r=await source('server/dbRuntime.ts');await r.connectDatabase({type:'sqlite',sqlite:{path:'/private/tmp/forwardx-282-ticket07/panel.db'}});
+try{
+ const db=await source('server/db.ts');const {rulesRouter}=await source('server/routers/rules.ts');const {encryptPayload,decryptPayload}=await source('server/agentCrypto.ts');
+ await db.updateForwardRule(101,{targetIp:'198.51.100.30',targetPort:30001,protocol:'tcp'});
+ if(!(await db.getForwardRuleById(103)))await r.insertAndGetId('forward_rules',{id:103,hostId:1,name:'失败探测规则',forwardType:'nftables',protocol:'tcp',sourcePort:23003,targetIp:'198.51.100.30',targetPort:30999,userId:1,isEnabled:true,isRunning:true});
+ const caller=rulesRouter.createCaller({user:await db.getUserById(1),req:{headers:{}},res:{}});
+ const ids=[];for(const ruleId of [101,103])ids.push((await caller.startSelfTest({ruleId})).id);
+ const token='isolated-manual-token-1';const res=await fetch('http://127.0.0.1:18827/api/agent/selftest-pull',{method:'POST',headers:{'content-type':'application/json','x-agent-encrypted':'1',authorization:'Bearer '+token},body:JSON.stringify(encryptPayload({},token))});
+ assert.equal(res.status,200);const body=decryptPayload(await res.json(),token);const selfTests=body.selfTests.filter(t=>ids.includes(t.testId));assert.equal(selfTests.length,2);
+ fs.writeFileSync('/private/tmp/forwardx-282-ticket07/selftests.json',JSON.stringify({ids,selfTests},null,2));console.log(JSON.stringify({ids,selfTests}));
+}finally{await r.closeDatabase();}

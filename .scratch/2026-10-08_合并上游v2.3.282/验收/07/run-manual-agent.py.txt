@@ -1,0 +1,20 @@
+import subprocess,time,json,pathlib,os
+p=pathlib.Path('/private/tmp/forwardx-282-ticket07')
+log=open(p/'agent-real-final.log','w')
+agent=subprocess.Popen(['docker','run','--rm','--init','--network','none','--cap-add','NET_ADMIN','-v',str(p)+':/evidence','-w','/evidence','forwardx-sni-test:20261006','node','/evidence/verify-manual-agent.mjs','/evidence'],stdout=log,stderr=subprocess.STDOUT)
+try:
+ deadline=time.monotonic()+45
+ while not (p/'agent-ready.json').exists():
+  if agent.poll() is not None:raise RuntimeError('Agent exited before readiness; inspect log')
+  if time.monotonic()>deadline:raise TimeoutError('Agent readiness')
+  time.sleep(.05)
+ with open(p/'export-selftests-final.log','w') as output:
+  subprocess.run(['node','--import','tsx',str(p/'export-selftests.mjs')],check=True,stdout=output,stderr=subprocess.STDOUT)
+ os.replace(p/'selftests.json',p/'fresh-selftests.json')
+ assert agent.wait(timeout=45)==0
+ with open(p/'report-http-final.log','w') as output:
+  subprocess.run(['node','--import','tsx',str(p/'post-reports.mjs')],check=True,stdout=output,stderr=subprocess.STDOUT)
+ print('Actual CLI, nonempty configuration identity, connections and encrypted reports passed')
+finally:
+ if agent.poll() is None:agent.terminate();agent.wait(timeout=10)
+ log.close()

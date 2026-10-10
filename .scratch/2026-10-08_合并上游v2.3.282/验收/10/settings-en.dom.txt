@@ -1,0 +1,276 @@
+- img "sni-panel 10验收"
+- generic: sni-panel 10验收
+- button "Toggle theme":
+- button "Toggle navigation":
+- generic: Main Menu
+- list:
+  - button "Dashboard":
+    - generic: Dashboard
+  - button "Hosts":
+    - generic: Hosts
+  - button "Links":
+    - generic: Links
+  - button "Forwarding Rules":
+    - generic: Forwarding Rules
+  - button "Announcements":
+    - generic: Announcements
+- generic: Management
+- list:
+  - button "Profile":
+    - generic: Profile
+  - button "SNI entry ports":
+    - generic: SNI entry ports
+  - button "Payment Integrations":
+    - generic: Payment Integrations
+  - button "Billing & Redemption":
+    - generic: Billing & Redemption
+  - button "Plans":
+    - generic: Plans
+  - button "Users":
+    - generic: Users
+  - button "Network Tests":
+    - generic: Network Tests
+  - button "Settings":
+    - generic: Settings
+- button "旧管理员 / unchanged Admin · Telegram Not Linked":
+  - paragraph: 旧管理员 / unchanged
+  - paragraph: Admin · Telegram Not Linked
+- main:
+  - button "Toggle Sidebar":
+    - generic: Toggle Sidebar
+  - generic: Settings
+  - button "Toggle theme":
+  - main:
+    - heading "Settings" [level=1]
+    - tablist "Settings":
+      - tab "System" [selected]:
+        - generic: System
+      - tab "Notifications":
+        - generic: Notifications
+      - tab "Email":
+        - generic: Email
+      - tab "Appearance":
+        - generic: Appearance
+      - tab "Backup & Restore":
+        - generic: Backup & Restore
+      - tab "Logs":
+        - generic: Logs
+    - tabpanel "System":
+      - text: Network Tests
+      - generic: Configure whether ordinary users are able to see the web test portal.
+      - paragraph: Visual network testing for ordinary users
+      - paragraph: The entry and interface to the sidebar behind you will be disabled for normal users.
+      - switch [checked]
+      - button "Save"
+      - text: Forwarding Protocols
+      - generic: Controls the transmission protocols available to users.
+      - button "Manage Protocols":
+        - text: Manage Protocols
+      - paragraph: All Protocols
+      - paragraph: 12 / 14
+      - paragraph: Port Forwarding
+      - paragraph: 5 / 6
+      - paragraph: Tunnel protocol
+      - paragraph: 7 / 8
+      - text: Public Panel URL
+      - generic: Agent installs and calls back to this address.
+      - textbox "e.g. https://forwardx.example.com or http://1.2.3.4:3000"
+      - button "Save"
+      - paragraph: Leave empty the current access address. Start with http:// or https://.
+      - paragraph: Inverted agent or Docker deployment please fill out an externally accessible panel address, otherwise Agent may not be able to return to contact.
+      - text: Web Service listening port
+      - generic: Modifys the web access port for the local deployment panel.
+      - spinbutton: "9810"
+      - button "Modify Port"
+      - paragraph: Current listening port:9810. The service will be restarted with a new port.
+      - text: Panel SSL Access
+      - generic: Enables HTTPS at the current port.
+      - paragraph: Enable HTTPS
+      - paragraph: Current protocol:HTTP, port:9810
+      - switch
+      - paragraph: Current certificate source:Server File Path
+      - paragraph: Only the currently selected certificate source is used.
+      - generic: Start with this source when enabled
+      - paragraph: Server File Path
+      - generic: Current Use
+      - paragraph: Reads certificates and private key files on the server.
+      - button "In use" [disabled]
+      - text: Certificate File Path
+      - textbox "Certificate File Path":
+        - /placeholder: /data/certs/fullchain.pem
+      - text: Path to Private Key File
+      - textbox "Path to Private Key File":
+        - /placeholder: /data/certs/privkey.pem
+      - button "Generate Self-Signed Certificate"
+      - paragraph: Paste PEM Content
+      - generic: Not Configured
+      - paragraph: Saves the certificate and private key PEM content directly.
+      - button "Use this source"
+      - text: Certificate PEM
+      - textbox "Certificate PEM":
+        - /placeholder: "-----BEGIN CERTIFICATE-----"
+      - text: Private Key PEM
+      - textbox "Private Key PEM":
+        - /placeholder: "-----BEGIN PRIVATE KEY-----"
+      - paragraph: Default closes. The certificate of authentication and the private key are checked while you save it, and the configuration takes effect to restart the panel; the port remains the same.
+      - button "Save SSL Configuration"
+      - text: Sign-in / sign-up verification
+      - generic: "Enabled by default. Use HTTPS: some browsers cannot verify over HTTP."
+      - paragraph: Enable human verification
+      - paragraph: Disables human verification only. Passwords, sign-in rate limits, email verification and 2FA still apply. Keep enabled for public deployments.
+      - switch "Enable human verification"
+      - button "Save verification settings"
+      - text: User Registration
+      - generic: Controls the self-service registration of new users.
+      - paragraph: Open Registration
+      - paragraph: Only administrators can add users after closing.
+      - switch [checked]
+      - button "Save Registration Settings"
+      - text: Two-Factor Authentication
+      - generic: Account can bind 2FA dynamic authentication codes.
+      - paragraph: Enable 2FA software support
+      - paragraph: Close and hide the bound entrance.
+      - switch
+      - button "Save Dual Authentication Settings"
+      - text: DDNS Servicer
+      - generic: Synchronizes the update of domain names on the transfer group switch.
+      - paragraph: Enable DDNS
+      - paragraph: Do not update the domain name after closing.
+      - switch
+      - paragraph: Service provider
+      - paragraph: Select the DDNS service for synchronizing domain names.
+      - combobox:
+        - generic: None
+      - link "View Configuration Tutor":
+        - /url: https://owo10086.github.io/sni-panel/guide/ddns#quick-setup
+        - text: View Configuration Tutor
+      - text: TTL
+      - textbox "600"
+      - paragraph: "TTL range: 60-86400 seconds. Webhook will pass the value as it is."
+      - button "Save DDNS Configuration"
+      - text: Host Monitor Configuration
+      - paragraph: Allow login free to view the host monitor
+      - switch
+      - text: Show Title
+      - textbox "Leave empty default use of site title + host monitor"
+      - text: Host Monitor Panel Path
+      - textbox "dev"
+      - paragraph: Letters, numbers, short lines and underlined are supported.
+      - text: Access Addresses
+      - textbox: http://127.0.0.1:18830/dev
+      - link "Open host monitor panel":
+        - /url: http://127.0.0.1:18830/dev
+      - button "Save Host Monitor Configuration"
+      - text: Login Session Configuration
+      - generic: Controls back-office access strategies for the same account on multiple devices.
+      - paragraph: Allow Multiple Devices Online
+      - paragraph: The equipment that is logged in immediately after closing will be taken over and the old session that is in use will be withdrawn; retaining only Cookie, but not the equipment in use, will not prevent new login.
+      - switch
+      - button "Save Login Session Configuration"
+      - text: Sidebar Navigation
+      - generic: Controls the display of a common entrance to the left navigation bar.
+      - button "Manage Menus":
+        - text: Manage Menus
+      - paragraph: Opened Menu
+      - paragraph: 9 / 10
+      - text: Version Upgrade
+      - generic: Check and upgrade ForwardX.
+      - paragraph: When front panel version
+      - paragraph: v3.3.0
+      - paragraph: Current Agent destination version
+      - paragraph: v3.3.0
+      - paragraph: Automatically check updates
+      - paragraph: Check regularly for panels and Agent updates after opening.
+      - switch [checked]
+      - alert:
+        - heading "The current environment has not yet enabled a single-key upgrade" [level=5]
+        - text: Configuration
+        - code: FORWARDX_UPGRADE_COMMAND
+        - text: to upgrade with one click.
+      - generic: It's the latest version, last checked:10/10/2026, 2:28:17 AM
+      - button "Check for updates":
+        - text: Check for updates
+      - button "Upgrade and Restart" [disabled]:
+        - text: Upgrade and Restart
+      - button "Version Back":
+        - text: Version Back
+      - link "Upgrade Log":
+        - /url: https://github.com/owo10086/sni-panel/releases/tag/v3.2.5
+        - text: Upgrade Log
+      - text: GitHub Download Accelerator
+      - generic: Configure the way Agent installs, upgrades and panels update access to GitHub.
+      - paragraph: Enable GitHub Accelerating Address
+      - paragraph: After opening and filling out the address, GitHub's real address will collide behind the acceleration address.
+      - switch
+      - paragraph: Prefer connect panel installation Agent
+      - paragraph: Starts the panel and pulls installed scripts and Agent programs, fails and turns back on GitHub.
+      - switch
+      - paragraph: Panel Update Accelerator Station
+      - paragraph: Version check, Release Installer, Version Reversal and Upgrade Scripts give priority to the Accelerator Address, and automatically backslides when they fail.
+      - switch
+      - text: GitHub Accelerator URL
+      - textbox "https://git.poouo.com"
+      - paragraph: "Example of format: https://mirror.example.com. Use the direct connection GitHub when the corresponding switch is not filled in or opened."
+      - button "Save GitHub Download Configuration"
+      - text: Open Source & Contact
+      - generic: Project addresses and channels of communication.
+      - link "GitHub Repository https://github.com/owo10086/sni-panel":
+        - /url: https://github.com/owo10086/sni-panel
+        - paragraph: GitHub Repository
+        - paragraph: https://github.com/owo10086/sni-panel
+      - link "Two-way Telegram Bot https://t.me/miyin_private_bot":
+        - /url: https://t.me/miyin_private_bot
+        - paragraph: Two-way Telegram Bot
+        - paragraph: https://t.me/miyin_private_bot
+      - link "Telegram Group https://t.me/ForwardX_panel":
+        - /url: https://t.me/ForwardX_panel
+        - paragraph: Telegram Group
+        - paragraph: https://t.me/ForwardX_panel
+      - link "Android APK Download https://github.com/owo10086/sni-panel/releases/download/v3.3.0/forwardx-android-v2.4.0.apk":
+        - /url: https://github.com/owo10086/sni-panel/releases/download/v3.3.0/forwardx-android-v2.4.0.apk
+        - paragraph: Android APK Download
+        - paragraph: https://github.com/owo10086/sni-panel/releases/download/v3.3.0/forwardx-android-v2.4.0.apk
+      - link "iOS IPA download (self-signed) https://github.com/owo10086/sni-panel/releases/download/v3.3.0/forwardx-ios-v1.0.0-unsigned.ipa":
+        - /url: https://github.com/owo10086/sni-panel/releases/download/v3.3.0/forwardx-ios-v1.0.0-unsigned.ipa
+        - paragraph: iOS IPA download (self-signed)
+        - paragraph: https://github.com/owo10086/sni-panel/releases/download/v3.3.0/forwardx-ios-v1.0.0-unsigned.ipa
+      - generic: Current Version
+      - code: v3.3.0
+      - generic: Android APP
+      - code: v2.4.0
+      - generic: iOS APP
+      - code: v1.0.0
+      - text: Google sign-in
+      - generic: Configure a Google OAuth web client for sign-up and sign-in. Password sign-in remains available.
+      - generic: Enabled
+      - generic: Enable Google sign-in
+      - switch "Enable Google sign-in" [checked]
+      - text: Client ID
+      - textbox "Client ID":
+        - /placeholder: 123456-example.apps.googleusercontent.com
+        - text: fixture10.apps.googleusercontent.com
+      - text: Client Secret
+      - textbox "Client Secret":
+        - /placeholder: Secret saved; leave blank to keep it
+      - text: Callback URL
+      - textbox "Callback URL": http://127.0.0.1:18830/api/auth/google/callback
+      - paragraph: Add this exact URL to Authorized redirect URIs in Google Cloud. Use HTTPS in production; localhost may use HTTP. Start sign-in from this same panel domain.
+      - paragraph: When registration is closed, only linked accounts can sign in. New accounts are regular users without forwarding access and must meet the registration email allowlist.
+      - paragraph: Existing users must sign in first, then link Google in their profile. Matching emails never merge accounts automatically. Two-factor authentication still applies.
+      - paragraph: Both the browser and panel server need access to Google. Google sign-in is available on the web; mobile apps keep their existing sign-in methods.
+      - link "Configure client in Google Cloud":
+        - /url: https://console.cloud.google.com/apis/credentials
+      - button "Save Google sign-in"
+      - button "Clear secret and disable"
+  - link "Project Address":
+    - /url: https://github.com/owo10086/sni-panel
+  - generic: "|"
+  - link "Documentation":
+    - /url: https://owo10086.github.io/sni-panel/
+  - generic: "|"
+  - link "Contact via Telegram":
+    - /url: https://t.me/miyin_private_bot
+  - generic: "|"
+  - link "Telegram Group":
+    - /url: https://t.me/ForwardX_panel
+- region "Notifications alt+T"

@@ -1,0 +1,12 @@
+Browser tab: 3, Title: "sni-panel 09验收", URL: "http://127.0.0.1:18829/rules".
+The following is a diff from the previous accessibility tree with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
+~				23 text 规则筛选 先选择规则，再根据上方模式填写对应内容。 已选规则 1 /  4
+~				33 checkbox (settable, integer) Description: 用户规则 A <&> unchanged 转发组 :18501 -> 203.0.113.10:443 / nftables / TCP, Value: 1
+~				41 text 用户规则 B unchanged 转发组 : 18502  ->  203.0.113.10 : 443  /  nftables  /  TCP 复制目标 可同时选择多个 端口转发 ；搜索仅筛选显示，不会取消已选目标。 已选目标 1
+~				49 button 取消
+~				50 button 清空目标
+~				52 checkbox (settable, integer) Description: 可用 用户端口 / Long port resource unchanged 192.0.2.1, Value: 1
+~				54 text 用户端口 / Long port resource unchanged 192.0.2.1 本次复制目标： 用户端口 / Long port resource unchanged  (# 10 ) 复制会保留原规则基础配置，并按当前选择的目标资源生成副本。
+~			55 button 删除所选
+~			59 button 复制所选规则
+The focused UI element is 52 checkbox (settable, integer) Description: 可用 用户端口 / Long port resource unchanged 192.0.2.1, Value: 1

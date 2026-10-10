@@ -1,0 +1,77 @@
+{
+  "baselineFiles": 966,
+  "changes": [
+    {
+      "path": "client/src/i18n/en.json",
+      "before": "05c4b05dc36f88d41bd47ccfe58457b793f6aae91d0be600b8aec3e0ea54c818",
+      "after": "55c4cc2cda65117b30bd071364ccf25e00f6ce32f085dba5089ac08953725346",
+      "status": "modified"
+    },
+    {
+      "path": "client/src/i18n/messages.ts",
+      "before": "46eda68e5f81d13f9317747d1f43819b36062d9d7f29d3f7a9ba17d0a347f78d",
+      "after": "a0b36dfbf26fc144603a22418506e1f2cdac0fcfd88fb0cb44801064ccd5bd2d",
+      "status": "modified"
+    },
+    {
+      "path": "client/src/i18n/runtime.test.ts",
+      "before": "0cd8a43a6738965c1991ad589506f6f5bf2e1193dbd1ef39188035128225c3d2",
+      "after": "6f03fc5f2891aa55bc1d616de45ad2cf783046f14f176853f716b297497d4a61",
+      "status": "modified"
+    },
+    {
+      "path": "client/src/pages/Profile.tsx",
+      "before": "8fcf1d5d6455db0771a2eef40378f693e1e1eeb4d5e186919105825fa29d4121",
+      "after": "3262e95fccdcf64bcb8d4e532ebd61e6bda652fac119be8f4a1e311645091188",
+      "status": "modified"
+    },
+    {
+      "path": "server/botAccounts.ts",
+      "before": "ee4411197dc40fb21408753a84807266658326013110304da69b8df3d2b58d4a",
+      "after": "895986cb44e41594704bac44c57c887ed8c1e3242f4cd03e45ae5418c51ce38e",
+      "status": "modified"
+    },
+    {
+      "path": "server/discordBot.ts",
+      "before": "726268d92e15fd1fae501cf4e69af5acef68c8bf1052aba46e4e00f22aa30bd7",
+      "after": "32d62e81ad435fa1b14a24a2fcfc31582e52ca43dcb3ef855ba0dec1ad8ce430",
+      "status": "modified"
+    },
+    {
+      "path": "server/notificationBackground.ts",
+      "before": null,
+      "after": "b24f93613f7047ef1611c9eb6f58af19c2b5bb4032337e29fcd0340745690fb1",
+      "status": "new"
+    },
+    {
+      "path": "server/notificationSafety.fixture.ts",
+      "before": null,
+      "after": "bc1617f6da7737acb6e517e03f43ae79d00c2797f3759ccc154328c95686736f",
+      "status": "new"
+    },
+    {
+      "path": "server/notificationSafety.test.ts",
+      "before": null,
+      "after": "8b88f6316a035a01dc9b3a23730dc0de9b6da666036b4e7b34fc593f13ac347a",
+      "status": "new"
+    },
+    {
+      "path": "server/repositories/userRepository.ts",
+      "before": "89ba4a396547cecfe5f97cd0348937db3df0fa7e14e2e42e9413fd00a9f2fdb9",
+      "after": "b19f9c5c7c9ecb75bc833130eefbc14d92746d0af936deb1105ae7600c325b72",
+      "status": "modified"
+    },
+    {
+      "path": "server/routers/telegram.ts",
+      "before": "5dd07cf963c1fc7896317126dac8b93e2806189fb83519a786b176aae6eedf9e",
+      "after": "6ef1b5876151e5e438abac260daaa712402b66c83df243ea59af8dae0ce01968",
+      "status": "modified"
+    },
+    {
+      "path": "server/telegramBot.ts",
+      "before": "2084ba196eaa09da0340c1700768d2bd7a1473a61908ed15ce13f7e94c6e631d",
+      "after": "5a0d9b6e775ee90383b000a1468341b3701c6df6764f81da7cd962fce73a88a3",
+      "status": "modified"
+    }
+  ]
+}

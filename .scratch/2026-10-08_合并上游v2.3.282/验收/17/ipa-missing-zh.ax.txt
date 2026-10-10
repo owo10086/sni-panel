@@ -1,0 +1,122 @@
+- img "sni-panel 移动验收"
+- generic: sni-panel 移动验收
+- button "Toggle theme":
+- button "Toggle navigation":
+- generic: 主菜单
+- list:
+  - button "仪表盘":
+    - generic: 仪表盘
+  - button "主机管理":
+    - generic: 主机管理
+  - button "链路管理":
+    - generic: 链路管理
+  - button "转发规则":
+    - generic: 转发规则
+  - button "公告":
+    - generic: 公告
+- generic: 管理
+- list:
+  - button "个人资料":
+    - generic: 个人资料
+  - button "SNI 入口":
+    - generic: SNI 入口
+  - button "支付对接":
+    - generic: 支付对接
+  - button "账单与兑换":
+    - generic: 账单与兑换
+  - button "套餐管理":
+    - generic: 套餐管理
+  - button "用户管理":
+    - generic: 用户管理
+  - button "网络测试":
+    - generic: 网络测试
+  - button "系统设置":
+    - generic: 系统设置
+- button "移动验收管理员 管理员 · TG 未绑定":
+  - paragraph: 移动验收管理员
+  - paragraph: 管理员 · TG 未绑定
+- main:
+  - button "Toggle Sidebar":
+    - generic: Toggle Sidebar
+  - generic: 个人资料
+  - button "Toggle theme":
+  - main:
+    - heading "个人资料" [level=1]
+    - paragraph: 管理账号安全、头像和通知渠道。
+    - text: 管理员
+    - text: 头像与账号
+    - generic: 低于 50K 的头像会直接上传，较大的图片会自动压缩。
+    - paragraph: 账号
+    - paragraph: mobile-admin
+    - text: 显示名称
+    - textbox "显示名称":
+      - /placeholder: mobile-admin
+      - text: <redacted>
+    - button "保存"
+    - button "上传":
+      - text: 上传
+    - button "随机":
+      - text: 随机
+    - button "保存头像"
+    - button "forwardx-nova":
+    - button "forwardx-orbit":
+    - button "forwardx-ember":
+    - button "forwardx-pixel":
+    - button "forwardx-mint":
+    - button "forwardx-coral":
+    - button "forwardx-sunrise":
+    - button "forwardx-aurora":
+    - button "forwardx-cobalt":
+    - button "forwardx-meadow":
+    - button "forwardx-plum":
+    - button "forwardx-lagoon":
+    - button "上传头像":
+    - text: 登录密码
+    - generic: 修改当前账号的登录密码。
+    - text: 当前密码
+    - textbox "当前密码":
+      - /placeholder: 请输入当前密码
+    - text: 新密码
+    - textbox "新密码":
+      - /placeholder: 至少 6 个字符
+    - text: 确认新密码
+    - textbox "确认新密码":
+      - /placeholder: 再次输入新密码
+    - button "修改密码"
+    - text: Telegram 绑定
+    - generic: 绑定后可接收提醒，并支持 Telegram 登录。
+    - generic: 未绑定
+    - paragraph: 公告 Telegram 推送
+    - paragraph: 默认关闭。开启后，新公告仅在管理员选择 TG 推送时发送到已绑定的 Telegram。
+    - switch [disabled]
+    - generic: 管理员尚未配置 Telegram 机器人。
+    - text: 双因素认证 (2FA)
+    - generic: 使用 2FA 软件生成动态验证码。
+    - generic: 未启用
+    - generic: 管理员尚未启用双重验证功能。
+    - text: 软件更新
+    - generic: 检查当前 APP 是否有新版本。 iOS 提供未签名 IPA，需要自行签名后安装。
+    - paragraph: 当前版本
+    - paragraph: v1.0.0
+    - paragraph: 最新版本
+    - paragraph: v1.0.0
+    - button "检查 APP 更新":
+      - text: 检查 APP 更新
+    - text: 退出登录
+    - generic: 结束当前浏览器或 APP 的登录会话。
+    - button "退出登录":
+      - text: 退出登录
+  - link "项目地址":
+    - /url: https://github.com/owo10086/sni-panel
+  - generic: "|"
+  - link "使用教程":
+    - /url: https://owo10086.github.io/sni-panel/
+  - generic: "|"
+  - link "联系TG":
+    - /url: https://t.me/miyin_private_bot
+  - generic: "|"
+  - link "TG群组":
+    - /url: https://t.me/ForwardX_panel
+- region "Notifications alt+T":
+  - list:
+    - generic: 当前版本暂无 IPA（需自行签名） 更新

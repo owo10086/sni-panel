@@ -1,0 +1,107 @@
+from pathlib import Path
+import subprocess,json,os,time,urllib.request,urllib.error,hashlib,shutil,secrets
+
+os.environ['DOCKER_DEFAULT_PLATFORM']='linux/amd64'
+root=Path('/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx')
+base=Path('/private/tmp/forwardx-282-ticket18')
+deployment=base/'deployment'
+deployment.mkdir(exist_ok=True,mode=0o700)
+registry='127.0.0.1:15518/sni-panel'
+result={'scope':'Isolated amd64 Linux panel/SQLite, real local registry and Compose; same code across distinct image IDs, not an old-version schema migration'}
+log=(base/'deploy-smoke.log').open('w')
+def run(args,**kw):
+ log.write('$ '+' '.join(args)+'\n');log.flush()
+ r=subprocess.run(args,capture_output=True,text=True,**kw);log.write(r.stdout+r.stderr);log.flush()
+ if r.returncode:raise RuntimeError('Command failed: '+args[0]+' '+str(r.returncode))
+ return r.stdout.strip()
+def api(method,data=None,token=None,mutation=False):
+ url='http://127.0.0.1:18818/api/trpc/'+method
+ headers={'Content-Type':'application/json','Origin':'capacitor://localhost','x-forwardx-mobile':'1'}
+ if token:headers['Authorization']='Bearer '+token
+ body=json.dumps({'json':data}).encode() if mutation else None
+ req=urllib.request.Request(url,data=body,headers=headers,method='POST' if mutation else 'GET')
+ with urllib.request.urlopen(req,timeout=10) as r:
+  out=json.load(r);assert r.headers.get('Access-Control-Allow-Origin')=='capacitor://localhost'
+ return out['result']['data']['json']
+def ready():
+ for _ in range(60):
+  try:return api('setup.status')
+  except Exception:time.sleep(0.5)
+ raise RuntimeError('Panel did not become ready')
+def inspect_image():return run(['docker','inspect','--format','{{.Image}}','forwardx-panel'])
+def write_env(image):
+ text=f'COMPOSE_PROJECT_NAME=forwardx\nFORWARDX_CONTAINER_NAME=forwardx-panel\nFORWARDX_IMAGE={image}\nPORT=18818\nFORWARDX_SETUP_LANGUAGE=en\nJWT_SECRET={secret}\n'
+ (deployment/'.env').write_text(text);os.chmod(deployment/'.env',0o600)
+def compose(*args):return run(['docker','compose','--env-file','.env','-p','forwardx',*args],cwd=deployment)
+secret=secrets.token_hex(32)
+password=secrets.token_urlsafe(20)
+(base/'smoke-credentials.json').write_text(json.dumps({'password':password}));os.chmod(base/'smoke-credentials.json',0o600)
+try:
+ run(['docker','run','-d','--name','forwardx-ticket18-registry','-p','127.0.0.1:15518:5000','registry:2'])
+ old=base/'old-image';old.mkdir(exist_ok=True);(old/'Dockerfile').write_text('FROM forwardx-ticket18-panel:3.3.0\nLABEL forwardx.ticket18.fixture=older-image\n')
+ run(['docker','build','--platform','linux/amd64','-t',registry+':old',str(old)])
+ run(['docker','tag','forwardx-ticket18-panel:3.3.0',registry+':v3.3.0'])
+ run(['docker','tag','forwardx-ticket18-panel:3.3.0',registry+':same-image'])
+ run(['docker','tag',registry+':old','forwardx-ticket18-unrelated:keep'])
+ for tag in ['old','v3.3.0']:run(['docker','push',registry+':'+tag])
+ shutil.copy2(root/'docker-compose.yml',deployment/'docker-compose.yml')
+ write_env(registry+':old')
+ compose('pull','forwardx');compose('up','-d','--remove-orphans','forwardx');result['initialSetup']=ready()
+ with urllib.request.urlopen('http://127.0.0.1:18818/api/locale') as r:result['initialLanguage']=json.load(r)
+ assert result['initialLanguage']['setupLanguage']=='en'
+ saved=api('setup.saveDatabase',{'type':'sqlite','sqlite':{'path':'/data/forwardx.db'}},mutation=True)
+ if saved.get('needsRestart'):time.sleep(1.5)
+ for _ in range(60):
+  try:
+   status=api('setup.status')
+   if status.get('schemaReady') and status.get('databaseConnected'):break
+  except Exception:pass
+  time.sleep(0.5)
+ else:raise RuntimeError('Configured database did not become ready')
+ admin=api('setup.createAdmin',{'email':'ticket18@example.invalid','password':password,'name':'Ticket 18 restore proof'},mutation=True)
+ auth=api('auth.login',{'username':'ticket18@example.invalid','password':password,'mobile':True},mutation=True)
+ token=auth['mobileToken'];assert token
+ api('system.updateSettings',{'siteTitle':'Ticket 18 persistent backup marker','updateAutoCheckEnabled':False},token,True)
+ me=api('auth.me',token=token);assert me['name']=='Ticket 18 restore proof'
+ result['adminId']=admin['id'];result['oldImageId']=inspect_image()
+ with urllib.request.urlopen('http://127.0.0.1:18818/') as r:assert 'assets/' in r.read().decode()
+ write_env(registry+':v3.3.0')
+ env_hash=hashlib.sha256((deployment/'.env').read_bytes()).hexdigest()
+ compose_hash=hashlib.sha256((deployment/'docker-compose.yml').read_bytes()).hexdigest()
+ # Execute the documented command with only directory and image repository changed.
+ command=run(['node','--import','tsx','--input-type=module','-e','import {DOCKER_COMPOSE_UPGRADE_COMMAND} from "./client/src/lib/panelUpgrade.ts"; process.stdout.write(DOCKER_COMPOSE_UPGRADE_COMMAND)'],cwd=root)
+ command=command.replace('cd /opt/forwardx-docker','cd '+str(deployment)).replace('ghcr.io/owo10086/sni-panel',registry)
+ (base/'actual-manual-command.sh').write_text(command+'\n')
+ run(['bash','-e',str(base/'actual-manual-command.sh')]);ready()
+ result['newImageId']=inspect_image();assert result['newImageId']!=result['oldImageId']
+ assert hashlib.sha256((deployment/'.env').read_bytes()).hexdigest()==env_hash
+ assert hashlib.sha256((deployment/'docker-compose.yml').read_bytes()).hexdigest()==compose_hash
+ assert api('auth.me',token=token)['id']==admin['id']
+ assert not subprocess.run(['docker','image','inspect',registry+':old'],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode==0
+ for image in [registry+':v3.3.0',registry+':same-image','forwardx-ticket18-unrelated:keep']:run(['docker','image','inspect','--format','{{.Id}}',image])
+ result['manualUpgrade']={'configPreserved':True,'sessionAndAdminPreserved':True,'oldTagRemoved':True,'currentAndAliasRetained':True,'otherRepositoryRetained':True,'version':run(['docker','exec','forwardx-panel','node','-p',"require('./package.json').version"])}
+ backup=base/'backup';backup.mkdir(exist_ok=True,mode=0o700)
+ # Documented stopped-container copy, including full data/configuration directory.
+ run(['docker','stop','forwardx-panel']);run(['docker','cp','forwardx-panel:/data',str(backup/'data')]);run(['docker','start','forwardx-panel']);ready()
+ shutil.copy2(deployment/'.env',backup/'.env');shutil.copy2(deployment/'docker-compose.yml',backup/'docker-compose.yml')
+ compose('stop','forwardx');shutil.move(str(deployment/'forwardx-data'),str(base/'original-data-retained'));shutil.copytree(backup/'data',deployment/'forwardx-data')
+ compose('up','-d','forwardx');ready();assert api('auth.me',token=token)['id']==admin['id']
+ # Independent SQLite integrity check against the stopped copy, using Linux runtime.
+ js="const db=new (require('better-sqlite3'))('/data/forwardx.db',{readonly:true}); const ok=db.pragma('quick_check',{simple:true}); if(ok!=='ok')process.exit(1); console.log(ok);"
+ integrity=run(['docker','run','--rm','--platform','linux/amd64','-v',str(backup/'data')+':/data:ro','--entrypoint','node','forwardx-ticket18-panel:3.3.0','-e',js])
+ result['restore']={'fullDataCopy':True,'sameAdminAndMobileSession':True,'sqliteQuickCheck':integrity}
+ # Actual server CORS whitelist, without the browser native bridge fixture.
+ req=urllib.request.Request('http://127.0.0.1:18818/api/trpc/auth.me',method='OPTIONS',headers={'Origin':'capacitor://localhost','Access-Control-Request-Method':'GET','Access-Control-Request-Headers':'Authorization,x-forwardx-mobile'})
+ with urllib.request.urlopen(req) as r:result['iosCors']={'status':r.status,'origin':r.headers.get('Access-Control-Allow-Origin'),'credentials':r.headers.get('Access-Control-Allow-Credentials')}
+ assert result['iosCors']=={'status':204,'origin':'capacitor://localhost','credentials':'true'}
+ req=urllib.request.Request('http://127.0.0.1:18818/api/trpc/auth.me',headers={'Origin':'https://untrusted.invalid'})
+ with urllib.request.urlopen(req) as r:assert r.headers.get('Access-Control-Allow-Origin') is None
+ result['iosCors']['untrustedOriginDenied']=True
+ result['success']=True
+finally:
+ try:compose('down','--remove-orphans')
+ except Exception:pass
+ subprocess.run(['docker','rm','-f','forwardx-ticket18-registry'],stdout=log,stderr=log)
+ (base/'deploy-smoke-result.json').write_text(json.dumps(result,indent=2))
+ log.close()
+print(json.dumps(result,indent=2))

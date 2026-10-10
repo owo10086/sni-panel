@@ -26,6 +26,9 @@ type managedConfigBackup struct {
 	hadPrevious  bool
 	previousMode os.FileMode
 	generation   uint64
+	// Incremental runtimes restore only the listeners added by this transaction,
+	// rather than restarting every listener in the shared process on failure.
+	restoreRuntime func() bool
 }
 
 type managedConfigTransaction struct {
@@ -82,26 +85,26 @@ func applyManagedConfigs(specs []managedConfigSpec) (*managedConfigTransaction, 
 		spec := raw
 		spec.Path = filepath.Clean(strings.TrimSpace(spec.Path))
 		if spec.Path == "." || !filepath.IsAbs(spec.Path) {
-			tx.rollbackLocked()
+			tx.rollbackLocked(false)
 			return nil, fmt.Errorf("managed config path must be absolute: %q", raw.Path)
 		}
 		mode, err := managedConfigFileMode(spec)
 		if err != nil {
-			tx.rollbackLocked()
+			tx.rollbackLocked(false)
 			return nil, err
 		}
 		data, err := base64.StdEncoding.DecodeString(spec.ContentBase64)
 		if err != nil {
-			tx.rollbackLocked()
+			tx.rollbackLocked(false)
 			return nil, fmt.Errorf("decode %s: %w", spec.Path, err)
 		}
 		if err := os.MkdirAll(filepath.Dir(spec.Path), 0755); err != nil {
-			tx.rollbackLocked()
+			tx.rollbackLocked(false)
 			return nil, err
 		}
 		staged, err := os.CreateTemp(filepath.Dir(spec.Path), ".forwardx-config-*")
 		if err != nil {
-			tx.rollbackLocked()
+			tx.rollbackLocked(false)
 			return nil, err
 		}
 		stagedPath := staged.Name()
@@ -117,7 +120,7 @@ func applyManagedConfigs(specs []managedConfigSpec) (*managedConfigTransaction, 
 		}
 		if err != nil {
 			cleanup()
-			tx.rollbackLocked()
+			tx.rollbackLocked(false)
 			return nil, err
 		}
 		previous, readErr := os.ReadFile(spec.Path)
@@ -125,27 +128,27 @@ func applyManagedConfigs(specs []managedConfigSpec) (*managedConfigTransaction, 
 		previousMode := mode
 		if readErr != nil && !os.IsNotExist(readErr) {
 			cleanup()
-			tx.rollbackLocked()
+			tx.rollbackLocked(false)
 			return nil, readErr
 		}
 		if hadPrevious {
 			info, statErr := os.Stat(spec.Path)
 			if statErr != nil {
 				cleanup()
-				tx.rollbackLocked()
+				tx.rollbackLocked(false)
 				return nil, statErr
 			}
 			previousMode = info.Mode().Perm()
 			if err := writeManagedConfigAtomic(spec.Path+".forwardx-last-good", previous, previousMode); err != nil {
 				cleanup()
-				tx.rollbackLocked()
+				tx.rollbackLocked(false)
 				return nil, err
 			}
 		}
 		tx.backups = append(tx.backups, managedConfigBackup{spec: spec, previous: previous, hadPrevious: hadPrevious, previousMode: previousMode, generation: generation})
 		if err := os.Rename(stagedPath, spec.Path); err != nil {
 			cleanup()
-			tx.rollbackLocked()
+			tx.rollbackLocked(false)
 			return nil, err
 		}
 		managedConfigCurrentGeneration[spec.Path] = generation
@@ -178,10 +181,13 @@ func (tx *managedConfigTransaction) rollback() bool {
 	}
 	managedConfigMutationMu.Lock()
 	defer managedConfigMutationMu.Unlock()
-	return tx.rollbackLocked()
+	return tx.rollbackLocked(true)
 }
 
-func (tx *managedConfigTransaction) rollbackLocked() bool {
+// Until applyManagedConfigs returns, no runtime commands have run. A staging
+// failure only needs to restore files; restarting services would disconnect
+// healthy listeners that never received the staged configuration.
+func (tx *managedConfigTransaction) rollbackLocked(restoreRuntime bool) bool {
 	if tx == nil {
 		return true
 	}
@@ -214,7 +220,12 @@ func (tx *managedConfigTransaction) rollbackLocked() bool {
 		}
 		delete(managedConfigCurrentGeneration, backup.spec.Path)
 		_ = os.Remove(backup.spec.Path + ".sha256")
-		if service := strings.TrimSpace(backup.spec.ServiceName); service != "" {
+		if !restoreRuntime {
+			continue
+		}
+		if backup.restoreRuntime != nil {
+			ok = backup.restoreRuntime() && ok
+		} else if service := strings.TrimSpace(backup.spec.ServiceName); service != "" {
 			services[service] = services[service] || backup.hadPrevious
 		}
 	}
@@ -228,6 +239,20 @@ func (tx *managedConfigTransaction) rollbackLocked() bool {
 	tx.finished = true
 	tx.rollbackOK = ok
 	return ok
+}
+
+func (tx *managedConfigTransaction) setRuntimeRestore(path string, restore func() bool) {
+	if tx == nil {
+		return
+	}
+	tx.stateMu.Lock()
+	defer tx.stateMu.Unlock()
+	for i := range tx.backups {
+		if tx.backups[i].spec.Path == path {
+			tx.backups[i].restoreRuntime = restore
+			return
+		}
+	}
 }
 
 func (tx *managedConfigTransaction) commit() {

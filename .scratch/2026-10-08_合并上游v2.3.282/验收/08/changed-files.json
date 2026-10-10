@@ -1,0 +1,20 @@
+{
+  "baselineFiles": 819,
+  "changes": [
+    {
+      "path": "client/src/i18n/en.json",
+      "beforeSha256": "5aa9c3b36d9e24d65785064204b6c33dfedbc844004a2a478569a63c84f496d4",
+      "afterSha256": "c7a78c5b4c3912e91dce4fcf24cf78f99b2a402355ba036ce66ecbdf3b771e41"
+    },
+    {
+      "path": "client/src/lib/publicMonitor.test.ts",
+      "beforeSha256": "5ac3250a73ccea3856035867453ea539ccf79bd140cf7702b855affe8291ba49",
+      "afterSha256": "300e9f8aca0aeec6aaa224d35ce6d15f2b538edfa104aad1ed47e3be0e3dd09b"
+    },
+    {
+      "path": "client/src/pages/HostMonitor.tsx",
+      "beforeSha256": "159afac9bed62d310daf2867fcf8cbe2574698ad2acd8c1bd55de5608d1ccb0f",
+      "afterSha256": "b24c4eb1426a578964098478fbf18aed2fc43be3e78f07e18a74b052841aa151"
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "role": "sni-splitter",
+  "ruleId": 606,
+  "listenPort": 24001,
+  "protocol": "tcp",
+  "sniRouteVersion": 46,
+  "sourceAllowIps": [],
+  "sniRoutes": [
+    {
+      "sni": "quota-healthy.example.com",
+      "ruleId": 606,
+      "targetIp": "203.0.113.31",
+      "targetPort": 8443,
+      "limitIn": 0,
+      "limitOut": 0,
+      "maxConnections": 0,
+      "maxIPs": 0,
+      "accessScope": "u1_h2"
+    }
+  ]
+}

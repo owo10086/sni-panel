@@ -1,0 +1,9 @@
+{
+  "clientDate": "2026-10-09",
+  "node": "v22.22.3",
+  "go": "go version go1.26.3 darwin/arm64",
+  "docker": "29.5.2 linux/arm64",
+  "image": "sha256:b191d6dbc4898969d6ea13b5f7a71ec68dca066facad4a6b20542eb36491e063",
+  "fxpSha256": "9bd10091c929869bfe01fb29d829e8b8778203ce97f3c6de81ee2f59d7c89dc2",
+  "testBinarySha256": "3f9f02b01b12eca8aa8cef29f28d983a8da238cecd09c538eb050bd974f7cd46"
+}

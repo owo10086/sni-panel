@@ -1,0 +1,133 @@
+{
+  "version": 1,
+  "issuedAt": 1791555065826,
+  "configRevision": 0,
+  "configHash": "7c1e4092522ba1b323fd81ece976ad1fda2dc393573e71446e383520063e5c37",
+  "actions": [
+    {
+      "statusType": "runtime",
+      "ruleId": 0,
+      "tunnelId": 0,
+      "op": "apply",
+      "forwardType": "gost-runtime-sync",
+      "sourcePort": 0,
+      "targetIp": "",
+      "targetPort": 0,
+      "protocol": "tcp",
+      "knownRunning": false,
+      "forceRuntimeSync": true,
+      "commands": [
+        "mkdir -p '/etc/forwardx/runtime'",
+        "mkdir -p '/run/forwardx-agent/gost-api' && chmod 700 '/run/forwardx-agent/gost-api'",
+        "mkdir -p /var/log/forwardx-agent; if command -v systemctl >/dev/null 2>&1 && [ -d /run/systemd/system ]; then mkdir -p /etc/systemd/system; unit_path=/etc/systemd/system/forwardx-runtime.service; unit_tmp=\"$unit_path.forwardx-new.$$\"; printf '%s' 'W1VuaXRdCkRlc2NyaXB0aW9uPUZvcndhcmRYIHVuaWZpZWQgcnVudGltZSBmb3J3YXJkZXIKQWZ0ZXI9bmV0d29yay50YXJnZXQKU3RhcnRMaW1pdEludGVydmFsU2VjPTYwClN0YXJ0TGltaXRCdXJzdD01CgpbU2VydmljZV0KTGltaXRDT1JFPTAKTG9nUmF0ZUxpbWl0SW50ZXJ2YWxTZWM9MzBzCkxvZ1JhdGVMaW1pdEJ1cnN0PTIwMApUeXBlPXNpbXBsZQpFeGVjU3RhcnQ9L3Vzci9sb2NhbC9iaW4vZm9yd2FyZHgtcnVudGltZSAtQyAvZXRjL2ZvcndhcmR4L3J1bnRpbWUvZ29zdC5qc29uClJlc3RhcnQ9YWx3YXlzClJlc3RhcnRTZWM9NQpMaW1pdE5PRklMRT02NTUzNQoKW0luc3RhbGxdCldhbnRlZEJ5PW11bHRpLXVzZXIudGFyZ2V0Cg==' | base64 -d > \"$unit_tmp\" || { rm -f \"$unit_tmp\"; exit 1; }; if [ ! -f \"$unit_path\" ] || ! cmp -s \"$unit_tmp\" \"$unit_path\"; then mv -f \"$unit_tmp\" \"$unit_path\"; chmod 644 \"$unit_path\"; systemctl daemon-reload; else rm -f \"$unit_tmp\"; fi; systemctl reset-failed 'forwardx-runtime'.service 2>/dev/null || true; elif command -v rc-service >/dev/null 2>&1 && command -v rc-update >/dev/null 2>&1; then script_path=/etc/init.d/forwardx-runtime; script_tmp=\"$script_path.forwardx-new.$$\"; printf '%s' 'IyEvc2Jpbi9vcGVucmMtcnVuCm5hbWU9ImZvcndhcmR4LXJ1bnRpbWUiCmRlc2NyaXB0aW9uPSJGb3J3YXJkWCBtYW5hZ2VkIHNlcnZpY2UgZm9yd2FyZHgtcnVudGltZSIKY29tbWFuZD0iL2Jpbi9zaCIKY29tbWFuZF9hcmdzPSItbGMgJ3VsaW1pdCAtYyAwIDI+L2Rldi9udWxsIHx8IHRydWU7IGV4ZWMgL3Vzci9sb2NhbC9iaW4vZm9yd2FyZHgtcnVudGltZSAtQyAvZXRjL2ZvcndhcmR4L3J1bnRpbWUvZ29zdC5qc29uJyIKY29tbWFuZF9iYWNrZ3JvdW5kPXRydWUKcGlkZmlsZT0iL3J1bi8ke1JDX1NWQ05BTUV9LnBpZCIKb3V0cHV0X2xvZz0iL3Zhci9sb2cvZm9yd2FyZHgtYWdlbnQvJHtSQ19TVkNOQU1FfS5sb2ciCmVycm9yX2xvZz0iL3Zhci9sb2cvZm9yd2FyZHgtYWdlbnQvJHtSQ19TVkNOQU1FfS5sb2ciCmRlcGVuZCgpIHsKICBuZWVkIG5ldAp9Cg==' | base64 -d > \"$script_tmp\" || { rm -f \"$script_tmp\"; exit 1; }; if [ ! -f \"$script_path\" ] || ! cmp -s \"$script_tmp\" \"$script_path\"; then mv -f \"$script_tmp\" \"$script_path\"; chmod 755 \"$script_path\"; else rm -f \"$script_tmp\"; fi; elif [ -d /etc/init.d ]; then script_path=/etc/init.d/forwardx-runtime; script_tmp=\"$script_path.forwardx-new.$$\"; printf '%s' 'IyEvYmluL3NoCiMjIyBCRUdJTiBJTklUIElORk8KIyBQcm92aWRlczogICAgICAgICAgZm9yd2FyZHgtcnVudGltZQojIFJlcXVpcmVkLVN0YXJ0OiAgICAkbmV0d29yawojIFJlcXVpcmVkLVN0b3A6ICAgICAkbmV0d29yawojIERlZmF1bHQtU3RhcnQ6ICAgICAyIDMgNCA1CiMgRGVmYXVsdC1TdG9wOiAgICAgIDAgMSA2CiMgU2hvcnQtRGVzY3JpcHRpb246IEZvcndhcmRYIG1hbmFnZWQgc2VydmljZSBmb3J3YXJkeC1ydW50aW1lCiMjIyBFTkQgSU5JVCBJTkZPClBJREZJTEU9L3J1bi9mb3J3YXJkeC1ydW50aW1lLnBpZApMT0dGSUxFPS92YXIvbG9nL2ZvcndhcmR4LWFnZW50L2ZvcndhcmR4LXJ1bnRpbWUubG9nCkNNRD0ndWxpbWl0IC1jIDAgMj4vZGV2L251bGwgfHwgdHJ1ZTsgZXhlYyAvdXNyL2xvY2FsL2Jpbi9mb3J3YXJkeC1ydW50aW1lIC1DIC9ldGMvZm9yd2FyZHgvcnVudGltZS9nb3N0Lmpzb24nCnN0YXJ0KCkgeyBta2RpciAtcCAvcnVuIC92YXIvbG9nL2ZvcndhcmR4LWFnZW50OyBpZiBbIC1zICIkUElERklMRSIgXSAmJiBraWxsIC0wICIkKGNhdCAiJFBJREZJTEUiKSIgMj4vZGV2L251bGw7IHRoZW4gcmV0dXJuIDA7IGZpOyBub2h1cCBzaCAtbGMgIiRDTUQiID4+ICIkTE9HRklMRSIgMj4mMSAmIGVjaG8gJCEgPiAiJFBJREZJTEUiOyB9CnN0b3AoKSB7IGlmIFsgLXMgIiRQSURGSUxFIiBdOyB0aGVuIGtpbGwgIiQoY2F0ICIkUElERklMRSIpIiAyPi9kZXYvbnVsbCB8fCB0cnVlOyBybSAtZiAiJFBJREZJTEUiOyBmaTsgfQpjYXNlICIkMSIgaW4KICBzdGFydCkgc3RhcnQgOzsKICBzdG9wKSBzdG9wIDs7CiAgcmVzdGFydCkgc3RvcDsgc2xlZXAgMTsgc3RhcnQgOzsKICBzdGF0dXMpIFsgLXMgIiRQSURGSUxFIiBdICYmIGtpbGwgLTAgIiQoY2F0ICIkUElERklMRSIpIiAyPi9kZXYvbnVsbCA7OwogICopIGVjaG8gIlVzYWdlOiAkMCB7c3RhcnR8c3RvcHxyZXN0YXJ0fHN0YXR1c30iOyBleGl0IDEgOzsKZXNhYwo=' | base64 -d > \"$script_tmp\" || { rm -f \"$script_tmp\"; exit 1; }; if [ ! -f \"$script_path\" ] || ! cmp -s \"$script_tmp\" \"$script_path\"; then mv -f \"$script_tmp\" \"$script_path\"; chmod 755 \"$script_path\"; else rm -f \"$script_tmp\"; fi; else echo \"[service] unsupported init system for forwardx-runtime\"; exit 1; fi",
+        "if command -v systemctl >/dev/null 2>&1 && [ -d /run/systemd/system ]; then systemctl disable 'forwardx-gost'.service 2>/dev/null || true; systemctl stop 'forwardx-gost'.service 2>/dev/null || true; fi; if command -v rc-service >/dev/null 2>&1; then rc-service 'forwardx-gost' stop 2>/dev/null || true; fi; if command -v rc-update >/dev/null 2>&1; then rc-update del 'forwardx-gost' default 2>/dev/null || true; fi; if [ -x /etc/init.d/forwardx-gost ]; then /etc/init.d/forwardx-gost stop 2>/dev/null || true; fi",
+        "if command -v systemctl >/dev/null 2>&1 && [ -d /run/systemd/system ]; then systemctl disable 'forwardx-runtime'.service 2>/dev/null || true; systemctl stop 'forwardx-runtime'.service 2>/dev/null || true; fi; if command -v rc-service >/dev/null 2>&1; then rc-service 'forwardx-runtime' stop 2>/dev/null || true; fi; if command -v rc-update >/dev/null 2>&1; then rc-update del 'forwardx-runtime' default 2>/dev/null || true; fi; if [ -x /etc/init.d/forwardx-runtime ]; then /etc/init.d/forwardx-runtime stop 2>/dev/null || true; fi",
+        "mkdir -p '/etc/forwardx/runtime'",
+        "mkdir -p '/run/forwardx-agent/gost-api' && chmod 700 '/run/forwardx-agent/gost-api'",
+        "mkdir -p /var/log/forwardx-agent; if command -v systemctl >/dev/null 2>&1 && [ -d /run/systemd/system ]; then mkdir -p /etc/systemd/system; unit_path=/etc/systemd/system/forwardx-tunnel-runtime.service; unit_tmp=\"$unit_path.forwardx-new.$$\"; printf '%s' 'W1VuaXRdCkRlc2NyaXB0aW9uPUZvcndhcmRYIG1hbmFnZWQgdHVubmVsIHJ1bnRpbWUKQWZ0ZXI9bmV0d29yay50YXJnZXQKU3RhcnRMaW1pdEludGVydmFsU2VjPTYwClN0YXJ0TGltaXRCdXJzdD01CgpbU2VydmljZV0KTGltaXRDT1JFPTAKTG9nUmF0ZUxpbWl0SW50ZXJ2YWxTZWM9MzBzCkxvZ1JhdGVMaW1pdEJ1cnN0PTIwMApUeXBlPXNpbXBsZQpFeGVjU3RhcnQ9L3Vzci9sb2NhbC9iaW4vZm9yd2FyZHgtcnVudGltZSAtQyAvZXRjL2ZvcndhcmR4L3J1bnRpbWUvdHVubmVsLWdvc3QuanNvbgpSZXN0YXJ0PWFsd2F5cwpSZXN0YXJ0U2VjPTUKTGltaXROT0ZJTEU9NjU1MzUKCltJbnN0YWxsXQpXYW50ZWRCeT1tdWx0aS11c2VyLnRhcmdldAo=' | base64 -d > \"$unit_tmp\" || { rm -f \"$unit_tmp\"; exit 1; }; if [ ! -f \"$unit_path\" ] || ! cmp -s \"$unit_tmp\" \"$unit_path\"; then mv -f \"$unit_tmp\" \"$unit_path\"; chmod 644 \"$unit_path\"; systemctl daemon-reload; else rm -f \"$unit_tmp\"; fi; systemctl reset-failed 'forwardx-tunnel-runtime'.service 2>/dev/null || true; elif command -v rc-service >/dev/null 2>&1 && command -v rc-update >/dev/null 2>&1; then script_path=/etc/init.d/forwardx-tunnel-runtime; script_tmp=\"$script_path.forwardx-new.$$\"; printf '%s' 'IyEvc2Jpbi9vcGVucmMtcnVuCm5hbWU9ImZvcndhcmR4LXR1bm5lbC1ydW50aW1lIgpkZXNjcmlwdGlvbj0iRm9yd2FyZFggbWFuYWdlZCBzZXJ2aWNlIGZvcndhcmR4LXR1bm5lbC1ydW50aW1lIgpjb21tYW5kPSIvYmluL3NoIgpjb21tYW5kX2FyZ3M9Ii1sYyAndWxpbWl0IC1jIDAgMj4vZGV2L251bGwgfHwgdHJ1ZTsgZXhlYyAvdXNyL2xvY2FsL2Jpbi9mb3J3YXJkeC1ydW50aW1lIC1DIC9ldGMvZm9yd2FyZHgvcnVudGltZS90dW5uZWwtZ29zdC5qc29uJyIKY29tbWFuZF9iYWNrZ3JvdW5kPXRydWUKcGlkZmlsZT0iL3J1bi8ke1JDX1NWQ05BTUV9LnBpZCIKb3V0cHV0X2xvZz0iL3Zhci9sb2cvZm9yd2FyZHgtYWdlbnQvJHtSQ19TVkNOQU1FfS5sb2ciCmVycm9yX2xvZz0iL3Zhci9sb2cvZm9yd2FyZHgtYWdlbnQvJHtSQ19TVkNOQU1FfS5sb2ciCmRlcGVuZCgpIHsKICBuZWVkIG5ldAp9Cg==' | base64 -d > \"$script_tmp\" || { rm -f \"$script_tmp\"; exit 1; }; if [ ! -f \"$script_path\" ] || ! cmp -s \"$script_tmp\" \"$script_path\"; then mv -f \"$script_tmp\" \"$script_path\"; chmod 755 \"$script_path\"; else rm -f \"$script_tmp\"; fi; elif [ -d /etc/init.d ]; then script_path=/etc/init.d/forwardx-tunnel-runtime; script_tmp=\"$script_path.forwardx-new.$$\"; printf '%s' 'IyEvYmluL3NoCiMjIyBCRUdJTiBJTklUIElORk8KIyBQcm92aWRlczogICAgICAgICAgZm9yd2FyZHgtdHVubmVsLXJ1bnRpbWUKIyBSZXF1aXJlZC1TdGFydDogICAgJG5ldHdvcmsKIyBSZXF1aXJlZC1TdG9wOiAgICAgJG5ldHdvcmsKIyBEZWZhdWx0LVN0YXJ0OiAgICAgMiAzIDQgNQojIERlZmF1bHQtU3RvcDogICAgICAwIDEgNgojIFNob3J0LURlc2NyaXB0aW9uOiBGb3J3YXJkWCBtYW5hZ2VkIHNlcnZpY2UgZm9yd2FyZHgtdHVubmVsLXJ1bnRpbWUKIyMjIEVORCBJTklUIElORk8KUElERklMRT0vcnVuL2ZvcndhcmR4LXR1bm5lbC1ydW50aW1lLnBpZApMT0dGSUxFPS92YXIvbG9nL2ZvcndhcmR4LWFnZW50L2ZvcndhcmR4LXR1bm5lbC1ydW50aW1lLmxvZwpDTUQ9J3VsaW1pdCAtYyAwIDI+L2Rldi9udWxsIHx8IHRydWU7IGV4ZWMgL3Vzci9sb2NhbC9iaW4vZm9yd2FyZHgtcnVudGltZSAtQyAvZXRjL2ZvcndhcmR4L3J1bnRpbWUvdHVubmVsLWdvc3QuanNvbicKc3RhcnQoKSB7IG1rZGlyIC1wIC9ydW4gL3Zhci9sb2cvZm9yd2FyZHgtYWdlbnQ7IGlmIFsgLXMgIiRQSURGSUxFIiBdICYmIGtpbGwgLTAgIiQoY2F0ICIkUElERklMRSIpIiAyPi9kZXYvbnVsbDsgdGhlbiByZXR1cm4gMDsgZmk7IG5vaHVwIHNoIC1sYyAiJENNRCIgPj4gIiRMT0dGSUxFIiAyPiYxICYgZWNobyAkISA+ICIkUElERklMRSI7IH0Kc3RvcCgpIHsgaWYgWyAtcyAiJFBJREZJTEUiIF07IHRoZW4ga2lsbCAiJChjYXQgIiRQSURGSUxFIikiIDI+L2Rldi9udWxsIHx8IHRydWU7IHJtIC1mICIkUElERklMRSI7IGZpOyB9CmNhc2UgIiQxIiBpbgogIHN0YXJ0KSBzdGFydCA7OwogIHN0b3ApIHN0b3AgOzsKICByZXN0YXJ0KSBzdG9wOyBzbGVlcCAxOyBzdGFydCA7OwogIHN0YXR1cykgWyAtcyAiJFBJREZJTEUiIF0gJiYga2lsbCAtMCAiJChjYXQgIiRQSURGSUxFIikiIDI+L2Rldi9udWxsIDs7CiAgKikgZWNobyAiVXNhZ2U6ICQwIHtzdGFydHxzdG9wfHJlc3RhcnR8c3RhdHVzfSI7IGV4aXQgMSA7Owplc2FjCg==' | base64 -d > \"$script_tmp\" || { rm -f \"$script_tmp\"; exit 1; }; if [ ! -f \"$script_path\" ] || ! cmp -s \"$script_tmp\" \"$script_path\"; then mv -f \"$script_tmp\" \"$script_path\"; chmod 755 \"$script_path\"; else rm -f \"$script_tmp\"; fi; else echo \"[service] unsupported init system for forwardx-tunnel-runtime\"; exit 1; fi",
+        "if command -v systemctl >/dev/null 2>&1 && [ -d /run/systemd/system ]; then systemctl disable 'forwardx-tunnels'.service 2>/dev/null || true; systemctl stop 'forwardx-tunnels'.service 2>/dev/null || true; fi; if command -v rc-service >/dev/null 2>&1; then rc-service 'forwardx-tunnels' stop 2>/dev/null || true; fi; if command -v rc-update >/dev/null 2>&1; then rc-update del 'forwardx-tunnels' default 2>/dev/null || true; fi; if [ -x /etc/init.d/forwardx-tunnels ]; then /etc/init.d/forwardx-tunnels stop 2>/dev/null || true; fi",
+        "if command -v systemctl >/dev/null 2>&1 && [ -d /run/systemd/system ]; then systemctl disable 'forwardx-tunnel-runtime'.service 2>/dev/null || true; systemctl stop 'forwardx-tunnel-runtime'.service 2>/dev/null || true; fi; if command -v rc-service >/dev/null 2>&1; then rc-service 'forwardx-tunnel-runtime' stop 2>/dev/null || true; fi; if command -v rc-update >/dev/null 2>&1; then rc-update del 'forwardx-tunnel-runtime' default 2>/dev/null || true; fi; if [ -x /etc/init.d/forwardx-tunnel-runtime ]; then /etc/init.d/forwardx-tunnel-runtime stop 2>/dev/null || true; fi"
+      ],
+      "managedConfigs": [
+        {
+          "path": "/etc/forwardx/runtime/gost.json",
+          "contentBase64": "ewogICJzZXJ2aWNlcyI6IFtdLAogICJjaGFpbnMiOiBbXSwKICAibGltaXRlcnMiOiBbXSwKICAiYXBpIjogewogICAgImFkZHIiOiAidW5peDovLy9ydW4vZm9yd2FyZHgtYWdlbnQvZ29zdC1hcGkvZm9yd2FyZHgtcnVudGltZS5zb2NrIgogIH0KfQ==",
+          "format": "json",
+          "serviceName": "forwardx-runtime"
+        },
+        {
+          "path": "/etc/forwardx/runtime/tunnel-gost.json",
+          "contentBase64": "ewogICJzZXJ2aWNlcyI6IFtdLAogICJhcGkiOiB7CiAgICAiYWRkciI6ICJ1bml4Oi8vL3J1bi9mb3J3YXJkeC1hZ2VudC9nb3N0LWFwaS9mb3J3YXJkeC10dW5uZWwtcnVudGltZS5zb2NrIgogIH0KfQ==",
+          "format": "json",
+          "serviceName": "forwardx-tunnel-runtime"
+        }
+      ],
+      "issuedAt": 1791555065826,
+      "configRevision": 0,
+      "configHash": "e90c4aa74060bf83ec0ff01a8d93758be93a0f01a0ae6134bad5b9bc937ee5c5"
+    },
+    {
+      "statusType": "runtime",
+      "ruleId": 0,
+      "tunnelId": 0,
+      "op": "apply",
+      "forwardType": "nginx-runtime-sync",
+      "sourcePort": 0,
+      "targetIp": "",
+      "targetPort": 0,
+      "protocol": "tcp",
+      "knownRunning": false,
+      "forceRuntimeSync": true,
+      "preCommands": [],
+      "commands": [
+        "if command -v systemctl >/dev/null 2>&1 && [ -d /run/systemd/system ]; then systemctl disable 'forwardx-nginx'.service 2>/dev/null || true; systemctl stop 'forwardx-nginx'.service 2>/dev/null || true; fi; if command -v rc-service >/dev/null 2>&1; then rc-service 'forwardx-nginx' stop 2>/dev/null || true; fi; if command -v rc-update >/dev/null 2>&1; then rc-update del 'forwardx-nginx' default 2>/dev/null || true; fi; if [ -x /etc/init.d/forwardx-nginx ]; then /etc/init.d/forwardx-nginx stop 2>/dev/null || true; fi; systemd_unit=/etc/systemd/system/forwardx-nginx.service; systemd_removed=0; if [ -e \"$systemd_unit\" ]; then rm -f \"$systemd_unit\"; systemd_removed=1; fi; rm -f /etc/init.d/forwardx-nginx /var/lib/forwardx-agent/service_forwardx-nginx.signature /var/log/forwardx-agent/forwardx-nginx.log 2>/dev/null || true; if command -v systemctl >/dev/null 2>&1 && [ -d /run/systemd/system ]; then if [ \"$systemd_removed\" = \"1\" ]; then systemctl daemon-reload 2>/dev/null || true; fi; systemctl reset-failed 'forwardx-nginx'.service 2>/dev/null || true; fi; command -v update-rc.d >/dev/null 2>&1 && update-rc.d -f 'forwardx-nginx' remove >/dev/null 2>&1 || true; command -v chkconfig >/dev/null 2>&1 && chkconfig 'forwardx-nginx' off >/dev/null 2>&1 || true",
+        "for pid in $(pgrep -f '[/]usr/local/bin/forwardx-nginx.*[/]etc/forwardx/nginx/nginx[.]conf' 2>/dev/null || true); do if [ \"$pid\" = \"$$\" ] || [ \"$pid\" = \"$PPID\" ]; then continue; fi; kill \"$pid\" 2>/dev/null || true; done; for attempt in 1 2 3; do if ! pgrep -f '[/]usr/local/bin/forwardx-nginx.*[/]etc/forwardx/nginx/nginx[.]conf' >/dev/null 2>&1; then break; fi; sleep 1; done; if pgrep -f '[/]usr/local/bin/forwardx-nginx.*[/]etc/forwardx/nginx/nginx[.]conf' >/dev/null 2>&1; then for pid in $(pgrep -f '[/]usr/local/bin/forwardx-nginx.*[/]etc/forwardx/nginx/nginx[.]conf' 2>/dev/null || true); do if [ \"$pid\" = \"$$\" ] || [ \"$pid\" = \"$PPID\" ]; then continue; fi; kill -KILL \"$pid\" 2>/dev/null || true; done; sleep 1; fi; if pgrep -f '[/]usr/local/bin/forwardx-nginx.*[/]etc/forwardx/nginx/nginx[.]conf' >/dev/null 2>&1; then echo \"[service] forwardx-nginx managed process cleanup failed\"; exit 1; fi; rm -f '/etc/forwardx/nginx/nginx.conf' '/etc/forwardx/nginx/nginx.conf.sha256' '/etc/forwardx/nginx/nginx.conf.forwardx-last-good' '/etc/forwardx/nginx/modules.conf' '/run/forwardx-nginx.pid' 2>/dev/null || true; if [ -e '/etc/forwardx/nginx/nginx.conf' ]; then echo \"[service] forwardx-nginx config cleanup failed\"; exit 1; fi",
+        "rm -f '/etc/forwardx/nginx/certs'/*.crt '/etc/forwardx/nginx/certs'/*.key '/etc/forwardx/nginx/certs'/*.crt.forwardx-last-good '/etc/forwardx/nginx/certs'/*.key.forwardx-last-good '/etc/forwardx/nginx/certs'/.forwardx-config-* '/etc/forwardx/nginx/certs'/.forwardx-restore-* 2>/dev/null || true; rm -f '/etc/forwardx/nginx'/.forwardx-config-* '/etc/forwardx/nginx'/.forwardx-restore-* '/var/log/forwardx-agent/forwardx-nginx-error.log' '/var/log/forwardx-agent/forwardx-nginx-session.log' 2>/dev/null || true; rmdir '/etc/forwardx/nginx/certs' '/etc/forwardx/nginx' 2>/dev/null || true"
+      ],
+      "managedConfigs": [],
+      "issuedAt": 1791555065826,
+      "configRevision": 0,
+      "configHash": "403a6ffc2f87b2a9e897eb800967ea6e06db36a7aa3cdb15b1059ef118e23c6e"
+    },
+    {
+      "statusType": "runtime",
+      "forwardType": "sni-source-cleanup",
+      "ruleId": 0,
+      "tunnelId": 0,
+      "sourcePort": 0,
+      "targetIp": "",
+      "targetPort": 0,
+      "protocol": "tcp",
+      "op": "apply",
+      "issuedAt": 1791555065824,
+      "knownRunning": false,
+      "forceRuntimeSync": true,
+      "reportStatus": true,
+      "failureMessage": "SNI 来源限制清理失败或无法核实，Agent 将重试，请检查主机防火墙权限和日志",
+      "commands": [
+        "sni_cleanup_nft() {\n  sni_tables=$(nft list tables) || return 1\n  printf '%s\\n' \"$sni_tables\" | grep -q '^table inet forwardx$' || return 0\n  sni_rules=$(nft -a list table inet forwardx) || return 1\n  sni_handles=$(printf '%s\\n' \"$sni_rules\" | awk -v marker='comment \"fwx-sni-splitter-[0-9]+:' '/^[[:space:]]*chain / {chain=$2} chain == \"sni_input\" && $0 ~ marker {if ($NF !~ /^[0-9]+$/) exit 1; print $NF}') || return 1\n  for sni_handle in $sni_handles; do nft delete rule inet forwardx sni_input handle \"$sni_handle\" || :; done\n  sni_rules=$(nft -a list table inet forwardx) || return 1\n  printf '%s\\n' \"$sni_rules\" | awk -v marker='comment \"fwx-sni-splitter-[0-9]+:' '/^[[:space:]]*chain / {chain=$2} chain == \"sni_input\" && $0 ~ marker {found=1} END {exit found ? 1 : 0}'\n}\nsni_cleanup_iptables() {\n  sni_binary=$1\n  sni_rules=$(\"$sni_binary\" -w 5 -S) || return 1\n  sni_deletions=$(printf '%s\\n' \"$sni_rules\" | awk -v marker='--comment \"?fwx-sni-splitter-[0-9]+:' '/^-A / && $0 ~ marker {sub(/^-A /, \"-D \"); print}') || return 1\n  if [ -n \"$sni_deletions\" ]; then\n    command -v \"$sni_binary-restore\" >/dev/null 2>&1 || return 1\n    printf '*filter\\n%s\\nCOMMIT\\n' \"$sni_deletions\" | \"$sni_binary-restore\" --noflush --wait 5 || :\n  fi\n  sni_rules=$(\"$sni_binary\" -w 5 -S) || return 1\n  printf '%s\\n' \"$sni_rules\" | awk -v marker='--comment \"?fwx-sni-splitter-[0-9]+:' '/^-A / && $0 ~ marker {found=1} END {exit found ? 1 : 0}'\n}\nsni_cleanup_status=0\nsni_cleanup_backends=0\nif command -v nft >/dev/null 2>&1; then sni_cleanup_backends=1; sni_cleanup_nft || sni_cleanup_status=1; fi\nif command -v iptables >/dev/null 2>&1; then sni_cleanup_backends=1; sni_cleanup_iptables iptables || sni_cleanup_status=1; fi\nif command -v ip6tables >/dev/null 2>&1; then sni_cleanup_backends=1; sni_cleanup_iptables ip6tables || sni_cleanup_status=1; fi\nif command -v iptables-legacy >/dev/null 2>&1; then sni_cleanup_backends=1; sni_cleanup_iptables iptables-legacy || sni_cleanup_status=1; fi\nif command -v ip6tables-legacy >/dev/null 2>&1; then sni_cleanup_backends=1; sni_cleanup_iptables ip6tables-legacy || sni_cleanup_status=1; fi\nif command -v iptables-nft >/dev/null 2>&1; then sni_cleanup_backends=1; sni_cleanup_iptables iptables-nft || sni_cleanup_status=1; fi\nif command -v ip6tables-nft >/dev/null 2>&1; then sni_cleanup_backends=1; sni_cleanup_iptables ip6tables-nft || sni_cleanup_status=1; fi\nif [ \"$sni_cleanup_backends\" = 0 ] || [ \"$sni_cleanup_status\" != 0 ]; then echo '[sni-source] cleanup failed or could not verify firewall state' >&2; exit 1; fi\necho '[sni-source] verified source restrictions removed'"
+      ],
+      "configRevision": 0,
+      "configHash": "69e974b9eccd98c05bd79b8ac5da274dd63ca148f3f673f6d2bdd9b7d9544657"
+    },
+    {
+      "statusType": "rule",
+      "ruleId": 102,
+      "op": "apply",
+      "forwardType": "forwardx",
+      "sourcePort": 24000,
+      "targetIp": "198.51.100.20",
+      "targetPort": 24000,
+      "protocol": "tcp",
+      "networkInterface": "",
+      "commands": [
+        "sni_cleanup_nft() {\n  sni_tables=$(nft list tables) || return 1\n  printf '%s\\n' \"$sni_tables\" | grep -q '^table inet forwardx$' || return 0\n  sni_rules=$(nft -a list table inet forwardx) || return 1\n  sni_handles=$(printf '%s\\n' \"$sni_rules\" | awk -v marker='comment \"fwx-sni-splitter-24000:' '/^[[:space:]]*chain / {chain=$2} chain == \"sni_input\" && $0 ~ marker {if ($NF !~ /^[0-9]+$/) exit 1; print $NF}') || return 1\n  for sni_handle in $sni_handles; do nft delete rule inet forwardx sni_input handle \"$sni_handle\" || :; done\n  sni_rules=$(nft -a list table inet forwardx) || return 1\n  printf '%s\\n' \"$sni_rules\" | awk -v marker='comment \"fwx-sni-splitter-24000:' '/^[[:space:]]*chain / {chain=$2} chain == \"sni_input\" && $0 ~ marker {found=1} END {exit found ? 1 : 0}'\n}\nsni_cleanup_iptables() {\n  sni_binary=$1\n  sni_rules=$(\"$sni_binary\" -w 5 -S) || return 1\n  sni_deletions=$(printf '%s\\n' \"$sni_rules\" | awk -v marker='--comment \"?fwx-sni-splitter-24000:' '/^-A / && $0 ~ marker {sub(/^-A /, \"-D \"); print}') || return 1\n  if [ -n \"$sni_deletions\" ]; then\n    command -v \"$sni_binary-restore\" >/dev/null 2>&1 || return 1\n    printf '*filter\\n%s\\nCOMMIT\\n' \"$sni_deletions\" | \"$sni_binary-restore\" --noflush --wait 5 || :\n  fi\n  sni_rules=$(\"$sni_binary\" -w 5 -S) || return 1\n  printf '%s\\n' \"$sni_rules\" | awk -v marker='--comment \"?fwx-sni-splitter-24000:' '/^-A / && $0 ~ marker {found=1} END {exit found ? 1 : 0}'\n}\nsni_cleanup_status=0\nsni_cleanup_backends=0\nif command -v nft >/dev/null 2>&1; then sni_cleanup_backends=1; sni_cleanup_nft || sni_cleanup_status=1; fi\nif command -v iptables >/dev/null 2>&1; then sni_cleanup_backends=1; sni_cleanup_iptables iptables || sni_cleanup_status=1; fi\nif command -v ip6tables >/dev/null 2>&1; then sni_cleanup_backends=1; sni_cleanup_iptables ip6tables || sni_cleanup_status=1; fi\nif command -v iptables-legacy >/dev/null 2>&1; then sni_cleanup_backends=1; sni_cleanup_iptables iptables-legacy || sni_cleanup_status=1; fi\nif command -v ip6tables-legacy >/dev/null 2>&1; then sni_cleanup_backends=1; sni_cleanup_iptables ip6tables-legacy || sni_cleanup_status=1; fi\nif command -v iptables-nft >/dev/null 2>&1; then sni_cleanup_backends=1; sni_cleanup_iptables iptables-nft || sni_cleanup_status=1; fi\nif command -v ip6tables-nft >/dev/null 2>&1; then sni_cleanup_backends=1; sni_cleanup_iptables ip6tables-nft || sni_cleanup_status=1; fi\nif [ \"$sni_cleanup_backends\" = 0 ] || [ \"$sni_cleanup_status\" != 0 ]; then echo '[sni-source] cleanup failed or could not verify firewall state' >&2; exit 1; fi\necho '[sni-source] verified source restrictions removed'"
+      ],
+      "fxp": {
+        "role": "sni-splitter",
+        "ruleId": 102,
+        "listenPort": 24000,
+        "protocol": "tcp",
+        "sniRouteVersion": 1,
+        "sourceAllowIps": [],
+        "sniRoutes": [
+          {
+            "sni": "api.example.com",
+            "ruleId": 102,
+            "targetIp": "203.0.113.20",
+            "targetPort": 443,
+            "limitIn": 0,
+            "limitOut": 0,
+            "maxConnections": 0,
+            "maxIPs": 0,
+            "accessScope": "u1_h2"
+          }
+        ]
+      },
+      "issuedAt": 1791555065826,
+      "configRevision": 0,
+      "knownRunning": false,
+      "configHash": "ac26f9cad746d4e170ff27dee42b229be6af316060c1410fc2db46e1191c4a59"
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "role": "sni-splitter",
+  "ruleId": 202,
+  "listenPort": 24001,
+  "protocol": "tcp",
+  "sniRouteVersion": 40,
+  "sourceAllowIps": [],
+  "sniRoutes": [
+    {
+      "sni": "gost-api.example.com",
+      "ruleId": 202,
+      "targetIp": "203.0.113.30",
+      "targetPort": 443,
+      "limitIn": 125000,
+      "limitOut": 125000,
+      "maxConnections": 2,
+      "maxIPs": 0,
+      "accessScope": "u1_h2"
+    },
+    {
+      "sni": "quota-healthy.example.com",
+      "ruleId": 606,
+      "targetIp": "203.0.113.31",
+      "targetPort": 8443,
+      "limitIn": 0,
+      "limitOut": 0,
+      "maxConnections": 0,
+      "maxIPs": 0,
+      "accessScope": "u1_h2"
+    }
+  ]
+}

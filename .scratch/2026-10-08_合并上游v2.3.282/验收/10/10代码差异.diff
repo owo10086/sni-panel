@@ -1,0 +1,238 @@
+--- a/client/src/components/GoogleAccountCard.tsx
++++ b/client/src/components/GoogleAccountCard.tsx
+@@ -9,11 +9,13 @@
+ import { Button } from "@/components/ui/button";
+ import { Input } from "@/components/ui/input";
+ import { Label } from "@/components/ui/label";
++import { useConfirmDialog } from "@/components/ui/confirm-dialog";
+ import { GoogleMark } from "./GoogleLoginButton";
+ 
+ export default function GoogleAccountCard() {
+   const search = useSearch();
+   const utils = trpc.useUtils();
++  const confirm = useConfirmDialog();
+   const { data } = trpc.google.status.useQuery();
+   const [password, setPassword] = useState("");
+   const [newPassword, setNewPassword] = useState("");
+@@ -44,7 +46,15 @@
+           }}>{t("设置登录密码")}</Button>
+         </div> : <div className="space-y-3">
+           <div className="space-y-2"><Label htmlFor="google-unbind-password">{t("输入当前密码以解绑 Google")}</Label><Input id="google-unbind-password" type="password" autoComplete="current-password" value={password} onChange={event => setPassword(event.target.value)} /></div>
+-          <Button type="button" variant="outline" disabled={!password || unbind.isPending} onClick={() => unbind.mutate({ password })}>{t("解除 Google 绑定")}</Button>
++          <Button type="button" variant="outline" disabled={!password || unbind.isPending} onClick={async () => {
++            const confirmed = await confirm({
++              title: t("确认解除 Google 绑定"),
++              description: <p className="break-words">{t("确定解除 Google 账户 {0} 的绑定？解绑后无法再用此 Google 账户登录，请使用当前账号和密码登录。", [data.email])}</p>,
++              confirmText: t("解除 Google 绑定"),
++              tone: "destructive",
++            });
++            if (confirmed) unbind.mutate({ password });
++          }}>{t("解除 Google 绑定")}</Button>
+         </div>}
+       </> : <Button type="button" variant="outline" className="gap-2" disabled={!data.enabled || start.isPending || mobileAuth.isNative} onClick={() => start.mutate({ bind: true })}><GoogleMark />{t("绑定 Google 账户")}</Button>}
+       {mobileAuth.isNative && <p className="text-xs text-muted-foreground">{t("请使用浏览器打开面板进行 Google 登录或绑定。")}</p>}
+--- a/client/src/i18n/en.json
++++ b/client/src/i18n/en.json
+@@ -1,4 +1,7 @@
+ {
++  "确认解除 Google 绑定": "Confirm unlinking Google",
++  "确定解除 Google 账户 {0} 的绑定？解绑后无法再用此 Google 账户登录，请使用当前账号和密码登录。": "Unlink Google account {0}? You will no longer be able to sign in with this Google account. Use your current username and password to sign in.",
++  "当前密码错误": "Your current password is incorrect",
+   "登录/注册人机验证": "Sign-in / sign-up verification",
+   "默认开启。建议使用 HTTPS；部分浏览器在 HTTP 下无法完成验证。": "Enabled by default. Use HTTPS: some browsers cannot verify over HTTP.",
+   "启用人机验证": "Enable human verification",
+@@ -104,7 +107,7 @@
+   " 出站": " Outbound",
+   " 创建折扣码": " Create discount code",
+   " 磁盘": " Disk",
+-  " 次": "  probes",
++  " 次": " times",
+   " 当前不支持": " Current Not Supported",
+   " 档": "  tiers",
+   " 导出当前": " Export Current",
+@@ -424,7 +427,7 @@
+   "保存失败": "Save failed",
+   "保存使用配置": "Save Usage Configuration",
+   "保存首页": "Save Home Page",
+-  "保存双重验证设置": "Save Dual Authentication Settings",
++  "保存双重验证设置": "Save two-factor settings",
+   "保存头像": "Save Avatar",
+   "保存协议开关": "Save Protocol Settings",
+   "保存修正": "Save Amendments",
+@@ -670,7 +673,7 @@
+   "此地址继续转交 Agent 和支付回调，请勿停止或卸载旧面板。": "This address continues to be forwarded to Agent and pays back, so do not stop or unload the old panel.",
+   "此网站不允许嵌入或加载超时": "This site does not allow embedding or loading timeout",
+   "此页面使用新窗口打开": "Open this page with a new window",
+-  "次": " probes",
++  "次": "times",
+   "次数": "Number",
+   "从 @BotFather 获取，例如 123456:ABC...": "From @BotFather, e. g. 123456:ABC...",
+   "从分组移除": "Remove From Group",
+@@ -838,7 +841,7 @@
+   "登录密码": "Login Password",
+   "登录入口已失效，请返回机器人重新点击“打开面板”。": "The login entrance is disabled, so please return to the bot to click \" Open Panel \" .",
+   "登录失败": "Login Failed",
+-  "登录账号以继续": "Login account number to continue",
++  "登录账号以继续": "Sign in to your account to continue",
+   "登录中...": "Logging in...",
+   "等 {0} 个目标": "and {0} other targets",
+   "等待": "Waiting",
+@@ -865,7 +868,7 @@
+   "等待中": "Waiting",
+   "等待主机状态同步": "Waiting for host status sync",
+   "等待转发资源完成检测": "Waiting for forwarding resources to complete testing",
+-  "低于 50K 的头像会直接上传，较大的图片会自动压缩。": "The image below 50K will be uploaded directly and the larger picture will automatically compress.",
++  "低于 50K 的头像会直接上传，较大的图片会自动压缩。": "Avatars under 50 KB upload directly. Larger images are compressed automatically.",
+   "低于阈值时提醒。": "Reminds when below the threshold.",
+   "抵扣金额": "Amount withheld",
+   "第 ": "Page ",
+@@ -1180,7 +1183,7 @@
+   "关闭后可在公告中查看。": "After closing, you can view it in the bulletin.",
+   "关闭后普通用户不能使用 AI 对话执行管理操作。": "Ordinary users cannot perform management operations using AI dialogue after closing.",
+   "关闭后无法下单": "Orders cannot be created when disabled",
+-  "关闭后隐藏绑定入口。": "Close and hide the bound entrance.",
++  "关闭后隐藏绑定入口。": "Disable to hide the authenticator setup option.",
+   "关闭后直接进入登录页。": "Enter the login page directly after closing.",
+   "关闭升级公告失败": "Failed to close upgrade announcement",
+   "关闭时后登录的设备会立即接管，正在使用的旧会话将退出；仅保留 Cookie 但未在使用的设备不会阻止新登录。": "The equipment that is logged in immediately after closing will be taken over and the old session that is in use will be withdrawn; retaining only Cookie, but not the equipment in use, will not prevent new login.",
+@@ -1224,14 +1227,14 @@
+   "管理员取消未接管的迁移": "Manager cancels untaken relocations",
+   "管理员权限": "Administrator Permissions",
+   "管理员尚未配置 Telegram 机器人。": "The administrator has not yet configured the Telegram bot.",
+-  "管理员尚未启用双重验证功能。": "The administrator has not yet enabled the dual authentication function.",
++  "管理员尚未启用双重验证功能。": "The administrator has not enabled two-factor authentication.",
+   "管理员手动附加本周期流量": "Administrators manually attach current cycle traffic",
+   "管理员未开启": "Disabled by Administrator",
+   "管理员修改": "Administrator Changes",
+   "管理员邮箱": "Administrator email",
+   "管理员账户已创建，请登录": "Administrator account created, please log in",
+   "管理员账户已更新，请登录": "The administrator's account has been updated. Login",
+-  "管理账号安全、头像和 Telegram。": "Manage account numbers security, headers and Telegram.",
++  "管理账号安全、头像和 Telegram。": "Manage account security, your avatar and Telegram.",
+   "管理主机": "Manage Hosts",
+   "管理主机 Ping / TCPing 探测服务。": "Manages the host Ping / TCPing detection service.",
+   "管理转发规则和运行状态": "Manage forwarding rules and operational status",
+@@ -1384,7 +1387,7 @@
+   "接口地址": "Interface Address",
+   "接收 PROXY": "Receive ProXy",
+   "节点": "Node",
+-  "结束当前浏览器或 APP 的登录会话。": "Ends the login session of the current browser or AP.",
++  "结束当前浏览器或 APP 的登录会话。": "End the sign-in session in this browser or app.",
+   "结束端口": "End Port",
+   "解绑 Telegram": "Untie Telegram",
+   "解绑 Telegram 失败": "Untie Telegram failed",
+@@ -1647,7 +1650,7 @@
+   "没有匹配的主机": "No matching host",
+   "没有匹配的转发规则": "There are no matching forward rules.",
+   "没有响应内容": "No response content",
+-  "没有账号？点击注册": "No account number? Click to register.",
++  "没有账号？点击注册": "Don't have an account? Sign up",
+   "每小时汇总": "Hourly Totals",
+   "每小时汇总一次可见规则流量。": "Hourly totals for visible rules.",
+   "每行一个仓库，默认读取 main 分支根目录的 forwardx-store.json。": "Forwardx-store.json in a warehouse per line with the default view of reading the root directory of the main branch.",
+@@ -1729,7 +1732,7 @@
+   "内网地址不能超过 128 个字符": "Intranet addresses cannot exceed 128 characters",
+   "内置 UDP 通道（无需安装系统 WireGuard）": "Internalized UDP channel (without system installation WireGuard)",
+   "内置壁纸": "Built-in Wallpapers",
+-  "昵称（选填）": "Nickname (optional fill)",
++  "昵称（选填）": "Nickname (optional)",
+   "年": "Year",
+   "年/月/日": "YYYY/MM/DD",
+   "年付": "Annual",
+@@ -1796,7 +1799,7 @@
+   "启动支持包任务失败": "Failed to start support package",
+   "启动中": "Starting",
+   "启用": "Enable",
+-  "启用 2FA 软件支持": "Enable 2FA software support",
++  "启用 2FA 软件支持": "Enable authenticator apps (2FA)",
+   "启用 AI 助手": "Enable AI Assistant",
+   "启用 DDNS": "Enable DDNS",
+   "启用 GitHub 加速地址": "Enable GitHub Accelerating Address",
+@@ -2313,7 +2316,7 @@
+   "实时入站": "Inbound rate",
+   "实时网络": "Real-time network",
+   "使用": "Use",
+-  "使用 2FA 软件生成动态验证码。": "Create dynamic authentication codes using 2FA software.",
++  "使用 2FA 软件生成动态验证码。": "Use an authenticator app (2FA) to generate verification codes.",
+   "使用 root 执行命令。": "Use root to execute the command.",
+   "使用 TCPing 检查成员。IPv6 格式：[地址]:端口。": "Check members using TCPing. IPv6 format: [Address]: Port.",
+   "使用按量计费资源": "Use of cost-based resources",
+@@ -2329,7 +2332,7 @@
+   "使用示例": "Use Example",
+   "使用隧道": "Use of tunnels",
+   "使用以前的数据": "Use previous data",
+-  "使用邮箱注册 ForwardX 账户": "Register forwardX accounts using email",
++  "使用邮箱注册 ForwardX 账户": "Create a ForwardX account with your email",
+   "使用转发链": "Use forwarding chain",
+   "使用转发组": "Use forwarding group",
+   "使用自定义 H5": "Use custom H5",
+@@ -2392,7 +2395,7 @@
+   "刷新中...": "Refreshing...",
+   "双向": "Inbound + Outbound",
+   "双向合计": "Total, two-way",
+-  "双因素认证 (2FA)": "Double-factor authentication (2FA)",
++  "双因素认证 (2FA)": "Two-factor authentication (2FA)",
+   "双因素认证已移除": "Double-factor authentication removed",
+   "双重验证": "Two-Factor Authentication",
+   "双重验证二维码已生成": "Double authentication QR code generated",
+@@ -2614,7 +2617,7 @@
+   "头像已更新，今日剩余 {0} 次": "Avatar updated. {0} changes remaining today.",
+   "头像已随机更新": "Header has been randomly updated",
+   "头像已随机更新，今日剩余 {0} 次": "The image has been updated randomly. It's all left today.{0}Numbers",
+-  "头像与账号": "Heads and accounts.",
++  "头像与账号": "Avatar and account",
+   "图标预览": "Icon Preview",
+   "图片解析失败": "Image Parsing Failed",
+   "图片链接": "Picture Link",
+@@ -2911,7 +2914,7 @@
+   "已安装": "Installed",
+   "已安装插件": "Installed Plugins",
+   "已绑定": "Linked",
+-  "已绑定账户可用，点击后再连接后端校验。": "A bound account is available, click and then connect to the backend.",
++  "已绑定账户可用，点击后再连接后端校验。": "Available to linked accounts. Click to connect and verify your account.",
+   "已保存备用": "Saved for backup",
+   "已保存公钥，留空表示不修改": "Saved public key, leave empty for unmodified",
+   "已保存密钥，留空表示不修改": "Saved key, leave blank for unmodified",
+@@ -3008,7 +3011,7 @@
+   "已用完": "Spent",
+   "已有 {0} / {1} 个托管监听确认运行，其余状态待确认": "Existing{0} / {1}Host listening confirmed active, remaining status confirmed",
+   "已有数据库切换任务正在执行": "Existing database toggle tasks in progress",
+-  "已有账号？返回登录": "There's an account? Back to login.",
++  "已有账号？返回登录": "Already have an account? Sign in",
+   "已再次请求浏览器保存": "Browser saved again requested",
+   "已再次请求浏览器保存加密备份": "Browser requested again to save encrypted backup",
+   "已展示缓存数据，正在后台刷新": "Cache data displayed, refreshing backstage",
+@@ -3265,7 +3268,7 @@
+   "账单中心": "Billing Center",
+   "账单周期": "Billing Cycle",
+   "账号": "Account",
+-  "账号可绑定 2FA 动态验证码。": "Account can bind 2FA dynamic authentication codes.",
++  "账号可绑定 2FA 动态验证码。": "Accounts can use verification codes from a 2FA authenticator app.",
+   "账户": "Account",
+   "账户管理": "Accounts",
+   "账户禁用": "Account disabled",
+@@ -3527,7 +3530,7 @@
+   "主域名": "Main Domain Name",
+   "注册": "Register",
+   "注册成功": "Registered successfully",
+-  "注册后需要管理员授权才能使用转发功能": "After registration, a manager's authorization is required to use forwarding.",
++  "注册后需要管理员授权才能使用转发功能": "An administrator must grant forwarding access after registration.",
+   "注册失败": "Failed to register",
+   "注册时必须验证邮箱。": "The email must be validated at the time of registration.",
+   "注册用户名必须是邮箱格式": "The registered username must be in email format",
+--- a/client/src/pages/Login.tsx
++++ b/client/src/pages/Login.tsx
+@@ -1,4 +1,4 @@
+-import { t as translateText } from "@/i18n";
++import { getLanguage, t as translateText } from "@/i18n";
+ import { useState, useCallback, useEffect, useRef } from "react";
+ import LanguageSelector from "@/components/LanguageSelector";
+ import GoogleLoginButton from "@/components/GoogleLoginButton";
+@@ -96,6 +96,7 @@
+     const container = containerRef.current;
+     if (!container) return;
+     const widget = document.createElement("cap-widget");
++    widget.setAttribute("data-cap-lang", getLanguage());
+     const panelBase = mobileAuth.isNative ? mobileAuth.normalizePanelUrl(mobileAuth.getPanelUrl()) : "";
+     widget.setAttribute("data-cap-api-endpoint", `${panelBase}/api/auth/cap/${props.purpose}/`);
+     widget.setAttribute("data-cap-worker-count", "2");

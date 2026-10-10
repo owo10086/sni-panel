@@ -1,3 +1,4 @@
+import { t as translateText } from "@/i18n";
 import {
   FORWARD_TYPES,
   type ForwardRuleProtocol,
@@ -81,7 +82,7 @@ export type RuleTransferParseResult =
 
 const targetHostSchema = z.string().trim().min(1).max(253).refine(
   (value) => /^[a-zA-Z0-9]([a-zA-Z0-9\-_.]*[a-zA-Z0-9])?$|^[a-fA-F0-9:.]+$/.test(value),
-  "地址格式不正确",
+  () => ({ message: translateText("地址格式不正确") }),
 );
 const ipv6AddressSchema = z.string().ip({ version: "v6" });
 
@@ -97,7 +98,7 @@ const ruleTransferRuleSchema = z.object({
   sourcePort: z.number().int().min(0).max(65535),
   sni: z.string().trim().max(1024).refine(
     (value) => !value || isValidSniValue(normalizeSniValue(value)),
-    "SNI 域名格式不正确",
+    () => ({ message: translateText("SNI 域名格式不正确") }),
   ).optional(),
   rateLimitMbps: z.number().int().min(0).max(1_000_000).optional().default(0),
   maxConnections: z.number().int().min(0).max(1_000_000).optional().default(0),
@@ -140,36 +141,36 @@ function parseSniBulkImportLine(line: string, lineNumber: number, sourcePort: nu
   const sourceLine = line.trim();
   const parts = sourceLine.split("#");
   if (parts.length !== 4) {
-    return { ok: false, message: `第 ${lineNumber} 行：请按 ${SNI_BULK_IMPORT_LINE_FORMAT} 格式填写` };
+    return { ok: false, message: translateText("第 {0} 行：请按 {1} 格式填写", [lineNumber, translateText(SNI_BULK_IMPORT_LINE_FORMAT)]) };
   }
   const [nameRaw, sniRaw, targetIpRaw, targetPortRaw] = parts.map((part) => part.trim());
-  if (!nameRaw) return { ok: false, message: `第 ${lineNumber} 行：规则名不能为空` };
-  if (nameRaw.length > 128) return { ok: false, message: `第 ${lineNumber} 行：规则名不能超过 128 个字符` };
+  if (!nameRaw) return { ok: false, message: translateText("第 {0} 行：规则名不能为空", [lineNumber]) };
+  if (nameRaw.length > 128) return { ok: false, message: translateText("第 {0} 行：规则名不能超过 128 个字符", [lineNumber]) };
   const sni = normalizeSniImportDomain(sniRaw);
-  if (!sni) return { ok: false, message: `第 ${lineNumber} 行：SNI 域名不能为空` };
-  if (!isValidSniValue(sni)) return { ok: false, message: `第 ${lineNumber} 行：SNI 域名格式不正确` };
+  if (!sni) return { ok: false, message: translateText("第 {0} 行：SNI 域名不能为空", [lineNumber]) };
+  if (!isValidSniValue(sni)) return { ok: false, message: translateText("第 {0} 行：SNI 域名格式不正确", [lineNumber]) };
   const targetIsBracketed = targetIpRaw.startsWith("[") && targetIpRaw.endsWith("]");
   const targetIp = targetIsBracketed ? targetIpRaw.slice(1, -1).trim() : targetIpRaw;
   if (targetIp.includes(":") && !targetIsBracketed) {
-    return { ok: false, message: `第 ${lineNumber} 行：IPv6 地址请使用 [地址] 格式` };
+    return { ok: false, message: translateText("第 {0} 行：IPv6 地址请使用 [地址] 格式", [lineNumber]) };
   }
   if (targetIsBracketed && !targetIp.includes(":")) {
-    return { ok: false, message: `第 ${lineNumber} 行：目标地址格式不正确` };
+    return { ok: false, message: translateText("第 {0} 行：目标地址格式不正确", [lineNumber]) };
   }
   if (targetIsBracketed && !ipv6AddressSchema.safeParse(targetIp).success) {
-    return { ok: false, message: `第 ${lineNumber} 行：IPv6 地址格式不正确` };
+    return { ok: false, message: translateText("第 {0} 行：IPv6 地址格式不正确", [lineNumber]) };
   }
   const targetResult = targetHostSchema.safeParse(targetIp);
   if (!targetResult.success) {
-    const message = targetIp ? "目标地址格式不正确" : "目标地址不能为空";
-    return { ok: false, message: `第 ${lineNumber} 行：${message}` };
+    const message = targetIp ? translateText("目标地址格式不正确") : translateText("目标地址不能为空");
+    return { ok: false, message: translateText("第 {0} 行：{1}", [lineNumber, message]) };
   }
   if (!/^\d+$/.test(targetPortRaw)) {
-    return { ok: false, message: `第 ${lineNumber} 行：目标端口必须在 1-65535 之间` };
+    return { ok: false, message: translateText("第 {0} 行：目标端口必须在 1-65535 之间", [lineNumber]) };
   }
   const targetPort = Number(targetPortRaw);
   if (!Number.isInteger(targetPort) || targetPort < 1 || targetPort > 65535) {
-    return { ok: false, message: `第 ${lineNumber} 行：目标端口必须在 1-65535 之间` };
+    return { ok: false, message: translateText("第 {0} 行：目标端口必须在 1-65535 之间", [lineNumber]) };
   }
   return {
     ok: true,
@@ -206,17 +207,17 @@ function parseSniBulkImportLine(line: string, lineNumber: number, sourcePort: nu
 
 export function parseSniBulkImportText(raw: unknown, sourcePort: number): SniBulkImportParseResult {
   if (!Number.isInteger(sourcePort) || sourcePort < 1 || sourcePort > 65535) {
-    return { ok: false, message: "入口端口必须在 1-65535 之间", rules: [] };
+    return { ok: false, message: translateText("入口端口必须在 1-65535 之间"), rules: [] };
   }
   const filledLines = String(raw || "")
     .split(/\r?\n/)
     .map((line, index) => ({ line, lineNumber: index + 1 }))
     .filter((item) => item.line.trim());
   if (filledLines.length === 0) {
-    return { ok: false, message: `请输入 SNI 分流规则，每行格式为 ${SNI_BULK_IMPORT_LINE_FORMAT}`, rules: [] };
+    return { ok: false, message: translateText("请输入 SNI 分流规则，每行格式为 {0}", [translateText(SNI_BULK_IMPORT_LINE_FORMAT)]), rules: [] };
   }
   if (filledLines.length > RULE_TRANSFER_MAX_IMPORT_COUNT) {
-    return { ok: false, message: `单次最多导入 ${RULE_TRANSFER_MAX_IMPORT_COUNT} 条规则`, rules: [] };
+    return { ok: false, message: translateText("单次最多导入 {0} 条规则", [RULE_TRANSFER_MAX_IMPORT_COUNT]), rules: [] };
   }
 
   const rules: SniBulkImportRule[] = [];
@@ -230,44 +231,44 @@ export function parseSniBulkImportText(raw: unknown, sourcePort: number): SniBul
     if (previousLine !== undefined) {
       return {
         ok: false,
-        message: `第 ${item.lineNumber} 行：SNI 域名 ${sni} 与第 ${previousLine} 行重复`,
+        message: translateText("第 {0} 行：SNI 域名 {1} 与第 {2} 行重复", [item.lineNumber, sni, previousLine]),
         rules: [],
       };
     }
     seen.set(sni, item.lineNumber);
     rules.push(rule);
   }
-  return { ok: true, message: `已识别 ${rules.length} 条 SNI 分流规则`, rules };
+  return { ok: true, message: translateText("已识别 {0} 条 SNI 分流规则", [rules.length]), rules };
 }
 
 function issueMessage(issue: z.ZodIssue) {
-  const field = issue.path.length > 0 ? `字段 ${issue.path.join(".")}` : "内容";
-  return `${field}${issue.message ? `：${issue.message}` : "格式不正确"}`;
+  const field = issue.path.length > 0 ? translateText("字段 {0}", [issue.path.join(".")]) : translateText("内容");
+  return translateText("{0}：{1}", [field, translateText(issue.message || "格式不正确")]);
 }
 
 export function parseRuleTransferFile(raw: unknown): RuleTransferParseResult {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
-    return { ok: false, error: "文件内容不是有效的规则对象" };
+    return { ok: false, error: translateText("文件内容不是有效的规则对象") };
   }
   const source = raw as Record<string, unknown>;
   if (source.kind !== RULE_TRANSFER_FILE_KIND) {
-    return { ok: false, error: "文件不是 ForwardX 转发规则导出文件" };
+    return { ok: false, error: translateText("文件不是 ForwardX 转发规则导出文件") };
   }
   if (source.version !== RULE_TRANSFER_FILE_VERSION) {
-    return { ok: false, error: `不支持该规则文件版本（当前支持 v${RULE_TRANSFER_FILE_VERSION}）` };
+    return { ok: false, error: translateText("不支持该规则文件版本（当前支持 v{0}）", [RULE_TRANSFER_FILE_VERSION]) };
   }
   if (!Array.isArray(source.rules) || source.rules.length === 0) {
-    return { ok: false, error: "文件中没有可导入的规则" };
+    return { ok: false, error: translateText("文件中没有可导入的规则") };
   }
   if (source.rules.length > RULE_TRANSFER_MAX_IMPORT_COUNT) {
-    return { ok: false, error: `单次最多导入 ${RULE_TRANSFER_MAX_IMPORT_COUNT} 条规则` };
+    return { ok: false, error: translateText("单次最多导入 {0} 条规则", [RULE_TRANSFER_MAX_IMPORT_COUNT]) };
   }
 
   const rules: RuleTransferFileRule[] = [];
   for (let index = 0; index < source.rules.length; index += 1) {
     const parsed = ruleTransferRuleSchema.safeParse(source.rules[index]);
     if (!parsed.success) {
-      return { ok: false, error: `第 ${index + 1} 条规则${issueMessage(parsed.error.issues[0])}` };
+      return { ok: false, error: translateText("第 {0} 条规则{1}", [index + 1, issueMessage(parsed.error.issues[0])]) };
     }
     rules.push(parsed.data);
   }

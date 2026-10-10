@@ -1,3 +1,4 @@
+import { t as translateText } from "@/i18n";
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -61,11 +62,11 @@ export function RuleBulkEditDialog<T>({ open, onOpenChange, rules, getRouteMode,
     const portText = snapshot.targetPortText.trim();
     const targetPort = portText ? Number(portText) : 0;
     if (targetIp && !isValidTargetHost(targetIp)) {
-      toast.error("请输入有效的目标地址");
+      toast.error(translateText("请输入有效的目标地址"));
       return;
     }
     if (portText && (!Number.isInteger(targetPort) || targetPort < 1 || targetPort > 65535)) {
-      toast.error("目标端口必须是 1 至 65535 之间的整数");
+      toast.error(translateText("目标端口必须是 1 至 65535 之间的整数"));
       return;
     }
     const mode = snapshot.routeMode;
@@ -84,36 +85,36 @@ export function RuleBulkEditDialog<T>({ open, onOpenChange, rules, getRouteMode,
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg grid-rows-[auto_minmax(0,1fr)_auto]">
         <DialogHeader className="pr-8">
-          <DialogTitle>批量编辑 {rules.length} 条规则</DialogTitle>
-          <DialogDescription>将对 {rules.length} 条规则生效</DialogDescription>
+          <DialogTitle>{translateText("批量编辑 {0} 条规则", [rules.length])}</DialogTitle>
+          <DialogDescription>{translateText("将应用到 {0} 条规则", [rules.length])}</DialogDescription>
         </DialogHeader>
         <div className="min-w-0 space-y-4 overflow-y-auto pr-1">
           <section className="min-w-0 space-y-3 border-t border-border/60 pt-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <h3 className="text-sm font-medium">替换入口资源</h3>
-              <span className="text-xs text-muted-foreground">{resourceSelected ? "已设置新入口" : "保持原入口"}</span>
+              <h3 className="text-sm font-medium">{translateText("替换入口资源")}</h3>
+              <span className="text-xs text-muted-foreground">{resourceSelected ? translateText("已设置新入口") : translateText("保持原入口")}</span>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor={`${fieldId}-mode`}>入口类型</Label>
+              <Label htmlFor={`${fieldId}-mode`}>{translateText("入口类型")}</Label>
               <Select value={routeMode || ""} disabled={disabled} onValueChange={(value) => update({ routeMode: value as RuleBulkRouteMode, tunnelId: null, forwardGroupId: null })}>
-                <SelectTrigger id={`${fieldId}-mode`} className="h-9"><SelectValue placeholder="选择入口类型" /></SelectTrigger>
+                <SelectTrigger id={`${fieldId}-mode`} className="h-9"><SelectValue placeholder={translateText("选择入口类型")} /></SelectTrigger>
                 <SelectContent>
                   {(Object.keys(routeLabels) as RuleBulkRouteMode[]).map((mode) => (
-                    <SelectItem key={mode} value={mode} disabled={!resources[mode].enabled}>{routeLabels[mode]}</SelectItem>
+                    <SelectItem key={mode} value={mode} disabled={!resources[mode].enabled}>{translateText(routeLabels[mode])}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             {routeMode && (
               <div className="min-w-0 space-y-1.5">
-                <Label htmlFor={`${fieldId}-resource`}>使用{routeMode === "tunnel" ? "隧道" : routeLabels[routeMode]}</Label>
+                <Label htmlFor={`${fieldId}-resource`}>{translateText("使用 {0}", [translateText(routeMode === "tunnel" ? "隧道" : routeLabels[routeMode])])}</Label>
                 <Select value={resourceId ? String(resourceId) : "none"} disabled={disabled || !resources[routeMode].enabled} onValueChange={(value) => {
                   const id = value === "none" ? null : Number(value);
                   update(routeMode === "tunnel" ? { tunnelId: id, forwardGroupId: null } : { forwardGroupId: id, tunnelId: null });
                 }}>
                   <SelectTrigger id={`${fieldId}-resource`} className="h-9 min-w-0 text-xs"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">不替换入口</SelectItem>
+                    <SelectItem value="none">{translateText("不替换入口")}</SelectItem>
                     {resources[routeMode].items.map((resource) => (
                       <SelectItem key={resource.id} value={String(resource.id)} textValue={getResourceText(routeMode, resource)}>
                         {renderResource(routeMode, resource)}
@@ -125,44 +126,45 @@ export function RuleBulkEditDialog<T>({ open, onOpenChange, rules, getRouteMode,
             )}
             {preset.typeCount > 1 && (
               <p className="text-xs leading-5 text-muted-foreground">
-                所选包含 {preset.typeCount} 种入口类型{resourceSelected && routeMode ? `，应用后会全部改为${routeLabels[routeMode]}` : "，保持原入口"}
+                {resourceSelected && routeMode
+                  ? translateText("所选包含 {0} 种入口类型，应用后会全部改为 {1}", [preset.typeCount, translateText(routeLabels[routeMode])])
+                  : translateText("所选包含 {0} 种入口类型，保持原入口", [preset.typeCount])}
               </p>
             )}
           </section>
           <section className="min-w-0 space-y-3 border-t border-border/60 pt-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <h3 className="text-sm font-medium">替换转发出口</h3>
-              <span className="text-xs text-muted-foreground">{hasTarget ? "按填写项替换" : "保持原目标"}</span>
+              <h3 className="text-sm font-medium">{translateText("替换转发出口")}</h3>
+              <span className="text-xs text-muted-foreground">{hasTarget ? translateText("按填写项替换") : translateText("保持原目标")}</span>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="min-w-0 space-y-1.5">
-                <Label htmlFor={`${fieldId}-host`}>目标地址</Label>
-                <Input id={`${fieldId}-host`} placeholder="留空则保持原目标地址" value={form.targetIp} disabled={disabled} onChange={(event) => update({ targetIp: event.target.value })} />
+                <Label htmlFor={`${fieldId}-host`}>{translateText("目标地址")}</Label>
+                <Input id={`${fieldId}-host`} placeholder={translateText("留空则保持原目标地址")} value={form.targetIp} disabled={disabled} onChange={(event) => update({ targetIp: event.target.value })} />
               </div>
               <div className="min-w-0 space-y-1.5">
-                <Label htmlFor={`${fieldId}-port`}>目标端口</Label>
-                <Input id={`${fieldId}-port`} type="number" min={1} max={65535} step={1} placeholder="留空则保持原目标端口" value={form.targetPortText} disabled={disabled} onChange={(event) => update({ targetPortText: event.target.value })} />
+                <Label htmlFor={`${fieldId}-port`}>{translateText("目标端口")}</Label>
+                <Input id={`${fieldId}-port`} type="number" min={1} max={65535} step={1} placeholder={translateText("留空则保持原目标端口")} value={form.targetPortText} disabled={disabled} onChange={(event) => update({ targetPortText: event.target.value })} />
               </div>
             </div>
           </section>
           <div className="min-w-0 space-y-1.5 border-t border-border/60 pt-3">
-            <Label htmlFor={`${fieldId}-conflict`}>端口冲突处理</Label>
+            <Label htmlFor={`${fieldId}-conflict`}>{translateText("端口冲突处理")}</Label>
             <Select value={form.conflictStrategy} disabled={disabled || !resourceSelected} onValueChange={(value) => update({ conflictStrategy: value as RuleBulkEditInput["conflictStrategy"] })}>
               <SelectTrigger id={`${fieldId}-conflict`} className="h-9 text-xs"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="skip">跳过冲突规则</SelectItem>
-                <SelectItem value="auto">自动分配新端口</SelectItem>
-                <SelectItem value="error">保持原端口，冲突则该条失败</SelectItem>
+                <SelectItem value="skip">{translateText("跳过冲突规则")}</SelectItem>
+                <SelectItem value="auto">{translateText("自动分配新端口")}</SelectItem>
+                <SelectItem value="error">{translateText("保持原端口，冲突则该条失败")}</SelectItem>
               </SelectContent>
             </Select>
-            <p className="text-xs leading-5 text-muted-foreground">SNI 分流规则共用同一入口端口，自动分配新端口会使同组规则分散到多个端口。</p>
+            <p className="text-xs leading-5 text-muted-foreground">{translateText("SNI 分流规则共用同一入口端口，自动分配新端口会使同组规则分散到多个端口。")}</p>
           </div>
         </div>
         <DialogFooter className="gap-2">
-          <Button type="button" variant="outline" disabled={busy} onClick={() => onOpenChange(false)}>取消</Button>
+          <Button type="button" variant="outline" disabled={busy} onClick={() => onOpenChange(false)}>{translateText("取消")}</Button>
           <Button type="button" disabled={disabled || (!resourceSelected && !hasTarget)} className="gap-1.5" onClick={() => void apply()}>
-            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}应用
-          </Button>
+            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}{translateText("应用")}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

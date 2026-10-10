@@ -1,0 +1,133 @@
+- generic: sni-panel 09验收
+- button:
+- button:
+- generic: Main Menu
+- list:
+  - button:
+    - generic: Dashboard
+  - button:
+    - generic: Hosts
+  - button:
+    - generic: Links
+  - button:
+    - generic: Forwarding Rules
+  - button:
+    - generic: Announcements
+- generic: Management
+- list:
+  - button:
+    - generic: Profile
+  - button:
+    - generic: SNI entry ports
+  - button:
+    - generic: Payment Integrations
+  - button:
+    - generic: Billing & Redemption
+  - button:
+    - generic: Plans
+  - button:
+    - generic: Users
+  - button:
+    - generic: Network Tests
+  - button:
+    - generic: Settings
+- button:
+  - paragraph: 中文管理员 <&> English
+  - paragraph: Admin · Telegram Not Linked
+- main:
+  - button:
+    - generic: Toggle Sidebar
+  - generic: sni-panel 09验收
+  - button:
+  - main:
+    - heading [level=1]: Traffic Billing
+    - paragraph: Set a traffic price for each resource.
+    - generic: Enable feature
+    - switch [checked]
+    - button:
+      - text: Add billing resource
+    - paragraph: Total charges
+    - paragraph:
+      - generic: CN¥0.00
+    - paragraph:
+      - generic: All past charges
+    - paragraph: Billed traffic
+    - paragraph:
+      - generic: 0 GB
+    - paragraph:
+      - generic: Total traffic from billing records
+    - paragraph: Billable Resources
+    - paragraph:
+      - generic: "2"
+    - paragraph:
+      - generic: Configured resources
+    - generic: Billing Configuration
+    - generic: Charge per GB, with optional resource permissions.
+    - button:
+    - button:
+    - generic: 用户端口 / Long port resource unchanged
+    - button:
+    - button:
+    - generic: Type
+    - generic: "Port Forwarding #10"
+    - generic: Unit price
+    - generic: CN¥0.012 / GB
+    - generic: Multiplier
+    - generic: 1x
+    - generic: Permissions
+    - generic: Public access
+    - generic: Status
+    - generic: Enable
+    - generic: 用户转发链 / Long chain resource unchanged
+    - button:
+    - button:
+    - generic: Type
+    - generic: "Forwarding Chain #20"
+    - generic: Unit price
+    - generic: CN¥0.012 / GB
+    - generic: Multiplier
+    - generic: 1x
+    - generic: Permissions
+    - generic: Public access
+    - generic: Status
+    - generic: Enable
+  - link:
+    - /url: https://github.com/owo10086/sni-panel
+    - text: Project Address
+  - generic: "|"
+  - link:
+    - /url: https://owo10086.github.io/sni-panel/
+    - text: Documentation
+  - generic: "|"
+  - link:
+    - /url: https://t.me/miyin_private_bot
+    - text: Contact via Telegram
+  - generic: "|"
+  - link:
+    - /url: https://t.me/ForwardX_panel
+    - text: Telegram Group
+- region "Notifications alt+T"
+- dialog "Edit billing resource":
+  - heading "Edit billing resource" [level=2]
+  - paragraph: Choose a resource and set its price per GB. The multiplier follows the resource settings.
+  - text: Resource type
+  - combobox [active]:
+    - generic: Forwarding Chain
+  - text: Resource
+  - combobox [disabled]:
+  - text: Price / GB
+  - spinbutton: "0.012"
+  - text: Link Multiplier
+  - generic: Shown after selecting a resource
+  - text: Description
+  - textbox "The default description for the time shop display system": "用户说明 <&> unchanged #20"
+  - text: Enable billing resource
+  - paragraph: When disabled, this resource is no longer available for traffic billing.
+  - switch [checked]
+  - text: Require resource permission
+  - paragraph: When off, users with a balance can use this resource. When on, grant access in user management.
+  - switch
+  - button "Cancel"
+  - button "Save"
+  - button "Close":
+    - generic: Close

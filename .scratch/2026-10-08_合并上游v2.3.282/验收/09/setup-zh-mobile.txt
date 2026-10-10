@@ -1,0 +1,58 @@
+Browser tab: 3, Title: "ForwardX", URL: "http://127.0.0.1:18839/setup".
+1 AXWebArea ForwardX, URL: 127.0.0.1:18839/setup
+	2 container
+		3 container root
+			4 container
+				5 text 语言
+				6 pop up button (collapsed, settable) Description: 语言, Value: 简体中文, Secondary Actions: Expand
+					7 menu
+						8 自动（安装参数 / 浏览器 / IP）
+						9 (selected) 简体中文
+						10 English
+			11 image ForwardX
+			12 heading ForwardX 首次部署, Value: 1
+				13 text ForwardX 首次部署
+			14 text 按步骤完成数据库初始化、旧面板迁移和管理员配置。
+			15 image
+			16 container
+				17 text 步骤  1
+			18 text 连接数据库
+			19 image
+			20 container
+				21 text 步骤  2
+			22 text 导入旧数据
+			23 image
+			24 container
+				25 text 步骤  3
+			26 text 创建管理员
+			47 image
+			48 text 连接数据库
+			49 text 选择数据库并初始化。
+			50 button SQLite 本地数据库 适合单机部署。
+				51 text SQLite 本地数据库
+				52 image
+				53 text 适合单机部署。
+			54 button MySQL 外部数据库 适合现有 MySQL 环境。
+				55 text MySQL 外部数据库
+				56 text 适合现有 MySQL 环境。
+			57 button PostgreSQL 外部数据库 适合 PostgreSQL 环境。
+				58 text PostgreSQL 外部数据库
+				59 text 适合 PostgreSQL 环境。
+			60 container
+				61 image
+				62 heading 数据库版本要求, Value: 5
+					63 text 数据库版本要求
+				64 text SQLite 无需额外服务；MySQL 需要 8.0.13 或更高版本；PostgreSQL 建议使用 12 或更高版本。
+			65 container
+				66 image
+				67 heading 当前已连接 SQLite 数据库, Value: 5
+					68 text 当前已连接  SQLite  数据库
+				69 text /data/forwardx.db  如需修改数据库配置，请选择新的数据库类型并重新保存。
+			70 text SQLite 数据文件
+			71 text field (settable) /tmp/用户输入-unchanged.db
+			72 button 保存并连接
+				73 text 保存并连接
+				74 image
+		46 container Notifications alt+T
+
+The focused UI element is 71 text field (settable) /tmp/用户输入-unchanged.db

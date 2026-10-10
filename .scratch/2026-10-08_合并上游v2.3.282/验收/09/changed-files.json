@@ -1,0 +1,141 @@
+{
+  "baselineCount": 851,
+  "modified": [
+    {
+      "path": "client/src/components/HostFlatMap.tsx",
+      "before": "0c8efab107acabaf02c32aa37d8c5996d2e2668c3fd64e6a444c6252904fd0c8",
+      "after": "1800fff18b7977f77a9a6e86d646852c26336a78f2ca4140b92cd8efe1d3e3f6"
+    },
+    {
+      "path": "client/src/components/LatencyStabilityStats.tsx",
+      "before": "923e7c964d782af0f8da322bc7016155074c3eba803f69bb871b4f5f1a1b989e",
+      "after": "b408eac1db5d35c00adde2ff84c033fd09046d341c6fca38f925cf7aea218639"
+    },
+    {
+      "path": "client/src/components/TrafficBillingConfigManager.tsx",
+      "before": "685dc05c5a070074f43465e07cbc649b8cdfe8fd82a112eae9d16509b8b8fc9a",
+      "after": "3d69f74799224851a8cfe7273206a8c8a50d56db181f838b2f8d7a1ac4007abe"
+    },
+    {
+      "path": "client/src/components/hosts/HostGroupManager.tsx",
+      "before": "9cc89d50271b726f4bda465cb010c6472a85f84fcfd3a5cf25674d8525db374e",
+      "after": "26a67d7b9006fd5900c997d62b5b5a578840dc95eee2d448f6e6bba97cb6b22a"
+    },
+    {
+      "path": "client/src/components/hosts/HostProbeServiceManager.tsx",
+      "before": "78afb2a014a98651a448adcb8ac7977419a0c9bb2c35dde74a062a340a83f337",
+      "after": "01528b621994a8e951ec74feabd747697ad25211e2b9ef278eb0e8622244979c"
+    },
+    {
+      "path": "client/src/components/plugins/AgentResourceManager.tsx",
+      "before": "0a26758d6eeddfdaca2ac8960c13dd79d3f946bedd7616429057173f246cab17",
+      "after": "75a138f1f351f29c2d277a40dec40f0ae7f1bb90bf4e3cbc876213ec6ced9d69"
+    },
+    {
+      "path": "client/src/components/rules/RuleBulkEditDialog.tsx",
+      "before": "88c1c0424b5ef1f7722f31f8bec7d28bd59dd160fc960404f150db1604e9db7b",
+      "after": "b74f94fb926c2f6424b249e3e031c5c3ce02be4e3424b73b5505bebec080d267"
+    },
+    {
+      "path": "client/src/i18n/en.json",
+      "before": "c7a78c5b4c3912e91dce4fcf24cf78f99b2a402355ba036ce66ecbdf3b771e41",
+      "after": "fd463a4d86c5988459c04614405add4faa1c50e25a53205047fd13d21492e4ef"
+    },
+    {
+      "path": "client/src/lib/linkAvailability.ts",
+      "before": "6ecbcdcda0d39c82dca1e652d62ba6718acb606a7ceb34964283c3ffb95aba78",
+      "after": "614b8f6b75874df4072ae01673efbdd44baef33d9ac0ff1690bc83c0cadc51a7"
+    },
+    {
+      "path": "client/src/lib/ruleBulkSelection.test.ts",
+      "before": "77d7f4e09e816ebadfe0ecd9ae0080070e3d26fb645a79320877207aaf538f1c",
+      "after": "9d495fe5deac96320fee64c4367f24b172a843cd7a0bc00938e960d15c297b21"
+    },
+    {
+      "path": "client/src/lib/ruleBulkSelection.ts",
+      "before": "095351b2ba17e3a76718d1762724136b8545bc8ad9fe8f56298487e59ddcfdc2",
+      "after": "f44c5cf7ccc3ac9904ec37e75a3ce8a684ba5485e98cab367493f6bd206bcfe7"
+    },
+    {
+      "path": "client/src/lib/ruleTransfer.test.ts",
+      "before": "94835d64cde0a8c7b20a6a1da2a83ea930f5677799d555607fe4fbf4badf4e79",
+      "after": "641cf5c1f411702f54f787cac80882acdd3275fa84611c778f0c3fb1a769066e"
+    },
+    {
+      "path": "client/src/lib/ruleTransfer.ts",
+      "before": "899dbf9c11165b0c7e40cafaa087f70721c11174d8914a648326c438f5e1ba76",
+      "after": "21638e876a941e83e8854894883682f4c3f23aa1d685bbbc927556a4bd4b2d6b"
+    },
+    {
+      "path": "client/src/main.tsx",
+      "before": "30dcdc5b1962f56d139faf5aa5154130f6557a839d4486f72a6e07207f47fa4f",
+      "after": "f0768d08e42ceece140df0e9f2703cb3140c1128af6db0b437131e46824ec56b"
+    },
+    {
+      "path": "client/src/pages/Announcements.tsx",
+      "before": "46b8aec21704bcd2a9722888986171966586ceac1daecbca095e920e934c0dda",
+      "after": "3b5d6bf82854938f79083023e9c58cfd3ee1f49f6dffe4f0c2b6bf74532ab85a"
+    },
+    {
+      "path": "client/src/pages/Billing.tsx",
+      "before": "0600756af66a581f9a3e47cd947c5538440161f98e68c5ccbc2559f9ed91fe1e",
+      "after": "c224299403010259a7e022959dbac98b6855561a535ab3f60b6308616a2677c5"
+    },
+    {
+      "path": "client/src/pages/ForwardGroups.tsx",
+      "before": "ab3c17556e17651c9ac03cf382d700cfbf681714f4fb11c95cf8ce5c8ba454e8",
+      "after": "48536c06a3fb3cc6cc3629eccc9ca8176cd83270464239293d2a8ea67c0e5100"
+    },
+    {
+      "path": "client/src/pages/Hosts.tsx",
+      "before": "182c9b1193d57158eb7e45180d636bcbfd0d4e10d86a34e3e76c189cf66f5c8c",
+      "after": "1836ef0a08e12c7f94bfc31790462848359bb54767ed5408c06bfa26f1c83c40"
+    },
+    {
+      "path": "client/src/pages/LookingGlass.tsx",
+      "before": "4ae14a922f3b9d731f8cb9393f27ea804f4c1b75cd21a22416b7984cf253870f",
+      "after": "c12e0e2d366f1e7a3d724079f5551f60bb8c89eef2f2e1d60cb68f5cd8dc4884"
+    },
+    {
+      "path": "client/src/pages/Plugins.tsx",
+      "before": "7f3bab3e19fc9ee16de3fd22d6c930a34ea53a31d5aaad00e1513ed8689513e3",
+      "after": "e9d1cc75aa74968e5e83d032ce6b6bb10bb0f860f7aae821a91525df6d76c626"
+    },
+    {
+      "path": "client/src/pages/Rules.tsx",
+      "before": "ba0067dafc3934427e27cace5d42e98b500b0720f899debb90f8b2374c823598",
+      "after": "f3f02d191a9c0bc0b198fbacc25f3c663022199c7dc5246d00f73879d19e043a"
+    },
+    {
+      "path": "client/src/pages/Settings.tsx",
+      "before": "5b6f8864c49c4a45907d28bb9dbd45dd2c52bfdf3d115e94529169a5cd723d34",
+      "after": "7c6daff73b43d022d585f33e63edb038012857ce076c575c6e039214896cc1e2"
+    },
+    {
+      "path": "client/src/pages/Setup.tsx",
+      "before": "768089862a14d22f1aca2a938dba96303ed00f5019a82f17c0c73a9edba38f61",
+      "after": "3e9ef924862a3d1b1dfbd11779041521725d467ea970fd0f7984026c62a23dde"
+    },
+    {
+      "path": "client/src/pages/Store.tsx",
+      "before": "0720befe4eb464a3c61ba56a10bd7a9e6a728596bbeafa39c6e6bb4a9d72e8b0",
+      "after": "12a54fecbcf0bd7b25371cd9027b929cfb9a368bd608732542acc10479a33328"
+    },
+    {
+      "path": "client/src/pages/Subscriptions.tsx",
+      "before": "46b9d29ea5fde16ec1ff67eb4751829f8c29f8ef80f50f83efd66054a807bad3",
+      "after": "52b8d13ec848a8108db91a6322a6c44f7b5cf1bd616df114554a565dc2171a9c"
+    },
+    {
+      "path": "client/src/pages/Tunnels.tsx",
+      "before": "8ce8eae523a4920a45c8db952aef014252257726df338c381421df0483320abe",
+      "after": "9477a41329306e3f59e250d2a463aa7f965f2bc3400afbc741b2e4303af789dd"
+    },
+    {
+      "path": "client/src/pages/Users.tsx",
+      "before": "2947a139967bd542155f74e12c2cf0a258cd17ba047a45d3c00fad4777b147f7",
+      "after": "c6f395397732651edefa04ccd519c6435900642f482aba76ad22f832ab086597"
+    }
+  ],
+  "added": []
+}

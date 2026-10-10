@@ -1,0 +1,1516 @@
+--- a/client/src/components/HostFlatMap.tsx
++++ b/client/src/components/HostFlatMap.tsx
+@@ -194,7 +194,7 @@
+     { label: "Agent", value: point.host.agentVersion ? `v${point.host.agentVersion}` : translateText("未上报") },
+   ];
+   const regionValue = point.flagUrl
+-    ? translateText("<span style=\"display:inline-flex;min-width:0;align-items:center;gap:7px;\"><img src=\"{0}\" alt=\"{1}\" referrerpolicy=\"no-referrer\" style=\"width:20px;height:15px;flex:0 0 auto;border-radius:2px;object-fit:cover;\" onerror=\"this.style.display='none';this.nextElementSibling.style.display='inline';\" /><span style=\"display:none;flex:0 0 auto;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,'Liberation Mono',monospace;font-size:11px;color:#cbd5e1;\">{2}</span><span style=\"min-width:0;overflow:hidden;text-overflow:ellipsis;\">{3}</span></span>", [escapeTooltipHtml(point.flagUrl), escapeTooltipHtml(point.countryCode), escapeTooltipHtml(point.countryCode), escapeTooltipHtml(point.regionText || "地区获取中")])
++    ? translateText("<span style=\"display:inline-flex;min-width:0;align-items:center;gap:7px;\"><img src=\"{0}\" alt=\"{1}\" referrerpolicy=\"no-referrer\" style=\"width:20px;height:15px;flex:0 0 auto;border-radius:2px;object-fit:cover;\" onerror=\"this.style.display='none';this.nextElementSibling.style.display='inline';\" /><span style=\"display:none;flex:0 0 auto;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,'Liberation Mono',monospace;font-size:11px;color:#cbd5e1;\">{2}</span><span style=\"min-width:0;overflow:hidden;text-overflow:ellipsis;\">{3}</span></span>", [escapeTooltipHtml(point.flagUrl), escapeTooltipHtml(point.countryCode), escapeTooltipHtml(point.countryCode), escapeTooltipHtml(point.regionText || translateText("地区获取中"))])
+     : escapeTooltipHtml(point.regionText || translateText("地区获取中"));
+   return translateText("\n    <div style=\"min-width:260px;max-width:330px;border:1px solid rgba(255,255,255,.14);border-radius:8px;background:rgba(8,13,24,.94);box-shadow:0 18px 44px rgba(0,0,0,.4);backdrop-filter:blur(10px);color:#f8fafc;padding:12px;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;\">\n      <div style=\"display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;\">\n        <div style=\"min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px;font-weight:700;\">{0}</div>\n        <div style=\"display:flex;align-items:center;gap:6px;color:#cbd5e1;font-size:12px;\">\n          <span style=\"width:8px;height:8px;border-radius:999px;background:{1};box-shadow:0 0 14px {2};\"></span>\n          {3}\n        </div>\n      </div>\n      {4}\n    </div>\n  ", [escapeTooltipHtml(point.host.name || "-"), deckColorToCss(point.color), deckColorToCss(point.haloColor), escapeTooltipHtml(point.statusText), rows.map((row) => `
+         <div style="display:grid;grid-template-columns:42px minmax(0,1fr);gap:8px;align-items:start;margin-top:6px;font-size:12px;line-height:1.45;">
+--- a/client/src/components/LatencyStabilityStats.tsx
++++ b/client/src/components/LatencyStabilityStats.tsx
+@@ -64,7 +64,7 @@
+       {counterStatistics !== undefined && (
+         <p className="text-[11px] leading-relaxed text-muted-foreground">
+           {counterStatistics?.available
+-            ? translateText("按已上报的累计探测次数统计；截至 {0}。", [counterStatistics.latestAt ? new Date(counterStatistics.latestAt).toLocaleString(getFormatLocale()) : "最后上报"])
++            ? translateText("按已上报的累计探测次数统计；截至 {0}。", [counterStatistics.latestAt ? new Date(counterStatistics.latestAt).toLocaleString(getFormatLocale()) : translateText("最后上报")])
+             : translateText("暂无累计探测统计，请升级 Agent 并等待上报。旧记录省略了稳定成功探测，无法准确计算失败率与稳定性。")}
+           {" "}{description || translateText("仅包含支持累计计数的 Agent 自首次上报后可观察到的探测；不补算旧数据，时间边界受上报间隔影响。")}
+           {counterStatistics?.available && <> {translateText("延迟曲线保留历史记录；稳定性只使用累计计数和对应的真实探测延迟。")} {counterStatistics.latencySamplesTruncated
+--- a/client/src/components/TrafficBillingConfigManager.tsx
++++ b/client/src/components/TrafficBillingConfigManager.tsx
+@@ -126,12 +126,12 @@
+ type BillingConfigViewMode = "card" | "table";
+ const BILLING_CONFIG_VIEW_MODE_STORAGE_KEY = "forwardx.trafficBilling.configs.viewMode";
+ const BILLING_RESOURCE_CATEGORY_ITEMS: Array<{ value: Exclude<BillingResourceCategory, "legacy_host">; label: string; description: string }> = [
+-  { value: "port", label: translateText("端口转发"), description: translateText("链路管理中的端口转发资源") },
+-  { value: "tunnel", label: translateText("隧道转发"), description: translateText("已创建的隧道资源") },
+-  { value: "chain", label: translateText("转发链"), description: translateText("固定多跳链路资源") },
+-  { value: "group", label: translateText("转发组"), description: translateText("转发组资源") },
++  { value: "port", label: "端口转发", description: "链路管理中的端口转发资源" },
++  { value: "tunnel", label: "隧道转发", description: "已创建的隧道资源" },
++  { value: "chain", label: "转发链", description: "固定多跳链路资源" },
++  { value: "group", label: "转发组", description: "转发组资源" },
+ ];
+-const LEGACY_HOST_RESOURCE_CATEGORY_ITEM = { value: "legacy_host" as const, label: translateText("历史主机"), description: translateText("旧版本主机计费资源") };
++const LEGACY_HOST_RESOURCE_CATEGORY_ITEM = { value: "legacy_host" as const, label: "历史主机", description: "旧版本主机计费资源" };
+ 
+ function getStoredBillingConfigViewMode(): BillingConfigViewMode {
+   if (typeof window === "undefined") return "card";
+@@ -194,7 +194,7 @@
+   if (config?.resourceType === "host") return "legacy_host";
+   if (config?.resourceType === "tunnel") return "tunnel";
+   const group = forwardGroups.find((item: any) => Number(item.id) === Number(config?.resourceId));
+-  const mode = forwardGroupMode(group || { groupMode: config?.resourceKind === translateText("端口转发") ? "port" : config?.resourceKind === translateText("转发链") ? "chain" : "failover" });
++  const mode = forwardGroupMode(group || { groupMode: config?.resourceKind === "端口转发" ? "port" : config?.resourceKind === "转发链" ? "chain" : "failover" });
+   if (mode === "port") return "port";
+   if (mode === "chain") return "chain";
+   return "group";
+@@ -315,16 +315,16 @@
+           <span className="min-w-0 break-words text-sm font-medium">{config.resourceName}</span>
+         </div>
+         <div className="-mr-2 -mt-2 flex shrink-0 items-center gap-1">
+-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onEdit}>
++          <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={translateText("编辑计费资源")} onClick={onEdit}>
+             <Pencil className="h-4 w-4" />
+           </Button>
+-          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={onDelete}>
++          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" aria-label={translateText("删除")} onClick={onDelete}>
+             <Trash2 className="h-4 w-4" />
+           </Button>
+         </div>
+       </div>
+       <div className="mt-3 space-y-2 border-t border-border/40 pt-3">
+-        <MobileInfoRow label={translateText("类型")}>{config.resourceKind || (config.resourceType === "host" ? translateText("历史主机") : config.resourceType === "tunnel" ? translateText("隧道转发") : translateText("转发资源"))} #{config.resourceId}</MobileInfoRow>
++        <MobileInfoRow label={translateText("类型")}>{(config.resourceKind ? translateText(config.resourceKind) : "") || (config.resourceType === "host" ? translateText("历史主机") : config.resourceType === "tunnel" ? translateText("隧道转发") : translateText("转发资源"))} #{config.resourceId}</MobileInfoRow>
+         <MobileInfoRow label={translateText("单价")}>{formatPricePerGb(config)} / GB</MobileInfoRow>
+         <MobileInfoRow label={translateText("倍率")}>{config.multiplierText || formatTrafficMultiplier(config.multiplier || 100)}</MobileInfoRow>
+         <MobileInfoRow label={translateText("权限")}>
+@@ -602,7 +602,7 @@
+                             <div className="flex items-center gap-2">
+                               {config.resourceType === "host" ? <Server className="h-4 w-4 text-muted-foreground" /> : <Route className="h-4 w-4 text-muted-foreground" />}
+                               <span>{config.resourceName}</span>
+-                              <Badge variant="outline" className="hidden sm:inline-flex">{config.resourceKind || translateText("转发资源")}</Badge>
++                              <Badge variant="outline" className="hidden sm:inline-flex">{translateText(config.resourceKind || "转发资源")}</Badge>
+                             </div>
+                           </TableCell>
+                           <TableCell>{formatPricePerGb(config)} / GB</TableCell>
+@@ -615,8 +615,8 @@
+                           <TableCell><Badge variant={config.enabled ? "outline" : "secondary"}>{config.enabled ? translateText("启用") : translateText("停用")}</Badge></TableCell>
+                           <TableCell className="text-right">
+                             <div className="flex justify-end gap-1">
+-                              <Button variant="ghost" size="icon" onClick={() => openEdit(config)}><Pencil className="h-4 w-4" /></Button>
+-                              <Button variant="ghost" size="icon" className="text-destructive" onClick={() => deleteConfig.mutate({ id: config.id })}><Trash2 className="h-4 w-4" /></Button>
++                              <Button variant="ghost" size="icon" aria-label={translateText("编辑计费资源")} onClick={() => openEdit(config)}><Pencil className="h-4 w-4" /></Button>
++                              <Button variant="ghost" size="icon" aria-label={translateText("删除")} className="text-destructive" onClick={() => deleteConfig.mutate({ id: config.id })}><Trash2 className="h-4 w-4" /></Button>
+                             </div>
+                           </TableCell>
+                         </TableRow>
+@@ -636,12 +636,12 @@
+       </Card>
+ 
+       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+-        <DialogContent className="max-w-2xl sm:max-h-[90svh]">
++        <DialogContent className="max-w-2xl grid-rows-[auto_minmax(0,1fr)_auto] sm:max-h-[90svh]">
+           <DialogHeader>
+             <DialogTitle>{configForm.id ? translateText("编辑计费资源") : translateText("新增计费资源")}</DialogTitle>
+             <DialogDescription>{translateText("选择资源并设置每 GB 单价；倍率继承资源配置。")}</DialogDescription>
+           </DialogHeader>
+-          <div className="grid gap-4 sm:grid-cols-2">
++          <div className="min-h-0 overflow-y-auto grid gap-4 pr-1 sm:grid-cols-2">
+             <div className="grid gap-3 sm:col-span-2 sm:grid-cols-[11rem_minmax(0,1fr)]">
+               <div className="space-y-2">
+                 <Label>{translateText("资源类型")}</Label>
+@@ -663,13 +663,13 @@
+                   </SelectTrigger>
+                   <SelectContent>
+                     {configForm.resourceCategory === "legacy_host" ? (
+-                      <SelectItem value="legacy_host" textValue={LEGACY_HOST_RESOURCE_CATEGORY_ITEM.label} disabled>
+-                        <span className="truncate text-sm font-medium">{LEGACY_HOST_RESOURCE_CATEGORY_ITEM.label}</span>
++                      <SelectItem value="legacy_host" textValue={translateText(LEGACY_HOST_RESOURCE_CATEGORY_ITEM.label)} disabled>
++                        <span className="truncate text-sm font-medium">{translateText(LEGACY_HOST_RESOURCE_CATEGORY_ITEM.label)}</span>
+                       </SelectItem>
+                     ) : null}
+                     {BILLING_RESOURCE_CATEGORY_ITEMS.map((item) => (
+-                      <SelectItem key={item.value} value={item.value} textValue={item.label}>
+-                        <span className="truncate text-sm font-medium">{item.label}</span>
++                      <SelectItem key={item.value} value={item.value} textValue={translateText(item.label)}>
++                        <span className="truncate text-sm font-medium">{translateText(item.label)}</span>
+                       </SelectItem>
+                     ))}
+                   </SelectContent>
+--- a/client/src/components/hosts/HostGroupManager.tsx
++++ b/client/src/components/hosts/HostGroupManager.tsx
+@@ -124,8 +124,8 @@
+       onToggleSuccess={(checked) => toast.success(checked ? translateText("主机分组已开启") : translateText("主机分组已关闭"))}
+       onToggleError={(error) => toast.error(error instanceof Error ? error.message : translateText("切换主机分组状态失败"))}
+       className="scale-75"
+-      title={translateText("{0}主机分组 {1}", [enabled ? "停用" : "启用", group.name || ""])}
+-      aria-label={translateText("{0}分组 {1}", [enabled ? "停用" : "启用", group.name || ""])}
++      title={translateText("{0}主机分组 {1}", [enabled ? translateText("停用") : translateText("启用"), group.name || ""])}
++      aria-label={translateText("{0}分组 {1}", [enabled ? translateText("停用") : translateText("启用"), group.name || ""])}
+     />
+   );
+ }
+@@ -327,7 +327,7 @@
+   const confirmDelete = async (group: HostGroupView) => {
+     if (await confirmDialog({
+       title: translateText("删除分组"),
+-      description: translateText("确定要删除“{0}”吗？删除后不会影响主机本身。", [group.name || "此分组"]),
++      description: translateText("确定要删除“{0}”吗？删除后不会影响主机本身。", [group.name || translateText("此分组")]),
+       confirmText: translateText("删除"),
+       tone: "destructive",
+     })) {
+--- a/client/src/components/hosts/HostProbeServiceManager.tsx
++++ b/client/src/components/hosts/HostProbeServiceManager.tsx
+@@ -156,8 +156,8 @@
+       onToggleSuccess={(checked) => toast.success(checked ? translateText("探测服务已开启") : translateText("探测服务已关闭"))}
+       onToggleError={(error) => toast.error(error instanceof Error ? error.message : translateText("切换探测服务状态失败"))}
+       className="scale-75"
+-      title={translateText("{0}探测服务 {1}", [enabled ? "停用" : "启用", service.name || ""])}
+-      aria-label={translateText("{0}服务 {1}", [enabled ? "停用" : "启用", service.name || ""])}
++      title={translateText("{0}探测服务 {1}", [enabled ? translateText("停用") : translateText("启用"), service.name || ""])}
++      aria-label={translateText("{0}服务 {1}", [enabled ? translateText("停用") : translateText("启用"), service.name || ""])}
+     />
+   );
+ }
+@@ -407,7 +407,7 @@
+   const confirmDelete = async (service: any) => {
+     if (await confirmDialog({
+       title: translateText("删除探测服务"),
+-      description: translateText("确定要删除“{0}”吗？删除后主机将不再执行该服务探测。", [service.name || "此服务"]),
++      description: translateText("确定要删除“{0}”吗？删除后主机将不再执行该服务探测。", [service.name || translateText("此服务")]),
+       confirmText: translateText("删除"),
+       tone: "destructive",
+     })) deleteMutation.mutate({ id: service.id });
+--- a/client/src/components/plugins/AgentResourceManager.tsx
++++ b/client/src/components/plugins/AgentResourceManager.tsx
+@@ -749,7 +749,7 @@
+           });
+         }
+       }
+-      toast.success(translateText("{0}成功", [operation.label || "操作"]));
++      toast.success(translateText("{0}成功", [operation.label || translateText("操作")]));
+       const refreshAfter = operation.refreshAfter?.length ? operation.refreshAfter : operation.refreshSources;
+       patchTaskState(meta.key, { phase: "refreshing", status: "success" });
+       void refreshSources(refreshAfter?.length ? refreshAfter : [view.listSourceId]).then((refreshed) => {
+@@ -780,7 +780,7 @@
+     if (!operation) return;
+     const accepted = await confirm({
+       title: operation.label || translateText("删除资源"),
+-      description: operation.description || translateText("确定删除 {0} 吗？", [rowIdentity(row, view) || "当前资源"]),
++      description: operation.description || translateText("确定删除 {0} 吗？", [rowIdentity(row, view) || translateText("当前资源")]),
+       confirmText: translateText("删除"),
+       tone: "destructive",
+     });
+@@ -947,7 +947,7 @@
+                   <SelectTrigger className="w-full">
+                     <span className="min-w-0 truncate text-left">
+                       {selectedHost
+-                        ? translateText("{0} · {1}", [selectedHost.name || `主机 ${selectedHost.id}`, taskStatusLabel(resourceHostStatus(selectedHost, selectedState))])
++                        ? translateText("{0} · {1}", [selectedHost.name || translateText("主机 {0}", [selectedHost.id]), taskStatusLabel(resourceHostStatus(selectedHost, selectedState))])
+                         : translateText("选择 Agent")}
+                     </span>
+                   </SelectTrigger>
+@@ -963,7 +963,7 @@
+               <div className="hidden min-w-0 lg:block">
+                 <p className="truncate text-sm font-semibold">{selectedHost?.name || translateText("请选择主机")}</p>
+                 <p className="mt-0.5 truncate text-xs text-muted-foreground">
+-                  {selectedHost ? translateText("{0} · ", [selectedHost.ip || selectedHost.ipv4 || selectedHost.ipv6 || "未设置 IP"]) : ""}{view.title}
++                  {selectedHost ? translateText("{0} · ", [selectedHost.ip || selectedHost.ipv4 || selectedHost.ipv6 || translateText("未设置 IP")]) : ""}{view.title}
+                 </p>
+               </div>
+               {latestTaskState && (
+--- a/client/src/components/rules/RuleBulkEditDialog.tsx
++++ b/client/src/components/rules/RuleBulkEditDialog.tsx
+@@ -12,7 +12,7 @@
+ type Resource = { id: number };
+ type Form = Omit<RuleBulkEditInput, "targetPort"> & { targetPortText: string };
+ const routeLabels: Record<RuleBulkRouteMode, string> = {
+-  local: translateText("端口转发"), tunnel: translateText("隧道转发"), chain: translateText("转发链"), group: translateText("转发组"),
++  local: "端口转发", tunnel: "隧道转发", chain: "转发链", group: "转发组",
+ };
+ const emptyForm = (routeMode: RuleBulkRouteMode | null): Form => ({
+   routeMode, tunnelId: null, forwardGroupId: null, targetIp: "", targetPortText: "", conflictStrategy: "error",
+@@ -85,8 +85,8 @@
+     <Dialog open={open} onOpenChange={onOpenChange}>
+       <DialogContent className="max-w-lg grid-rows-[auto_minmax(0,1fr)_auto]">
+         <DialogHeader className="pr-8">
+-          <DialogTitle>{translateText("批量编辑")}{rules.length} {translateText("条规则")}</DialogTitle>
+-          <DialogDescription>{translateText("将对")}{rules.length} {translateText("条规则生效")}</DialogDescription>
++          <DialogTitle>{translateText("批量编辑 {0} 条规则", [rules.length])}</DialogTitle>
++          <DialogDescription>{translateText("将应用到 {0} 条规则", [rules.length])}</DialogDescription>
+         </DialogHeader>
+         <div className="min-w-0 space-y-4 overflow-y-auto pr-1">
+           <section className="min-w-0 space-y-3 border-t border-border/60 pt-3">
+@@ -100,14 +100,14 @@
+                 <SelectTrigger id={`${fieldId}-mode`} className="h-9"><SelectValue placeholder={translateText("选择入口类型")} /></SelectTrigger>
+                 <SelectContent>
+                   {(Object.keys(routeLabels) as RuleBulkRouteMode[]).map((mode) => (
+-                    <SelectItem key={mode} value={mode} disabled={!resources[mode].enabled}>{routeLabels[mode]}</SelectItem>
++                    <SelectItem key={mode} value={mode} disabled={!resources[mode].enabled}>{translateText(routeLabels[mode])}</SelectItem>
+                   ))}
+                 </SelectContent>
+               </Select>
+             </div>
+             {routeMode && (
+               <div className="min-w-0 space-y-1.5">
+-                <Label htmlFor={`${fieldId}-resource`}>{translateText("使用")}{routeMode === "tunnel" ? translateText("隧道") : routeLabels[routeMode]}</Label>
++                <Label htmlFor={`${fieldId}-resource`}>{translateText("使用 {0}", [translateText(routeMode === "tunnel" ? "隧道" : routeLabels[routeMode])])}</Label>
+                 <Select value={resourceId ? String(resourceId) : "none"} disabled={disabled || !resources[routeMode].enabled} onValueChange={(value) => {
+                   const id = value === "none" ? null : Number(value);
+                   update(routeMode === "tunnel" ? { tunnelId: id, forwardGroupId: null } : { forwardGroupId: id, tunnelId: null });
+@@ -126,7 +126,9 @@
+             )}
+             {preset.typeCount > 1 && (
+               <p className="text-xs leading-5 text-muted-foreground">
+-                {translateText("所选包含")}{preset.typeCount} {translateText("种入口类型")}{resourceSelected && routeMode ? translateText("，应用后会全部改为{0}", [routeLabels[routeMode]]) : translateText("，保持原入口")}
++                {resourceSelected && routeMode
++                  ? translateText("所选包含 {0} 种入口类型，应用后会全部改为 {1}", [preset.typeCount, translateText(routeLabels[routeMode])])
++                  : translateText("所选包含 {0} 种入口类型，保持原入口", [preset.typeCount])}
+               </p>
+             )}
+           </section>
+--- a/client/src/i18n/en.json
++++ b/client/src/i18n/en.json
+@@ -176,7 +176,7 @@
+   " 微信官方": " WeChat Pay (Official)",
+   " 项": "  items",
+   " 新增公告": " New Bulletin",
+-  " 新增计费资源": " New billing resources",
++  " 新增计费资源": " Add billing resource",
+   " 新增折扣码": " Add a new discount code",
+   " 页，显示 ": " pages, showing ",
+   " 已请求 {0} 台 Agent 重新检查连接和 Mimic 环境，{1} 台离线主机将在重新连接后上报。": " Recheck requested for {0} agents. {1} offline hosts will report after reconnecting.",
+@@ -205,7 +205,7 @@
+   "；出口：": "; exit:",
+   "；当前展示上次数据": "; showing previous data",
+   "；搜索仅筛选显示，不会取消已选目标。": "; searching only shows the filter and does not cancel the selected target.",
+-  "。编辑不会改变规则归属。": ". The editor will not change the attribution of the rule.",
++  "。编辑不会改变规则归属。": ". Editing keeps the current rule owner.",
+   "· {0} 个兼容资源": "· {0} compatible resources",
+   "· {0} 个可更新": "· {0} updates available",
+   "· {0} 个历史主机": "· {0} legacy hosts",
+@@ -352,7 +352,7 @@
+   "安装命令已生成": "Install command generated",
+   "安装失败": "Installation Failed",
+   "安卓通知设置已保存": "Anzor Notification Settings Saved",
+-  "按 GB 计费，可单独要求授权。": "On a GB charge basis, authorization may be requested separately.",
++  "按 GB 计费，可单独要求授权。": "Charge per GB, with optional resource permissions.",
+   "按步骤完成数据库初始化、旧面板迁移和管理员配置。": "Set up your database, optionally migrate an existing panel, and configure your administrator account.",
+   "按出口组顺序使用成员，首个成员为主出口。": "Members are used in the order in which they are exported, with the first member being the main exit.",
+   "按当前策略为新连接选择已启用的出口主机。": "Select the active exit host for the new connection according to the current policy.",
+@@ -376,7 +376,7 @@
+   "按右侧设置处理": "Deal with right",
+   "按主机管理插件资源。": "Manage plugin resources by host.",
+   "按主机或隧道聚合。": "Aggregation by host or tunnel.",
+-  "按资源设置流量单价。": "Set the traffic unit price by resource.",
++  "按资源设置流量单价。": "Set a traffic price for each resource.",
+   "白天模式": "Light Mode",
+   "百分比": "Percentage",
+   "百分比折扣不能超过 100": "Percentage discount not to exceed 100",
+@@ -396,8 +396,8 @@
+   "绑定时间": "Linked At",
+   "绑定时间：": "Linked at:",
+   "包含 ": "Organisation ",
+-  "保持原目标": "Stay on target.",
+-  "保持原入口": "Keep the original entrance.",
++  "保持原目标": "Keep current targets",
++  "保持原入口": "Keep current entries",
+   "保存": "Save",
+   "保存 AI 配置": "Save AI Configuration",
+   "保存 API Key 后可拉取模型列表。": "Saves the list of models that you can drag after API Key.",
+@@ -488,7 +488,7 @@
+   "编辑服务": "Editorial services",
+   "编辑公告": "Edit Announcement",
+   "编辑规则": "Edit Rules",
+-  "编辑计费资源": "Edit billing resources",
++  "编辑计费资源": "Edit billing resource",
+   "编辑隧道": "Edit tunnel",
+   "编辑套餐": "Edit plan",
+   "编辑主机": "Edit Host",
+@@ -709,7 +709,7 @@
+   "单 IP: ": "Single IP: ",
+   "单次最多导入 {0} 条规则": "Import up to {0} rules at a time",
+   "单价": "Unit price",
+-  "单价 / GB": "Unit / GB",
++  "单价 / GB": "Price / GB",
+   "单价最低 0.001/GB": "Minimum unit price 0.001/GB",
+   "单位 GB，0 表示不限。": "Unit GB, 0 means unlimited.",
+   "单位：秒，范围 10-3600。": "Unit: seconds, range 10-3600.",
+@@ -816,7 +816,7 @@
+   "导入到右侧目标": "Import to Right Target",
+   "导入规则": "Import rules",
+   "导入后会接管备份内已有主机，旧面板的主机、规则、隧道和转发组会迁移到当前面板。": "When imported, you will take over the host that already exists in the backup, and the hosts, rules, tunnels and forwarding groups of the old panel will move to the current panel.",
+-  "导入会保留文件中的规则配置，并应用到右侧当前选择的目标资源。": "Imports preserves the configuration of the rules in the file and applies to the target resource currently selected on the right.",
++  "导入会保留文件中的规则配置，并应用到右侧当前选择的目标资源。": "Imported rules keep their configuration and use the target resource selected on the right.",
+   "导入旧数据": "Import Existing Data",
+   "导入目标": "Import destination",
+   "导入文件": "Import File",
+@@ -829,7 +829,7 @@
+   "到期时间：--": "Expires: --",
+   "到期提醒": "Expiry Reminder",
+   "地区": "Region",
+-  "地区获取中": "Area acquisition",
++  "地区获取中": "Detecting region",
+   "地址": "Address",
+   "登录": "Log In",
+   "登录弹窗": "Login Blast Window",
+@@ -856,11 +856,11 @@
+   "等待服务器完成导入": "Waiting for server to complete import",
+   "等待服务重启": "Waiting for service to restart",
+   "等待继续验证": "Waiting for confirmation",
+-  "等待监控数据": "Waiting for surveillance data",
++  "等待监控数据": "Waiting for monitoring data",
+   "等待检测": "Waiting for test",
+   "等待确认{0}": "Waiting to confirm {0}",
+   "等待入口健康度检测结果": "Waiting for health test results at the entrance",
+-  "等待生效": "Pending entry into force",
++  "等待生效": "Pending activation",
+   "等待探测": "Waiting for Probe",
+   "等待中": "Waiting",
+   "等待主机状态同步": "Waiting for host status sync",
+@@ -869,7 +869,7 @@
+   "低于阈值时提醒。": "Reminds when below the threshold.",
+   "抵扣金额": "Amount withheld",
+   "第 ": "Page ",
+-  "第 {0} 条规则{1}": "Rule {0}{1}",
++  "第 {0} 条规则{1}": "Rule {0}: {1}",
+   "第 {0} 跳只能使用入口地址、内网IP或IPv6地址": "Hop {0} only supports entry, private IP or IPv6 addresses",
+   "第 {0} 跳指定地址格式无效": "Invalid address format for hop {0}",
+   "第 {0} 行：{1}": "Line {0}: {1}",
+@@ -1041,7 +1041,7 @@
+   "复制成功": "Copied",
+   "复制到右侧目标": "Copy to Right Target",
+   "复制回退脚本": "Copy Back Script",
+-  "复制会保留原规则基础配置，并按当前选择的目标资源生成副本。": "Copy will retain the original rule base configuration and generate a copy according to the currently selected target resource.",
++  "复制会保留原规则基础配置，并按当前选择的目标资源生成副本。": "Copies keep the original rule settings and use the selected target resource.",
+   "复制脚本": "Copy Script",
+   "复制目标": "Copy Target",
+   "复制入口地址: {0}": "Copy entry address: {0}",
+@@ -1133,7 +1133,7 @@
+   "公告已更新": "Announcement updated",
+   "公告已删除": "Announcement deleted",
+   "公告预览": "Announcement Preview",
+-  "公开可用": "Openly Available",
++  "公开可用": "Public access",
+   "公开首页": "Public Home Page",
+   "公开域名": "Open Domain Name",
+   "公开资源会在商店中展示，用户有余额即可直接使用。": "Open resources are displayed in shops and users can use them directly with balances.",
+@@ -1142,7 +1142,7 @@
+   "公网目标限定": "Internet target limits",
+   "公网域名 Zone ID": "Common domain name Zone ID",
+   "功能介绍": "Functional Introduction",
+-  "功能开关": "Function Switches",
++  "功能开关": "Enable feature",
+   "共": "Total",
+   "共 ": "Total ",
+   "购买": "Purchase",
+@@ -1184,7 +1184,7 @@
+   "关闭后直接进入登录页。": "Enter the login page directly after closing.",
+   "关闭升级公告失败": "Failed to close upgrade announcement",
+   "关闭时后登录的设备会立即接管，正在使用的旧会话将退出；仅保留 Cookie 但未在使用的设备不会阻止新登录。": "The equipment that is logged in immediately after closing will be taken over and the old session that is in use will be withdrawn; retaining only Cookie, but not the equipment in use, will not prevent new login.",
+-  "关闭时普通用户有余额即可使用；开启时需要在用户管理中单独授权。": "The balance is available for ordinary users at the time of closure; the opening requires separate authorization in the user management.",
++  "关闭时普通用户有余额即可使用；开启时需要在用户管理中单独授权。": "When off, users with a balance can use this resource. When on, grant access in user management.",
+   "关闭双重验证": "Close Dual Authentication",
+   "关闭双重验证失败": "Failed to close dual authentication",
+   "关闭邮箱服务后不发送验证码或提醒邮件；已保存的密码不会回显。": "Do not send authentication codes or alarm mail after closing the email service; the saved password does not appear back.",
+@@ -1203,7 +1203,7 @@
+   "管理 TCP、UDP、隧道和转发链。": "Management of TCP, UDP, tunnel and forwarding chain.",
+   "管理菜单开关": "Manage Menus",
+   "管理当前插件在已选主机上的资源和实时状态。": "Manages the resource and real-time status of the current plugin on the selected host.",
+-  "管理当前用户筛选范围内的规则；复制或导入的新规则归属：": "Manages the rules within the current user selection; new rules for copying or importing belong to:",
++  "管理当前用户筛选范围内的规则；复制或导入的新规则归属：": "Manage rules for the current user filter. Copied or imported rules will belong to:",
+   "管理多入口故障转移与负载分配。": "Manage multi-entry failure transfer and load distribution.",
+   "管理多主机转发、隧道和流量。": "Management of multiple mainframe relays, tunnels and traffic.",
+   "管理共享入口域名的多台主机。": "Manage multiple hosts for shared entry domain names.",
+@@ -1487,7 +1487,7 @@
+   "控制新用户自助注册。": "Controls the self-service registration of new users.",
+   "控制用户可用的转发协议。": "Controls the transmission protocols available to users.",
+   "控制左侧导航栏常用入口是否展示。": "Controls the display of a common entrance to the left navigation bar.",
+-  "扣费记录累计": "Cumulative withholding record",
++  "扣费记录累计": "Total traffic from billing records",
+   "扣费记录累计。": "Discharges are recorded cumulatively.",
+   "跨 IPv4/IPv6 风险": "Cross IPv4/IPv6 Risks",
+   "快捷登录需要域名": "Shortcut login requires domain name",
+@@ -1502,7 +1502,7 @@
+   "累计 —": "Cumulative —",
+   "累计出向：{0}": "Total outbound: {0}",
+   "累计出站": "Total Outbound",
+-  "累计扣费": "Cumulative deductions",
++  "累计扣费": "Total charges",
+   "累计流量": "Total Traffic",
+   "累计入向 {0} / 出向 {1}": "Total inbound {0} / outbound {1}",
+   "累计入向：{0}": "Total inbound: {0}",
+@@ -1512,7 +1512,7 @@
+   "离线 {0} 台": "{0} offline hosts",
+   "离线导入恢复": "Offline import recovery",
+   "历史计费主机": "History billing host",
+-  "历史扣费合计": "Total historical deductions",
++  "历史扣费合计": "All past charges",
+   "历史扣费合计。": "Total historical deductions.",
+   "历史主机": "History Host",
+   "历史主机绑定（兼容）": "Historical host binding (compatible)",
+@@ -1596,7 +1596,7 @@
+   "流量耗尽提醒": "The traffic's running out.",
+   "流量计费": "Traffic Billing",
+   "流量计费功能未开启": "Traffic billing is disabled",
+-  "流量计费管理": "traffic billing management",
++  "流量计费管理": "Traffic Billing",
+   "流量计费隧道": "traffic-counting tunnel",
+   "流量计费余额不足，请充值后再启用规则": "The traffic billing balance is insufficient. Please fill it and then activate the rule.",
+   "流量计费转发资源": "traffic billing and forwarding resources",
+@@ -1753,21 +1753,21 @@
+   "配置左侧导航名称、页面地址、打开方式和可见范围。": "Configure the left navigation name, page address, opening mode and visible range.",
+   "批量编辑": "Batch Edit",
+   "批量编辑处理失败：": "Batch editing failed:",
+-  "批量编辑会按你实际填写的项逐条覆盖：入口资源未选择则保留原入口，目标地址或端口留空则保留原目标值。": "Batch editing will be covered according to the item you actually fill: the entry resource will be left unselected, the original entry will be retained, and the target address or port will be left empty.",
++  "批量编辑会按你实际填写的项逐条覆盖：入口资源未选择则保留原入口，目标地址或端口留空则保留原目标值。": "Only the fields you fill in will change. Leave the entry resource unselected to keep each rule’s current entry. Leave the target address or port blank to keep its current value.",
+   "批量编辑内容": "Batch Edit Content",
+-  "批量编辑完成：成功 {0} 条，跳过 {1} 条，失败 {2} 条。{3}": "Batch editing complete: successful{0}Bar, skip.{1}Article. Failure.{2}Article.{3}",
++  "批量编辑完成：成功 {0} 条，跳过 {1} 条，失败 {2} 条。{3}": "Batch edit complete: {0} succeeded, {1} skipped, {2} failed. {3}",
+   "批量导出": "Batch Export",
+   "批量导出会按左侧当前选中的规则生成 JSON 文件，不会受右侧资源范围限制。": "Batch export generates a JSON file according to the currently selected rule on the left, which is not limited by the right resource range.",
+   "批量导入": "Batch Import",
+   "批量导入处理失败：{0}": "Batch import failed: {0}",
+-  "批量导入完成：成功 {0} 条，失败 {1} 条，已仅保留失败项供重试。{2}": "Batch import complete: successful{0}Article. Failure.{1}Article, only failed items have been retained for retesting.{2}",
++  "批量导入完成：成功 {0} 条，失败 {1} 条，已仅保留失败项供重试。{2}": "Batch import complete: {0} succeeded, {1} failed. Only failed items remain for retry. {2}",
+   "批量复制": "Batch Copy",
+   "批量复制处理失败：": "Batch copy processing failed:",
+-  "批量复制完成：成功 {0} 条，跳过 {1} 条，失败 {2} 条。{3}": "Batch copy complete: successful{0}Bar, skip.{1}Article. Failure.{2}Article.{3}",
++  "批量复制完成：成功 {0} 条，跳过 {1} 条，失败 {2} 条。{3}": "Batch copy complete: {0} succeeded, {1} skipped, {2} failed. {3}",
+   "批量管理": "Bulk Actions",
+-  "批量管理转发规则": "Batch management forwarding rules",
++  "批量管理转发规则": "Manage forwarding rules in bulk",
+   "批量删除失败：": "Batch deletion failed:",
+-  "批量删除完成：成功 {0} 条，失败 {1} 条。{2}": "Batch deletion complete: successful{0}Article. Failure.{1}Article.{2}",
++  "批量删除完成：成功 {0} 条，失败 {1} 条。{2}": "Batch delete complete: {0} succeeded, {1} failed. {2}",
+   "批量下发升级任务失败": "Batch down upgrade failed",
+   "平均延迟": "Average Latency",
+   "平面地图视图": "Plane Map View",
+@@ -1814,7 +1814,7 @@
+   "启用后按此来源启动": "Start with this source when enabled",
+   "启用后可按主机管理插件资源": "Manage plugin resources by host once enabled",
+   "启用机器人": "Enable Bot",
+-  "启用计费资源": "Enable billing resources",
++  "启用计费资源": "Enable billing resource",
+   "启用双重验证": "Enable dual authentication",
+   "启用双重验证失败": "Enable dual authentication failed",
+   "启用微信官方": "Enable Wireless Official",
+@@ -2031,7 +2031,7 @@
+   "请至少添加一个成员": "Please add at least one member.",
+   "请至少选择要替换的入口资源，或填写目标地址/端口": "Please select at least the entry resources to replace, or fill in the target address/port",
+   "请至少选择一个省份，或切换回全国模式。": "Please select at least one province or switch back to the national model.",
+-  "区域": "Regional",
++  "区域": "Region",
+   "取消": "Cancel",
+   "取消本次登录": "Cancel this login",
+   "取消订阅": "Unsubscribe",
+@@ -2098,7 +2098,8 @@
+   "确认删除“{0}”的已取消记录？支付和余额流水会继续保留。": "Confirm Delete{0}“The cancelled records? Payments and surplus traffic will continue to be retained.",
+   "确认删除“{0}”记录？支付和余额流水会继续保留。": "Confirm Delete{0}\"Records? Payments and surplus traffic will continue to be kept.",
+   "确认删除选中的 {0} 个兑换码？此操作不会影响已经完成的兑换记录。": "Confirm to delete the selected{0}An exchange code? This operation will not affect the exchange records that have been completed.",
+-  "确认删除选中的 {0} 条转发规则？": "Confirm to delete the selected{0}A transmission rule?",
++  "确认删除选中的 {0} 条转发规则？": "Delete the {0} selected forwarding rules?",
++  "确认删除规则 \"{0}\"？": "Delete rule \"{0}\"?",
+   "确认删除用户 \"": "Confirm to delete user \"",
+   "确认升级": "Confirm Upgrade",
+   "确认升级并重启": "Confirm Upgrade and Restart",
+@@ -2145,7 +2146,7 @@
+   "入口健康度检测": "Entry health test.",
+   "入口健康度检测目标格式不正确": "Incorrect format of access health test target.",
+   "入口接收上游": "Entry Receives from Upstream",
+-  "入口类型": "Type of entry",
++  "入口类型": "Entry type",
+   "入口域名": "Entry Domain",
+   "入口域名或 DDNS 域名": "Entry domain or DDNS domain",
+   "入口主机": "Entry Host",
+@@ -2307,9 +2308,9 @@
+   "时间": "Time",
+   "实际探测次数": "Number of actual detections",
+   "实时出向": "Real time direction",
+-  "实时出站": "Out in real time.",
++  "实时出站": "Outbound rate",
+   "实时入向": "Real-time Input",
+-  "实时入站": "Real-time entry stations",
++  "实时入站": "Inbound rate",
+   "实时网络": "Real-time network",
+   "使用": "Use",
+   "使用 2FA 软件生成动态验证码。": "Create dynamic authentication codes using 2FA software.",
+@@ -2576,7 +2577,7 @@
+   "停用": "Disable",
+   "停用 ": "Disable ",
+   "停用插件使用配置": "Disable Plugin Use Configuration",
+-  "停用后该资源不再作为流量计费资源使用。": "This resource is no longer used as a traffic-counting resource after it has been discontinued.",
++  "停用后该资源不再作为流量计费资源使用。": "When disabled, this resource is no longer available for traffic billing.",
+   "停止 iperf3 服务端": "Stop iperf3 Server",
+   "停止中": "Stopping",
+   "通道": "Channels",
+@@ -2675,7 +2676,7 @@
+   "未上报": "Not Reported",
+   "未上报 CPU 型号": "Unreported CPU Model",
+   "未设置": "Not Set",
+-  "未设置 IP": "No IP set",
++  "未设置 IP": "IP not set",
+   "未设置替换项": "No replacement set",
+   "未识别": "Not recognized",
+   "未使用": "Unused",
+@@ -2789,7 +2790,7 @@
+   "新增第一个菜单项": "Add the first menu entry",
+   "新增公告": "New Bulletin",
+   "新增规则归属：": "Rule owner:",
+-  "新增计费资源": "New billing resources",
++  "新增计费资源": "Add billing resource",
+   "新增链路": "Add links",
+   "新增套餐": "Add plan",
+   "信任此插件": "Trust this plugin",
+@@ -2810,10 +2811,10 @@
+   "需要 Zone:Read + DNS:Edit 权限": "Zone: Read + DNS: Edit Permissions",
+   "需要安装 mimic/mimic-dkms。UDP 丢包时可将业务 MTU 调整为 1200-1300。": "Install mimic/mimic-dkms. If UDP packet loss occurs, try a traffic MTU of 1200-1300.",
+   "需要插件信任": "Plugin Trust Required",
+-  "需要额外计费权限": "Additional billing privileges required",
++  "需要额外计费权限": "Require resource permission",
+   "需要管理员授权后才能添加规则": "You need the administrator's authorization to add the rule.",
+   "需要迁移前仍有效的管理员登录会话；请求已转交后禁止此操作。": "The administrator who is still valid before moving is required to log in to the session; the request is turned over and the operation is banned.",
+-  "需要授权": "Authorization Required",
++  "需要授权": "Permission required",
+   "需要输入 ": "Input required ",
+   "需要直连 IP 和端口时，请选择“当前访问地址”。": "If you need to connect directly to IP and port, select \" Current Visiting Address \" .",
+   "需在基础设置中选择": "Select in Foundation Settings",
+@@ -2843,7 +2844,7 @@
+   "选择需要归入此分组的主机。": "Select the host that you want to group in this group.",
+   "选择需要启用的邮件场景。": "Select the mail scene that you want to enable.",
+   "选择需要运行服务的主机": "Select the host that requires running services",
+-  "选择要导入到哪个端口转发、隧道、转发链或转发组。": "Select which port you want to import for forwarding, tunneling, forwarding chain or forwarding group.",
++  "选择要导入到哪个端口转发、隧道、转发链或转发组。": "Choose the port forwarding resource, tunnel, forwarding chain or forwarding group to import into.",
+   "选择要加入分组的主机...": "Select the host to add grouping...",
+   "选择要授权的端口转发": "Select the port to authorize forwarding",
+   "选择要授权的计费转发资源": "Select the billing forward resource to be authorized",
+@@ -2866,15 +2867,15 @@
+   "选择主机": "Select Host",
+   "选择转发工具": "Select Forward Tool",
+   "选择资源": "Select Resource",
+-  "选择资源并设置每 GB 单价；倍率继承资源配置。": "Select the resource and set the unit price per GB; multiple inherit the resource allocation.",
+-  "选择资源后显示": "Show after selecting the resource",
++  "选择资源并设置每 GB 单价；倍率继承资源配置。": "Choose a resource and set its price per GB. The multiplier follows the resource settings.",
++  "选择资源后显示": "Shown after selecting a resource",
+   "选择最近 5 个以内的可回退版本。": "Select from the last 5 available rollback versions.",
+   "选中的文件会同步到目标主机的 {0}。": "The selected file will be synchronized with the target host.{0}。",
+   "削峰": "Peak",
+   "延迟": "Latency",
+   "延迟检测": "Latency Probe",
+   "延迟探测": "Latency probe",
+-  "沿用旧配置": "Continue old configuration",
++  "沿用旧配置": "Keep existing settings",
+   "验证并登录": "Verify and Login",
+   "验证连接与权限": "Validate Connections and Permissions",
+   "验证码错误或已过期，请重新输入": "Verification code is invalid or expired. Try again.",
+@@ -2934,8 +2935,8 @@
+   "已读取证书和私钥": "Read certificate and private key",
+   "已分配随机端口: {0}": "Random port assigned: {0}",
+   "已复制": "Copied",
+-  "已复制 {0} 条规则到 {1}{2}": "Copyed{0}Rule number one.{1}{2}",
+-  "已复制到剪贴板": "Copyed to clipboard",
++  "已复制 {0} 条规则到 {1}{2}": "Copied {0} rules to {1}{2}",
++  "已复制到剪贴板": "Copied to clipboard",
+   "已复制入口地址: {0}": "Entry address copied: {0}",
+   "已购附加流量": "Additional traffic purchased",
+   "已购买和已分配的套餐。": "Food plan have been purchased and distributed.",
+@@ -2943,7 +2944,7 @@
+   "已关闭公告 TG 推送": "Closed Bulletin TG Send",
+   "已过期": "Expired",
+   "已计费 {0}GB": "Billed {0} GB",
+-  "已计费流量": "Fee-based traffic",
++  "已计费流量": "Billed traffic",
+   "已加载 ": "Loaded ",
+   "已检测到面板已升级。请阅读本次版本公告，": "The panel has been upgraded. Read this version of the bulletin.",
+   "已拒绝本次迁移请求。": "The request for relocation was denied.",
+@@ -2955,7 +2956,7 @@
+   "已配置": "Configured",
+   "已配置 ": "Configured ",
+   "已配置 V{0}": "Configured V{0}",
+-  "已配置资源": "Resources allocated",
++  "已配置资源": "Configured resources",
+   "已配置资源。": "Resources have been allocated.",
+   "已批量编辑 ": "Batch Edited ",
+   "已启用": "Enabled",
+@@ -3094,7 +3095,7 @@
+   "余额购买": "Buy with Balance",
+   "余额加载中": "Loading Balance",
+   "余额金额": "Balance",
+-  "余额可用时可直接在转发规则中使用。": "The balance, when available, can be used directly in the forwarding rules.",
++  "余额可用时可直接在转发规则中使用。": "Users with a balance can select this resource in forwarding rules.",
+   "余额流水": "Balance Transactions",
+   "余额未变化": "No change in balance",
+   "余额消费": "Balance Charges",
+@@ -3414,7 +3415,7 @@
+   "支持包已生成": "Support packages generated",
+   "支持包已生成，{0} 台 Agent 未返回完整诊断": "The support package has been generated.{0}Agent did not return the full diagnosis",
+   "支持包已生成，但浏览器保存文件失败": "Support packages were generated, but the browser failed to save the file",
+-  "支持从文件导入，或手动输入目标地址与端口后批量导入。": "Supports import from a file, or manually enters the target address and port back-load import.",
++  "支持从文件导入，或手动输入目标地址与端口后批量导入。": "Import a rule file or enter target addresses and ports manually.",
+   "支持完整 HTML 或 body 内容。": "Supports complete HTML or body content.",
+   "支持完整网址、裸域名和面板相对路径（例如 /monitor）。": "Supports complete web sites, nudity domain names and panel relative paths (e.g. /monitor).",
+   "支持文字、Markdown 和 HTML。": "Supports text, Markdown and HTML.",
+@@ -3584,7 +3585,7 @@
+   "状态更新失败": "Status update failed",
+   "准备{0}": "Preparing {0}",
+   "资产": "Assets",
+-  "资源": "Resources",
++  "资源": "Resource",
+   "资源绑定": "Resource binding",
+   "资源编号：#": "Resource number: #",
+   "资源不存在或已删除，可删除清理": "Resources do not exist or have been deleted, and cleanup can be deleted",
+@@ -4185,5 +4186,39 @@
+   "稳定性延迟样本覆盖所选时间内已上报的有效批次。": "Stability latency samples cover valid reported batches in the selected period.",
+   "TCP 连接失败": "TCP connection failures",
+   "返回主机列表": "Back to host list",
+-  "主机不存在": "Host not found"
++  "主机不存在": "Host not found",
++  "失败 {0} 条：{1}": "Failed: {0}: {1}",
++  "成功 {0} 条，跳过 {1} 条，失败 {2} 条：{3}": "Succeeded: {0}; skipped: {1}; failed: {2}: {3}",
++  "已复制 {0} 条规则到 {1}，跳过 {2} 条": "Copied {0} rules to {1}; skipped {2}",
++  "已复制 {0} 条规则到 {1}": "Copied {0} rules to {1}",
++  "已导出 {0} 条规则，共 {1} 个文件": "Exported {0} rules in {1} files",
++  "已导出 {0} 条规则": "Exported {0} rules",
++  "，等待后续批次 {0} 台": "; {0} hosts waiting for later batches",
++  "，跳过 {0} 台最新版本": "; skipped {0} hosts already on the latest version",
++  "，跳过 {0} 台离线主机": "; skipped {0} offline hosts",
++  "，解析到 {0}": "; resolved to {0}",
++  "，失败 {0}": "; {0} failed",
++  "在入口与出口": "at the entry and exit",
++  "在出口主机": "at the exit host",
++  "成员主机{0}": "Member host {0}",
++  "此分组": "this group",
++  "此服务": "this service",
++  "当前资源": "the current resource",
++  "兑换入口": "Redemption",
++  "折扣入口": "Discounts",
++  "已取消套餐": "Cancelled plan",
++  "链路资源": "link resource",
++  "已上报": "reported",
++  "功能": "Feature",
++  "请检查规则配置": "Check the rule settings",
++  "批量编辑 {0} 条规则": "Batch edit {0} rules",
++  "将应用到 {0} 条规则": "Apply changes to {0} rules",
++  "使用 {0}": "Use {0}",
++  "所选包含 {0} 种入口类型，应用后会全部改为 {1}": "Selection includes {0} entry types; after applying, all will use {1}",
++  "所选包含 {0} 种入口类型，保持原入口": "Selection includes {0} entry types; keep the current entries",
++  "已批量编辑 {0} 条，跳过 {1} 条": "Edited {0} rules; skipped {1}",
++  "下载规则文件": "Download rule files",
++  "规则已拆分为 {0} 个文件，请逐个点击下载，避免浏览器拦截连续下载。": "The rules are split into {0} files. Download each file separately so your browser can save every part.",
++  "下载第 {0}/{1} 个文件（{2} 条规则）": "Download file {0}/{1} ({2} rules)",
++  "已生成 {0} 条规则，共 {1} 个文件，请逐个下载": "Prepared {0} rules in {1} files. Download each file."
+ }
+--- a/client/src/lib/linkAvailability.ts
++++ b/client/src/lib/linkAvailability.ts
+@@ -414,7 +414,7 @@
+     } else {
+       let candidates = members;
+       let configurationValid = members.length > 0;
+-      let configurationMessage = translateText("{0}没有已启用成员", [mode === "entry" ? "入口组" : mode === "exit" ? "出口组" : "转发组"]);
++      let configurationMessage = translateText("{0}没有已启用成员", [mode === "entry" ? translateText("入口组") : mode === "exit" ? translateText("出口组") : translateText("转发组")]);
+       if ((mode === "entry" || mode === "failover") && !String(group?.domain || "").trim()) {
+         configurationValid = false;
+         configurationMessage = mode === "entry" ? translateText("入口组需要指定入口域名") : translateText("转发组需要指定 DDNS 域名");
+--- a/client/src/lib/ruleBulkSelection.test.ts
++++ b/client/src/lib/ruleBulkSelection.test.ts
+@@ -1,5 +1,6 @@
+ import assert from "node:assert/strict";
+ import test from "node:test";
++import { getLanguagePreference, initializeLanguage, setLanguagePreference } from "../i18n";
+ import { getRuleBulkCheckboxState, getRuleBulkRoutePreset, getRuleBulkSelectability, pruneRuleBulkSelection, summarizeRuleBulkDeleteResult, summarizeRuleBulkResult, toggleRuleBulkSelection } from "./ruleBulkSelection";
+ 
+ test("仅普通且受支持的规则可以参与行内批量操作", () => {
+@@ -113,3 +114,32 @@
+   assert.equal(partial.tone, "error");
+   assert.deepEqual(partial.keepSelectedIds, [2]);
+ });
++
++test("批量结果跟随当前语言，计数与原始诊断保持不变", async () => {
++  const previous = getLanguagePreference();
++  const diagnostic = "Agent stderr: 原始诊断 {0} <&>";
++  const outcomes = [
++    { ruleId: 1, outcome: "updated" },
++    { ruleId: 2, outcome: "skipped" },
++    { ruleId: 3, outcome: "failed", error: diagnostic },
++  ] as const;
++  try {
++    setLanguagePreference("en");
++    await initializeLanguage();
++    const english = summarizeRuleBulkResult(outcomes);
++    assert.equal(english.message, `Succeeded: 1; skipped: 1; failed: 1: ${diagnostic}`);
++    assert.deepEqual(english.keepSelectedIds, [2, 3]);
++    assert.equal(summarizeRuleBulkResult([{ ruleId: 1, outcome: "failed", error: "连接失败" }]).message, "Failed: 1: 连接失败");
++    assert.equal(summarizeRuleBulkDeleteResult([{ ruleId: 1, outcome: "failed", error: "删除失败" }]).message, "Succeeded: 0; failed: 1: 删除失败");
++    assert.equal(summarizeRuleBulkResult([{ ruleId: 1, outcome: "failed" }]).message, "Failed: 1: Unknown error");
++    assert.equal(summarizeRuleBulkDeleteResult([{ ruleId: 1, outcome: "updated" }]).message, "Deleted 1 rules");
++    setLanguagePreference("zh-CN");
++    await initializeLanguage();
++    const chinese = summarizeRuleBulkResult(outcomes);
++    assert.equal(chinese.message, `成功 1 条，跳过 1 条，失败 1 条：${diagnostic}`);
++    assert.deepEqual(chinese.keepSelectedIds, english.keepSelectedIds);
++  } finally {
++    setLanguagePreference(previous);
++    await initializeLanguage();
++  }
++});
+--- a/client/src/lib/ruleBulkSelection.ts
++++ b/client/src/lib/ruleBulkSelection.ts
+@@ -77,7 +77,10 @@
+   const keepSelectedIds = outcomes.filter((result) => result.outcome !== "updated").map((result) => result.ruleId);
+   let message = translateText("已批量编辑 {0} 条规则", [updated]);
+   if (failed > 0) {
+-    message = translateText("{0}失败 {1} 条：{2}", [updated === 0 && skipped === 0 ? "" : `成功 ${updated} 条，跳过 ${skipped} 条，`, failed, failures[0].error || "未知错误"]);
++    const error = failures[0].error || translateText("未知错误");
++    message = updated === 0 && skipped === 0
++      ? translateText("失败 {0} 条：{1}", [failed, error])
++      : translateText("成功 {0} 条，跳过 {1} 条，失败 {2} 条：{3}", [updated, skipped, failed, error]);
+   } else if (updated === 0 && skipped > 0) {
+     message = translateText("{0} 条规则因端口冲突全部跳过，未做任何修改", [skipped]);
+   } else if (skipped > 0) {
+--- a/client/src/lib/ruleTransfer.test.ts
++++ b/client/src/lib/ruleTransfer.test.ts
+@@ -1,10 +1,12 @@
+ import assert from "node:assert/strict";
+ import test from "node:test";
++import { getLanguagePreference, initializeLanguage, setLanguagePreference } from "../i18n";
+ import {
+   RULE_TRANSFER_FILE_KIND,
+   RULE_TRANSFER_FILE_VERSION,
+   findRuleTransferPortConflict,
+   parseRuleTransferFile,
++  parseSniBulkImportText,
+   type RuleTransferFileRule,
+ } from "./ruleTransfer";
+ 
+@@ -102,3 +104,29 @@
+     null,
+   );
+ });
++
++test("导入提示随语言切换，保存的默认名称和业务字段保持一致", async () => {
++  const previous = getLanguagePreference();
++  const rule = validRule();
++  const { name: _name, ...withoutName } = rule;
++  try {
++    setLanguagePreference("en");
++    await initializeLanguage();
++    const format = parseSniBulkImportText("", 18443);
++    assert.equal(format.ok, false);
++    assert.equal(format.message, "Enter one SNI rule per line using the format Rule name#SNI domain#Target address#Target port");
++    const invalid = parseRuleTransferFile(transferFile({ ...rule, targetIp: "bad host" }));
++    assert.equal(invalid.ok, false);
++    assert.match(invalid.ok ? "" : invalid.error, /Invalid address format/);
++    const english = parseRuleTransferFile(transferFile(withoutName));
++    assert.equal(english.ok, true);
++    if (english.ok) assert.equal(english.file.rules[0].name, "导入规则");
++    setLanguagePreference("zh-CN");
++    await initializeLanguage();
++    assert.deepEqual(parseRuleTransferFile(transferFile(withoutName)), english);
++    assert.equal(parseSniBulkImportText("", 18443).message, "请输入 SNI 分流规则，每行格式为 规则名#SNI域名#目标地址#目标端口");
++  } finally {
++    setLanguagePreference(previous);
++    await initializeLanguage();
++  }
++});
+--- a/client/src/lib/ruleTransfer.ts
++++ b/client/src/lib/ruleTransfer.ts
+@@ -11,7 +11,7 @@
+ export const RULE_TRANSFER_FILE_VERSION = 1;
+ export const RULE_TRANSFER_MAX_IMPORT_COUNT = 500;
+ export const RULE_TRANSFER_MAX_FILE_SIZE = 5 * 1024 * 1024;
+-export const SNI_BULK_IMPORT_LINE_FORMAT = translateText("规则名#SNI域名#目标地址#目标端口");
++export const SNI_BULK_IMPORT_LINE_FORMAT = "规则名#SNI域名#目标地址#目标端口";
+ 
+ export type ProxyProtocolVersion = 1 | 2;
+ export type FailoverStrategy = "fallback" | "round_robin" | "random" | "ip_hash";
+@@ -82,7 +82,7 @@
+ 
+ const targetHostSchema = z.string().trim().min(1).max(253).refine(
+   (value) => /^[a-zA-Z0-9]([a-zA-Z0-9\-_.]*[a-zA-Z0-9])?$|^[a-fA-F0-9:.]+$/.test(value),
+-  translateText("地址格式不正确"),
++  () => ({ message: translateText("地址格式不正确") }),
+ );
+ const ipv6AddressSchema = z.string().ip({ version: "v6" });
+ 
+@@ -92,13 +92,13 @@
+ });
+ 
+ const ruleTransferRuleSchema = z.object({
+-  name: z.string().trim().min(1).max(128).optional().default(translateText("导入规则")),
++  name: z.string().trim().min(1).max(128).optional().default("导入规则"),
+   forwardType: z.enum(FORWARD_TYPES).optional().default("iptables"),
+   protocol: z.enum(["tcp", "udp", "both"]).optional().default("both"),
+   sourcePort: z.number().int().min(0).max(65535),
+   sni: z.string().trim().max(1024).refine(
+     (value) => !value || isValidSniValue(normalizeSniValue(value)),
+-    translateText("SNI 域名格式不正确"),
++    () => ({ message: translateText("SNI 域名格式不正确") }),
+   ).optional(),
+   rateLimitMbps: z.number().int().min(0).max(1_000_000).optional().default(0),
+   maxConnections: z.number().int().min(0).max(1_000_000).optional().default(0),
+@@ -141,7 +141,7 @@
+   const sourceLine = line.trim();
+   const parts = sourceLine.split("#");
+   if (parts.length !== 4) {
+-    return { ok: false, message: translateText("第 {0} 行：请按 {1} 格式填写", [lineNumber, SNI_BULK_IMPORT_LINE_FORMAT]) };
++    return { ok: false, message: translateText("第 {0} 行：请按 {1} 格式填写", [lineNumber, translateText(SNI_BULK_IMPORT_LINE_FORMAT)]) };
+   }
+   const [nameRaw, sniRaw, targetIpRaw, targetPortRaw] = parts.map((part) => part.trim());
+   if (!nameRaw) return { ok: false, message: translateText("第 {0} 行：规则名不能为空", [lineNumber]) };
+@@ -214,7 +214,7 @@
+     .map((line, index) => ({ line, lineNumber: index + 1 }))
+     .filter((item) => item.line.trim());
+   if (filledLines.length === 0) {
+-    return { ok: false, message: translateText("请输入 SNI 分流规则，每行格式为 {0}", [SNI_BULK_IMPORT_LINE_FORMAT]), rules: [] };
++    return { ok: false, message: translateText("请输入 SNI 分流规则，每行格式为 {0}", [translateText(SNI_BULK_IMPORT_LINE_FORMAT)]), rules: [] };
+   }
+   if (filledLines.length > RULE_TRANSFER_MAX_IMPORT_COUNT) {
+     return { ok: false, message: translateText("单次最多导入 {0} 条规则", [RULE_TRANSFER_MAX_IMPORT_COUNT]), rules: [] };
+@@ -243,7 +243,7 @@
+ 
+ function issueMessage(issue: z.ZodIssue) {
+   const field = issue.path.length > 0 ? translateText("字段 {0}", [issue.path.join(".")]) : translateText("内容");
+-  return translateText("{0}{1}", [field, issue.message ? `：${issue.message}` : "格式不正确"]);
++  return translateText("{0}：{1}", [field, translateText(issue.message || "格式不正确")]);
+ }
+ 
+ export function parseRuleTransferFile(raw: unknown): RuleTransferParseResult {
+--- a/client/src/main.tsx
++++ b/client/src/main.tsx
+@@ -11,8 +11,6 @@
+ import { DATABASE_UNAVAILABLE_MESSAGE } from "@shared/databaseHealth";
+ import { fetchPublicMonitor, PUBLIC_MONITOR_QUERY_PATHS } from "./lib/publicMonitor";
+ import { fetchManualProbe, MANUAL_PROBE_QUERY_PATHS } from "./lib/manualProbe";
+-
+-const LOGIN_EXPIRED_NOTICE = translateText("登录状态已失效，请重新登录");
+ 
+ const cachedSiteTitle = (() => {
+   if (typeof window === "undefined") return "";
+@@ -60,7 +58,7 @@
+   if (!isUnauthorized) return;
+   const notice = error.message === ACCOUNT_DISABLED_ERR_MSG || error.message === SESSION_REPLACED_ERR_MSG
+     ? error.message
+-    : LOGIN_EXPIRED_NOTICE;
++    : translateText("登录状态已失效，请重新登录");
+   if (mobileAuth.isNative || error.message === ACCOUNT_DISABLED_ERR_MSG) {
+     mobileAuth.clear();
+   }
+--- a/client/src/pages/Announcements.tsx
++++ b/client/src/pages/Announcements.tsx
+@@ -56,7 +56,7 @@
+ function announcementSuccessMessage(action: string, data: any) {
+   const push = data?.telegramPush;
+   if (!push?.requested) return translateText("公告已{0}", [action]);
+-  return translateText("公告已{0}，通知推送 {1}/{2}{3}", [action, push.sent || 0, push.total || 0, push.failed ? `，失败 ${push.failed}` : ""]);
++  return translateText("公告已{0}，通知推送 {1}/{2}{3}", [action, push.sent || 0, push.total || 0, push.failed ? translateText("，失败 {0}", [push.failed]) : ""]);
+ }
+ 
+ export default function Announcements() {
+--- a/client/src/pages/Billing.tsx
++++ b/client/src/pages/Billing.tsx
+@@ -361,7 +361,7 @@
+     onSuccess: async (_data, variables) => {
+       const redemptionToggle = typeof variables.redemptionEnabled === "boolean";
+       const enabled = redemptionToggle ? variables.redemptionEnabled : !!variables.discountEnabled;
+-      toast.success(translateText("{0}已{1}", [redemptionToggle ? "兑换入口" : "折扣入口", enabled ? "开启" : "关闭"]));
++      toast.success(translateText("{0}已{1}", [redemptionToggle ? translateText("兑换入口") : translateText("折扣入口"), enabled ? translateText("开启") : translateText("关闭")]));
+       await utils.billing.featureStatus.invalidate();
+     },
+     onError: (error) => toast.error(error.message || translateText("更新失败")),
+@@ -379,7 +379,7 @@
+   const confirmDeleteCancelledSubscription = async (item: any) => {
+     const confirmed = await confirmDialog({
+       title: translateText("删除订阅记录"),
+-      description: translateText("确认删除“{0}”记录？支付和余额流水会继续保留。", [item.title || "已取消套餐"]),
++      description: translateText("确认删除“{0}”记录？支付和余额流水会继续保留。", [item.title || translateText("已取消套餐")]),
+       confirmText: translateText("删除"),
+       tone: "destructive",
+     });
+@@ -994,7 +994,7 @@
+                   <>
+                 <div className="grid gap-3 md:hidden">
+                   {filteredRedemptionCodes.map((code: any) => {
+-                    const content = code.type === "plan" ? translateText("{0} / {1} 天", [code.planName || `套餐 #${code.planId}`, code.durationDays || 30]) : money(code.amountCents);
++                    const content = code.type === "plan" ? translateText("{0} / {1} 天", [code.planName || translateText("套餐 #{0}", [code.planId]), code.durationDays || 30]) : money(code.amountCents);
+                     const usage = code.usedAt ? translateText("{0} 于 {1}", [code.usedByUsername || code.usedByUserId, dateText(code.usedAt)]) : translateText("未使用");
+                     return (
+                       <div key={code.id} className="rounded-lg border border-border/50 bg-background/40 p-3">
+@@ -1036,7 +1036,7 @@
+                         <TableCell><input type="checkbox" checked={selectedRedemptionSet.has(Number(code.id))} onChange={(event) => toggleRedemptionCode(Number(code.id), event.target.checked)} /></TableCell>
+                         <TableCell className="font-mono break-all">{code.code}</TableCell>
+                         <TableCell><Badge variant="outline">{code.type === "plan" ? translateText("套餐") : translateText("余额")}</Badge></TableCell>
+-                        <TableCell>{code.type === "plan" ? translateText("{0} / {1} 天", [code.planName || `套餐 #${code.planId}`, code.durationDays || 30]) : money(code.amountCents)}</TableCell>
++                        <TableCell>{code.type === "plan" ? translateText("{0} / {1} 天", [code.planName || translateText("套餐 #{0}", [code.planId]), code.durationDays || 30]) : money(code.amountCents)}</TableCell>
+                         <TableCell>{dateText(code.startsAt)} - {dateText(code.expiresAt)}</TableCell>
+                         <TableCell>{code.usedAt ? translateText("{0} 于 {1}", [code.usedByUsername || code.usedByUserId, dateText(code.usedAt)]) : translateText("未使用")}</TableCell>
+                         <TableCell className="text-right"><Button variant="ghost" size="icon" className="text-destructive" onClick={() => deleteRedemptionCode.mutate({ id: code.id })}><Trash2 className="h-4 w-4" /></Button></TableCell>
+--- a/client/src/pages/ForwardGroups.tsx
++++ b/client/src/pages/ForwardGroups.tsx
+@@ -1609,11 +1609,11 @@
+         checked={enabled}
+         disabled={!groupId}
+         onCheckedChangeAsync={(checked) => toggleMutation.mutateAsync({ id: groupId, isEnabled: checked })}
+-        onToggleSuccess={(checked) => toast.success(translateText("{0}已{1}", [resourceLabel, checked ? "开启" : "关闭"]))}
++        onToggleSuccess={(checked) => toast.success(translateText("{0}已{1}", [resourceLabel, checked ? translateText("开启") : translateText("关闭")]))}
+         onToggleError={(error) => toast.error(error instanceof Error ? error.message : translateText("切换{0}状态失败", [resourceLabel]))}
+         className="scale-75"
+         title={enabled ? translateText("关闭后该资源及关联规则将停止下发和转发") : translateText("开启后将恢复此前由该资源受控关闭的规则")}
+-        aria-label={translateText("{0}{1}", [enabled ? "停用" : "启用", group?.name || "链路资源"])}
++        aria-label={translateText("{0}{1}", [enabled ? translateText("停用") : translateText("启用"), group?.name || translateText("链路资源")])}
+       />
+     );
+   };
+@@ -1882,10 +1882,10 @@
+           <Badge variant="outline" className="justify-center gap-1.5 px-3 py-1.5 text-xs">
+             <Activity className="h-3 w-3 text-current" />
+             <AnimatedStatValue
+-              value={translateText("{0} / {1} {2}", [activeCount, modeTotal, activeGroupMode === "failover" || activeGroupMode === "entry" ? "健康" : "启用"])}
++              value={translateText("{0} / {1} {2}", [activeCount, modeTotal, activeGroupMode === "failover" || activeGroupMode === "entry" ? translateText("健康") : translateText("启用")])}
+               loading={isLoading || !groups}
+               cacheKey={`forwardGroups.header.${activeGroupMode}.active`}
+-              fallbackValue={translateText("0 / 0 {0}", [activeGroupMode === "failover" || activeGroupMode === "entry" ? "健康" : "启用"])}
++              fallbackValue={translateText("0 / 0 {0}", [activeGroupMode === "failover" || activeGroupMode === "entry" ? translateText("健康") : translateText("启用")])}
+             />
+           </Badge>
+           {canManualCheck && <Button variant="outline" className="gap-2" onClick={() => runFailoverMutation.mutate()} disabled={runFailoverMutation.isPending}>
+--- a/client/src/pages/Hosts.tsx
++++ b/client/src/pages/Hosts.tsx
+@@ -321,7 +321,7 @@
+     "user-select:none",
+     "cursor:pointer",
+   ].join(";");
+-  element.title = translateText("{0} · {1}", [point.host.name || point.label, point.regionText || "地区获取中"]);
++  element.title = translateText("{0} · {1}", [point.host.name || point.label, point.regionText || translateText("地区获取中")]);
+   element.addEventListener("pointerenter", () => onHoverChange(point));
+   element.addEventListener("pointerleave", () => onHoverChange(null));
+   element.addEventListener("mouseenter", () => onHoverChange(point));
+@@ -362,7 +362,7 @@
+     { label: "Agent", value: point.host.agentVersion ? `v${point.host.agentVersion}` : translateText("未上报") },
+   ];
+   const regionValue = point.flagUrl
+-    ? translateText("<span style=\"display:inline-flex;min-width:0;align-items:center;gap:7px;\"><img src=\"{0}\" alt=\"{1}\" referrerpolicy=\"no-referrer\" style=\"width:20px;height:15px;flex:0 0 auto;border-radius:2px;object-fit:cover;\" onerror=\"this.style.display='none';this.nextElementSibling.style.display='inline';\" /><span style=\"display:none;flex:0 0 auto;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,'Liberation Mono',monospace;font-size:11px;color:#cbd5e1;\">{2}</span><span style=\"min-width:0;overflow:hidden;text-overflow:ellipsis;\">{3}</span></span>", [escapeTooltipHtml(point.flagUrl), escapeTooltipHtml(point.countryCode), escapeTooltipHtml(point.countryCode), escapeTooltipHtml(point.regionText || "地区获取中")])
++    ? translateText("<span style=\"display:inline-flex;min-width:0;align-items:center;gap:7px;\"><img src=\"{0}\" alt=\"{1}\" referrerpolicy=\"no-referrer\" style=\"width:20px;height:15px;flex:0 0 auto;border-radius:2px;object-fit:cover;\" onerror=\"this.style.display='none';this.nextElementSibling.style.display='inline';\" /><span style=\"display:none;flex:0 0 auto;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,'Liberation Mono',monospace;font-size:11px;color:#cbd5e1;\">{2}</span><span style=\"min-width:0;overflow:hidden;text-overflow:ellipsis;\">{3}</span></span>", [escapeTooltipHtml(point.flagUrl), escapeTooltipHtml(point.countryCode), escapeTooltipHtml(point.countryCode), escapeTooltipHtml(point.regionText || translateText("地区获取中"))])
+     : escapeTooltipHtml(point.regionText || translateText("地区获取中"));
+   return translateText("\n    <div style=\"min-width:260px;max-width:320px;border:1px solid rgba(255,255,255,.14);border-radius:8px;background:rgba(8,13,24,.92);box-shadow:0 18px 44px rgba(0,0,0,.4);backdrop-filter:blur(10px);color:#f8fafc;padding:12px;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;\">\n      <div style=\"display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;\">\n        <div style=\"min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px;font-weight:700;\">{0}</div>\n        <div style=\"display:flex;align-items:center;gap:6px;color:#cbd5e1;font-size:12px;\">\n          <span style=\"width:8px;height:8px;border-radius:999px;background:{1};box-shadow:0 0 14px {2};\"></span>\n          {3}\n        </div>\n      </div>\n      {4}\n    </div>\n  ", [escapeTooltipHtml(point.host.name || "-"), point.color, point.glowColor, escapeTooltipHtml(point.statusText), rows.map((row) => `
+         <div style="display:grid;grid-template-columns:42px minmax(0,1fr);gap:8px;align-items:start;margin-top:6px;font-size:12px;line-height:1.45;">
+@@ -1749,7 +1749,7 @@
+       const skippedLatest = (data as any)?.skippedLatest || 0;
+       const skippedOffline = (data as any)?.skippedOffline || 0;
+       const scheduled = (data as any)?.scheduled || 0;
+-      toast.success(translateText("已安排 {0} 台 Agent 滚动升级，首批推送 {1} 台{2}{3}{4}", [data?.requested || 0, data?.pushed || 0, scheduled ? `，等待后续批次 ${scheduled} 台` : "", skippedLatest ? `，跳过 ${skippedLatest} 台最新版本` : "", skippedOffline ? `，跳过 ${skippedOffline} 台离线主机` : ""]));
++      toast.success(translateText("已安排 {0} 台 Agent 滚动升级，首批推送 {1} 台{2}{3}{4}", [data?.requested || 0, data?.pushed || 0, scheduled ? translateText("，等待后续批次 {0} 台", [scheduled]) : "", skippedLatest ? translateText("，跳过 {0} 台最新版本", [skippedLatest]) : "", skippedOffline ? translateText("，跳过 {0} 台离线主机", [skippedOffline]) : ""]));
+     },
+     onError: (err) => toast.error(err.message || translateText("批量下发升级任务失败")),
+   });
+@@ -1766,7 +1766,7 @@
+       }
+       if (tracked.has(host.id)) {
+         tracked.delete(host.id);
+-        toast.success(translateText("{0} Agent 升级成功，当前版本 {1}", [host.name, host.agentVersion ? `v${host.agentVersion}` : "已上报"]));
++        toast.success(translateText("{0} Agent 升级成功，当前版本 {1}", [host.name, host.agentVersion ? `v${host.agentVersion}` : translateText("已上报")]));
+       }
+     }
+     for (const hostId of Array.from(tracked.keys())) {
+--- a/client/src/pages/LookingGlass.tsx
++++ b/client/src/pages/LookingGlass.tsx
+@@ -368,7 +368,7 @@
+     onError: (error) => {
+       setRunState("error");
+       setRunStartedAt(null);
+-      setLiveOutput((value) => translateText("{0}\n执行失败: {1}", [value, error.message || "测试失败"]));
++      setLiveOutput((value) => translateText("{0}\n执行失败: {1}", [value, error.message || translateText("测试失败")]));
+       toast.error(error.message || translateText("测试失败"));
+     },
+   });
+--- a/client/src/pages/Plugins.tsx
++++ b/client/src/pages/Plugins.tsx
+@@ -324,7 +324,7 @@
+       const title = String(feature?.title || "").trim();
+       const detail = String(feature?.description || "").trim();
+       if (!title && !detail) continue;
+-      lines.push(translateText("- {0}{1}", [title ? `**${title}**` : "功能", detail ? `：${detail}` : ""]));
++      lines.push(translateText("- {0}{1}", [title ? `**${title}**` : translateText("功能"), detail ? `：${detail}` : ""]));
+     }
+   }
+ 
+@@ -1068,7 +1068,7 @@
+ 
+   const updateFromGithubMutation = trpc.plugins.updateFromGithub.useMutation({
+     onSuccess: async (plugin) => {
+-      toast.success(translateText("插件已更新到 v{0}", [(plugin as any)?.version || "最新版本"]));
++      toast.success(translateText("插件已更新到 v{0}", [(plugin as any)?.version || translateText("最新版本")]));
+       await invalidatePluginQueries();
+     },
+     onError: (error) => toast.error(error.message || translateText("更新失败")),
+--- a/client/src/pages/Rules.tsx
++++ b/client/src/pages/Rules.tsx
+@@ -53,6 +53,7 @@
+ } from "@/components/ui/table";
+ import DataSectionLoading from "@/components/DataSectionLoading";
+ import { trpc } from "@/lib/trpc";
++import { downloadTextFile } from "@/lib/fileDownload";
+ import { pollingInterval } from "@/lib/polling";
+ import { handoffManualTestResult } from "@/lib/manualTestCache";
+ import {
+@@ -1218,7 +1219,7 @@
+   const lastHost = getHost(Number(lastMember.hostId || 0));
+   return kernelFamilyWarning(
+     toolLabel,
+-    translateText("{0} 入口", [warningHostName(lastHost, `主机${Number(lastMember.hostId || 0) || ""}`)]),
++    translateText("{0} 入口", [warningHostName(lastHost, translateText("主机{0}", [Number(lastMember.hostId || 0) || ""]))]),
+     inboundFamilies,
+     translateText("最终目标 {0}", [String(rule?.targetIp || "").trim() || "-"]),
+     addressFamily(rule?.targetIp),
+@@ -1238,7 +1239,7 @@
+       const memberHost = lookupHostForWarning(hosts, hostById, Number(member.hostId || 0));
+       const warning = kernelFamilyWarning(
+         toolLabel,
+-        translateText("{0} 入口", [warningHostName(memberHost, `成员主机${Number(member.hostId || 0) || ""}`)]),
++        translateText("{0} 入口", [warningHostName(memberHost, translateText("成员主机{0}", [Number(member.hostId || 0) || ""]))]),
+         hostEntryFamilies(memberHost),
+         translateText("最终目标 {0}", [String(rule?.targetIp || "").trim() || "-"]),
+         addressFamily(rule?.targetIp),
+@@ -1251,7 +1252,7 @@
+   if (!entryHost) return null;
+   return kernelFamilyWarning(
+     toolLabel,
+-    translateText("{0} 入口", [warningHostName(entryHost, "入口主机")]),
++    translateText("{0} 入口", [warningHostName(entryHost, translateText("入口主机"))]),
+     hostEntryFamilies(entryHost),
+     translateText("目标 {0}", [String(rule?.targetIp || "").trim() || "-"]),
+     addressFamily(rule?.targetIp),
+@@ -1564,7 +1565,7 @@
+     { label: translateText("出向"), value: formatBytes(path.bytesOut) },
+     { label: translateText("连接"), value: String(path.connections || 0) },
+   ];
+-  return translateText("\n    <div style=\"min-width:290px;max-width:390px;border:1px solid rgba(255,255,255,.14);border-radius:8px;background:rgba(8,13,24,.94);box-shadow:0 18px 44px rgba(0,0,0,.42);backdrop-filter:blur(10px);color:#f8fafc;padding:12px;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;\">\n      <div style=\"display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;\">\n        <div style=\"min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px;font-weight:700;\">{0}</div>\n        <div style=\"display:flex;align-items:center;gap:6px;color:#cbd5e1;font-size:12px;\">\n          <span style=\"width:8px;height:8px;border-radius:999px;background:{1};box-shadow:0 0 14px {2};\"></span>\n          {3}\n        </div>\n      </div>\n      {4}\n      <div style=\"margin-top:10px;color:#93c5fd;font-size:12px;\">点击编辑规则</div>\n    </div>\n  ", [escapeTooltipHtml(path.rule?.name || `规则 #${path.rule?.id}`), path.color, hexToRgba(path.color, .8), escapeTooltipHtml(formatBytes(path.totalBytes)), rows.map((row) => `
++  return translateText("\n    <div style=\"min-width:290px;max-width:390px;border:1px solid rgba(255,255,255,.14);border-radius:8px;background:rgba(8,13,24,.94);box-shadow:0 18px 44px rgba(0,0,0,.42);backdrop-filter:blur(10px);color:#f8fafc;padding:12px;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;\">\n      <div style=\"display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;\">\n        <div style=\"min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px;font-weight:700;\">{0}</div>\n        <div style=\"display:flex;align-items:center;gap:6px;color:#cbd5e1;font-size:12px;\">\n          <span style=\"width:8px;height:8px;border-radius:999px;background:{1};box-shadow:0 0 14px {2};\"></span>\n          {3}\n        </div>\n      </div>\n      {4}\n      <div style=\"margin-top:10px;color:#93c5fd;font-size:12px;\">点击编辑规则</div>\n    </div>\n  ", [escapeTooltipHtml(path.rule?.name || translateText("规则 #{0}", [path.rule?.id])), path.color, hexToRgba(path.color, .8), escapeTooltipHtml(formatBytes(path.totalBytes)), rows.map((row) => `
+         <div style="display:grid;grid-template-columns:42px minmax(0,1fr);gap:8px;align-items:start;margin-top:6px;font-size:12px;line-height:1.45;">
+           <span style="color:#94a3b8;">${escapeTooltipHtml(row.label)}</span>
+           <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;color:#e2e8f0;">${escapeTooltipHtml(row.value)}</span>
+@@ -1717,7 +1718,7 @@
+       : targetHostPoint
+       ? translateText("目标地址匹配已登记主机")
+       : targetGeoCoord
+-      ? translateText("目标地址已定位{0}", [targetGeo?.resolvedAddress && normalizeAddressKey(targetGeo.resolvedAddress) !== normalizeAddressKey(rule.targetIp) ? `，解析到 ${targetGeo.resolvedAddress}` : ""])
++      ? translateText("目标地址已定位{0}", [targetGeo?.resolvedAddress && normalizeAddressKey(targetGeo.resolvedAddress) !== normalizeAddressKey(rule.targetIp) ? translateText("，解析到 {0}", [targetGeo.resolvedAddress]) : ""])
+       : translateText("目标地址未定位，临时放置在出口附近");
+     const targetPoint: RuleGlobePoint = {
+       id: `target:${rule.id}`,
+@@ -2168,13 +2169,13 @@
+   };
+ }
+ 
+-function downloadRuleTransferFiles(
++function buildRuleTransferFiles(
+   rules: readonly any[],
+   scope: Record<string, unknown>,
+   fileNameBase: string,
+ ) {
+   const chunks = chunkBatchItems(rules, RULE_TRANSFER_MAX_IMPORT_COUNT);
+-  chunks.forEach((chunk, index) => {
++  return chunks.map((chunk, index) => {
+     const payload = {
+       kind: RULE_TRANSFER_FILE_KIND,
+       version: RULE_TRANSFER_FILE_VERSION,
+@@ -2182,18 +2183,9 @@
+       scope,
+       rules: chunk.map(exportRuleForTransfer),
+     };
+-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json;charset=utf-8" });
+-    const url = URL.createObjectURL(blob);
+-    const anchor = document.createElement("a");
+     const partSuffix = chunks.length > 1 ? `-part-${index + 1}-of-${chunks.length}` : "";
+-    anchor.href = url;
+-    anchor.download = `${fileNameBase}${partSuffix}.json`;
+-    document.body.appendChild(anchor);
+-    anchor.click();
+-    document.body.removeChild(anchor);
+-    globalThis.setTimeout(() => URL.revokeObjectURL(url), 0);
++    return { filename: `${fileNameBase}${partSuffix}.json`, content: JSON.stringify(payload, null, 2), ruleCount: chunk.length };
+   });
+-  return chunks.length;
+ }
+ 
+ function normalizeFailoverTargetsForSubmit(text: string) {
+@@ -2384,6 +2376,7 @@
+     targetPort: 0,
+   });
+   const [showExportDialog, setShowExportDialog] = useState(false);
++  const [exportDownloads, setExportDownloads] = useState<ReturnType<typeof buildRuleTransferFiles>>([]);
+   const [showImportDialog, setShowImportDialog] = useState(false);
+   const [exportScopeType, setExportScopeType] = useState<RuleTransferScopeType>("local");
+   const [exportResourceId, setExportResourceId] = useState("");
+@@ -3670,7 +3663,9 @@
+       if (failures.length > 0) {
+         toast.error(translateText("批量复制完成：成功 {0} 条，跳过 {1} 条，失败 {2} 条。{3}", [copied, skipped, failures.length, batchOperationErrorMessage(failures[0].reason)]));
+       } else {
+-        toast.success(translateText("已复制 {0} 条规则到 {1}{2}", [copied, targetSummary, skipped ? "，跳过 " + skipped + " 条" : ""]));
++        toast.success(skipped
++          ? translateText("已复制 {0} 条规则到 {1}，跳过 {2} 条", [copied, targetSummary, skipped])
++          : translateText("已复制 {0} 条规则到 {1}", [copied, targetSummary]));
+         if (copied > 0) setShowCopyDialog(false);
+       }
+     } catch (error: any) {
+@@ -3730,7 +3725,9 @@
+       if (failures.length > 0) {
+         toast.error(translateText("批量编辑完成：成功 {0} 条，跳过 {1} 条，失败 {2} 条。{3}", [updated, skipped, failures.length, batchOperationErrorMessage(failures[0].reason)]));
+       } else {
+-        toast.success(translateText("已批量编辑 ") + updated + translateText(" 条规则") + (skipped ? translateText("，跳过 ") + skipped + translateText(" 条") : ""));
++        toast.success(skipped
++          ? translateText("已批量编辑 {0} 条，跳过 {1} 条", [updated, skipped])
++          : translateText("已批量编辑 {0} 条规则", [updated]));
+         if (updated > 0) setShowCopyDialog(false);
+       }
+     } catch (error: any) {
+@@ -3751,7 +3748,10 @@
+       { type: "batch", name: translateText("批量管理选中规则") },
+       `forwardx-rules-batch-${date}`,
+     );
+-    toast.success(translateText("已导出 {0} 条规则{1}", [copySelectedRules.length, partCount > 1 ? `，共 ${partCount} 个文件` : ""]));
++    if (!partCount) return;
++    toast.success(partCount > 1
++      ? translateText("已生成 {0} 条规则，共 {1} 个文件，请逐个下载", [copySelectedRules.length, partCount])
++      : translateText("已导出 {0} 条规则", [copySelectedRules.length]));
+   };
+ 
+   const handleBatchDeleteRules = async () => {
+@@ -3797,9 +3797,9 @@
+       ]);
+       if (showCopyDialog) await fullRulesQuery.refetch();
+       if (failures.length > 0) {
+-        toast.error(translateText("批量删除完成：成功 {0} 条，失败 {1} 条。{2}", [deletedIdList.length, failures.length, failures[0]?.error || "请稍后重试"]));
++        toast.error(translateText("批量删除完成：成功 {0} 条，失败 {1} 条。{2}", [deletedIdList.length, failures.length, failures[0]?.error || translateText("请稍后重试")]));
+       } else {
+-        toast.success(translateText("已删除 ") + deletedIdList.length + translateText(" 条规则"));
++        toast.success(translateText("已删除 {0} 条规则", [deletedIdList.length]));
+       }
+     } catch (error: any) {
+       toast.error(translateText("批量删除失败：") + (error?.message || translateText("请稍后重试")));
+@@ -4116,7 +4116,7 @@
+       ? translateText("导出左侧已选规则")
+       : translateText("复制到右侧目标");
+   const batchRuleSelectionPanel = (
+-    <div className="space-y-3 rounded-md border border-border/60 bg-background/55 p-3">
++    <div className="min-w-0 space-y-3 rounded-md border border-border/60 bg-background/55 p-3">
+       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+         <div className="space-y-1">
+           <Label>{translateText("规则筛选")}</Label>
+@@ -4701,7 +4701,7 @@
+   const renderTrafficBillingResourceBadge = (enabled = true) => enabled ? (
+     <span className="shrink-0 rounded border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium leading-none text-amber-700 dark:text-amber-300">{translateText("按量计费资源")}</span>
+   ) : null;
+-  const getHostOptionText = (host: any) => translateText("{0}（{1}）{2}", [getHostOptionName(host), host?.isOnline ? "在线" : "离线", trafficBillingHostIds.has(Number(host?.id)) ? " / 按量计费资源" : ""]);
++  const getHostOptionText = (host: any) => translateText("{0}（{1}）{2}", [getHostOptionName(host), host?.isOnline ? translateText("在线") : translateText("离线"), trafficBillingHostIds.has(Number(host?.id)) ? translateText(" / 按量计费资源") : ""]);
+   const renderHostStatusLabel = (host: any) => {
+     const online = !!host?.isOnline;
+     return (
+@@ -4835,8 +4835,8 @@
+         return {
+           state: "running",
+           title: versionText
+-            ? translateText("域名已{0}生效，配置版本：{1}", [entryRuntimes.length > 0 ? "在入口与出口" : "在出口主机", versionText])
+-            : translateText("域名已{0}生效", [entryRuntimes.length > 0 ? "在入口与出口" : "在出口主机"]),
++            ? translateText("域名已{0}生效，配置版本：{1}", [entryRuntimes.length > 0 ? translateText("在入口与出口") : translateText("在出口主机"), versionText])
++            : translateText("域名已{0}生效", [entryRuntimes.length > 0 ? translateText("在入口与出口") : translateText("在出口主机")]),
+         };
+       }
+       const entryConfigError = entryRuntimes.find((entry: any) => String(entry?.lastConfigError || "").trim());
+@@ -5835,11 +5835,28 @@
+         resetImportDialog();
+       }
+     } catch (error: any) {
+-      toast.error(translateText("批量导入处理失败：{0}", [error?.message || "请检查规则配置"]));
++      toast.error(translateText("批量导入处理失败：{0}", [error?.message || translateText("请检查规则配置")]));
+     } finally {
+       importingRulesRef.current = false;
+       setImportingRules(false);
+     }
++  };
++
++  const downloadRuleTransferFile = (file: ReturnType<typeof buildRuleTransferFiles>[number]) => {
++    try {
++      downloadTextFile(file.filename, file.content, "application/json;charset=utf-8");
++      return true;
++    } catch (error: unknown) {
++      toast.error(error instanceof Error ? error.message : translateText("浏览器未能保存文件，请检查下载权限后重试"));
++      return false;
++    }
++  };
++  const downloadRuleTransferFiles = (rules: readonly any[], scope: Record<string, unknown>, fileNameBase: string) => {
++    const files = buildRuleTransferFiles(rules, scope, fileNameBase);
++    if (files.length === 1) return downloadRuleTransferFile(files[0]) ? 1 : 0;
++    setShowCopyDialog(false);
++    setExportDownloads(files);
++    return files.length;
+   };
+ 
+   const handleExportRules = () => {
+@@ -5863,7 +5880,10 @@
+       },
+       `forwardx-rules-${exportScopeType}-${sanitizeRuleTransferFilePart(resourceLabel)}-${date}`,
+     );
+-    toast.success(translateText("已导出 {0} 条规则{1}", [exportableRules.length, partCount > 1 ? `，共 ${partCount} 个文件` : ""]));
++    if (!partCount) return;
++    toast.success(partCount > 1
++      ? translateText("已生成 {0} 条规则，共 {1} 个文件，请逐个下载", [exportableRules.length, partCount])
++      : translateText("已导出 {0} 条规则", [exportableRules.length]));
+     setShowExportDialog(false);
+   };
+   const getRuleOwnerName = (rule: any) => {
+@@ -8386,6 +8406,26 @@
+         </DialogContent>
+       </Dialog>
+ 
++      <Dialog open={exportDownloads.length > 0} onOpenChange={(open) => { if (!open) setExportDownloads([]); }}>
++        <DialogContent className="max-w-lg">
++          <DialogHeader>
++            <DialogTitle>{translateText("下载规则文件")}</DialogTitle>
++            <DialogDescription>{translateText("规则已拆分为 {0} 个文件，请逐个点击下载，避免浏览器拦截连续下载。", [exportDownloads.length])}</DialogDescription>
++          </DialogHeader>
++          <div className="space-y-2 overflow-y-auto">
++            {exportDownloads.map((file, index) => (
++              <Button key={file.filename} variant="outline" className="w-full justify-start gap-2" onClick={() => downloadRuleTransferFile(file)}>
++                <Download className="h-4 w-4" />
++                {translateText("下载第 {0}/{1} 个文件（{2} 条规则）", [index + 1, exportDownloads.length, file.ruleCount])}
++              </Button>
++            ))}
++          </div>
++          <DialogFooter>
++            <Button variant="outline" onClick={() => setExportDownloads([])}>{translateText("关闭")}</Button>
++          </DialogFooter>
++        </DialogContent>
++      </Dialog>
++
+       <Dialog open={showExportDialog} onOpenChange={setShowExportDialog}>
+         <DialogContent className="sm:max-w-2xl">
+           <DialogHeader>
+@@ -8454,7 +8494,7 @@
+           if (!open) resetImportDialog();
+         }}
+       >
+-        <DialogContent className="sm:max-w-2xl">
++        <DialogContent className="grid-rows-[auto_minmax(0,1fr)_auto] sm:max-w-2xl">
+           <DialogHeader>
+             <DialogTitle className="flex items-center gap-2">
+               <Upload className="h-5 w-5" />
+@@ -8462,7 +8502,7 @@
+             </DialogTitle>
+             <DialogDescription>{translateText("选择范围和规则文件后导入")}</DialogDescription>
+           </DialogHeader>
+-          <div className="space-y-4 py-2">
++          <div className="min-h-0 min-w-0 space-y-4 overflow-y-auto py-2 pr-1">
+             <div className="grid gap-4 sm:grid-cols-[minmax(0,11rem)_minmax(0,1fr)]">
+               <div className="space-y-2">
+                 <Label>{translateText("类型")}</Label>
+@@ -8528,13 +8568,13 @@
+         </DialogContent>
+       </Dialog>
+       <Dialog open={showCopyDialog} onOpenChange={(open) => !copyActionPending && setShowCopyDialog(open)}>
+-        <DialogContent className="sm:max-w-4xl">
++        <DialogContent className="grid-rows-[auto_minmax(0,1fr)_auto] sm:max-w-4xl">
+           <DialogHeader>
+             <DialogTitle className="flex items-center gap-2">
+               <ClipboardCopy className="h-5 w-5" />{translateText("批量管理转发规则")}</DialogTitle>
+             <DialogDescription>{translateText("管理当前用户筛选范围内的规则；复制或导入的新规则归属：")}{ruleOperationOwnerLabel}{translateText("。编辑不会改变规则归属。")}</DialogDescription>
+           </DialogHeader>
+-          <div className="max-h-[72vh] space-y-4 overflow-y-auto pr-1">
++          <div className="min-h-0 min-w-0 space-y-4 overflow-y-auto pr-1">
+             <div className={segmentedControlClassName}>
+               <div className="grid grid-cols-2 gap-1 sm:grid-cols-4">
+                 <button
+@@ -8583,7 +8623,7 @@
+             {isBatchImportMode ? (
+               <>
+               <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_3.5rem_minmax(0,0.82fr)] lg:items-start">
+-                <div className="space-y-3 rounded-md border border-border/60 bg-background/55 p-3">
++                <div className="min-w-0 space-y-3 rounded-md border border-border/60 bg-background/55 p-3">
+                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                     <div className="space-y-1">
+                       <Label>{translateText("导入内容")}</Label>
+@@ -8599,7 +8639,7 @@
+                     </div>
+                   </div>
+                   <div className={segmentedControlClassName}>
+-                    <div className={`grid gap-1 ${user?.role === "admin" ? "grid-cols-3" : "grid-cols-2"}`}>
++                    <div className={`grid grid-cols-1 gap-1 ${user?.role === "admin" ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}>
+                       <button
+                         type="button"
+                         className={routeModeOptionClass(importSourceMode === "file", importingRules)}
+@@ -8680,7 +8720,7 @@
+                         value={importManualText}
+                         onChange={(event) => setImportManualText(event.target.value)}
+                         placeholder={importSourceMode === "sni"
+-                          ? translateText("{0}\n官网#www.example.com#203.0.113.10#443\nIPv6站点#ipv6.example.com#[2408:xxxx::1]#8443", [SNI_BULK_IMPORT_LINE_FORMAT])
++                          ? translateText("{0}\n官网#www.example.com#203.0.113.10#443\nIPv6站点#ipv6.example.com#[2408:xxxx::1]#8443", [translateText(SNI_BULK_IMPORT_LINE_FORMAT)])
+                           : translateText("每行一个目标地址，格式如：\nexample.com:443\n10.0.0.8:8080\n[2408:xxxx::1]:8443")}
+                         className={importSourceMode === "sni" ? "min-h-[11rem] resize-y font-mono text-sm" : "min-h-[7.5rem] resize-y"}
+                       />
+@@ -8714,7 +8754,7 @@
+                             <div className="mt-1 truncate text-xs text-muted-foreground">
+                               {sni
+                                 ? `:${rule.sourcePort} / ${sni} -> ${formatAddressWithPort(rule.targetIp, rule.targetPort)} / ${forwardTypeDisplayLabel(rule.forwardType)}`
+-                                : translateText("{0} -> {1} / {2}", [rule.sourcePort > 0 ? `:${rule.sourcePort}` : "随机端口", formatAddressWithPort(rule.targetIp, rule.targetPort), forwardTypeDisplayLabel(rule.forwardType)])}
++                                : translateText("{0} -> {1} / {2}", [rule.sourcePort > 0 ? `:${rule.sourcePort}` : translateText("随机端口"), formatAddressWithPort(rule.targetIp, rule.targetPort), forwardTypeDisplayLabel(rule.forwardType)])}
+                             </div>
+                           </div>
+                         );
+@@ -8732,7 +8772,7 @@
+                   </div>
+                 </div>
+ 
+-                <div className="space-y-3 rounded-md border border-border/60 bg-background/55 p-3">
++                <div className="min-w-0 space-y-3 rounded-md border border-border/60 bg-background/55 p-3">
+                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                     <div className="space-y-1">
+                       <Label>{translateText("导入目标")}</Label>
+@@ -8843,7 +8883,7 @@
+                 </div>
+               </div>
+ 
+-              <div className="space-y-3">
++              <div className="min-w-0 space-y-3">
+                 {isBatchExportMode ? (
+                 <div className="space-y-3 rounded-md border border-border/60 bg-background/55 p-3">
+                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+@@ -9155,7 +9195,7 @@
+                       <div className="py-10 text-center text-sm text-muted-foreground">{translateText("没有可选择的")}{copyTargetScopeLabel}</div>
+                     )}
+                   </div>
+-                  <div className="rounded-md border border-emerald-500/20 bg-emerald-500/5 px-3 py-2 text-xs leading-5 text-emerald-800 dark:text-emerald-200">
++                  <div className="break-words rounded-md border border-emerald-500/20 bg-emerald-500/5 px-3 py-2 text-xs leading-5 text-emerald-800 dark:text-emerald-200">
+                     {selectedCopyTargetResources.length > 0 ? (
+                       <>
+                         <span className="font-medium">{translateText("本次复制目标：")}</span>
+@@ -9270,7 +9310,7 @@
+         <DialogContent className="sm:max-w-md">
+           <DialogHeader>
+             <DialogTitle>{translateText("删除转发规则")}</DialogTitle>
+-            <DialogDescription>{translateText("确认删除 \"")}{deleteRule?.name}"？
++            <DialogDescription>{translateText("确认删除规则 \"{0}\"？", [deleteRule?.name || ""])}
+             </DialogDescription>
+           </DialogHeader>
+           <DialogFooter>
+--- a/client/src/pages/Settings.tsx
++++ b/client/src/pages/Settings.tsx
+@@ -3893,7 +3893,7 @@
+   const [ddnsTencentCloudSecretId, setDdnsTencentCloudSecretId] = useState("");
+   const [ddnsTencentCloudSecretKey, setDdnsTencentCloudSecretKey] = useState("");
+   const [ddnsTencentCloudDomainName, setDdnsTencentCloudDomainName] = useState("");
+-  const [ddnsTencentCloudRecordLine, setDdnsTencentCloudRecordLine] = useState(translateText("默认"));
++  const [ddnsTencentCloudRecordLine, setDdnsTencentCloudRecordLine] = useState("默认");
+   const [ddnsTencentCloudRecordLineId, setDdnsTencentCloudRecordLineId] = useState("");
+   const [ddnsWebhookUrl, setDdnsWebhookUrl] = useState("");
+   const [ddnsWebhookMethod, setDdnsWebhookMethod] = useState<"POST" | "PUT" | "GET">("POST");
+@@ -3961,7 +3961,7 @@
+       setDdnsAliyunLine(settings.ddns?.aliyunLine || "default");
+       setDdnsTencentCloudSecretId(settings.ddns?.tencentcloudSecretId || "");
+       setDdnsTencentCloudDomainName(settings.ddns?.tencentcloudDomainName || "");
+-      setDdnsTencentCloudRecordLine(settings.ddns?.tencentcloudRecordLine || translateText("默认"));
++      setDdnsTencentCloudRecordLine(settings.ddns?.tencentcloudRecordLine || "默认");
+       setDdnsTencentCloudRecordLineId(settings.ddns?.tencentcloudRecordLineId || "");
+       setDdnsWebhookUrl(settings.ddns?.webhookUrl || "");
+       setDdnsWebhookMethod((settings.ddns?.webhookMethod === "PUT" || settings.ddns?.webhookMethod === "GET") ? settings.ddns.webhookMethod : "POST");
+@@ -5407,7 +5407,7 @@
+                     setUpdateAutoCheckEnabled(checked);
+                     utils.system.getSettings.invalidate();
+                     utils.system.publicInfo.invalidate();
+-                    toast.success(translateText("自动检查更新已{0}", [checked ? "开启" : "关闭"]));
++                    toast.success(translateText("自动检查更新已{0}", [checked ? translateText("开启") : translateText("关闭")]));
+                   }}
+                   onToggleError={(error) => toast.error(error instanceof Error ? error.message : translateText("自动检查更新失败"))}
+                 />
+@@ -5545,11 +5545,11 @@
+                     </p>
+                     <p className="mt-1 text-xs text-muted-foreground">
+                       {upgradeStatus.job.status === "success"
+-                        ? translateText("已完成 {0} {1}，{2} 秒后自动刷新", [upgradeStatus.job.targetVersion || "", upgradeStatus.job.mode === "rollback" ? "回退" : "升级", PANEL_UPGRADE_REFRESH_DELAY_SECONDS])
++                        ? translateText("已完成 {0} {1}，{2} 秒后自动刷新", [upgradeStatus.job.targetVersion || "", upgradeStatus.job.mode === "rollback" ? translateText("回退") : translateText("升级"), PANEL_UPGRADE_REFRESH_DELAY_SECONDS])
+                         : upgradeStatus.job.status === "waiting_assets"
+                           ? translateText("GitHub Actions 仍在生成面板安装包或镜像，请稍后重新检查更新")
+                         : upgradeStatus.job.status === "error"
+-                          ? translateText("{0}未完成，请查看下方异常信息", [upgradeStatus.job.mode === "rollback" ? "回退" : "升级"])
++                          ? translateText("{0}未完成，请查看下方异常信息", [upgradeStatus.job.mode === "rollback" ? translateText("回退") : translateText("升级")])
+                           : upgradeProgress.label}
+                     </p>
+                   </div>
+--- a/client/src/pages/Setup.tsx
++++ b/client/src/pages/Setup.tsx
+@@ -36,9 +36,9 @@
+ type SetupMode = "new" | "migrate" | null;
+ 
+ const steps = [
+-  { id: 1, title: translateText("连接数据库"), icon: Database },
+-  { id: 2, title: translateText("导入旧数据"), icon: Sparkles },
+-  { id: 3, title: translateText("创建管理员"), icon: ShieldCheck },
++  { id: 1, title: "连接数据库", icon: Database },
++  { id: 2, title: "导入旧数据", icon: Sparkles },
++  { id: 3, title: "创建管理员", icon: ShieldCheck },
+ ] as const;
+ 
+ function databaseTypeLabel(type: string | null | undefined) {
+--- a/client/src/pages/Store.tsx
++++ b/client/src/pages/Store.tsx
+@@ -386,7 +386,7 @@
+                             </CardTitle>
+                             <CardDescription className="mt-2">{translateText("余额可用时可直接在转发规则中使用。")}</CardDescription>
+                           </div>
+-                          <Badge variant="outline">{config.resourceKind || (config.resourceType === "host" ? translateText("历史主机") : config.resourceType === "tunnel" ? translateText("隧道转发") : translateText("转发资源"))}</Badge>
++                          <Badge variant="outline">{(config.resourceKind ? translateText(config.resourceKind) : "") || (config.resourceType === "host" ? translateText("历史主机") : config.resourceType === "tunnel" ? translateText("隧道转发") : translateText("转发资源"))}</Badge>
+                         </div>
+                       </CardHeader>
+                       <CardContent className="flex-1 space-y-4">
+--- a/client/src/pages/Subscriptions.tsx
++++ b/client/src/pages/Subscriptions.tsx
+@@ -142,7 +142,7 @@
+   const confirmDeleteCancelledSubscription = async (sub: any) => {
+     const confirmed = await confirmDialog({
+       title: translateText("删除订阅记录"),
+-      description: translateText("确认删除“{0}”的已取消记录？支付和余额流水会继续保留。", [sub.planName || `套餐 #${sub.planId}`]),
++      description: translateText("确认删除“{0}”的已取消记录？支付和余额流水会继续保留。", [sub.planName || translateText("套餐 #{0}", [sub.planId])]),
+       confirmText: translateText("删除"),
+       tone: "destructive",
+     });
+--- a/client/src/pages/Tunnels.tsx
++++ b/client/src/pages/Tunnels.tsx
+@@ -668,7 +668,7 @@
+     { label: translateText("链路"), value: link.routeText },
+     { label: translateText("节点"), value: routeNodes },
+   ];
+-  return translateText("\n    <div style=\"min-width:280px;max-width:360px;border:1px solid rgba(255,255,255,.14);border-radius:8px;background:rgba(8,13,24,.94);box-shadow:0 18px 44px rgba(0,0,0,.42);backdrop-filter:blur(10px);color:#f8fafc;padding:12px;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;\">\n      <div style=\"display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;\">\n        <div style=\"min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px;font-weight:700;\">{0}</div>\n        <div style=\"display:flex;align-items:center;gap:6px;color:#cbd5e1;font-size:12px;\">\n          <span style=\"width:8px;height:8px;border-radius:999px;background:{1};box-shadow:0 0 14px {2};\"></span>\n          {3}\n        </div>\n      </div>\n      {4}\n      <div style=\"margin-top:10px;color:#93c5fd;font-size:12px;\">点击编辑</div>\n    </div>\n  ", [escapeTooltipHtml(link.name), link.color, link.glowColor, escapeTooltipHtml(link.kind === "tunnel" ? "隧道" : "转发链"), rows.map((row) => `
++  return translateText("\n    <div style=\"min-width:280px;max-width:360px;border:1px solid rgba(255,255,255,.14);border-radius:8px;background:rgba(8,13,24,.94);box-shadow:0 18px 44px rgba(0,0,0,.42);backdrop-filter:blur(10px);color:#f8fafc;padding:12px;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;\">\n      <div style=\"display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;\">\n        <div style=\"min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px;font-weight:700;\">{0}</div>\n        <div style=\"display:flex;align-items:center;gap:6px;color:#cbd5e1;font-size:12px;\">\n          <span style=\"width:8px;height:8px;border-radius:999px;background:{1};box-shadow:0 0 14px {2};\"></span>\n          {3}\n        </div>\n      </div>\n      {4}\n      <div style=\"margin-top:10px;color:#93c5fd;font-size:12px;\">点击编辑</div>\n    </div>\n  ", [escapeTooltipHtml(link.name), link.color, link.glowColor, escapeTooltipHtml(link.kind === "tunnel" ? translateText("隧道") : translateText("转发链")), rows.map((row) => `
+         <div style="display:grid;grid-template-columns:42px minmax(0,1fr);gap:8px;align-items:start;margin-top:6px;font-size:12px;line-height:1.45;">
+           <span style="color:#94a3b8;">${escapeTooltipHtml(row.label)}</span>
+           <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;color:#e2e8f0;">${escapeTooltipHtml(row.value)}</span>
+@@ -677,7 +677,7 @@
+ }
+ 
+ function renderTunnelGlobeHostTooltip(point: TunnelGlobeHostPoint) {
+-  return translateText("\n    <div style=\"min-width:220px;border:1px solid rgba(255,255,255,.14);border-radius:8px;background:rgba(8,13,24,.94);box-shadow:0 18px 44px rgba(0,0,0,.42);color:#f8fafc;padding:10px;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;\">\n      <div style=\"font-size:13px;font-weight:700;\">{0}</div>\n      <div style=\"margin-top:6px;color:#cbd5e1;font-size:12px;\">{1}</div>\n    </div>\n  ", [escapeTooltipHtml(point.name), escapeTooltipHtml(point.regionText || "地区获取中")]);
++  return translateText("\n    <div style=\"min-width:220px;border:1px solid rgba(255,255,255,.14);border-radius:8px;background:rgba(8,13,24,.94);box-shadow:0 18px 44px rgba(0,0,0,.42);color:#f8fafc;padding:10px;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;\">\n      <div style=\"font-size:13px;font-weight:700;\">{0}</div>\n      <div style=\"margin-top:6px;color:#cbd5e1;font-size:12px;\">{1}</div>\n    </div>\n  ", [escapeTooltipHtml(point.name), escapeTooltipHtml(point.regionText || translateText("地区获取中"))]);
+ }
+ 
+ function buildTunnelGlobeDataKey(
+@@ -2667,7 +2667,7 @@
+     const hopIds = getTunnelHopIds(tunnel);
+     const entryGroup = Number(tunnel?.entryGroupId || 0) > 0 ? entryGroupById.get(Number(tunnel.entryGroupId)) : null;
+     const entryGroupLabel = entryGroup
+-      ? translateText("{0}{1}", [String(entryGroup.name || "入口组").trim(), String(entryGroup.domain || "").trim() ? ` (${String(entryGroup.domain).trim()})` : ""])
++      ? translateText("{0}{1}", [String(entryGroup.name || translateText("入口组")).trim(), String(entryGroup.domain || "").trim() ? ` (${String(entryGroup.domain).trim()})` : ""])
+       : "";
+     const visibleHopIds = entryGroup
+       ? hopIds.filter((hostId: number) => !entryMembersForGroup(Number(entryGroup.id)).some((member: any) => Number(member.hostId || 0) === Number(hostId)))
+--- a/client/src/pages/Users.tsx
++++ b/client/src/pages/Users.tsx
+@@ -1033,7 +1033,7 @@
+     setAddonUserId(Number(sub.userId));
+     setAddonUserName(userLabel({ username: sub.username, name: sub.name, id: sub.userId }));
+     setAddonSubscriptionId(String(sub.id));
+-    setAddonSubscriptionLabel(translateText("{0} · {1}", [sub.planName || `套餐 #${sub.planId}`, formatBytes(sub.trafficLimit)]));
++    setAddonSubscriptionLabel(translateText("{0} · {1}", [sub.planName || translateText("套餐 #{0}", [sub.planId]), formatBytes(sub.trafficLimit)]));
+     setAddonTrafficGB("");
+     setShowAddonDialog(true);
+   };
+@@ -1044,7 +1044,7 @@
+       return;
+     }
+     setExtendSubscriptionId(Number(sub.id));
+-    setExtendSubscriptionLabel(translateText("{0} · {1}", [userLabel({ username: sub.username, name: sub.name, id: sub.userId }), sub.planName || `套餐 #${sub.planId}`]));
++    setExtendSubscriptionLabel(translateText("{0} · {1}", [userLabel({ username: sub.username, name: sub.name, id: sub.userId }), sub.planName || translateText("套餐 #{0}", [sub.planId])]));
+     setExtendExpiresAtInput(formatDateInputValue(sub.expiresAt));
+     setShowExtendDialog(true);
+   };
+@@ -1131,7 +1131,7 @@
+     const isSelf = u.id === currentUser?.id;
+     const title = isSelf
+       ? translateText("不能停用当前登录账号")
+-      : translateText("{0}账号 {1}", [enabled ? "停用" : "启用", u.username || ""]);
++      : translateText("{0}账号 {1}", [enabled ? translateText("停用") : translateText("启用"), u.username || ""]);
+     return (
+       <div
+         className={

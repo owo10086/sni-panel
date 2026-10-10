@@ -1,0 +1,12 @@
+## Latest page snapshot
+uid=34_0 RootWebArea "ForwardX" url="http://127.0.0.1:18822/rules"
+  uid=34_412 region "Notifications alt+T" live="polite" relevant="additions text"
+  uid=36_0 dialog "重置全部规则数据" description="确认重置我的规则范围内的全部规则统计数据？此操作覆盖所有分页，不受搜索、链路、分类或勾选影响。"
+    uid=36_1 heading "重置全部规则数据" level="2"
+    uid=36_2 StaticText "确认重置我的规则范围内的全部规则统计数据？此操作覆盖所有分页，不受搜索、链路、分类或勾选影响。"
+    uid=36_3 StaticText "重置会清除可操作规则的统计数据，并跳过管理员自定义规则。"
+    uid=36_4 StaticText "此操作不会重置账户套餐已用流量、余额或流量按量计费记录，也不会改变规则到期时间。"
+    uid=36_5 button "取消" focusable focused
+    uid=36_6 button "确认重置"
+    uid=36_7 button "Close"
+

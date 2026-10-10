@@ -1,0 +1,39 @@
+- generic: Language
+- combobox "Language":
+  - option "Automatic (browser / IP)"
+  - option "Simplified Chinese"
+  - option "English" [selected]
+- button "Toggle Theme":
+- main:
+  - img "ForwardX"
+  - generic: ForwardX
+  - generic: Create Account
+  - generic: Create a ForwardX account with your email
+  - button "Continue with Google":
+    - text: Continue with Google
+  - text: Username
+  - textbox "Username" [active]:
+    - /placeholder: Please enter the email as a username
+  - text: Nickname (optional)
+  - textbox "Nickname (optional)":
+    - /placeholder: Display Name
+  - text: Password
+  - textbox "Password":
+    - /placeholder: At least 6 characters
+  - button:
+  - text: Confirm Password
+  - textbox "Confirm Password":
+    - /placeholder: Enter password again
+  - text: Human Verification
+  - group "Cap verification":
+    - button "Click to verify you are human":
+      - paragraph:
+        - generic: Click to Verify
+    - link "Secured by Cap":
+      - /url: https://trycap.dev
+      - text: Cap
+  - button "Register":
+    - text: Register
+  - button "Already have an account? Sign in"
+  - paragraph: An administrator must grant forwarding access after registration.
+- region "Notifications alt+T"

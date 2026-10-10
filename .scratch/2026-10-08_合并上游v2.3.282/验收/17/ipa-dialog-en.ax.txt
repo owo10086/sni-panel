@@ -1,0 +1,132 @@
+- generic: sni-panel 移动验收
+- button:
+- button:
+- generic: Main Menu
+- list:
+  - button:
+    - generic: Dashboard
+  - button:
+    - generic: Hosts
+  - button:
+    - generic: Links
+  - button:
+    - generic: Forwarding Rules
+  - button:
+    - generic: Announcements
+- generic: Management
+- list:
+  - button:
+    - generic: Profile
+  - button:
+    - generic: SNI entry ports
+  - button:
+    - generic: Payment Integrations
+  - button:
+    - generic: Billing & Redemption
+  - button:
+    - generic: Plans
+  - button:
+    - generic: Users
+  - button:
+    - generic: Network Tests
+  - button:
+    - generic: Settings
+- button:
+  - paragraph: 移动验收管理员
+  - paragraph: Admin · Telegram Not Linked
+- main:
+  - button:
+    - generic: Toggle Sidebar
+  - generic: Profile
+  - button:
+  - main:
+    - heading [level=1]: Profile
+    - paragraph: Manage account security, your avatar and notification channels.
+    - text: Admin
+    - text: Avatar and account
+    - generic: Avatars under 50 KB upload directly. Larger images are compressed automatically.
+    - paragraph: Account
+    - paragraph: mobile-admin
+    - text: Display Name
+    - textbox:
+      - /placeholder: mobile-admin
+      - text: <redacted>
+    - button: Save
+    - button:
+      - text: Upload
+    - button:
+      - text: Random
+    - button: Save Avatar
+    - button:
+    - button:
+    - button:
+    - button:
+    - button:
+    - button:
+    - button:
+    - button:
+    - button:
+    - button:
+    - button:
+    - button:
+    - button:
+    - text: Login Password
+    - generic: Changes the login password for the current account.
+    - text: Current Password
+    - textbox:
+      - /placeholder: Enter the current password
+    - text: New Password
+    - textbox:
+      - /placeholder: At least 6 characters
+    - text: Confirm new password
+    - textbox:
+      - /placeholder: Enter new password again
+    - button: Change Password
+    - text: Link Telegram
+    - generic: Bind to receive alarms and support Telegram login.
+    - generic: Unbound
+    - paragraph: Announcer Telegram Send
+    - paragraph: Default closes. After opening, the new bulletin will only be sent to a bound Telegram when the administrator selects TG for delivery.
+    - switch [disabled]
+    - generic: The administrator has not yet configured the Telegram bot.
+    - text: Two-factor authentication (2FA)
+    - generic: Use an authenticator app (2FA) to generate verification codes.
+    - generic: Not enabled
+    - generic: The administrator has not enabled two-factor authentication.
+    - text: Software Updates
+    - generic: Check for a new app version. iOS packages are unsigned IPAs. Sign them yourself before installing.
+    - button:
+      - text: Check APP Updates
+    - text: Log Out
+    - generic: End the sign-in session in this browser or app.
+    - button:
+      - text: Log Out
+  - link:
+    - /url: https://github.com/owo10086/sni-panel
+    - text: Project Address
+  - generic: "|"
+  - link:
+    - /url: https://owo10086.github.io/sni-panel/
+    - text: Documentation
+  - generic: "|"
+  - link:
+    - /url: https://t.me/miyin_private_bot
+    - text: Contact via Telegram
+  - generic: "|"
+  - link:
+    - /url: https://t.me/ForwardX_panel
+    - text: Telegram Group
+- region "Notifications alt+T"
+- dialog "App update available":
+  - heading "App update available" [level=2]:
+    - text: App update available
+  - paragraph: Download the latest IPA (sign before installing).
+  - paragraph: Current Version
+  - paragraph: v1.0.0
+  - paragraph: Latest version
+  - paragraph: v1.0.1
+  - button "Later" [active]
+  - button "Go to Download":
+    - text: Go to Download
+  - button "Close":
+    - generic: Close

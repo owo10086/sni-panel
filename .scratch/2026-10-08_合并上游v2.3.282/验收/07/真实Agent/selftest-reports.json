@@ -1,0 +1,15 @@
+[
+  {
+    "latencyMs": 1,
+    "message": "目标 198.51.100.30:30001 TCP可达，延迟 1ms",
+    "resolvedTargetIp": "198.51.100.30",
+    "targetReachable": true,
+    "testId": 9
+  },
+  {
+    "latencyMs": 0,
+    "message": "目标 198.51.100.30:30999 TCP不可达或超时",
+    "targetReachable": false,
+    "testId": 10
+  }
+]

@@ -1,0 +1,122 @@
+- img "sni-panel 移动验收"
+- generic: sni-panel 移动验收
+- button "Toggle theme":
+- button "Toggle navigation":
+- generic: Main Menu
+- list:
+  - button "Dashboard":
+    - generic: Dashboard
+  - button "Hosts":
+    - generic: Hosts
+  - button "Links":
+    - generic: Links
+  - button "Forwarding Rules":
+    - generic: Forwarding Rules
+  - button "Announcements":
+    - generic: Announcements
+- generic: Management
+- list:
+  - button "Profile":
+    - generic: Profile
+  - button "SNI entry ports":
+    - generic: SNI entry ports
+  - button "Payment Integrations":
+    - generic: Payment Integrations
+  - button "Billing & Redemption":
+    - generic: Billing & Redemption
+  - button "Plans":
+    - generic: Plans
+  - button "Users":
+    - generic: Users
+  - button "Network Tests":
+    - generic: Network Tests
+  - button "Settings":
+    - generic: Settings
+- button "移动验收管理员 Admin · Telegram Not Linked":
+  - paragraph: 移动验收管理员
+  - paragraph: Admin · Telegram Not Linked
+- main:
+  - button "Toggle Sidebar":
+    - generic: Toggle Sidebar
+  - generic: Profile
+  - button "Toggle theme":
+  - main:
+    - heading "Profile" [level=1]
+    - paragraph: Manage account security, your avatar and notification channels.
+    - text: Admin
+    - text: Avatar and account
+    - generic: Avatars under 50 KB upload directly. Larger images are compressed automatically.
+    - paragraph: Account
+    - paragraph: mobile-admin
+    - text: Display Name
+    - textbox "Display Name":
+      - /placeholder: mobile-admin
+      - text: <redacted>
+    - button "Save"
+    - button "Upload":
+      - text: Upload
+    - button "Random":
+      - text: Random
+    - button "Save Avatar"
+    - button "forwardx-nova":
+    - button "forwardx-orbit":
+    - button "forwardx-ember":
+    - button "forwardx-pixel":
+    - button "forwardx-mint":
+    - button "forwardx-coral":
+    - button "forwardx-sunrise":
+    - button "forwardx-aurora":
+    - button "forwardx-cobalt":
+    - button "forwardx-meadow":
+    - button "forwardx-plum":
+    - button "forwardx-lagoon":
+    - button "Upload Avatar":
+    - text: Login Password
+    - generic: Changes the login password for the current account.
+    - text: Current Password
+    - textbox "Current Password":
+      - /placeholder: Enter the current password
+    - text: New Password
+    - textbox "New Password":
+      - /placeholder: At least 6 characters
+    - text: Confirm new password
+    - textbox "Confirm new password":
+      - /placeholder: Enter new password again
+    - button "Change Password"
+    - text: Link Telegram
+    - generic: Bind to receive alarms and support Telegram login.
+    - generic: Unbound
+    - paragraph: Announcer Telegram Send
+    - paragraph: Default closes. After opening, the new bulletin will only be sent to a bound Telegram when the administrator selects TG for delivery.
+    - switch [disabled]
+    - generic: The administrator has not yet configured the Telegram bot.
+    - text: Two-factor authentication (2FA)
+    - generic: Use an authenticator app (2FA) to generate verification codes.
+    - generic: Not enabled
+    - generic: The administrator has not enabled two-factor authentication.
+    - text: Software Updates
+    - generic: Checks if there is a new version of the current APP.
+    - paragraph: Current Version
+    - paragraph: v2.4.0
+    - paragraph: Latest version
+    - paragraph: v2.4.0
+    - button "Check APP Updates":
+      - text: Check APP Updates
+    - text: Log Out
+    - generic: End the sign-in session in this browser or app.
+    - button "Log Out":
+      - text: Log Out
+  - link "Project Address":
+    - /url: https://github.com/owo10086/sni-panel
+  - generic: "|"
+  - link "Documentation":
+    - /url: https://owo10086.github.io/sni-panel/
+  - generic: "|"
+  - link "Contact via Telegram":
+    - /url: https://t.me/miyin_private_bot
+  - generic: "|"
+  - link "Telegram Group":
+    - /url: https://t.me/ForwardX_panel
+- region "Notifications alt+T":
+  - list:
+    - generic: Your app is up to date

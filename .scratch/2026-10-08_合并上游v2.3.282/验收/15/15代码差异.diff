@@ -1,0 +1,798 @@
+diff --git a/private/tmp/forwardx-282-ticket15/before/client/src/components/SeamlessMigrationGate.tsx b/client/src/components/SeamlessMigrationGate.tsx
+index 7ccb1d2..6422888 100644
+--- a/private/tmp/forwardx-282-ticket15/before/client/src/components/SeamlessMigrationGate.tsx
++++ b/client/src/components/SeamlessMigrationGate.tsx
+@@ -32,28 +32,28 @@ export function SeamlessMigrationGate({ children }: { children: ReactNode }) {
+   // Imported accounts must log in again before an operator can resume a
+   // migration after a process/network failure. Never expose a public commit.
+   const loginPage = target && location === "/login";
+-  const content = <section className="mx-auto w-full max-w-xl rounded-xl border bg-card p-6 shadow-sm space-y-4">
++  const content = <section className="mx-auto w-full min-w-0 max-w-xl rounded-xl border bg-card p-6 shadow-sm space-y-4 break-words">
+     <h1 className="text-xl font-semibold">{target ? translateText("无缝迁移验证中") : state.phase === "frozen" ? translateText("面板迁移中，已暂停新操作") : translateText("面板已迁移，旧数据保留")}</h1>
+     <p className="text-sm text-muted-foreground">{translateText("迁移不会要求重启 Agent 或现有转发进程。旧面板数据库不会自动删除。")}</p>
+     {target ? <>
+-      <p>{state.job?.step || translateText("等待继续验证")} {state.job ? `${state.job.progress}%` : ""}</p>
++      <p>{translateText(state.job?.step || "等待继续验证")} {state.job ? `${state.job.progress}%` : ""}</p>
+       {state.readiness && <p className="text-sm">{translateText("待验证：")}{state.readiness.hosts}{translateText(" 台主机 / ")}{state.readiness.rules}{translateText(" 条规则 / ")}{state.readiness.tunnels}{translateText(" 条隧道")}</p>}
+-      {state.job?.error && <p className="text-sm text-destructive">{state.job.error}</p>}
++      {state.job?.error && <p className="text-sm text-destructive">{translateText(state.job.error)}</p>}
+       <p className="text-sm text-muted-foreground">{translateText("旧地址 ")}{state.sourceUrl}{translateText(" 必须持续可访问。中断后请使用迁移前的管理员账号登录新面板，继续验证；不要重新启用旧数据库写入。")}</p>
+-      {state.imported && <div className="flex gap-3">
++      {state.imported && <div className="flex flex-wrap gap-3">
+         <Button asChild variant="outline"><a href="/login">{translateText("登录管理员")}</a></Button>
+         <Button disabled={state.busy || resume.isPending} onClick={() => resume.mutate()}>{state.busy || resume.isPending ? translateText("正在验证…") : translateText("继续验证并接管")}</Button>
+       </div>}
+-      {resume.error && <p className="text-sm text-destructive">{resume.error.message}</p>}
++      {resume.error && <p className="text-sm text-destructive">{translateText(resume.error.message)}</p>}
+     </> : <>
+       <p className="text-sm">{state.phase === "frozen" ? translateText("正在导出一致快照。未完成转交的冻结会在一小时后解除。") : translateText("此地址继续转交 Agent 和支付回调，请勿停止或卸载旧面板。")}</p>
+       <Button asChild><a href={state.targetUrl}>{translateText("打开新面板")}</a></Button>
+       {state.phase === "frozen" && <div className="space-y-2">
+-        <Button variant="outline" disabled={cancel.isPending} onClick={() => {
++        <Button variant="outline" className="h-auto max-w-full whitespace-normal py-2" disabled={cancel.isPending} onClick={() => {
+           if (window.confirm(translateText("取消尚未接管的迁移并恢复旧面板写入？新端已导入的快照将无法继续接管，需重新准备空目标迁移。"))) cancel.mutate();
+         }}>{translateText("管理员取消未接管的迁移")}</Button>
+         <p className="text-xs text-muted-foreground">{translateText("需要迁移前仍有效的管理员登录会话；请求已转交后禁止此操作。")}</p>
+-        {cancel.error && <p className="text-sm text-destructive">{cancel.error.message}</p>}
++        {cancel.error && <p className="text-sm text-destructive">{translateText(cancel.error.message)}</p>}
+       </div>}
+     </>}
+   </section>;
+diff --git a/private/tmp/forwardx-282-ticket15/before/client/src/i18n/en.json b/client/src/i18n/en.json
+index c386c2f..b4bd2f2 100644
+--- a/private/tmp/forwardx-282-ticket15/before/client/src/i18n/en.json
++++ b/client/src/i18n/en.json
+@@ -100,7 +100,7 @@
+   " / 按量计费资源": " / Costed resources",
+   " / 离线": " / Offline",
+   " 按量计费": " Pay-as-you-go",
+-  " 必须持续可访问。中断后请使用迁移前的管理员账号登录新面板，继续验证；不要重新启用旧数据库写入。": " Access must be continuous. After the break, use the administrator account number before the migration to log in to the new panel to continue the validation; do not restart the old database for writing.",
++  " 必须持续可访问。中断后请使用迁移前的管理员账号登录新面板，继续验证；不要重新启用旧数据库写入。": " must remain reachable. After an interruption, sign in to the new panel with your original administrator account and resume verification. Keep the old database read-only.",
+   " 不支持": " Not Supported",
+   " 插件包": " Plugin Package",
+   " 成员": " Members",
+@@ -160,7 +160,7 @@
+   " 台。": "  hosts.",
+   " 台发现新版本": "  hosts have updates",
+   " 台主机": "  hosts",
+-  " 台主机 / ": "  hosts / ",
++  " 台主机 / ": " hosts / ",
+   " 套餐列表": " Plans",
+   " 添加档位": " Add Trail",
+   " 条": "  rules",
+@@ -168,8 +168,8 @@
+   " 条 · 转发链 ": "  rules · forwarding chains ",
+   " 条成员运行规则。": "  member rules.",
+   " 条规则": "  rules",
+-  " 条规则 / ": "  rules / ",
+-  " 条隧道": "  tunnels",
++  " 条规则 / ": " rules / ",
++  " 条隧道": " tunnels",
+   " 条隧道 · ": "  tunnels · ",
+   " 条未显示。": "  more not shown.",
+   " 条延迟明细": "  latency records",
+@@ -515,7 +515,7 @@
+   "不再提醒": "Don't Remind Again",
+   "不支持": "Not Supported",
+   "不支持该规则文件版本（当前支持 v{0}）": "Unsupported rule file version (supported: v{0})",
+-  "不主动重启 Agent 或转发进程。仅支持单实例面板，两端须为相同版本和数据库类型，目标须无业务数据，迁移期间不能有其他程序写入同库；旧数据库保留为只读，旧地址和转交服务必须持续运行。面板操作会短暂停用，新面板需重新登录。": "Do not voluntarily restart the Agent or forwarding process. Only the single-examples panel is supported. Both ends must be of the same version and database type, the target must have no business data and no other program to write to the library during the migration; the old database is kept read-only and the old address and forwarding service must run on an ongoing basis. The panel operation is briefly suspended and the new panel must be re-logged in.",
++  "不主动重启 Agent 或转发进程。仅支持单实例面板，两端须为相同版本和数据库类型，目标须无业务数据，迁移期间不能有其他程序写入同库；旧数据库保留为只读，旧地址和转交服务必须持续运行。面板操作会短暂停用，新面板需重新登录。": "Keeps the Agent and forwarding processes running. Both panels must run as single instances with the same version and database type. The target must contain no business data, and no other program may write to either database during migration. The old database stays read-only; keep its address and forwarding service running. Panel operations pause briefly, and you must sign in again on the new panel.",
+   "不足1天": "Less than 1 Day",
+   "步骤 ": "Step ",
+   "部分成功": "Partially Successful",
+@@ -670,7 +670,7 @@
+   "磁盘": "Disk",
+   "磁盘使用率 {0}%": "Disk Usage {0}%",
+   "此插件声明了高权限面板操作，需要管理员确认信任后才能执行。": "This plugin states that the high-authority panel operation needs to be trusted by the administrator before it can be executed.",
+-  "此地址继续转交 Agent 和支付回调，请勿停止或卸载旧面板。": "This address continues to be forwarded to Agent and pays back, so do not stop or unload the old panel.",
++  "此地址继续转交 Agent 和支付回调，请勿停止或卸载旧面板。": "This address continues forwarding Agent requests and payment callbacks. Keep the old panel running and installed.",
+   "此网站不允许嵌入或加载超时": "This site does not allow embedding or loading timeout",
+   "此页面使用新窗口打开": "Open this page with a new window",
+   "次": "times",
+@@ -694,7 +694,7 @@
+   "打开仓库": "Open the warehouse.",
+   "打开方式": "Open With",
+   "打开机器人": "Open bot",
+-  "打开新面板": "Open New Panel",
++  "打开新面板": "Open new panel",
+   "打开页面": "Open Page",
+   "打开支付页": "Open Payment Page",
+   "打开主机监控面板": "Open host monitor panel",
+@@ -704,7 +704,7 @@
+   "待读取": "To read",
+   "待配置": "To be configured",
+   "待选择": "To be selected",
+-  "待验证：": "To be validated:",
++  "待验证：": "Pending verification: ",
+   "待支付": "Awaiting Payment",
+   "待支付订单": "Pending orders",
+   "单 IP ": "Single IP ",
+@@ -836,7 +836,7 @@
+   "地址": "Address",
+   "登录": "Log In",
+   "登录弹窗": "Login Blast Window",
+-  "登录管理员": "Login Administrator",
++  "登录管理员": "Sign in as administrator",
+   "登录会话配置": "Login Session Configuration",
+   "登录密码": "Login Password",
+   "登录入口已失效，请返回机器人重新点击“打开面板”。": "The login entrance is disabled, so please return to the bot to click \" Open Panel \" .",
+@@ -858,7 +858,7 @@
+   "等待服务器完成导出": "Waiting for the server to complete export",
+   "等待服务器完成导入": "Waiting for server to complete import",
+   "等待服务重启": "Waiting for service to restart",
+-  "等待继续验证": "Waiting for confirmation",
++  "等待继续验证": "Waiting to resume verification",
+   "等待监控数据": "Waiting for monitoring data",
+   "等待检测": "Waiting for test",
+   "等待确认{0}": "Waiting to confirm {0}",
+@@ -1192,7 +1192,7 @@
+   "关闭双重验证失败": "Failed to close dual authentication",
+   "关闭邮箱服务后不发送验证码或提醒邮件；已保存的密码不会回显。": "Do not send authentication codes or alarm mail after closing the email service; the saved password does not appear back.",
+   "关闭中...": "Closing...",
+-  "关键数据迁移": "Key data migration",
++  "关键数据迁移": "Essential data migration",
+   "关联": "Association",
+   "关联入口组不存在": "Associated entry group does not exist",
+   "关联信息": "Association Information",
+@@ -1224,7 +1224,7 @@
+   "管理员加赠": "Admin Bonus",
+   "管理员可查看本地部署的 journalctl 服务日志，或 Docker 的 docker logs 容器日志。页面仅展示安全错误摘要，不公开数据库密码和连接串。": "The administrator can view the locally deployed journalctl service log, or the Docker logs for Docker's containers. The page displays only a summary of security errors, and the database password and connection string is not available.",
+   "管理员默认拥有全部权限，且不受流量/资源限制": "Administrator by default has full privileges and is not subject to traffic/resource constraints",
+-  "管理员取消未接管的迁移": "Manager cancels untaken relocations",
++  "管理员取消未接管的迁移": "Cancel pending migration as administrator",
+   "管理员权限": "Administrator Permissions",
+   "管理员尚未配置 Telegram 机器人。": "The administrator has not yet configured the Telegram bot.",
+   "管理员尚未启用双重验证功能。": "The administrator has not enabled two-factor authentication.",
+@@ -1336,7 +1336,7 @@
+   "季付": "Quarterly",
+   "继续保存": "Keep Save",
+   "继续下一步": "Let's move on.",
+-  "继续验证并接管": "Continue validation and take over.",
++  "继续验证并接管": "Resume verification and take over",
+   "加密数据导出": "Encrypted Data Export",
+   "加密通信": "Encrypted communications",
+   "加载中": "Loading",
+@@ -1431,11 +1431,11 @@
+   "警告": "Warning",
+   "旧版本主机计费资源": "Old version of host billing resources",
+   "旧版端口转发规则需要选择新版端口转发，保存后会保留当前目标地址和端口配置。": "The old port forwarding rule requires the selection of a new version of the port forwarding and saves the current target address and port configuration.",
+-  "旧地址 ": "Old Address ",
++  "旧地址 ": "The old address ",
+   "旧面板地址": "Old Panel Address",
+   "旧面板离线时，可通过加密备份文件恢复并接管旧主机。": "When the old panel is offline, the old mainframe can be restored and taken over by encrypted backup files.",
+   "旧面板迁移码": "Old Panel Migration Code",
+-  "旧面板数据不会自动删除。": "Old panel data will not be automatically deleted.",
++  "旧面板数据不会自动删除。": "The old panel data is retained.",
+   "旧数据会继续保留，但这里不再支持新增入口组或出口组。": "Old data will continue to be maintained, but new entry or exit groups are no longer supported here.",
+   "旧数据已清空，请创建新管理员": "Old data is empty, please create a new administrator",
+   "拒绝": "Reject",
+@@ -1496,7 +1496,7 @@
+   "快捷登录需要域名": "Shortcut login requires domain name",
+   "快速安装命令：": "Quick installation command:",
+   "扩展点": "Extension Point",
+-  "拉取旧面板数据，并在新面板运行验证通过后完成接管。": "Draws old panel data and takes over after the new panel has been validated.",
++  "拉取旧面板数据，并在新面板运行验证通过后完成接管。": "Import data from the old panel and take over after the new panel passes runtime verification.",
+   "来源": "Source",
+   "来源：": "Source:",
+   "类型": "Type",
+@@ -1681,10 +1681,10 @@
+   "面板回退任务已启动": "Panel rollback started",
+   "面板会把当前数据迁移到目标数据库，完成后自动重启或刷新连接。": "The panel will migrate the current data to the target database and will automatically restart or refresh the connection upon completion.",
+   "面板内嵌入": "Embedded in Panel",
+-  "面板迁移中，已暂停新操作": "Panel moving, new operation suspended",
++  "面板迁移中，已暂停新操作": "Panel migration in progress; new operations are paused",
+   "面板日志": "Logs",
+   "面板设置已保存": "Panel Settings Saved",
+-  "面板已迁移，旧数据保留": "Panel migrated, old data retained",
++  "面板已迁移，旧数据保留": "Panel migrated; old data is retained",
+   "面板重启或任务结果超过保留时间，请重新读取主机状态。": "The panel restarted or the task result expired. Read host status again.",
+   "面向 Linux 服务器的转发管理面板": "Forward management panel for Linux server",
+   "描述": "Description",
+@@ -1717,7 +1717,7 @@
+   "目标端口 ": "Target Port ",
+   "目标端口必须在 1-65535 之间": "Target port must be between 1-65535",
+   "目标面板：": "Target panel:",
+-  "目标面板验证通过后才会接管；": "Target panel validation will take over only after adoption;",
++  "目标面板验证通过后才会接管；": "The target takes over only after verification. ",
+   "目标数据库": "Target database",
+   "目标数据库连接及写入权限测试通过": "Target database connection and write permission test passed",
+   "目标数据库需要为空库；迁移完成后面板会自动重启或刷新连接。": "The target database needs to be empty; the backboard will be automatically restarted or refreshed when the migration is complete.",
+@@ -1830,7 +1830,7 @@
+   "启用中...": "Enabled...",
+   "起始端口": "Start Port",
+   "起始端口不能大于结束端口": "Start port cannot be greater than end port",
+-  "迁移不会要求重启 Agent 或现有转发进程。旧面板数据库不会自动删除。": "The migration does not require the re-launching of Agent or the existing forwarding process. The old panel database will not be automatically deleted.",
++  "迁移不会要求重启 Agent 或现有转发进程。旧面板数据库不会自动删除。": "Migration does not require restarting the Agent or existing forwarding processes. The old panel database is retained.",
+   "迁移到新版端口转发": "Move to new port forward",
+   "迁移会保留当前数据 ID；如果目标数据库已有业务数据，后端会阻止切换以避免覆盖或混合数据。": "The migration will retain the current data ID; if operational data are available in the target database, the backend will prevent switching to avoid overlaying or mixing data.",
+   "迁移码": "Migration code",
+@@ -1838,7 +1838,7 @@
+   "迁移码规则": "Migration code rules",
+   "迁移码已复制": "Migration code copied",
+   "迁移码已生成，5 分钟内有效": "The migration code has been generated and is valid in 5 minutes.",
+-  "迁移内容": "Move content",
++  "迁移内容": "Data to migrate",
+   "迁移内容：": "Move content:",
+   "迁移前请确认数据库版本": "Please confirm database version before moving",
+   "迁移全部数据；两端均为 SQLite 且目标库为空时自动使用数据库快速传输。": "Moves all data; both ends are SQLite and the database is used automatically when the target library is empty.",
+@@ -2040,7 +2040,7 @@
+   "取消订阅": "Unsubscribe",
+   "取消订阅失败": "Unsubscribed failed",
+   "取消后该订阅会立即停止生效，关联的本周期附加流量也会失效。用户账户和历史记录不会被删除。": "User accounts and historical records will not be deleted.",
+-  "取消尚未接管的迁移并恢复旧面板写入？新端已导入的快照将无法继续接管，需重新准备空目标迁移。": "Cancel the migration that has not yet been taken over and restore the old panel for writing? The imported snapshot of the new end will not be able to continue taking over and will need to be reprepared for the empty migration.",
++  "取消尚未接管的迁移并恢复旧面板写入？新端已导入的快照将无法继续接管，需重新准备空目标迁移。": "Cancel the pending migration and restore writes on the old panel? The snapshot already imported into the new panel cannot take over afterward. Prepare an empty target and start a new migration.",
+   "取消中...": "Canceling...",
+   "取最大值": "Maximum of Inbound / Outbound",
+   "去支付": "To pay for it.",
+@@ -2090,7 +2090,7 @@
+   "确认加赠": "Recognition of the grant",
+   "确认解绑": "Confirm the untie.",
+   "确认密码": "Confirm Password",
+-  "确认迁移": "Confirm migration.",
++  "确认迁移": "Confirm migration",
+   "确认切换": "Confirm Switch",
+   "确认切换数据库": "Confirm toggle Database",
+   "确认清空该主机当前累计的流量统计？": "Confirming the current cumulative traffic statistics of the host?",
+@@ -2575,7 +2575,7 @@
+   "条转发链": " forwarding chains",
+   "条转发链 ·": " forwarding chains ·",
+   "跳过冲突规则": "Skip Conflict Rules",
+-  "跳过监控、延迟、测试和审计历史，迁移速度更快。": "The migration is faster than surveillance, delay, testing and audit history.",
++  "跳过监控、延迟、测试和审计历史，迁移速度更快。": "Skip monitoring, latency, test and audit history for a faster migration.",
+   "跳转支付": "Continue to Payment",
+   "停用": "Disable",
+   "停用 ": "Disable ",
+@@ -2716,9 +2716,9 @@
+   "无法获取主机列表，请稍后重试": "Unable to load hosts. Try again later.",
+   "无法连接面板，请检查右上角面板地址": "Unable to connect to the panel. Check the panel URL at the top right.",
+   "无缝模式：短暂暂停业务写入，保留转发进程及旧地址": "A seamless mode: short suspension of business writing, retention of forwarding process and old address",
+-  "无缝模式仅接受空业务目标面板；旧地址必须保留并持续转交请求，不自动重启 Agent 或转发进程；": "The seamless mode accepts only an empty business target panel; the old address must be kept and forwarded on an ongoing basis without automatically restarting the Agent or forwarding process;",
+-  "无缝迁移（旧地址转交）": "Swift migration (old address forwarded)",
+-  "无缝迁移验证中": "Sniperless migration certification",
++  "无缝模式仅接受空业务目标面板；旧地址必须保留并持续转交请求，不自动重启 Agent 或转发进程；": "Seamless migration requires a target without business data. Keep the old address forwarding requests; the Agent and forwarding processes stay running. ",
++  "无缝迁移（旧地址转交）": "Seamless migration (keep forwarding from the old address)",
++  "无缝迁移验证中": "Verifying seamless migration",
+   "无加密": "No Encryption",
+   "无可用主机": "No host available",
+   "无描述": "No description",
+@@ -2787,7 +2787,7 @@
+   "新密码至少6个字符": "New password at least 6 characters",
+   "新面板访问地址": "New Panel Access Address",
+   "新面板或旧数据迁移": "New Panel or Old Data Migration",
+-  "新面板将连接旧面板拉取数据，并在旧面板审批后执行迁移。": "The new panel will connect the old panel to extract the data and carry out the migration after the old panel has been approved.",
++  "新面板将连接旧面板拉取数据，并在旧面板审批后执行迁移。": "The new panel will request data from the old panel. Migration starts after its administrator approves.",
+   "新增": "Add",
+   "新增菜单项": "Add Menu Item",
+   "新增第一个菜单项": "Add the first menu entry",
+@@ -2816,7 +2816,7 @@
+   "需要插件信任": "Plugin Trust Required",
+   "需要额外计费权限": "Require resource permission",
+   "需要管理员授权后才能添加规则": "You need the administrator's authorization to add the rule.",
+-  "需要迁移前仍有效的管理员登录会话；请求已转交后禁止此操作。": "The administrator who is still valid before moving is required to log in to the session; the request is turned over and the operation is banned.",
++  "需要迁移前仍有效的管理员登录会话；请求已转交后禁止此操作。": "Requires a still-valid administrator session from before migration. Cancellation is unavailable after requests have been transferred.",
+   "需要授权": "Permission required",
+   "需要输入 ": "Input required ",
+   "需要直连 IP 和端口时，请选择“当前访问地址”。": "If you need to connect directly to IP and port, select \" Current Visiting Address \" .",
+@@ -3146,7 +3146,7 @@
+   "在线 ": "Online ",
+   "在线充值入账": "Recording of online charges",
+   "在线购买": "Online purchases",
+-  "在线迁移接收": "Online migration reception",
++  "在线迁移接收": "Receive an online migration",
+   "在线迁移任务已开始": "The online migration mission has started.",
+   "在线迁移失败": "Online migration failed",
+   "在线迁移完成": "Online migration complete",
+@@ -3302,7 +3302,7 @@
+   "正在处理 {0}。": "Processing {0}.",
+   "正在处理已选择的备份文件。": "Processing selected backup files.",
+   "正在导出...": "Exporting...",
+-  "正在导出一致快照。未完成转交的冻结会在一小时后解除。": "The uncompleted transfer is lifted in an hour.",
++  "正在导出一致快照。未完成转交的冻结会在一小时后解除。": "Exporting a consistent snapshot. If requests have not been transferred, the freeze expires after one hour.",
+   "正在导入...": "Importing...",
+   "正在等待 GitHub Actions 构建发布资产": "Waiting for GitHub Actions to build released assets",
+   "正在等待支付结果，付款后将自动跳转……": "Waiting for payment results, after payment will automatically jump ...",
+@@ -3393,7 +3393,7 @@
+   "正在通过 Telegram 登录": "Login via Telegram",
+   "正在写入面板数据": "Writing Panel Data",
+   "正在验证 Telegram 登录...": "Authenticating Telegram Login...",
+-  "正在验证…": "Authenticating...",
++  "正在验证…": "Verifying…",
+   "正在验证新面板和转发状态，请保持新旧面板可访问。": "New panels and forwarding status are being verified, and please keep old panels accessible.",
+   "正在验证一次性登录码...": "Validation of one-time login...",
+   "正在整理用户、主机、规则、隧道和系统配置。": "Users, hosts, rules, tunnels and system configurations are being collated.",
+@@ -4238,5 +4238,15 @@
+   "请先解除当前 Discord 绑定": "Unbind your current Discord account first.",
+   "Discord 通知渠道未启用或未配置": "The Discord notification channel is not enabled or configured.",
+   "Discord 请求队列繁忙，请稍后重试": "The Discord request queue is busy. Try again shortly.",
+-  "Discord 限流，请稍后重试": "Discord is limiting requests. Try again shortly."
++  "Discord 限流，请稍后重试": "Discord is limiting requests. Try again shortly.",
++  "普通模式会切换 Agent 的面板地址，可能重建转发进程并中断现有连接。新面板验证通过后才会接管，旧面板数据不会自动删除。": "Normal migration changes the Agent panel address and may rebuild forwarding processes, interrupting existing connections. The new panel takes over only after verification. The old panel data is retained.",
++  "正在转交 Agent 请求并验证运行状态": "Forwarding Agent requests and verifying runtime status",
++  "无缝迁移完成": "Seamless migration complete",
++  "迁移等待恢复与继续验证": "Migration is waiting for recovery and resumed verification",
++  "正在检查无缝迁移兼容性": "Checking seamless migration compatibility",
++  "等待旧面板管理员确认无缝迁移": "Waiting for the old panel administrator to approve seamless migration",
++  "原样导入并校验 ID、端口和运行状态": "Importing original data and verifying IDs, ports and runtime status",
++  "数据校验通过，准备接管": "Data verified; preparing to take over",
++  "无缝迁移未完成": "Seamless migration is incomplete",
++  "迁移验证正在执行": "Migration verification is already running"
+ }
+diff --git a/private/tmp/forwardx-282-ticket15/before/client/src/pages/Settings.tsx b/client/src/pages/Settings.tsx
+index 9451714..b14d611 100644
+--- a/private/tmp/forwardx-282-ticket15/before/client/src/pages/Settings.tsx
++++ b/client/src/pages/Settings.tsx
+@@ -1484,7 +1484,7 @@ function BackupRestoreSection({ panelUrl }: { panelUrl: string }) {
+                     <p className="text-sm font-medium text-amber-700 dark:text-amber-300">{translateText("收到新面板迁移请求")}</p>
+                     <p className="mt-1 break-all text-xs text-muted-foreground">{translateText("目标面板：")}{migrationRequest.targetPanelUrl}
+                     </p>
+-                    <p className="mt-1 text-xs text-muted-foreground">{translateText("迁移内容：")}{panelMigrationScopeLabel(migrationRequest.dataScope || "full")}；{migrationRequest.seamless ? translateText("无缝模式：短暂暂停业务写入，保留转发进程及旧地址") : translateText("普通模式")}
++                    <p className="mt-1 text-xs text-muted-foreground">{translateText("迁移内容：")}{translateText(panelMigrationScopeLabel(migrationRequest.dataScope || "full"))}；{migrationRequest.seamless ? translateText("无缝模式：短暂暂停业务写入，保留转发进程及旧地址") : translateText("普通模式")}
+                       {migrationRequest.directSqliteRequested ? translateText(" · SQLite 快速传输") : ""}
+                     </p>
+                     <div className="mt-3 flex flex-wrap gap-2">
+@@ -1529,7 +1529,9 @@ function BackupRestoreSection({ panelUrl }: { panelUrl: string }) {
+           <CardContent className="space-y-3">
+             <div className="rounded-md border p-3 space-y-2">
+               <Label className="flex items-center justify-between">{translateText("无缝迁移（旧地址转交）")}<Switch checked={onlineMigration.seamless} onCheckedChange={(seamless) => setOnlineMigration({ ...onlineMigration, seamless })} /></Label>
+-              <p className="text-xs text-muted-foreground">{translateText("不主动重启 Agent 或转发进程。仅支持单实例面板，两端须为相同版本和数据库类型，目标须无业务数据，迁移期间不能有其他程序写入同库；旧数据库保留为只读，旧地址和转交服务必须持续运行。面板操作会短暂停用，新面板需重新登录。")}</p>
++              <p className="text-xs text-muted-foreground">{onlineMigration.seamless
++                ? translateText("不主动重启 Agent 或转发进程。仅支持单实例面板，两端须为相同版本和数据库类型，目标须无业务数据，迁移期间不能有其他程序写入同库；旧数据库保留为只读，旧地址和转交服务必须持续运行。面板操作会短暂停用，新面板需重新登录。")
++                : translateText("普通模式会切换 Agent 的面板地址，可能重建转发进程并中断现有连接。新面板验证通过后才会接管，旧面板数据不会自动删除。")}</p>
+             </div>
+             <div className="space-y-2">
+               <Label>{translateText("迁移内容")}</Label>
+@@ -1977,10 +1979,11 @@ function BackupRestoreSection({ panelUrl }: { panelUrl: string }) {
+           </DialogHeader>
+           <Alert>
+             <ShieldCheck className="h-4 w-4" />
+-            <AlertTitle>{panelMigrationScopeLabel(onlineMigration.dataScope)}</AlertTitle>
++            <AlertTitle>{translateText(panelMigrationScopeLabel(onlineMigration.dataScope))}</AlertTitle>
+             <AlertDescription>
+               {onlineMigration.seamless ? translateText("无缝模式仅接受空业务目标面板；旧地址必须保留并持续转交请求，不自动重启 Agent 或转发进程；") : hasExistingData ? translateText("当前面板数据会保留并执行增量合并；") : translateText("目标面板验证通过后才会接管；")}{translateText("旧面板数据不会自动删除。")}</AlertDescription>
+           </Alert>
++          {!onlineMigration.seamless && <p className="text-sm text-muted-foreground">{translateText("普通模式会切换 Agent 的面板地址，可能重建转发进程并中断现有连接。新面板验证通过后才会接管，旧面板数据不会自动删除。")}</p>}
+           <DialogFooter>
+             <Button variant="outline" onClick={() => setShowOnlineConfirm(false)} disabled={startPanelMigrationMutation.isPending}>{translateText("取消")}</Button>
+             <Button
+diff --git a/private/tmp/forwardx-282-ticket15/before/server/seamlessMigration.fixture.ts b/server/seamlessMigration.fixture.ts
+index d196bad..915a316 100644
+--- a/private/tmp/forwardx-282-ticket15/before/server/seamlessMigration.fixture.ts
++++ b/server/seamlessMigration.fixture.ts
+@@ -7,25 +7,57 @@ import * as runtime from "./dbRuntime";
+ import { ensureDatabaseSchema } from "./dbSchema";
+ import * as state from "./seamlessMigrationState";
+ import { seamlessAgentProxy } from "./seamlessMigrationProxy";
+-import { migrationRouter, startPanelMigration, getMigrationJob } from "./migration";
++import { migrationRouter, startPanelMigration, getMigrationJob, buildMigrationRuntimeExpectations } from "./migration";
+ import { createMigrationCode, getCurrentMigrationCode, approveMigrationRequest } from "./migrationCodes";
+ import { agentRouter } from "./agentRoutes";
+ import * as migration from "./seamlessPanelMigration";
+ import { importSeamlessSnapshot } from "./seamlessMigrationImport";
+ import { resolveAgentAdvertisedPanelUrl } from "./agentPanelUrl";
+ import { AGENT_VERSION } from "../shared/versions";
++import { paymentCallbackRouter } from "./payment";
++import { seedSeamlessRuntimeFixture } from "./seamlessRuntime.fixture";
++import { decryptPayload } from "./agentCrypto";
+ 
+ await runtime.connectDatabase({ type: "sqlite", sqlite: { path: process.env.SQLITE_PATH! } });
+ await ensureDatabaseSchema();
+ const app = express();
++let dropActivationResponse = false;
++const observations: any[] = [];
+ app.use(seamlessAgentProxy);
+ app.use(state.seamlessAdmissionMiddleware);
++app.use((req, res, next) => {
++  if (req.path === "/api/migration/seamless-activate" && dropActivationResponse) {
++    const json = res.json.bind(res);
++    res.json = ((body: any) => {
++      if (body.success) { dropActivationResponse = false; res.destroy(); return res; }
++      return json(body);
++    }) as typeof res.json;
++  }
++  next();
++});
++app.use(paymentCallbackRouter);
+ app.post("/api/agent/raw-test", express.raw({ type: "*/*" }), (req, res) => res.send(req.body));
+ app.post("/api/payment/webhook/test", express.raw({ type: "*/*" }), async (_req, res) => {
+   await runtime.executeRaw("INSERT INTO system_settings (key,value) VALUES ('test-callback','target-only')");
+   res.json({ success: true });
+ });
+ app.use(express.json());
++app.use((req, _res, next) => {
++  if (["/api/sync", "/api/agent/traffic", "/api/agent/heartbeat"].includes(req.path)) {
++    for (const token of ["migration-test-agent-token", "migration-test-exit-token"]) {
++      try {
++        const decoded = decryptPayload(req.body, token, { rememberReplay: false }) as any;
++        const requestPath = req.path === "/api/sync" ? decoded.path : req.path;
++        if (["/api/agent/traffic", "/api/agent/heartbeat"].includes(requestPath)) {
++          observations.push({ path: requestPath, payload: req.path === "/api/sync" ? decoded.payload : decoded,
++            phase: state.getSeamlessMigrationState()?.phase || "normal", token });
++        }
++        break;
++      } catch { /* Other fixture identity or an unencrypted request. */ }
++    }
++  }
++  next();
++});
+ app.use(migrationRouter);
+ app.use(agentRouter);
+ app.post("/api/trpc/rules.create", (_req, res) => res.json({ unexpected: true }));
+@@ -46,15 +78,23 @@ process.on("message", async (message: any) => {
+         await runtime.executeRaw("INSERT INTO forward_rules (id,userId,hostId,name,sourcePort,targetIp,targetPort,forwardType,protocol,isEnabled,isRunning) VALUES (101,3,7,'fixture-rule',18001,'127.0.0.1',18002,'realm','tcp',1,1)");
+         await runtime.executeRaw("INSERT INTO system_settings (key,value) VALUES ('panelPublicUrl',?)", [url]);
+         break;
++      case "seed-runtime":
++        await seedSeamlessRuntimeFixture(url, message.entryIp, message.exitIp);
++        break;
+       case "freeze":
+         result = await migration.freezeAndExportSeamless({ sourceUrl: url, targetUrl: message.targetUrl, token: message.token, dataScope: "full" });
+         break;
+       case "import": {
+         const snapshot = message.snapshot;
++        const identity = (rows: any[]) => Object.fromEntries(rows.map((row) => [Number(row.id), Number(row.id)]));
++        const expectations = buildMigrationRuntimeExpectations(snapshot, {
++          hosts: identity(snapshot.tables.hosts || []), tunnels: identity(snapshot.tables.tunnels || []),
++          forwardRules: identity(snapshot.tables.forward_rules || []),
++        });
+         state.persistSeamlessMigrationState({ version: 1, id: snapshot.seamless.id, role: "target", phase: "verifying",
+           sourceUrl: message.sourceUrl, targetUrl: url, tokenHash: crypto.createHash("sha256").update(snapshot.takeoverToken).digest("hex"),
+           takeoverToken: snapshot.takeoverToken, startedAt: Date.now(), expiresAt: Date.now() + 3_600_000,
+-          requiredHosts: [7], requiredRules: [101], requiredTunnels: [],
++          requiredHosts: expectations.hostIds, requiredRules: expectations.ruleIds, requiredTunnels: expectations.tunnelIds,
+           job: { id: "fixture-job", status: "running", progress: 35, step: "fixture", startedAt: Date.now() } });
+         await importSeamlessSnapshot(snapshot, url);
+         state.persistSeamlessMigrationState({ ...state.getSeamlessMigrationState()!, imported: true });
+@@ -71,6 +111,8 @@ process.on("message", async (message: any) => {
+       case "advertised": result = await resolveAgentAdvertisedPanelUrl(); break;
+       case "status": result = state.getSeamlessMigrationState(); break;
+       case "forget-imported": state.persistSeamlessMigrationState({ ...state.getSeamlessMigrationState()!, imported: false }); break;
++      case "drop-activation-response": dropActivationResponse = true; break;
++      case "observations": result = observations; break;
+       default: throw new Error("Unknown fixture operation");
+     }
+     process.send?.({ id: message.id, result });
+diff --git a/private/tmp/forwardx-282-ticket15/before/server/seamlessMigration.test.ts b/server/seamlessMigration.test.ts
+index 0d22b86..df9e736 100644
+--- a/private/tmp/forwardx-282-ticket15/before/server/seamlessMigration.test.ts
++++ b/server/seamlessMigration.test.ts
+@@ -153,6 +153,42 @@ test("complete online migration goes through real approval, export, import and r
+   } finally { await Promise.all(children.map(stop)); fs.rmSync(directory, { recursive: true, force: true }); }
+ });
+ 
++test("a target changed after preflight aborts before transfer and restores the frozen source", { timeout: 40_000 }, async (t) => {
++  const host = Object.values(os.networkInterfaces()).flat().find((nic) => nic && !nic.internal && nic.family === "IPv4")?.address;
++  if (!host) { t.skip("No local non-loopback IPv4 interface"); return; }
++  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "fwx-seamless-abort-"));
++  const children: ChildProcess[] = [];
++  try {
++    fs.mkdirSync(path.join(directory, "source")); fs.mkdirSync(path.join(directory, "target"));
++    const source = await fixture(path.join(directory, "source"), host); children.push(source.child);
++    const target = await fixture(path.join(directory, "target"), host); children.push(target.child);
++    await source.call("seed");
++    const code = await source.call("code");
++    const job = await target.call("start", { sourceUrl: source.url, code: code.code });
++    let pending: any;
++    for (let attempt = 0; attempt < 60; attempt++) {
++      pending = await source.call("pending");
++      if (pending) break;
++      await new Promise((resolve) => setTimeout(resolve, 100));
++    }
++    assert.ok(pending);
++    await target.call("write", { sql: "INSERT INTO forward_rules (id,hostId,userId,name,sourcePort,targetIp,targetPort,forwardType) VALUES (999,7,3,'existing-target',19999,'127.0.0.1',80,'realm')" });
++    const existingTarget = await target.call("query", { sql: "SELECT * FROM forward_rules" });
++    await source.call("approve", { requestId: pending.id });
++    let failed: any;
++    for (let attempt = 0; attempt < 100; attempt++) {
++      failed = await target.call("job", { jobId: job.id });
++      if (failed.status === "failed") break;
++      await new Promise((resolve) => setTimeout(resolve, 100));
++    }
++    assert.equal(failed.status, "failed"); assert.match(failed.error, /空业务目标/);
++    assert.equal(await source.call("status"), null); assert.equal(await target.call("status"), null);
++    assert.deepEqual(await target.call("query", { sql: "SELECT * FROM forward_rules" }), existingTarget);
++    await source.call("write", { sql: "UPDATE forward_rules SET name='source-resumed' WHERE id=101" });
++    assert.equal((await source.call("query", { sql: "SELECT name,isRunning FROM forward_rules WHERE id=101" }))[0].name, "source-resumed");
++  } finally { await Promise.all(children.map(stop)); fs.rmSync(directory, { recursive: true, force: true }); }
++});
++
+ test("two panels preserve signed ingress, SSE and a live TCP connection; restart keeps source read-only", { timeout: 60_000 }, async (t) => {
+   // Keep production SSRF protections intact: use an actual local NIC, not a
+   // test-only bypass allowing outbound requests to localhost / metadata.
+diff --git a/scripts/verify-seamless-runtime.mjs b/scripts/verify-seamless-runtime.mjs
+new file mode 100644
+index 0000000..7c40dc8
+--- /dev/null
++++ b/scripts/verify-seamless-runtime.mjs
+@@ -0,0 +1,253 @@
++// Isolated two-panel/two-Agent verification. Never points at a production panel.
++// node --import tsx scripts/verify-seamless-runtime.mjs OUTPUT AGENT FXP GOST [IMAGE]
++import assert from "node:assert/strict";
++import fs from "node:fs";
++import path from "node:path";
++import os from "node:os";
++import http from "node:http";
++import net from "node:net";
++import tls from "node:tls";
++import { spawn, spawnSync } from "node:child_process";
++import { once } from "node:events";
++import { createHash } from "node:crypto";
++
++const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
++function command(binary, args) {
++  const result = spawnSync(binary, args, { encoding: "utf8", timeout: 30000 });
++  assert.equal(result.status, 0, result.stderr || result.stdout || String(result.error));
++  return result.stdout.trim();
++}
++async function waitFor(check, description, limit = 45000) {
++  const until = Date.now() + limit;
++  let last;
++  while (Date.now() < until) {
++    try { const result = await check(); if (result) return result; } catch (error) { last = error; }
++    await pause(100);
++  }
++  throw new Error(`Timed out: ${description}; ${last?.message || "condition not met"}`);
++}
++function connection(host, port, servername) {
++  return new Promise((resolve, reject) => {
++    const socket = servername ? tls.connect({ host, port, servername, rejectUnauthorized: false }) : net.connect(port, host);
++    socket.setTimeout(3000, () => socket.destroy(new Error("Connection timed out")));
++    socket.once("error", reject);
++    socket.once(servername ? "secureConnect" : "connect", () => { socket.setTimeout(0); socket.on("error", () => {}); resolve(socket); });
++  });
++}
++async function echo(socket, value) {
++  assert.equal(socket.destroyed, false, "the established business connection must survive");
++  const expected = Buffer.from(value);
++  await new Promise((resolve, reject) => {
++    const chunks = []; let size = 0;
++    const cleanup = () => { clearTimeout(timer); socket.off("data", data); socket.off("error", fail); socket.off("close", closed); };
++    const fail = error => { cleanup(); reject(error); };
++    const closed = () => fail(new Error("Business connection closed"));
++    const data = chunk => { chunks.push(chunk); size += chunk.length; if (size >= expected.length) { cleanup(); try { assert.deepEqual(Buffer.concat(chunks), expected); resolve(); } catch (error) { reject(error); } } };
++    const timer = setTimeout(() => fail(new Error("Business echo timed out")), 5000);
++    socket.on("data", data); socket.once("error", fail); socket.once("close", closed); socket.write(expected);
++  });
++}
++
++async function linuxBackends() {
++  assert.ok(fs.existsSync("/.dockerenv"));
++  const directory = fs.mkdtempSync("/tmp/seamless-backends-");
++  command("openssl", ["req", "-x509", "-newkey", "rsa:2048", "-nodes", "-keyout", `${directory}/key.pem`, "-out", `${directory}/cert.pem`, "-subj", "/CN=seamless-fixture", "-days", "1"]);
++  const credentials = { key: fs.readFileSync(`${directory}/key.pem`), cert: fs.readFileSync(`${directory}/cert.pem`) };
++  for (const port of [30443, 30843, 31443, 31843, 30001]) {
++    const echo = socket => { socket.on("error", () => {}); socket.on("data", data => socket.write(data)); };
++    const server = port === 30001 ? net.createServer(echo) : tls.createServer(credentials, echo);
++    await new Promise(resolve => server.listen(port, "0.0.0.0", resolve));
++  }
++  console.log("Synthetic TLS and TCP targets ready");
++}
++
++async function linuxClient(base, exitIp) {
++  assert.ok(fs.existsSync("/.dockerenv"));
++  const api = async action => {
++    const response = await fetch(`${base}/${action}`, { method: "POST", signal: AbortSignal.timeout(160000) });
++    const result = await response.json(); assert.equal(response.status, 200, JSON.stringify(result)); return result;
++  };
++  const request = async (name, payload = "probe") => {
++    const socket = await connection("127.0.0.1", 18443, name);
++    try { await echo(socket, payload); } finally { socket.destroy(); }
++  };
++  await waitFor(async () => { await request("healthy.example.test"); return true; }, "managed SNI entry and exit");
++  await waitFor(async () => { const socket = await connection(exitIp, 21001); socket.destroy(); return true; }, "managed ordinary GOST");
++  const healthy = await connection("127.0.0.1", 18443, "healthy.example.test");
++  const plain = await connection(exitIp, 21001);
++  const check = async stage => {
++    await echo(healthy, `persistent-tls-${stage}`); await echo(plain, `persistent-tcp-${stage}`);
++    await assert.rejects(request("exhausted.example.test")); await assert.rejects(request("expired.example.test"));
++  };
++  try {
++    await check("before"); await request("metered.example.test", Buffer.alloc(128 * 1024, 97));
++    await api("before"); await api("transfer");
++    await check("verifying"); await request("metered.example.test", Buffer.alloc(64 * 1024, 98));
++    await api("during"); await api("restart-and-resume");
++    await check("active"); await request("metered.example.test", Buffer.alloc(64 * 1024, 99));
++    await api("after");
++    console.log("PASS: managed TLS and ordinary TCP connections survived transfer, uncertain result and both panel restarts; existing exhausted/expired SNI stayed blocked");
++  } finally { healthy.destroy(); plain.destroy(); }
++}
++
++async function verifyPanels() {
++  const [outputArg, agent, fxp, gost, image = "forwardx-sni-test:20261006"] = process.argv.slice(2);
++  assert.ok(outputArg && agent && fxp && gost, "provide output and the three actual runtime binaries");
++  const output = path.resolve(outputArg); fs.mkdirSync(output, { recursive: true });
++  const host = Object.values(os.networkInterfaces()).flat().find(nic => nic && !nic.internal && nic.family === "IPv4")?.address;
++  assert.ok(host, "a real local IPv4 interface is required; production SSRF checks stay enabled");
++  const { encryptPayload, decryptPayload } = await import("../server/agentCrypto.ts");
++  const { gmPaySign } = await import("../server/gmPay.ts");
++  const network = `forwardx-migration-${process.pid}`;
++  const names = [`${network}-entry`, `${network}-exit`];
++  const children = new Set(); const checks = {};
++  let source, target, server, sourceUrl, targetUrl, initial, sourceFrozen, replay;
++  const token = "fixture-private-takeover-token";
++  const hash = filename => createHash("sha256").update(fs.readFileSync(filename)).digest("hex");
++  fs.writeFileSync(path.join(output, "artifacts.json"), JSON.stringify({ agent: hash(agent), fxp: hash(fxp), gost: hash(gost) }, null, 2));
++  for (const [binary, name] of [[agent, "forwardx-agent"], [fxp, "forwardx-fxp"], [gost, "gost"]]) { fs.copyFileSync(binary, path.join(output, name)); fs.chmodSync(path.join(output, name), 0o755); }
++  const exec = (container, args) => command("docker", ["exec", container, ...args]);
++  const runtimeSnapshot = () => Object.fromEntries(names.map(name => [name.endsWith("entry") ? "entry" : "exit", JSON.parse(exec(name, ["node", "-e", String.raw`
++    const fs=require('fs'),crypto=require('crypto');const processes=[];
++    for(const pid of fs.readdirSync('/proc').filter(x=>/^\d+$/.test(x))){try{const name=fs.readFileSync('/proc/'+pid+'/comm','utf8').trim();if(!['forwardx-fxp','forwardx-runtim','forwardx-tunne','gost','forwardx-agent'].some(x=>name.startsWith(x)))continue;const stat=fs.readFileSync('/proc/'+pid+'/stat','utf8');processes.push({pid:Number(pid),name,start:stat.slice(stat.lastIndexOf(')')+2).split(' ')[19]})}catch{}}
++    const configs={};for(const dir of ['/run/forwardx-agent','/etc/forwardx','/etc/forwardx/runtime']){if(!fs.existsSync(dir))continue;for(const name of fs.readdirSync(dir)){if(!name.endsWith('.json'))continue;const p=dir+'/'+name;configs[p]=crypto.createHash('sha256').update(fs.readFileSync(p)).digest('hex')}}
++    console.log(JSON.stringify({processes:processes.sort((a,b)=>a.pid-b.pid),configs}));`]))]));
++  const runtimeListeners = () => Object.fromEntries(names.map(name => [name.endsWith("entry") ? "entry" : "exit", exec(name, ["ss", "-lntup"])]));
++  const stop = async panel => { if (!panel || panel.child.exitCode !== null || panel.child.signalCode !== null) return; const done = once(panel.child, "exit"); panel.child.kill(); await done; children.delete(panel.child); };
++  async function panel(role, port = 0) {
++    const directory = path.join(output, role); fs.mkdirSync(directory, { recursive: true });
++    const child = spawn(process.execPath, ["--import", "tsx", "server/seamlessMigration.fixture.ts"], {
++      stdio: ["ignore", "pipe", "pipe", "ipc"], env: { ...process.env, SQLITE_PATH: path.join(directory, "panel.db"), DATABASE_TYPE: "sqlite",
++        DATABASE_CONFIG_PATH: path.join(directory, "database.json"), FORWARDX_SEAMLESS_MIGRATION_STATE_PATH: path.join(directory, "migration.json"),
++        FORWARDX_LOG_DIR: path.join(directory, "logs"), FORWARDX_TEST_HOST: host, FORWARDX_TEST_PORT: String(port), FORWARDX_DEV_PANEL: "true", JWT_SECRET: "migration-fixture-secret" },
++    });
++    children.add(child); let logs = "", seq = 0;
++    child.stdout.on("data", data => { logs += data; fs.appendFileSync(path.join(directory, "panel.log"), data); });
++    child.stderr.on("data", data => { logs += data; fs.appendFileSync(path.join(directory, "panel.log"), data); });
++    const url = await new Promise((resolve, reject) => {
++      const timer = setTimeout(() => reject(new Error(`Panel start failed: ${logs}`)), 20000);
++      child.once("exit", code => { clearTimeout(timer); reject(new Error(`Panel exited ${code}: ${logs}`)); });
++      child.on("message", message => { if (message.ready) { clearTimeout(timer); resolve(message.ready); } });
++    });
++    const call = (op, values = {}) => new Promise((resolve, reject) => {
++      const id = ++seq; const timer = setTimeout(() => { child.off("message", listener); reject(new Error(`Panel ${op} timed out: ${logs}`)); }, 145000);
++      const listener = message => { if (message.id !== id) return; clearTimeout(timer); child.off("message", listener); message.error ? reject(new Error(message.error)) : resolve(message.result); };
++      child.on("message", listener); child.send({ id, op, ...values });
++    });
++    return { child, url, call };
++  }
++  const sql = async (panel, query) => panel.call("query", { sql: query });
++  const accounting = async panel => ({
++    rules: await sql(panel, "SELECT id,quotaUsedIn,quotaUsedOut,ruleLimitReason FROM forward_rules ORDER BY id"),
++    users: await sql(panel, "SELECT id,trafficUsed,balanceCents FROM users ORDER BY id"),
++    reports: await sql(panel, "SELECT hostId,producerId,reportId FROM agent_traffic_reports ORDER BY hostId,id"),
++    payments: await sql(panel, "SELECT outTradeNo,status FROM payment_orders"),
++    balance: await sql(panel, "SELECT paymentOrderNo,amountCents FROM balance_transactions"),
++  });
++  const postTraffic = async (url, identityToken, payload) => {
++    const response = await fetch(`${url}/api/agent/traffic`, { method: "POST", headers: { authorization: `Bearer ${identityToken}`, "content-type": "application/json", "x-agent-encrypted": "1" }, body: JSON.stringify(encryptPayload(payload, identityToken)) });
++    assert.equal(response.status, 200); return decryptPayload(await response.json(), identityToken);
++  };
++  const payment = async () => {
++    const body = { pid: "1000", order_id: "MIGRATION-PAYMENT", trade_id: "MIGRATION-TRADE", amount: 2, token: "USDT", status: 2 };
++    body.signature = gmPaySign(body, "migration-test-payment-secret");
++    const response = await fetch(`${sourceUrl}/api/payment/webhook/gmpay`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
++    assert.equal(response.status, 200, await response.text());
++  };
++  try {
++    command("docker", ["network", "create", network]);
++    for (const name of names) command("docker", ["run", "-d", "--init", "--cap-add", "NET_ADMIN", "--network", network, "--name", name, "-v", `${output}:/verification`, "-v", `${path.resolve("scripts/verify-seamless-runtime.mjs")}:/verify.mjs:ro`, "--entrypoint", "tail", image, "-f", "/dev/null"]);
++    const ips = names.map(name => command("docker", ["inspect", name, "--format", `{{(index .NetworkSettings.Networks "${network}").IPAddress}}`]));
++    const subnet = command("docker", ["network", "inspect", network, "--format", "{{(index .IPAM.Config 0).Subnet}}"]);
++    source = await panel("source"); target = await panel("target"); sourceUrl = source.url; targetUrl = target.url;
++    await source.call("seed-runtime", { entryIp: ips[0], exitIp: ips[1] });
++    for (const [index, name] of names.entries()) {
++      // Both containers share the host's Internet egress. Keep their distinct
++      // synthetic addresses: allow only this panel, peers, and loopback.
++      for (const address of [host, subnet, "127.0.0.0/8"]) exec(name, ["iptables", "-A", "OUTPUT", "-d", address, "-j", "ACCEPT"]);
++      exec(name, ["iptables", "-A", "OUTPUT", "-j", "REJECT"]);
++      exec(name, ["ip6tables", "-A", "OUTPUT", "-d", "::1", "-j", "ACCEPT"]);
++      exec(name, ["ip6tables", "-A", "OUTPUT", "-j", "REJECT"]);
++      exec(name, ["sh", "-c", "cp /verification/forwardx-fxp /usr/local/bin/forwardx-fxp; cp /verification/gost /usr/local/bin/gost; cp /verification/gost /usr/local/bin/forwardx-runtime; mkdir -p /verification/" + (index ? "exit" : "entry")]);
++      const cfg = { panelUrl: sourceUrl, token: index ? "migration-test-exit-token" : "migration-test-agent-token", interval: 1 };
++      fs.writeFileSync(path.join(output, `${index ? "exit" : "entry"}-agent.json`), JSON.stringify(cfg), { mode: 0o600 });
++    }
++    command("docker", ["exec", "-d", names[1], "sh", "-c", "node /verify.mjs --backends > /verification/backends.log 2>&1"]);
++    for (const [index, name] of names.entries()) command("docker", ["exec", "-d", name, "sh", "-c", `/verification/forwardx-agent -config /verification/${index ? "exit" : "entry"}-agent.json > /verification/${index ? "exit" : "entry"}-agent.log 2>&1`]);
++    const handlers = {
++      before: async () => {
++        await waitFor(async () => (await accounting(source)).rules.some(row => row.id === 101 && row.quotaUsedIn > 1000), "actual exit accounting");
++        replay = (await source.call("observations")).findLast(row => row.path === "/api/agent/traffic" && row.token === "migration-test-exit-token" && row.payload.stats?.some(stat => stat.ruleId === 101 && stat.bytesIn > 0));
++        assert.ok(replay, "actual FXP/Agent exit report captured"); initial = runtimeSnapshot(); checks.beforeRuntime = initial; checks.beforeListeners = runtimeListeners(); checks.before = await accounting(source);
++        for (const runtime of Object.values(initial)) assert.ok(runtime.processes.some(row => row.name.startsWith("forwardx-agent")));
++        assert.ok(initial.exit.processes.some(row => row.name.startsWith("forwardx-fxp")), "exit splitter is actually managed by Agent");
++        assert.ok(Object.keys(initial.exit.configs).some(filename => filename.startsWith("/etc/forwardx/runtime/")), "actual GOST runtime configuration is recorded");
++        return checks.before;
++      },
++      transfer: async () => {
++        const snapshot = await source.call("freeze", { token, targetUrl }); sourceFrozen = await accounting(source);
++        await target.call("import", { snapshot, sourceUrl }); await source.call("drop-activation-response");
++        await assert.rejects(target.call("resume"), /fetch failed/);
++        assert.equal((await source.call("status")).phase, "forwarding"); assert.equal((await target.call("status")).phase, "verifying");
++        const before = await accounting(target);
++        assert.equal((await postTraffic(sourceUrl, replay.token, replay.payload)).duplicate, true);
++        assert.deepEqual((await accounting(target)).rules, before.rules, "the pending pre-freeze report stays deduplicated immediately after takeover");
++        checks.preMigrationReplayDuplicate = true;
++        checks.uncertainActivationRetained = true; return { phase: "verifying" };
++      },
++      during: async () => {
++        await waitFor(async () => (await target.call("observations")).some(row => row.path === "/api/agent/traffic" && row.token === "migration-test-exit-token" && row.payload.stats?.some(stat => stat.ruleId === 101 && stat.bytesIn > 0)), "new panel receives actual traffic while verifying");
++        checks.verifyingRuntime = runtimeSnapshot(); checks.verifyingListeners = runtimeListeners(); assert.deepEqual(checks.verifyingRuntime, initial, "managed processes and config files remain identical during verification");
++        const current = (await target.call("observations")).findLast(row => row.path === "/api/agent/traffic" && row.token === "migration-test-exit-token" && row.payload.stats?.some(stat => stat.ruleId === 101 && stat.bytesIn > 0));
++        const before = await accounting(target);
++        assert.equal((await postTraffic(sourceUrl, current.token, current.payload)).duplicate, true);
++        const after = await accounting(target); assert.deepEqual(after.rules, before.rules, "retrying the current exit report does not bill twice");
++        await postTraffic(sourceUrl, "migration-test-agent-token", { reportId: "migration-entry-not-billed", reportProducerId: "migration-entry-fixture", stats: [{ ruleId: 101, bytesIn: 999999, bytesOut: 999999, connections: 1 }] });
++        assert.deepEqual((await accounting(target)).rules, before.rules, "entry report cannot double bill logical SNI quota");
++        await payment(); await payment();
++        checks.verifyingAccounting = await accounting(target); assert.equal(checks.verifyingAccounting.users[0].balanceCents, 100200); assert.equal(checks.verifyingAccounting.balance.length, 1);
++        assert.deepEqual(await accounting(source), sourceFrozen, "only the target writes accounting after transfer");
++        return { actualExitReportDeduplicated: true, entryIgnored: true, signedPaymentAppliedOnce: true };
++      },
++      "restart-and-resume": async () => {
++        await stop(target); await stop(source);
++        source = await panel("source", Number(new URL(sourceUrl).port)); target = await panel("target", Number(new URL(targetUrl).port));
++        assert.equal((await source.call("status")).phase, "forwarding"); assert.equal((await target.call("status")).phase, "verifying");
++        await assert.rejects(source.call("write", { sql: "UPDATE forward_rules SET isEnabled=0" }), /保留数据/);
++        const replies = await Promise.allSettled([target.call("resume"), target.call("resume")]);
++        assert.equal(replies.filter(reply => reply.status === "fulfilled" && reply.value.status === "success").length, 1);
++        assert.equal(replies.filter(reply => reply.status === "rejected").length, 1);
++        assert.equal((await source.call("status")).phase, "archived"); assert.equal((await target.call("status")).phase, "active");
++        await payment(); assert.equal((await accounting(target)).balance.length, 1);
++        checks.restartAndResume = true; return { phase: "active" };
++      },
++      after: async () => {
++        await waitFor(async () => (await accounting(target)).rules.find(row => row.id === 101).quotaUsedIn > checks.verifyingAccounting.rules.find(row => row.id === 101).quotaUsedIn, "continued actual traffic after takeover");
++        checks.activeRuntime = runtimeSnapshot(); checks.activeListeners = runtimeListeners();
++        for (const role of ["entry", "exit"]) assert.deepEqual(checks.activeRuntime[role].processes, initial[role].processes, "Agent and managed forwarding process identity remains unchanged after takeover");
++        checks.after = await accounting(target); assert.deepEqual(await accounting(source), sourceFrozen);
++        assert.equal(checks.after.rules.find(row => row.id === 103).ruleLimitReason, "traffic_limit"); assert.equal(checks.after.rules.find(row => row.id === 104).ruleLimitReason, "expired");
++        assert.equal(await target.call("advertised"), sourceUrl); checks.managedLongConnections = true;
++        fs.writeFileSync(path.join(output, "result.json"), JSON.stringify(checks, null, 2)); return { success: true };
++      },
++    };
++    server = http.createServer(async (req, res) => {
++      try { const handler = handlers[req.url.slice(1)]; assert.ok(handler, "unknown verification stage"); const result = await handler(); res.setHeader("content-type", "application/json"); res.end(JSON.stringify(result)); }
++      catch (error) { res.writeHead(500, { "content-type": "application/json" }); res.end(JSON.stringify({ error: error.message })); }
++    });
++    await new Promise(resolve => server.listen(0, "0.0.0.0", resolve));
++    const client = spawn("docker", ["exec", names[0], "node", "/verify.mjs", "--client", `http://${host}:${server.address().port}`, ips[1]], { stdio: "inherit" });
++    assert.equal((await once(client, "exit"))[0], 0, "actual managed connection verification failed");
++    assert.equal(checks.managedLongConnections, true);
++  } finally {
++    fs.writeFileSync(path.join(output, "progress.json"), JSON.stringify(checks, null, 2));
++    if (server) { server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); }
++    await Promise.all([...children].map(child => stop({ child })));
++    for (const name of names) spawnSync("docker", ["rm", "-f", name], { encoding: "utf8" });
++    spawnSync("docker", ["network", "rm", network], { encoding: "utf8" });
++  }
++}
++
++if (process.argv[2] === "--backends") await linuxBackends();
++else if (process.argv[2] === "--client") await linuxClient(process.argv[3], process.argv[4]);
++else await verifyPanels();
+diff --git a/server/seamlessRuntime.fixture.ts b/server/seamlessRuntime.fixture.ts
+new file mode 100644
+index 0000000..d828269
+--- /dev/null
++++ b/server/seamlessRuntime.fixture.ts
+@@ -0,0 +1,33 @@
++// Synthetic business data for the isolated Agent/FXP migration verification.
++import { executeRaw, quoteDbIdentifier as q } from "./dbRuntime";
++import { setSettings } from "./repositories/settingsRepository";
++import { AGENT_VERSION } from "../shared/versions";
++
++export async function seedSeamlessRuntimeFixture(url: string, entryIp: string, exitIp: string) {
++  const insert = (table: string, row: Record<string, unknown>) => executeRaw(
++    `INSERT INTO ${q(table)} (${Object.keys(row).map(q).join(",")}) VALUES (${Object.keys(row).map(() => "?").join(",")})`, Object.values(row));
++  await insert("users", { id: 3, username: "migration-admin", password: "fixture", role: "admin",
++    canAddRules: true, manualCanAddRules: true, balanceCents: 100000 });
++  for (const [id, ip, token] of [[7, entryIp, "migration-test-agent-token"], [8, exitIp, "migration-test-exit-token"]] as const) {
++    await insert("hosts", { id, userId: 3, name: `managed-${id}`, ip, ipv4: ip, agentToken: token, agentVersion: AGENT_VERSION,
++      isOnline: true, lastHeartbeat: Math.floor(Date.now() / 1000), portRangeStart: 18000, portRangeEnd: 40000 });
++  }
++  await insert("tunnels", { id: 7, userId: 3, name: "managed-tcp", entryHostId: 7, exitHostId: 8,
++    mode: "tcp", listenPort: 23000, secret: "migration-fixture-tunnel-secret", isEnabled: true, isRunning: true });
++  for (const [id, name, targetPort, limits] of [
++    [101, "metered.example.test", 30443, { trafficLimit: 20000000, quotaUsedIn: 1000, quotaUsedOut: 2000 }],
++    [102, "healthy.example.test", 30843, {}],
++    [103, "exhausted.example.test", 31443, { trafficLimit: 1, quotaUsedIn: 2, quotaUsedOut: 3, ruleLimitReason: "traffic_limit" }],
++    [104, "expired.example.test", 31843, { expiresAt: Math.floor(Date.now() / 1000) - 86400, ruleLimitReason: "expired" }],
++  ] as const) {
++    await insert("forward_rules", { id, userId: 3, hostId: 7, name, sourcePort: 18443, sni: name, sniSplitterPort: 24000,
++      tunnelId: 7, tunnelExitPort: 24001, targetIp: exitIp, targetPort, forwardType: "gost", protocol: "tcp",
++      isEnabled: true, isRunning: id < 103, ...limits });
++  }
++  await insert("forward_rules", { id: 200, userId: 3, hostId: 8, name: "plain-gost", sourcePort: 21001,
++    targetIp: "127.0.0.1", targetPort: 30001, forwardType: "gost", protocol: "tcp", isEnabled: true, isRunning: true });
++  await insert("payment_orders", { id: 1, outTradeNo: "MIGRATION-PAYMENT", userId: 3, provider: "gmpay",
++    paymentType: "gmpay", orderType: "balance", status: "pending", subject: "migration recharge", amountCents: 200, currency: "CNY" });
++  await setSettings({ panelPublicUrl: url, notificationProvider: "telegram", telegramEnabled: "false", discordEnabled: "false",
++    paymentConfig: JSON.stringify({ gmpay: { enabled: true, pid: "1000", secretKey: "migration-test-payment-secret" } }) });
++}

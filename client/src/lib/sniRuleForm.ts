@@ -1,3 +1,4 @@
+import { t as translateText } from "@/i18n";
 import { isValidSniValue, normalizeSniValue } from "@shared/sni";
 
 // SNI 分流规则的真值来源始终是 sni 字段非空（见 .scratch/2026-09-15_SNI分流开关/spec.md）。
@@ -151,41 +152,41 @@ export function sniToggleSupport(input: SniToggleSupportInput): SniToggleSupport
   const allowed: SniToggleSupport = { visible: true, reason: null, pending: false };
   if (!input.isAdmin) return { visible: false, reason: null, pending: false };
   if (input.routeMode === "group") {
-    return blocked("转发组不支持 SNI 分流，请改用转发链、隧道或端口转发");
+    return blocked(translateText("转发组不支持 SNI 分流，请改用转发链、隧道或端口转发"));
   }
   if (input.routeMode === "tunnel") {
     const tunnel = input.tunnel;
-    if (!tunnel) return blocked("请先选择隧道", true);
+    if (!tunnel) return blocked(translateText("请先选择隧道"), true);
     if (Number(tunnel.exitGroupId || 0) > 0 || tunnel.loadBalanceEnabled === true) {
-      return blocked("该隧道为多出口，SNI 分流仅支持单出口");
+      return blocked(translateText("该隧道为多出口，SNI 分流仅支持单出口"));
     }
     if (Number(tunnel.exitHostId || 0) <= 0) {
-      return blocked("该隧道没有可推导的出口主机");
+      return blocked(translateText("该隧道没有可推导的出口主机"));
     }
     return allowed;
   }
   const group = input.group;
   const groupPending = !group && Number(input.groupId || 0) > 0;
   if (input.routeMode === "chain") {
-    if (!group) return blocked("请先选择转发链", groupPending);
-    if (input.groupModeForRule !== "chain") return blocked("请先选择转发链");
+    if (!group) return blocked(translateText("请先选择转发链"), groupPending);
+    if (input.groupModeForRule !== "chain") return blocked(translateText("请先选择转发链"));
   } else if (!group) {
-    return blocked("SNI 分流仅支持已保存的端口转发资源", groupPending);
+    return blocked(translateText("SNI 分流仅支持已保存的端口转发资源"), groupPending);
   } else if (input.groupModeForRule !== "port") {
-    return blocked("SNI 分流仅支持已保存的端口转发资源");
+    return blocked(translateText("SNI 分流仅支持已保存的端口转发资源"));
   }
   if (String(group?.groupType || "host") !== "host") {
-    return blocked("SNI 分流仅支持主机型链路资源");
+    return blocked(translateText("SNI 分流仅支持主机型链路资源"));
   }
   const members = enabledMembersOf(group);
   if (members.some((member) => String(member?.memberType || "host") !== "host")) {
-    return blocked("SNI 分流仅支持主机型链路资源");
+    return blocked(translateText("SNI 分流仅支持主机型链路资源"));
   }
   if (input.routeMode === "local" && members.length !== 1) {
-    return blocked("SNI 分流的端口转发资源必须且只能包含一台主机");
+    return blocked(translateText("SNI 分流的端口转发资源必须且只能包含一台主机"));
   }
   if (members.length === 0) {
-    return blocked("该链路资源没有启用的主机成员");
+    return blocked(translateText("该链路资源没有启用的主机成员"));
   }
   return allowed;
 }
@@ -194,7 +195,7 @@ export function sniDomainFormatError(value: string): string | null {
   const normalized = normalizeSniValue(value);
   if (!normalized) return null;
   if (isValidSniValue(normalized)) return null;
-  return "SNI 域名格式不正确：只填写完整域名，不含 https://、端口、路径或通配符";
+  return translateText("SNI 域名格式不正确：只填写完整域名，不含 https://、端口、路径或通配符");
 }
 
 export function sniEntryPortCheckValue(enabled: boolean, value: string): string | null {

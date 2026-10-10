@@ -1,0 +1,7 @@
+Browser tab: 3, Title: "sni-panel 09验收", URL: "http://127.0.0.1:18829/settings".
+The following is a diff from the previous accessibility tree with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
++			306 content list
++				307 container
++					308 image
++					309 text Panel Settings Saved
+The focused UI element is 1 AXWebArea sni-panel 09验收, URL: 127.0.0.1:18829/settings

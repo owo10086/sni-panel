@@ -615,40 +615,39 @@ export async function upsertTrafficBillingConfig(data: InsertTrafficBillingConfi
   if (!isTrafficBillingResourceType(resourceType)) throw new Error("资源类型无效");
   if (resourceId <= 0) throw new Error("资源无效");
   await assertBillingResourceExists(resourceType, resourceId);
-  const existingById = id > 0
+  const existing = id > 0
     ? (await db.select().from(trafficBillingConfigs).where(eq(trafficBillingConfigs.id, id)).limit(1))[0]
-    : null;
-  const pricePerGbMilliCents = normalizePriceMilliCents(
-    Number((data as any).pricePerGbMilliCents || 0) || normalizePrice(Number((data as any).pricePerGbCents || 0)) * MILLI_CENTS_PER_CENT,
-  );
+    : (await db.select().from(trafficBillingConfigs).where(and(
+      eq(trafficBillingConfigs.resourceType, resourceType),
+      eq(trafficBillingConfigs.resourceId, resourceId),
+    )).limit(1))[0];
+  if (id > 0 && !existing) throw new Error("计费配置不存在");
+  const pricePerGbMilliCents = (data as any).pricePerGbMilliCents !== undefined
+    ? normalizePriceMilliCents(Number((data as any).pricePerGbMilliCents))
+    : (data as any).pricePerGbCents !== undefined
+      ? normalizePrice(Number((data as any).pricePerGbCents)) * MILLI_CENTS_PER_CENT
+      : configPriceMilliCents(existing);
   const multiplier = await getBillingResourceMultiplier(
     resourceType,
     resourceId,
-    Number((data as any).multiplier || (existingById as any)?.multiplier || 100),
+    Number((data as any).multiplier ?? existing?.multiplier ?? 100),
   );
   const payload = {
     resourceType,
     resourceId,
     enabled: !!(data as any).enabled,
     requiresPermission: !!(data as any).requiresPermission,
-    description: String((data as any).description || "").trim() || null,
+    description: (data as any).description === undefined
+      ? existing?.description ?? null
+      : String((data as any).description || "").trim() || null,
     pricePerGbCents: Math.floor(pricePerGbMilliCents / MILLI_CENTS_PER_CENT),
     pricePerGbMilliCents,
     multiplier,
     updatedAt: nowDate(),
   };
-  if (id > 0) {
-    if (!existingById) throw new Error("计费配置不存在");
-    await db.update(trafficBillingConfigs).set(payload as any).where(eq(trafficBillingConfigs.id, id));
-    return { ...existingById, ...payload };
-  }
-  const existing = await db.select().from(trafficBillingConfigs).where(and(
-    eq(trafficBillingConfigs.resourceType, resourceType),
-    eq(trafficBillingConfigs.resourceId, resourceId),
-  )).limit(1);
-  if (existing[0]) {
-    await db.update(trafficBillingConfigs).set(payload as any).where(eq(trafficBillingConfigs.id, existing[0].id));
-    return { ...existing[0], ...payload };
+  if (existing) {
+    await db.update(trafficBillingConfigs).set(payload as any).where(eq(trafficBillingConfigs.id, existing.id));
+    return { ...existing, ...payload };
   }
   const createdId = await insertAndGetId("traffic_billing_configs", { ...payload, createdAt: nowDate() });
   return { id: createdId, ...payload };

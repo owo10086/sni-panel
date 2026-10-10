@@ -1,0 +1,28 @@
+- generic: Language
+- combobox "Language":
+  - option "Automatic (browser / IP)"
+  - option "Simplified Chinese"
+  - option "English" [selected]
+- button "Toggle Theme":
+- main:
+  - img "ForwardX"
+  - generic: ForwardX
+  - generic: Welcome Back
+  - generic: Sign in to your account to continue
+  - text: Username or email
+  - textbox "Username or email":
+    - /placeholder: Please enter a username or email
+  - text: Password
+  - textbox "Password":
+    - /placeholder: Please enter the password.
+  - button:
+  - button "Log In":
+    - text: Log In
+  - paragraph: Sign in with Discord
+  - paragraph: DM /login to your bound bot and open the one-time login link.
+  - link "Open Discord":
+    - /url: https://discord.com/users/999999999999999999
+  - button "Don't have an account? Sign up"
+- region "Notifications alt+T":
+  - list:
+    - generic: The Discord login code is invalid or has expired.

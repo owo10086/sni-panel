@@ -9,7 +9,26 @@ export type AgentHostTrafficStat = {
   bytesIn?: number;
   bytesOut?: number;
 };
-export type AgentTcpingResult = {
+/** Monotonic real-probe counters; independent of the current health sample. */
+export type AgentProbeCounter = {
+  probeCounterEpoch?: string;
+  /** Epoch creation time in microseconds, for ordering restarted counters. */
+  probeCounterStartedAt?: number;
+  probeTotalCount?: number;
+  probeTotalSuccesses?: number;
+};
+
+export function hasAgentProbeCounter(value: AgentProbeCounter | null | undefined): boolean {
+  return !!value && typeof value.probeCounterEpoch === "string"
+    && /^[a-zA-Z0-9_-]{1,64}$/.test(value.probeCounterEpoch)
+    && (value.probeCounterStartedAt === undefined || (Number.isSafeInteger(value.probeCounterStartedAt) && Number(value.probeCounterStartedAt) > 0))
+    && Number.isSafeInteger(value.probeTotalCount) && Number(value.probeTotalCount) >= 1
+    && Number(value.probeTotalCount) <= 1_000_000_000
+    && Number.isSafeInteger(value.probeTotalSuccesses) && Number(value.probeTotalSuccesses) >= 0
+    && Number(value.probeTotalSuccesses) <= Number(value.probeTotalCount);
+}
+
+export type AgentTcpingResult = AgentProbeCounter & {
   ruleId: number;
   tunnelId?: number;
   sourcePort?: number;
@@ -28,7 +47,7 @@ export type AgentTcpingResult = {
   healthPending?: boolean;
 };
 
-export type AgentTunnelTcpingResult = {
+export type AgentTunnelTcpingResult = AgentProbeCounter & {
   tunnelId: number;
   targetIp?: string;
   targetPort?: number;
@@ -57,7 +76,7 @@ export type AgentHostProbeServiceResult = {
   probeSuccesses?: number;
   method?: "tcping" | "ping" | string;
 };
-export type AgentForwardGroupLatencyResult = {
+export type AgentForwardGroupLatencyResult = AgentProbeCounter & {
   groupId: number;
   memberId?: number;
   probeType?: "chain" | "china" | string;
@@ -120,6 +139,15 @@ export function normalizeAgentProbeCounts(value: {
 }
 
 export type SelfTestMeta =
+  | {
+      kind: "direct";
+      ruleId: number;
+      forwardType: string;
+      sourcePort: number;
+      targetIp: string;
+      targetPort: number;
+      method: "tcp" | "ping";
+    }
   | {
       kind: "tunnel";
       tunnelId: number;
@@ -244,12 +272,20 @@ function validAgentProbeResult(item: any, idKey: string) {
   if (item.method !== undefined && !validShortString(item.method, 32)) return false;
   if (item.probeKey !== undefined && !validShortString(item.probeKey, 1024)) return false;
   if (item.topologyKey !== undefined && !validShortString(item.topologyKey, 2048)) return false;
+  if ((item.probeCounterEpoch !== undefined || item.probeCounterStartedAt !== undefined || item.probeTotalCount !== undefined || item.probeTotalSuccesses !== undefined)
+    && !hasAgentProbeCounter(item)) return false;
+  if (hasAgentProbeCounter(item)) {
+    const counts = normalizeAgentProbeCounts(item, { legacyZeroAsSuccess: false });
+    if (item.probeTotalCount < counts.probeCount || item.probeTotalSuccesses < counts.probeSuccesses
+      || item.probeTotalCount - item.probeTotalSuccesses < counts.probeCount - counts.probeSuccesses) return false;
+  }
   return true;
 }
 
 export function isSelfTestMeta(value: unknown): value is SelfTestMeta {
   const meta = value as Partial<SelfTestMeta>;
   if (!meta || typeof meta.kind !== "string") return false;
+  if (meta.kind === "direct") return Number.isFinite(Number(meta.ruleId));
   if (meta.kind === "forward-chain") return Number.isFinite(Number((meta as any).groupId));
   return Number.isFinite(Number((meta as any).tunnelId));
 }

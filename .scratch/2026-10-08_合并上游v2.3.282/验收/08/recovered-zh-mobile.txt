@@ -1,0 +1,180 @@
+- banner:
+  - heading "08监控验收" [level=1]
+  - link "进入后台":
+    - /url: /hosts
+    - text: 进入后台
+- main:
+  - status:
+    - generic: 最近刷新 2026-10-10 00:58:23
+    - button "刷新":
+      - text: 刷新
+  - status:
+    - generic: 最近刷新 2026-10-10 00:58:23
+    - button "刷新":
+      - text: 刷新
+  - button "返回":
+  - heading "监控主机 A" [level=2]
+  - generic: 在线
+  - paragraph: 状态
+  - paragraph: 在线
+  - paragraph: 运行时间
+  - paragraph: 15分钟
+  - paragraph: 内存
+  - paragraph: 45%
+  - paragraph: 磁盘
+  - paragraph: 13%
+  - paragraph: 区域
+  - generic "地区获取中":
+    - generic: 地区获取中
+  - paragraph: 版本
+  - paragraph: v3.3.0
+  - paragraph: 实时入站
+  - paragraph: 0 B/s
+  - paragraph: 实时出站
+  - paragraph: 0 B/s
+  - paragraph: 累计入站
+  - paragraph: 0 B
+  - paragraph: 累计出站
+  - paragraph: 0 B
+  - paragraph: 到期时间
+  - paragraph: 永久有效
+  - paragraph: 最后上报
+  - paragraph: 2026-10-10 00:50:17
+  - paragraph: 监控主机 A
+  - paragraph: 32 个监控服务
+  - button "清除筛选" [disabled]:
+    - text: 清除筛选
+  - button "History service 32 64ms 2026-10-10 00:48:41" [pressed]:
+    - generic "History service 32"
+    - paragraph: 64ms
+    - paragraph: 2026-10-10 00:48:41
+  - button "History service 31 62ms 2026-10-10 00:48:41" [pressed]:
+    - generic "History service 31"
+    - paragraph: 62ms
+    - paragraph: 2026-10-10 00:48:41
+  - button "History service 30 60ms 2026-10-10 00:48:41" [pressed]:
+    - generic "History service 30"
+    - paragraph: 60ms
+    - paragraph: 2026-10-10 00:48:41
+  - button "History service 29 58ms 2026-10-10 00:48:41" [pressed]:
+    - generic "History service 29"
+    - paragraph: 58ms
+    - paragraph: 2026-10-10 00:48:41
+  - button "History service 28 56ms 2026-10-10 00:48:41" [pressed]:
+    - generic "History service 28"
+    - paragraph: 56ms
+    - paragraph: 2026-10-10 00:48:41
+  - button "History service 27 54ms 2026-10-10 00:48:41" [pressed]:
+    - generic "History service 27"
+    - paragraph: 54ms
+    - paragraph: 2026-10-10 00:48:41
+  - button "History service 26 52ms 2026-10-10 00:48:41" [pressed]:
+    - generic "History service 26"
+    - paragraph: 52ms
+    - paragraph: 2026-10-10 00:48:41
+  - button "History service 25 50ms 2026-10-10 00:48:41" [pressed]:
+    - generic "History service 25"
+    - paragraph: 50ms
+    - paragraph: 2026-10-10 00:48:41
+  - button "History service 24 48ms 2026-10-10 00:48:41" [pressed]:
+    - generic "History service 24"
+    - paragraph: 48ms
+    - paragraph: 2026-10-10 00:48:41
+  - button "History service 23 46ms 2026-10-10 00:48:41" [pressed]:
+    - generic "History service 23"
+    - paragraph: 46ms
+    - paragraph: 2026-10-10 00:48:41
+  - button "History service 22 44ms 2026-10-10 00:48:41" [pressed]:
+    - generic "History service 22"
+    - paragraph: 44ms
+    - paragraph: 2026-10-10 00:48:41
+  - button "History service 21 42ms 2026-10-10 00:48:41" [pressed]:
+    - generic "History service 21"
+    - paragraph: 42ms
+    - paragraph: 2026-10-10 00:48:41
+  - button "History service 20 40ms 2026-10-10 00:48:41" [pressed]:
+    - generic "History service 20"
+    - paragraph: 40ms
+    - paragraph: 2026-10-10 00:48:41
+  - button "History service 19 38ms 2026-10-10 00:48:41" [pressed]:
+    - generic "History service 19"
+    - paragraph: 38ms
+    - paragraph: 2026-10-10 00:48:41
+  - button "History service 18 36ms 2026-10-10 00:48:41" [pressed]:
+    - generic "History service 18"
+    - paragraph: 36ms
+    - paragraph: 2026-10-10 00:48:41
+  - button "History service 17 34ms 2026-10-10 00:48:41" [pressed]:
+    - generic "History service 17"
+    - paragraph: 34ms
+    - paragraph: 2026-10-10 00:48:41
+  - button "History service 16 32ms 2026-10-10 00:48:41" [pressed]:
+    - generic "History service 16"
+    - paragraph: 32ms
+    - paragraph: 2026-10-10 00:48:41
+  - button "History service 15 30ms 2026-10-10 00:48:41" [pressed]:
+    - generic "History service 15"
+    - paragraph: 30ms
+    - paragraph: 2026-10-10 00:48:41
+  - button "History service 14 28ms 2026-10-10 00:48:41" [pressed]:
+    - generic "History service 14"
+    - paragraph: 28ms
+    - paragraph: 2026-10-10 00:48:41
+  - button "History service 13 26ms 2026-10-10 00:48:41" [pressed]:
+    - generic "History service 13"
+    - paragraph: 26ms
+    - paragraph: 2026-10-10 00:48:41
+  - button "History service 12 24ms 2026-10-10 00:48:41" [pressed]:
+    - generic "History service 12"
+    - paragraph: 24ms
+    - paragraph: 2026-10-10 00:48:41
+  - button "History service 11 22ms 2026-10-10 00:48:41" [pressed]:
+    - generic "History service 11"
+    - paragraph: 22ms
+    - paragraph: 2026-10-10 00:48:41
+  - button "History service 10 20ms 2026-10-10 00:48:41" [pressed]:
+    - generic "History service 10"
+    - paragraph: 20ms
+    - paragraph: 2026-10-10 00:48:41
+  - button "History service 9 18ms 2026-10-10 00:48:41" [pressed]:
+    - generic "History service 9"
+    - paragraph: 18ms
+    - paragraph: 2026-10-10 00:48:41
+  - button "History service 8 16ms 2026-10-10 00:48:41" [pressed]:
+    - generic "History service 8"
+    - paragraph: 16ms
+    - paragraph: 2026-10-10 00:48:41
+  - button "History service 7 14ms 2026-10-10 00:48:41" [pressed]:
+    - generic "History service 7"
+    - paragraph: 14ms
+    - paragraph: 2026-10-10 00:48:41
+  - button "History service 6 12ms 2026-10-10 00:48:41" [pressed]:
+    - generic "History service 6"
+    - paragraph: 12ms
+    - paragraph: 2026-10-10 00:48:41
+  - button "History service 5 10ms 2026-10-10 00:48:41" [pressed]:
+    - generic "History service 5"
+    - paragraph: 10ms
+    - paragraph: 2026-10-10 00:48:41
+  - button "History service 4 8ms 2026-10-10 00:48:41" [pressed]:
+    - generic "History service 4"
+    - paragraph: 8ms
+    - paragraph: 2026-10-10 00:48:41
+  - button "History service 3 6ms 2026-10-10 00:48:41" [pressed]:
+    - generic "History service 3"
+    - paragraph: 6ms
+    - paragraph: 2026-10-10 00:48:41
+  - button "History service 2 4ms 2026-10-10 00:48:41" [pressed]:
+    - generic "History service 2"
+    - paragraph: 4ms
+    - paragraph: 2026-10-10 00:48:41
+  - button "History service 1 2ms 2026-10-10 00:48:41" [pressed]:
+    - generic "History service 1"
+    - paragraph: 2ms
+    - paragraph: 2026-10-10 00:48:41
+  - paragraph: 服务延迟趋势
+  - paragraph: 点击上方服务可筛选图表
+  - switch "削峰"
+  - generic: 削峰
+- region "Notifications alt+T"
+- generic: 10:45

@@ -1,0 +1,297 @@
+{
+  "stage": "second-config-validation-failure",
+  "processes": {
+    "forwardx-runtime": {
+      "pid": 130,
+      "start": "73135308"
+    },
+    "forwardx-tunnel-runtime": {
+      "pid": 185,
+      "start": "73135410"
+    }
+  },
+  "configs": {
+    "forwardx-runtime": {
+      "services": [
+        {
+          "name": "fwx-1-tcp",
+          "addr": ":21001",
+          "handler": {
+            "type": "tcp"
+          },
+          "listener": {
+            "type": "tcp"
+          },
+          "forwarder": {
+            "nodes": [
+              {
+                "name": "target-1",
+                "addr": "198.51.100.30:30001"
+              }
+            ]
+          },
+          "status": {
+            "createTime": 1791557111,
+            "state": "ready",
+            "events": [
+              {
+                "time": 1791557111,
+                "msg": "service fwx-1-tcp is running"
+              },
+              {
+                "time": 1791557111,
+                "msg": "service fwx-1-tcp is ready"
+              },
+              {
+                "time": 1791557111,
+                "msg": "service fwx-1-tcp is listening on [::]:21001"
+              }
+            ]
+          }
+        },
+        {
+          "name": "fwx-1-udp",
+          "addr": ":21001",
+          "handler": {
+            "type": "udp"
+          },
+          "listener": {
+            "type": "udp",
+            "metadata": {
+              "backlog": "128",
+              "keepalive": true,
+              "readbuffersize": "8192",
+              "readqueuesize": "64",
+              "ttl": "30s"
+            }
+          },
+          "forwarder": {
+            "nodes": [
+              {
+                "name": "target-1",
+                "addr": "198.51.100.30:30001"
+              }
+            ]
+          },
+          "status": {
+            "createTime": 1791557111,
+            "state": "ready",
+            "events": [
+              {
+                "time": 1791557111,
+                "msg": "service fwx-1-udp is running"
+              },
+              {
+                "time": 1791557111,
+                "msg": "service fwx-1-udp is ready"
+              },
+              {
+                "time": 1791557111,
+                "msg": "service fwx-1-udp is listening on [::]:21001"
+              }
+            ]
+          }
+        },
+        {
+          "name": "fwx-2-tcp",
+          "addr": ":21002",
+          "handler": {
+            "type": "tcp"
+          },
+          "listener": {
+            "type": "tcp"
+          },
+          "forwarder": {
+            "nodes": [
+              {
+                "name": "target-2",
+                "addr": "198.51.100.30:30001"
+              }
+            ]
+          },
+          "status": {
+            "createTime": 1791557111,
+            "state": "ready",
+            "events": [
+              {
+                "time": 1791557111,
+                "msg": "service fwx-2-tcp is running"
+              },
+              {
+                "time": 1791557111,
+                "msg": "service fwx-2-tcp is ready"
+              },
+              {
+                "time": 1791557111,
+                "msg": "service fwx-2-tcp is listening on [::]:21002"
+              }
+            ]
+          }
+        },
+        {
+          "name": "fwx-3-tcp",
+          "addr": ":21003",
+          "limiter": "fwx-rule-3-host-1-20",
+          "handler": {
+            "type": "tcp"
+          },
+          "listener": {
+            "type": "tcp"
+          },
+          "forwarder": {
+            "nodes": [
+              {
+                "name": "target-3",
+                "addr": "198.51.100.30:30001"
+              }
+            ]
+          },
+          "status": {
+            "createTime": 1791557114,
+            "state": "ready",
+            "events": [
+              {
+                "time": 1791557114,
+                "msg": "service fwx-3-tcp is running"
+              },
+              {
+                "time": 1791557114,
+                "msg": "service fwx-3-tcp is ready"
+              },
+              {
+                "time": 1791557114,
+                "msg": "service fwx-3-tcp is listening on [::]:21003"
+              }
+            ]
+          }
+        }
+      ],
+      "limiters": [
+        {
+          "name": "fwx-rule-3-host-1-20",
+          "limits": [
+            "$ 2500000B 2500000B"
+          ]
+        }
+      ],
+      "api": {
+        "addr": "unix:///run/forwardx-agent/gost-api/forwardx-runtime.sock"
+      }
+    },
+    "forwardx-tunnel-runtime": {
+      "services": [
+        {
+          "name": "fwx-tunnel-exit-7-100-23000",
+          "addr": ":23000",
+          "handler": {
+            "type": "relay",
+            "auth": {
+              "username": "fwx-7-100",
+              "password": "e69538ea58df7c3b5e12da5451df036d2e204c826e8158c32065632f1244b3bf"
+            },
+            "metadata": {
+              "nodelay": true
+            }
+          },
+          "listener": {
+            "type": "tcp"
+          },
+          "status": {
+            "createTime": 1791557112,
+            "state": "ready",
+            "events": [
+              {
+                "time": 1791557112,
+                "msg": "service fwx-tunnel-exit-7-100-23000 is running"
+              },
+              {
+                "time": 1791557112,
+                "msg": "service fwx-tunnel-exit-7-100-23000 is ready"
+              },
+              {
+                "time": 1791557112,
+                "msg": "service fwx-tunnel-exit-7-100-23000 is listening on [::]:23000"
+              }
+            ]
+          }
+        },
+        {
+          "name": "fwx-tunnel-exit-7-101-23002",
+          "addr": ":23002",
+          "handler": {
+            "type": "relay",
+            "auth": {
+              "username": "fwx-7-101",
+              "password": "27c91ee5a6fbb039af4824ccd5a3bcf024d6b4b065b08b85d923dc5e27a270a9"
+            },
+            "metadata": {
+              "nodelay": true
+            }
+          },
+          "listener": {
+            "type": "tcp"
+          },
+          "status": {
+            "createTime": 1791557112,
+            "state": "ready",
+            "events": [
+              {
+                "time": 1791557112,
+                "msg": "service fwx-tunnel-exit-7-101-23002 is running"
+              },
+              {
+                "time": 1791557112,
+                "msg": "service fwx-tunnel-exit-7-101-23002 is ready"
+              },
+              {
+                "time": 1791557112,
+                "msg": "service fwx-tunnel-exit-7-101-23002 is listening on [::]:23002"
+              }
+            ]
+          }
+        },
+        {
+          "name": "fwx-tunnel-exit-7-102-23003",
+          "addr": ":23003",
+          "handler": {
+            "type": "relay",
+            "auth": {
+              "username": "fwx-7-102",
+              "password": "971901de49c8c3169bc42d1be3ee552c35016cb9b1c30cded2a68a6a71a2ed4b"
+            },
+            "metadata": {
+              "nodelay": true
+            }
+          },
+          "listener": {
+            "type": "tcp"
+          },
+          "status": {
+            "createTime": 1791557114,
+            "state": "ready",
+            "events": [
+              {
+                "time": 1791557114,
+                "msg": "service fwx-tunnel-exit-7-102-23003 is running"
+              },
+              {
+                "time": 1791557114,
+                "msg": "service fwx-tunnel-exit-7-102-23003 is ready"
+              },
+              {
+                "time": 1791557114,
+                "msg": "service fwx-tunnel-exit-7-102-23003 is listening on [::]:23003"
+              }
+            ]
+          }
+        }
+      ],
+      "api": {
+        "addr": "unix:///run/forwardx-agent/gost-api/forwardx-tunnel-runtime.sock"
+      }
+    }
+  },
+  "listeners": "Netid State  Recv-Q Send-Q Local Address:Port  Peer Address:PortProcess                                   \nudp   UNCONN 0      0            0.0.0.0:44188      0.0.0.0:*    users:((\"node\",pid=7,fd=30))             \nudp   UNCONN 0      0      198.51.100.30:30001      0.0.0.0:*    users:((\"node\",pid=7,fd=20))             \nudp   UNCONN 0      0                  *:21001            *:*    users:((\"forwardx-runtim\",pid=130,fd=6)) \ntcp   LISTEN 0      511        127.0.0.1:44799      0.0.0.0:*    users:((\"node\",pid=7,fd=21))             \ntcp   LISTEN 0      511    198.51.100.30:30002      0.0.0.0:*    users:((\"node\",pid=7,fd=19))             \ntcp   LISTEN 0      511    198.51.100.30:30001      0.0.0.0:*    users:((\"node\",pid=7,fd=18))             \ntcp   LISTEN 0      511          0.0.0.0:23005      0.0.0.0:*    users:((\"node\",pid=7,fd=32))             \ntcp   LISTEN 0      4096               *:22001            *:*    users:((\"gost\",pid=215,fd=3))            \ntcp   LISTEN 0      4096               *:22002            *:*    users:((\"gost\",pid=215,fd=6))            \ntcp   LISTEN 0      4096               *:21001            *:*    users:((\"forwardx-runtim\",pid=130,fd=3)) \ntcp   LISTEN 0      4096               *:21002            *:*    users:((\"forwardx-runtim\",pid=130,fd=7)) \ntcp   LISTEN 0      4096               *:21003            *:*    users:((\"forwardx-runtim\",pid=130,fd=14))\ntcp   LISTEN 0      4096               *:23000            *:*    users:((\"forwardx-runtim\",pid=185,fd=3)) \ntcp   LISTEN 0      4096               *:23002            *:*    users:((\"forwardx-runtim\",pid=185,fd=6)) \ntcp   LISTEN 0      4096               *:23003            *:*    users:((\"forwardx-runtim\",pid=185,fd=11))\n",
+  "establishedConnectionsPreserved": 3,
+  "udp": true
+}

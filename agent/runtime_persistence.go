@@ -694,6 +694,19 @@ func restorePersistedForwardXRuntimes(cfg Config) {
 
 func restorePersistedFXPSpecs(cfg Config, specs []fxpSpec) int {
 	specs = planPersistedFXPRestoreSpecs(specs)
+	restoreSpecs := make([]fxpSpec, 0, len(specs))
+	for _, spec := range specs {
+		if spec.Role == "sni-splitter" {
+			// Historical SNI snapshots can outlive every rule on their listener.
+			// Only the panel's current desired state can authorize starting them.
+			// Already running splitters keep serving and are adopted by normal
+			// reconciliation; do not restart them from a local snapshot either.
+			logf("local SNI runtime restore deferred until panel confirmation rule=%d port=%d", spec.RuleID, spec.ListenPort)
+			continue
+		}
+		restoreSpecs = append(restoreSpecs, spec)
+	}
+	specs = restoreSpecs
 	if len(specs) == 0 {
 		return 0
 	}

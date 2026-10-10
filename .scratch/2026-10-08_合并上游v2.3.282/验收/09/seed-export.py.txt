@@ -1,0 +1,8 @@
+import sqlite3
+c=sqlite3.connect('/private/tmp/forwardx-282-ticket09/panel.db');c.row_factory=sqlite3.Row
+base=dict(c.execute('select * from forward_rules where id=1').fetchone())
+for i in range(501):
+ row=dict(base,id=1000+i,name=f'导出测试 / unchanged {i+1:03}',sourcePort=19000+i,forwardGroupId=10,isRunning=0,pendingDelete=0,sortOrder=1000+i)
+ c.execute('insert or ignore into forward_rules ('+','.join('"'+k+'"' for k in row)+') values ('+','.join('?' for _ in row)+')',tuple(row.values()))
+c.commit()
+print('501 synthetic root rules in isolated resource 10')

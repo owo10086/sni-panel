@@ -1,0 +1,9 @@
+[
+  "client/src/components/SeamlessMigrationGate.tsx",
+  "client/src/i18n/en.json",
+  "client/src/pages/Settings.tsx",
+  "server/seamlessMigration.fixture.ts",
+  "server/seamlessMigration.test.ts",
+  "scripts/verify-seamless-runtime.mjs",
+  "server/seamlessRuntime.fixture.ts"
+]

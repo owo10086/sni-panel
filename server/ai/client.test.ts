@@ -116,3 +116,46 @@ test("opens the circuit after repeated provider failures", async () => {
   await assert.rejects(request(), (error) => error instanceof AiClientError && error.code === "circuit_open");
   assert.equal(calls, 2);
 });
+
+test("keeps the deadline while a response body stalls after headers", async () => {
+  const client = new ForwardxAiClient({ timeoutMs: 20, transientRetries: 0,
+    fetchImpl: (async () => new Response(new ReadableStream({ start(controller) { controller.enqueue(new TextEncoder().encode('{')); } }))) as typeof fetch });
+  await assert.rejects(client.requestStructuredJson({ operation: "stalled-body", settings: settings(), systemPrompt: "s", userText: "u", schema: z.object({ ok: z.boolean() }) }),
+    (error) => error instanceof AiClientError && error.code === "timeout");
+});
+
+test("retains structured server context and rejects oversized provider responses", async () => {
+  let body: any;
+  const client = new ForwardxAiClient({ fetchImpl: (async (_url, init) => {
+    body = JSON.parse(String(init?.body));
+    return completion({ ok: true });
+  }) as typeof fetch });
+  await client.requestStructuredJson({ operation: "context", settings: settings(), systemPrompt: "s", userText: "u".repeat(800), context: { intent: { target: "2", amountYuan: 50 } }, maxTokens: 2048, schema: z.object({ ok: z.boolean() }) });
+  assert.equal(body.messages[1].content.length, 800);
+  assert.match(body.messages[2].content, /amountYuan/);
+  assert.equal(body.max_tokens, 2048);
+  const oversized = new ForwardxAiClient({ fetchImpl: (async () => new Response("x".repeat(300_000))) as typeof fetch });
+  await assert.rejects(oversized.requestStructuredJson({ operation: "oversized", settings: settings(), systemPrompt: "s", userText: "u", schema: z.object({ ok: z.boolean() }) }),
+    (error) => error instanceof AiClientError && error.code === "invalid_response");
+});
+
+test("provider failures keep useful diagnostics without exposing the configured API key", async () => {
+  const apiKey = "test-secret/with+symbols";
+  for (const failure of ["http", "network"] as const) {
+    const client = new ForwardxAiClient({ transientRetries: 0, fetchImpl: (async () => {
+      const message = `invalid credential ${apiKey} encoded=${encodeURIComponent(apiKey)} request=test-12`;
+      if (failure === "network") throw new Error(message);
+      return new Response(message, { status: 401 });
+    }) as typeof fetch });
+    await assert.rejects(client.requestStructuredJson({ operation: "safe-error", settings: settings({ apiKey }), systemPrompt: "s", userText: "u", schema: z.object({ ok: z.boolean() }) }), (error) => {
+      assert.ok(error instanceof AiClientError);
+      assert.equal(error.code, failure);
+      assert.ok(!error.message.includes(apiKey));
+      assert.ok(!error.message.includes(encodeURIComponent(apiKey)));
+      assert.match(error.message, /invalid credential/);
+      assert.match(error.message, /request=test-12/);
+      if (failure === "http") assert.equal(error.options.status, 401);
+      return true;
+    });
+  }
+});

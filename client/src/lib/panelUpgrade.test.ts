@@ -41,9 +41,9 @@ test("accelerates generated and supplied GitHub release URLs", () => {
 });
 
 test("provides the documented Compose upgrade and old-image cleanup command without markup escapes", () => {
-  const documentation = fs.readFileSync("docs/guide/deploy-panel.md", "utf8").replace(/\r\n/g, "\n");
-  const upgradeSection = documentation.split("### 6. 手动升级 Docker 面板")[1];
-  const documentedCommand = upgradeSection?.match(/```bash\n([\s\S]*?)\n```/)?.[1];
+  const documentation = fs.readFileSync("docs/guide/deploy-docker.md", "utf8").replace(/\r\n/g, "\n");
+  const upgradeSection = documentation.split("## 手动升级与旧镜像清理")[1];
+  const documentedCommand = upgradeSection?.match(/~~~bash\n([\s\S]*?)\n~~~/)?.[1];
 
   assert.equal(DOCKER_COMPOSE_UPGRADE_COMMAND, documentedCommand);
   assert.match(DOCKER_COMPOSE_UPGRADE_COMMAND, /--env-file \.env -p forwardx pull forwardx/);

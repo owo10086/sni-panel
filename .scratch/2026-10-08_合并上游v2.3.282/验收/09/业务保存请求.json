@@ -1,0 +1,251 @@
+[
+  {
+    "at": "2026-10-09T17:24:39.781Z",
+    "path": "/rules.update,rules.update",
+    "body": {
+      "0": {
+        "json": {
+          "id": 1,
+          "forwardGroupId": 30,
+          "forwardType": "nftables",
+          "sourcePort": 18501
+        }
+      },
+      "1": {
+        "json": {
+          "id": 5,
+          "forwardGroupId": 30,
+          "forwardType": "nftables",
+          "sourcePort": 18510
+        }
+      }
+    },
+    "query": {
+      "batch": "1"
+    }
+  },
+  {
+    "at": "2026-10-09T17:26:52.866Z",
+    "path": "/rules.update,rules.update",
+    "body": {
+      "0": {
+        "json": {
+          "id": 3,
+          "forwardGroupId": 30,
+          "forwardType": "nftables",
+          "sourcePort": 18502
+        }
+      },
+      "1": {
+        "json": {
+          "id": 5,
+          "forwardGroupId": 30,
+          "forwardType": "nftables",
+          "sourcePort": 18510
+        }
+      }
+    },
+    "query": {
+      "batch": "1"
+    }
+  },
+  {
+    "at": "2026-10-09T17:38:52.036Z",
+    "path": "/system.updateSettings",
+    "body": {
+      "0": {
+        "json": {
+          "ddns": {
+            "enabled": false,
+            "provider": "tencentcloud",
+            "ttl": 600,
+            "cloudflareZoneId": "",
+            "cloudflareApiToken": null,
+            "huaweicloudAccessKeyId": "",
+            "huaweicloudSecretKey": null,
+            "huaweicloudRegion": "cn-north-4",
+            "huaweicloudEndpoint": "",
+            "huaweicloudZoneId": "",
+            "huaweicloudTtl": 600,
+            "huaweicloudLine": "default_view",
+            "aliyunAccessKeyId": "",
+            "aliyunAccessKeySecret": null,
+            "aliyunDomainName": "",
+            "aliyunEndpoint": "https://alidns.aliyuncs.com",
+            "aliyunTtl": 600,
+            "aliyunLine": "default",
+            "tencentcloudSecretId": "",
+            "tencentcloudSecretKey": null,
+            "tencentcloudDomainName": "",
+            "tencentcloudTtl": 600,
+            "tencentcloudRecordLine": "默认",
+            "tencentcloudRecordLineId": "",
+            "webhookUrl": "",
+            "webhookMethod": "POST",
+            "webhookHeaders": ""
+          }
+        },
+        "meta": {
+          "values": {
+            "ddns.cloudflareApiToken": [
+              "undefined"
+            ],
+            "ddns.huaweicloudSecretKey": [
+              "undefined"
+            ],
+            "ddns.aliyunAccessKeySecret": [
+              "undefined"
+            ],
+            "ddns.tencentcloudSecretKey": [
+              "undefined"
+            ]
+          },
+          "v": 1
+        }
+      }
+    },
+    "query": {
+      "batch": "1"
+    }
+  },
+  {
+    "at": "2026-10-09T17:40:09.557Z",
+    "path": "/rules.update",
+    "body": {
+      "0": {
+        "json": {
+          "id": 5,
+          "hostId": null,
+          "name": "用户 SNI 规则 unchanged",
+          "forwardType": "nftables",
+          "protocol": "tcp",
+          "gostMode": "direct",
+          "gostRelayHost": null,
+          "gostRelayPort": null,
+          "tunnelId": null,
+          "forwardGroupId": 20,
+          "sourcePort": 18510,
+          "sni": "api.example.test",
+          "maxConnections": 0,
+          "isEnabled": true,
+          "targetIp": "203.0.113.10",
+          "targetPort": 443,
+          "telegramErrorNotifyEnabled": false,
+          "failoverEnabled": false,
+          "failoverStrategy": "fallback",
+          "failoverTargets": [],
+          "failoverSeconds": 60,
+          "recoverSeconds": 120,
+          "autoFailback": true,
+          "rateLimitMbps": 0,
+          "trafficLimit": 0,
+          "trafficMode": "both",
+          "createdAt": "2026-10-09T17:06:03.000Z",
+          "expiresAt": null
+        },
+        "meta": {
+          "values": {
+            "hostId": [
+              "undefined"
+            ],
+            "createdAt": [
+              "Date"
+            ]
+          },
+          "v": 1
+        }
+      }
+    },
+    "query": {
+      "batch": "1"
+    }
+  },
+  {
+    "at": "2026-10-09T17:51:42.612Z",
+    "path": "/rules.checkSniImport",
+    "body": {
+      "0": {
+        "json": {
+          "userId": null,
+          "forwardGroupId": 20,
+          "tunnelId": null,
+          "sourcePort": 18511,
+          "rules": [
+            {
+              "lineNumber": 1,
+              "sni": "import09.example.test"
+            }
+          ]
+        },
+        "meta": {
+          "values": {
+            "userId": [
+              "undefined"
+            ]
+          },
+          "v": 1
+        }
+      }
+    },
+    "query": {
+      "batch": "1"
+    }
+  },
+  {
+    "at": "2026-10-09T17:51:42.776Z",
+    "path": "/rules.create",
+    "body": {
+      "0": {
+        "json": {
+          "hostId": null,
+          "userId": null,
+          "name": "用户导入规则 unchanged <&>",
+          "forwardType": "nftables",
+          "protocol": "tcp",
+          "gostMode": "direct",
+          "gostRelayHost": null,
+          "gostRelayPort": null,
+          "tunnelId": null,
+          "forwardGroupId": 20,
+          "sourcePort": 18511,
+          "sni": "import09.example.test",
+          "rateLimitMbps": 0,
+          "maxConnections": 0,
+          "targetIp": "203.0.113.20",
+          "targetPort": 443,
+          "isEnabled": true,
+          "telegramErrorNotifyEnabled": false,
+          "proxyProtocolReceive": false,
+          "proxyProtocolSend": false,
+          "proxyProtocolExitReceive": false,
+          "proxyProtocolExitSend": false,
+          "proxyProtocolVersion": 1,
+          "tcpFastOpen": false,
+          "zeroCopy": false,
+          "udpOverTcp": false,
+          "udpOverTcpPort": null,
+          "failoverEnabled": false,
+          "failoverStrategy": "fallback",
+          "failoverTargets": [],
+          "failoverSeconds": 60,
+          "recoverSeconds": 120,
+          "autoFailback": true
+        },
+        "meta": {
+          "values": {
+            "hostId": [
+              "undefined"
+            ],
+            "userId": [
+              "undefined"
+            ]
+          },
+          "v": 1
+        }
+      }
+    },
+    "query": {
+      "batch": "1"
+    }
+  }
+]

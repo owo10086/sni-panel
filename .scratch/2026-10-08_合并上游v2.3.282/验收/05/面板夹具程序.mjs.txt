@@ -1,0 +1,68 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import http from 'node:http';
+import path from 'node:path';
+import { pathToFileURL } from 'node:url';
+const root = process.cwd();
+const fromRepo = file => import(pathToFileURL(path.join(root, file)).href);
+const { default: express } = await fromRepo('node_modules/express/index.js');
+const runtime = await fromRepo('server/dbRuntime.ts');
+const { ensureDatabaseSchema } = await fromRepo('server/dbSchema.ts');
+const { agentRouter } = await fromRepo('server/agentRoutes.ts');
+const { encryptPayload, decryptPayload } = await fromRepo('server/agentCrypto.ts');
+const dir = '/private/tmp/forwardx-282-ticket05';
+const token = 'isolated-gost-token';
+await runtime.connectDatabase({ type: 'sqlite', sqlite: { path: process.env.FORWARDX_TEST_DB } });
+await ensureDatabaseSchema();
+const insert = (table, row) => runtime.executeRaw(`INSERT INTO "${table}" (${Object.keys(row).map(k => `"${k}"`).join(',')}) VALUES (${Object.keys(row).map(() => '?').join(',')})`, Object.values(row));
+await insert('users', {id: 1, username: 'admin', password: 'x', role: 'admin', canAddRules: 1, manualCanAddRules: 1});
+for (const [id, ip] of [[1, '198.51.100.10'], [2, '198.51.100.20']]) {
+  await insert('hosts', {id, name: `isolated-${id}`, ip, ipv4: ip, agentToken: id === 1 ? token : 'isolated-entry-token', userId: 1, isOnline: 1, lastHeartbeat: Math.floor(Date.now()/1000), agentVersion: '3.3.0', portRangeStart: 20000, portRangeEnd: 40000});
+}
+await insert('tunnels', {id: 7, name: 'isolated-tcp', entryHostId: 2, exitHostId: 1, mode: 'tcp', listenPort: 23000, userId: 1, isEnabled: 1, secret: 'isolated-tunnel-secret'});
+const local = (id, port, protocol = 'tcp', rate = 0) => insert('forward_rules', {id, hostId: 1, name: `local-${id}`, forwardType: 'gost', protocol, sourcePort: port, targetIp: '198.51.100.30', targetPort: 30001, userId: 1, isEnabled: 1, isRunning: 0, rateLimitMbps: rate});
+const tunnel = (id, source, exit) => insert('forward_rules', {id, hostId: 2, name: `tunnel-${id}`, forwardType: 'gost', protocol: 'tcp', tunnelId: 7, tunnelExitPort: exit, sourcePort: source, targetIp: '198.51.100.30', targetPort: 30001, userId: 1, isEnabled: 1, isRunning: 0});
+await local(1, 21001, 'both'); await local(2, 21002);
+await tunnel(100, 22001, 23001); await tunnel(101, 22002, 23002);
+const app = express(); app.use(express.json({limit: '10mb'})); app.use(agentRouter);
+const server = http.createServer(app);
+await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+const base = `http://127.0.0.1:${server.address().port}`;
+let seq = 0;
+const plans = {};
+async function exportPlan(stage, host = 1, version = '3.3.0') {
+  const auth = host === 1 ? token : 'isolated-entry-token';
+  const response = await fetch(base + '/api/agent/heartbeat', {method: 'POST', headers: {authorization: `Bearer ${auth}`, 'content-type': 'application/json', 'x-agent-encrypted': '1'}, body: JSON.stringify(encryptPayload({agentVersion: version, agentBootId: `fixture-${++seq}`, agentProcessId: 1000+seq, forceReconcile: true}, auth))});
+  assert.equal(response.status, 200);
+  const payload = decryptPayload(await response.json(), auth);
+  const action = payload.desiredState.actions.find(a => a.forwardType === 'gost-runtime-sync');
+  assert.ok(action, `missing actual GOST sync for ${stage}`);
+  assert.equal(action.managedConfigs.length, 2);
+  for (const spec of action.managedConfigs) {
+    const config = JSON.parse(Buffer.from(spec.contentBase64, 'base64'));
+    assert.ok(config.api.addr.startsWith('unix:///run/forwardx-agent/gost-api/'));
+  }
+  plans[stage] = action;
+  fs.writeFileSync(path.join(dir, stage + '-heartbeat.json'), JSON.stringify(payload, null, 2));
+}
+try {
+  await exportPlan('base'); await exportPlan('entry', 2); await exportPlan('legacy', 1, '3.2.0');
+  await local(3, 21003, 'tcp', 20); await tunnel(102, 22003, 23003);
+  await runtime.executeRaw('UPDATE "forward_rules" SET "rateLimitMbps" = 20 WHERE "id" = 102');
+  await exportPlan('add');
+  await exportPlan('entryAdd', 2);
+  await local(4, 21004, 'tcp', 10); await tunnel(103, 22004, 23004); await tunnel(104, 22005, 23005);
+  await runtime.executeRaw('UPDATE "forward_rules" SET "rateLimitMbps" = 10 WHERE "id" = 103');
+  await exportPlan('conflict');
+  await exportPlan('entryConflict', 2);
+  await runtime.executeRaw('DELETE FROM "forward_rules" WHERE "id" IN (4,103,104)');
+  await runtime.executeRaw('UPDATE "forward_rules" SET "targetPort" = ? WHERE "id" = ?', [30002, 1]);
+  await exportPlan('edit');
+  await runtime.executeRaw('DELETE FROM "forward_rules" WHERE "id" IN (2,101)');
+  await exportPlan('delete');
+  fs.writeFileSync(path.join(dir, 'plans.json'), JSON.stringify(plans, null, 2));
+  console.log(Object.keys(plans).join(', '));
+} finally {
+  await new Promise(resolve => server.close(resolve));
+  process.exit(0);
+}

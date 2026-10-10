@@ -1,0 +1,52 @@
+Browser tab: 3, Title: "sni-panel 09验收", URL: "http://127.0.0.1:18829/rules".
+1 AXWebArea sni-panel 09验收, URL: 127.0.0.1:18829/rules
+	2 container forwardx-overlay-root
+		3 container Notifications alt+T
+		4 container Edit Rules, ID: radix-_r_12_
+			5 heading Edit Rules, Value: 2, ID: radix-_r_13_
+				6 text Edit Rules
+			7 container
+				8 tab group forwarding rule type
+					9 tab (selectable, settable, boolean) Port Forwarding, ID: radix-_r_3a_-trigger-local, Value: 0
+Port Forwarding
+					10 tab (selectable, disabled, settable, boolean) Tunnel Forwarding, ID: radix-_r_3a_-trigger-tunnel, Value: 0
+Tunnel Forwarding
+					11 tab (selected, settable, boolean) Forwarding Chain, Value: 1, ID: radix-_r_3a_-trigger-chain
+						12 image
+						13 text Forwarding Chain
+					14 tab (selectable, settable, boolean) Forwarding Group, ID: radix-_r_3a_-trigger-group, Value: 0
+Forwarding Group
+				15 text Use forwarding chain
+				16 combo box (collapsed) Value: 用户转发链 / Long chain resource unchanged 1x Available, Secondary Actions: Expand
+					17 container Available / 用户转发链 / Long chain resource unchanged / 1x
+						18 text 用户转发链 / Long chain resource unchanged 1x Available
+				19 image
+				20 text nftables 1 .  用户主机 1 Long host name unchanged 2 .  用户主机 2 Long host name unchanged Rule Name
+				21 text field (settable) 用户 SNI 规则 unchanged
+				22 text Protocol TCP SNI splitting
+				23 image
+				24 text Enable SNI splitting Multiple rules share an entry port. The entry selects a forwarding chain by TLS domain, and the exit selects the destination.
+				25 switch Description: Enable SNI splitting, Value: 1
+				26 text Source Port
+				27 text SNI entry port
+				28 text 18510
+				29 button Change entry port
+				30 text Target Address
+				31 text field (settable) 203.0.113.10
+				32 text SNI domain *
+				33 text field (settable) api.example.test
+				34 text Maximum number of connections
+				35 stepper (settable)
+				36 text Target Port  *
+				37 stepper (settable, integer) 443
+				38 text Error alerts Configure and enable the selected notification channel in system settings first.
+				39 switch (disabled) 0
+				40 button (collapsed) Rule Limits & Expiry, Secondary Actions: Expand
+					41 text Rule Limits & Expiry
+			42 button Cancel
+			43 button Save
+			44 button Close
+				45 image
+				46 text Close
+
+The focused UI element is 11 tab (selected, settable, boolean) Forwarding Chain, Value: 1, ID: radix-_r_3a_-trigger-chain

@@ -1,0 +1,51 @@
+{
+  "fields": {
+    "agentBootId": {
+      "before": "679aa522-8d86-428d-8529-1a30983998f1",
+      "after": "679aa522-8d86-428d-8529-1a30983998f1"
+    },
+    "agentProcessId": {
+      "before": 69,
+      "after": 69
+    },
+    "agentProcessStartedAt": {
+      "before": 1791563626,
+      "after": 1791563626
+    },
+    "agentLastReceivedRevision": {
+      "before": 1,
+      "after": 1
+    },
+    "agentLastAppliedRevision": {
+      "before": 1,
+      "after": 1
+    },
+    "agentLastReceivedHash": {
+      "before": "first-api-activation-1",
+      "after": "first-api-activation-1"
+    },
+    "agentLastAppliedHash": {
+      "before": "first-api-activation-1",
+      "after": "first-api-activation-1"
+    }
+  },
+  "tasks": [
+    {
+      "id": 9,
+      "status": "success",
+      "latencyMs": 1,
+      "firstDispatchedAt": 1791563632,
+      "updatedAt": 1791563633,
+      "elapsedSeconds": 1
+    },
+    {
+      "id": 10,
+      "status": "failed",
+      "latencyMs": 1,
+      "firstDispatchedAt": 1791563632,
+      "updatedAt": 1791563634,
+      "elapsedSeconds": 2
+    }
+  ],
+  "agentSha256": "529b5b00626c62c8b02f6ee1337a06687e0337c86fc6b374ea1aae3882e93ecf"
+}

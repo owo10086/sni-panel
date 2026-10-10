@@ -71,7 +71,7 @@ export const trafficBillingRouter = router({
       );
       appendPanelLog(
         reconciliation.failures.length > 0 ? "warn" : "info",
-        `[TrafficBilling] config saved ${input.resourceType}=${input.resourceId} priceMilli=${input.pricePerGbMilliCents ?? 0} requiresPermission=${input.requiresPermission} affectedUsers=${reconciliation.affectedUsers} disabledRules=${reconciliation.disabledRules} failures=${reconciliation.failures.length}`,
+        `[TrafficBilling] config saved ${input.resourceType}=${input.resourceId} priceMilli=${config.pricePerGbMilliCents} requiresPermission=${config.requiresPermission} affectedUsers=${reconciliation.affectedUsers} disabledRules=${reconciliation.disabledRules} failures=${reconciliation.failures.length}`,
       );
       return config;
     }),

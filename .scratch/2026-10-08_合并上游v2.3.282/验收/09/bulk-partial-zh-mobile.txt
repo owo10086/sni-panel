@@ -1,0 +1,267 @@
+Browser tab: 3, Title: "sni-panel 09验收", URL: "http://127.0.0.1:18829/rules".
+1 AXWebArea sni-panel 09验收, URL: 127.0.0.1:18829/rules
+	2 container
+		3 container root
+			4 container
+				5 image sni-panel 09验收
+				6 text sni-panel 09验收
+				7 button Description: Toggle theme, Help: 切换到黑夜模式
+					8 image
+				9 button Toggle navigation
+					10 image
+				11 text 主菜单
+				12 content list
+					13 button 仪表盘
+						14 image
+						15 text 仪表盘
+					16 button 主机管理
+						17 image
+						18 text 主机管理
+					19 button 链路管理
+						20 image
+						21 text 链路管理
+					22 button 转发规则
+						23 image
+						24 text 转发规则
+					25 button 公告
+						26 image
+						27 text 公告
+				28 text 管理
+				29 content list
+					30 button 个人资料
+						31 image
+						32 text 个人资料
+					33 button SNI 入口
+						34 image
+						35 text SNI 入口
+					36 button 支付对接
+						37 image
+						38 text 支付对接
+					39 button 账单与兑换
+						40 image
+						41 text 账单与兑换
+					42 button 套餐管理
+						43 image
+						44 text 套餐管理
+					45 button 用户管理
+						46 image
+						47 text 用户管理
+					48 button 网络测试
+						49 image
+						50 text 网络测试
+					51 button 系统设置
+						52 image
+						53 text 系统设置
+				54 pop up button (collapsed) 中文管理员 <&> English 管理员 · TG 未绑定, Help: 中文管理员 <&> English, ID: radix-_r_35_, Secondary Actions: Expand
+					55 image Created with getavataaars.com
+					56 text 中文管理员 <&> English
+					57 container
+						58 text 管理员  ·  TG 未绑定
+			59 container
+				60 button Toggle Sidebar
+					61 image
+					62 text Toggle Sidebar
+				63 text 转发规则
+				64 button Toggle theme
+					65 image
+				66 heading 转发规则, Value: 1
+					67 text 转发规则
+				68 text 管理转发规则和运行状态
+				69 image
+				70 text 3 / 3 已启用
+				71 button 重置数据
+					72 image
+					73 text 重置数据
+				74 button 批量管理
+					75 image
+					76 text 批量管理
+				77 button 添加规则
+					78 image
+					79 text 添加规则
+				80 image
+				81 text 筛选：
+				82 container
+					83 image
+					84 text field (settable)
+				85 combo box (collapsed) Value: 我的规则, Secondary Actions: Expand
+					86 text 我的规则
+				87 pop up button (collapsed) 所有链路, ID: radix-_r_j_, Secondary Actions: Expand
+					88 text 所有链路
+					89 image
+				90 combo box (collapsed) Value: 每页12 项, Secondary Actions: Expand
+					91 container
+						92 text 每页 12 项
+				93 tab group 转发规则分类
+					94 tab (selected, settable, boolean) 全部 3, ID: radix-_r_m_-trigger-all, Value: 1
+全部
+3
+					95 tab (selectable, settable, boolean) 端口转发 0, ID: radix-_r_m_-trigger-local, Value: 0
+端口转发
+0
+					96 tab (selectable, settable, boolean) 隧道转发 0, ID: radix-_r_m_-trigger-tunnel, Value: 0
+隧道转发
+0
+					97 tab (selectable, settable, boolean) 转发链 1, ID: radix-_r_m_-trigger-chain, Value: 0
+转发链
+1
+					98 tab (selectable, settable, boolean) 转发组 2, ID: radix-_r_m_-trigger-group, Value: 0
+转发组
+2
+				99 container
+					100 text 入向流量
+					101 text 总 0 B 24H 0 B
+				102 container
+					103 text 出向流量
+					104 text 总 0 B 24H 0 B
+				105 container
+					106 text 连接次数
+					107 text 总 0 24H 0
+				108 container
+					109 checkbox (settable, integer) Description: 选择本页全部可选规则, Value: 2
+					110 text 全选本页
+				111 container 所选规则批量操作
+					112 text 已选 1 条（本页）
+					113 button 清空
+						114 image
+						115 text 清空
+					116 button 批量编辑
+						117 image
+						118 text 批量编辑
+					119 button 删除所选
+						120 image
+						121 text 删除所选
+					122 button 更多批量操作
+						123 image
+						124 text 更多批量操作
+				125 container
+					126 checkbox (settable, integer) Description: 选择端口转发本页全部可选规则, Value: 0
+					127 button (expanded) 端口转发 1 使用已保存端口转发, Secondary Actions: Collapse
+						128 image
+						129 image
+						130 text 端口转发
+						131 text 1
+						132 text 使用已保存端口转发
+					133 container
+						134 checkbox (settable, integer) Description: 选择规则 用户规则 B unchanged, Value: 0
+						135 text 用户规则 B unchanged 用户:  中文管理员 <&> English 用户端口 / Long port resource unchanged
+						136 switch Description: 停用转发规则 用户规则 B unchanged, Help: 关闭后该转发规则将停止下发和转发, Value: 1
+						137 text 入口
+						138 button 192.0.2.1:18502, Help: 复制端口转发入口: 192.0.2.1:18502
+							139 text 192.0.2.1:18502
+							140 image
+						141 image
+						142 text 出口 203.0.113.10:443 链路
+						143 image
+						144 text 端口转发
+						145 container 转发工具：nftables
+							146 image
+							147 text nftables
+						148 text 协议 TCP 24H 入向 — 24H 出向 — 累计流量 — 延迟 未测试
+						149 button 查看 TCPing 延迟
+							150 image
+						151 button 转发链路自测
+							152 image
+						153 button 重置规则数据
+							154 image
+						155 button
+							156 image
+						157 button
+							158 image
+					159 checkbox (settable, integer) Description: 选择转发链本页全部可选规则, Value: 1
+					160 button (expanded) 转发链 1 按转发链顺序转发, Secondary Actions: Collapse
+						161 image
+						162 image
+						163 text 转发链
+						164 text 1
+						165 text 按转发链顺序转发
+					166 container
+						167 checkbox (settable, integer) Description: 选择 SNI 组内全部可选规则, Value: 1
+						168 button (collapsed) 用户转发链 / Long chain resource unchanged · SNI 分流 等待生效 1 条规则 入口端口18510, Secondary Actions: Expand
+							169 image
+							170 image
+							171 container 用户转发链 / Long chain resource unchanged
+								172 text 用户转发链 / Long chain resource unchanged · SNI 分流
+							173 text 等待生效
+							174 text 1
+							175 text 条规则
+							176 text 入口端口
+							177 text 18510
+						178 text 入口分流器 入口 用户主机 1 Long host name unchanged:18510 尚未观测到 版本 - 未匹配连接 0 客户端使用了入口主机没有配置的域名，可能是域名拼写、DNS 指向或端口扫描。 出口分流器 出口 用户主机 2 Long host name unchanged:20859 尚未观测到 版本 - 未匹配连接 0 入口与出口配置可能尚未同步。
+					179 checkbox (settable, integer) Description: 选择转发组本页全部可选规则, Value: 0
+					180 button (expanded) 转发组 2 使用转发组入口, Secondary Actions: Collapse
+						181 image
+						182 image
+						183 text 转发组
+						184 text 2
+						185 text 使用转发组入口
+					186 container
+						187 checkbox (settable, integer) Description: 选择规则 用户规则 A <&> unchanged, Value: 0
+						188 text 用户规则 A <&> unchanged
+						189 container
+							190 text 用户:  中文管理员 <&> English
+						191 text 用户转发组 / unchanged failover group
+						192 switch Description: 停用转发规则 用户规则 A <&> unchanged, Help: 关闭后该转发规则将停止下发和转发, Value: 1
+						193 text 入口
+						194 button failover.example.test:18501, Help: 复制转发组入口: failover.example.test:18501
+							195 text failover.example.test:18501
+							196 image
+						197 image
+						198 text 出口
+						199 text 203.0.113.10:443
+						200 text 链路
+						201 image
+						202 text 转发组
+						203 container 转发工具：nftables
+							204 image
+							205 text nftables
+						206 text 协议
+						207 text TCP
+						208 text 24H 入向
+						209 text —
+						210 text 24H 出向
+						211 text —
+						212 text 累计流量
+						213 text —
+						214 text 延迟
+						215 text 未测试
+						216 button 查看 TCPing 延迟
+							217 image
+						218 button 转发链路自测
+							219 image
+						220 button 重置规则数据
+							221 image
+						222 button
+							223 image
+						224 button
+							225 image
+						226 checkbox 0
+						227 switch 1
+						228 button
+							229 image
+						230 image
+						231 image
+						232 button
+							233 image
+						234 button
+							235 image
+						236 button
+							237 image
+						238 button
+							239 image
+						240 button
+							241 image
+				242 link Description: 项目地址, Value: github.com/owo10086/sni-panel
+				243 text |
+				244 link Description: 使用教程, Value: owo10086.github.io/sni-panel/
+				245 text |
+				246 link Description: 联系TG, Value: t.me/miyin_private_bot
+				247 text |
+				248 link Description: TG群组, Value: t.me/ForwardX_panel
+		249 container forwardx-overlay-root
+			250 container Notifications alt+T
+				251 content list
+					252 container
+						253 image
+						254 text 成功 1 条，跳过 0 条，失败 1 条：SNI 分流仅支持端口转发、隧道或转发链
+
+The focused UI element is 1 AXWebArea sni-panel 09验收, URL: 127.0.0.1:18829/rules

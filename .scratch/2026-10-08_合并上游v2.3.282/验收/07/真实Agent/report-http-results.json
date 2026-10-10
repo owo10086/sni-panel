@@ -1,0 +1,32 @@
+[
+  {
+    "testId": 9,
+    "repeat": 0,
+    "result": {
+      "success": true
+    }
+  },
+  {
+    "testId": 9,
+    "repeat": 1,
+    "result": {
+      "success": true,
+      "ignored": true
+    }
+  },
+  {
+    "testId": 10,
+    "repeat": 0,
+    "result": {
+      "success": true
+    }
+  },
+  {
+    "testId": 10,
+    "repeat": 1,
+    "result": {
+      "success": true,
+      "ignored": true
+    }
+  }
+]

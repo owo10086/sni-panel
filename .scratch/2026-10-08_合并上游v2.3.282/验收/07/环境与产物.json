@@ -1,0 +1,19 @@
+{
+  "branch": "v2.3.282",
+  "headBaseline": "b258398e55ab1bee06eedcc1475a96bd7a79ff83",
+  "node": "v22.22.3",
+  "agentSha256": "529b5b00626c62c8b02f6ee1337a06687e0337c86fc6b374ea1aae3882e93ecf",
+  "agentVersion": "3.3.0",
+  "goEnvironment": "Linux arm64 / Go 1.23.12 / forwardx-sni-test:20261006",
+  "gostVersion": "3.2.6",
+  "databases": [
+    "SQLite",
+    "PostgreSQL18-alpine",
+    "MySQL8.4"
+  ],
+  "temporaryDirectory": "/private/tmp/forwardx-282-ticket07",
+  "changedExistingFiles": 13,
+  "newFiles": 2,
+  "finalFocusedTests": 44,
+  "linuxFocusedTests": 11
+}

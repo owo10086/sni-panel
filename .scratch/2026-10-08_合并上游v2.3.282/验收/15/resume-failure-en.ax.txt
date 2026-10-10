@@ -1,0 +1,12 @@
+Browser tab: 1, Title: "sni-panel 迁移验收", URL: "http://127.0.0.1:18851/settings?tab=backup".
+1 AXWebArea sni-panel 迁移验收, URL: 127.0.0.1:18851/settings?tab=backup
+	2 container
+		3 container
+			4 heading Verifying seamless migration, Value: 1
+				5 text Verifying seamless migration
+			6 text Migration does not require restarting the Agent or existing forwarding processes. The old panel database is retained. Migration is waiting for recovery and resumed verification 75% Pending verification:  2  hosts /  4  rules /  1  tunnels 无缝面板迁移 不允许访问受限地址 127.0.0.1 The old address  http://127.0.0.1:18859  must remain reachable. After an interruption, sign in to the new panel with your original administrator account and resume verification. Keep the old database read-only.
+			7 link Description: Sign in as administrator, Value: 127.0.0.1:18851/login
+			8 button Resume verification and take over
+			9 text 无缝面板迁移 不允许访问受限地址 127.0.0.1
+
+The focused UI element is 1 AXWebArea sni-panel 迁移验收, URL: 127.0.0.1:18851/settings?tab=backup

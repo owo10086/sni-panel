@@ -1,6 +1,9 @@
 import { protectedProcedure, router } from "../_core/trpc";
 import { z } from "zod";
 import { isIP } from "node:net";
+import { ruleLimitInputShape, ruleLimitPatch, hasRuleLimitInput, validateRuleLimitInput, validateRuleRateLimitTargets } from "./ruleLimitInput";
+import { assertRuleWritable, isAdminManagedRule } from "../../shared/ruleLimits";
+import { reconcileRuleLimits } from "../ruleLimits";
 import * as db from "../db";
 import { pushAgentRefresh } from "../agentEvents";
 import { refreshRulePortWarningsForHost } from "../rulePortOccupancy";
@@ -67,6 +70,7 @@ const mainBackupGostTunnelModes = new Set(["tls", "wss", "tcp", "mtls", "mwss", 
 const SNI_BULK_IMPORT_MAX_COUNT = 500;
 const sniInputSchema = z.string().max(1024).nullable().optional();
 const sniRuleLimitInputShape = {
+  ...ruleLimitInputShape,
   rateLimitMbps: z.number().int().min(0).max(1_000_000).optional(),
   maxConnections: z.number().int().min(0).max(1_000_000).optional(),
 } as const;
@@ -129,7 +133,6 @@ function resolveSniRuleLimits(
   input: SniRuleLimitInput,
   current?: SniRuleLimitInput,
 ): SniRuleLimits {
-  if (!sni) return { rateLimitMbps: 0, maxConnections: 0 };
   const normalizeLimit = (value: unknown) => {
     const numeric = Number(value);
     if (!Number.isFinite(numeric)) return 0;
@@ -137,7 +140,7 @@ function resolveSniRuleLimits(
   };
   return {
     rateLimitMbps: normalizeLimit(input.rateLimitMbps ?? current?.rateLimitMbps),
-    maxConnections: normalizeLimit(input.maxConnections ?? current?.maxConnections),
+    maxConnections: sni ? normalizeLimit(input.maxConnections ?? current?.maxConnections) : 0,
   };
 }
 
@@ -250,6 +253,7 @@ async function reserveDirectTunnelSniRuntimePorts(options: {
   ]);
   const existingTunnelExitPort = Number(options.state.tunnelExitPort || 0)
     || Number(options.currentTunnelExitPort || 0);
+  const splitterPort = Number(options.state.splitterPort || 0) || Number(options.currentSplitterPort || 0);
   let sharedListenPort: number | null = null;
   let listenerRepair: Awaited<ReturnType<typeof ensureTunnelListenerPortPolicy>> | null = null;
   if (!existingTunnelExitPort && usesSharedTunnelPrimaryListener(tunnel)) {
@@ -273,6 +277,9 @@ async function reserveDirectTunnelSniRuntimePorts(options: {
       preferredEnd: exitHost.portRangeEnd,
       currentPort: existingTunnelExitPort || sharedListenPort,
       excludeRuleIds,
+      // Excluding the shared SNI rules also hides their splitter listener.
+      // Keep it unavailable when repairing a stale tunnel-exit port.
+      reservedPorts: splitterPort > 0 ? [splitterPort] : [],
       allowSameTunnelListener: Number(existingTunnelExitPort || sharedListenPort || 0) === Number(tunnel.listenPort || 0),
       excludeTunnelId: Number(tunnel.id),
       protocol: "both",
@@ -284,7 +291,7 @@ async function reserveDirectTunnelSniRuntimePorts(options: {
     hostId: Number(exitHost.id),
     preferredStart: exitHost.portRangeStart,
     preferredEnd: exitHost.portRangeEnd,
-    currentPort: Number(options.state.splitterPort || 0) || Number(options.currentSplitterPort || 0),
+    currentPort: splitterPort,
     excludeRuleIds,
     protocol: "both",
   });
@@ -1078,6 +1085,7 @@ export async function deleteForwardRuleForActor(
     const rule = await db.getForwardRuleById(ruleId);
     if (!rule || dbBool((rule as any).pendingDelete)) throw new Error("规则不存在或已删除");
     if (actor.role !== "admin" && rule.userId !== actor.id) throw new Error("无权操作此规则");
+    assertRuleWritable(actor, rule);
     if ((rule as any).forwardGroupRuleId) throw new Error("转发组成员规则由系统维护，不能直接删除");
     const reasonPrefix = String(options.reasonPrefix || "forward-rule").trim() || "forward-rule";
     let chargedCents = 0;
@@ -1143,21 +1151,28 @@ export async function toggleForwardRuleForActor(
       const rule = await db.getForwardRuleById(ruleId);
       if (!rule) throw new Error("规则不存在");
       if (actor.role !== "admin" && rule.userId !== actor.id) throw new Error("无权操作此规则");
+      assertRuleWritable(actor, rule);
       if ((rule as any).forwardGroupRuleId) throw new Error("转发组成员规则由系统维护，不能直接开关");
+      // Administrators may stop forwarding after access is revoked. Enabling
+      // still validates the saved owner's account, resource and plan limits.
+      const savedOwner = isEnabled ? await db.getUserById(Number(rule.userId)) : null;
+      if (isEnabled && !savedOwner) throw new Error("规则归属用户不存在");
+      if (savedOwner?.accountEnabled === false) throw new Error("规则归属用户已被禁用");
+      const ruleOwner = savedOwner ?? actor;
       if ((rule as any).isForwardGroupTemplate) {
-        if (actor.role !== "admin") {
+        if (ruleOwner.role !== "admin") {
           const groupId = Number((rule as any).forwardGroupId || 0);
           if (isEnabled) {
             if (!groupId) throw new Error("转发组不存在");
-            const access = await requireForwardGroupUseAccess({ user: actor }, groupId);
-            const owner = await requireForwardAccessReady(actor.id, { allowTrafficBillingRecovery: access.isTrafficBillingResource });
-            await requireTrafficBillingBalanceForRule(actor.id, access.isTrafficBillingResource);
+            const access = await requireForwardGroupUseAccess({ user: ruleOwner }, groupId);
+            const owner = await requireForwardAccessReady(ruleOwner.id, { allowTrafficBillingRecovery: access.isTrafficBillingResource });
+            await requireTrafficBillingBalanceForRule(ruleOwner.id, access.isTrafficBillingResource);
             if (owner.expiresAt && new Date(owner.expiresAt) <= new Date()) {
               throw new Error("套餐已到期，请续费后再启用规则");
             }
             await assertExistingRuleWithinQuota(owner);
             await assertForwardGroupPortWithinUserPlanRange({
-              userId: actor.id,
+              userId: ruleOwner.id,
               forwardGroupId: groupId,
               sourcePort: Number(rule.sourcePort),
             });
@@ -1280,20 +1295,20 @@ export async function toggleForwardRuleForActor(
           sourcePort: Number(rule.sourcePort),
           tunnelId: Number((rule as any).tunnelId || 0) || null,
         });
-        if (actor.role !== "admin") {
+        if (ruleOwner.role !== "admin") {
           await assertRulePortWithinUserPlanRange({
-            userId: actor.id,
+            userId: ruleOwner.id,
             hostId: Number(rule.hostId),
             sourcePort: Number(rule.sourcePort),
             tunnelId: Number((rule as any).tunnelId || 0) || null,
           });
           const activeTunnelId = Number((rule as any).tunnelId || 0);
-          const actorContext = { user: actor };
+          const ownerContext = { user: ruleOwner };
           const resourceAccess = activeTunnelId
-            ? await requireTunnelUseOrTrafficBillingAccess(actorContext, activeTunnelId)
-            : await requireHostUseAccess(actorContext, rule.hostId);
-          const owner = await requireForwardAccessReady(actor.id, { allowTrafficBillingRecovery: !!resourceAccess.isTrafficBillingResource });
-          await requireTrafficBillingBalanceForRule(actor.id, !!resourceAccess.isTrafficBillingResource);
+            ? await requireTunnelUseOrTrafficBillingAccess(ownerContext, activeTunnelId)
+            : await requireHostUseAccess(ownerContext, rule.hostId);
+          const owner = await requireForwardAccessReady(ruleOwner.id, { allowTrafficBillingRecovery: !!resourceAccess.isTrafficBillingResource });
+          await requireTrafficBillingBalanceForRule(ruleOwner.id, !!resourceAccess.isTrafficBillingResource);
           await assertExistingRuleWithinQuota(owner);
           if (owner.expiresAt && new Date(owner.expiresAt) <= new Date()) {
             throw new Error("套餐已到期，请续费后再启用规则");
@@ -1666,6 +1681,7 @@ export const crudRulesRouter = router({
     }),
   create: protectedProcedure
     .input(z.object({
+      ...ruleLimitInputShape,
       userId: z.number().int().positive().optional(),
       hostId: z.number().optional(),
       name: z.string().min(1).max(128),
@@ -1693,7 +1709,17 @@ export const crudRulesRouter = router({
       ...transportTuningInputShape,
       ...sniRuleLimitInputShape,
     }))
+    .use(async ({ input, next }) => {
+      const result = await next();
+      if (result.ok && (hasRuleLimitInput(input) || (input as any).adminManaged)) await reconcileRuleLimits([Number((result.data as any).id)], true);
+      return result;
+    })
     .mutation(async ({ input, ctx }) => {
+      validateRuleLimitInput(ctx.user.role, input);
+      await validateRuleRateLimitTargets(input);
+      if (ctx.user.role === "admin" && (hasRuleLimitInput(input) || (input.userId && input.userId !== ctx.user.id))) {
+        Object.assign(input, { adminManaged: true });
+      }
       const ownerContext = { ...ctx, user: await resolveRuleOperationOwner(ctx.user, input.userId) };
       await requireRuleTelegramNotifyReady(input.telegramErrorNotifyEnabled);
       // 权限检查：管理员或有 canAddRules 权限的用户
@@ -1855,6 +1881,7 @@ export const crudRulesRouter = router({
         }
         await requireRuleProtocolEnabled({ forwardType, tunnelId: null });
         const createTemplateRule = () => db.createForwardRule({
+          ...ruleLimitPatch(input),
           hostId,
           name: input.name,
           forwardType,
@@ -1903,7 +1930,9 @@ export const crudRulesRouter = router({
         } as any);
         let id = 0;
         if (isForwardChain) {
-          id = await db.withForwardGroupSyncTransaction(forwardGroupId, createTemplateRule);
+          // Adding a template must not re-dispatch unchanged, healthy listeners
+          // belonging to the existing chain. Runtime-field changes still apply.
+          id = await db.withForwardGroupSyncTransaction(forwardGroupId, createTemplateRule, { preserveRuntime: true });
         } else {
           id = await createTemplateRule();
           await db.syncForwardGroupRules(forwardGroupId);
@@ -1931,6 +1960,7 @@ export const crudRulesRouter = router({
     }),
   update: protectedProcedure
     .input(z.object({
+      ...ruleLimitInputShape,
       id: z.number(),
       hostId: z.number().optional(),
       name: z.string().min(1).max(128).optional(),
@@ -1959,8 +1989,14 @@ export const crudRulesRouter = router({
       ...sniRuleLimitInputShape,
       isEnabled: z.boolean().optional(),
     }))
+    .use(async ({ input, next }) => {
+      const result = await next();
+      if (result.ok && hasRuleLimitInput(input)) await reconcileRuleLimits([input.id], true);
+      return result;
+    })
     .mutation(async ({ input, ctx }) => withKeyedTaskLock(`rule:${input.id}`, async () => {
       const heldReservations: HostPortReservation[] = [];
+      let portQuotaReservation: RuleQuotaReservation | null = null;
       // Keep the primary tunnel-exit reservation separate from source-port
       // reservations. It is released immediately after the rule row is
       // written, before the mapping reconciler acquires its own reservations.
@@ -2003,9 +2039,18 @@ export const crudRulesRouter = router({
       try {
       const rule = await db.getForwardRuleById(input.id);
       if (!rule) throw new Error("规则不存在");
+      validateRuleLimitInput(ctx.user.role, input, rule);
       if (ctx.user.role !== "admin" && rule.userId !== ctx.user.id) throw new Error("无权操作此规则");
+      assertRuleWritable(ctx.user, rule);
+      if (ctx.user.role === "admin" && (isAdminManagedRule(rule) || hasRuleLimitInput(input))) {
+        Object.assign(input, { adminManaged: true });
+      }
+      await validateRuleRateLimitTargets({ ...rule, ...input });
       if ((rule as any).forwardGroupRuleId) throw new Error("转发组成员规则由系统维护，不能直接修改");
       await requireRuleTelegramNotifyReady(input.telegramErrorNotifyEnabled);
+      // Editing retains the saved owner; administrator privileges apply to
+      // configuration fields, while resource and plan checks use that owner.
+      const ownerContext = { ...ctx, user: await resolveRuleOperationOwner(ctx.user, Number(rule.userId)) };
       const normalizedInputSni = input.sni !== undefined ? normalizeSniInput(input.sni) : undefined;
       if (normalizedInputSni || (ctx.user.role !== "admin" && normalizeSniInput((rule as any).sni))) {
         assertSniRuleAdmin(ctx.user, normalizedInputSni || normalizeSniInput((rule as any).sni));
@@ -2029,9 +2074,9 @@ export const crudRulesRouter = router({
 
         if (nextForwardGroupId > 0) {
           let planRange: Awaited<ReturnType<typeof db.getUserForwardGroupPlanPortRange>> = null;
-          if (ctx.user.role !== "admin") {
-            await requireForwardGroupUseAccess(ctx, nextForwardGroupId);
-            planRange = await db.getUserForwardGroupPlanPortRange(ctx.user.id, nextForwardGroupId);
+          if (ownerContext.user.role !== "admin") {
+            await requireForwardGroupUseAccess(ownerContext, nextForwardGroupId);
+            planRange = await db.getUserForwardGroupPlanPortRange(ownerContext.user.id, nextForwardGroupId);
           }
           const entryHostIds = await db.getForwardGroupRuleEntryHostIds(nextForwardGroupId);
           const unavailablePorts = new Set(entryHostIds.flatMap((hostId) => reservedHostPorts(hostId, nextProtocol)));
@@ -2086,15 +2131,15 @@ export const crudRulesRouter = router({
           let rangeEnd: number | null | undefined;
           let planRange: Awaited<ReturnType<typeof db.getUserPlanPortRange>> = null;
           if (nextTunnelId) {
-            const { tunnel } = await requireTunnelUseOrTrafficBillingAccess(ctx, nextTunnelId);
+            const { tunnel } = await requireTunnelUseOrTrafficBillingAccess(ownerContext, nextTunnelId);
             nextHostId = Number((tunnel as any).entryHostId || 0);
             rangeStart = (tunnel as any).portRangeStart;
             rangeEnd = (tunnel as any).portRangeEnd;
           } else {
-            await requireHostUseAccess(ctx, nextHostId);
+            await requireHostUseAccess(ownerContext, nextHostId);
           }
-          if (ctx.user.role !== "admin") {
-            planRange = await db.getUserPlanPortRange(ctx.user.id, nextHostId, nextTunnelId || undefined);
+          if (ownerContext.user.role !== "admin") {
+            planRange = await db.getUserPlanPortRange(ownerContext.user.id, nextHostId, nextTunnelId || undefined);
           }
           const occupiedPorts = new Set<number>();
           const reservation = await reserveAvailableHostPort({
@@ -2116,6 +2161,31 @@ export const crudRulesRouter = router({
           heldReservations.push(reservation);
           input.sourcePort = reservation.port;
         }
+      }
+
+      if (input.sourcePort !== undefined && Number(input.sourcePort) !== Number(rule.sourcePort)) {
+        const owner = await db.getUserById(ownerContext.user.id);
+        if (ownerContext.user.role !== "admin") {
+          // Replace this logical rule when counting ports. A shared old port
+          // remains counted by its other rules; derived children never count.
+          portQuotaReservation = await reserveRuleCreateQuota({
+            userId: ownerContext.user.id,
+            maxRules: 0,
+            maxPorts: Number(owner?.maxPorts || 0),
+            sourcePort: input.sourcePort,
+            hasSourcePort: () => db.userHasRuleSourcePort(ownerContext.user.id, Number(input.sourcePort)),
+            getRuleCount: () => Promise.resolve(0),
+            getPortCount: () => db.getUserPortCount(ownerContext.user.id, Number(rule.id)),
+          });
+        }
+      }
+
+      if (input.isEnabled === true && !dbBool(rule.isEnabled) && ownerContext.user.role !== "admin") {
+        const owner = await db.getUserById(ownerContext.user.id);
+        if (!owner) throw new Error("规则归属用户不存在");
+        // Port changes already reserve the final, deduplicated port count.
+        // Re-enabling through editing must also enforce the rule quota.
+        await assertExistingRuleWithinQuota({ ...owner, maxPorts: portQuotaReservation ? 0 : owner.maxPorts });
       }
 
       const refreshUpdatedRulePortWarnings = async () => {
@@ -2143,9 +2213,9 @@ export const crudRulesRouter = router({
             : null;
           const route = await prepareDirectRuleRouteForActor(
             {
-              id: ctx.user.id,
-              role: ctx.user.role,
-              allowedForwardTypes: (ctx.user as any).allowedForwardTypes,
+              id: ownerContext.user.id,
+              role: ownerContext.user.role,
+              allowedForwardTypes: (ownerContext.user as any).allowedForwardTypes,
             },
             {
               forwardType: nextForwardType,
@@ -2185,8 +2255,8 @@ export const crudRulesRouter = router({
             tunnelId: nextTunnelId,
             tunnel: selectedTunnelForRule,
           });
-          if (ctx.user.role !== "admin") {
-            const planRange = await db.getUserPlanPortRange(ctx.user.id, nextHostId, nextTunnelId || undefined);
+          if (ownerContext.user.role !== "admin") {
+            const planRange = await db.getUserPlanPortRange(ownerContext.user.id, nextHostId, nextTunnelId || undefined);
             if (planRange && !db.isPortAllowedByUserPlanRange(nextSourcePort, planRange)) {
               const ranges = planRange.ranges.map((range) => `${range.start}-${range.end}`).join(",");
               throw new Error(`套餐端口必须在 ${ranges} 区间内`);
@@ -2283,6 +2353,7 @@ export const crudRulesRouter = router({
             failoverTargets: [],
           }, nextProtocol);
           const data: any = {
+            ...ruleLimitPatch(input),
             name: input.name ?? (rule as any).name,
             hostId: nextHostId,
             forwardType: nextForwardType,
@@ -2358,10 +2429,10 @@ export const crudRulesRouter = router({
         if (!activeGroupId) throw new Error("转发组不存在");
         const groupChanged = activeGroupId !== groupId;
         let groupAccess = { isTrafficBillingResource: false };
-        if (ctx.user.role !== "admin") {
-          groupAccess = await requireForwardGroupUseAccess(ctx, activeGroupId);
+        if (ownerContext.user.role !== "admin") {
+          groupAccess = await requireForwardGroupUseAccess(ownerContext, activeGroupId);
           const nextSourcePort = input.sourcePort ?? rule.sourcePort;
-          const planRange = await db.getUserForwardGroupPlanPortRange(ctx.user.id, activeGroupId);
+          const planRange = await db.getUserForwardGroupPlanPortRange(ownerContext.user.id, activeGroupId);
           if (planRange && !db.isPortAllowedByUserPlanRange(nextSourcePort, planRange)) {
             const ranges = planRange.ranges.map((range) => `${range.start}-${range.end}`).join(",");
             throw new Error(`套餐端口必须在 ${ranges} 内`);
@@ -2396,14 +2467,18 @@ export const crudRulesRouter = router({
           reservations: heldReservations,
         });
         const { group, isForwardChain, isPortGroup, sniSplitterPort: nextSniSplitterPort } = preparedGroupRuntime;
-        if (ctx.user.role !== "admin" && (input.isEnabled === true || dbBool((rule as any).isEnabled))) {
-          await requireTrafficBillingBalanceForRule(ctx.user.id, groupAccess.isTrafficBillingResource);
+        if (ownerContext.user.role !== "admin" && (input.isEnabled === true || dbBool((rule as any).isEnabled))) {
+          const owner = await requireForwardAccessReady(ownerContext.user.id, { allowTrafficBillingRecovery: groupAccess.isTrafficBillingResource });
+          await requireTrafficBillingBalanceForRule(ownerContext.user.id, groupAccess.isTrafficBillingResource);
+          if (owner.expiresAt && new Date(owner.expiresAt) <= new Date()) {
+            throw new Error("套餐已到期，请续费后再启用规则");
+          }
         }
         const nextForwardType = lockedForwardTypeForGroup(group, input.forwardType ?? (rule as any).forwardType);
         const groupRouteChanged = groupChanged
           || String(nextForwardType) !== String((rule as any).forwardType);
         if (groupRouteChanged) {
-          requireForwardTypeAllowedForActor(ctx.user, nextForwardType);
+          requireForwardTypeAllowedForActor(ownerContext.user, nextForwardType);
         }
         await reserveForwardGroupEntryPorts(
           activeGroupId,
@@ -2505,6 +2580,7 @@ export const crudRulesRouter = router({
           await db.withForwardGroupSyncTransaction(
             activeGroupId,
             () => db.updateForwardRule(input.id, data),
+            { prioritizeTemplateRuleId: input.id },
           );
         } else {
           if (groupChanged) await markTemplateChildrenPendingDelete(input.id, "forward-group-rule-route-changed");
@@ -2525,9 +2601,9 @@ export const crudRulesRouter = router({
         const sourcePort = Number(input.sourcePort ?? (rule as any).sourcePort);
         if (!groupId) throw new Error("请选择转发链或转发组");
         let groupAccess = { isTrafficBillingResource: false };
-        if (ctx.user.role !== "admin") {
-          groupAccess = await requireForwardGroupUseAccess(ctx, groupId);
-          const planRange = await db.getUserForwardGroupPlanPortRange(ctx.user.id, groupId);
+        if (ownerContext.user.role !== "admin") {
+          groupAccess = await requireForwardGroupUseAccess(ownerContext, groupId);
+          const planRange = await db.getUserForwardGroupPlanPortRange(ownerContext.user.id, groupId);
           if (planRange && !db.isPortAllowedByUserPlanRange(sourcePort, planRange)) {
             const ranges = planRange.ranges.map((range) => `${range.start}-${range.end}`).join(",");
             throw new Error(`套餐端口必须在 ${ranges} 内`);
@@ -2556,11 +2632,15 @@ export const crudRulesRouter = router({
           reservations: heldReservations,
         });
         const { group, isForwardChain, isPortGroup, sniSplitterPort: nextSniSplitterPort } = preparedGroupRuntime;
-        if (ctx.user.role !== "admin" && (input.isEnabled === true || dbBool((rule as any).isEnabled))) {
-          await requireTrafficBillingBalanceForRule(ctx.user.id, groupAccess.isTrafficBillingResource);
+        if (ownerContext.user.role !== "admin" && (input.isEnabled === true || dbBool((rule as any).isEnabled))) {
+          const owner = await requireForwardAccessReady(ownerContext.user.id, { allowTrafficBillingRecovery: groupAccess.isTrafficBillingResource });
+          await requireTrafficBillingBalanceForRule(ownerContext.user.id, groupAccess.isTrafficBillingResource);
+          if (owner.expiresAt && new Date(owner.expiresAt) <= new Date()) {
+            throw new Error("套餐已到期，请续费后再启用规则");
+          }
         }
         const nextForwardType = lockedForwardTypeForGroup(group, input.forwardType ?? (rule as any).forwardType);
-        requireForwardTypeAllowedForActor(ctx.user, nextForwardType);
+        requireForwardTypeAllowedForActor(ownerContext.user, nextForwardType);
         await reserveForwardGroupEntryPorts(
           groupId,
           sourcePort,
@@ -2589,6 +2669,7 @@ export const crudRulesRouter = router({
         }
         const data: any = {
           name: input.name ?? (rule as any).name,
+          ...ruleLimitPatch(input),
           hostId,
           forwardType: nextForwardType,
           protocol: nextProtocol,
@@ -2668,13 +2749,13 @@ export const crudRulesRouter = router({
           ? (input.tunnelId !== undefined ? input.tunnelId : (rule as any).tunnelId)
           : null;
         if (nextTunnelIdForRule) {
-          const access = await requireTunnelUseOrTrafficBillingAccess(ctx, nextTunnelIdForRule);
+          const access = await requireTunnelUseOrTrafficBillingAccess(ownerContext, nextTunnelIdForRule);
           selectedTunnelForRule = access.tunnel;
           if (!dbBool(selectedTunnelForRule.isEnabled)) throw new Error("Selected tunnel is disabled");
           nextHostIdForRule = Number(selectedTunnelForRule.entryHostId);
-          if (ctx.user.role !== "admin" && String(selectedTunnelForRule.mode).toLowerCase() === "forwardx") {
-            const owner = await requireForwardAccessReady(ctx.user.id, { allowTrafficBillingRecovery: !!access.isTrafficBillingResource });
-            await requireTrafficBillingBalanceForRule(ctx.user.id, !!access.isTrafficBillingResource);
+          if (ownerContext.user.role !== "admin" && String(selectedTunnelForRule.mode).toLowerCase() === "forwardx") {
+            const owner = await requireForwardAccessReady(ownerContext.user.id, { allowTrafficBillingRecovery: !!access.isTrafficBillingResource });
+            await requireTrafficBillingBalanceForRule(ownerContext.user.id, !!access.isTrafficBillingResource);
             if (!(owner as any)?.canAddRules) {
               throw new Error("No permission to use custom encrypted tunnels");
             }
@@ -2685,7 +2766,7 @@ export const crudRulesRouter = router({
       const routeChanged = String(nextForwardTypeForRule) !== String((rule as any).forwardType) || Number(nextTunnelIdForRule || 0) !== Number((rule as any).tunnelId || 0);
       const directRouteChanged = routeChanged || Number(nextHostIdForRule) !== Number((rule as any).hostId);
       if (directRouteChanged) {
-        requireForwardTypeAllowedForActor(ctx.user, nextForwardTypeForRule);
+        requireForwardTypeAllowedForActor(ownerContext.user, nextForwardTypeForRule);
       }
       const requestedMainBackupEnabled = input.failoverEnabled ?? (rule as any).failoverEnabled;
       if (nextDirectRuleSni && !nextTunnelIdForRule) {
@@ -2710,19 +2791,19 @@ export const crudRulesRouter = router({
         ? dbBool(input.isEnabled)
         : dbBool((rule as any).isEnabled);
       if (!nextTunnelIdForRule) {
-        const access = await requireHostUseAccess(ctx, nextHostIdForRule);
-        if (ctx.user.role !== "admin" && nextRuleEnabled) {
-          await requireTrafficBillingBalanceForRule(ctx.user.id, !!access.isTrafficBillingResource);
+        const access = await requireHostUseAccess(ownerContext, nextHostIdForRule);
+        if (ownerContext.user.role !== "admin" && nextRuleEnabled) {
+          await requireTrafficBillingBalanceForRule(ownerContext.user.id, !!access.isTrafficBillingResource);
         }
       }
 
-      if (nextRuleEnabled && ctx.user.role !== "admin") {
+      if (nextRuleEnabled && ownerContext.user.role !== "admin") {
         const activeTunnelId = Number(nextTunnelIdForRule || 0);
         const resourceAccess = activeTunnelId
-          ? await requireTunnelUseOrTrafficBillingAccess(ctx, activeTunnelId)
-          : await requireHostUseAccess(ctx, nextHostIdForRule);
-        const owner = await requireForwardAccessReady(ctx.user.id, { allowTrafficBillingRecovery: !!resourceAccess.isTrafficBillingResource });
-        await requireTrafficBillingBalanceForRule(ctx.user.id, !!resourceAccess.isTrafficBillingResource);
+          ? await requireTunnelUseOrTrafficBillingAccess(ownerContext, activeTunnelId)
+          : await requireHostUseAccess(ownerContext, nextHostIdForRule);
+        const owner = await requireForwardAccessReady(ownerContext.user.id, { allowTrafficBillingRecovery: !!resourceAccess.isTrafficBillingResource });
+        await requireTrafficBillingBalanceForRule(ownerContext.user.id, !!resourceAccess.isTrafficBillingResource);
         if (owner.expiresAt && new Date(owner.expiresAt) <= new Date()) {
           throw new Error("套餐已到期，请续费后再启用规则");
         }
@@ -2771,8 +2852,8 @@ export const crudRulesRouter = router({
           if (!isPortAllowedByPolicy(nextSourcePortForRule, effectivePolicy)) {
             throw new Error(portPolicyErrorMessage(effectivePolicy, "源端口"));
           }
-          if (ctx.user.role !== "admin") {
-            const planRange = await db.getUserPlanPortRange(ctx.user.id, nextHostIdForRule, nextTunnelIdForRule || undefined);
+          if (ownerContext.user.role !== "admin") {
+            const planRange = await db.getUserPlanPortRange(ownerContext.user.id, nextHostIdForRule, nextTunnelIdForRule || undefined);
             if (planRange) {
               effectivePolicy = combinePortPolicies(effectivePolicy, portPolicyFrom({
                 portRanges: planRange.ranges,
@@ -2903,7 +2984,7 @@ export const crudRulesRouter = router({
         (data as any).gostRelayPort = null;
         const nextTunnelId = data.tunnelId !== undefined ? data.tunnelId : (rule as any).tunnelId;
         if (nextTunnelId) {
-          const tunnel = selectedTunnelForRule ?? (await requireTunnelUseOrTrafficBillingAccess(ctx, nextTunnelId)).tunnel;
+          const tunnel = selectedTunnelForRule ?? (await requireTunnelUseOrTrafficBillingAccess(ownerContext, nextTunnelId)).tunnel;
           if (!dbBool(tunnel.isEnabled)) throw new Error("所选隧道已停用");
           if (Number(tunnel.entryHostId) !== Number(nextHostIdForRule)) {
             throw new Error("所选隧道的入口 Agent 必须与规则所属主机一致");
@@ -3005,9 +3086,9 @@ export const crudRulesRouter = router({
           tunnelId: nextTunnelIdForRule,
           tunnel: selectedTunnelForRule,
         });
-        if (ctx.user.role !== "admin") {
+        if (ownerContext.user.role !== "admin") {
           await assertRulePortWithinUserPlanRange({
-            userId: ctx.user.id,
+            userId: ownerContext.user.id,
             hostId: nextHostIdForRule,
             sourcePort,
             tunnelId: nextTunnelIdForRule,
@@ -3131,6 +3212,7 @@ export const crudRulesRouter = router({
       }
       return { success: true, reset: keyFieldChanged && !failoverHotUpdate, hotUpdated: failoverHotUpdate };
       } finally {
+        await portQuotaReservation?.release();
         tunnelExitPortReservationForUpdate?.release();
         tunnelExitPortReservationForConversion?.release();
         releaseHostPortReservations(heldReservations);

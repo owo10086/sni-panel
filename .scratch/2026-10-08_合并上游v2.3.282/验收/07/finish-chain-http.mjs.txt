@@ -1,0 +1,7 @@
+import fs from 'node:fs';import path from 'node:path';import assert from 'node:assert/strict';import {pathToFileURL}from'node:url';
+const source=f=>import(pathToFileURL(path.join(process.cwd(),f)).href);const {encryptPayload,decryptPayload}=await source('server/agentCrypto.ts');const token='isolated-manual-token-2';
+const report={testId:4,targetReachable:true,latencyMs:13,message:'fixture: completed after panel process restart'};
+const response=await fetch('http://127.0.0.1:18827/api/agent/selftest-result',{method:'POST',headers:{'content-type':'application/json','x-agent-encrypted':'1',authorization:'Bearer '+token},body:JSON.stringify(encryptPayload(report,token))});
+assert.equal(response.status,200);const result=decryptPayload(await response.json(),token);assert.equal(result.success,true);
+process.env.DATABASE_TYPE='sqlite';const r=await source('server/dbRuntime.ts');await r.connectDatabase({type:'sqlite',sqlite:{path:'/private/tmp/forwardx-282-ticket07/panel.db'}});
+try{const tests=await source('server/repositories/forwardTestRepository.ts');const current=await tests.getLatestForwardTest(102);assert.equal(current.status,'success');assert.equal(current.latencyMs,24);const evidence={syntheticReport:true,productionEncryptedRoute:true,response:result,result:current};fs.writeFileSync('/private/tmp/forwardx-282-ticket07/restarted-chain-final.json',JSON.stringify(evidence,null,2));console.log(JSON.stringify(evidence));}finally{await r.closeDatabase();}

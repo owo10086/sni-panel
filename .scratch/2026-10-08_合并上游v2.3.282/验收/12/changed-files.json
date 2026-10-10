@@ -1,0 +1,53 @@
+{
+  "baselineFiles": 969,
+  "changes": [
+    {
+      "path": "server/ai/client.test.ts",
+      "before": "f0519c2dcebf2d8d8ca4cb78185a54b1f2ff7acdbd6c6102a86a8d8aea42e90e",
+      "after": "5084eab1e3b08dff4e1eeb06c07324e6c6c8c61e17e2a778298b3b6fe9e963f8",
+      "status": "modified"
+    },
+    {
+      "path": "server/ai/client.ts",
+      "before": "5437c6356edcd4aeb30153494273cf64f0172030332010e2a0b0ff55fc85319a",
+      "after": "5ec50532334f354a8ac6a3488e1c3a0edc68e3ca072b1140332245c719236b03",
+      "status": "modified"
+    },
+    {
+      "path": "server/ai/panelTools.fixture.ts",
+      "before": "5a923d445abebda92dde9adacc40871a86a0a63ff2c24c86ec78bc82ee713896",
+      "after": "4cf67efd39e06d03f3589039a9ad4ce6549c89d5d9d5d58effbac4a86fe2e8ce",
+      "status": "modified"
+    },
+    {
+      "path": "server/ai/panelTools.permissions.fixture.ts",
+      "before": null,
+      "after": "c026a22f742246836d99bb5843737a2650022184bf899e3a6e21d10202716ac6",
+      "status": "new"
+    },
+    {
+      "path": "server/ai/panelTools.test.ts",
+      "before": "b4bee8bec281bee12d0d74e866838bb2cfefb2a5af2f162939bb2cc3ee65ac70",
+      "after": "69aff4e6869c322b588997fd4716bbaaf7df220fee6414b1ad678599e2035a55",
+      "status": "modified"
+    },
+    {
+      "path": "server/ai/panelTools.ts",
+      "before": "d49c386846cc41a9fee60b90606f85066e4886d3e3082dc338d6141cd1e57814",
+      "after": "c5553012edd85037bdd4727f293d677c0ee42ee0b3be7c1748e5b9e8373a83f4",
+      "status": "modified"
+    },
+    {
+      "path": "server/repositories/trafficBillingRepository.ts",
+      "before": "a86af7186daaaa56957d009de70c1acb925da7b656ea8be4f9f5443c7d530e80",
+      "after": "0e9bda33a3b4ee59db9132be7d63bec80b9f48da43ae649eb8b57b655a649da2",
+      "status": "modified"
+    },
+    {
+      "path": "server/routers/trafficBilling.ts",
+      "before": "6fca9d9117d98b6ca94895304cd046fe21e4f0ff52797064bc53273b20d6f081",
+      "after": "3e9b550a6fd764d6d3b0a59565c773d5b55d4cde383447c7200a301d5221d7e0",
+      "status": "modified"
+    }
+  ]
+}

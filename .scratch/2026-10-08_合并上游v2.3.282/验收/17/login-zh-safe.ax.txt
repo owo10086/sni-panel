@@ -1,0 +1,30 @@
+- generic: 语言
+- combobox "语言":
+  - option "自动（浏览器 / IP）"
+  - option "简体中文" [selected]
+  - option "English"
+- button "设置面板地址":
+- button "切换主题":
+- main:
+  - img "sni-panel"
+  - generic: sni-panel
+  - generic: 欢迎回来
+  - generic: 登录账号以继续
+  - text: 用户名或邮箱
+  - textbox "用户名或邮箱" [active]:
+    - /placeholder: 请输入用户名或邮箱
+    - text: <redacted>
+  - text: 密码
+  - textbox "密码":
+    - /placeholder: 请输入密码
+    - text: <redacted>
+  - button:
+  - button "登录":
+    - text: 登录
+  - generic: 或
+  - text: Telegram 快捷登录
+  - button "打开 Telegram 登录":
+    - text: 打开 Telegram 登录
+  - paragraph: 已绑定账户可用，点击后再连接后端校验。
+  - button "没有账号？点击注册"
+- region "Notifications alt+T"

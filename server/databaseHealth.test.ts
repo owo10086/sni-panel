@@ -17,6 +17,50 @@ import net from "node:net";
 const refused = Object.assign(new Error("connect ECONNREFUSED postgres://admin:secret@private-db:5432/db SQL password=secret"), { code: "ECONNREFUSED" });
 const config = { type: "postgresql" as const, postgresql: { host: "127.0.0.1", port: 5432, user: "test", password: "secret", database: "test" } };
 
+test("real SQLite health remains read-only and locked during source freeze and target verification", () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "forwardx-frozen-health-"));
+  const script = String.raw`
+    import assert from "node:assert/strict";
+    import * as runtime from "./server/dbRuntime.ts";
+    import {ensureDatabaseSchema} from "./server/dbSchema.ts";
+    import * as migration from "./server/seamlessMigrationState.ts";
+    import {databaseHealth} from "./server/databaseHealthState.ts";
+    import {probeDatabase,startDatabaseHealthMonitor} from "./server/databaseHealthMonitor.ts";
+    const config={type:"sqlite",sqlite:{path:process.env.SQLITE_PATH}};
+    await runtime.connectDatabase(config); await ensureDatabaseSchema();
+    const monitor=startDatabaseHealthMonitor({initialized:true,readConfig:()=>config,intervalMs:20,
+      initialize:async()=>{throw new Error("must not rerun schema during migration")},onReady:()=>{throw new Error("must not start background twice")}});
+    try {
+      for(const [role,phase] of [["source","frozen"],["target","verifying"]]) {
+        migration.persistSeamlessMigrationState({version:1,id:"health",role,phase,sourceUrl:"http://old.test",targetUrl:"http://new.test",tokenHash:"a".repeat(64),startedAt:Date.now(),expiresAt:Date.now()+300000});
+        databaseHealth.healthy();
+        await probeDatabase(config);
+        await assert.rejects(runtime.executeRaw("INSERT INTO users (id,username,password) VALUES (99,'blocked','fixture')"),error=>error.code==="PANEL_MIGRATION_READ_ONLY");
+        assert.equal(databaseHealth.snapshot().state,"healthy","a refused migration write is not a database failure");
+        await monitor.check(); await new Promise(resolve=>setTimeout(resolve,70));
+        assert.equal(databaseHealth.snapshot().state,"healthy","repeated checks during migration remain healthy");
+        assert.equal((await runtime.queryRaw("SELECT COUNT(*) AS count FROM users"))[0].count,0);
+        let release; let entered=false; let probed=false;
+        const exclusive=migration.seamlessInternal(()=>runtime.withSqliteExclusive(async()=>{entered=true;await new Promise(resolve=>release=resolve)}));
+        while(!entered) await new Promise(resolve=>setImmediate(resolve));
+        const waiting=probeDatabase(config).then(()=>probed=true);
+        await new Promise(resolve=>setTimeout(resolve,20));assert.equal(probed,false,"a probe waits for the same connection lock");
+        release();await exclusive;await waiting;assert.equal(probed,true);
+        databaseHealth.unavailable(Object.assign(new Error("full"),{code:"SQLITE_FULL"}));
+        await monitor.check();assert.equal(databaseHealth.snapshot().reason.code,"SQLITE_FULL","SELECT success must not clear an unresolved storage fault");
+        databaseHealth.healthy();
+      }
+    } finally {monitor.stop();migration.persistSeamlessMigrationState(null);await runtime.closeDatabase();}
+  `;
+  try {
+    const result = spawnSync(process.execPath, ["--import", "tsx", "--input-type=module", "-e", script], {
+      encoding: "utf8", timeout: 20_000, env: { ...process.env, DATABASE_TYPE: "sqlite", SQLITE_PATH: path.join(directory, "panel.db"),
+        FORWARDX_SEAMLESS_MIGRATION_STATE_PATH: path.join(directory, "migration.json"), FORWARDX_LOG_DIR: path.join(directory, "logs") },
+    });
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+  } finally { fs.rmSync(directory, { recursive: true, force: true }); }
+});
+
 test("database errors are classified through driver wrappers without disclosing secrets", () => {
   const cases = [
     ["ECONNREFUSED", /拒绝/], ["ENOTFOUND", /解析/], ["ETIMEDOUT", /超时/],

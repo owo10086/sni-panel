@@ -1,0 +1,42 @@
+## Latest page snapshot
+uid=61_0 RootWebArea "ForwardX" url="http://127.0.0.1:18822/rules?tab=all"
+  uid=61_72 region "Notifications alt+T" live="polite" relevant="additions text"
+  uid=65_0 dialog "Add Forward Rule" description="Rule owner:验收管理员"
+    uid=65_1 heading "Add Forward Rule" level="2"
+    uid=65_2 StaticText "Rule owner:"
+    uid=65_3 StaticText "验收管理员"
+    uid=65_4 tablist "forwarding rule type" orientation="horizontal"
+      uid=65_5 tab "Port Forwarding" focusable focused selectable selected
+      uid=65_6 tab "Tunnel Forwarding" disableable disabled selectable
+      uid=65_7 tab "Forwarding Chain" selectable
+      uid=65_8 tab "Forwarding Group" disableable disabled selectable
+    uid=65_9 StaticText "Port forwarding link"
+    uid=65_10 combobox expandable haspopup="listbox" value="端口转发二 1x Available"
+    uid=65_11 StaticText "nftables"
+    uid=65_12 StaticText "1"
+    uid=65_13 StaticText ". "
+    uid=65_14 StaticText "验收主机3"
+    uid=65_15 StaticText "Rule Name"
+    uid=65_16 textbox "For example: Web Service Forward"
+    uid=65_17 StaticText "Protocol"
+    uid=65_18 combobox expandable haspopup="listbox" value="TCP+UDP"
+    uid=65_19 StaticText "Enable SNI splitting"
+    uid=65_20 StaticText "Multiple rules share an entry port. The exit host routes each TLS domain to its destination."
+    uid=65_21 switch "Enable SNI splitting"
+    uid=65_22 StaticText "Source Port"
+    uid=65_23 StaticText "18000-20000"
+    uid=65_24 textbox "For example, 8080"
+    uid=65_25 button "Randomly allocate ports"
+    uid=65_26 StaticText "Target Address"
+    uid=65_27 textbox "Example: 10.0.0.1 or example.com"
+    uid=65_28 StaticText "Target Port "
+    uid=65_29 StaticText "*"
+    uid=65_30 spinbutton "For example: 80" valuemax="65535" valuemin="1" valuetext=""
+    uid=65_31 StaticText "Error alerts"
+    uid=65_32 StaticText "Configure and enable the selected notification channel in system settings first."
+    uid=65_33 switch disableable disabled
+    uid=65_34 DisclosureTriangle "Rule Limits & Expiry" expandable
+    uid=65_35 button "Cancel"
+    uid=65_36 button "Create" disableable disabled
+    uid=65_37 button "Close"
+

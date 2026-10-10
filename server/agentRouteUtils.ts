@@ -117,6 +117,10 @@ export function buildMetaAgentSelfTestPayload(
   test: { id?: unknown; ruleId?: unknown },
   meta: SelfTestMeta | null,
 ) {
+  if (meta?.kind === "direct") {
+    const method = normalizeLinkProbeMethod(meta.method);
+    return { ...buildRuleAgentSelfTestPayload(test, meta), protocol: method, method };
+  }
   const tunnelPayload = buildTunnelAgentSelfTestPayload(test, meta);
   if (tunnelPayload) return tunnelPayload;
 

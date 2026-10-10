@@ -1,0 +1,77 @@
+{
+  "ticket": "06",
+  "date": "2026-10-09",
+  "branch": "v2.3.282",
+  "head": "b258398e55ab1bee06eedcc1475a96bd7a79ff83",
+  "beforeFiles": 887,
+  "changedExistingFiles": 14,
+  "addedFiles": 1,
+  "sourceSha256": {
+    "client/src/i18n/en.json": "d9ecdce4d5098194f590212e4b36d94761124c3d60df83a1a87aaa492392cdaf",
+    "client/src/lib/latencyChart.ts": "c98b27f011d89e1d0a42bfb4c96a2dbd1a68273fb2869f183bc9325d84c8e0d7",
+    "client/src/lib/latencyChart.test.ts": "c4a2989d0681183b403199cabfb1749f140c60097fe070b7abc1617499c46b38",
+    "client/src/components/rules/TcpingDetailDialog.tsx": "88975afa58bc44780b76c144a70c0ff1aa4e41ea7555d1aa8dd05ed6a29035cd",
+    "client/src/components/LatencyStabilityStats.test.tsx": "1ac751608d76ab5f60191ec58a6d4dfaf0caffcc05393fee6266fa15d0cbbaf4",
+    "client/src/components/LatencyStabilityStats.tsx": "923e7c964d782af0f8da322bc7016155074c3eba803f69bb871b4f5f1a1b989e",
+    "shared/probeStatistics.ts": "b1d2062f0da3a80757fcad8136121afabe5160d6333a09e1054b4c7624b302bf",
+    "shared/agentDtos.ts": "58dcbdeb2e45ef75b902165b3c178f3c8c63a8850178d66ce209f2a3e4eff8cc",
+    "agent/tcping_report_gate.go": "42e7c649c765c571a4495714f100fbdba7ffd3a7ce7f3fc96a8a31bbac17476a",
+    "server/agentProbeCounterReportGate.ts": "55e965dcfddc1755d61a1d1c68191d94baa2a2770709661bdba46a25aaf6bdad",
+    "server/probeCounter.test.ts": "e13705d064477c30db6452763041488b32b8a38c552d1400ed3866b5d1c9b1e4",
+    "server/repositories/probeCounterRepository.ts": "f796a8362b960268134d8bf392cb84fec52fe1579e2f920349b3e2444d36fb50",
+    "server/migration.ts": "3b9ade226506d4e30ff64a862e5937542d5b8c3c1eebe4e8b463781b4a6d8cfa",
+    "server/dbSchema.ts": "399960ab0117c4a3f6f0e700bc90c13c1dd4323d6a556bedac4889caa39cdc58",
+    "scripts/verify-probe-agent-counters.mjs": "010dffce2f660464b5aa799f6a6931a45f792a5eb46588da6e78d89d9fb3e2aa"
+  },
+  "diffSha256": "eb30aa1c453518e026be962aac4913a1ae32dae903373c4b65e900f51316274c",
+  "node": "22.22.3",
+  "pnpm": "10.28.1",
+  "databases": {
+    "sqlite": "3.49.2",
+    "postgresql": "18.4 Alpine arm64",
+    "mysql": "8.4.11"
+  },
+  "databaseImages": {
+    "postgres:18-alpine": "sha256:1b1689b20d16a014a3d195653381cf2caa75a41a92d93b255a9d6ea29fd353aa",
+    "mysql:8.4": "sha256:6ea90827b1100f8f2ae306a539f86d2c264a26ed435a2a9f75551dd5c3aeb242"
+  },
+  "agentRuntime": {
+    "platform": "Linux arm64",
+    "image": "forwardx-sni-test:20261006",
+    "network": "none",
+    "init": true,
+    "probeTargets": "loopback",
+    "candidateVersion": "3.3.0",
+    "releasedVersion": "3.2.0",
+    "candidateSha256": "288e27d27bb490d69f50995b079082fd25e63a5b0a997cb88e3c841d1cb53911",
+    "testBinarySha256": "14c3b1b7a720827417478b6ea86a93b997f94c74f664022f87985e90b0a79990",
+    "reportCount": 8,
+    "tcpBatch": 3,
+    "pingBatch": 5
+  },
+  "checks": {
+    "panelFocused": {
+      "passed": 102,
+      "failed": 0,
+      "skipped": 0
+    },
+    "agentFull": {
+      "passed": 459,
+      "failed": 0,
+      "skipped": 1,
+      "skipReason": "FORWARDX_AGENT_STRESS=1 not enabled"
+    },
+    "agentFocused": {
+      "passed": 14,
+      "failed": 0
+    },
+    "typecheckExit": 0,
+    "linuxGoVetExit": 0,
+    "scriptSyntaxExit": 0,
+    "gitDiffCheckExit": 0,
+    "reverseDiffCheckExit": 0
+  },
+  "productionOperations": false,
+  "committed": false,
+  "pushed": false
+}
