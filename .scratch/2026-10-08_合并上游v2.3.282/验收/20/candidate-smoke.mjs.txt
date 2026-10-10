@@ -1,0 +1,84 @@
+import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
+import fs from 'node:fs';
+import {createRequire} from 'node:module';
+const require=createRequire('/app/package.json');
+const Database=require('better-sqlite3');
+const db=new Database('/data/forwardx.db');db.pragma('busy_timeout=5000');
+const prefix='accept282_'+crypto.randomBytes(5).toString('hex');
+const password=crypto.randomBytes(24).toString('hex');
+const salt=crypto.randomBytes(16).toString('hex');
+const hash=salt+':'+crypto.scryptSync(password,salt,64).toString('hex');
+const insert=(table,cols,vals)=>Number(db.prepare('INSERT INTO "'+table+'" ('+cols.map(x=>'"'+x+'"').join(',')+') VALUES ('+vals.map(()=>'?').join(',')+')').run(...vals).lastInsertRowid);
+const ids={users:[],hosts:[],groups:[],rules:[]};
+const results=[];const cookies={};
+let successful=false;
+const record=(name)=>results.push({name,passed:true});
+async function rpc(path,input,user='admin',query=false){
+ const url='https://127.0.0.1:3000/api/trpc/'+path+(query?'?input='+encodeURIComponent(JSON.stringify({json:input})): '');
+ const r=await fetch(url,{method:query?'GET':'POST',headers:{'content-type':'application/json',...(cookies[user]?{cookie:cookies[user]}:{})},...(query?{}:{body:JSON.stringify({json:input})}),signal:AbortSignal.timeout(15000)});
+ const raw=await r.json();
+ if(raw.error)throw new Error(raw.error.json?.message||JSON.stringify(raw.error));
+ const setCookie=r.headers.get('set-cookie');if(path==='auth.login'){assert.ok(setCookie);cookies[user]=setCookie.split(';')[0];}
+ return raw.result.data.json;
+}
+async function denied(operation,pattern){await assert.rejects(operation,pattern);}
+try{
+ for(const role of ['admin','user','user'])ids.users.push(insert('users',['username','password','role','canAddRules','manualCanAddRules','maxRules','manualMaxRules','maxPorts','manualMaxPorts','balanceCents'],[prefix+'_'+ids.users.length,hash,role,1,1,2,2,1,1,1000]));
+ const [admin,owner,other]=ids.users;const now=Math.floor(Date.now()/1000);
+ for(let i=0;i<2;i++)ids.hosts.push(insert('hosts',['name','ip','ipv4','agentToken','userId','isOnline','lastHeartbeat','agentVersion','portRangeStart','portRangeEnd'],[prefix+'_'+i,'198.51.100.'+(100+i),'198.51.100.'+(100+i),prefix+'_host'+i,admin,0,0,'3.3.0',i?24000:18000,i?24010:19000]));
+ const group=insert('forward_groups',['name','groupType','groupMode','forwardType','domain','targetIp','targetPort','userId','isEnabled'],[prefix,'host','chain','nftables','','0.0.0.0',1,admin,1]);ids.groups.push(group);
+ for(let i=0;i<2;i++)insert('forward_group_members',['groupId','memberType','hostId','priority','isEnabled'],[group,'host',ids.hosts[i],i*10,1]);
+ insert('user_forward_group_permissions',['userId','forwardGroupId'],[owner,group]);
+ await rpc('auth.login',{username:prefix+'_0',password},'admin');
+ await rpc('auth.login',{username:prefix+'_1',password},'owner');
+ await rpc('auth.login',{username:prefix+'_2',password},'other');
+ assert.equal((await rpc('auth.me',undefined,'owner',true)).id,owner);record('real password login and session cookie');
+ const input={forwardGroupId:group,name:prefix,forwardType:'nftables',protocol:'tcp',sourcePort:18443,targetIp:'203.0.113.20',targetPort:443,sni:'one.example.test',userId:owner};
+ const first=await rpc('rules.create',input);ids.rules.push(Number(first.id));
+ const second=await rpc('rules.create',{...input,sni:'two.example.test'});ids.rules.push(Number(second.id));
+ assert.equal((await rpc('rules.getById',{id:ids.rules[0]},'owner',true)).userId,owner);record('selected owner and two SNI names on one port at quota');
+ await denied(()=>rpc('rules.update',{id:ids.rules[0],name:'blocked'},'owner'),/托管|仅管理员|仅可查看/);
+ await denied(()=>rpc('rules.create',{...input,userId:other,sni:'other.example.test'}),/无权使用/);
+ await denied(()=>rpc('rules.toggle',{id:ids.rules[0],isEnabled:false},'other'),/无权操作/);record('SNI configuration and other-user protections');
+ await denied(()=>rpc('rules.toggle',{id:ids.rules[0],isEnabled:false},'owner'),/托管|仅可查看|仅管理员/);
+ await denied(()=>rpc('rules.delete',{id:ids.rules[0]},'owner'),/托管|仅可查看|仅管理员/);
+ await denied(()=>rpc('rules.resetTraffic',{scope:'rule',ruleId:ids.rules[0]},'owner'),/托管|仅可查看|仅管理员/);
+ await rpc('rules.update',{id:ids.rules[0],trafficLimit:1000,trafficMode:'outbound',rateLimitMbps:10,expiresAt:new Date(Date.now()+86400000).toISOString()});
+ const limited=await rpc('rules.getById',{id:ids.rules[0]},'owner',true);
+ assert.equal(limited.trafficLimit,1000);assert.equal(limited.trafficMode,'outbound');assert.equal(limited.rateLimitMbps,10);
+ await rpc('rules.update',{id:ids.rules[0],trafficLimit:0,rateLimitMbps:0,expiresAt:null});
+ await denied(()=>rpc('rules.toggle',{id:ids.rules[0],isEnabled:false},'owner'),/托管|仅可查看|仅管理员/);
+ record('admin-managed SNI protections and clearing limits preserves managed ownership');
+ const ordinary=await rpc('rules.create',{...input,userId:admin,sni:'',sourcePort:18444,name:prefix+'_plain'});ids.rules.push(Number(ordinary.id));
+ assert.equal((await rpc('rules.getById',{id:ids.rules[2]},'admin',true)).sni,null);record('ordinary forwarding rule saves through production API');
+ const reset=await rpc('rules.resetTraffic',{scope:'all',userId:owner,ruleIds:[ids.rules[0]]});
+ assert.ok(reset.requestedRuleIds.includes(ids.rules[1]));assert.equal(db.prepare('SELECT balanceCents FROM users WHERE id=?').get(owner).balanceCents,1000);record('reset-all owner scope ignores selection and keeps balance');
+ const removed=await rpc('rules.deleteBatch',{ids:ids.rules.slice(0,2)},'admin');assert.equal(removed.deletedIds.length,2);record('administrator deletes managed SNI while owner remains read-only');
+ await rpc('rules.delete',{id:ids.rules[2]});
+ successful=true;
+ if(process.env.KEEP_UI==='1'){
+  const ui=await rpc('rules.create',{...input,sni:'ui.example.test',name:prefix+'_ui'});ids.rules.push(Number(ui.id));
+  fs.writeFileSync('/tmp/ticket20-ui-private.json',JSON.stringify({prefix,ids,username:prefix+'_1',password}),{mode:0o600});
+ }
+ console.log(JSON.stringify({at:new Date().toISOString(),candidate:'ed9be4f',version:'3.3.0',syntheticHostsOffline:true,results}));
+}finally{
+ if(!(successful&&process.env.KEEP_UI==='1')) cleanup(db,ids,prefix);
+ db.close();
+}
+function cleanup(db,ids,prefix){
+ const ruleIds=Array.from(new Set([...ids.rules,...ids.groups.flatMap(id=>db.prepare('SELECT id FROM forward_rules WHERE forwardGroupId=?').all(id).map(r=>r.id))]));
+ db.transaction(()=>{
+  const tables=db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'").all().map(r=>r.name);
+  for(const table of tables){
+   const cols=new Set(db.prepare('PRAGMA table_info("'+table+'")').all().map(r=>r.name));
+   for(const [col,values] of [['ruleId',ruleIds],['parentRuleId',ruleIds],['hostId',ids.hosts],['userId',ids.users],['forwardGroupId',ids.groups]]){
+    if(cols.has(col)&&values.length)db.prepare('DELETE FROM "'+table+'" WHERE "'+col+'" IN ('+values.map(()=>'?').join(',')+')').run(...values);
+   }
+  }
+  for(const group of ids.groups){db.prepare('DELETE FROM forward_group_members WHERE groupId=?').run(group);db.prepare('DELETE FROM forward_groups WHERE id=?').run(group);}
+  for(const host of ids.hosts)db.prepare('DELETE FROM hosts WHERE id=?').run(host);
+  for(const user of ids.users)db.prepare('DELETE FROM users WHERE id=?').run(user);
+ })();
+ assert.equal(db.prepare('SELECT count(*) AS n FROM users WHERE username LIKE ?').get(prefix+'%').n,0);
+}

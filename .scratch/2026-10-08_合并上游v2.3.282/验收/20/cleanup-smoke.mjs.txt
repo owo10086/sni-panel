@@ -1,0 +1,24 @@
+import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
+import fs from 'node:fs';
+import {createRequire} from 'node:module';
+const require=createRequire('/app/package.json');
+const Database=require('better-sqlite3');
+const db=new Database('/data/forwardx.db');db.pragma('busy_timeout=5000');
+const {prefix,ids}=JSON.parse(fs.readFileSync('/tmp/ticket20-ui-private.json','utf8'));cleanup(db,ids,prefix);db.close();console.log(JSON.stringify({temporaryRecordsRemoved:true}));
+function cleanup(db,ids,prefix){
+ const ruleIds=Array.from(new Set([...ids.rules,...ids.groups.flatMap(id=>db.prepare('SELECT id FROM forward_rules WHERE forwardGroupId=?').all(id).map(r=>r.id))]));
+ db.transaction(()=>{
+  const tables=db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'").all().map(r=>r.name);
+  for(const table of tables){
+   const cols=new Set(db.prepare('PRAGMA table_info("'+table+'")').all().map(r=>r.name));
+   for(const [col,values] of [['ruleId',ruleIds],['parentRuleId',ruleIds],['hostId',ids.hosts],['userId',ids.users],['forwardGroupId',ids.groups]]){
+    if(cols.has(col)&&values.length)db.prepare('DELETE FROM "'+table+'" WHERE "'+col+'" IN ('+values.map(()=>'?').join(',')+')').run(...values);
+   }
+  }
+  for(const group of ids.groups){db.prepare('DELETE FROM forward_group_members WHERE groupId=?').run(group);db.prepare('DELETE FROM forward_groups WHERE id=?').run(group);}
+  for(const host of ids.hosts)db.prepare('DELETE FROM hosts WHERE id=?').run(host);
+  for(const user of ids.users)db.prepare('DELETE FROM users WHERE id=?').run(user);
+ })();
+ assert.equal(db.prepare('SELECT count(*) AS n FROM users WHERE username LIKE ?').get(prefix+'%').n,0);
+}

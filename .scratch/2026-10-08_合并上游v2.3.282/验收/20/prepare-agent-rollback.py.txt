@@ -1,0 +1,21 @@
+import pathlib,tarfile,json,os
+os.umask(0o077);p=pathlib.Path('/root/forwardx-acceptance/20261010-upstream282-ed9be4f')
+with tarfile.open(p/'agent-before.tgz') as t:assert any(x.name.endswith('forwardx-agent') for x in t)
+s='''#!/bin/sh
+set -eu
+systemctl stop forwardx-agent
+python3 - <<'INNER'
+import pathlib,json,shutil
+p=pathlib.Path('/root/forwardx-acceptance/20261010-upstream282-ed9be4f/retired-quarantine');p.mkdir(exist_ok=True)
+for base in ['/var/lib/forwardx-agent','/run/forwardx-agent']:
+ for f in pathlib.Path(base).rglob('*.json'):
+  try:d=json.loads(f.read_text())
+  except:continue
+  if (d.get('role')=='sni-splitter' or 'sni-splitter' in f.name) and (d.get('listenPort')==56392 or '56392' in f.name):
+   dest=p/f.relative_to('/');dest.parent.mkdir(parents=True,exist_ok=True);shutil.move(str(f),dest)
+INNER
+tar -xzf /root/forwardx-acceptance/20261010-upstream282-ed9be4f/agent-before.tgz -C /
+systemctl daemon-reload
+systemctl start forwardx-agent
+'''
+(p/'rollback-agent.sh').write_text(s);(p/'rollback-agent.sh').chmod(0o700);print(json.dumps({'agentRollbackPrepared':True,'retiredPortQuarantine':56392,'oldRuntimeArchivePreserved':True}))

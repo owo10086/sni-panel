@@ -1,0 +1,88 @@
+{
+  "at": "2026-10-10T08:39:38.294063+00:00",
+  "retiredPort": 56392,
+  "retiredListening": false,
+  "remainingRetiredSnapshots": [
+    {
+      "path": "/var/lib/forwardx-agent/fxp/fxp-v1-sni-splitter-0-605-56392.json",
+      "sha256": "f6fc43a8bc839a57d2e777ee9dd012633ea0ef0df0a8a195a7efd30e28b061e7"
+    },
+    {
+      "path": "/var/lib/forwardx-agent/fxp/fxp-v1-sni-splitter-0-629-56392.json",
+      "sha256": "b442fdaa3992833ddc1e35fb73c4b302e424d718a1392120aeff351cbc7cfeae"
+    },
+    {
+      "path": "/var/lib/forwardx-agent/fxp/fxp-v1-sni-splitter-0-653-56392.json",
+      "sha256": "f056d3284a60472b392ab1881e24e5dacc05db3a800d4b739df7414bc87a3bd0"
+    },
+    {
+      "path": "/var/lib/forwardx-agent/fxp/fxp-v1-sni-splitter-0-611-56392.json",
+      "sha256": "a62508ac090d5fe29fc69cafee606b9a3c6a437c7c9f246964551660c39d7266"
+    },
+    {
+      "path": "/var/lib/forwardx-agent/fxp/fxp-v1-sni-splitter-0-557-56392.json",
+      "sha256": "2a0a6a393741b778201f5c028023a2f79e200e6507f4da7b22f96f26011f8408"
+    },
+    {
+      "path": "/var/lib/forwardx-agent/fxp/fxp-v1-sni-splitter-0-581-56392.json",
+      "sha256": "8a1cdb9d59997480312f27151509cced704c5bdf4cabb8dfcd2a427a5aa7ce12"
+    },
+    {
+      "path": "/run/forwardx-agent/fxp-sni-splitter-0-56392.json",
+      "sha256": "8f85863828f49505f8e6d8c5a06c55a2c88be06be3e3ff82dbfdbcf37d81f0a3"
+    }
+  ],
+  "runningFxpProcesses": [
+    {
+      "pid": 488266,
+      "role": "sni-splitter",
+      "listenPort": 36058,
+      "routeCount": 44,
+      "executableSha256": "da88721e746d446a80edeb38a6ea44c7c035ce02cbc98cb34177fb1819d67dc7"
+    }
+  ],
+  "sourceFirewall": [
+    {
+      "backend": "nft",
+      "available": true,
+      "readExitCode": 0,
+      "remainingSniSourceRestrictionRules": 0
+    },
+    {
+      "backend": "iptables",
+      "available": true,
+      "readExitCode": 0,
+      "remainingSniSourceRestrictionRules": 0
+    },
+    {
+      "backend": "ip6tables",
+      "available": true,
+      "readExitCode": 0,
+      "remainingSniSourceRestrictionRules": 0
+    },
+    {
+      "backend": "iptables-legacy",
+      "available": true,
+      "readExitCode": 0,
+      "remainingSniSourceRestrictionRules": 0
+    },
+    {
+      "backend": "ip6tables-legacy",
+      "available": true,
+      "readExitCode": 0,
+      "remainingSniSourceRestrictionRules": 0
+    },
+    {
+      "backend": "iptables-nft",
+      "available": true,
+      "readExitCode": 0,
+      "remainingSniSourceRestrictionRules": 0
+    },
+    {
+      "backend": "ip6tables-nft",
+      "available": true,
+      "readExitCode": 0,
+      "remainingSniSourceRestrictionRules": 0
+    }
+  ]
+}

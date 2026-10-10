@@ -1,0 +1,7 @@
+import json,ssl,socket,hashlib,datetime
+p='/root/forwardx-acceptance/20261010-upstream282-ed9be4f/';d=json.load(open(p+'ordinary-private.json'))
+ctx=ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT);ctx.check_hostname=False;ctx.verify_mode=ssl.CERT_NONE
+with socket.create_connection((d['entryAddress'],d['sourcePort']),timeout=10) as raw:
+ with ctx.wrap_socket(raw,server_hostname=d['sni']) as tls:
+  result={'at':datetime.datetime.now(datetime.timezone.utc).isoformat(),'ordinarySourcePort':d['sourcePort'],'tls':tls.version(),'certSha256':hashlib.sha256(tls.getpeercert(binary_form=True)).hexdigest(),'passed':True}
+print(json.dumps(result))

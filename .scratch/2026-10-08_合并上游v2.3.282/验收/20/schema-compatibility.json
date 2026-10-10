@@ -1,0 +1,32 @@
+[
+  {
+    "version": "3.3.0",
+    "image": "sha256:68b7b297dd8f2875285e18a5cd979ef85b7489486f95ffede1c2ea344a3d4e56",
+    "databaseHealth": {
+      "state": "healthy",
+      "databaseType": "sqlite",
+      "checkedAt": "2026-10-10T08:20:53.300Z",
+      "unavailableSince": null,
+      "reason": null,
+      "restartRequired": false
+    },
+    "network": "none",
+    "productionDataMounted": false,
+    "quickCheck": "ok"
+  },
+  {
+    "version": "3.2.5",
+    "image": "sha256:49923d448e9f572142289f8c78633a06cb2ecc8af8ae0455c91bb0c5fbdf54c4",
+    "databaseHealth": {
+      "state": "healthy",
+      "databaseType": "sqlite",
+      "checkedAt": "2026-10-10T08:21:03.940Z",
+      "unavailableSince": null,
+      "reason": null,
+      "restartRequired": false
+    },
+    "network": "none",
+    "productionDataMounted": false,
+    "quickCheck": "ok"
+  }
+]

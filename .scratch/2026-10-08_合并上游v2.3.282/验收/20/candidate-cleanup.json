@@ -1,0 +1,89 @@
+[
+  {
+    "temporaryRecordsRemoved": true
+  },
+  {
+    "at": "2026-10-10T08:39:08.910346+00:00",
+    "quickCheck": "ok",
+    "missingOldTablesOrColumns": [],
+    "addedColumns": [
+      "users.discordBindCode",
+      "users.discordBindCodeExpiresAt",
+      "users.discordLoginCode",
+      "users.discordUsername",
+      "users.discordLastSeenAt",
+      "users.discordId",
+      "users.googleSubject",
+      "users.discordLinkedAt",
+      "users.googleEmail",
+      "users.googleLinkedAt",
+      "users.discordAnnouncementSubscribed",
+      "users.discordLoginCodeExpiresAt",
+      "forward_rules.trafficMode",
+      "forward_rules.expiresAt",
+      "forward_rules.adminManaged",
+      "forward_rules.quotaUsedOut",
+      "forward_rules.ruleLimitReason",
+      "forward_rules.quotaUsedIn",
+      "forward_rules.trafficLimit",
+      "forward_tests.requestMessage",
+      "forward_tests.firstDispatchedAt",
+      "forward_tests.batchSettled",
+      "forward_tests.batchId"
+    ],
+    "addedTables": [
+      "ai_bot_workflows",
+      "probe_counter_heads",
+      "probe_counter_snapshots"
+    ],
+    "businessConfigurationChanges": [],
+    "counts": {
+      "hosts": 5,
+      "forward_rules": 235,
+      "tunnels": 0,
+      "forward_groups": 7,
+      "forward_group_members": 12,
+      "system_settings": 74
+    },
+    "hosts": [
+      {
+        "id": 2,
+        "isOnline": 1,
+        "agentVersion": "3.3.0",
+        "agentLastReceivedRevision": 3034,
+        "agentLastAppliedRevision": 3034
+      },
+      {
+        "id": 3,
+        "isOnline": 1,
+        "agentVersion": "3.2.0",
+        "agentLastReceivedRevision": 3024,
+        "agentLastAppliedRevision": 3024
+      },
+      {
+        "id": 4,
+        "isOnline": 1,
+        "agentVersion": "3.3.0",
+        "agentLastReceivedRevision": 3024,
+        "agentLastAppliedRevision": 3024
+      },
+      {
+        "id": 5,
+        "isOnline": 1,
+        "agentVersion": "3.2.0",
+        "agentLastReceivedRevision": 3024,
+        "agentLastAppliedRevision": 3024
+      },
+      {
+        "id": 12,
+        "isOnline": 1,
+        "agentVersion": "3.2.0",
+        "agentLastReceivedRevision": 3024,
+        "agentLastAppliedRevision": 3024
+      }
+    ],
+    "googleLoginEnabled": "false",
+    "notificationProvider": "telegram",
+    "seamlessStateFileExists": false
+  }
+]

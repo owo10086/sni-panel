@@ -1,0 +1,39 @@
+{
+  "in": {
+    "agentArchivePaths": [
+      "usr/local/bin/forwardx-agent",
+      "usr/local/bin/forwardx-fxp",
+      "usr/local/bin/forwardx-runtime",
+      "etc/forwardx/",
+      "etc/forwardx/agent/",
+      "etc/forwardx/agent/config.json",
+      "etc/forwardx/runtime/",
+      "etc/forwardx/runtime/gost.json",
+      "etc/forwardx/runtime/tunnel-gost.json",
+      "etc/forwardx/runtime/gost.json.forwardx-last-good",
+      "etc/forwardx/runtime/tunnel-gost.json.forwardx-last-good",
+      "etc/systemd/system/forwardx-agent.service"
+    ],
+    "runtimeArchiveSeparate": true,
+    "retiredRuntimePathsIncludedInAgentArchive": false
+  },
+  "out": {
+    "agentArchivePaths": [
+      "usr/local/bin/forwardx-agent",
+      "usr/local/bin/forwardx-fxp",
+      "usr/local/bin/forwardx-runtime",
+      "etc/forwardx/",
+      "etc/forwardx/runtime/",
+      "etc/forwardx/runtime/gost.json",
+      "etc/forwardx/runtime/gost.json.forwardx-last-good",
+      "etc/forwardx/runtime/tunnel-gost.json",
+      "etc/forwardx/runtime/tunnel-gost.json.forwardx-last-good",
+      "etc/forwardx/runtime/tunnel-gost.json.sha256",
+      "etc/forwardx/agent/",
+      "etc/forwardx/agent/config.json",
+      "etc/systemd/system/forwardx-agent.service"
+    ],
+    "runtimeArchiveSeparate": true,
+    "retiredRuntimePathsIncludedInAgentArchive": false
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "at": "2026-10-10T08:39:38.399363+00:00",
+  "retiredPort": 56392,
+  "retiredListening": false,
+  "remainingRetiredSnapshots": [],
+  "runningFxpProcesses": [
+    {
+      "pid": 3202126,
+      "role": "sni-splitter",
+      "listenPort": 443,
+      "routeCount": 13,
+      "executableSha256": "da88721e746d446a80edeb38a6ea44c7c035ce02cbc98cb34177fb1819d67dc7"
+    }
+  ],
+  "sourceFirewall": [
+    {
+      "backend": "nft",
+      "available": true,
+      "readExitCode": 0,
+      "remainingSniSourceRestrictionRules": 0
+    },
+    {
+      "backend": "iptables",
+      "available": true,
+      "readExitCode": 0,
+      "remainingSniSourceRestrictionRules": 0
+    },
+    {
+      "backend": "ip6tables",
+      "available": true,
+      "readExitCode": 0,
+      "remainingSniSourceRestrictionRules": 0
+    },
+    {
+      "backend": "iptables-legacy",
+      "available": true,
+      "readExitCode": 0,
+      "remainingSniSourceRestrictionRules": 0
+    },
+    {
+      "backend": "ip6tables-legacy",
+      "available": true,
+      "readExitCode": 0,
+      "remainingSniSourceRestrictionRules": 0
+    },
+    {
+      "backend": "iptables-nft",
+      "available": true,
+      "readExitCode": 0,
+      "remainingSniSourceRestrictionRules": 0
+    },
+    {
+      "backend": "ip6tables-nft",
+      "available": true,
+      "readExitCode": 0,
+      "remainingSniSourceRestrictionRules": 0
+    }
+  ]
+}

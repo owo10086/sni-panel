@@ -1,0 +1,28 @@
+import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
+import fs from 'node:fs';
+import {createRequire} from 'node:module';
+const require=createRequire('/app/package.json');
+const Database=require('better-sqlite3');
+const db=new Database('/data/forwardx.db');db.pragma('busy_timeout=5000');
+const creds=JSON.parse(fs.readFileSync('/tmp/ticket20-ui-private.json','utf8'));
+const target=JSON.parse(fs.readFileSync('/tmp/ordinary-private.json','utf8'));
+const cookies={};
+async function rpc(path,input,user='admin',query=false){
+ const url='https://127.0.0.1:3000/api/trpc/'+path+(query?'?input='+encodeURIComponent(JSON.stringify({json:input})): '');
+ const r=await fetch(url,{method:query?'GET':'POST',headers:{'content-type':'application/json',...(cookies[user]?{cookie:cookies[user]}:{})},...(query?{}:{body:JSON.stringify({json:input})}),signal:AbortSignal.timeout(15000)});
+ const raw=await r.json();
+ if(raw.error)throw new Error(raw.error.json?.message||JSON.stringify(raw.error));
+ const setCookie=r.headers.get('set-cookie');if(path==='auth.login'){assert.ok(setCookie);cookies[user]=setCookie.split(';')[0];}
+ return raw.result.data.json;
+}
+async function denied(operation,pattern){await assert.rejects(operation,pattern);}
+await rpc('auth.login',{username:creds.username.replace(/_1$/,'_0'),password:creds.password},'admin');
+if(process.env.DELETE_ORDINARY==='1'){
+ const id=JSON.parse(fs.readFileSync('/tmp/ordinary-id.json','utf8')).id;
+ await rpc('rules.delete',{id});console.log(JSON.stringify({temporaryOrdinaryRuleRemoved:true}));
+}else{
+ const result=await rpc('rules.create',{hostId:target.hostId,name:creds.prefix+'_network',forwardType:'nftables',protocol:'tcp',sourcePort:target.sourcePort,targetIp:target.targetIp,targetPort:target.targetPort});
+ fs.writeFileSync('/tmp/ordinary-id.json',JSON.stringify({id:Number(result.id)}),{mode:0o600});console.log(JSON.stringify({ordinaryRuleCreated:true,sourcePort:target.sourcePort,id:Number(result.id)}));
+}
+db.close();

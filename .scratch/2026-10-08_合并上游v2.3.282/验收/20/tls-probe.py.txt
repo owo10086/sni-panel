@@ -1,0 +1,21 @@
+import concurrent.futures, datetime, hashlib, json, socket, ssl, time
+
+targets = json.load(open('/root/forwardx-acceptance/20261010-upstream282-ed9be4f/tls-targets.json'))
+def probe(item):
+    name, host, port, domain = item
+    result = {'name': name, 'at': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'host': host, 'port': port, 'sni': domain}
+    started = time.monotonic()
+    try:
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        context.check_hostname = False
+        context.verify_mode = ssl.CERT_NONE
+        with socket.create_connection((host, port), timeout=5) as raw:
+            result['localAddress'] = raw.getsockname()[0]
+            with context.wrap_socket(raw, server_hostname=domain) as tls:
+                result.update(ok=True, tls=tls.version(), certSha256=hashlib.sha256(tls.getpeercert(binary_form=True)).hexdigest())
+    except Exception as e: result.update(ok=False, error=str(e))
+    result['elapsedMs'] = round((time.monotonic()-started)*1000)
+    return result
+
+with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+    print(json.dumps({'sourceHost': socket.gethostname(), 'results': list(executor.map(probe, targets))}, ensure_ascii=False))

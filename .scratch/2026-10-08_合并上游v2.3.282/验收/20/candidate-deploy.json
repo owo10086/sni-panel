@@ -1,0 +1,101 @@
+[
+  {
+    "at": "2026-10-10T08:21:59.859809+00:00",
+    "version": "3.3.0",
+    "imageId": "sha256:68b7b297dd8f2875285e18a5cd979ef85b7489486f95ffede1c2ea344a3d4e56",
+    "codeCommit": "ed9be4fafe77e834c41b1089baeb128ba5ff85a8",
+    "health": {
+      "state": "healthy",
+      "databaseType": "sqlite",
+      "checkedAt": "2026-10-10T08:21:58.916Z",
+      "unavailableSince": null,
+      "reason": null,
+      "restartRequired": false
+    },
+    "indexHash": "9868a991e8bdec6f689e16ed8de3e4abab789ed9cdd39ef18deeea9212815dc8"
+  },
+  {
+    "at": "2026-10-10T08:22:00.561695+00:00",
+    "quickCheck": "ok",
+    "missingOldTablesOrColumns": [],
+    "addedColumns": [
+      "users.googleSubject",
+      "users.discordId",
+      "users.discordLastSeenAt",
+      "users.discordUsername",
+      "users.discordBindCodeExpiresAt",
+      "users.discordLinkedAt",
+      "users.discordBindCode",
+      "users.discordLoginCodeExpiresAt",
+      "users.googleEmail",
+      "users.discordAnnouncementSubscribed",
+      "users.discordLoginCode",
+      "users.googleLinkedAt",
+      "forward_rules.quotaUsedOut",
+      "forward_rules.ruleLimitReason",
+      "forward_rules.adminManaged",
+      "forward_rules.trafficLimit",
+      "forward_rules.trafficMode",
+      "forward_rules.quotaUsedIn",
+      "forward_rules.expiresAt",
+      "forward_tests.firstDispatchedAt",
+      "forward_tests.batchSettled",
+      "forward_tests.batchId",
+      "forward_tests.requestMessage"
+    ],
+    "addedTables": [
+      "ai_bot_workflows",
+      "probe_counter_heads",
+      "probe_counter_snapshots"
+    ],
+    "businessConfigurationChanges": [],
+    "counts": {
+      "hosts": 5,
+      "forward_rules": 235,
+      "tunnels": 0,
+      "forward_groups": 7,
+      "forward_group_members": 12,
+      "system_settings": 74
+    },
+    "hosts": [
+      {
+        "id": 2,
+        "isOnline": 1,
+        "agentVersion": "3.2.0",
+        "agentLastReceivedRevision": 2990,
+        "agentLastAppliedRevision": 2990
+      },
+      {
+        "id": 3,
+        "isOnline": 1,
+        "agentVersion": "3.2.0",
+        "agentLastReceivedRevision": 2990,
+        "agentLastAppliedRevision": 2990
+      },
+      {
+        "id": 4,
+        "isOnline": 1,
+        "agentVersion": "3.2.0",
+        "agentLastReceivedRevision": 2990,
+        "agentLastAppliedRevision": 2990
+      },
+      {
+        "id": 5,
+        "isOnline": 1,
+        "agentVersion": "3.2.0",
+        "agentLastReceivedRevision": 2990,
+        "agentLastAppliedRevision": 2990
+      },
+      {
+        "id": 12,
+        "isOnline": 1,
+        "agentVersion": "3.2.0",
+        "agentLastReceivedRevision": 2990,
+        "agentLastAppliedRevision": 2990
+      }
+    ],
+    "googleLoginEnabled": "false",
+    "notificationProvider": "telegram",
+    "seamlessStateFileExists": false
+  }
+]

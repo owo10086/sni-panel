@@ -1,0 +1,193 @@
+{
+  "results": [
+    {
+      "name": "alternate-119-target",
+      "at": "2026-10-10T08:34:51.846623+00:00",
+      "ok": false,
+      "error": "[Errno 111] Connection refused",
+      "elapsedMs": 195
+    },
+    {
+      "name": "alternate-119-exit",
+      "at": "2026-10-10T08:34:51.847232+00:00",
+      "ok": false,
+      "error": "_ssl.c:975: The handshake operation timed out",
+      "elapsedMs": 5183
+    },
+    {
+      "name": "alternate-119-entry",
+      "at": "2026-10-10T08:34:51.847603+00:00",
+      "ok": false,
+      "error": "_ssl.c:975: The handshake operation timed out",
+      "elapsedMs": 5167
+    },
+    {
+      "name": "alternate-122-target",
+      "at": "2026-10-10T08:34:51.848247+00:00",
+      "ok": true,
+      "tls": "TLSv1.3",
+      "elapsedMs": 435
+    },
+    {
+      "name": "alternate-122-exit",
+      "at": "2026-10-10T08:34:51.849691+00:00",
+      "ok": true,
+      "tls": "TLSv1.3",
+      "elapsedMs": 713
+    },
+    {
+      "name": "alternate-122-entry",
+      "at": "2026-10-10T08:34:51.850531+00:00",
+      "ok": true,
+      "tls": "TLSv1.3",
+      "elapsedMs": 605
+    },
+    {
+      "name": "alternate-125-target",
+      "at": "2026-10-10T08:34:51.852716+00:00",
+      "ok": false,
+      "error": "[Errno 113] No route to host",
+      "elapsedMs": 1542
+    },
+    {
+      "name": "alternate-125-exit",
+      "at": "2026-10-10T08:34:51.854163+00:00",
+      "ok": false,
+      "error": "_ssl.c:975: The handshake operation timed out",
+      "elapsedMs": 5168
+    },
+    {
+      "name": "alternate-125-entry",
+      "at": "2026-10-10T08:34:51.856318+00:00",
+      "ok": false,
+      "error": "_ssl.c:975: The handshake operation timed out",
+      "elapsedMs": 5158
+    },
+    {
+      "name": "alternate-128-target",
+      "at": "2026-10-10T08:34:51.858622+00:00",
+      "ok": true,
+      "tls": "TLSv1.3",
+      "elapsedMs": 699
+    },
+    {
+      "name": "alternate-128-exit",
+      "at": "2026-10-10T08:34:52.041988+00:00",
+      "ok": true,
+      "tls": "TLSv1.3",
+      "elapsedMs": 840
+    },
+    {
+      "name": "alternate-128-entry",
+      "at": "2026-10-10T08:34:52.283137+00:00",
+      "ok": true,
+      "tls": "TLSv1.3",
+      "elapsedMs": 873
+    },
+    {
+      "name": "alternate-131-target",
+      "at": "2026-10-10T08:34:52.456150+00:00",
+      "ok": true,
+      "tls": "TLSv1.3",
+      "elapsedMs": 30
+    },
+    {
+      "name": "alternate-131-exit",
+      "at": "2026-10-10T08:34:52.486051+00:00",
+      "ok": true,
+      "tls": "TLSv1.3",
+      "elapsedMs": 671
+    },
+    {
+      "name": "alternate-131-entry",
+      "at": "2026-10-10T08:34:52.558288+00:00",
+      "ok": true,
+      "tls": "TLSv1.3",
+      "elapsedMs": 708
+    },
+    {
+      "name": "alternate-134-target",
+      "at": "2026-10-10T08:34:52.562545+00:00",
+      "ok": true,
+      "tls": "TLSv1.3",
+      "elapsedMs": 27
+    },
+    {
+      "name": "alternate-134-exit",
+      "at": "2026-10-10T08:34:52.590054+00:00",
+      "ok": true,
+      "tls": "TLSv1.3",
+      "elapsedMs": 625
+    },
+    {
+      "name": "alternate-134-entry",
+      "at": "2026-10-10T08:34:52.881743+00:00",
+      "ok": true,
+      "tls": "TLSv1.3",
+      "elapsedMs": 609
+    },
+    {
+      "name": "alternate-137-target",
+      "at": "2026-10-10T08:34:53.155956+00:00",
+      "ok": true,
+      "tls": "TLSv1.3",
+      "elapsedMs": 22
+    },
+    {
+      "name": "alternate-137-exit",
+      "at": "2026-10-10T08:34:53.157235+00:00",
+      "ok": true,
+      "tls": "TLSv1.3",
+      "elapsedMs": 628
+    },
+    {
+      "name": "alternate-137-entry",
+      "at": "2026-10-10T08:34:53.178131+00:00",
+      "ok": true,
+      "tls": "TLSv1.3",
+      "elapsedMs": 624
+    },
+    {
+      "name": "alternate-140-target",
+      "at": "2026-10-10T08:34:53.214957+00:00",
+      "ok": false,
+      "error": "[Errno 111] Connection refused",
+      "elapsedMs": 172
+    },
+    {
+      "name": "alternate-140-exit",
+      "at": "2026-10-10T08:34:53.266235+00:00",
+      "ok": false,
+      "error": "TLS/SSL connection has been closed (EOF) (_ssl.c:992)",
+      "elapsedMs": 530
+    },
+    {
+      "name": "alternate-140-entry",
+      "at": "2026-10-10T08:34:53.387548+00:00",
+      "ok": false,
+      "error": "TLS/SSL connection has been closed (EOF) (_ssl.c:992)",
+      "elapsedMs": 477
+    },
+    {
+      "name": "alternate-143-target",
+      "at": "2026-10-10T08:34:53.394429+00:00",
+      "ok": false,
+      "error": "[Errno 111] Connection refused",
+      "elapsedMs": 192
+    },
+    {
+      "name": "alternate-143-exit",
+      "at": "2026-10-10T08:34:53.490579+00:00",
+      "ok": false,
+      "error": "TLS/SSL connection has been closed (EOF) (_ssl.c:992)",
+      "elapsedMs": 520
+    },
+    {
+      "name": "alternate-143-entry",
+      "at": "2026-10-10T08:34:53.587097+00:00",
+      "ok": false,
+      "error": "TLS/SSL connection has been closed (EOF) (_ssl.c:992)",
+      "elapsedMs": 556
+    }
+  ]
+}

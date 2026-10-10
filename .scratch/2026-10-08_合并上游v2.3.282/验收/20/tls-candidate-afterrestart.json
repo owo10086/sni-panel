@@ -1,0 +1,74 @@
+{
+  "results": [
+    {
+      "name": "entry-seednet",
+      "at": "2026-10-10T08:31:45.531739+00:00",
+      "ok": false,
+      "error": "TLS/SSL connection has been closed (EOF) (_ssl.c:992)",
+      "elapsedMs": 312
+    },
+    {
+      "name": "exit-seednet",
+      "at": "2026-10-10T08:31:45.533006+00:00",
+      "ok": false,
+      "error": "TLS/SSL connection has been closed (EOF) (_ssl.c:992)",
+      "elapsedMs": 348
+    },
+    {
+      "name": "exit-japan",
+      "at": "2026-10-10T08:31:45.533860+00:00",
+      "ok": true,
+      "tls": "TLSv1.3",
+      "elapsedMs": 228
+    },
+    {
+      "name": "target-seednet",
+      "at": "2026-10-10T08:31:45.534708+00:00",
+      "ok": false,
+      "error": "[Errno 111] Connection refused",
+      "elapsedMs": 161
+    },
+    {
+      "name": "target-japan",
+      "at": "2026-10-10T08:31:45.535463+00:00",
+      "ok": true,
+      "tls": "TLSv1.3",
+      "elapsedMs": 256
+    },
+    {
+      "name": "unknown-seednet",
+      "at": "2026-10-10T08:31:45.536944+00:00",
+      "ok": false,
+      "error": "TLS/SSL connection has been closed (EOF) (_ssl.c:992)",
+      "elapsedMs": 320
+    },
+    {
+      "name": "unknown-japan",
+      "at": "2026-10-10T08:31:45.538554+00:00",
+      "ok": false,
+      "error": "TLS/SSL connection has been closed (EOF) (_ssl.c:992)",
+      "elapsedMs": 212
+    },
+    {
+      "name": "no-sni-seednet",
+      "at": "2026-10-10T08:31:45.542058+00:00",
+      "ok": false,
+      "error": "TLS/SSL connection has been closed (EOF) (_ssl.c:992)",
+      "elapsedMs": 313
+    },
+    {
+      "name": "no-sni-japan",
+      "at": "2026-10-10T08:31:45.543605+00:00",
+      "ok": false,
+      "error": "TLS/SSL connection has been closed (EOF) (_ssl.c:992)",
+      "elapsedMs": 213
+    },
+    {
+      "name": "current-japan-entry",
+      "at": "2026-10-10T08:31:45.547988+00:00",
+      "ok": true,
+      "tls": "TLSv1.3",
+      "elapsedMs": 379
+    }
+  ]
+}

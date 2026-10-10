@@ -1,0 +1,3 @@
+#!/bin/sh
+set -eu
+docker compose -p forwardx --project-directory /root/docker_data/forwardx --env-file /root/forwardx-acceptance/20261010-upstream282-ed9be4f/.env -f /root/forwardx-acceptance/20261010-upstream282-ed9be4f/docker-compose.yml -f /root/forwardx-acceptance/20261010-upstream282-ed9be4f/rollback-image.yml up -d --force-recreate --pull never forwardx

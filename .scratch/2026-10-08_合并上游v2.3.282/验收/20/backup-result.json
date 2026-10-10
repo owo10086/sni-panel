@@ -1,0 +1,18 @@
+{
+  "backup": "/root/forwardx-acceptance/20261010-upstream282-ed9be4f",
+  "at": "2026-10-10T07:26:20.146293+00:00",
+  "rollbackImage": "sha256:49923d448e9f572142289f8c78633a06cb2ecc8af8ae0455c91bb0c5fbdf54c4",
+  "originalImage": "sha256:637f9fe9c7f0e59c0ab27906580801c6a4991d29a039967faed1c3764e3060a6",
+  "databaseBytes": 31842304,
+  "databaseQuickCheck": "ok",
+  "businessCounts": {
+    "hosts": 5,
+    "forward_rules": 235,
+    "tunnels": 0,
+    "forward_groups": 7,
+    "forward_group_members": 12,
+    "system_settings": 74
+  },
+  "backupFiles": 49,
+  "permissions": "0700 directory, 0600 private files"
+}

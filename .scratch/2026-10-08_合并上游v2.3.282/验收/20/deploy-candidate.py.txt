@@ -1,0 +1,27 @@
+import datetime,json,pathlib,subprocess,time
+p=pathlib.Path('/root/forwardx-acceptance/20261010-upstream282-ed9be4f');deploy=pathlib.Path('/root/docker_data/forwardx')
+run=lambda a:subprocess.check_output(a,text=True)
+image='sha256:68b7b297dd8f2875285e18a5cd979ef85b7489486f95ffede1c2ea344a3d4e56'
+info=json.loads(run(['docker','image','inspect',image]))[0]
+assert info['Architecture']=='amd64' and info['Config']['Labels']['org.opencontainers.image.version']=='3.3.0'
+assert info['Config']['Labels']['org.opencontainers.image.revision']=='ed9be4fafe77e834c41b1089baeb128ba5ff85a8'
+assert json.loads((p/'schema-compatibility.json').read_text())[1]['version']=='3.2.5'
+current=json.loads(run(['docker','inspect','forwardx-panel']))[0]
+assert current['Image']=='sha256:637f9fe9c7f0e59c0ab27906580801c6a4991d29a039967faed1c3764e3060a6'
+override=p/'candidate-image.yml';override.write_text('services:\n  forwardx:\n    image: '+image+'\n')
+args=['docker','compose','-p','forwardx','--project-directory',str(deploy),'--env-file',str(p/'.env'),'-f',str(p/'docker-compose.yml'),'-f',str(override),'up','-d','--force-recreate','--pull','never','forwardx']
+try:
+ subprocess.run(args,check=True);healthy=False
+ for attempt in range(45):
+  check=subprocess.run(['curl','-ksS','--max-time','2','https://127.0.0.1/api/database-health'],capture_output=True,text=True)
+  try:healthy=check.returncode==0 and json.loads(check.stdout).get('state')=='healthy'
+  except:healthy=False
+  if healthy:break
+  time.sleep(1)
+ assert healthy,'candidate health failed'
+ container=json.loads(run(['docker','inspect','forwardx-panel']))[0];assert container['Image']==image
+ version=run(['docker','exec','forwardx-panel','node','-p','require("./package.json").version']).strip();assert version=='3.3.0'
+ result={'at':datetime.datetime.now(datetime.timezone.utc).isoformat(),'version':version,'imageId':image,'codeCommit':'ed9be4fafe77e834c41b1089baeb128ba5ff85a8','health':json.loads(check.stdout),'indexHash':run(['docker','exec','forwardx-panel','sha256sum','/app/dist/index.js']).split()[0]}
+ (p/'candidate-deployment.json').write_text(json.dumps(result,indent=2));print(json.dumps(result))
+except Exception:
+ subprocess.run([str(p/'rollback.sh')],check=True);raise

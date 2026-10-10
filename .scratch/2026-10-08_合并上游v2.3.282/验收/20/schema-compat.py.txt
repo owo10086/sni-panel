@@ -1,0 +1,27 @@
+import os,json,pathlib,shutil,sqlite3,subprocess,time
+os.umask(0o077)
+p=pathlib.Path('/root/forwardx-acceptance/20261010-upstream282-ed9be4f')
+work=p/'schema-isolation';work.mkdir(exist_ok=False)
+subprocess.run(['tar','-xzf',str(p/'data-files-before.tgz'),'-C',str(work)],check=True)
+shutil.copy2(p/'forwardx-before.db',work/'forwardx.db')
+run=lambda a:subprocess.check_output(a,text=True,stderr=subprocess.DEVNULL)
+production=json.loads(run(['docker','inspect','forwardx-panel']))[0]
+env=[x for x in production['Config']['Env'] if x.startswith(('JWT_SECRET=','NODE_ENV=','PORT=','DATABASE_CONFIG_PATH=','SQLITE_PATH=','MYSQL_CONFIG_PATH=','DATABASE_TYPE='))]
+health="const https=require('https');https.get('https://127.0.0.1:3000/api/database-health',{rejectUnauthorized:false},r=>{let b='';r.on('data',x=>b+=x);r.on('end',()=>{console.log(b);process.exit(r.statusCode===200&&JSON.parse(b).state==='healthy'?0:1)})}).on('error',()=>process.exit(1))"
+results=[]
+for name,image in [('new','sha256:68b7b297dd8f2875285e18a5cd979ef85b7489486f95ffede1c2ea344a3d4e56'),('rollback','sha256:49923d448e9f572142289f8c78633a06cb2ecc8af8ae0455c91bb0c5fbdf54c4')]:
+ cname='forwardx-20-schema-'+name;args=['docker','run','-d','--name',cname,'--network','none','-v',str(work)+':/data']
+ for v in env:args+=['-e',v]
+ try:
+  run(args+[image]);healthy=False
+  for attempt in range(45):
+   r=subprocess.run(['docker','exec',cname,'node','-e',health],capture_output=True,text=True)
+   if r.returncode==0:healthy=True;break
+   time.sleep(1)
+  (p/('schema-'+name+'.log')).write_text(run(['docker','logs',cname]))
+  assert healthy,name+' could not read copied database'
+  result={'version':run(['docker','exec',cname,'node','-p','require("./package.json").version']).strip(),'image':image,'databaseHealth':json.loads(r.stdout),'network':'none','productionDataMounted':False}
+  with sqlite3.connect(work/'forwardx.db') as db:result['quickCheck']=db.execute('PRAGMA quick_check').fetchone()[0]
+  assert result['quickCheck']=='ok';results.append(result)
+ finally:subprocess.run(['docker','rm','-f',cname],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+(p/'schema-compatibility.json').write_text(json.dumps(results,indent=2));print(json.dumps(results))

@@ -1,0 +1,20 @@
+import sqlite3,json,pathlib,datetime
+root=pathlib.Path('/root/forwardx-acceptance/20261010-upstream282-ed9be4f');d=json.loads((root/'business-before.json').read_text());old=json.loads((root/'schema-before.json').read_text())
+with sqlite3.connect('file:/root/docker_data/forwardx/forwardx-data/forwardx.db?mode=ro',uri=True) as db:
+ db.row_factory=sqlite3.Row;tables={r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type='table'")};missing=[];added=[]
+ for t,columns in old.items():
+  if t not in tables:missing.append(t);continue
+  actual={r['name'] for r in db.execute('PRAGMA table_info("'+t+'")')};before={r['name'] for r in columns};missing.extend(t+'.'+x for x in before-actual);added.extend(t+'.'+x for x in actual-before)
+ volatile={'updatedAt','isOnline','lastHeartbeat','agentBootId','agentBootedAt','agentProcessId','agentProcessStartedAt','agentLastReceivedRevision','agentLastAppliedRevision','agentLastReceivedHash','agentLastAppliedHash','agentRecoveryStartedAt','agentRecoveryCompletedAt','agentRecoveryExpected','agentRecoveryReady','agentVersion','osInfo','cpuInfo','memoryTotal','isRunning','activeMemberId','lastDdnsValue','lastDdnsAt','lastStatus','lastMessage','lastFailoverAt','healthStatus','lastLatencyMs','chinaHealthStatus','chinaHealthLatencyMs','chinaHealthCheckedAt','failureSince','healthySince','lastCheckedAt','geoCountryCode','geoCountryName','geoRegion','geoEmoji','geoLatitudeMicro','geoLongitudeMicro','geoUpdatedAt','mimicCheckedAt','mimicRuntimeCheckedAt','agentUpgradeRequested','agentUpgradeRequestedAt','agentUpgradeTargetVersion','agentUpgradeReleaseVersion'}
+ changes=[];counts={}
+ for t,rows in d.items():
+  current=[dict(r) for r in db.execute('SELECT * FROM "'+t+'"')];counts[t]=len(current);key='key' if t=='system_settings' else 'id';actual={r[key]:r for r in current}
+  for r in rows:
+   if r[key] not in actual:changes.append({'table':t,'id':r[key],'field':'missing'});continue
+   for k,v in r.items():
+    if k not in volatile and actual[r[key]].get(k)!=v:changes.append({'table':t,'id':r[key],'field':k})
+ quick=db.execute('PRAGMA quick_check').fetchone()[0];hosts=[dict(r) for r in db.execute('SELECT id,isOnline,agentVersion,agentLastReceivedRevision,agentLastAppliedRevision FROM hosts')]
+ settings={r['key']:r['value'] for r in db.execute('SELECT key,value FROM system_settings')}
+ result={'at':datetime.datetime.now(datetime.timezone.utc).isoformat(),'quickCheck':quick,'missingOldTablesOrColumns':missing,'addedColumns':added,'addedTables':sorted(tables-set(old)-{'sqlite_sequence'}),'businessConfigurationChanges':changes,'counts':counts,'hosts':hosts,'googleLoginEnabled':settings.get('googleLoginEnabled','false'),'notificationProvider':settings.get('notificationProvider','telegram'),'seamlessStateFileExists':pathlib.Path('/root/docker_data/forwardx/forwardx-data/seamless-migration.json').exists()}
+ (root/'candidate-data-comparison.json').write_text(json.dumps(result,indent=2));print(json.dumps(result))
+ assert quick=='ok' and not missing and not changes

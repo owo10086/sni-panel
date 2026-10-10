@@ -1,0 +1,10 @@
+{
+  "at": "2026-10-10T07:34:13.995751+00:00",
+  "retiredPort": 56392,
+  "retiredListeningBefore": false,
+  "persistentRetiredSnapshots": 6,
+  "runtimeRetiredSnapshots": 1,
+  "allSniSnapshots": 13,
+  "runtimeArchiveSha256": "106afd80069acfa40f1be48b749e6627f0255bc43bd2e2e5821950c4d4e7c632",
+  "runtimeArchiveBytes": 3970
+}

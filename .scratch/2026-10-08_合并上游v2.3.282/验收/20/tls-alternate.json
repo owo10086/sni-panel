@@ -1,0 +1,67 @@
+{
+  "results": [
+    {
+      "name": "alternate-107-target",
+      "at": "2026-10-10T08:33:05.229042+00:00",
+      "ok": false,
+      "error": "[Errno 111] Connection refused",
+      "elapsedMs": 24
+    },
+    {
+      "name": "alternate-107-exit",
+      "at": "2026-10-10T08:33:05.230056+00:00",
+      "ok": false,
+      "error": "TLS/SSL connection has been closed (EOF) (_ssl.c:992)",
+      "elapsedMs": 478
+    },
+    {
+      "name": "alternate-107-entry",
+      "at": "2026-10-10T08:33:05.230733+00:00",
+      "ok": false,
+      "error": "TLS/SSL connection has been closed (EOF) (_ssl.c:992)",
+      "elapsedMs": 455
+    },
+    {
+      "name": "alternate-110-target",
+      "at": "2026-10-10T08:33:05.231365+00:00",
+      "ok": false,
+      "error": "[Errno 113] No route to host",
+      "elapsedMs": 2680
+    },
+    {
+      "name": "alternate-110-exit",
+      "at": "2026-10-10T08:33:05.231849+00:00",
+      "ok": false,
+      "error": "_ssl.c:975: The handshake operation timed out",
+      "elapsedMs": 5177
+    },
+    {
+      "name": "alternate-110-entry",
+      "at": "2026-10-10T08:33:05.232725+00:00",
+      "ok": false,
+      "error": "TLS/SSL connection has been closed (EOF) (_ssl.c:992)",
+      "elapsedMs": 2692
+    },
+    {
+      "name": "alternate-113-target",
+      "at": "2026-10-10T08:33:05.233272+00:00",
+      "ok": false,
+      "error": "[Errno 113] No route to host",
+      "elapsedMs": 2678
+    },
+    {
+      "name": "alternate-113-exit",
+      "at": "2026-10-10T08:33:05.237681+00:00",
+      "ok": false,
+      "error": "TLS/SSL connection has been closed (EOF) (_ssl.c:992)",
+      "elapsedMs": 2698
+    },
+    {
+      "name": "alternate-113-entry",
+      "at": "2026-10-10T08:33:05.240641+00:00",
+      "ok": false,
+      "error": "TLS/SSL connection has been closed (EOF) (_ssl.c:992)",
+      "elapsedMs": 2684
+    }
+  ]
+}

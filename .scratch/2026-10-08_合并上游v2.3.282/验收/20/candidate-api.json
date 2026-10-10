@@ -1,0 +1,38 @@
+[
+  {
+    "at": "2026-10-10T08:22:26.323Z",
+    "candidate": "ed9be4f",
+    "version": "3.3.0",
+    "syntheticHostsOffline": true,
+    "results": [
+      {
+        "name": "real password login and session cookie",
+        "passed": true
+      },
+      {
+        "name": "selected owner and two SNI names on one port at quota",
+        "passed": true
+      },
+      {
+        "name": "SNI configuration and other-user protections",
+        "passed": true
+      },
+      {
+        "name": "admin-managed SNI protections and clearing limits preserves managed ownership",
+        "passed": true
+      },
+      {
+        "name": "ordinary forwarding rule saves through production API",
+        "passed": true
+      },
+      {
+        "name": "reset-all owner scope ignores selection and keeps balance",
+        "passed": true
+      },
+      {
+        "name": "administrator deletes managed SNI while owner remains read-only",
+        "passed": true
+      }
+    ]
+  }
+]

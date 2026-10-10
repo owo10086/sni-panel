@@ -1,0 +1,22 @@
+[
+  {
+    "agentRollbackPrepared": true,
+    "retiredPortQuarantine": 56392,
+    "oldRuntimeArchivePreserved": true
+  },
+  {
+    "at": "2026-10-10T08:25:10.441873+00:00",
+    "installerSha256": "39b09d8a20b073839b6037d70c85b316921207da673dbfa5793b880a4684835c",
+    "mode": "panel installer upgrade, panel-first",
+    "exitCode": 0,
+    "installedHashes": {
+      "forwardx-agent": "786d217d745e92db71e6cb080c83437afb5ddea99211f32daa75054c695c3e9a",
+      "forwardx-fxp": "da88721e746d446a80edeb38a6ea44c7c035ce02cbc98cb34177fb1819d67dc7",
+      "forwardx-runtime": "a2aea24efb4597b5f57b35b8e1bbcc59f439b80723854d4371f6828b46682ffb"
+    },
+    "configurationTokenAndPanelPreserved": true,
+    "retiredPort": 56392,
+    "retiredListeningAfter": false,
+    "serviceActive": "active"
+  }
+]
