@@ -1,3 +1,6 @@
+import { gateForwardRulesForRuntime } from "../linkAccessView";
+import { isFailoverSniRuleApplied } from "../sniRuntimeObservability";
+import { clearRuleLatencyQueryCaches } from "../ruleLatencyQueryCache";
 import { isIP } from "node:net";
 import { and, asc, desc, eq, inArray, isNotNull, isNull, notInArray, or, sql } from "drizzle-orm";
 import {
@@ -88,6 +91,8 @@ import {
   primePresenceCapableHosts,
 } from "../agentFastLiveness";
 import { getForwardChainSniEntryRuleIds } from "./forwardChainSniEntryScope";
+import { isSniEntryAgentVersionSupported, SNI_SPLITTER_MIN_AGENT_VERSION } from "../../shared/sni";
+import { validateForwardGroupSniMembers } from "../sniEntryPort";
 
 async function settleAndMarkForwardGroupRulePendingDelete(
   rule: any,
@@ -2044,6 +2049,12 @@ async function failoverAgentSelectionStillCurrent(group: any, active: any, next:
     const nextLiveness = await resolveMemberAgentLiveness(next);
     if (!nextLiveness.available) return false;
   }
+  if (next && (next.healthy || Number(next.id || 0) !== Number(active?.id || 0))
+    && groupModeOf(latest) === "failover"
+    && (await getForwardGroupTemplateRules(Number(latest.id))).some((rule: any) => normalizeSniValue(rule.sni))) {
+    const candidate = (latest.members || []).find((member: any) => Number(member.id) === Number(next.id));
+    if (!dbBool(latest.isEnabled) || !candidate || !(await evaluateMemberHealth(candidate, latest)).healthy) return false;
+  }
   return true;
 }
 
@@ -2642,12 +2653,14 @@ export function filterForwardGroupFieldsForUse(
 
 async function refreshRuleEndpoints(rule: any, reason: string) {
   if (!rule) return;
-  pushAgentRefresh(Number(rule.hostId), reason, { urgent: true });
+  await afterDatabaseCommit(() => { pushAgentRefresh(Number(rule.hostId), reason, { urgent: true }); });
   if ((rule as any).tunnelId) {
     const tunnel = await getTunnelById(Number((rule as any).tunnelId));
     if (tunnel) {
-      pushAgentRefresh(Number(tunnel.entryHostId), `${reason}-entry`, { urgent: true });
-      pushAgentRefresh(Number(tunnel.exitHostId), `${reason}-exit`, { urgent: true });
+      await afterDatabaseCommit(() => {
+        pushAgentRefresh(Number(tunnel.entryHostId), `${reason}-entry`, { urgent: true });
+        pushAgentRefresh(Number(tunnel.exitHostId), `${reason}-exit`, { urgent: true });
+      });
     }
   }
 }
@@ -2695,6 +2708,10 @@ async function forwardGroupRuntimeDependenciesEnabled(group: any) {
 }
 
 async function refreshControlledForwardRules(rules: any[], reason: string) {
+  if (isDatabaseTransactionActive()) {
+    await afterDatabaseCommit(() => refreshControlledForwardRules(rules, reason));
+    return;
+  }
   const hostIds = new Set<number>();
   const tunnelIds = new Set<number>();
   for (const rule of rules) {
@@ -2743,7 +2760,7 @@ async function disableForwardRulesByGroupIds(groupIds: number[], reason: string)
   return controlledIds.length;
 }
 
-async function restoreForwardRulesByGroupId(groupId: number, reason: string) {
+async function restoreForwardRulesByGroupId(groupId: number, reason: string, options: { skipSync?: boolean } = {}) {
   const group = await getForwardGroupById(groupId) as any;
   if (!group || !(await forwardGroupRuntimeDependenciesEnabled(group))) return 0;
   const db = await getDb();
@@ -2766,7 +2783,7 @@ async function restoreForwardRulesByGroupId(groupId: number, reason: string) {
       updatedAt: nowDate(),
     } as any).where(eq(forwardRules.id, Number(rule.id)));
   }
-  await syncForwardGroupRules(groupId);
+  if (!options.skipSync) await syncForwardGroupRules(groupId);
   await refreshControlledForwardRules(rules as any[], reason);
   return rules.length;
 }
@@ -2823,11 +2840,17 @@ async function setTunnelsEnabledByGroup(groupId: number, groupMode: "entry" | "e
   return changed;
 }
 
-export async function setForwardGroupEnabled(groupId: number, isEnabled: boolean) {
+export async function setForwardGroupEnabled(groupId: number, isEnabled: boolean, options: { skipSync?: boolean } = {}): Promise<{ success: boolean; affectedRules: number; affectedTunnels: number }> {
   const group = await getForwardGroupById(groupId) as any;
   if (!group) throw new Error("转发资源不存在");
   const mode = groupModeOf(group);
   const wasEnabled = dbBool(group.isEnabled);
+  if (isEnabled && mode === "failover") await validateForwardGroupSniMembers(groupId, group.members || []);
+  if (mode === "failover" && !options.skipSync && (await getForwardGroupTemplateRules(groupId) as any[]).some((rule: any) => normalizeSniValue(rule.sni))) {
+    const result = await withForwardGroupSyncTransaction(groupId, () => setForwardGroupEnabled(groupId, isEnabled, { skipSync: true }));
+    if (isEnabled) await runForwardGroupFailover(groupId, { manual: true });
+    return result;
+  }
   if (isEnabled && mode === "exit" && !sortedMembers(group, true).some((member: any) => member?.memberType === "host")) {
     throw new Error("Enabled exit group must contain at least one enabled host");
   }
@@ -2855,18 +2878,18 @@ export async function setForwardGroupEnabled(groupId: number, isEnabled: boolean
   try {
     if (!isEnabled) {
       affectedRules = await disableForwardRulesByGroupIds(ruleGroupIds, `${mode}-group-disabled`);
-      for (const id of ruleGroupIds) await syncForwardGroupRules(id);
+      if (!options.skipSync) for (const id of ruleGroupIds) await syncForwardGroupRules(id);
       if (mode === "entry" || mode === "exit") {
         affectedTunnels = await setTunnelsEnabledByGroup(groupId, mode, false);
       }
     } else {
       for (const id of ruleGroupIds) {
-        affectedRules += await restoreForwardRulesByGroupId(id, `${mode}-group-enabled`);
+        affectedRules += await restoreForwardRulesByGroupId(id, `${mode}-group-enabled`, options);
       }
       if (mode === "entry" || mode === "exit") {
         affectedTunnels = await setTunnelsEnabledByGroup(groupId, mode, true);
       }
-      if (mode === "failover" || mode === "entry" || mode === "exit") {
+      if (!options.skipSync && (mode === "failover" || mode === "entry" || mode === "exit")) {
         await runForwardGroupFailover(groupId, { manual: true, forceSync: true });
       }
     }
@@ -2875,7 +2898,7 @@ export async function setForwardGroupEnabled(groupId: number, isEnabled: boolean
       try {
         await db.update(forwardGroups).set({ isEnabled: false, updatedAt: nowDate() } as any).where(eq(forwardGroups.id, groupId));
         await disableForwardRulesByGroupIds(ruleGroupIds, `${mode}-group-enable-rollback`);
-        for (const id of ruleGroupIds) await syncForwardGroupRules(id);
+        if (!options.skipSync) for (const id of ruleGroupIds) await syncForwardGroupRules(id);
         if (mode === "entry" || mode === "exit") await setTunnelsEnabledByGroup(groupId, mode, false);
       } catch (rollbackError) {
         appendPanelLog("warn", `[ForwardGroup] enable rollback failed group=${groupId}: ${rollbackError instanceof Error ? rollbackError.message : String(rollbackError)}`);
@@ -2927,7 +2950,7 @@ async function ensureMemberRuleForTemplate(group: any, templateRule: any, member
   await assertEntryPortAllowed(member, Number(templateRule.sourcePort));
   const groupMode = groupModeOf(group);
   const templateSni = normalizeSniValue((templateRule as any).sni);
-  const shareablePortRuleIds = groupMode === "port" && templateSni
+  const shareablePortRuleIds = (groupMode === "port" || groupMode === "failover") && templateSni
     ? (await getForwardGroupSniEntryPortState({
       groupId: Number(group.id),
       sourcePort: Number(templateRule.sourcePort),
@@ -3120,6 +3143,14 @@ async function ensureMemberRuleForTemplate(group: any, templateRule: any, member
       return Number(existing.id);
     }
     await updateForwardRule(Number(existing.id), payload);
+    if (groupMode === "failover" && normalizeSniValue(payload.sni)
+      && (String(existing.targetIp).trim().toLowerCase() !== String(payload.targetIp).trim().toLowerCase()
+        || Number(existing.targetPort) !== Number(payload.targetPort))) {
+      // Keep latency history, but require a fresh health decision for the new
+      // destination. Report ingestion shares this group's save lock.
+      await executeRaw(`UPDATE ${quoteIdentifier("tcping_stats")} SET ${quoteIdentifier("healthStatus")} = ?, ${quoteIdentifier("healthPending")} = ? WHERE ${quoteIdentifier("ruleId")} = ?`, ["unknown", boolValue(true), Number(existing.id)]);
+      await afterDatabaseCommit(() => clearRuleLatencyQueryCaches());
+    }
     if (member.memberType === "tunnel") {
       const tunnel = await getTunnelById(Number(tunnelId || 0));
       tunnelExitPortReservation?.release();
@@ -3397,7 +3428,6 @@ async function syncForwardGroupRulesUnlocked(groupId: number, options: SyncForwa
   const db = await getDb();
   const members = sortedMembers(group) as any[];
   const groupMode = groupModeOf(group);
-  const preserveRuntime = !!options.preserveRuntime;
   const activeChainMembers = groupMode === "chain" ? members.filter((member: any) => dbBool(member?.isEnabled)) : members;
 
   if (groupMode === "port") {
@@ -3408,6 +3438,8 @@ async function syncForwardGroupRulesUnlocked(groupId: number, options: SyncForwa
   }
 
   const templates = await getForwardGroupTemplateRules(groupId);
+  const preserveRuntime = !!options.preserveRuntime || (groupMode === "failover" && templates.some((template: any) => normalizeSniValue(template.sni)));
+  options = { ...options, preserveRuntime };
 
   if (isCollectionGroupMode(groupMode)) {
     const childRules = await getForwardGroupChildRules(groupId);
@@ -3662,14 +3694,16 @@ async function syncForwardGroupRulesUnlocked(groupId: number, options: SyncForwa
 async function syncForwardGroupRulesWithLockHeld(groupId: number, options: SyncForwardGroupRulesOptions = {}) {
   const group = await getForwardGroupById(groupId);
   if (!group) return;
-  if (groupModeOf(group) !== "chain") {
+  if (groupModeOf(group) !== "chain" && groupModeOf(group) !== "failover") {
     await syncForwardGroupRulesUnlocked(groupId, options);
     return;
   }
   await withDatabaseTransaction(async () => {
     await syncForwardGroupRulesUnlocked(groupId, { ...options, deferRefresh: true });
     // Dispatch only after commit so Agents always observe the complete topology.
-    await afterDatabaseCommit(() => refreshForwardChainRuntime(groupId, "forward-chain-synced"));
+    await afterDatabaseCommit(() => groupModeOf(group) === "chain"
+      ? refreshForwardChainRuntime(groupId, "forward-chain-synced")
+      : refreshForwardGroupRuntime(groupId, "forward-group-synced").then(() => undefined));
   });
 }
 
@@ -3678,14 +3712,34 @@ export async function withForwardGroupSyncTransaction<T>(
   work: () => Promise<T>,
   options: SyncForwardGroupRulesOptions = {},
 ): Promise<T> {
+  return withForwardGroupsSyncTransaction([groupId], work, options);
+}
+
+// Route moves must lock both groups before starting the transaction. Sorted
+// acquisition prevents two opposite moves from waiting on each other.
+export async function withForwardGroupsSyncTransaction<T>(
+  groupIds: number[],
+  work: () => Promise<T>,
+  options: SyncForwardGroupRulesOptions = {},
+): Promise<T> {
   if (isDatabaseTransactionActive()) {
     throw new Error("Forward group sync transaction must start before a database transaction");
   }
-  return withKeyedTaskLock(`forward-group-sync:${groupId}`, () => withDatabaseTransaction(async () => {
+  const ids = [...new Set(groupIds)].sort((a, b) => a - b);
+  return withForwardGroupSyncLocks(ids, () => withDatabaseTransaction(async () => {
     const result = await work();
-    await syncForwardGroupRulesWithLockHeld(groupId, options);
+    for (const id of ids) await syncForwardGroupRulesWithLockHeld(id, options);
     return result;
   }));
+}
+
+// Health reports and final selection commits must see a complete saved group.
+export function withForwardGroupSyncLocks<T>(groupIds: number[], work: () => Promise<T>): Promise<T> {
+  const ids = [...new Set(groupIds)].filter(id => Number.isInteger(id) && id > 0).sort((a, b) => a - b);
+  const acquire = (index: number): Promise<T> => index < ids.length
+    ? withKeyedTaskLock(`forward-group-sync:${ids[index]}`, () => acquire(index + 1))
+    : work();
+  return acquire(0);
 }
 
 export async function syncForwardGroupRules(groupId: number, options: SyncForwardGroupRulesOptions = {}) {
@@ -3824,6 +3878,7 @@ export async function replaceForwardGroupMembers(
     externalEntry: groupMode === "chain" && Number((group as any)?.entryGroupId || 0) > 0,
   })));
   await validateForwardGroupRecordMembers(group, normalizedMembers as any);
+  await validateForwardGroupSniMembers(groupId, normalizedMembers);
   const db = await getDb();
   const existing = await db.select().from(forwardGroupMembers).where(eq(forwardGroupMembers.groupId, groupId));
   const previousHostIds = (existing as any[])
@@ -4035,7 +4090,7 @@ export async function scheduleForwardGroupsForHostHealthChange(hostId: number) {
 async function latestTcping(ruleId: number) {
   const table = quoteIdentifier("tcping_stats");
   const result = await queryRaw<any>(
-    `SELECT * FROM ${table} WHERE ${quoteIdentifier("ruleId")} = ? ORDER BY ${quoteIdentifier("recordedAt")} DESC LIMIT 1`,
+    `SELECT * FROM ${table} WHERE ${quoteIdentifier("ruleId")} = ? ORDER BY ${quoteIdentifier("recordedAt")} DESC, ${quoteIdentifier("id")} DESC LIMIT 1`,
     [ruleId],
   );
   return result[0];
@@ -4082,10 +4137,20 @@ async function evaluateMemberHealth(member: any, group: any) {
       .filter((rule: any) => dbBool(rule.isEnabled) && !dbBool(rule.pendingDelete))
       .map((rule: any) => Number(rule.id || 0))
       .filter((id: number) => id > 0));
+    const sniTemplates = groupModeOf(group) === "failover"
+      ? await gateForwardRulesForRuntime((await getForwardGroupTemplateRules(Number(group.id))).filter((rule: any) => normalizeSniValue(rule.sni)))
+      : [];
+    const pausedSniIds = new Set(sniTemplates.filter(rule => !dbBool(rule.isEnabled) || dbBool(rule.pendingDelete)).map(rule => Number(rule.id)));
     const activeChildRules = (childRules as any[])
-      .filter((rule: any) => enabledTemplateIds.has(Number(rule.forwardGroupRuleId || 0)));
+      .filter((rule: any) => enabledTemplateIds.has(Number(rule.forwardGroupRuleId || 0)) && !pausedSniIds.has(Number(rule.forwardGroupRuleId)));
+    const requiredSniTemplates = sniTemplates.filter(rule => dbBool(rule.isEnabled) && !dbBool(rule.pendingDelete));
+    const sniHost = requiredSniTemplates.length > 0 ? await getHostById(Number(member.hostId)) : null;
 
-    if (activeChildRules.length === 0) {
+    if (requiredSniTemplates.length > 0 && !isSniEntryAgentVersionSupported(sniHost?.agentVersion)) {
+      message = `入口 ${sniHost?.name || member.hostId} 需要 Agent ${SNI_SPLITTER_MIN_AGENT_VERSION} 或更高版本`;
+    } else if (requiredSniTemplates.some((template: any) => !activeChildRules.some(child => Number(child.forwardGroupRuleId) === Number(template.id)))) {
+      message = "等待入口补齐 SNI 分流规则";
+    } else if (activeChildRules.length === 0) {
       message = "No enabled forwarding rule is using this group member";
     } else if (!agentLiveness.available) {
       observedFailureSince = agentLiveness.failureSince || now;
@@ -4100,9 +4165,9 @@ async function evaluateMemberHealth(member: any, group: any) {
           message = "Member rule disabled";
           break;
         }
-        if (!dbBool(rule.isRunning)) {
+        if (!dbBool(rule.isRunning) || (normalizeSniValue(rule.sni) && groupModeOf(group) === "failover" && !isFailoverSniRuleApplied(rule))) {
           healthy = false;
-          message = "Member rule not running yet";
+          message = normalizeSniValue(rule.sni) ? `等待入口应用 SNI 规则 ${rule.sni} 的最新配置` : "Member rule not running yet";
           break;
         }
         const latestStat = await latestTcping(Number(rule.id));
@@ -4731,18 +4796,23 @@ async function syncSingleForwardGroupDdns(
   const currentMessage = options.currentMessage || "DDNS 已是最新，解析记录已指向选中入口";
   const previousMemberId = Number(group.activeMemberId || 0);
   const previousValue = String(group.lastDdnsValue || "").trim();
+  const commitIfCurrent = (work: () => Promise<void>) => withForwardGroupSyncLocks([Number(group.id)], async () => {
+    if (options.beforeCommit && !(await options.beforeCommit())) return false;
+    await work();
+  });
 
   if (options.beforeCommit && !(await options.beforeCommit())) return false;
 
   if (!ddnsSettings.enabled || ddnsSettings.provider === "disabled") {
-    const changed = await updateForwardGroupRuntimeIfChanged(db, group, {
-      activeMemberId: memberId,
-      lastDdnsValue: value,
-      lastStatus: "healthy",
-      lastMessage: `系统 DDNS 未启用；建议入口 ${value}`,
+    return commitIfCurrent(async () => {
+        const changed = await updateForwardGroupRuntimeIfChanged(db, group, {
+          activeMemberId: memberId,
+          lastDdnsValue: value,
+          lastStatus: "healthy",
+          lastMessage: `系统 DDNS 未启用；建议入口 ${value}`,
+        });
+        if (changed) await insertForwardGroupEvent(group.id, memberId, "ddns-skip", `系统 DDNS 未启用，解析记录未更新；${detail}`);
     });
-    if (changed) await insertForwardGroupEvent(group.id, memberId, "ddns-skip", `系统 DDNS 未启用，解析记录未更新；${detail}`);
-    return;
   }
 
   if (
@@ -4751,12 +4821,13 @@ async function syncSingleForwardGroupDdns(
     && String(group.lastDdnsValue || "") === value
     && !exactDdnsReconciliationDue(group, value)
   ) {
+    return commitIfCurrent(async () => {
     const changed = await updateForwardGroupRuntimeIfChanged(db, group, {
       lastStatus: "healthy",
       lastMessage: `当前入口 ${value}`,
     });
     if (changed) await insertForwardGroupEvent(group.id, memberId, "ddns-current", `${currentMessage}；${detail}`);
-    return;
+    });
   }
 
   try {
@@ -4768,39 +4839,46 @@ async function syncSingleForwardGroupDdns(
       values: [value],
       ttl: Number(ddnsSettings.ttl || 600),
     });
-    if (options.beforeCommit && !(await options.beforeCommit())) return false;
-    rememberExactDdnsReconciliation(group, value);
-    await db.update(forwardGroups).set({
-      activeMemberId: memberId,
-      lastDdnsValue: value,
-      lastDdnsAt: nowDate(),
-      lastFailoverAt: nowDate(),
-      lastStatus: "healthy",
-      lastMessage: `${successMessage}到 ${value}`,
-      updatedAt: nowDate(),
-    }).where(eq(forwardGroups.id, group.id));
-    await insertForwardGroupEvent(group.id, memberId, eventType, `${successMessage}；${detail}`);
-    if (groupSwitchNotifyEnabled(group) && !options.suppressSwitchNotify && previousMemberId > 0 && Number(previousMemberId) !== Number(memberId)) {
-      const [fromLabel, toLabel] = await Promise.all([
-        forwardGroupMemberLabel(options.previousMember, previousMemberId),
-        forwardGroupMemberLabel(member, memberId),
-      ]);
-      void notifyForwardGroupSwitch({
-        groupId: Number(group.id),
-        groupName: String(group.name || "转发组"),
-        groupMode: "failover",
-        domain: String(group.domain || ""),
-        recordType,
-        fromLabel,
-        fromValue: previousValue,
-        toLabel,
-        toValue: value,
-        reason: options.switchReason || "入口不可用，已自动切换到健康成员",
-        detail: options.switchDetail || "",
-      }).catch((error) => {
-        console.warn(`[ForwardGroup] switch notify failed group=${group.id}: ${error instanceof Error ? error.message : String(error)}`);
-      });
-    }
+    return await withForwardGroupSyncLocks([Number(group.id)], async () => {
+      if (options.beforeCommit && !(await options.beforeCommit())) {
+        // The provider may already have changed its record. Force the next
+        // evaluation to reconcile it instead of trusting the earlier cache.
+        exactDdnsReconciledGroups.delete(Number(group.id));
+        return false;
+      }
+      rememberExactDdnsReconciliation(group, value);
+      await db.update(forwardGroups).set({
+        activeMemberId: memberId,
+        lastDdnsValue: value,
+        lastDdnsAt: nowDate(),
+        lastFailoverAt: nowDate(),
+        lastStatus: "healthy",
+        lastMessage: `${successMessage}到 ${value}`,
+        updatedAt: nowDate(),
+      }).where(eq(forwardGroups.id, group.id));
+      await insertForwardGroupEvent(group.id, memberId, eventType, `${successMessage}；${detail}`);
+      if (groupSwitchNotifyEnabled(group) && !options.suppressSwitchNotify && previousMemberId > 0 && Number(previousMemberId) !== Number(memberId)) {
+        const [fromLabel, toLabel] = await Promise.all([
+          forwardGroupMemberLabel(options.previousMember, previousMemberId),
+          forwardGroupMemberLabel(member, memberId),
+        ]);
+        void notifyForwardGroupSwitch({
+          groupId: Number(group.id),
+          groupName: String(group.name || "转发组"),
+          groupMode: "failover",
+          domain: String(group.domain || ""),
+          recordType,
+          fromLabel,
+          fromValue: previousValue,
+          toLabel,
+          toValue: value,
+          reason: options.switchReason || "入口不可用，已自动切换到健康成员",
+          detail: options.switchDetail || "",
+        }).catch((error) => {
+          console.warn(`[ForwardGroup] switch notify failed group=${group.id}: ${error instanceof Error ? error.message : String(error)}`);
+        });
+      }
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     await db.update(forwardGroups).set({

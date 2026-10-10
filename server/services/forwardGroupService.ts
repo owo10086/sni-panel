@@ -281,6 +281,18 @@ export async function updateForwardGroupFromInput(id: number, input: ForwardGrou
     }
     if (shouldResetChinaHealth) await db.resetForwardGroupChinaHealth(id);
   };
+  const hasSniRules = (await db.getForwardGroupTemplateRules(id) as any[]).some(rule => String(rule.sni || "").trim());
+  if (hasSniRules && String(existing.groupMode) === "failover") {
+    if (normalized.data.groupMode !== "failover" || normalized.data.groupType !== "host") {
+      throw new Error("承载 SNI 分流规则的转发组必须保持主机型转发组");
+    }
+    await db.withForwardGroupSyncTransaction(id, async () => {
+      await persistConfiguration({ deferRefresh: true, skipMemberSync: true });
+      if (enabledChanged) await db.setForwardGroupEnabled(id, desiredEnabled, { skipSync: true });
+    }, { preserveRuntime: true });
+    await db.runForwardGroupFailover(id, { forcePriority: memberPriorityChanged });
+    return db.getForwardGroupById(id);
+  }
   if (normalized.data.groupMode === "chain" && !enabledChanged) {
     await db.withForwardGroupSyncTransaction(
       id,

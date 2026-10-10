@@ -9,6 +9,16 @@ export type SniRuntimeRuleReport = {
   sniUnmatchedConnections?: unknown;
   sniLastConfigError?: unknown;
   ready?: unknown;
+  targetIp?: unknown;
+  targetPort?: unknown;
+  limitIn?: unknown;
+  limitOut?: unknown;
+  maxConnections?: unknown;
+  maxIPs?: unknown;
+  accessScope?: unknown;
+  sourceAllowIps?: unknown;
+  protocol?: unknown;
+  forwardType?: unknown;
 };
 
 export type SniRuntimeGroupStatus = {
@@ -19,6 +29,7 @@ export type SniRuntimeGroupStatus = {
   lastConfigError: string;
   appliedDomains: string[];
   appliedRuleIds: number[];
+  appliedRoutes: SniRuntimeRuleReport[];
   observedAt: number;
 };
 
@@ -56,6 +67,7 @@ export function recordSniRuntimeSnapshot(
       lastConfigError: "",
       appliedDomains: [],
       appliedRuleIds: [],
+      appliedRoutes: [],
       observedAt,
     };
     group.currentVersion = Math.max(group.currentVersion, normalizedCounter(report?.sniRouteVersion));
@@ -65,7 +77,8 @@ export function recordSniRuntimeSnapshot(
     );
     const lastConfigError = String(report?.sniLastConfigError || "").trim();
     if (lastConfigError) group.lastConfigError = lastConfigError.slice(0, 1000);
-    if (report?.ready !== false && group.currentVersion > 0) {
+    if (report?.ready !== false && normalizedCounter(report?.sniRouteVersion) > 0) {
+      group.appliedRoutes.push({ ...report, sourceAllowIps: Array.isArray(report.sourceAllowIps) ? [...report.sourceAllowIps] : [] });
       if (!group.appliedDomains.includes(sni)) group.appliedDomains.push(sni);
       const ruleId = Math.floor(Number(report?.ruleId || 0));
       if (ruleId > 0 && !group.appliedRuleIds.includes(ruleId)) group.appliedRuleIds.push(ruleId);
@@ -84,6 +97,7 @@ export function recordSniRuntimeSnapshot(
         currentVersion: 0,
         appliedDomains: [],
         appliedRuleIds: [],
+        appliedRoutes: [],
         observedAt,
       },
       SNI_RUNTIME_CACHE_MAX_SIZE,
@@ -121,12 +135,14 @@ export function recordSniRuntimeApplyResult(input: {
     lastConfigError: "",
     appliedDomains: [],
     appliedRuleIds: [],
+    appliedRoutes: [],
     observedAt: 0,
   };
   const next: SniRuntimeGroupStatus = {
     ...current,
     appliedDomains: [...current.appliedDomains],
     appliedRuleIds: [...current.appliedRuleIds],
+    appliedRoutes: [...current.appliedRoutes],
     observedAt: Math.max(current.observedAt, Number(input.observedAt || Date.now())),
     lastConfigError: input.success ? "" : String(input.message || "SNI 分流配置应用失败").trim().slice(0, 1000),
   };
@@ -142,5 +158,41 @@ export function getSniRuntimeGroupStatus(hostIdValue: unknown, splitterPortValue
     ...status,
     appliedDomains: [...status.appliedDomains],
     appliedRuleIds: [...status.appliedRuleIds],
+    appliedRoutes: status.appliedRoutes.map(route => ({ ...route, sourceAllowIps: Array.isArray(route.sourceAllowIps) ? [...route.sourceAllowIps] : [] })),
   } : null;
+}
+
+// Readiness follows the actual route contents so a delayed running-status write
+// cannot confirm an older destination or limit after a newer save.
+export function isFailoverSniRuleApplied(rule: {
+  id: unknown; hostId: unknown; userId: unknown; sourcePort: unknown; sni?: unknown;
+  targetIp: unknown; targetPort: unknown; rateLimitMbps?: unknown; maxConnections?: unknown;
+}) {
+  const status = getSniRuntimeGroupStatus(rule.hostId, rule.sourcePort);
+  const rate = Number(rule.rateLimitMbps);
+  const bytesPerSecond = Number.isFinite(rate) && rate > 0 ? Math.floor(rate) * 125_000 : 0;
+  return !!status?.appliedRoutes.some(route => (
+    Number(route.ruleId) === Number(rule.id)
+    && ["forwardx", "fxp"].includes(String(route.forwardType || "").toLowerCase())
+    && String(route.protocol || "").toLowerCase() === "tcp"
+    && (!Array.isArray(route.sourceAllowIps) || route.sourceAllowIps.length === 0)
+    && sniRouteContentMatches(route, {
+      sni: rule.sni, targetIp: rule.targetIp, targetPort: rule.targetPort,
+      limitIn: bytesPerSecond, limitOut: bytesPerSecond,
+      maxConnections: Math.min(1_000_000, Math.max(0, Math.floor(Number(rule.maxConnections) || 0))),
+      maxIPs: 0, accessScope: `u${Number(rule.userId) || 0}_h${Number(rule.hostId)}`,
+    })
+  ));
+}
+
+export function sniRouteContentMatches(candidate: SniRuntimeRuleReport, expected: SniRuntimeRuleReport) {
+  const endpoint = (value: unknown) => String(value || "").trim().replace(/^\[|\]$/g, "").toLowerCase();
+  return normalizeSniValue(candidate.sni) === normalizeSniValue(expected.sni)
+    && endpoint(candidate.targetIp) === endpoint(expected.targetIp)
+    && Number(candidate.targetPort || 0) === Number(expected.targetPort || 0)
+    && Number(candidate.limitIn || 0) === Number(expected.limitIn || 0)
+    && Number(candidate.limitOut || 0) === Number(expected.limitOut || 0)
+    && Number(candidate.maxConnections || 0) === Number(expected.maxConnections || 0)
+    && Number(candidate.maxIPs || 0) === Number(expected.maxIPs || 0)
+    && String(candidate.accessScope || "").trim() === String(expected.accessScope || "").trim();
 }

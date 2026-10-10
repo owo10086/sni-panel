@@ -1,5 +1,7 @@
 # SNI 分流转发开关
 
+> 2026-10-10 范围补充：主机型转发组现已增加 SNI 支持；入口端口默认 443 且可以修改。历史中的“转发组不支持”“端口锁定”“统一出口计量”须结合[新规格](../2026-10-10_转发组承载SNI分流/spec.md)和[当前使用说明](../../docs/guide/sni-routing.md)理解。原方案记录保留。
+
 Status: ready-for-agent
 
 ## Problem Statement

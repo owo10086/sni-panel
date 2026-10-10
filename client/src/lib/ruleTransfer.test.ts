@@ -130,3 +130,19 @@ test("导入提示随语言切换，保存的默认名称和业务字段保持�
     await initializeLanguage();
   }
 });
+
+
+test("SNI transfer preserves quota and expiry alongside its route and member limits", () => {
+  const parsed = parseRuleTransferFile({
+    ...transferFile(validRule({ sni: "api.example.com", sourcePort: 18443, rateLimitMbps: 15, maxConnections: 8 })),
+    scope: { type: "group", id: 10, name: "primary and backup" },
+    rules: [{ ...validRule({ sni: "api.example.com", sourcePort: 18443, rateLimitMbps: 15, maxConnections: 8 }), trafficLimit: 123456, trafficMode: "both", expiresAt: "2030-10-10T00:00:00.000Z" }],
+  });
+  assert.equal(parsed.ok, true);
+  if (!parsed.ok) return;
+  assert.equal(parsed.file.scope?.type, "group");
+  assert.equal(parsed.file.scope?.id, 10);
+  assert.equal(parsed.file.rules[0].trafficLimit, 123456);
+  assert.equal(parsed.file.rules[0].trafficMode, "both");
+  assert.equal(parsed.file.rules[0].expiresAt, "2030-10-10T00:00:00.000Z");
+});

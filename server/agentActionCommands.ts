@@ -215,6 +215,47 @@ export function normalizeSourceAllowIps(values: Iterable<unknown> | null | undef
   return Array.from(addresses).sort();
 }
 
+// Uses the existing shell channel so supported older Agents also fail closed
+// when a shared-table update cannot revoke a domain. Successful hot updates
+// leave the shared listener and unrelated connections intact.
+export function buildSNISplitterRevocationGuardCmd(port: number, tunnelId: number, allowedDomains: string[]) {
+  if (!Number.isInteger(port) || port <= 0 || port > 65535 || !Number.isInteger(tunnelId) || tunnelId < 0 || allowedDomains.length === 0) {
+    throw new Error("Invalid SNI revocation guard identity");
+  }
+  const prefix = `/run/forwardx-agent/fxp-sni-splitter-${tunnelId}`;
+  const runtimeFiles = `${prefix}-${port}.json ${prefix}-[0-9]*-${port}.json`;
+  const snapshotFiles = `/var/lib/forwardx-agent/fxp/fxp-*-sni-splitter-${tunnelId}-*-${port}.json`;
+  const allowed = [...new Set(allowedDomains)].map(domain => shQuote(domain)).join("|");
+  const pattern = `[f]orwardx-fxp.* ${prefix}(-[0-9]+)?-${port}\\.json([[:space:]]|$)`;
+  return [
+    "sni_safe=1; sni_runtime_found=0",
+    `for sni_file in ${runtimeFiles} ${snapshotFiles}; do`,
+    "  [ -f \"$sni_file\" ] || continue",
+    "  sni_file_safe=1",
+    '  sni_contents=$(cat "$sni_file") || sni_file_safe=0',
+    `  sni_domains=$(printf '%s' "$sni_contents" | grep -oE '"sni"[[:space:]]*:[[:space:]]*"[^"]*"' | sed 's/^[^:]*:[[:space:]]*"//; s/"$//')`,
+    '  [ -n "$sni_domains" ] || sni_file_safe=0',
+    `  (while IFS= read -r sni_domain; do case "$sni_domain" in ${allowed}) :;; *) exit 1;; esac; done <<EOF_SNI_DOMAINS`,
+    "$sni_domains",
+    "EOF_SNI_DOMAINS",
+    "  ) || sni_file_safe=0",
+    `  case "$sni_file" in`,
+    `    ${prefix}*) sni_runtime_found=1; [ "$sni_file_safe" = 1 ] || sni_safe=0;;`,
+    // A representative rule change may leave the previous snapshot beside
+    // the new one. Discard unsafe recovery files without stopping a safe table.
+    '    *) [ "$sni_file_safe" = 1 ] || rm -f "$sni_file" || sni_safe=0;;',
+    "  esac",
+    "done",
+    'if [ "$sni_safe" = 1 ] && [ "$sni_runtime_found" = 1 ]; then exit 0; fi',
+    `for pid in $(pgrep -f ${shQuote(pattern)} 2>/dev/null || true); do`,
+    '  [ "$pid" = "$$" ] || [ "$pid" = "$PPID" ] || kill -KILL "$pid" 2>/dev/null || true',
+    "done",
+    `rm -f ${runtimeFiles} ${prefix}-${port}.sock ${prefix}-[0-9]*-${port}.sock ${snapshotFiles} || exit 1`,
+    `echo '[sni] domain revocation failed; stopped unsafe shared listener port=${port}' >&2`,
+    "exit 1",
+  ].join("\n");
+}
+
 function nftProcessCountingCleanupCmd(port: number) {
   const marker = `fwx-stat-${port}:`;
   return `if command -v nft >/dev/null 2>&1 && nft list table inet ${nftProcessTrafficTable} >/dev/null 2>&1; then for c in ${nftProcessTrafficChains.join(" ")}; do for h in $(nft -a list chain inet ${nftProcessTrafficTable} "$c" 2>/dev/null | awk -v marker=${shellQuote(marker)} 'index($0, marker) {print $NF}'); do nft delete rule inet ${nftProcessTrafficTable} "$c" handle "$h" 2>/dev/null || true; done; done; fi; true`;

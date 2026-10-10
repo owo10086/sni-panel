@@ -44,6 +44,7 @@ import { selectAgentTrafficReportInterval } from "./agentHeartbeatGate";
 import { pruneMapEntries, setBoundedMapValue } from "./boundedCache";
 import { probeCounterSnapshot, type ProbeCounterSnapshot } from "./repositories/probeCounterRepository";
 import { agentProbeCounterReportGate } from "./agentProbeCounterReportGate";
+import { withForwardGroupSyncLocks } from "./repositories/forwardGroupRepository";
 
 const VERBOSE_AGENT_REPORTS = /^(1|true|yes|on)$/i.test(String(process.env.FORWARDX_VERBOSE_AGENT_REPORTS || ""));
 
@@ -876,7 +877,11 @@ agentRouter.post("/api/agent/traffic", async (req: Request, res: Response) => {
       acceptedBytesOut += bytesOut;
       const ruleBytes = bytesIn + bytesOut;
       if (ruleBytes > 0) {
-        if (!(rule as any).isRunning) runningRuleIds.add(Number(rule.id));
+        // A previous successful SNI table can still send traffic while a new
+        // table is waiting to apply. Traffic confirms usage, not readiness.
+        if (!(rule as any).isRunning && !(String(rule.sni || "").trim() && String(group?.groupMode) === "failover")) {
+          runningRuleIds.add(Number(rule.id));
+        }
         logTrafficReportSample(
           `rule:${host.id}:${rule.id}`,
           `[Traffic] host=${host.id} rule=${rule.id}`,
@@ -1437,130 +1442,140 @@ agentRouter.post("/api/agent/tcping", async (req: Request, res: Response) => {
       await db.insertHostProbeServiceStats(serviceStats);
     }
 
-    const reportedRuleRows = await db.getForwardRulesByIds(results.map((report) => Number(report.ruleId || 0))) as any[];
-    const reportedRuleById = new Map(reportedRuleRows.map((rule: any) => [Number(rule.id), rule]));
-    const tunnelLatencyById = new Map<number, Promise<any>>();
-    const tunnelContextById = new Map<number, Promise<{ tunnel: any } | null>>();
-    const getTunnelContext = (tunnelId: number) => {
-      let work = tunnelContextById.get(tunnelId);
-      if (!work) {
-        work = (async () => {
-          const tunnel = await db.getTunnelById(tunnelId) as any;
-          if (!tunnel) return null;
-          return { tunnel };
-        })();
-        tunnelContextById.set(tunnelId, work);
-      }
-      return work;
-    };
-    const getLatestTunnelLatency = (tunnelId: number) => {
-      let work = tunnelLatencyById.get(tunnelId);
-      if (!work) {
-        work = db.getLatestTunnelLatency(tunnelId);
-        tunnelLatencyById.set(tunnelId, work);
-      }
-      return work;
-    };
-    const ruleStats = await mapWithConcurrency(results, 16, async (report) => {
-      const ruleId = Number(report.ruleId);
-      if (ruleId <= 0) return null;
-      const rule = reportedRuleById.get(ruleId) as any;
-      if (!rule || rule.pendingDelete || !rule.isEnabled) return null;
-      const tunnelId = Number(rule.tunnelId || 0);
-      const baseLatency = typeof report.latencyMs === "number" && Number.isFinite(report.latencyMs) && report.latencyMs >= 0
-        ? Number(report.latencyMs)
-        : null;
-      if (tunnelId <= 0) {
-        if (Number(rule.hostId || 0) !== Number(host.id)) return null;
-        if (report.sourcePort && Number(report.sourcePort) !== Number(rule.sourcePort || 0)) return null;
-        if (report.targetPort && Number(report.targetPort) !== Number(rule.targetPort || 0)) return null;
-        if (!isRuleLatencyReportMethodCompatible(rule.protocol, report.method)) return null;
+    const reportCandidates = await db.getForwardRulesByIds(results.map(report => Number(report.ruleId || 0))) as any[];
+    const sniGroupIds = [...new Set(reportCandidates.filter(rule => String(rule.sni || "").trim() && Number(rule.forwardGroupRuleId) > 0).map(rule => Number(rule.forwardGroupId)))];
+    const sniGroups = await Promise.all(sniGroupIds.map(id => db.getForwardGroupById(id)));
+    const sniFailoverGroupIds = new Set(sniGroups.filter((group: any) => group && String(group.groupMode || "failover") === "failover").map((group: any) => Number(group.id)));
+    const ruleGatePlan = await withForwardGroupSyncLocks([...sniFailoverGroupIds], async () => {
+      const reportedRuleRows = await db.getForwardRulesByIds(results.map((report) => Number(report.ruleId || 0))) as any[];
+      const reportedRuleById = new Map(reportedRuleRows.map((rule: any) => [Number(rule.id), rule]));
+      const tunnelLatencyById = new Map<number, Promise<any>>();
+      const tunnelContextById = new Map<number, Promise<{ tunnel: any } | null>>();
+      const getTunnelContext = (tunnelId: number) => {
+        let work = tunnelContextById.get(tunnelId);
+        if (!work) {
+          work = (async () => {
+            const tunnel = await db.getTunnelById(tunnelId) as any;
+            if (!tunnel) return null;
+            return { tunnel };
+          })();
+          tunnelContextById.set(tunnelId, work);
+        }
+        return work;
+      };
+      const getLatestTunnelLatency = (tunnelId: number) => {
+        let work = tunnelLatencyById.get(tunnelId);
+        if (!work) {
+          work = db.getLatestTunnelLatency(tunnelId);
+          tunnelLatencyById.set(tunnelId, work);
+        }
+        return work;
+      };
+      const ruleStats = await mapWithConcurrency(results, 16, async (report) => {
+        const ruleId = Number(report.ruleId);
+        if (ruleId <= 0) return null;
+        const rule = reportedRuleById.get(ruleId) as any;
+        if (!rule || rule.pendingDelete || !rule.isEnabled) return null;
+        const tunnelId = Number(rule.tunnelId || 0);
+        const baseLatency = typeof report.latencyMs === "number" && Number.isFinite(report.latencyMs) && report.latencyMs >= 0
+          ? Number(report.latencyMs)
+          : null;
+        if (tunnelId <= 0) {
+          if (Number(rule.hostId || 0) !== Number(host.id)) return null;
+          if (report.sourcePort && Number(report.sourcePort) !== Number(rule.sourcePort || 0)) return null;
+          if (report.targetPort && Number(report.targetPort) !== Number(rule.targetPort || 0)) return null;
+          if (String(rule.sni || "").trim() && Number(rule.forwardGroupRuleId) > 0 && sniFailoverGroupIds.has(Number(rule.forwardGroupId))
+            && (!report.targetIp || !sameProbeTarget(report.targetIp, rule.targetIp)
+              || Number(report.targetPort) !== Number(rule.targetPort))) return null;
+          if (!isRuleLatencyReportMethodCompatible(rule.protocol, report.method)) return null;
+          collectCounter("rule", ruleId, report);
+          const isTimeout = !!report.isTimeout || baseLatency === null;
+          const latencyMs = isTimeout ? null : baseLatency;
+          return {
+            stat: {
+              ruleId,
+              hostId: host.id,
+              latencyMs,
+              isTimeout,
+              probeCount: Number(report.probeCount) || 1,
+              probeSuccesses: Number(report.probeSuccesses) || 0,
+              healthStatus: report.healthStatus || null,
+              healthPending: !!report.healthPending,
+            },
+            gateReport: { ...report, latencyMs, isTimeout },
+          };
+        }
+
+        const tunnelContext = await getTunnelContext(tunnelId);
+        if (!tunnelContext || !validateTunnelRuleLatencyReport({
+          hostId: host.id,
+          rule,
+          tunnel: tunnelContext.tunnel,
+          report,
+        })) return null;
         collectCounter("rule", ruleId, report);
-        const isTimeout = !!report.isTimeout || baseLatency === null;
-        const latencyMs = isTimeout ? null : baseLatency;
+        const latestTunnelLatency = report.isTimeout ? null : await getLatestTunnelLatency(tunnelId);
+        const combined = combineTunnelRuleLatencySample({
+          targetLatencyMs: baseLatency,
+          targetIsTimeout: !!report.isTimeout,
+          tunnelLatencyMs: latestTunnelLatency?.latencyMs,
+          tunnelIsTimeout: !!latestTunnelLatency?.isTimeout,
+          tunnelRecordedAt: latestTunnelLatency?.recordedAt,
+        });
+        if (!combined) return null;
+        const tunnelIntroducedTimeout = combined.isTimeout && !report.isTimeout;
+        // Compose target and tunnel counters. If the tunnel path timed out,
+        // no end-to-end packet can be considered successful; otherwise retain
+        // the lower success ratio from either segment.
+        const composedProbeCounts = combineTunnelRuleProbeCounts({
+          target: report,
+          tunnel: latestTunnelLatency,
+          combinedIsTimeout: combined.isTimeout,
+        });
         return {
           stat: {
             ruleId,
             hostId: host.id,
-            latencyMs,
-            isTimeout,
-            probeCount: Number(report.probeCount) || 1,
-            probeSuccesses: Number(report.probeSuccesses) || 0,
-            healthStatus: report.healthStatus || null,
-            healthPending: !!report.healthPending,
+            latencyMs: combined.latencyMs,
+            isTimeout: combined.isTimeout,
+            probeCount: composedProbeCounts.probeCount,
+            probeSuccesses: composedProbeCounts.probeSuccesses,
+            healthStatus: tunnelIntroducedTimeout ? null : report.healthStatus || null,
+            healthPending: tunnelIntroducedTimeout ? false : !!report.healthPending,
           },
-          gateReport: { ...report, latencyMs, isTimeout },
+          gateReport: {
+            ...report,
+            tunnelId,
+            latencyMs: combined.latencyMs,
+            isTimeout: combined.isTimeout,
+          },
         };
+      });
+      const validRuleStats = ruleStats.filter((entry): entry is NonNullable<typeof entry> => !!entry);
+      const ruleGatePlan = agentTcpingReportGate.plan({
+        hostId: Number(host.id),
+        force,
+        results: validRuleStats.map((entry) => entry.gateReport),
+        tunnels: [],
+        forwardGroups: [],
+        services: [],
+      });
+      const acceptedRuleIds = new Set(ruleGatePlan.results.map((report) => Number(report.ruleId)));
+      const stats = validRuleStats
+        .filter((entry) => acceptedRuleIds.has(Number(entry.stat.ruleId)))
+        .map((entry) => entry.stat);
+
+      if (stats.length > 0) {
+        await db.insertTcpingStats(stats);
+        clearRuleLatencyQueryCaches();
+        db.scheduleForwardGroupFailover(Array.from(new Set(stats
+          .filter((stat) => ruleGatePlan.transitionRuleIds.has(Number(stat.ruleId)))
+          .map((stat) => Number(reportedRuleById.get(stat.ruleId)?.forwardGroupId || 0))
+          .filter((groupId) => Number.isInteger(groupId) && groupId > 0))));
       }
 
-      const tunnelContext = await getTunnelContext(tunnelId);
-      if (!tunnelContext || !validateTunnelRuleLatencyReport({
-        hostId: host.id,
-        rule,
-        tunnel: tunnelContext.tunnel,
-        report,
-      })) return null;
-      collectCounter("rule", ruleId, report);
-      const latestTunnelLatency = report.isTimeout ? null : await getLatestTunnelLatency(tunnelId);
-      const combined = combineTunnelRuleLatencySample({
-        targetLatencyMs: baseLatency,
-        targetIsTimeout: !!report.isTimeout,
-        tunnelLatencyMs: latestTunnelLatency?.latencyMs,
-        tunnelIsTimeout: !!latestTunnelLatency?.isTimeout,
-        tunnelRecordedAt: latestTunnelLatency?.recordedAt,
-      });
-      if (!combined) return null;
-      const tunnelIntroducedTimeout = combined.isTimeout && !report.isTimeout;
-      // Compose target and tunnel counters. If the tunnel path timed out,
-      // no end-to-end packet can be considered successful; otherwise retain
-      // the lower success ratio from either segment.
-      const composedProbeCounts = combineTunnelRuleProbeCounts({
-        target: report,
-        tunnel: latestTunnelLatency,
-        combinedIsTimeout: combined.isTimeout,
-      });
-      return {
-        stat: {
-          ruleId,
-          hostId: host.id,
-          latencyMs: combined.latencyMs,
-          isTimeout: combined.isTimeout,
-          probeCount: composedProbeCounts.probeCount,
-          probeSuccesses: composedProbeCounts.probeSuccesses,
-          healthStatus: tunnelIntroducedTimeout ? null : report.healthStatus || null,
-          healthPending: tunnelIntroducedTimeout ? false : !!report.healthPending,
-        },
-        gateReport: {
-          ...report,
-          tunnelId,
-          latencyMs: combined.latencyMs,
-          isTimeout: combined.isTimeout,
-        },
-      };
+      return ruleGatePlan;
     });
-    const validRuleStats = ruleStats.filter((entry): entry is NonNullable<typeof entry> => !!entry);
-    const ruleGatePlan = agentTcpingReportGate.plan({
-      hostId: Number(host.id),
-      force,
-      results: validRuleStats.map((entry) => entry.gateReport),
-      tunnels: [],
-      forwardGroups: [],
-      services: [],
-    });
-    const acceptedRuleIds = new Set(ruleGatePlan.results.map((report) => Number(report.ruleId)));
-    const stats = validRuleStats
-      .filter((entry) => acceptedRuleIds.has(Number(entry.stat.ruleId)))
-      .map((entry) => entry.stat);
-
-    if (stats.length > 0) {
-      await db.insertTcpingStats(stats);
-      clearRuleLatencyQueryCaches();
-      db.scheduleForwardGroupFailover(Array.from(new Set(stats
-        .filter((stat) => ruleGatePlan.transitionRuleIds.has(Number(stat.ruleId)))
-        .map((stat) => Number(reportedRuleById.get(stat.ruleId)?.forwardGroupId || 0))
-        .filter((groupId) => Number.isInteger(groupId) && groupId > 0))));
-    }
-
     const counterPlan = agentProbeCounterReportGate.plan(counterSnapshots, force);
     await db.insertProbeCounterSnapshots(counterPlan.rows);
     counterPlan.commit();

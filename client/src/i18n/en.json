@@ -4247,5 +4247,15 @@
   "数据校验通过，准备接管": "Data verified; preparing to take over",
   "无缝迁移未完成": "Seamless migration is incomplete",
   "迁移验证正在执行": "Migration verification is already running",
-  "Android 发布页（以实际附件为准）": "Android release page (check available assets)"
+  "Android 发布页（以实际附件为准）": "Android release page (check available assets)",
+  "速度和连接数限制由每台入口分别执行；切换期间旧入口的连接可能继续使用。": "Rate and connection limits apply separately on each entrance; existing connections may continue on the previous entrance during a switch.",
+  "请选择支持 SNI 分流的链路资源": "Select a link resource that supports SNI routing",
+  "暂无转发链或转发组 SNI 入口": "No SNI entrances on forwarding chains or failover groups",
+  "请先选择主机型转发组": "Select a host failover group first",
+  "SNI 分流仅支持主机型转发组": "SNI routing supports host failover groups only",
+  "当前入口已生效，{0} 台备用入口等待同步": "The current entrance is ready; {0} backup entrances are waiting to sync",
+  "各入口的 SNI 分流配置已生效": "SNI routing is applied on all entrances",
+  "等待当前入口应用最新 SNI 分流配置": "Waiting for the current entrance to apply the latest SNI routing configuration",
+  "当前入口": "Current entrance",
+  "备用入口": "Backup entrance"
 }

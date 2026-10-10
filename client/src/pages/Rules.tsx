@@ -75,6 +75,7 @@ import {
   RULE_TRANSFER_MAX_FILE_SIZE,
   RULE_TRANSFER_MAX_IMPORT_COUNT,
   SNI_BULK_IMPORT_LINE_FORMAT,
+  exportRuleForTransfer,
   formatSniBulkImportRuleLine,
   isSniBulkImportRule,
   normalizeSniImportDomain,
@@ -403,7 +404,7 @@ const ruleTransferScopeOptions: Array<{ value: RuleTransferScopeType; label: str
 const importRuleTransferScopeOptions = ruleTransferScopeOptions;
 // 分流器与链路类型无关（ADR-0001）：端口转发、隧道、转发链都能挂在它前面。
 // 只有转发组不行——它天然多出口，推导不出唯一的出口主机。
-const SNI_IMPORT_SCOPE_TYPES: RuleTransferScopeType[] = ["local", "tunnel", "chain"];
+const SNI_IMPORT_SCOPE_TYPES: RuleTransferScopeType[] = ["local", "tunnel", "chain", "group"];
 const sniImportRuleTransferScopeOptions = ruleTransferScopeOptions
   .filter((option) => SNI_IMPORT_SCOPE_TYPES.includes(option.value));
 
@@ -1227,6 +1228,7 @@ function buildKernelChainForwardWarning(input: Required<Pick<KernelForwardWarnin
 }
 
 function buildKernelForwardWarning({ rule, host, group, hosts = [], hostById, forwardGroupById }: KernelForwardWarningInput) {
+  if (normalizeSniImportDomain(rule?.sni)) return null;
   const forwardType = String(rule?.forwardType || "").trim().toLowerCase();
   if (!isKernelForwardType(forwardType)) return null;
   const toolLabel = FORWARD_TYPE_LABELS[forwardType as ForwardType] || forwardType;
@@ -2078,11 +2080,6 @@ function normalizePositiveRuleNumber(value: unknown, fallback: number) {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
 
-function normalizeRuleTransferSeconds(value: unknown, fallback: number) {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? Math.min(3600, Math.max(10, Math.round(parsed))) : fallback;
-}
-
 function sanitizeRuleTransferFilePart(value: string) {
   return value
     .trim()
@@ -2133,40 +2130,6 @@ function formatFailoverTargetsText(raw: unknown) {
   return parseRuleFailoverTargets(raw)
     .map((target) => `${target.targetIp.includes(":") ? `[${target.targetIp}]` : target.targetIp}:${target.targetPort}`)
     .join("\n");
-}
-
-function exportRuleForTransfer(rule: any): RuleTransferFileRule {
-  const sni = normalizeSniImportDomain(rule?.sni);
-  return {
-    name: String(rule?.name || translateText("导入规则")),
-    forwardType: normalizeRuleForwardType(rule?.forwardType),
-    protocol: normalizeRuleProtocol(rule?.protocol),
-    sourcePort: Number(rule?.sourcePort || 0),
-    ...(sni ? {
-      sni,
-      rateLimitMbps: Math.min(1_000_000, Math.max(0, Math.floor(Number(rule?.rateLimitMbps) || 0))),
-      maxConnections: Math.min(1_000_000, Math.max(0, Math.floor(Number(rule?.maxConnections) || 0))),
-    } : {}),
-    targetIp: String(rule?.targetIp || ""),
-    targetPort: Number(rule?.targetPort || 0),
-    isEnabled: rule?.isEnabled !== false,
-    telegramErrorNotifyEnabled: Boolean(rule?.telegramErrorNotifyEnabled),
-    proxyProtocolReceive: Boolean(rule?.proxyProtocolReceive),
-    proxyProtocolSend: Boolean(rule?.proxyProtocolSend),
-    proxyProtocolExitReceive: Boolean(rule?.proxyProtocolExitReceive),
-    proxyProtocolExitSend: Boolean(rule?.proxyProtocolExitSend),
-    proxyProtocolVersion: normalizeProxyProtocolVersion(rule?.proxyProtocolVersion),
-    tcpFastOpen: Boolean(rule?.tcpFastOpen),
-    zeroCopy: Boolean(rule?.zeroCopy),
-    udpOverTcp: Boolean(rule?.udpOverTcp),
-    udpOverTcpPort: Number(rule?.udpOverTcpPort || 0),
-    failoverEnabled: Boolean(rule?.failoverEnabled),
-    failoverStrategy: normalizeFailoverStrategy(rule?.failoverStrategy),
-    failoverTargets: parseRuleFailoverTargets(rule?.failoverTargets),
-    failoverSeconds: normalizeRuleTransferSeconds(rule?.failoverSeconds, 60),
-    recoverSeconds: normalizeRuleTransferSeconds(rule?.recoverSeconds, 120),
-    autoFailback: rule?.autoFailback !== false,
-  };
 }
 
 function buildRuleTransferFiles(
@@ -2388,6 +2351,7 @@ function RulesContent() {
   const [importFile, setImportFile] = useState<RuleTransferFile | null>(null);
   const [importFileName, setImportFileName] = useState("");
   const [importFileError, setImportFileError] = useState("");
+  const [importFailures, setImportFailures] = useState<string[]>([]);
   const [importFileInputKey, setImportFileInputKey] = useState(0);
   const [importManualText, setImportManualText] = useState("");
   const [importSniSourcePort, setImportSniSourcePort] = useState(SNI_DEFAULT_ENTRY_PORT);
@@ -3518,7 +3482,10 @@ function RulesContent() {
       forwardGroupId: isForwardGroupTarget ? Number(resource.id) : null,
       sourcePort,
       sni: String(rule.sni || "").trim() || null,
-      ...(user?.role === "admin" ? { rateLimitMbps: Number(rule.rateLimitMbps || 0) } : {}),
+      ...(user?.role === "admin" ? {
+        rateLimitMbps: Number(rule.rateLimitMbps || 0),
+        ...(rule.sni ? { trafficLimit: Number(rule.trafficLimit || 0), trafficMode: rule.trafficMode || "outbound", expiresAt: rule.expiresAt ? new Date(rule.expiresAt) : null } : {}),
+      } : {}),
       maxConnections: Number(rule.maxConnections || 0),
       targetIp: String(rule.targetIp || ""),
       targetPort: Number(rule.targetPort || 0),
@@ -4813,6 +4780,19 @@ function RulesContent() {
       const exitHost = hostById.get(Number(exitRuntime?.hostId || 0));
       if (rule.resourceAccessAllowed === false) return { state: "error", title: revokedResourceTitle };
       if (!rule.isEnabled || group?.isEnabled === false) return { state: "disabled", title: translateText("规则已停用") };
+      if (String(group?.groupMode) === "failover") {
+        const current = entryRuntimes.find((entry: any) => Number(entry.hostId) === Number(runtime?.currentHostId));
+        const pending = entryRuntimes.filter((entry: any) => !entry.applied).length;
+        const currentHost = current ? hostById.get(Number(current.hostId)) : null;
+        if (currentHost && !currentHost.isOnline) return { state: "error", title: translateText("主机离线") };
+        if (currentHost && isSniEntryAgentVersionUnsupported(currentHost)) return { state: "error", title: translateText("Agent 版本不足") };
+        if (current?.applied || (!runtime?.currentHostId && runtime?.applied)) {
+          return { state: "running", title: pending > 0
+            ? translateText("当前入口已生效，{0} 台备用入口等待同步", [pending])
+            : translateText("各入口的 SNI 分流配置已生效") };
+        }
+        return { state: "pending", title: translateText("等待当前入口应用最新 SNI 分流配置") };
+      }
       if (unsupportedEntryRuntime) {
         const entryHost = hostById.get(Number(unsupportedEntryRuntime.hostId || 0));
         const agentVersion = String(entryHost?.agentVersion || "").trim();
@@ -5628,7 +5608,7 @@ function RulesContent() {
       return { ok: false, message: translateText("SNI 分流仅管理员可导入"), rules: [] };
     }
     if (!SNI_IMPORT_SCOPE_TYPES.includes(importScopeType)) {
-      return { ok: false, message: translateText("SNI 分流规则不能导入到转发组，请选择端口转发、隧道或转发链"), rules: [] };
+      return { ok: false, message: translateText("请选择支持 SNI 分流的链路资源"), rules: [] };
     }
     return parseSniBulkImportText(importManualText, importSniSourcePort);
   }, [importManualText, importScopeType, importSniSourcePort, user?.role]);
@@ -5654,6 +5634,7 @@ function RulesContent() {
     setImportFile(null);
     setImportFileName("");
     setImportFileError("");
+    setImportFailures([]);
     setImportFileInputKey((key) => key + 1);
     setImportManualText("");
     setImportSniSourcePort(SNI_DEFAULT_ENTRY_PORT);
@@ -5745,7 +5726,10 @@ function RulesContent() {
       forwardGroupId: importScopeType === "tunnel" ? null : resourceId,
       sourcePort: rule.sourcePort,
       sni: sni || null,
-      ...(user?.role === "admin" ? { rateLimitMbps: Number(rule.rateLimitMbps || 0) } : {}),
+      ...(user?.role === "admin" ? {
+        rateLimitMbps: Number(rule.rateLimitMbps || 0),
+        ...(rule.sni ? { trafficLimit: Number(rule.trafficLimit || 0), trafficMode: rule.trafficMode || "outbound", expiresAt: rule.expiresAt ? new Date(rule.expiresAt) : null } : {}),
+      } : {}),
       maxConnections: sni ? Number(rule.maxConnections || 0) : 0,
       targetIp: rule.targetIp,
       targetPort: rule.targetPort,
@@ -5778,19 +5762,20 @@ function RulesContent() {
     importingRulesRef.current = true;
     setImportingRules(true);
     try {
+      setImportFailures([]);
+      const results = await runBatchOperations(importValidation.rules, 6, async (rule) => {
       if (importSourceMode === "sni") {
         await checkSniImportMutation.mutateAsync({
           userId: createOwnerUserId,
           forwardGroupId: importScopeType === "tunnel" ? null : Number(importResourceId),
           tunnelId: importScopeType === "tunnel" ? Number(importResourceId) : null,
           sourcePort: Number(importSniSourcePort),
-          rules: importValidation.rules.map((rule) => ({
+          rules: [{
             lineNumber: Number(rule.sourceLineNumber),
             sni: normalizeSniImportDomain(rule.sni),
-          })),
+          }],
         });
       }
-      const results = await runBatchOperations(importValidation.rules, 6, async (rule) => {
         const payload = buildImportRulePayload(rule);
         try {
           return await importCreateMutation.mutateAsync(payload);
@@ -5801,6 +5786,8 @@ function RulesContent() {
       });
       const importedCount = results.filter((result) => result.status === "fulfilled").length;
       const failures = results.filter((result) => result.status === "rejected");
+      setImportFailures(results.filter(result => result.status === "rejected").map(result =>
+        `${result.item.name}: ${batchOperationErrorMessage(result.reason)}`));
       await Promise.all([
         utils.rules.list.invalidate(),
         utils.rules.listPage.invalidate(),
@@ -6860,9 +6847,12 @@ function RulesContent() {
       return isSniEntryAgentVersionUnsupported(host);
     });
     const configErrorEndpoints = endpoints.filter((endpoint) => String(endpoint?.lastConfigError || "").trim());
+    const isFailoverSni = runtimeRules.some((rule: any) => rule?.sniRuntime?.currentHostId !== undefined);
+    const currentHostId = Number(runtimeRules.find((rule: any) => rule?.sniRuntime?.currentHostId)?.sniRuntime.currentHostId || 0);
+    const currentEntranceError = isFailoverSni && [...offlineEndpoints, ...unsupportedEntryEndpoints].some(endpoint => Number(endpoint.hostId) === currentHostId);
     const status: SniRuleGroupStatus = activeRules.length === 0
       ? "disabled"
-      : offlineEndpoints.length > 0 || unsupportedEntryEndpoints.length > 0 || configErrorEndpoints.length > 0
+      : currentEntranceError || !isFailoverSni && (offlineEndpoints.length > 0 || unsupportedEntryEndpoints.length > 0 || configErrorEndpoints.length > 0)
         ? "error"
         : appliedCount === activeRules.length
           ? "running"
@@ -6879,6 +6869,8 @@ function RulesContent() {
       appliedCount,
       entryEndpoints,
       exitEndpoints,
+      isFailoverSni,
+      currentHostId,
       offlineEndpoints,
       unsupportedEntryEndpoints,
       configErrorEndpoints,
@@ -6897,7 +6889,10 @@ function RulesContent() {
     const statusDotClass = SNI_RULE_GROUP_STATUS_CONFIG[meta.status].dotClass;
     const endpointLabel = (endpoint: any, side: "入口" | "出口") => {
       const host = hostById.get(Number(endpoint.hostId || 0));
-      return `${translateText(side)} ${getHostOptionName(host || { id: endpoint.hostId })}:${endpoint.port}`;
+      const label = meta.isFailoverSni && side === "入口"
+        ? (Number(endpoint.hostId) === meta.currentHostId ? translateText("当前入口") : translateText("备用入口"))
+        : translateText(side);
+      return `${label} ${getHostOptionName(host || { id: endpoint.hostId })}:${endpoint.port}`;
     };
     const configErrorText = meta.configErrorEndpoints.map((endpoint: any) => {
       const normalizedError = String(endpoint.lastConfigError || "").trim().replace(/[。.!！]+$/, "");
@@ -6962,7 +6957,7 @@ function RulesContent() {
             <span className="shrink-0 text-xs text-muted-foreground">{translateText("入口端口")}{meta.representative?.sourcePort || "-"}</span>
           </button>
         </div>
-        <div className={cn("grid gap-2 border-t border-border/40 px-7 py-2 text-xs leading-5", meta.entryEndpoints.length > 0 && "md:grid-cols-2")}>
+        <div className={cn("grid gap-2 border-t border-border/40 px-7 py-2 text-xs leading-5", meta.entryEndpoints.length > 0 && meta.exitEndpoints.length > 0 && "md:grid-cols-2")}>
           {meta.entryEndpoints.length > 0 && (
             <div className="min-w-0">
               <p className="font-medium">{translateText("入口分流器")}</p>
@@ -6970,11 +6965,11 @@ function RulesContent() {
               <p className="text-muted-foreground">{translateText("客户端使用了入口主机没有配置的域名，可能是域名拼写、DNS 指向或端口扫描。")}</p>
             </div>
           )}
-          <div className="min-w-0">
+          {meta.exitEndpoints.length > 0 && <div className="min-w-0">
             <p className="font-medium">{translateText("出口分流器")}</p>
             {meta.exitEndpoints.map((endpoint) => renderEndpointRuntime(endpoint, "出口"))}
             <p className="text-muted-foreground">{meta.entryEndpoints.length > 0 ? translateText("入口与出口配置可能尚未同步。") : translateText("客户端使用的域名尚未配置在出口分流表中。")}</p>
-          </div>
+          </div>}
         </div>
         {(offlineText.length > 0 || unsupportedEntryText.length > 0 || configErrorText.length > 0) && (
           <div className="space-y-1 border-t border-border/40 px-7 py-2 text-xs leading-5 text-destructive">
@@ -8270,6 +8265,7 @@ function RulesContent() {
                       placeholder="0"
                       onChange={(e) => setForm({ ...form, maxConnections: parseInt(e.target.value) || 0 })}
                     />
+                    {form.routeMode === "group" && <p className="text-xs text-muted-foreground">{translateText("速度和连接数限制由每台入口分别执行；切换期间旧入口的连接可能继续使用。")}</p>}
                   </div>
                 </>
               )}
@@ -8739,6 +8735,9 @@ function RulesContent() {
                       {importValidation.message}
                     </div>
                   )}
+                  {importFailures.length > 0 && <ul className="max-h-48 list-disc space-y-1 overflow-y-auto rounded-md bg-destructive/10 p-3 pl-7 text-xs text-destructive">
+                    {importFailures.map((message, index) => <li key={index}>{message}</li>)}
+                  </ul>}
                   {importValidation.rules.length > 0 && (
                     <div className="max-h-[24rem] space-y-2 overflow-y-auto rounded-md border border-border/60 p-2">
                       {importValidation.rules.map((rule, index) => {

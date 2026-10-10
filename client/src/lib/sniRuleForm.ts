@@ -151,9 +151,6 @@ export function sniToggleSupport(input: SniToggleSupportInput): SniToggleSupport
   const blocked = (reason: string, pending = false): SniToggleSupport => ({ visible: true, reason, pending });
   const allowed: SniToggleSupport = { visible: true, reason: null, pending: false };
   if (!input.isAdmin) return { visible: false, reason: null, pending: false };
-  if (input.routeMode === "group") {
-    return blocked(translateText("转发组不支持 SNI 分流，请改用转发链、隧道或端口转发"));
-  }
   if (input.routeMode === "tunnel") {
     const tunnel = input.tunnel;
     if (!tunnel) return blocked(translateText("请先选择隧道"), true);
@@ -167,7 +164,10 @@ export function sniToggleSupport(input: SniToggleSupportInput): SniToggleSupport
   }
   const group = input.group;
   const groupPending = !group && Number(input.groupId || 0) > 0;
-  if (input.routeMode === "chain") {
+  if (input.routeMode === "group") {
+    if (!group) return blocked(translateText("请先选择主机型转发组"), groupPending);
+    if (input.groupModeForRule !== "failover") return blocked(translateText("SNI 分流仅支持主机型转发组"));
+  } else if (input.routeMode === "chain") {
     if (!group) return blocked(translateText("请先选择转发链"), groupPending);
     if (input.groupModeForRule !== "chain") return blocked(translateText("请先选择转发链"));
   } else if (!group) {

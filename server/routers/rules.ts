@@ -1,3 +1,4 @@
+import { ruleLimitReason } from "../../shared/ruleLimits";
 import { adminProcedure, protectedProcedure, router } from "../_core/trpc";
 import { z } from "zod";
 import * as db from "../db";
@@ -7,7 +8,7 @@ import { selfTestRulesRouter } from "./rules.selfTest";
 import { trafficRulesRouter } from "./rules.traffic";
 import { canUseForwardRuleResource, getLinkAccessScope } from "../linkAccessView";
 import { isManagedForwardGroupChildRule } from "../forwardRuleVisibility";
-import { getSniRuntimeGroupStatus } from "../sniRuntimeObservability";
+import { getSniRuntimeGroupStatus, isFailoverSniRuleApplied } from "../sniRuntimeObservability";
 import { getPortOccupancy, inspectPortOccupancy } from "../portOccupancy";
 import { getRulePortWarnings, type RulePortWarning } from "../rulePortOccupancy";
 import { getRulePortFailure } from "../rulePortFailure";
@@ -31,7 +32,8 @@ type SniRuntimeEndpointStatus = {
 type SniRuntimeRuleStatus = {
   applied: boolean;
   entries: SniRuntimeEndpointStatus[];
-  exit: SniRuntimeEndpointStatus;
+  exit?: SniRuntimeEndpointStatus;
+  currentHostId?: number;
 };
 
 type ForwardRuleView = Omit<ForwardRule, never> & {
@@ -49,8 +51,10 @@ type ForwardRuleViewOutput = ForwardRuleView | ForwardRuleView[] | ForwardRulePa
 type SniRuntimeForwardGroup = {
   id: unknown;
   groupMode?: unknown;
+  activeMemberId?: unknown;
   isEnabled?: unknown;
   members?: Array<{
+    id?: unknown;
     hostId?: unknown;
     isEnabled?: unknown;
     memberType?: unknown;
@@ -105,13 +109,16 @@ async function attachSniRuntimeStatus(value: ForwardRuleViewInput): Promise<Forw
   const groupById = new Map(groups.map((group) => [Number(group.id), group]));
   const tunnelById = new Map(tunnels.filter(Boolean).map((tunnel: any) => [Number(tunnel.id), tunnel]));
   const entryHostIdsByGroup = new Map(await Promise.all(groups
-    .filter((group) => String(group.groupMode || "") === "chain")
+    .filter((group) => ["chain", "failover"].includes(String(group.groupMode || "")))
     .map(async (group) => [Number(group.id), await db.getForwardGroupRuleEntryHostIds(Number(group.id))] as const)));
   const entryHostIds = Array.from(new Set(Array.from(entryHostIdsByGroup.values()).flat()));
   const entryVersionSupportedByHostId = new Map(
     (await getSniEntryHostVersionStatuses(entryHostIds))
       .map((status) => [status.id, status.versionSupported]),
   );
+  const failoverChildren = (await Promise.all(groups
+    .filter(group => String(group.groupMode) === "failover")
+    .map(group => db.getForwardGroupChildRules(Number(group.id))))).flat() as ForwardRule[];
   const endpointStatus = (hostId: number, port: number, sni: string): SniRuntimeEndpointStatus => {
     const runtime = getSniRuntimeGroupStatus(hostId, port);
     return {
@@ -131,6 +138,22 @@ async function attachSniRuntimeStatus(value: ForwardRuleViewInput): Promise<Forw
     const group = groupById.get(Number(rule.forwardGroupId || 0));
     const tunnel = tunnelById.get(Number(rule.tunnelId || 0));
     if (!sni || splitterPort <= 0 || (!group && !tunnel)) return rule;
+    if (String(group?.groupMode) === "failover") {
+      const allowed = !ruleLimitReason(rule, { bytesIn: Number(rule.quotaUsedIn || 0), bytesOut: Number(rule.quotaUsedOut || 0) });
+      const templateId = Number(rule.forwardGroupRuleId || rule.id);
+      const entries = (group?.members || []).filter(member => runtimeBool(member.isEnabled, true))
+        .map(member => {
+          const hostId = Number(member.hostId);
+          const child = failoverChildren.find(child => Number(child.forwardGroupRuleId) === templateId && Number(child.hostId) === hostId);
+          return { ...endpointStatus(hostId, Number(rule.sourcePort), sni),
+            applied: !!child && runtimeBool(child.isEnabled) && runtimeBool(child.isRunning) && !runtimeBool(child.pendingDelete) && entryVersionSupportedByHostId.get(hostId) === true && isFailoverSniRuleApplied(child) };
+        });
+      const activeHostId = Number(group?.members?.find(member => Number(member.id) === Number(group.activeMemberId))?.hostId || 0);
+      const current = entries.find(entry => entry.hostId === activeHostId);
+      const applied = allowed && (current?.applied ?? entries.some(entry => entry.applied));
+      return { ...rule, isRunning: applied && runtimeBool(rule.isEnabled) && runtimeBool(group?.isEnabled) && !runtimeBool(rule.pendingDelete),
+        sniRuntime: { applied, entries, currentHostId: activeHostId } };
+    }
     const exitHostId = tunnel
       ? Number((tunnel as any).exitHostId || 0)
       : Number([...(group?.members || [])]

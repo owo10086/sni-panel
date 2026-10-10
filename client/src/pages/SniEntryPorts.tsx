@@ -90,7 +90,7 @@ function SniEntryPortsContent() {
           {entries.length === 0 ? (
             <div className="flex min-h-[180px] flex-col items-center justify-center gap-2 border-y border-border/50 text-sm text-muted-foreground">
               <Network className="h-6 w-6" />
-              <p>{query ? translateText("没有符合搜索条件的 SNI 入口") : translateText("暂无转发链 SNI 入口")}</p>
+              <p>{query ? translateText("没有符合搜索条件的 SNI 入口") : translateText("暂无转发链或转发组 SNI 入口")}</p>
             </div>
           ) : (
             <div className="space-y-6">

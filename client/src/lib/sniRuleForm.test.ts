@@ -87,10 +87,14 @@ test("普通用户看不到开关", () => {
   );
 });
 
-test("转发组模式下开关置灰", () => {
+test("主机型转发组允许 SNI，未选资源仍需先选择", () => {
   const support = sniToggleSupport({ isAdmin: true, routeMode: "group" });
   assert.equal(support.visible, true);
-  assert.match(String(support.reason), /转发组不支持/);
+  assert.match(String(support.reason), /请先选择主机型转发组/);
+  assert.equal(sniToggleSupport({ isAdmin: true, routeMode: "group", groupModeForRule: "failover",
+    group: { groupType: "host", members: [{ memberType: "host" }, { memberType: "host" }] } }).reason, null);
+  assert.match(String(sniToggleSupport({ isAdmin: true, routeMode: "group", groupModeForRule: "failover",
+    group: { groupType: "tunnel", members: [{ memberType: "tunnel" }] } }).reason), /主机型/);
 });
 
 test("多出口隧道与负载均衡隧道置灰，单出口隧道可用", () => {

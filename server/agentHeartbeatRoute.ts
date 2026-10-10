@@ -66,6 +66,7 @@ import {
   buildNftForwardCmds,
   buildNftTransitionCleanupCmds,
   buildSNISplitterSourceRestrictionCleanupCmds,
+  buildSNISplitterRevocationGuardCmd,
   normalizeSourceAllowIps,
   killByPatternCmd,
   removeManagedServiceCmd,
@@ -124,7 +125,7 @@ import { observePresenceCapableHostActivity, registerPresenceCapableHost } from 
 import { recordAuthenticatedAgentActivity } from "./agentActivity";
 import { normalizeSniValue } from "./repositories/repositoryUtils";
 import { getSniRuleGroupKey, isSniEntryAgentVersionSupported } from "@shared/sni";
-import { recordSniRuntimeSnapshot } from "./sniRuntimeObservability";
+import { recordSniRuntimeSnapshot, sniRouteContentMatches } from "./sniRuntimeObservability";
 import { reconcileSniChainRunningStateForHost } from "./sniRuntimeRunningState";
 
 // DNS 解析缓存：ruleId → 主目标上次解析到的 IPv4 地址。
@@ -2662,7 +2663,7 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
     };
     type SniRuntime = {
       mode: "entry" | "relay" | "tunnel-entry" | "exit";
-      resource: "chain" | "port" | "tunnel";
+      resource: "chain" | "port" | "failover" | "tunnel";
       representative: boolean;
       sni: string;
       splitterPort: number;
@@ -2688,7 +2689,14 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
       if (groupId > 0 && memberId > 0) {
         const group = await getForwardChainGroup(groupId);
         const groupMode = String((group as any)?.groupMode || "");
-        if (groupMode !== "chain" && groupMode !== "port") return null;
+        if (groupMode !== "chain" && groupMode !== "port" && groupMode !== "failover") return null;
+        // Keep the actual runtime identity after a member is disabled or
+        // removed, so cleanup does not fall back to the group's ordinary tool.
+        if (groupMode === "failover") {
+          return { mode: "exit", resource: "failover", representative: true,
+            sni: sniRoute.sni, splitterPort: Number(rule.sourcePort),
+            targetIp: processTarget(rule), targetPort: Number(rule.targetPort) };
+        }
         const members = [...(((group as any).members || []) as SniForwardChainMemberLike[])]
           .filter((member) => runtimeBool(member?.isEnabled))
           .sort((a, b) => Number(a.priority) - Number(b.priority));
@@ -5254,14 +5262,7 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
       const localSniRouteMatches = (candidate: AgentLocalRuntimeRuleState) => {
         const expected = acceptedRoutesByRuleId.get(Number(candidate.ruleId || 0));
         if (!expected) return true;
-        return normalizeSniValue(candidate.sni) === expected.sni
-          && cleanEndpointHost(candidate.targetIp).toLowerCase() === cleanEndpointHost(expected.targetIp).toLowerCase()
-          && Number(candidate.targetPort || 0) === Number(expected.targetPort || 0)
-          && Number(candidate.limitIn || 0) === Number(expected.limitIn || 0)
-          && Number(candidate.limitOut || 0) === Number(expected.limitOut || 0)
-          && Number(candidate.maxConnections || 0) === Number(expected.maxConnections || 0)
-          && Number(candidate.maxIPs || 0) === Number(expected.maxIPs || 0)
-          && String(candidate.accessScope || "").trim() === String(expected.accessScope || "").trim();
+        return sniRouteContentMatches(candidate, expected);
       };
       const localSniRuntimeTargetMatches = (candidate: AgentLocalRuntimeRuleState) => {
         if (acceptedRoutesByRuleId.has(Number(candidate.ruleId || 0))) return true;
@@ -5709,6 +5710,11 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
       const ruleTunnel = tunnelId > 0 ? tunnelById.get(tunnelId) as any : null;
       if (!isRuleProtocolEnabled(forwardProtocolSettings, rule, ruleTunnel)) return;
       if (runtimeBool(rule.isEnabled) && sniRuntime.mode === "exit") {
+        if (sniRuntime.resource === "failover" && !isSniEntryAgentVersionSupported(effectiveAgentVersion)) {
+          await db.markForwardRulesNotRunning([Number(rule.id)]);
+          rule.isRunning = false;
+          return;
+        }
         expectedRulePorts.add(runtimePortProtocolKey(sniRuntime.splitterPort, "tcp"));
         expectedRuleIdentityKeys.add(ruleRuntimeIdentityKey(rule.id, sniRuntime.splitterPort, "tcp"));
         expectedRulePortIdentityKeys.add(ruleRuntimePortIdentityKey(rule.id, sniRuntime.splitterPort));
@@ -5744,8 +5750,8 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
           ruleId: rule.id,
           tunnelId: Number(rule.tunnelId || 0) || undefined,
           sourcePort: sniRuntime.splitterPort,
-          targetIp: splitterRuntimeTargetIp,
-          targetPort: splitterRuntimeTargetPort,
+          targetIp: sniRuntime.resource === "failover" ? targetIp : splitterRuntimeTargetIp,
+          targetPort: sniRuntime.resource === "failover" ? targetPort : splitterRuntimeTargetPort,
           protocol: "tcp",
           forwardType: "forwardx",
         });
@@ -5890,7 +5896,19 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
         const appliedRuleIds: number[] = [];
         const unappliedRuleIds: number[] = [];
         for (const rule of locallyOwnedRunningRules) {
-          const domainApplied = appliedDomains.has(normalizeSniValue(rule.sni));
+          const expectedRoute = group.routes.find(route => Number(route.ruleId) === Number(rule.id));
+          const domainApplied = sniRuntimeForRule(rule)?.resource === "failover"
+            ? isSniEntryAgentVersionSupported(effectiveAgentVersion) && !!expectedRoute && reportedLocalRules.some(local => (
+              Number(local.ruleId) === Number(rule.id)
+              && Number(local.port) === group.splitterPort
+              && local.ready !== false
+              && Number(local.sniRouteVersion || 0) > 0
+              && forwardTypeCompatible(local.forwardType, "forwardx")
+              && localProtocolCompatible(local.protocol, "tcp")
+              && sniRouteContentMatches(local, expectedRoute)
+              && normalizeSourceAllowIps(local.sourceAllowIps || []).length === 0
+            ))
+            : appliedDomains.has(normalizeSniValue(rule.sni));
           if (domainApplied) {
             if (!runtimeBool(rule.isRunning)) appliedRuleIds.push(Number(rule.id));
             rule.isRunning = true;
@@ -5911,6 +5929,10 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
       )) continue;
       const routes = group.routes.slice().sort((a, b) => String(a.sni).localeCompare(String(b.sni)));
       const sniRouteVersion = sniRouteTableVersionFor(Number(host.id), group.splitterPort, routes, configRevision, localSniRouteTableVersionFor(group.splitterPort));
+      const revocationGuard = rulesInGroup.some(rule => sniRuntimeForRule(rule)?.resource === "failover")
+        ? buildSNISplitterRevocationGuardCmd(group.splitterPort, Number(group.tunnelId || 0), routes.map(route => String(route.sni)))
+        : null;
+      const splitterCleanup = buildSNISplitterSourceRestrictionCleanupCmds(group.splitterPort);
       actions.push({
         tunnelId: group.tunnelId || undefined,
         statusType: group.tunnelId ? "rule" : undefined,
@@ -5922,7 +5944,10 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
         targetPort: group.splitterPort,
         protocol: "tcp",
         networkInterface: hostInterface,
-        commands: buildSNISplitterSourceRestrictionCleanupCmds(group.splitterPort),
+        commands: revocationGuard
+          ? splitterCleanup.map(command => `(\n${command}\n) || { (\n${revocationGuard}\n); exit 1; }`)
+          : splitterCleanup,
+        postCommands: revocationGuard ? [revocationGuard] : undefined,
         fxp: {
           role: "sni-splitter",
           ruleId: Number(firstRule?.id || 0),
@@ -5932,6 +5957,32 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
           sourceAllowIps: [],
           sniRoutes: routes,
         },
+      });
+    }
+    const stoppedFailoverSniPorts = new Set<number>();
+    for (const rule of agentAllRules as SniRuntimeRuleLike[]) {
+      const runtime = sniRuntimeForRule(rule);
+      if (runtime?.resource !== "failover") continue;
+      const port = runtime.splitterPort;
+      if (sniExitGroups.has(port) || expectedRulePorts.has(runtimePortProtocolKey(port, "tcp")) || stoppedFailoverSniPorts.has(port)) continue;
+      stoppedFailoverSniPorts.add(port);
+      const prefix = "/run/forwardx-agent/fxp-sni-splitter-0";
+      actions.push({
+        // The whole unused port is being retired. A shared splitter can have
+        // a different representative rule in the Agent's local state.
+        ruleId: 0,
+        op: "remove",
+        forwardType: "forwardx",
+        sourcePort: port,
+        targetIp: host.ip,
+        targetPort: port,
+        protocol: "tcp",
+        commands: [
+          ...buildSNISplitterSourceRestrictionCleanupCmds(port),
+          `for pid in $(pgrep -f ${shQuote(`[f]orwardx-fxp.* ${prefix}(-[0-9]+)?-${port}\\.json([[:space:]]|$)`)} 2>/dev/null || true); do [ "$pid" = "$$" ] || [ "$pid" = "$PPID" ] || kill -KILL "$pid" 2>/dev/null || true; done`,
+          `rm -f ${prefix}-${port}.json ${prefix}-${port}.sock ${prefix}-[0-9]*-${port}.json ${prefix}-[0-9]*-${port}.sock /var/lib/forwardx-agent/fxp/fxp-*-sni-splitter-0-*-${port}.json`,
+        ],
+        fxp: { role: "sni-splitter", ruleId: 0, listenPort: port, protocol: "tcp", sniRoutes: [] },
       });
     }
     if (hasReportedRuntimeState) {
@@ -6933,7 +6984,7 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
         const localPortIdentityKey = ruleRuntimePortIdentityKey(reportedRuleId, port);
         const expectedIdentity = !!localIdentityKey && expectedRuleIdentityKeys.has(localIdentityKey);
         const expectedPortIdentity = !!localPortIdentityKey && expectedRulePortIdentityKeys.has(localPortIdentityKey);
-        if (expectedIdentity || expectedPortIdentity || (!reportedRuleId && expectedRulePorts.has(localRuntimeKey)) || ruleActionPorts.has(localRuntimeKey) || (!!localPortIdentityKey && ruleActionPortIdentityKeys.has(localPortIdentityKey))) continue;
+        if (expectedIdentity || expectedPortIdentity || stoppedFailoverSniPorts.has(port) || (!reportedRuleId && expectedRulePorts.has(localRuntimeKey)) || ruleActionPorts.has(localRuntimeKey) || (!!localPortIdentityKey && ruleActionPortIdentityKeys.has(localPortIdentityKey))) continue;
         // A replacement apply for this same rule proves that an old listener was
         // superseded by an edit. Remove it in this batch; without that concrete
         // replacement, retain orphan hysteresis for transient runtime gaps.

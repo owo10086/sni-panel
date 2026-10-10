@@ -148,7 +148,7 @@ test("forward-chain SNI rule creation is admin-only and prepares splitter metada
   assert.equal(result.status, 0, result.stderr || result.stdout);
 });
 
-test("SNI rule creation rejects ambiguous exit hosts and old exit agents", () => {
+test("SNI rule creation rejects unsupported group modes and old agents", () => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), "forwardx-sni-rule-reject-"));
   const databasePath = path.join(directory, "sni-rule-reject.db");
   const script = String.raw`
@@ -239,6 +239,7 @@ test("SNI rule creation rejects ambiguous exit hosts and old exit agents", () =>
       });
       assert.equal(liveCheck.ok, false);
       assert.match(String(liveCheck.reason || ""), /入口 Agent.*entry.*2\.2\.195/);
+      await runtime.executeRaw('UPDATE "forward_groups" SET "groupMode" = ? WHERE "id" = ?', ["exit", 30]);
       await assert.rejects(
         () => caller.create(createInput({ forwardGroupId: 30, sourcePort: 18444 })),
         /SNI 分流当前只支持单出口/,

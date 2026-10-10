@@ -1,7 +1,8 @@
 import * as db from "./db";
 import { normalizePositiveIds } from "./repositories/repositoryUtils";
-import { normalizeSniValue } from "@shared/sni";
+import { isSniEntryAgentVersionSupported, normalizeSniValue, SNI_SPLITTER_MIN_AGENT_VERSION } from "@shared/sni";
 import type { Tunnel } from "../drizzle/schema";
+import { isPortAllowedByPolicy, portPolicyErrorMessage, portPolicyFrom } from "./portPolicy";
 
 // SNI 分流规则共用一个入口端口（ADR-0002），所以「这个端口能不能用」不再是一次
 // 布尔查询。判定同时服务两条路径：创建/更新规则时（抛错），以及表单实时校验端口
@@ -139,6 +140,46 @@ export function assertSniEntryPortCanUseSni(state: SniEntryPortState, sourcePort
   }
   if (state?.plainRule) {
     throw new Error(`入口端口 ${sourcePort} 已被普通转发规则 ${forwardRuleConflictLabel(state.plainRule)} 占用，无法创建 SNI 分流规则`);
+  }
+}
+
+/** Check the complete prospective entrance set before any member is replaced. */
+export async function validateForwardGroupSniMembers(groupId: number, members: Array<{ memberType?: unknown; hostId?: unknown; isEnabled?: unknown }>) {
+  const group = await db.getForwardGroupById(groupId);
+  if (String(group?.groupMode) !== "failover") return;
+  const templates = (await db.getForwardGroupTemplateRules(groupId) as any[])
+    .filter(rule => normalizeSniValue(rule.sni) && !dbBool(rule.pendingDelete) && (dbBool(rule.isEnabled) || dbBool(rule.disabledByGroup)));
+  if (templates.length === 0) return;
+  const enabledMembers = members.filter(member => dbBool(member.isEnabled, true));
+  if (String(group?.groupType) !== "host" || enabledMembers.some(member => String(member.memberType) !== "host")) {
+    throw new Error("SNI 分流仅支持主机型转发组");
+  }
+  for (const member of enabledMembers) {
+    const hostId = Number(member.hostId);
+    const host = await db.getHostById(hostId);
+    if (!host || !isSniEntryAgentVersionSupported(host.agentVersion)) {
+      throw new Error(`入口 Agent「${host?.name || hostId}」（ID ${hostId}）需要 ${SNI_SPLITTER_MIN_AGENT_VERSION} 或更高版本，当前版本 ${host?.agentVersion || "未上报"}`);
+    }
+    for (const template of templates) {
+      const port = Number(template.sourcePort);
+      const sni = normalizeSniValue(template.sni);
+      const children = await db.getForwardGroupChildRulesForTemplate(Number(template.id)) as any[];
+      const ownIds = normalizePositiveIds([template.id, ...children.map(child => child.id)]);
+      const state = await db.getForwardGroupSniEntryPortState({ groupId, sourcePort: port, entryHostIds: [hostId], sni, excludeRuleIds: ownIds });
+      assertSniEntryPortCanUseSni(state, port, sni);
+      if (state.otherGroupSniRule) throw new Error(`入口 ${host.name} 的端口 ${port} 已被其他资源的 SNI 规则占用`);
+      const policy = portPolicyFrom(host);
+      if (!isPortAllowedByPolicy(port, policy)) throw new Error(`入口 ${host.name}：${portPolicyErrorMessage(policy, "入口端口")}`);
+      if (await db.isHostPortUnavailableForExplicitUse(hostId, port, [...ownIds, ...state.shareableRuleIds], "tcp")) {
+        throw new Error(`入口 ${host.name} 的端口 ${port} 已被占用`);
+      }
+      const owner = await db.getUserById(Number(template.userId));
+      if (owner && owner.role !== "admin") {
+        if (!await db.checkUserForwardGroupPermission(Number(owner.id), groupId)) throw new Error(`规则 ${sni} 的归属用户无权使用该转发组`);
+        const range = await db.getUserForwardGroupPlanPortRange(Number(owner.id), groupId);
+        if (range && !db.isPortAllowedByUserPlanRange(port, range)) throw new Error(`规则 ${sni} 的端口不在归属用户套餐范围内`);
+      }
+    }
   }
 }
 

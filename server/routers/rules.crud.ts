@@ -1,3 +1,4 @@
+import { afterDatabaseCommit, isDatabaseTransactionActive } from "../dbRuntime";
 import { protectedProcedure, router } from "../_core/trpc";
 import { z } from "zod";
 import { isIP } from "node:net";
@@ -144,9 +145,9 @@ function resolveSniRuleLimits(
   };
 }
 
-const MULTI_EXIT_FORWARD_GROUP_MODES = new Set(["failover", "exit"]);
+const MULTI_EXIT_FORWARD_GROUP_MODES = new Set(["exit"]);
 
-async function inferForwardGroupSniExitHost(group: ForwardGroupRuntimeConfig) {
+async function validateForwardGroupSniHosts(group: ForwardGroupRuntimeConfig) {
   const members = Array.isArray(group?.members) ? group.members : [];
   const enabledMembers = members.filter((member) => dbBool(member?.isEnabled, true));
   const enabledHostMembers = enabledMembers.filter((member) => (
@@ -154,13 +155,10 @@ async function inferForwardGroupSniExitHost(group: ForwardGroupRuntimeConfig) {
     && Number(member?.hostId || 0) > 0
   ));
   const groupMode = String(group?.groupMode || "").trim().toLowerCase();
-  // Members of these modes are alternatives to each other, so no single exit
-  // host can be derived. Say that plainly instead of blaming the link type —
-  // v1 rejects multi-exit rather than silently picking the first host.
   if (MULTI_EXIT_FORWARD_GROUP_MODES.has(groupMode)) {
     throw new Error("SNI 分流当前只支持单出口");
   }
-  if (groupMode !== "chain" && groupMode !== "port") {
+  if (groupMode !== "chain" && groupMode !== "port" && groupMode !== "failover") {
     throw new Error("SNI 分流仅支持端口转发、隧道或转发链");
   }
   if (String(group?.groupType || "host") !== "host") {
@@ -171,6 +169,11 @@ async function inferForwardGroupSniExitHost(group: ForwardGroupRuntimeConfig) {
   }
   if (groupMode === "port" && enabledHostMembers.length !== 1) {
     throw new Error("SNI 分流端口转发必须且只能包含一台主机");
+  }
+  if (groupMode === "failover") {
+    if (enabledHostMembers.length === 0) throw new Error("该转发组没有启用的主机成员");
+    await assertSniEntryAgentVersions(enabledHostMembers.map(member => Number(member.hostId)), Number(group.id));
+    return;
   }
   const exitMember = enabledMembers[enabledMembers.length - 1];
   const exitHostId = Number(exitMember?.hostId || 0);
@@ -187,7 +190,8 @@ async function reserveSniSplitterPortForForwardGroup(
   group: ForwardGroupRuntimeConfig,
   options: { currentPort?: unknown; excludeRuleIds?: number | number[] } = {},
 ) {
-  const exitHost = await inferForwardGroupSniExitHost(group);
+  const exitHost = await validateForwardGroupSniHosts(group);
+  if (!exitHost) throw new Error("SNI 分流器独立端口仅用于转发链出口");
   const reservation = await reserveTunnelExitPort({
     hostId: Number(exitHost.id),
     preferredStart: (exitHost as any).portRangeStart,
@@ -359,11 +363,11 @@ async function prepareForwardGroupRuntimePorts(options: {
   const isPortGroup = group.groupMode === "port";
   let sniSplitterPort: number | null = null;
   if (options.sni) {
-    if (!isForwardChain && !isPortGroup) {
+    if (!isForwardChain && !isPortGroup && group.groupMode !== "failover") {
       throw new Error("SNI 分流仅支持端口转发、隧道或转发链");
     }
-    if (isPortGroup) {
-      await inferForwardGroupSniExitHost(group);
+    if (isPortGroup || group.groupMode === "failover") {
+      await validateForwardGroupSniHosts(group);
       sniSplitterPort = options.sourcePort;
     } else {
       const splitterReservation = await reserveSniSplitterPortForForwardGroup(group, {
@@ -1001,25 +1005,27 @@ async function settleTrafficBillingForDeletedRule(rule: any) {
   });
   if (billed && Number(billed.balanceAfterCents) < 0) {
     await db.setUserForwardAccess(Number(rule.userId), false, "traffic_billing_balance");
-    await refreshUserForwardEndpoints(Number(rule.userId), "traffic-billing-delete-balance-negative");
+    await afterDatabaseCommit(() => refreshUserForwardEndpoints(Number(rule.userId), "traffic-billing-delete-balance-negative"));
   }
   return billed;
 }
 
 async function refreshPendingTemplateChildren(childRules: any[], reason: string) {
-  const refreshedTunnelIds = new Set<number>();
-  for (const child of childRules) {
-    const tunnelId = Number((child as any).tunnelId || 0);
-    if (tunnelId > 0 && !refreshedTunnelIds.has(tunnelId)) {
-      refreshedTunnelIds.add(tunnelId);
-      const tunnel = await db.getTunnelById(tunnelId);
-      if (tunnel) await pushTunnelEndpointRefresh(tunnel, reason);
+  await afterDatabaseCommit(async () => {
+    const refreshedTunnelIds = new Set<number>();
+    for (const child of childRules) {
+      const tunnelId = Number((child as any).tunnelId || 0);
+      if (tunnelId > 0 && !refreshedTunnelIds.has(tunnelId)) {
+        refreshedTunnelIds.add(tunnelId);
+        const tunnel = await db.getTunnelById(tunnelId);
+        if (tunnel) await pushTunnelEndpointRefresh(tunnel, reason);
+      }
     }
-  }
-  const hostIds = Array.from(new Set(childRules
-    .map((child: any) => Number(child.hostId || 0))
-    .filter((hostId: number) => hostId > 0)));
-  for (const hostId of hostIds) pushAgentRefresh(hostId, reason);
+    const hostIds = Array.from(new Set(childRules
+      .map((child: any) => Number(child.hostId || 0))
+      .filter((hostId: number) => hostId > 0)));
+    for (const hostId of hostIds) pushAgentRefresh(hostId, reason);
+  });
 }
 
 async function reconcileSharedTunnelPortsForRules(rules: any[]) {
@@ -1065,7 +1071,12 @@ async function markTemplateChildrenPendingDelete(
 ) {
   const childRules = await db.getForwardGroupChildRulesForTemplate(templateRuleId);
   for (const child of childRules as any[]) {
-    await settleTrafficBillingForDeletedRule(child);
+    if (isDatabaseTransactionActive()) {
+      await db.markForwardRulePendingDelete(Number(child.id));
+      await afterDatabaseCommit(() => settleTrafficBillingForDeletedRule(child).then(() => undefined));
+    } else {
+      await settleTrafficBillingForDeletedRule(child);
+    }
     const tunnelId = Number((child as any).tunnelId || 0);
     if (tunnelId) {
       await db.updateTunnel(tunnelId, { isRunning: false } as any);
@@ -1178,6 +1189,7 @@ export async function toggleForwardRuleForActor(
             });
           }
         }
+        let saveTemplate: () => Promise<unknown> = () => db.toggleForwardRule(ruleId, false);
         if (isEnabled) {
           const groupId = Number((rule as any).forwardGroupId || 0);
           if (!groupId) throw new Error("转发组不存在");
@@ -1214,13 +1226,13 @@ export async function toggleForwardRuleForActor(
             protocolBlockReason: null,
           };
           if (ruleSni) {
-            if (!isForwardChain && !isPortGroup) {
+            if (!isForwardChain && !isPortGroup && group.groupMode !== "failover") {
               throw new Error("SNI 分流仅支持端口转发、隧道或转发链");
             }
             enableData.protocol = "tcp";
             enableData.sni = ruleSni;
-            if (isPortGroup) {
-              await inferForwardGroupSniExitHost(group);
+            if (isPortGroup || group.groupMode === "failover") {
+              await validateForwardGroupSniHosts(group);
               enableData.sniSplitterPort = Number(rule.sourcePort);
             } else {
               sniSplitterPortReservation = await reserveSniSplitterPortForForwardGroup(group, {
@@ -1240,11 +1252,15 @@ export async function toggleForwardRuleForActor(
             isPortForwardGroup: isPortGroup,
             isAdmin: actor.role === "admin",
           });
-          await db.updateForwardRule(ruleId, enableData);
-        } else {
-          await db.toggleForwardRule(ruleId, false);
+          saveTemplate = () => db.updateForwardRule(ruleId, enableData);
         }
-        await db.syncForwardGroupRules(Number((rule as any).forwardGroupId));
+        const templateGroupId = Number((rule as any).forwardGroupId);
+        if (normalizeSniValue((rule as any).sni)) {
+          await db.withForwardGroupSyncTransaction(templateGroupId, saveTemplate, { preserveRuntime: true });
+        } else {
+          await saveTemplate();
+          await db.syncForwardGroupRules(templateGroupId);
+        }
         await db.runForwardGroupFailover(Number((rule as any).forwardGroupId));
         for (const entryHostId of await db.getForwardGroupRuleEntryHostIds(Number((rule as any).forwardGroupId))) {
           await refreshRulePortWarningsForHost(entryHostId);
@@ -1625,7 +1641,7 @@ export const crudRulesRouter = router({
       if (tunnel) {
         await inferDirectTunnelSniExitHost(tunnel);
       } else {
-        await inferForwardGroupSniExitHost(group as any);
+        await validateForwardGroupSniHosts(group as any);
         entryHostIds = await db.getForwardGroupRuleEntryHostIds(forwardGroupId);
         if (entryHostIds.length === 0) throw new Error("链路资源没有可用入口 Agent");
         await assertSniEntryAgentVersions(entryHostIds, forwardGroupId);
@@ -1752,7 +1768,7 @@ export const crudRulesRouter = router({
         if (normalizedSni) {
           const sniGroup = await db.getForwardGroupById(forwardGroupId);
           if (!sniGroup) throw new Error("Forward group does not exist");
-          await inferForwardGroupSniExitHost(sniGroup);
+          await validateForwardGroupSniHosts(sniGroup);
         }
         const entryHostIds = await db.getForwardGroupRuleEntryHostIds(forwardGroupId);
         if (normalizedSni) await assertSniEntryAgentVersions(entryHostIds, forwardGroupId);
@@ -1929,7 +1945,7 @@ export const crudRulesRouter = router({
           userId: ownerContext.user.id,
         } as any);
         let id = 0;
-        if (isForwardChain) {
+        if (isForwardChain || normalizedSni) {
           // Adding a template must not re-dispatch unchanged, healthy listeners
           // belonging to the existing chain. Runtime-field changes still apply.
           id = await db.withForwardGroupSyncTransaction(forwardGroupId, createTemplateRule, { preserveRuntime: true });
@@ -2395,26 +2411,33 @@ export const crudRulesRouter = router({
             data.protocolBlockReason = null;
           }
 
-          await db.updateForwardRule(input.id, data);
-          // Let the mapping reconciler acquire endpoint reservations itself;
-          // retaining this primary reservation would make a matching mapping
-          // appear busy and can rotate its port unnecessarily.
-          tunnelExitPortReservationForConversion?.release();
-          tunnelExitPortReservationForConversion = null;
-          releaseHostPortReservations(heldReservations);
-          if (nextTunnelId && selectedTunnelForRule) {
-            await reconcileSharedTunnelRulePorts(selectedTunnelForRule);
-            await db.reconcileForwardRuleTunnelExits({ ...rule, ...data, id: input.id, tunnelId: nextTunnelId, tunnelExitPort }, selectedTunnelForRule);
-            await db.updateTunnel(nextTunnelId, { isRunning: false } as any);
+          const convertTemplate = async () => {
+            await db.updateForwardRule(input.id, data);
+            // Let the mapping reconciler acquire endpoint reservations itself;
+            // retaining this primary reservation would make a matching mapping
+            // appear busy and can rotate its port unnecessarily.
+            tunnelExitPortReservationForConversion?.release();
+            tunnelExitPortReservationForConversion = null;
+            releaseHostPortReservations(heldReservations);
+            if (nextTunnelId && selectedTunnelForRule) {
+              await reconcileSharedTunnelRulePorts(selectedTunnelForRule);
+              await db.reconcileForwardRuleTunnelExits({ ...rule, ...data, id: input.id, tunnelId: nextTunnelId, tunnelExitPort }, selectedTunnelForRule);
+              await db.updateTunnel(nextTunnelId, { isRunning: false } as any);
+            } else {
+              await db.clearForwardRuleTunnelExits(input.id);
+            }
+            const retiredChildren = await markTemplateChildrenPendingDelete(
+              input.id,
+              "forward-group-rule-converted",
+              { deferRefresh: true },
+            );
+            await refreshPendingTemplateChildren(retiredChildren as any[], "forward-group-rule-converted");
+          };
+          if (normalizeSniValue((rule as any).sni) || nextSni) {
+            await db.withForwardGroupSyncTransaction(groupId, convertTemplate, { preserveRuntime: true });
           } else {
-            await db.clearForwardRuleTunnelExits(input.id);
+            await convertTemplate();
           }
-          const retiredChildren = await markTemplateChildrenPendingDelete(
-            input.id,
-            "forward-group-rule-converted",
-            { deferRefresh: true },
-          );
-          await refreshPendingTemplateChildren(retiredChildren as any[], "forward-group-rule-converted");
           if (nextTunnelId && selectedTunnelForRule) {
             await pushTunnelEndpointRefresh(selectedTunnelForRule, "forward-group-rule-converted");
           } else {
@@ -2576,12 +2599,18 @@ export const crudRulesRouter = router({
           data.protocolBlockReason = null;
         }
         if (keyFieldChanged || groupChanged || data.isEnabled !== undefined) data.isRunning = false;
-        if (!groupChanged && isForwardChain) {
+        if (!groupChanged && (isForwardChain || nextSni || normalizeSniValue((rule as any).sni))) {
           await db.withForwardGroupSyncTransaction(
             activeGroupId,
             () => db.updateForwardRule(input.id, data),
             { prioritizeTemplateRuleId: input.id },
           );
+        } else if (groupChanged && (nextSni || normalizeSniValue((rule as any).sni))) {
+          await db.withForwardGroupsSyncTransaction([groupId, activeGroupId], async () => {
+            await markTemplateChildrenPendingDelete(input.id, "forward-group-rule-route-changed");
+            await db.updateForwardRule(input.id, data);
+          }, { preserveRuntime: true, prioritizeTemplateRuleId: input.id });
+          await db.runForwardGroupFailover(groupId);
         } else {
           if (groupChanged) await markTemplateChildrenPendingDelete(input.id, "forward-group-rule-route-changed");
           await db.updateForwardRule(input.id, data);
@@ -2720,8 +2749,16 @@ export const crudRulesRouter = router({
           data.disabledByGroup = false;
           data.protocolBlockReason = null;
         }
-        await db.updateForwardRule(input.id, data);
-        await db.clearForwardRuleTunnelExits(input.id);
+        const saveConvertedRule = async () => {
+          await db.updateForwardRule(input.id, data);
+          await db.clearForwardRuleTunnelExits(input.id);
+        };
+        if (nextSni || normalizeSniValue((rule as any).sni)) {
+          await db.withForwardGroupSyncTransaction(groupId, saveConvertedRule, { preserveRuntime: true });
+        } else {
+          await saveConvertedRule();
+          await db.syncForwardGroupRules(groupId);
+        }
         if ((rule as any).tunnelId) {
           const oldTunnel = await db.getTunnelById((rule as any).tunnelId);
           await reconcileSharedTunnelRulePorts(oldTunnel);
@@ -2730,7 +2767,6 @@ export const crudRulesRouter = router({
         } else if (Number((rule as any).hostId || 0) > 0) {
           pushAgentRefresh(Number((rule as any).hostId), "forward-rule-route-changed");
         }
-        await db.syncForwardGroupRules(groupId);
         await db.runForwardGroupFailover(groupId);
         await refreshUpdatedRulePortWarnings();
         return { success: true, reset: true };

@@ -24,6 +24,9 @@ export type RuleTransferFileRule = {
   sni?: string;
   rateLimitMbps?: number;
   maxConnections?: number;
+  trafficLimit?: number;
+  trafficMode?: "outbound" | "both" | "max";
+  expiresAt?: string | null;
   targetIp: string;
   targetPort: number;
   isEnabled: boolean;
@@ -102,6 +105,9 @@ const ruleTransferRuleSchema = z.object({
   ).optional(),
   rateLimitMbps: z.number().int().min(0).max(1_000_000).optional().default(0),
   maxConnections: z.number().int().min(0).max(1_000_000).optional().default(0),
+  trafficLimit: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER).optional(),
+  trafficMode: z.enum(["outbound", "both", "max"]).optional(),
+  expiresAt: z.string().datetime({ offset: true }).nullable().optional(),
   targetIp: targetHostSchema,
   targetPort: z.number().int().min(1).max(65535),
   isEnabled: z.boolean().optional().default(true),
@@ -310,4 +316,37 @@ export function findRuleTransferPortConflict(rules: readonly RuleTransferFileRul
     seen.set(rule.sourcePort, index);
   }
   return null;
+}
+
+
+// Export saved rules through the same format used by the import preview. Null
+// database defaults are normalized here rather than leaking into JSON files.
+export function exportRuleForTransfer(rule: Record<string, any>): RuleTransferFileRule {
+  const sni = normalizeSniValue(rule.sni);
+  let targets: any = [];
+  try { targets = typeof rule.failoverTargets === "string" ? JSON.parse(rule.failoverTargets || "[]") : rule.failoverTargets; } catch { /* legacy malformed values export as no extra targets */ }
+  const seconds = (value: unknown, fallback: number) => Math.min(3600, Math.max(10, Number.isFinite(Number(value)) ? Math.round(Number(value)) : fallback));
+  return ruleTransferRuleSchema.parse({
+    name: String(rule.name || translateText("导入规则")),
+    forwardType: FORWARD_TYPES.includes(rule.forwardType) ? rule.forwardType : "iptables",
+    protocol: ["tcp", "udp", "both"].includes(rule.protocol) ? rule.protocol : "both",
+    sourcePort: Number(rule.sourcePort || 0),
+    ...(sni ? {
+      sni, rateLimitMbps: Math.min(1_000_000, Math.max(0, Math.floor(Number(rule.rateLimitMbps) || 0))),
+      maxConnections: Math.min(1_000_000, Math.max(0, Math.floor(Number(rule.maxConnections) || 0))),
+      trafficLimit: Number(rule.trafficLimit || 0), trafficMode: rule.trafficMode || "outbound",
+      expiresAt: rule.expiresAt ? new Date(rule.expiresAt).toISOString() : null,
+    } : {}),
+    targetIp: String(rule.targetIp || ""), targetPort: Number(rule.targetPort || 0), isEnabled: rule.isEnabled !== false,
+    telegramErrorNotifyEnabled: Boolean(rule.telegramErrorNotifyEnabled),
+    proxyProtocolReceive: Boolean(rule.proxyProtocolReceive), proxyProtocolSend: Boolean(rule.proxyProtocolSend),
+    proxyProtocolExitReceive: Boolean(rule.proxyProtocolExitReceive), proxyProtocolExitSend: Boolean(rule.proxyProtocolExitSend),
+    proxyProtocolVersion: Number(rule.proxyProtocolVersion) === 2 ? 2 : 1,
+    tcpFastOpen: Boolean(rule.tcpFastOpen), zeroCopy: Boolean(rule.zeroCopy),
+    udpOverTcp: Boolean(rule.udpOverTcp), udpOverTcpPort: Number(rule.udpOverTcpPort || 0),
+    failoverEnabled: Boolean(rule.failoverEnabled),
+    failoverStrategy: ["fallback", "round_robin", "random", "ip_hash"].includes(rule.failoverStrategy) ? rule.failoverStrategy : "fallback",
+    failoverTargets: Array.isArray(targets) ? targets.map(target => ({ targetIp: String(target?.targetIp || "").trim(), targetPort: Number(target?.targetPort || 0) })).filter(target => target.targetIp && target.targetPort >= 1 && target.targetPort <= 65535).slice(0, 10) : [],
+    failoverSeconds: seconds(rule.failoverSeconds, 60), recoverSeconds: seconds(rule.recoverSeconds, 120), autoFailback: rule.autoFailback !== false,
+  });
 }

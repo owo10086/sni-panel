@@ -30,12 +30,12 @@ export async function validateRuleRateLimitTargets(rule: Record<string, any>) {
   if (!(Number(rule.rateLimitMbps) > 0)) return;
   let hostIds: number[] = [];
   const sni = !!normalizeSniValue(rule.sni);
-  // SNI rate limits are enforced once at the exit splitter, never at each entry.
+  // Host failover members each run a final splitter; chains retain their single exit.
   if (rule.forwardGroupId && sni) {
     const group = await db.getForwardGroupById(Number(rule.forwardGroupId));
     const members = (group?.members || []).filter((member: any) => member.isEnabled && member.memberType === "host")
       .sort((a: any, b: any) => Number(a.priority) - Number(b.priority));
-    hostIds = [Number(members.at(-1)?.hostId || 0)];
+    hostIds = group?.groupMode === "failover" ? members.map((member: any) => Number(member.hostId)) : [Number(members.at(-1)?.hostId || 0)];
   } else if (rule.forwardGroupId) hostIds = await db.getForwardGroupRuleEntryHostIds(Number(rule.forwardGroupId));
   else if (rule.tunnelId) {
     const tunnel = await db.getTunnelById(Number(rule.tunnelId));
