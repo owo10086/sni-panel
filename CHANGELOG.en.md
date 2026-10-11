@@ -4,6 +4,24 @@
 
 ## [Unreleased]
 
+## [3.3.1] - 2026-10-11
+
+### Features and fixes
+
+- Support SNI routing on host failover groups. Full business hostnames share an entrance port, every enabled member prepares its routes in advance and connects directly to each destination, and the existing whole-group priorities, observation windows, DDNS and automatic failback settings continue to apply.
+- Require the current contents of every allowed route to be applied and the actual destinations to be healthy before selecting or failing back to a member. Old tables, historical running flags and health measurements for an old target cannot qualify new settings. Recheck selection when configuration changes while waiting for DDNS.
+- Save rules and member changes atomically. Port conflicts or failures during writes preserve previous settings, members and managed rules. Hosts that are offline or fail to apply a successful save remain pending until the current configuration is ready.
+- Keep stable shared splitter identities per member and port. Normal additions, edits and removals preserve other hostnames' connections; remove unsafe stale recovery files left by deleting the first rule without stopping a safe table. Disabling or removing a member, or removing the last active route, now retires the actual listeners and recovery records.
+- When a failed removal leaves a disabled, deleted, quota-exhausted, expired or unauthorized hostname in the running table, stop that entrance's shared port and remove unsafe configuration and recovery files. This exceptional failure temporarily affects other hostnames on the same entrance and port until synchronization completes.
+- Deduplicate and aggregate actual traffic from old and new entrances into the root rule and its owner without resetting usage during synchronization, failover or quota increases. Apply rate and connection limits per member and preserve per-hostname quotas and expiry.
+- Support host-group SNI copies, text bulk configuration and JSON import/export while retaining hostnames, resource context, ports, destinations and limits. Failed items leave no partial rules and do not undo successful items. Update Chinese/English UI, usage guides and architecture decisions.
+
+### Versions and upgrade notes
+
+- Panel: `3.3.1`; Agent and ForwardX FXP runtime: `3.3.0`. Only the panel requires upgrading; existing Agent/FXP binaries remain compatible. The minimum SNI capability version remains `2.2.195`.
+- DNS caches still affect failover. Established connections cannot migrate and interrupted connections must reconnect. Rate and connection limits are not strict aggregate caps when multiple entrances serve simultaneously.
+- Native Android and iOS/iPadOS applications remain excluded under the standing agreement. This release does not publish APK or IPA packages.
+
 ## [3.3.0] - 2026-10-10
 
 ### Features and configuration
