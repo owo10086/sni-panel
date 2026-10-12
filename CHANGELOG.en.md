@@ -4,6 +4,20 @@
 
 ## [Unreleased]
 
+## [3.3.3] - 2026-10-12
+
+### Fixes
+
+- Fix batch deletion hanging on host-based SNI forwarding groups, leaving some rules pending deletion without returning a result for the batch. Commit rule synchronization before settling traffic charges and notifying entrances, so concurrent deletion tasks cannot wait on each other and block other database writes.
+- Propagate cleanup options and let the common cleanup boundary detect an active database transaction itself. Member changes and other callers follow the correct order even without an explicit deferral option. Roll back deletion state without charging or sending refresh notifications when a save fails.
+- Preserve unselected hostnames and shared entrance configuration, removing the listener only after the final hostname is removed. Retain existing permissions, per-item deletion results, usage settlement and low-balance suspension, without charging again during repeated synchronization.
+
+### Versions and upgrade notes
+
+- Panel: `3.3.3`; Agent and ForwardX FXP runtime: `3.3.0`. Only the panel requires upgrading; existing Agent/FXP binaries remain compatible.
+- Restarting during the upgrade releases waits in the old panel process but does not automatically retry a partially completed batch deletion. Check retained rules, deleted rules and entrance removals after upgrading before processing any unfinished selections.
+- Native Android and iOS/iPadOS applications remain excluded under the standing agreement. This release does not publish APK or IPA packages.
+
 ## [3.3.2] - 2026-10-12
 
 ### Fixes and improvements
