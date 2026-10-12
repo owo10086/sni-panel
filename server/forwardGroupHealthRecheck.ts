@@ -120,6 +120,7 @@ export class ForwardGroupEvaluationQueue {
   private readonly consecutiveFailures = new Map<number, number>();
   private timer: TimerHandle | null = null;
   private running = false;
+  private evaluating = new Set<number>();
 
   constructor(
     private readonly evaluate: (groupIds: number[]) => void | Promise<void>,
@@ -140,6 +141,13 @@ export class ForwardGroupEvaluationQueue {
     }
     this.arm(this.debounceMs);
     return this.pending.size;
+  }
+
+  retry(groupIdValue: unknown) {
+    const groupId = Number(groupIdValue);
+    if (!Number.isInteger(groupId) || groupId <= 0 || this.evaluating.has(groupId)) return false;
+    this.scheduleRetry(groupId);
+    return true;
   }
 
   private arm(delayMs: number) {
@@ -185,6 +193,7 @@ export class ForwardGroupEvaluationQueue {
     const groupIds = Array.from(this.pending);
     this.pending.clear();
     this.running = true;
+    this.evaluating = new Set(groupIds);
     try {
       await this.evaluate(groupIds);
       for (const groupId of groupIds) this.clearRetry(groupId);
@@ -205,6 +214,7 @@ export class ForwardGroupEvaluationQueue {
         // Queue progress must not depend on diagnostics succeeding.
       }
     } finally {
+      this.evaluating.clear();
       this.running = false;
       this.arm(this.debounceMs);
     }

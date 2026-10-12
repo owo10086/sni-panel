@@ -332,6 +332,7 @@ async function applyAgentRuleStatus(host: any, payload: any): Promise<AgentStatu
         success: !!isRunning,
         message,
       });
+      if (!isRunning) void db.scheduleForwardGroupsForHostHealthChange(Number(host.id));
       if (shouldLogStatus(`sni-runtime:${host.id}:${reportedSniRuntimePort}`, `running=${!!isRunning}:version=${Number(payload?.sniRouteVersion || 0)}`, !isRunning || !!message)) {
         appendPanelLog(
           isRunning ? "info" : "warn",

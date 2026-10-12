@@ -1,5 +1,8 @@
 import { setBoundedMapValue, updateBoundedMapValueInPlace } from "./boundedCache";
 import { normalizeSniValue } from "./repositories/repositoryUtils";
+import { FORWARD_GROUP_AGENT_HEALTH_FRESHNESS_TTL_MS } from "./forwardGroupHealthRecheck";
+import { subscribeAgentFastLivenessOffline } from "./agentFastLiveness";
+import { randomBytes } from "node:crypto";
 
 export type SniRuntimeRuleReport = {
   port?: unknown;
@@ -31,10 +34,90 @@ export type SniRuntimeGroupStatus = {
   appliedRuleIds: number[];
   appliedRoutes: SniRuntimeRuleReport[];
   observedAt: number;
+  confirmedAt: number;
+  interruptedAt: number;
 };
 
 const SNI_RUNTIME_CACHE_MAX_SIZE = 10_000;
 const sniRuntimeStatusCache = new Map<string, SniRuntimeGroupStatus>();
+const sniRuntimeInvalidatedAt = new Map<number, number>();
+const retiredAgentProcesses = new Map<number, Set<string>>();
+const pendingRuntimeSessions = new Map<number, string>();
+
+export function pendingSniRuntimeSession(hostId: number) {
+  return pendingRuntimeSessions.get(hostId);
+}
+
+export function beginSniRuntimeSession(hostId: number) {
+  if (!pendingRuntimeSessions.has(hostId)) setBoundedMapValue(pendingRuntimeSessions, hostId, randomBytes(32).toString("hex"), SNI_RUNTIME_CACHE_MAX_SIZE);
+}
+
+export function sniRuntimePreviouslyAppliedRuleIds(hostId: number) {
+  return [...new Set([...sniRuntimeStatusCache.values()].filter(status => status.hostId === hostId).flatMap(status => status.appliedRuleIds))];
+}
+
+export function acknowledgeSniRuntimeSession(hostId: number, hash: unknown) {
+  const expected = pendingRuntimeSessions.get(hostId);
+  if (!expected || expected !== hash) return false;
+  pendingRuntimeSessions.delete(hostId);
+  return true;
+}
+
+function agentProcessIdentity(value: any) {
+  const startedAt = value.agentProcessStartedAt instanceof Date ? Math.floor(value.agentProcessStartedAt.getTime() / 1000) : value.agentProcessStartedAt;
+  return [String(value.agentBootId || ""), Number(value.agentProcessId || 0), String(startedAt || "")].join(":");
+}
+
+export function isRetiredSniHeartbeatProcess(hostId: number, report: any) {
+  return retiredAgentProcesses.get(hostId)?.has(agentProcessIdentity(report)) === true;
+}
+
+export function acceptSniHeartbeatProcess(host: any, report: any) {
+  // Boot/PID are already supplied by every supported SNI Agent. The stored
+  // timestamp is a Date, while the report uses seconds; compare it separately.
+  if (!report.agentProcessId || !host.agentProcessId) return true;
+  const key = agentProcessIdentity(report);
+  let retired = retiredAgentProcesses.get(Number(host.id));
+  if (retired?.has(key)) return false;
+  if (key !== agentProcessIdentity(host)) {
+    if (!retired) {
+      retired = new Set();
+      setBoundedMapValue(retiredAgentProcesses, Number(host.id), retired, SNI_RUNTIME_CACHE_MAX_SIZE);
+    }
+    retired.add(agentProcessIdentity(host));
+    if (retired.size > 32) retired.delete(retired.values().next().value!);
+  }
+  return true;
+}
+
+export function invalidateSniRuntimeConfirmation(hostId: number, at = Date.now()) {
+  if (at > (sniRuntimeInvalidatedAt.get(hostId) || 0)) {
+    setBoundedMapValue(pendingRuntimeSessions, hostId, randomBytes(32).toString("hex"), SNI_RUNTIME_CACHE_MAX_SIZE);
+  }
+  at = Math.max(at, sniRuntimeInvalidatedAt.get(hostId) || 0);
+  setBoundedMapValue(sniRuntimeInvalidatedAt, hostId, at, SNI_RUNTIME_CACHE_MAX_SIZE);
+  for (const [key, status] of sniRuntimeStatusCache) {
+    if (status.hostId !== hostId) continue;
+    updateBoundedMapValueInPlace(sniRuntimeStatusCache, key, {
+      ...status, confirmedAt: 0, interruptedAt: at,
+    }, SNI_RUNTIME_CACHE_MAX_SIZE);
+  }
+}
+
+export function sniRuntimeConfirmationBoundary(hostId: number) {
+  return sniRuntimeInvalidatedAt.get(hostId) || 0;
+}
+
+export function renewSniRuntimeConfirmation(hostId: number, reports: SniRuntimeRuleReport[], observedAt = Date.now()) {
+  const ports = new Set(reports.filter(report => normalizeSniValue(report.sni)).map(report => Number(report.port)));
+  if ([...ports].some(port => !getSniRuntimeGroupStatus(hostId, port)?.confirmedAt || (getSniRuntimeGroupStatus(hostId, port)?.confirmedAt || 0) < sniRuntimeConfirmationBoundary(hostId))) return false;
+  recordSniRuntimeSnapshot(hostId, reports, observedAt);
+  return true;
+}
+
+subscribeAgentFastLivenessOffline(event => {
+  if (event.isCurrent()) invalidateSniRuntimeConfirmation(event.hostId, event.offlineAt || Date.now());
+});
 
 function cacheKey(hostId: number, splitterPort: number) {
   return `${hostId}:${splitterPort}`;
@@ -50,6 +133,7 @@ export function recordSniRuntimeSnapshot(
   hostIdValue: unknown,
   reports: SniRuntimeRuleReport[],
   observedAt = Date.now(),
+  requiredRuleIds?: Set<number>,
 ) {
   const hostId = Math.floor(Number(hostIdValue || 0));
   if (hostId <= 0) return;
@@ -69,6 +153,8 @@ export function recordSniRuntimeSnapshot(
       appliedRuleIds: [],
       appliedRoutes: [],
       observedAt,
+      confirmedAt: observedAt,
+      interruptedAt: sniRuntimeConfirmationBoundary(hostId),
     };
     group.currentVersion = Math.max(group.currentVersion, normalizedCounter(report?.sniRouteVersion));
     group.unmatchedConnections = Math.max(
@@ -99,12 +185,26 @@ export function recordSniRuntimeSnapshot(
         appliedRuleIds: [],
         appliedRoutes: [],
         observedAt,
+        confirmedAt: observedAt,
+        interruptedAt: observedAt,
       },
       SNI_RUNTIME_CACHE_MAX_SIZE,
     );
   }
 
   for (const group of groups.values()) {
+    const previous = sniRuntimeStatusCache.get(cacheKey(hostId, group.splitterPort));
+    group.interruptedAt = Math.max(group.interruptedAt, previous?.interruptedAt || 0);
+    if (previous?.appliedRoutes.some(old => requiredRuleIds?.has(Number(old.ruleId)) && !group.appliedRoutes.some(current =>
+      Number(current.ruleId) === Number(old.ruleId) && sniRouteContentMatches(current, old)))) {
+      group.interruptedAt = observedAt;
+    }
+    if (previous?.confirmedAt && observedAt - previous.confirmedAt >= FORWARD_GROUP_AGENT_HEALTH_FRESHNESS_TTL_MS) {
+      group.interruptedAt = Math.max(group.interruptedAt, previous.confirmedAt + FORWARD_GROUP_AGENT_HEALTH_FRESHNESS_TTL_MS);
+    }
+    if (group.appliedRoutes.length !== (reports || []).filter(report => Number(report.port) === group.splitterPort && normalizeSniValue(report.sni)).length) {
+      group.interruptedAt = observedAt;
+    }
     group.appliedDomains.sort();
     group.appliedRuleIds.sort((left, right) => left - right);
     setBoundedMapValue(
@@ -137,6 +237,8 @@ export function recordSniRuntimeApplyResult(input: {
     appliedRuleIds: [],
     appliedRoutes: [],
     observedAt: 0,
+    confirmedAt: 0,
+    interruptedAt: 0,
   };
   const next: SniRuntimeGroupStatus = {
     ...current,
@@ -145,6 +247,7 @@ export function recordSniRuntimeApplyResult(input: {
     appliedRoutes: [...current.appliedRoutes],
     observedAt: Math.max(current.observedAt, Number(input.observedAt || Date.now())),
     lastConfigError: input.success ? "" : String(input.message || "SNI 分流配置应用失败").trim().slice(0, 1000),
+    ...(!input.success ? { confirmedAt: 0, interruptedAt: Number(input.observedAt || Date.now()) } : {}),
   };
   setBoundedMapValue(sniRuntimeStatusCache, key, next, SNI_RUNTIME_CACHE_MAX_SIZE);
 }
@@ -169,6 +272,7 @@ export function isFailoverSniRuleApplied(rule: {
   targetIp: unknown; targetPort: unknown; rateLimitMbps?: unknown; maxConnections?: unknown;
 }) {
   const status = getSniRuntimeGroupStatus(rule.hostId, rule.sourcePort);
+  if (!status?.confirmedAt || Date.now() - status.confirmedAt >= FORWARD_GROUP_AGENT_HEALTH_FRESHNESS_TTL_MS) return false;
   const rate = Number(rule.rateLimitMbps);
   const bytesPerSecond = Number.isFinite(rate) && rate > 0 ? Math.floor(rate) * 125_000 : 0;
   return !!status?.appliedRoutes.some(route => (

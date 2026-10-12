@@ -7,6 +7,16 @@ import {
 
 export { LINK_PROBE_FRESH_MS } from "@shared/linkProbePolicy";
 
+export function translateForwardGroupHealthMessage(message: string) {
+  return message.split("；").map(part => {
+    const retained = /^继续保留解析 (.+)，等待成员恢复$/.exec(part);
+    if (retained) return translateText("继续保留解析 {0}，等待成员恢复", [retained[1]]);
+    const version = /^入口 (.+) 需要 Agent (.+) 或更高版本$/.exec(part);
+    if (version) return translateText("入口 {0} 需要 Agent {1} 或更高版本", [version[1], version[2]]);
+    return translateText(part);
+  }).join(translateText("；"));
+}
+
 export type LinkAvailabilityStatus = "disabled" | "available" | "degraded" | "pending" | "unavailable";
 
 export type LinkAvailabilitySource = "probe" | "hosts" | "config";
@@ -99,7 +109,7 @@ function resultFromSummary(summary: AvailabilitySummaryInput | null | undefined)
   const state = result(
     status,
     summary.source as LinkAvailabilitySource,
-    String(summary.message || ""),
+    translateForwardGroupHealthMessage(String(summary.message || "")),
   );
   state.available = summary.available === undefined
     ? status === "available" || status === "degraded"
@@ -412,7 +422,18 @@ export function buildLinkAvailabilityIndex(input: {
         requiredNodes: Array.from(memberNodes.values()),
       }, now);
     } else {
+      if (mode === "failover" && group.hasSniFailoverRules && group.isEnabled !== false && group.lastStatus !== "error") {
+        const ready = members.filter((member: any) => member.selectionReady === true);
+        if (group.lastStatus === "unknown" || group.lastStatus === "down" || ready.length === 0) {
+          const reason = String(group.lastMessage || members.find((member: any) => !member.selectionReady)?.healthMessage || "等待重新确认 SNI 分流运行状态");
+          state = result(group.lastStatus === "down" ? "unavailable" : "pending", "probe", translateForwardGroupHealthMessage(reason));
+          groupAvailabilityById.set(Number(group.id), state);
+          continue;
+        }
+        eligibleMemberIds = new Set(ready.map((member: any) => Number(member.id)));
+      }
       let candidates = members;
+      if (mode === "failover" && group.hasSniFailoverRules) candidates = members.filter((member: any) => eligibleMemberIds.has(Number(member.id)));
       let configurationValid = members.length > 0;
       let configurationMessage = translateText("{0}没有已启用成员", [mode === "entry" ? translateText("入口组") : mode === "exit" ? translateText("出口组") : translateText("转发组")]);
       if ((mode === "entry" || mode === "failover") && !String(group?.domain || "").trim()) {

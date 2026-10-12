@@ -18,6 +18,8 @@ test("host failover SNI lifecycle preserves readiness, atomic saves, imports and
     import { forwardGroupsRouter } from "./server/routers/forwardGroups.ts";
     import { registerAgentHeartbeatRoute } from "./server/agentHeartbeatRoute.ts";
     import { registerAgentReportRoutes } from "./server/agentReportRoutes.ts";
+    let testNow = Date.now();
+    Date.now = () => testNow;
     const insert = (table, values) => runtime.executeRaw(
       'INSERT INTO "' + table + '" (' + Object.keys(values).map(k => '"' + k + '"').join(',') + ') VALUES (' + Object.keys(values).map(() => '?').join(',') + ')', Object.values(values));
     const context = user => ({ req: { headers: {} }, res: { clearCookie() {} }, user, authSession: null, authFailureReason: null });
@@ -132,7 +134,8 @@ test("host failover SNI lifecycle preserves readiness, atomic saves, imports and
       const updatedConfig = staleHeartbeat.desiredState.actions.find(a => a.op === "apply" && a.fxp?.role === "sni-splitter").fxp;
       await heartbeat(2, localRules(updatedConfig));
       assert.equal((await admin.getById({ id: second.id })).sniRuntime.entries.find(entry => entry.hostId === 2).applied, true);
-      // Real reports for the old destination must not qualify a new address on the same port.
+      // Entrance readiness follows current splitter contents; destination
+      // measurements remain useful history but do not grant that readiness.
       {
         const groups = forwardGroupsRouter.createCaller(context({ id: 1, username: "admin", role: "admin", accountEnabled: true }));
         const report = async (id, config) => {
@@ -159,16 +162,18 @@ test("host failover SNI lifecycle preserves readiness, atomic saves, imports and
           await heartbeat(id, localRules(config));
         }
         await groups.runFailover();
-        assert.ok((await groups.list()).find(g => g.id === 10).members.every(m => m.healthStatus !== "healthy"), "old address health cannot qualify the newly applied destination");
+        assert.ok((await groups.list()).find(g => g.id === 10).members.every(m => m.healthStatus === "healthy"), "current applied contents qualify without probing the new destination");
         for (const id of [1, 2]) await report(id, oldConfigs[id - 1]);
         await groups.runFailover();
-        assert.ok((await groups.list()).find(g => g.id === 10).members.every(m => m.healthStatus !== "healthy"), "late reports for the old address are rejected");
+        assert.ok((await groups.list()).find(g => g.id === 10).members.every(m => m.healthStatus === "healthy"), "late destination reports cannot change entrance readiness");
         for (const id of [1, 2]) await report(id, newConfigs[id - 1]);
         await groups.runFailover();
         assert.ok((await groups.list()).find(g => g.id === 10).members.every(m => m.healthStatus === "healthy"));
 
         // Change a limit while the DDNS provider is still handling the selected backup.
         const settings = await import("./server/repositories/settingsRepository.ts");
+        testNow += 11_000;
+        for (const id of [1, 2]) await heartbeat(id, localRules(newConfigs[id - 1]));
         let onDns = async () => {};
         app.post("/test-ddns-race", async (_req, res) => { await onDns(); res.json({ success: true }); });
         await settings.setSettings({ ddnsEnabled: "true", ddnsProvider: "webhook", ddnsWebhookUrl: "http://127.0.0.1:" + server.address().port + "/test-ddns-race", ddnsWebhookMethod: "POST" });
@@ -250,9 +255,14 @@ test("host failover SNI lifecycle preserves readiness, atomic saves, imports and
         await reportStage("healthy");
         assert.equal((await state()).activeMemberId, 101);
         await reportStage("pending");
-        assert.equal((await state()).activeMemberId, 101, "failure observation window keeps the current entrance");
+        await reportStage("failed");
+        assert.equal((await state()).activeMemberId, 101, "destination failure alone keeps the current entrance");
+        await heartbeat(1, []);
+        await groups.runFailover();
+        assert.equal((await state()).activeMemberId, 101, "splitter failure observes the configured delay");
+        testNow += 11_000;
         rejectDdns = true;
-        await assert.rejects(() => reportStage("failed"), /simulated DDNS failure/);
+        await assert.rejects(() => groups.runFailover(), /simulated DDNS failure/);
         const failedDns = await state();
         assert.equal(failedDns.activeMemberId, 101, "a failed DDNS update does not announce a completed switch");
         assert.equal(failedDns.lastStatus, "error");
@@ -261,9 +271,13 @@ test("host failover SNI lifecycle preserves readiness, atomic saves, imports and
         assert.equal((await state()).activeMemberId, 102);
         assert.equal((await state()).lastDdnsValue, "127.0.0.2");
         await reportStage("recover-pending");
+        await heartbeat(1, localRules(full[0]));
+        await groups.runFailover();
         assert.equal((await state()).activeMemberId, 102, "recovery observation window keeps the backup entrance");
         await groups.updateFields({ id: 10, autoFailback: false });
         await reportStage("recovered");
+        testNow += 11_000;
+        await groups.runFailover();
         assert.equal((await state()).activeMemberId, 102, "disabling automatic failback keeps the healthy backup after recovery");
         await groups.updateFields({ id: 10, autoFailback: true });
         await groups.runFailover();
@@ -275,7 +289,11 @@ test("host failover SNI lifecycle preserves readiness, atomic saves, imports and
           assert.equal(response.status, 200);
         }
         await groups.runFailover();
-        assert.equal((await state()).lastStatus, "down", "no healthy destination is reported as a successful failover");
+        assert.equal((await state()).lastStatus, "healthy", "destination failure does not mark working splitters down");
+        for (const id of [1, 2]) await heartbeat(id, []);
+        testNow += 11_000;
+        await groups.runFailover();
+        assert.equal((await state()).lastStatus, "down", "no working splitter is reported as a successful failover");
         await reportStage("recovered");
       }
       const groups = forwardGroupsRouter.createCaller(context({ id: 1, username: "admin", role: "admin", accountEnabled: true }));

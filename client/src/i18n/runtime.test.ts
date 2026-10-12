@@ -42,7 +42,19 @@ test("language initialization, persistence and network/storage failures are safe
     const { parseRuleTransferFile } = await import("../lib/ruleTransfer");
     const ruleInput = { kind: "forwardx.forward-rules", version: 1, scope: { type: "chain", id: 7, name: "用户链路" }, rules: [{ name: "用户规则", forwardType: "realm", protocol: "both", sourcePort: 65535, targetIp: "example.com", targetPort: 443, proxyProtocolSend: false }] };
     const englishRule = parseRuleTransferFile(ruleInput);
-    const { resolveLinkAvailability } = await import("../lib/linkAvailability");
+    const { resolveLinkAvailability, buildLinkAvailabilityIndex } = await import("../lib/linkAvailability");
+    const sniInput = { hosts: [{ id: 1, isOnline: true, ipv4: "192.0.2.1" }], tunnels: [], groups: [{
+      id: 70, groupMode: "failover", hasSniFailoverRules: true, isEnabled: true,
+      domain: "entry.example.com", lastStatus: "down",
+      lastMessage: "SNI 分流运行确认已过期；继续保留解析 192.0.2.1，等待成员恢复",
+      availability: { status: "unavailable", source: "hosts", available: false, message: "SNI 分流运行确认已过期；继续保留解析 192.0.2.1，等待成员恢复", usableMemberIds: [] },
+      members: [{ id: 701, hostId: 1, isEnabled: true, selectionReady: false }],
+    }] };
+    const englishSni = buildLinkAvailabilityIndex(sniInput).groupAvailabilityById.get(70)!;
+    assert.equal(englishSni.status, "unavailable");
+    assert.match(englishSni.message, /expired/);
+    assert.match(englishSni.message, /192\.0\.2\.1/);
+    assert.doesNotMatch(englishSni.message, /[\u4e00-\u9fff]/);
     const englishState = resolveLinkAvailability({ label: "用户链路", enabled: true, hostsLoaded: true, requiredNodes: [{ id: 17, available: true }] });
     assert.equal(englishState.status, "available");
     assert.equal(englishState.available, true);
@@ -60,6 +72,9 @@ test("language initialization, persistence and network/storage failures are safe
     const chineseState = resolveLinkAvailability({ label: "用户链路", enabled: true, hostsLoaded: true, requiredNodes: [{ id: 17, available: true }] });
     assert.equal(chineseState.status, englishState.status);
     assert.notEqual(chineseState.message, englishState.message);
+    const chineseSni = buildLinkAvailabilityIndex(sniInput).groupAvailabilityById.get(70)!;
+    assert.equal(chineseSni.status, englishSni.status);
+    assert.equal(chineseSni.message, sniInput.groups[0].lastMessage);
     assert.equal(setLanguagePreference("auto"), true);
     mock("navigator", { languages: ["fr-FR"] });
     await initializeLanguage("https://panel.example.com");

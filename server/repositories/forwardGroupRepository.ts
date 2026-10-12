@@ -1,5 +1,6 @@
 import { gateForwardRulesForRuntime } from "../linkAccessView";
-import { isFailoverSniRuleApplied } from "../sniRuntimeObservability";
+import { getSniRuntimeGroupStatus, isFailoverSniRuleApplied, sniRuntimeConfirmationBoundary, invalidateSniRuntimeConfirmation } from "../sniRuntimeObservability";
+import { evaluateSniMemberHealthWindows, isSniChinaHealthDecisionFinal, recordSniChinaHealthDecision, sniMemberHealthSummary, type SniMemberHealthObservation } from "../forwardGroupSniHealth";
 import { clearRuleLatencyQueryCaches } from "../ruleLatencyQueryCache";
 import { isIP } from "node:net";
 import { and, asc, desc, eq, inArray, isNotNull, isNull, notInArray, or, sql } from "drizzle-orm";
@@ -27,6 +28,7 @@ import {
   getForwardGroupChildRulesForTemplate,
   getForwardGroupTemplateRules,
   getForwardRuleById,
+  getForwardRulesByIds,
   getForwardRulesByTunnel,
   markForwardRulePendingDelete,
   updateForwardRule,
@@ -1050,6 +1052,7 @@ export async function getForwardGroups(userId?: number, options: { includeRuntim
       forwardGroupId: forwardRules.forwardGroupId,
       isEnabled: forwardRules.isEnabled,
       pendingDelete: forwardRules.pendingDelete,
+      sni: forwardRules.sni,
     })
     .from(forwardRules)
     .where(and(
@@ -1125,7 +1128,9 @@ export async function getForwardGroups(userId?: number, options: { includeRuntim
   return groupRows.map((group: any) => {
     const groupId = Number(group.id);
     const latestLatency = latestLatencyByGroup.get(groupId);
-    const groupMembers = membersByGroupId.get(groupId) || [];
+    const hasSniFailoverRules = groupModeOf(group) === "failover" && group.groupType === "host"
+      && (templatesByGroupId.get(groupId) || []).some(rule => normalizeSniValue(rule.sni));
+    const groupMembers = (membersByGroupId.get(groupId) || []).map(member => hasSniFailoverRules ? { ...member, ...sniMemberHealthSummary(Number(member.id)) } : member);
     const entryMembers = Number(group.entryGroupId || 0) > 0
       ? membersByGroupId.get(Number(group.entryGroupId)) || []
       : [];
@@ -1142,6 +1147,7 @@ export async function getForwardGroups(userId?: number, options: { includeRuntim
       ...group,
       groupMode: groupModeOf(group),
       templateRuleCount: templateCountByGroup.get(groupId) || 0,
+      ...(hasSniFailoverRules ? { hasSniFailoverRules: true } : {}),
       ...(runtime ? {
         runtimeStatus: runtime.status,
         runtimeExpectedRuleCount: runtime.expectedRuleCount,
@@ -1302,6 +1308,9 @@ export async function getForwardGroupOptions(allowedGroupIds?: number[]) {
     : await query.orderBy(asc(forwardGroups.sortOrder), desc(forwardGroups.createdAt), desc(forwardGroups.id));
   if (rows.length === 0) return [];
   const ids = rows.map((group: any) => Number(group.id));
+  const sniTemplates = await db.select({ groupId: forwardRules.forwardGroupId }).from(forwardRules)
+    .where(and(inArray(forwardRules.forwardGroupId, ids), eq(forwardRules.isForwardGroupTemplate, true), isNotNull(forwardRules.sni)));
+  const sniGroupIds = new Set(sniTemplates.map((rule: any) => Number(rule.groupId)));
   const members = await db
     .select()
     .from(forwardGroupMembers)
@@ -1315,11 +1324,13 @@ export async function getForwardGroupOptions(allowedGroupIds?: number[]) {
     list.push(member);
     membersByGroupId.set(groupId, list);
   }
-  return rows.map((group: any) => ({
-    ...group,
-    groupMode: groupModeOf(group),
-    members: membersByGroupId.get(Number(group.id)) || [],
-  }));
+  return rows.map((group: any) => {
+    const hasSniFailoverRules = groupModeOf(group) === "failover" && group.groupType === "host" && sniGroupIds.has(Number(group.id));
+    return {
+      ...group, groupMode: groupModeOf(group), ...(hasSniFailoverRules ? { hasSniFailoverRules: true } : {}),
+      members: (membersByGroupId.get(Number(group.id)) || []).map(member => hasSniFailoverRules ? { ...member, ...sniMemberHealthSummary(Number(member.id)) } : member),
+    };
+  });
 }
 
 export async function getForwardGroupById(id: number) {
@@ -1879,6 +1890,7 @@ export async function updateForwardGroupMemberChinaHealth(input: {
   latencyMs: number | null;
   isTimeout: boolean;
   healthStatus?: "unknown" | "healthy" | "unhealthy";
+  reportedAt?: number;
 }) {
   const group = await getForwardGroupById(Number(input.groupId)) as any;
   if (!group || !dbBool(group.chinaHealthCheckEnabled) || !supportsChinaHealthMode(groupModeOf(group))) return false;
@@ -1905,27 +1917,31 @@ export async function updateForwardGroupMemberChinaHealth(input: {
         }
       : {};
   const db = await getDb();
+  const hasSniRules = groupModeOf(group) === "failover"
+    && (await getForwardGroupTemplateRules(Number(group.id))).some((rule: any) => normalizeSniValue(rule.sni));
+  if (hasSniRules && input.reportedAt && input.reportedAt <= sniRuntimeConfirmationBoundary(Number(input.hostId))) return false;
   await db.update(forwardGroupMembers).set({
     chinaHealthStatus: nextStatus,
     chinaHealthLatencyMs: nextStatus === "healthy" ? input.latencyMs : null,
     chinaHealthCheckedAt: decisionNow,
-    ...decisionWindowPatch,
+    ...(!hasSniRules ? decisionWindowPatch : {}),
     updatedAt: decisionNow,
   } as any).where(eq(forwardGroupMembers.id, Number(input.memberId)));
+  if (hasSniRules) recordSniChinaHealthDecision(Number(input.memberId), nextStatus, decisionNow.getTime(), agentDecision === "healthy" || agentDecision === "unhealthy");
   scheduleForwardGroupFailover([Number(input.groupId)]);
   return true;
 }
 
 export async function resetForwardGroupChinaHealth(groupId: number) {
   const db = await getDb();
+  const group = await getForwardGroupById(groupId) as any;
+  const hasSniRules = groupModeOf(group) === "failover" && group?.groupType === "host"
+    && (await getForwardGroupTemplateRules(groupId) as any[]).some(rule => normalizeSniValue(rule.sni));
   await db.update(forwardGroupMembers).set({
-    healthStatus: "unknown",
     chinaHealthStatus: "unknown",
     chinaHealthLatencyMs: null,
     chinaHealthCheckedAt: null,
-    failureSince: null,
-    healthySince: null,
-    lastCheckedAt: null,
+    ...(!hasSniRules ? { healthStatus: "unknown", failureSince: null, healthySince: null, lastCheckedAt: null } : {}),
     updatedAt: nowDate(),
   } as any).where(eq(forwardGroupMembers.groupId, Number(groupId)));
 }
@@ -2038,6 +2054,18 @@ async function memberDdnsValue(member: any, recordType: ForwardGroupRecordType) 
 async function failoverAgentSelectionStillCurrent(group: any, active: any, next: any) {
   const latest = await getForwardGroupById(Number(group?.id || 0)).catch(() => null) as any;
   if (!latest || Number(latest.activeMemberId || 0) !== Number(group?.activeMemberId || 0)) return false;
+  if (!dbBool(latest.isEnabled) || exactDdnsSignature(latest, "") !== exactDdnsSignature(group, "")) return false;
+  if (group.groupType === "host" && groupModeOf(group) === "failover"
+    && (await getForwardGroupTemplateRules(Number(group.id))).some((rule: any) => normalizeSniValue(rule.sni))) {
+    if (dbBool(latest.autoFailback) !== dbBool(group.autoFailback)
+      || forwardGroupFailoverDelayMs(latest) !== forwardGroupFailoverDelayMs(group)
+      || forwardGroupRecoverDelayMs(latest) !== forwardGroupRecoverDelayMs(group)
+      || dbBool(latest.chinaHealthCheckEnabled) !== dbBool(group.chinaHealthCheckEnabled)
+      || String(latest.chinaHealthCheckTarget || "") !== String(group.chinaHealthCheckTarget || "")) return false;
+    const selectionMembers = (value: any) => sortedMembers(value, true).map((member: any) =>
+      [Number(member.id), Number(member.priority), String(member.memberType), Number(member.hostId || 0)].join(":")).join("|");
+    if (selectionMembers(latest) !== selectionMembers(group)) return false;
+  }
   const enabledMemberIds = new Set((latest.members || [])
     .filter((member: any) => dbBool(member?.isEnabled))
     .map((member: any) => Number(member.id || 0)));
@@ -2053,7 +2081,9 @@ async function failoverAgentSelectionStillCurrent(group: any, active: any, next:
     && groupModeOf(latest) === "failover"
     && (await getForwardGroupTemplateRules(Number(latest.id))).some((rule: any) => normalizeSniValue(rule.sni))) {
     const candidate = (latest.members || []).find((member: any) => Number(member.id) === Number(next.id));
-    if (!dbBool(latest.isEnabled) || !candidate || !(await evaluateMemberHealth(candidate, latest)).healthy) return false;
+    if (!candidate) return false;
+    const health = await evaluateMemberHealth(candidate, latest);
+    if (!health.healthy || !health.recoveredLongEnough) return false;
   }
   return true;
 }
@@ -4087,6 +4117,15 @@ export async function scheduleForwardGroupsForHostHealthChange(hostId: number) {
   return activeGroupIds.length;
 }
 
+export async function hostHasFailoverSniRules(hostId: number) {
+  const db = await getDb();
+  const rows = await db.select({ id: forwardRules.id }).from(forwardRules)
+    .innerJoin(forwardGroups, eq(forwardGroups.id, forwardRules.forwardGroupId))
+    .where(and(eq(forwardRules.hostId, hostId), eq(forwardGroups.groupMode, "failover"),
+      eq(forwardGroups.groupType, "host"), isNotNull(forwardRules.sni))).limit(1);
+  return rows.length > 0;
+}
+
 async function latestTcping(ruleId: number) {
   const table = quoteIdentifier("tcping_stats");
   const result = await queryRaw<any>(
@@ -4096,7 +4135,150 @@ async function latestTcping(ruleId: number) {
   return result[0];
 }
 
+async function evaluateSniMemberHealth(member: any, group: any, templates: any[]) {
+  const db = await getDb();
+  const now = Date.now();
+  const liveness = await resolveMemberAgentLiveness(member, now);
+  const host = await getHostById(Number(member.hostId));
+  if (!liveness.available && !liveness.trafficExcluded) {
+    invalidateSniRuntimeConfirmation(liveness.hostId, liveness.lastOfflineAt || liveness.failureSince?.getTime() || now);
+  }
+  const boundary = sniRuntimeConfirmationBoundary(liveness.hostId);
+  const gatedTemplates = await gateForwardRulesForRuntime(templates);
+  const required = gatedTemplates.filter(rule => dbBool(rule.isEnabled) && !dbBool(rule.pendingDelete));
+  // Keep revoked children here: their old domains must have left the actual
+  // table before the remaining domains can qualify this entrance.
+  const children = await db.select().from(forwardRules).where(eq(forwardRules.forwardGroupMemberId, Number(member.id)));
+  const observations: SniMemberHealthObservation[] = [{
+    key: "agent", healthy: liveness.available, agentFinal: liveness.available || liveness.trafficExcluded,
+    failureAt: liveness.failureSince?.getTime(), message: liveness.trafficExcluded
+      ? "主机流量达到故障转移阈值，已暂停组调度" : "入口 Agent 离线",
+  }];
+  const sniRequired = required.filter(rule => normalizeSniValue(rule.sni));
+  let sniHealthy = true;
+  let sniPending = false;
+  let sniMessage = "入口和 SNI 分流正常";
+  let sniFailureAt = now;
+  let confirmedAt = 0;
+  let interruptedAt = boundary;
+  let expiresAt: number | undefined;
+  for (const template of sniRequired) {
+    const child = children.find((rule: any) => Number(rule.forwardGroupRuleId) === Number(template.id));
+    const status = getSniRuntimeGroupStatus(member.hostId, template.sourcePort);
+    interruptedAt = Math.max(interruptedAt, status?.interruptedAt || 0);
+    if (!isSniEntryAgentVersionSupported(host?.agentVersion)) {
+      sniHealthy = false;
+      sniMessage = `入口 ${host?.name || member.hostId} 需要 Agent ${SNI_SPLITTER_MIN_AGENT_VERSION} 或更高版本`;
+    } else if (!child || !dbBool(child.isEnabled) || dbBool(child.pendingDelete)) {
+      sniHealthy = false;
+      sniMessage = "等待入口补齐 SNI 分流规则";
+    } else if (!status?.confirmedAt || status.confirmedAt < boundary) {
+      sniHealthy = false;
+      sniPending = true;
+      if (interruptedAt) sniFailureAt = Math.min(sniFailureAt, interruptedAt);
+      sniMessage = "等待重新确认 SNI 分流运行状态";
+    } else if (now >= status.confirmedAt + forwardGroupRuleProbeFreshMs) {
+      sniHealthy = false;
+      sniFailureAt = Math.min(sniFailureAt, status.confirmedAt + forwardGroupRuleProbeFreshMs);
+      interruptedAt = Math.max(interruptedAt, status.confirmedAt + forwardGroupRuleProbeFreshMs);
+      sniMessage = "SNI 分流运行确认已过期";
+    } else {
+      expiresAt = Math.min(expiresAt || Infinity, status.confirmedAt + forwardGroupRuleProbeFreshMs);
+      confirmedAt = Math.max(confirmedAt, status.confirmedAt);
+      if (!status.currentVersion || status.appliedRoutes.length === 0) {
+        sniHealthy = false;
+        sniFailureAt = Math.min(sniFailureAt, status.confirmedAt);
+        sniMessage = "SNI 分流程序未运行";
+      } else if (!isFailoverSniRuleApplied({ ...child, ...template, id: child.id, hostId: member.hostId })) {
+        sniHealthy = false;
+        sniFailureAt = Math.min(sniFailureAt, Math.max(status.confirmedAt, toDate(template.updatedAt)?.getTime() || now));
+        sniMessage = "SNI 分流配置尚未生效";
+      }
+    }
+  }
+  // A revoked domain still present in the table is not the required safe
+  // configuration, even if every remaining enabled domain is also present.
+  const requiredIds = new Set(required.map(rule => Number(rule.id)));
+  for (const child of children) {
+    if (!normalizeSniValue(child.sni) || (requiredIds.has(Number(child.forwardGroupRuleId)) && !dbBool(child.pendingDelete))) continue;
+    if (getSniRuntimeGroupStatus(member.hostId, child.sourcePort)?.appliedRuleIds.includes(Number(child.id))) {
+      sniHealthy = false;
+      sniMessage = "SNI 分流配置尚未生效";
+    }
+  }
+  // A child may already have been purged after a valid removal report. Keep
+  // rejecting its old identity if a delayed table later brings it back. Other
+  // resources can legally share this splitter, so validate against all live
+  // reported rule identities rather than only this group's children.
+  const observedRoutes = [...new Set(sniRequired.map(rule => Number(rule.sourcePort)))].flatMap(port =>
+    getSniRuntimeGroupStatus(member.hostId, port)?.appliedRoutes || []);
+  if (observedRoutes.length) {
+    const currentRules = await gateForwardRulesForRuntime(await getForwardRulesByIds(observedRoutes.map(route => Number(route.ruleId))));
+    const currentById = new Map(currentRules.filter(rule => dbBool(rule.isEnabled) && !dbBool(rule.pendingDelete)).map(rule => [Number(rule.id), rule]));
+    if (observedRoutes.some(route => normalizeSniValue(currentById.get(Number(route.ruleId))?.sni) !== normalizeSniValue(route.sni))) {
+      sniHealthy = false;
+      sniMessage = "SNI 分流配置尚未生效";
+    }
+  }
+  if (!required.length) observations.push({ key: "rules", healthy: false, pending: true, message: "没有应运行的转发规则" });
+  if (sniRequired.length || !sniHealthy) observations.push({
+    key: "sni", healthy: sniHealthy, pending: !interruptedAt && sniPending && sniHealthy === false && sniMessage.includes("重新确认"),
+    failureAt: sniFailureAt, confirmedAt, interruptedAt, expiresAt, message: sniMessage,
+  });
+  const latencies: number[] = [];
+  for (const template of required.filter(rule => !normalizeSniValue(rule.sni))) {
+    const child = children.find((rule: any) => Number(rule.forwardGroupRuleId) === Number(template.id));
+    const latest = child ? await latestTcping(Number(child.id)) : null;
+    const stat = freshForwardGroupRuleProbe(latest, new Date(now));
+    const status = String(stat?.healthStatus || "");
+    const current = agentHealthSampleIsCurrent(liveness, latest?.recordedAt)
+      && (!boundary || (toDate(latest?.recordedAt)?.getTime() || 0) > boundary);
+    const running = !!child && dbBool(child.isEnabled) && dbBool(child.isRunning) && !dbBool(child.pendingDelete);
+    const checkedAt = toDate(latest?.recordedAt)?.getTime() || 0;
+    const missingExpiryAt = (toDate(member.lastCheckedAt)?.getTime() || toDate(group.createdAt)?.getTime() || now) + forwardGroupRuleProbeFreshMs;
+    const pending = running && ((!stat && !checkedAt && now < missingExpiryAt) || !current || status === "unknown");
+    observations.push({
+      key: `rule:${template.id}`, healthy: running && !!stat && current && status !== "unknown" && status !== "unhealthy" && (status === "healthy" || !dbBool(stat.isTimeout)),
+      pending, pendingTtlMs: forwardGroupRuleProbeFreshMs, agentFinal: running && !!stat && current && (status === "healthy" || status === "unhealthy"),
+      failureAt: checkedAt && !stat ? checkedAt + forwardGroupRuleProbeFreshMs : undefined,
+      expiresAt: checkedAt && stat ? checkedAt + forwardGroupRuleProbeFreshMs : pending && !checkedAt ? missingExpiryAt : undefined,
+      message: !running ? "普通转发规则尚未运行" : pending ? "等待普通规则的健康检测结果" : !stat ? "普通规则的健康检测结果已过期" : "普通规则的健康检测失败",
+    });
+    if (typeof stat?.latencyMs === "number") latencies.push(stat.latencyMs);
+  }
+  if (dbBool(group.chinaHealthCheckEnabled)) {
+    const checkedAt = toDate(member.chinaHealthCheckedAt)?.getTime() || 0;
+    const current = agentHealthSampleIsCurrent(liveness, member.chinaHealthCheckedAt) && (!boundary || checkedAt > boundary);
+    const status = current ? forwardGroupChinaHealthStateAt(member, now) : "pending";
+    const missingExpiryAt = (toDate(group.createdAt)?.getTime() || now) + forwardGroupRuleProbeFreshMs;
+    observations.push({
+      key: "china", healthy: status === "healthy", pending: status === "pending" && (!current || now < missingExpiryAt),
+      pendingTtlMs: forwardGroupRuleProbeFreshMs,
+      agentFinal: isSniChinaHealthDecisionFinal(Number(member.id), status, checkedAt),
+      failureAt: status === "stale" && checkedAt ? checkedAt + forwardGroupRuleProbeFreshMs : undefined,
+      expiresAt: status === "healthy" || status === "unhealthy" ? checkedAt + forwardGroupRuleProbeFreshMs : !checkedAt && now < missingExpiryAt ? missingExpiryAt : undefined,
+      message: status === "healthy" ? "国内健康度检测正常" : status === "unhealthy" ? "国内健康度检测失败" : status === "stale" ? "国内健康度检测数据已过期" : "等待国内健康度检测结果",
+    });
+    if (typeof member.chinaHealthLatencyMs === "number") latencies.push(member.chinaHealthLatencyMs);
+  }
+  const result = evaluateSniMemberHealthWindows({
+    memberId: Number(member.id), previouslyObserved: !!toDate(member.lastCheckedAt), observations, now,
+    failoverMs: forwardGroupFailoverDelayMs(group), recoverMs: forwardGroupRecoverDelayMs(group),
+  });
+  const healthStatus = result.healthy ? "healthy" : result.healthPending ? "unknown" : "unhealthy";
+  const latencyMs = latencies.length ? Math.round(latencies.reduce((sum, value) => sum + value, 0) / latencies.length) : null;
+  await db.update(forwardGroupMembers).set({
+    healthStatus, lastLatencyMs: latencyMs, failureSince: result.failureSince, healthySince: result.healthySince,
+    lastCheckedAt: new Date(now), updatedAt: new Date(now),
+  } as any).where(eq(forwardGroupMembers.id, member.id));
+  return { ...member, ...result, sniHealth: true, latencyMs, chinaHealthPending: observations.some(item => item.key === "china" && item.pending), agentLivenessSignature: liveness.signature };
+}
+
 async function evaluateMemberHealth(member: any, group: any) {
+  if (groupModeOf(group) === "failover" && group.groupType === "host") {
+    const templates = await getForwardGroupTemplateRules(Number(group.id));
+    if (templates.some((rule: any) => normalizeSniValue(rule.sni))) return evaluateSniMemberHealth(member, group, templates);
+  }
   const db = await getDb();
   const now = nowDate();
   const agentLiveness = await resolveMemberAgentLiveness(member, now.getTime());
@@ -4796,22 +4978,30 @@ async function syncSingleForwardGroupDdns(
   const currentMessage = options.currentMessage || "DDNS 已是最新，解析记录已指向选中入口";
   const previousMemberId = Number(group.activeMemberId || 0);
   const previousValue = String(group.lastDdnsValue || "").trim();
+  const selectionIsCurrent = async () => {
+    const latest = await getForwardGroupById(Number(group.id)) as any;
+    const candidate = latest?.members?.find((item: any) => Number(item.id) === memberId && dbBool(item.isEnabled));
+    if (!latest || !dbBool(latest.isEnabled) || groupModeOf(latest) !== groupModeOf(group)
+      || exactDdnsSignature(latest, "") !== exactDdnsSignature(group, "")
+      || !candidate || (await memberDdnsValue(candidate, recordType)) !== value) return false;
+    return !options.beforeCommit || await options.beforeCommit();
+  };
   const commitIfCurrent = (work: () => Promise<void>) => withForwardGroupSyncLocks([Number(group.id)], async () => {
-    if (options.beforeCommit && !(await options.beforeCommit())) return false;
+    if (!(await selectionIsCurrent())) return false;
     await work();
   });
 
-  if (options.beforeCommit && !(await options.beforeCommit())) return false;
+  if (!(await selectionIsCurrent())) return false;
 
   if (!ddnsSettings.enabled || ddnsSettings.provider === "disabled") {
     return commitIfCurrent(async () => {
-        const changed = await updateForwardGroupRuntimeIfChanged(db, group, {
-          activeMemberId: memberId,
-          lastDdnsValue: value,
-          lastStatus: "healthy",
-          lastMessage: `系统 DDNS 未启用；建议入口 ${value}`,
-        });
-        if (changed) await insertForwardGroupEvent(group.id, memberId, "ddns-skip", `系统 DDNS 未启用，解析记录未更新；${detail}`);
+      const changed = await updateForwardGroupRuntimeIfChanged(db, group, {
+        activeMemberId: memberId,
+        lastDdnsValue: value,
+        lastStatus: "healthy",
+        lastMessage: `系统 DDNS 未启用；建议入口 ${value}`,
+      });
+      if (changed) await insertForwardGroupEvent(group.id, memberId, "ddns-skip", `系统 DDNS 未启用，解析记录未更新；${detail}`);
     });
   }
 
@@ -4822,11 +5012,11 @@ async function syncSingleForwardGroupDdns(
     && !exactDdnsReconciliationDue(group, value)
   ) {
     return commitIfCurrent(async () => {
-    const changed = await updateForwardGroupRuntimeIfChanged(db, group, {
-      lastStatus: "healthy",
-      lastMessage: `当前入口 ${value}`,
-    });
-    if (changed) await insertForwardGroupEvent(group.id, memberId, "ddns-current", `${currentMessage}；${detail}`);
+      const changed = await updateForwardGroupRuntimeIfChanged(db, group, {
+        lastStatus: "healthy",
+        lastMessage: `当前入口 ${value}`,
+      });
+      if (changed) await insertForwardGroupEvent(group.id, memberId, "ddns-current", `${currentMessage}；${detail}`);
     });
   }
 
@@ -4840,7 +5030,7 @@ async function syncSingleForwardGroupDdns(
       ttl: Number(ddnsSettings.ttl || 600),
     });
     return await withForwardGroupSyncLocks([Number(group.id)], async () => {
-      if (options.beforeCommit && !(await options.beforeCommit())) {
+      if (!(await selectionIsCurrent())) {
         // The provider may already have changed its record. Force the next
         // evaluation to reconcile it instead of trusting the earlier cache.
         exactDdnsReconciledGroups.delete(Number(group.id));
@@ -5011,7 +5201,7 @@ async function runForwardGroupFailoverForGroups(
     // higher-priority member recovers, it must win over the currently active
     // lower-priority member regardless of how the evaluation array was built.
     const healthyMembers = evaluated
-      .filter((member) => member.healthy)
+      .filter((member) => member.healthy && (!(member as any).sniHealth || member.recoveredLongEnough))
       .sort((left, right) => {
         const priorityDelta = Number(left.priority) - Number(right.priority);
         return priorityDelta || Number(left.id) - Number(right.id);
@@ -5021,7 +5211,7 @@ async function runForwardGroupFailoverForGroups(
     if ((active?.healthPending && String(group.lastDdnsValue || "").trim()) || (!active && !firstHealthy && anyPending)) {
       await updateForwardGroupRuntimeIfChanged(db, group, {
         lastStatus: "unknown",
-        lastMessage: "等待国内健康度检测结果；暂不变更现有 DDNS 解析",
+        lastMessage: `${active?.message || evaluated.find(member => member.healthPending)?.message || "等待入口健康检测结果"}；暂不变更现有 DDNS 解析`,
       });
       continue;
     }
@@ -5054,7 +5244,12 @@ async function runForwardGroupFailoverForGroups(
         scheduleForwardGroupFailover([Number(group.id)]);
         continue;
       }
-      await preserveForwardGroupDdns(group, ddnsSettings, options, "没有可用于 DDNS 故障转移的健康成员");
+      await preserveForwardGroupDdns(group, ddnsSettings, options, evaluated.find(member => member.healthy && !member.recoveredLongEnough)?.message || "没有可用于 DDNS 故障转移的健康成员");
+      continue;
+    }
+
+    if ((next as any).sniHealth && Number(next.id) === Number(active?.id) && (!next.healthy || !next.recoveredLongEnough)) {
+      await updateForwardGroupRuntimeIfChanged(db, group, { lastStatus: "unknown", lastMessage: `${next.message}；保留现有解析` });
       continue;
     }
 
@@ -5101,6 +5296,7 @@ async function runForwardGroupFailoverByIds(groupIds: number[], options: Forward
       });
     } catch (error) {
       failures.push({ groupId, error });
+      forwardGroupEvaluationQueue.retry(groupId);
     }
   }
   if (failures.length > 0) throw new ForwardGroupEvaluationBatchError(failures);

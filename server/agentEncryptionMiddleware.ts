@@ -39,6 +39,19 @@ const AGENT_AUTH_FAILURE_LOG_INTERVAL_MS = 5 * 60 * 1000;
 const AGENT_AUTH_FAILURE_CACHE_RETENTION_MS = 60 * 60 * 1000;
 const AGENT_AUTH_FAILURE_CACHE_MAX = 2048;
 const agentAuthFailureLogAt = new Map<string, number>();
+const clocklessAgentOffsets = new Map<string, { offset: number; confirmed: boolean }>();
+
+function agentReportTime(token: string, envelopeTime: number, protocolNow: number, clockless: boolean) {
+  let offset = 0;
+  if (clockless) {
+    // v2 Agents need not share the panel clock. Learn their clock difference
+    // from authenticated traffic; a delayed packet must not move it forward.
+    const previous = clocklessAgentOffsets.get(token);
+    offset = Math.min(previous?.offset ?? Infinity, protocolNow - envelopeTime);
+    setBoundedMapValue(clocklessAgentOffsets, token, { offset, confirmed: previous?.confirmed || false }, AGENT_AUTH_FAILURE_CACHE_MAX);
+  }
+  return Date.now() + envelopeTime + offset - protocolNow;
+}
 
 const agentAuthFailureCacheCleanupTimer = setInterval(() => {
   const now = Date.now();
@@ -103,6 +116,7 @@ export async function agentEncryptionMiddleware(req: Request, res: Response, nex
   let token: string | null = null;
   let payload: any = null;
   const protocolNowMs = panelCryptoNowMs();
+  const envelopeTime = Number(req.body.ts);
   let authStage = "resolve-token";
   try {
     token = await resolveAgentTokenFromAuthorization(req, rawBodyText, protocolNowMs);
@@ -163,6 +177,14 @@ export async function agentEncryptionMiddleware(req: Request, res: Response, nex
     res.setHeader(AGENT_AUTH_RESULT_HEADER, AGENT_AUTH_RESULT_ACCEPTED);
     req.body = payload;
     (req as any).agentToken = token;
+    // Preserve the authenticated envelope time so a delayed pre-offline report
+    // cannot serve as a fresh runtime confirmation after reconnection.
+    (req as any).agentReportClockKnown = !hasClocklessAgentAuth(req) || clocklessAgentOffsets.get(token)?.confirmed === true;
+    (req as any).agentReportCreatedAt = agentReportTime(token, envelopeTime, protocolNowMs, hasClocklessAgentAuth(req));
+    (req as any).confirmAgentReportClock = () => {
+      setBoundedMapValue(clocklessAgentOffsets, token!, { offset: protocolNowMs - envelopeTime, confirmed: true }, AGENT_AUTH_FAILURE_CACHE_MAX);
+      (req as any).agentReportCreatedAt = Date.now();
+    };
     const tunneledPath = isSyncRequest ? normalizeTunnelPath(req.body?.path) : "";
     if (isSyncRequest && !tunneledPath) {
       res.status(400).json({ error: "Invalid encrypted request" });

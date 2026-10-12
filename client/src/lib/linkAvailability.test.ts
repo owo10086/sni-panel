@@ -365,3 +365,25 @@ test("an entry group's healthy probe result wins over a stale offline host flag"
   assert.equal(state?.status, "available");
   assert.deepEqual([...state!.usableMemberIds], [621]);
 });
+
+test("SNI failover availability follows actual readiness and exposes the blocking reason", () => {
+  const group = {
+    id: 70, groupMode: "failover", groupType: "host", hasSniFailoverRules: true,
+    domain: "entry.example.com", recordType: "A", isEnabled: true,
+    lastStatus: "unknown", lastMessage: "入口恢复观察尚未完成",
+    members: [{ id: 701, hostId: 1, isEnabled: true, chinaHealthStatus: "healthy", selectionReady: false }],
+  };
+  const input = { hosts: [{ id: 1, isOnline: true, ipv4: "192.0.2.1" }], groups: [group], tunnels: [], now };
+  const pending = buildLinkAvailabilityIndex(input).groupAvailabilityById.get(70);
+  assert.equal(pending?.status, "pending");
+  assert.equal(pending?.message, "入口恢复观察尚未完成");
+  assert.equal(pending?.available, false);
+  group.lastStatus = "down";
+  group.lastMessage = "SNI 分流运行确认已过期；继续保留解析 192.0.2.1，等待成员恢复";
+  assert.equal(buildLinkAvailabilityIndex(input).groupAvailabilityById.get(70)?.status, "unavailable");
+  group.lastStatus = "healthy";
+  group.members[0].selectionReady = true;
+  const ready = buildLinkAvailabilityIndex(input).groupAvailabilityById.get(70);
+  assert.equal(ready?.available, true);
+  assert.deepEqual([...ready!.usableMemberIds], [701]);
+});

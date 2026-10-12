@@ -45,6 +45,7 @@ import { pruneMapEntries, setBoundedMapValue } from "./boundedCache";
 import { probeCounterSnapshot, type ProbeCounterSnapshot } from "./repositories/probeCounterRepository";
 import { agentProbeCounterReportGate } from "./agentProbeCounterReportGate";
 import { withForwardGroupSyncLocks } from "./repositories/forwardGroupRepository";
+import { pendingSniRuntimeSession, sniRuntimeConfirmationBoundary } from "./sniRuntimeObservability";
 
 const VERBOSE_AGENT_REPORTS = /^(1|true|yes|on)$/i.test(String(process.env.FORWARDX_VERBOSE_AGENT_REPORTS || ""));
 
@@ -1359,6 +1360,9 @@ agentRouter.post("/api/agent/tcping", async (req: Request, res: Response) => {
       for (const report of reports) {
         if (String(report.probeType || "") === "china") {
           if (!acceptedGroupReports.has(report)) continue;
+          if ((req as any).agentAuthVersion === "v2" && (pendingSniRuntimeSession(Number(host.id)) || (req as any).agentReportClockKnown === false)
+            && group.groupType === "host" && String(group.groupMode || "failover") === "failover"
+            && (await db.getForwardGroupTemplateRules(groupId)).some((rule: any) => String(rule.sni || "").trim())) continue;
           const expected = chinaExpectedByKey.get(`${groupId}:${Number(report.memberId || 0)}`) as any;
           if (!expected) continue;
           if (report.targetIp && !sameProbeTarget(report.targetIp, expected.targetIp)) continue;
@@ -1370,6 +1374,7 @@ agentRouter.post("/api/agent/tcping", async (req: Request, res: Response) => {
             latencyMs: typeof report.latencyMs === "number" && report.latencyMs > 0 ? report.latencyMs : null,
             isTimeout: !!report.isTimeout,
             healthStatus: report.healthStatus,
+            reportedAt: Number((req as any).agentReportCreatedAt || Date.now()),
           });
           continue;
         }
@@ -1443,9 +1448,11 @@ agentRouter.post("/api/agent/tcping", async (req: Request, res: Response) => {
     }
 
     const reportCandidates = await db.getForwardRulesByIds(results.map(report => Number(report.ruleId || 0))) as any[];
-    const sniGroupIds = [...new Set(reportCandidates.filter(rule => String(rule.sni || "").trim() && Number(rule.forwardGroupRuleId) > 0).map(rule => Number(rule.forwardGroupId)))];
+    const sniGroupIds = [...new Set(reportCandidates.filter(rule => Number(rule.forwardGroupRuleId) > 0).map(rule => Number(rule.forwardGroupId)))];
     const sniGroups = await Promise.all(sniGroupIds.map(id => db.getForwardGroupById(id)));
-    const sniFailoverGroupIds = new Set(sniGroups.filter((group: any) => group && String(group.groupMode || "failover") === "failover").map((group: any) => Number(group.id)));
+    const sniTemplates = await Promise.all(sniGroupIds.map(id => db.getForwardGroupTemplateRules(id)));
+    const sniFailoverGroupIds = new Set(sniGroups.filter((group: any, index) => group && group.groupType === "host"
+      && String(group.groupMode || "failover") === "failover" && sniTemplates[index].some((rule: any) => String(rule.sni || "").trim())).map((group: any) => Number(group.id)));
     const ruleGatePlan = await withForwardGroupSyncLocks([...sniFailoverGroupIds], async () => {
       const reportedRuleRows = await db.getForwardRulesByIds(results.map((report) => Number(report.ruleId || 0))) as any[];
       const reportedRuleById = new Map(reportedRuleRows.map((rule: any) => [Number(rule.id), rule]));
@@ -1476,6 +1483,8 @@ agentRouter.post("/api/agent/tcping", async (req: Request, res: Response) => {
         if (ruleId <= 0) return null;
         const rule = reportedRuleById.get(ruleId) as any;
         if (!rule || rule.pendingDelete || !rule.isEnabled) return null;
+        if (sniFailoverGroupIds.has(Number(rule.forwardGroupId)) && (Number((req as any).agentReportCreatedAt || Date.now()) <= sniRuntimeConfirmationBoundary(Number(host.id))
+          || ((req as any).agentAuthVersion === "v2" && (pendingSniRuntimeSession(Number(host.id)) || (req as any).agentReportClockKnown === false)))) return null;
         const tunnelId = Number(rule.tunnelId || 0);
         const baseLatency = typeof report.latencyMs === "number" && Number.isFinite(report.latencyMs) && report.latencyMs >= 0
           ? Number(report.latencyMs)
@@ -1501,6 +1510,9 @@ agentRouter.post("/api/agent/tcping", async (req: Request, res: Response) => {
               probeSuccesses: Number(report.probeSuccesses) || 0,
               healthStatus: report.healthStatus || null,
               healthPending: !!report.healthPending,
+              // Compare receipt time with the panel's reconnect boundary using
+              // the same clock, rather than the database server's clock.
+              ...(sniFailoverGroupIds.has(Number(rule.forwardGroupId)) ? { recordedAt: new Date() } : {}),
             },
             gateReport: { ...report, latencyMs, isTimeout },
           };

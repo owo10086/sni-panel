@@ -125,7 +125,7 @@ import { observePresenceCapableHostActivity, registerPresenceCapableHost } from 
 import { recordAuthenticatedAgentActivity } from "./agentActivity";
 import { normalizeSniValue } from "./repositories/repositoryUtils";
 import { getSniRuleGroupKey, isSniEntryAgentVersionSupported } from "@shared/sni";
-import { recordSniRuntimeSnapshot, sniRouteContentMatches } from "./sniRuntimeObservability";
+import { acknowledgeSniRuntimeSession, beginSniRuntimeSession, pendingSniRuntimeSession, sniRuntimePreviouslyAppliedRuleIds, acceptSniHeartbeatProcess, isRetiredSniHeartbeatProcess, invalidateSniRuntimeConfirmation, recordSniRuntimeSnapshot, renewSniRuntimeConfirmation, sniRuntimeConfirmationBoundary, sniRouteContentMatches } from "./sniRuntimeObservability";
 import { reconcileSniChainRunningStateForHost } from "./sniRuntimeRunningState";
 
 // DNS 解析缓存：ruleId → 主目标上次解析到的 IPv4 地址。
@@ -1509,6 +1509,57 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
     const compactMetrics = Array.isArray(req.body?.m) ? req.body.m : [];
     const busyHeartbeat = req.body?.busy === true || String(req.body?.busy || "").toLowerCase() === "true";
     const forceReconcile = req.body?.forceReconcile === true || String(req.body?.forceReconcile || "").toLowerCase() === "true";
+    const agentBootId = normalizeAgentText(req.body?.agentBootId, 128);
+    const agentProcessId = Math.max(0, Math.floor(Number(req.body?.agentProcessId || 0)));
+    const agentProcessStartedAtSeconds = Number(req.body?.agentProcessStartedAt || 0);
+    const previousHost = { ...(host as any) };
+    const reportedLocalRuntimeState = normalizeAgentLocalRuntimeState(req.body?.localState);
+    const recoveredFromOffline = wasOnline === false;
+    const rebootDetected = heartbeatIndicatesAgentReboot(previousHost, req.body?.uptime ?? compactMetrics[12], agentBootId);
+    const previousProcessStartedAt = heartbeatTimestampMs(previousHost.agentProcessStartedAt);
+    const processIdChanged = agentProcessId > 0
+      && Number(previousHost.agentProcessId || 0) > 0
+      && agentProcessId !== Number(previousHost.agentProcessId || 0);
+    const processStartChanged = previousProcessStartedAt > 0
+      && agentProcessStartedAtSeconds > 0
+      && agentProcessStartedAtSeconds * 1000 !== previousProcessStartedAt;
+    // boot_id identifies the host, not the Agent process. A quick systemd
+    // restart can keep the same boot_id and even the same Unix second; the PID
+    // change is the primary signal, with start time as the PID-reuse fallback.
+    const processRestartDetected = processIdChanged || processStartChanged;
+    const recoveryTriggered = recoveredFromOffline || rebootDetected || processRestartDetected;
+    const clocklessReport = (req as any).agentAuthVersion === "v2";
+    const reportCreatedAt = Number((req as any).agentReportCreatedAt || Date.now());
+    const obsoleteProcess = !clocklessReport && previousProcessStartedAt > 0 && agentProcessStartedAtSeconds > 0
+      && agentProcessStartedAtSeconds * 1000 < previousProcessStartedAt;
+    const staleRuntimeReport = obsoleteProcess || (clocklessReport ? reportCreatedAt < sniRuntimeConfirmationBoundary(Number(host.id)) : reportCreatedAt <= sniRuntimeConfirmationBoundary(Number(host.id)))
+      || (recoveredFromOffline && reportCreatedAt <= heartbeatTimestampMs(previousHost.lastHeartbeat) + db.HOST_ONLINE_TTL_MS);
+    const unknownClock = clocklessReport && (req as any).agentReportClockKnown === false;
+    const retiredProcess = isRetiredSniHeartbeatProcess(Number(host.id), req.body);
+    const failoverSniHost = (recoveryTriggered || staleRuntimeReport || unknownClock || retiredProcess || (clocklessReport && pendingSniRuntimeSession(Number(host.id))))
+      ? await db.hostHasFailoverSniRules(Number(host.id)) : false;
+    if (failoverSniHost && (retiredProcess || (!clocklessReport && (obsoleteProcess || staleRuntimeReport || !acceptSniHeartbeatProcess(previousHost, req.body))))) {
+      agentLocalRuntimeStateCache.delete(Number(host.id));
+      res.json({ success: true, actions: [], nextInterval: 5, requestLocalState: true, reconciliationCoalesced: true, presenceSupported: true });
+      return;
+    }
+    const runtimeSessionAcknowledged = failoverSniHost && clocklessReport && acknowledgeSniRuntimeSession(Number(host.id), req.body?.agentLastReceivedHash);
+    if (runtimeSessionAcknowledged) {
+      // This body was created after receiving our unique session hash. Its
+      // clock can now be learned without turning a delayed body into evidence.
+      (req as any).confirmAgentReportClock?.();
+      acceptSniHeartbeatProcess(previousHost, req.body);
+      if (!reportedLocalRuntimeState) agentLocalRuntimeStateCache.delete(Number(host.id));
+    }
+    if (failoverSniHost && !runtimeSessionAcknowledged && (recoveryTriggered || (clocklessReport && (unknownClock || staleRuntimeReport)))
+      && (!clocklessReport || !pendingSniRuntimeSession(Number(host.id)))) {
+      if (!recoveryTriggered && unknownClock && !Number(previousHost.agentProcessId) && !sniRuntimePreviouslyAppliedRuleIds(Number(host.id)).length) beginSniRuntimeSession(Number(host.id));
+      else invalidateSniRuntimeConfirmation(Number(host.id));
+      if (!reportedLocalRuntimeState) agentLocalRuntimeStateCache.delete(Number(host.id));
+      void db.scheduleForwardGroupsForHostHealthChange(Number(host.id));
+    }
+    const runtimeConfirmationPending = failoverSniHost && clocklessReport && !!pendingSniRuntimeSession(Number(host.id));
+    const runtimeConfirmationBoundary = sniRuntimeConfirmationBoundary(Number(host.id));
     if (!busyHeartbeat) {
       releaseHeartbeatReconciliation = agentHeartbeatGate.tryAcquire(logHostId, { force: forceReconcile });
       if (!releaseHeartbeatReconciliation) {
@@ -1529,7 +1580,7 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
           });
         }
         const panelMigration = await getPanelMigrationAgentDirective(logHostId);
-        const coalescedRequestLocalState = !!normalizeRuntimeStateSignature(req.body?.localStateSignature);
+        const coalescedRequestLocalState = failoverSniHost || !!normalizeRuntimeStateSignature(req.body?.localStateSignature);
         logAgentHeartbeatSummary({
           hostId: logHostId,
           hostName: logHostName,
@@ -1579,29 +1630,39 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
     const nextCpuInfo = normalizeAgentText(cpuInfo, 256);
     const nextAgentVersion = normalizeAgentText(agentVersion, 64);
     const agentVersionChanged = hasAgentVersionChanged((host as any).agentVersion, nextAgentVersion);
-    const agentBootId = normalizeAgentText(req.body?.agentBootId, 128);
     const agentBootedAtSeconds = Number(req.body?.agentBootedAt || 0);
-    const agentProcessId = Math.max(0, Math.floor(Number(req.body?.agentProcessId || 0)));
-    const agentProcessStartedAtSeconds = Number(req.body?.agentProcessStartedAt || 0);
     const agentLastReceivedRevision = Math.max(0, Math.floor(Number(req.body?.agentLastReceivedRevision || 0)));
     const agentLastAppliedRevision = Math.max(0, Math.floor(Number(req.body?.agentLastAppliedRevision || 0)));
     const agentLastReceivedHash = normalizeAgentText(req.body?.agentLastReceivedHash, 64);
     const agentLastAppliedHash = normalizeAgentText(req.body?.agentLastAppliedHash, 64);
     const reportedDefaultNetworkInterface = normalizeNetworkInterface(req.body?.defaultNetworkInterface);
-    const previousHost = { ...(host as any) };
     const reportedAddress = mergeAgentReportedAddress(req.body, host);
     const dnsChangedReports = Array.isArray(req.body?.dnsChanged) ? req.body.dnsChanged : [];
     const agentStateSignatures = normalizeAgentStateSignatures(req.body?.stateSignatures);
     const localRuntimeStateSignature = normalizeRuntimeStateSignature(req.body?.localStateSignature);
-    const reportedLocalRuntimeState = normalizeAgentLocalRuntimeState(req.body?.localState);
-    if (reportedLocalRuntimeState) {
-      recordSniRuntimeSnapshot(Number(host.id), reportedLocalRuntimeState.rules);
-    }
     const localRuntimeState = resolveAgentLocalRuntimeState(
       Number(host.id),
       localRuntimeStateSignature,
       reportedLocalRuntimeState,
     );
+    if (runtimeSessionAcknowledged && !reportedLocalRuntimeState) localRuntimeState.requestLocalState = true;
+    if (reportedLocalRuntimeState && !runtimeConfirmationPending) {
+      const previousRuleIds = sniRuntimePreviouslyAppliedRuleIds(Number(host.id));
+      const previousRules = previousRuleIds.length ? await gateForwardRulesForRuntime(await db.getForwardRulesByIds(previousRuleIds) as any[]) : [];
+      const requiredRuleIds = new Set(previousRules.filter(rule => rule.isEnabled && !rule.pendingDelete).map(rule => Number(rule.id)));
+      if (sniRuntimeConfirmationBoundary(Number(host.id)) !== runtimeConfirmationBoundary || isRetiredSniHeartbeatProcess(Number(host.id), req.body)) {
+        agentLocalRuntimeStateCache.delete(Number(host.id));
+        res.json({ success: true, actions: [], nextInterval: 5, requestLocalState: true, reconciliationCoalesced: true, presenceSupported: true });
+        return;
+      }
+      recordSniRuntimeSnapshot(Number(host.id), reportedLocalRuntimeState.rules, Date.now(), requiredRuleIds);
+      void db.scheduleForwardGroupsForHostHealthChange(Number(host.id));
+    } else if (!runtimeConfirmationPending && localRuntimeStateSignature && localRuntimeState.state && !localRuntimeState.requestLocalState) {
+      if (!renewSniRuntimeConfirmation(Number(host.id), localRuntimeState.state.rules)) {
+        localRuntimeState.requestLocalState = true;
+      }
+      void db.scheduleForwardGroupsForHostHealthChange(Number(host.id));
+    }
     const portOccupancy = receivePortOccupancy(Number(host.id), {
       schemaVersion: req.body?.portOccupancySchemaVersion,
       signature: req.body?.portOccupancySignature,
@@ -1680,20 +1741,6 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
     const upgradedProtocolGuardBackendAgent = !!nextAgentVersion
       && isAgentVersionAtLeast(nextAgentVersion, AGENT_PROTOCOL_GUARD_BACKEND_VERSION)
       && !isAgentVersionAtLeast(previousHost.agentVersion, AGENT_PROTOCOL_GUARD_BACKEND_VERSION);
-    const recoveredFromOffline = wasOnline === false;
-    const rebootDetected = heartbeatIndicatesAgentReboot(previousHost, uptime, agentBootId);
-    const previousProcessStartedAt = heartbeatTimestampMs(previousHost.agentProcessStartedAt);
-    const processIdChanged = agentProcessId > 0
-      && Number(previousHost.agentProcessId || 0) > 0
-      && agentProcessId !== Number(previousHost.agentProcessId || 0);
-    const processStartChanged = previousProcessStartedAt > 0
-      && agentProcessStartedAtSeconds > 0
-      && agentProcessStartedAtSeconds * 1000 !== previousProcessStartedAt;
-    // boot_id identifies the host, not the Agent process. A quick systemd
-    // restart can keep the same boot_id and even the same Unix second; the PID
-    // change is the primary signal, with start time as the PID-reuse fallback.
-    const processRestartDetected = processIdChanged || processStartChanged;
-    const recoveryTriggered = recoveredFromOffline || rebootDetected || processRestartDetected;
     const effectiveAgentVersion = nextAgentVersion || String((host as any).agentVersion || "");
     const supportsDesiredState = isAgentVersionAtLeast(effectiveAgentVersion, AGENT_DESIRED_STATE_VERSION);
     const supportsStateSignatures = isAgentVersionAtLeast(effectiveAgentVersion, AGENT_STATE_SIGNATURE_VERSION);
@@ -1731,10 +1778,10 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
       agentVersion: nextAgentVersion || (host as any).agentVersion || null,
       cpuInfo: nextCpuInfo || (host as any).cpuInfo || null,
       memoryTotal: memoryTotal || (host as any).memoryTotal || null,
-      ...(agentBootId ? { agentBootId } : {}),
-      ...(agentBootedAtSeconds > 0 ? { agentBootedAt: new Date(agentBootedAtSeconds * 1000) } : {}),
-      ...(agentProcessId > 0 ? { agentProcessId } : {}),
-      ...(agentProcessStartedAtSeconds > 0 ? { agentProcessStartedAt: new Date(agentProcessStartedAtSeconds * 1000) } : {}),
+      ...(!runtimeConfirmationPending && agentBootId ? { agentBootId } : {}),
+      ...(!runtimeConfirmationPending && agentBootedAtSeconds > 0 ? { agentBootedAt: new Date(agentBootedAtSeconds * 1000) } : {}),
+      ...(!runtimeConfirmationPending && agentProcessId > 0 ? { agentProcessId } : {}),
+      ...(!runtimeConfirmationPending && agentProcessStartedAtSeconds > 0 ? { agentProcessStartedAt: new Date(agentProcessStartedAtSeconds * 1000) } : {}),
       ...(agentLastReceivedRevision > 0 ? { agentLastReceivedRevision } : {}),
       ...(agentLastAppliedRevision > 0 ? { agentLastAppliedRevision } : {}),
       ...(agentLastReceivedHash ? { agentLastReceivedHash } : {}),
@@ -1905,7 +1952,7 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
       agentLastReceivedHash,
       agentLastAppliedHash,
     });
-    if (stablePlan) {
+    if (stablePlan && !runtimeConfirmationPending) {
       const metricsWatching = isHostMetricsWatching(host.id);
       logAgentHeartbeatSummary({
         hostId: logHostId,
@@ -7636,7 +7683,7 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
     });
     const sendDesiredState = supportsDesiredState
       && !deferActionsForLocalState
-      && shouldSendDesiredState(Number(host.id), orderedActions, activeWorkActions, responseIssuedAt, configRevision);
+      && (runtimeConfirmationPending || shouldSendDesiredState(Number(host.id), orderedActions, activeWorkActions, responseIssuedAt, configRevision));
     if (sendDesiredState) {
       for (const action of orderedActions) {
         agentStatusOrderGuard.expect(
@@ -7651,7 +7698,7 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
       version: 1,
       issuedAt: actionBatchIssuedAt,
       configRevision,
-      configHash: desiredStateHash,
+      configHash: runtimeConfirmationPending ? pendingSniRuntimeSession(Number(host.id))! : desiredStateHash,
       actions: orderedActions,
     } : undefined;
     const stateSections = buildAgentStateResponseSections({
