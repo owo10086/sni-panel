@@ -4149,7 +4149,7 @@
   "选择本页全部可选规则": "Select all available rules on this page",
   "选择测试主机后点击开始测试，Agent 会启动 iperf3 服务端。": "Select a test host and start the test. The Agent will start an iperf3 server.",
   "选择规则 {0}": "Select rule {0}",
-  "部署目录、项目名、服务名和容器名须与原部署一致。固定镜像标签时，先更新 .env 或 Compose 文件中的镜像版本。升级前备份数据库和配置，确认容器正常运行后再执行最后三行旧镜像清理命令。": "The deployment directory, project, service and container names must match the existing deployment. If the image tag is pinned, update it in .env or Compose first. Back up the database and configuration before upgrading. Run the last three image cleanup commands only after confirming the new container works.",
+  "命令会自动读取当前面板的部署目录，备份 docker-compose.yml，将镜像改为提示的新版本，再重建面板并核对版本。原有数据目录和其他服务保持不变。请用 root 执行；如修改过容器名，先调整命令中的 PANEL_CONTAINER。升级前请备份数据库。": "The command detects the current panel directory, backs up docker-compose.yml, switches its image to the version shown, recreates the panel, and verifies the version. It preserves the data directory and other services. Run as root; if you renamed the container, update PANEL_CONTAINER first. Back up the database before upgrading.",
   "配置": "Configuration",
   "配置应用失败": "Configuration failed",
   "错误": "Error",

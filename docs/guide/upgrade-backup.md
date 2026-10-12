@@ -126,7 +126,7 @@ curl -fsSL https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/ins
 curl -fsSL https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/install-panel-docker.sh | sudo env FORWARDX_TARGET_VERSION=vX.Y.Z bash -s -- upgrade
 ```
 
-升级会保留数据和脚本识别的核心配置，包括原端口、项目名、容器名、登录密钥、下载加速地址和首次部署语言；数据库连接保存在持久化数据目录中。脚本会重新生成 Compose 和 `.env`，不会原样保留所有手动新增项。升级前备份并核对自定义网络、挂载和环境变量。如果目标镜像尚未构建完成，脚本会提示稍后重试并保留旧容器运行。手动 Compose 部署请继续按 [手动升级与旧镜像清理](./deploy-docker.md#手动升级与旧镜像清理) 操作，避免混用安装器。
+升级会保留数据和脚本识别的核心配置，包括原端口、项目名、容器名、登录密钥、下载加速地址和首次部署语言；数据库连接保存在持久化数据目录中。脚本会重新生成 Compose 和 `.env`，不会原样保留所有手动新增项。升级前备份并核对自定义网络、挂载和环境变量。如果目标镜像尚未构建完成，脚本会提示稍后重试并保留旧容器运行。手动 Compose 部署请继续按 [手动升级](./deploy-docker.md#手动升级) 操作，避免混用安装器。
 
 升级完成后不要只看镜像拉取提示，可核对运行容器实际使用的镜像和程序版本：
 

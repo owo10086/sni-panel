@@ -86,32 +86,28 @@ sudo docker compose logs --tail 300 forwardx
 
 默认只有面板服务，不包含 MySQL/PostgreSQL 容器；可以在网页配置外部数据库。数据库地址见 [数据库配置](./database.md)。
 
-## 手动升级与旧镜像清理
+## 手动升级
 
-先备份数据库、`.env` 和 Compose 配置。固定版本标签时，先把 `.env` 中的 `FORWARDX_IMAGE` 改为已发布的目标标签，再执行升级。使用 root 权限，在**原部署目录**执行；下面与面板升级弹窗复制的默认命令一致：
+在面板的更新提示或「系统设置 → 检查更新」中，默认显示「手动升级」。复制命令后，在面板服务器以 root 身份执行。命令会使用提示中的目标版本；以后发布新版本时，命令中的版本号也会随之变化。
 
-~~~bash
-cd /opt/forwardx-docker
-docker compose --env-file .env -p forwardx pull forwardx
-docker compose --env-file .env -p forwardx up -d --remove-orphans forwardx
-CURRENT_IMAGE_ID="$(docker inspect --format '{{.Image}}' forwardx-panel)"
-docker image ls --no-trunc --format '{{.Repository}} {{.Tag}} {{.ID}}' ghcr.io/owo10086/sni-panel \
-  | awk -v current="$CURRENT_IMAGE_ID" '$1 == "ghcr.io/owo10086/sni-panel" && $2 != "<none>" && $3 != current { print $1 ":" $2 }' \
-  | xargs -r docker image rm
-~~~
+命令从当前 `forwardx-panel` 容器读取原部署目录、项目名和服务名，使用该目录里的 `docker-compose.yml`，并依次完成：
 
-逐条确认成功后再执行下一步。上面的手动安装示例使用 `/opt/forwardx-compose`，应把第一行改为该目录；项目名、容器名和镜像仓库也应替换为原部署使用的值。`-p forwardx` 显式指定项目名，必须与原项目一致，避免误建另一套服务。
+1. 准备只修改面板镜像版本的新配置，核对它能够被 Docker Compose 读取。
+2. 下载目标版本镜像。下载失败时停止，原配置和容器保持原状。
+3. 备份原配置为 `docker-compose.yml.bak-日期时间`，再把面板镜像改为目标版本。
+4. 只重新创建面板容器，继续使用原数据目录，随后核对容器内实际程序版本。
 
-最后三行只删除本项目仓库中、镜像 ID 与当前容器不同的旧标签；保留当前镜像及指向同一镜像的标签。它不会删除数据目录，也不清理其他仓库。保留用于回退的旧镜像时，先跳过这三行，验收通过后再清理。其他容器仍使用的镜像可能删除失败，按 Docker 提示处理。
+这也适用于此前写死旧版本标签或镜像摘要的部署，以及从 `.env` 读取旧镜像的部署；命令会在 Compose 的面板服务中明确写入目标版本。它不会重写 `.env`、重启其他服务或自动删除旧镜像。
 
-升级后查看日志与实际程序版本：
+升级前请备份数据库。如修改过容器名，先调整命令开头的 `PANEL_CONTAINER`。该命令适用于本仓库提供的 `docker-compose.yml` 格式；自定义文件名、缩进或多文件合并部署，应先核对原启动配置。找不到部署目录或不能唯一识别面板镜像时，命令会停止。
+
+执行成功时，终端显示 `ForwardX panel version: 目标版本`。刷新面板，在系统设置中核对版本；也可以单独检查：
 
 ~~~bash
-docker compose --env-file .env -p forwardx logs --tail 300 forwardx
-docker exec forwardx-panel node -p "require('./package.json').version"
+docker exec forwardx-panel node -p 'require("./package.json").version'
 ~~~
 
-手动模式保留原 Compose 和 `.env`；一键脚本会重写这些文件。不要通过卸载、删除数据目录或卷来升级，也不要直接对手动部署套用安装器升级。
+「一键脚本」仍适用于由安装器管理的部署，会重新生成部署目录中的 Compose 和 `.env` 配置。手动部署应使用上述手动升级命令，保留自己的部署设置。不要通过卸载或删除数据目录来升级。
 
 ## GitHub 下载加速
 

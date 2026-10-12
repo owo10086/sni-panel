@@ -3915,7 +3915,7 @@ function SystemInfoSection() {
   const [rollbackType, setRollbackType] = useState<"panel" | "agent">("panel");
   const [selectedRollbackVersion, setSelectedRollbackVersion] = useState("");
   const [showDockerUpgradeScript, setShowDockerUpgradeScript] = useState(false);
-  const [dockerUpgradeMethod, setDockerUpgradeMethod] = useState<DockerUpgradeMethod>("script");
+  const [dockerUpgradeMethod, setDockerUpgradeMethod] = useState<DockerUpgradeMethod>("manual");
   const previousUpgradeStatus = useRef<string | null>(null);
   const shownDockerUpgradeVersion = useRef<string | null>(null);
   const lastPanelUpdateCheck = useRef(0);
@@ -4517,7 +4517,7 @@ function SystemInfoSection() {
     upgradeStatus?.manualUpgradeCommand ||
     settings?.upgrade?.manualUpgradeCommand ||
     manualPanelUpgradeCommands[1].command;
-  const selectedDockerUpgradeCommand = getDockerUpgradeCommand(dockerUpgradeMethod, dockerPanelUpgradeCommand);
+  const selectedDockerUpgradeCommand = getDockerUpgradeCommand(dockerUpgradeMethod, dockerPanelUpgradeCommand, updateInfo?.latestVersion);
   const canShowDockerUpgradeScript =
     isDockerDeployment &&
     !!updateInfo?.latestVersion &&
@@ -5890,13 +5890,14 @@ function SystemInfoSection() {
           <SniEntryVersionPreflight enabled={showDockerUpgradeScript} />
           <DockerUpgradeCommands
             scriptCommand={dockerPanelUpgradeCommand}
+            targetVersion={updateInfo?.latestVersion}
             method={dockerUpgradeMethod}
             onMethodChange={setDockerUpgradeMethod}
           />
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setShowDockerUpgradeScript(false)}>
               {translateText("关闭")}</Button>
-            <Button className="gap-2" onClick={() => copyTextToClipboard(selectedDockerUpgradeCommand)}>
+            <Button className="gap-2" disabled={!selectedDockerUpgradeCommand} onClick={() => copyTextToClipboard(selectedDockerUpgradeCommand)}>
               <Copy className="h-4 w-4" />
               {dockerUpgradeMethod === "manual" ? translateText("复制手动升级命令") : translateText("复制脚本")}
             </Button>

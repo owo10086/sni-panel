@@ -482,7 +482,7 @@ function DashboardLayoutContent({
   const [upgradeAnnouncementCountdown, setUpgradeAnnouncementCountdown] = useState(UPGRADE_ANNOUNCEMENT_COUNTDOWN_SECONDS);
   const [showTelegramDialog, setShowTelegramDialog] = useState(false);
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
-  const [dockerUpgradeMethod, setDockerUpgradeMethod] = useState<DockerUpgradeMethod>("script");
+  const [dockerUpgradeMethod, setDockerUpgradeMethod] = useState<DockerUpgradeMethod>("manual");
   const [checkingMobileUpdate, setCheckingMobileUpdate] = useState(false);
   const [mobileUpdateInfo, setMobileUpdateInfo] = useState<MobileAppUpdateResult | null>(null);
   const [showMobileUpdateDialog, setShowMobileUpdateDialog] = useState(false);
@@ -1158,7 +1158,7 @@ function DashboardLayoutContent({
       ? upgradeStatus.githubAccelerator
       : null,
   });
-  const selectedDockerUpgradeCommand = getDockerUpgradeCommand(dockerUpgradeMethod, dockerUpgradeCommand);
+  const selectedDockerUpgradeCommand = getDockerUpgradeCommand(dockerUpgradeMethod, dockerUpgradeCommand, upgradeTargetVersion);
   const upgradeRefreshText = upgradeRefreshCountdown !== null
     ? (upgradeRefreshCountdown > 0 ? translateText("{0} 秒后自动刷新", [upgradeRefreshCountdown]) : translateText("正在刷新页面"))
     : translateText("系统恢复后将自动刷新");
@@ -1723,6 +1723,7 @@ function DashboardLayoutContent({
                     )}
                     <DockerUpgradeCommands
                       scriptCommand={dockerUpgradeCommand}
+                      targetVersion={upgradeTargetVersion}
                       method={dockerUpgradeMethod}
                       onMethodChange={setDockerUpgradeMethod}
                     />
@@ -1795,7 +1796,7 @@ function DashboardLayoutContent({
               {displayUpgradeJob?.status === "running" ? translateText("后台执行") : translateText("取消")}
             </Button>
             {isDockerDeployment ? (
-              <Button className="w-full gap-2 sm:w-auto" onClick={() => copyText(selectedDockerUpgradeCommand)}>
+              <Button className="w-full gap-2 sm:w-auto" disabled={!selectedDockerUpgradeCommand} onClick={() => copyText(selectedDockerUpgradeCommand)}>
                 <Copy className="h-4 w-4" />
                 {dockerUpgradeMethod === "manual" ? translateText("复制手动升级命令") : translateText("复制脚本")}
               </Button>
