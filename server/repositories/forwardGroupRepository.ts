@@ -3422,7 +3422,9 @@ async function removeManagedRule(
   const billingResource = await findTrafficBillingResourceForRule(rule);
   const fallback = trafficBillingResourceCandidatesForRule(rule)[0];
   const resource = billingResource || fallback;
-  if (options.deferRefresh) {
+  // Never wait for a user's billing lock while holding a database transaction:
+  // concurrent deletion or traffic reports may hold that lock and need the DB.
+  if (options.deferRefresh || isDatabaseTransactionActive()) {
     await markForwardRulePendingDelete(Number(rule.id));
     await afterDatabaseCommit(async () => {
       const billed = resource
@@ -3473,11 +3475,11 @@ async function syncForwardGroupRulesUnlocked(groupId: number, options: SyncForwa
 
   if (isCollectionGroupMode(groupMode)) {
     const childRules = await getForwardGroupChildRules(groupId);
-    for (const child of childRules as any[]) await removeManagedRule(Number(child.id));
+    for (const child of childRules as any[]) await removeManagedRule(Number(child.id), options);
     for (const template of templates as any[]) await markForwardRulePendingDelete(Number(template.id));
     for (const member of members) {
       if (member.ruleId) {
-        await removeManagedRule(Number(member.ruleId));
+        await removeManagedRule(Number(member.ruleId), options);
         await db.update(forwardGroupMembers).set({ ruleId: null, updatedAt: nowDate() } as any).where(eq(forwardGroupMembers.id, member.id));
       }
     }
@@ -3549,7 +3551,7 @@ async function syncForwardGroupRulesUnlocked(groupId: number, options: SyncForwa
     const childRules = await getForwardGroupChildRules(groupId);
     for (const child of childRules as any[]) {
       if (!liveMemberIds.has(Number(child.forwardGroupMemberId)) || !liveTemplateIds.has(Number(child.forwardGroupRuleId))) {
-        await removeManagedRule(Number(child.id));
+        await removeManagedRule(Number(child.id), options);
       }
     }
   }

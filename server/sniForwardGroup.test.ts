@@ -5,6 +5,288 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 
+function verifySniGroupDeletion(body: string) {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "forwardx-sni-group-delete-"));
+  const script = String.raw`
+    import assert from "node:assert/strict";
+    import http from "node:http";
+    import express from "express";
+    import * as runtime from "./server/dbRuntime.ts";
+    import { ensureDatabaseSchema } from "./server/dbSchema.ts";
+    import { rulesRouter } from "./server/routers/rules.ts";
+    import * as groups from "./server/repositories/forwardGroupRepository.ts";
+    import * as savedRules from "./server/repositories/forwardRuleRepository.ts";
+    import * as settings from "./server/repositories/settingsRepository.ts";
+    import * as users from "./server/repositories/userRepository.ts";
+    import * as billing from "./server/repositories/trafficBillingRepository.ts";
+    import { registerAgentHeartbeatRoute } from "./server/agentHeartbeatRoute.ts";
+    import { trafficBillingUserLockKey, withKeyedTaskLock } from "./server/keyedTaskLock.ts";
+    const insert = (table, values) => runtime.executeRaw(
+      'INSERT INTO "' + table + '" (' + Object.keys(values).map(k => '"' + k + '"').join(',') + ') VALUES (' + Object.keys(values).map(() => '?').join(',') + ')', Object.values(values));
+    const context = user => ({ req: { headers: {} }, res: { clearCookie() {} }, user, authSession: null, authFailureReason: null });
+    const admin = rulesRouter.createCaller(context({ id: 1, username: "admin", role: "admin", accountEnabled: true }));
+    const within = async (work, label) => {
+      const watchdog = setTimeout(() => { console.error(label + " did not finish within 5 seconds"); process.exit(2); }, 5000);
+      try { return await work; } finally { clearTimeout(watchdog); }
+    };
+    const app = express();
+    app.use(express.json());
+    app.use((req, _res, next) => { req.agentToken = String(req.headers.authorization || "").replace("Bearer ", ""); next(); });
+    registerAgentHeartbeatRoute(app);
+    const server = http.createServer(app);
+    const heartbeat = async (id, localRules = []) => {
+      const response = await fetch("http://127.0.0.1:" + server.address().port + "/api/agent/heartbeat", {
+        method: "POST", headers: { authorization: "Bearer token-" + id, "content-type": "application/json" },
+        body: JSON.stringify({ agentVersion: "3.3.0", agentBootId: "delete-boot-" + id, agentProcessId: 1000 + id, forceReconcile: true, localState: { rules: localRules } }),
+      });
+      assert.equal(response.status, 200);
+      const result = await response.json();
+      assert.equal(result.success, true);
+      return result;
+    };
+    const splitter = result => result.desiredState.actions.find(action => action.op === "apply" && action.fxp?.role === "sni-splitter" && action.sourcePort === 18443);
+    const localRules = config => config.sniRoutes.map(route => ({ ...route, port: config.listenPort, forwardType: "forwardx", protocol: "tcp", sniRouteVersion: config.sniRouteVersion, sourceAllowIps: [], ready: true }));
+    const createRules = async (prefix, count) => {
+      const ids = [];
+      for (let index = 0; index < count; index++) {
+        const rule = await admin.create({ forwardGroupId: 10, name: prefix + "-" + index, sourcePort: 18443, targetIp: "203.0.113.10", targetPort: 19443 + index, sni: prefix + "-" + index + ".example.test", isEnabled: true });
+        ids.push(Number(rule.id));
+      }
+      return ids;
+    };
+    try {
+      await runtime.connectDatabase({ type: "sqlite", sqlite: { path: process.env.FORWARDX_TEST_DB } });
+      await ensureDatabaseSchema();
+      await insert("users", { id: 1, username: "admin", password: "x", role: "admin", canAddRules: 1, manualCanAddRules: 1, balanceCents: 1000 });
+      await insert("users", { id: 2, username: "other", password: "x", role: "user", canAddRules: 1, manualCanAddRules: 1 });
+      for (const id of [1, 2]) await insert("hosts", { id, name: "entrance-" + id, ip: "192.0.2." + id, ipv4: "192.0.2." + id, agentToken: "token-" + id, userId: 1, isOnline: 1, lastHeartbeat: Math.floor(Date.now() / 1000), agentVersion: "3.3.0", portRangeStart: 18000, portRangeEnd: 19000 });
+      await insert("forward_groups", { id: 10, name: "delete-test", groupType: "host", groupMode: "failover", forwardType: "nftables", domain: "", targetIp: "0.0.0.0", targetPort: 1, userId: 1, isEnabled: 1, failoverSeconds: 10, recoverSeconds: 10 });
+      for (const id of [1, 2]) await insert("forward_group_members", { id: 100 + id, groupId: 10, memberType: "host", hostId: id, priority: id * 10, isEnabled: 1 });
+      await new Promise(resolve => server.listen(0, "127.0.0.1", resolve));
+      ${body}
+    } finally {
+      server.closeAllConnections();
+      await new Promise(resolve => server.close(resolve));
+      await runtime.closeDatabase();
+    }
+    process.exit(0);
+  `;
+  try {
+    const result = spawnSync(process.execPath, ["--import", "tsx", "--input-type=module", "-e", script], {
+      cwd: process.cwd(), env: { ...process.env, DATABASE_TYPE: "sqlite", FORWARDX_TEST_DB: path.join(directory, "test.db") }, encoding: "utf8", timeout: 60_000,
+    });
+    assert.equal(result.status, 0, result.error?.message || result.stderr || result.stdout);
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true });
+  }
+}
+
+test("SNI group batch deletion completes, preserves unselected routes and removes the final listener", () => {
+  verifySniGroupDeletion(String.raw`
+    const ids = await createRules("original", 12);
+    const initial = [];
+    for (const id of [1, 2]) {
+      const config = splitter(await heartbeat(id)).fxp;
+      assert.equal(config.sniRoutes.length, 12);
+      initial.push(config);
+      await heartbeat(id, localRules(config));
+    }
+    const result = await within(admin.deleteBatch({ ids: ids.slice(0, 9) }), "12 rules deleting 9");
+    assert.equal(result.success, true);
+    assert.equal(result.requested, 9);
+    assert.deepEqual(result.deletedIds, ids.slice(0, 9));
+    assert.deepEqual(result.failures, []);
+    assert.deepEqual((await admin.list()).map(rule => Number(rule.id)).sort((a, b) => a - b), ids.slice(9));
+    for (const id of ids.slice(0, 9)) assert.equal(await savedRules.getForwardRuleById(id), undefined);
+    const remaining = [];
+    for (const id of [1, 2]) {
+      const config = splitter(await within(heartbeat(id, localRules(initial[id - 1])), "heartbeat after deletion")).fxp;
+      assert.deepEqual(config.sniRoutes.map(route => route.sni).sort(), ["original-10.example.test", "original-11.example.test", "original-9.example.test"]);
+      remaining.push(config);
+      await heartbeat(id, localRules(config));
+    }
+    const children = await savedRules.getForwardGroupChildRules(10);
+    assert.equal(children.filter(rule => !rule.pendingDelete).length, 6);
+    assert.ok(children.filter(rule => !rule.pendingDelete).every(rule => ids.slice(9).includes(Number(rule.forwardGroupRuleId))));
+    await within(settings.setSetting("batchDeleteProgress", "saved"), "database write after deletion");
+    assert.equal(await settings.getSetting("batchDeleteProgress"), "saved");
+    await within(admin.deleteBatch({ ids: ids.slice(9) }), "deleting the remaining domains");
+    for (const id of [1, 2]) {
+      const result = await heartbeat(id, localRules(remaining[id - 1]));
+      assert.equal(splitter(result), undefined);
+      assert.ok(result.desiredState.actions.some(action => action.op === "remove" && action.fxp?.role === "sni-splitter" && action.sourcePort === 18443));
+      await heartbeat(id, []);
+    }
+    for (let attempt = 0; attempt < 10; attempt++) {
+      const small = await createRules("repeat-" + attempt, 4);
+      const deleted = await within(admin.deleteBatch({ ids: small }), "4 rules deleting all, attempt " + attempt);
+      assert.equal(deleted.success, true);
+      assert.deepEqual(deleted.deletedIds, small);
+      assert.deepEqual(deleted.failures, []);
+      assert.deepEqual(await admin.list(), []);
+      await within(settings.setSetting("batchDeleteProgress", String(attempt)), "database write after repeated deletion");
+      assert.equal(await settings.getSetting("batchDeleteProgress"), String(attempt));
+    }
+  `);
+});
+
+test("SNI member removal commits before waiting for billing and sends no refresh on rollback", () => {
+  verifySniGroupDeletion(String.raw`
+    const ids = await createRules("managed", 1);
+    const children = await savedRules.getForwardGroupChildRulesForTemplate(ids[0]);
+    const removed = children.find(rule => Number(rule.hostId) === 1);
+    await billing.setTrafficBillingEnabled(true);
+    await billing.upsertTrafficBillingConfig({ resourceType: "forward_group", resourceId: 10, enabled: true, requiresPermission: false, pricePerGbCents: 100, multiplier: 100 });
+    await billing.billTrafficUsage({ userId: 1, ruleId: Number(removed.id), bytes: 268435456, resourceType: "forward_group", resourceId: 10 });
+    const { registerAgentEventClient } = await import("./server/agentEvents.ts");
+    const { decryptPayload } = await import("./server/agentCrypto.ts");
+    const eventNow = Date.now() + 5000;
+    Date.now = () => eventNow;
+    let events;
+    app.get("/test-events", (_req, res) => {
+      res.set({ "Content-Type": "text/event-stream", "Cache-Control": "no-cache" });
+      res.flushHeaders();
+      events = registerAgentEventClient(1, "token-1", res);
+    });
+    const response = await fetch("http://127.0.0.1:" + server.address().port + "/test-events");
+    const reader = response.body.getReader();
+    const checkpoint = async label => {
+      events.writeComment(label);
+      let frames = "";
+      while (!frames.includes(": " + label + "\n\n")) {
+        const chunk = await reader.read();
+        assert.equal(chunk.done, false);
+        frames += Buffer.from(chunk.value).toString("utf8");
+      }
+      return frames.split("\n").filter(line => line.startsWith("data: "))
+        .map(line => decryptPayload(JSON.parse(line.slice(6)), "token-1").type);
+    };
+    const remainingMembers = [{ memberType: "host", hostId: 2, priority: 20, isEnabled: true }];
+    try {
+      await assert.rejects(() => within(groups.withForwardGroupSyncTransaction(10, async () => {
+        // Intentionally omit deferRefresh: the cleanup boundary must detect the transaction itself.
+        await groups.replaceForwardGroupMembers(10, remainingMembers, { skipSync: true });
+        throw new Error("intentional rollback");
+      }), "member removal rollback"), /intentional rollback/);
+      assert.equal((await savedRules.getForwardRuleById(Number(removed.id))).pendingDelete, false);
+      assert.deepEqual((await groups.getForwardGroupById(10)).members.map(member => Number(member.hostId)).sort(), [1, 2]);
+      assert.deepEqual(await billing.listTrafficBillingRecords({ userId: 1 }), []);
+      assert.equal((await users.getUserById(1)).balanceCents, 1000);
+      assert.deepEqual(await within(checkpoint("rollback-checked"), "rollback event checkpoint"), []);
+
+      const held = Promise.withResolvers();
+      const release = Promise.withResolvers();
+      const committed = Promise.withResolvers();
+      const billingTask = withKeyedTaskLock(trafficBillingUserLockKey(1), async () => {
+        held.resolve();
+        await release.promise;
+      });
+      await held.promise;
+      let finished = false;
+      const save = groups.withForwardGroupSyncTransaction(10, async () => {
+        await runtime.afterDatabaseCommit(() => { committed.resolve(); });
+        await groups.replaceForwardGroupMembers(10, remainingMembers, { skipSync: true });
+      }).finally(() => { finished = true; });
+      try {
+        await within(committed.promise, "database commit with billing held");
+        await within(users.updateUserProfile(1, { name: "database available" }), "independent write while billing waits");
+        assert.equal((await users.getUserById(1)).name, "database available");
+        assert.equal((await savedRules.getForwardRuleById(Number(removed.id))).pendingDelete, true);
+        assert.equal((await users.getUserById(1)).balanceCents, 1000);
+        assert.deepEqual(await billing.listTrafficBillingRecords({ userId: 1 }), []);
+        assert.equal(finished, false, "settlement must still wait for the billing task");
+        assert.deepEqual(await within(checkpoint("commit-checked"), "commit event checkpoint"), []);
+      } finally {
+        release.resolve();
+        await billingTask;
+      }
+      await within(save, "member removal after billing release");
+      assert.equal((await users.getUserById(1)).balanceCents, 975);
+      const records = await billing.listTrafficBillingRecords({ userId: 1 });
+      assert.equal(records.length, 1);
+      assert.equal(records[0].amountCents, 25);
+      assert.equal(records[0].ruleId, Number(removed.id));
+      assert.ok((await within(checkpoint("billing-checked"), "billing event checkpoint")).includes("agent-refresh"));
+      await groups.syncForwardGroupRules(10);
+      assert.equal((await users.getUserById(1)).balanceCents, 975);
+      assert.equal((await billing.listTrafficBillingRecords({ userId: 1 })).length, 1);
+    } finally {
+      events.close();
+      await reader.cancel();
+    }
+  `);
+});
+
+test("SNI batch deletion settles selected usage once and retains low-balance access controls", () => {
+  verifySniGroupDeletion(String.raw`
+    const ids = await createRules("billing", 12);
+    await billing.setTrafficBillingEnabled(true);
+    await billing.upsertTrafficBillingConfig({ resourceType: "forward_group", resourceId: 10, enabled: true, requiresPermission: false, pricePerGbCents: 100, multiplier: 100 });
+    // Each domain has exactly a quarter GB left to settle, costing 25 cents.
+    for (const ruleId of ids) await billing.billTrafficUsage({ userId: 1, ruleId, bytes: 268435456, resourceType: "forward_group", resourceId: 10 });
+    assert.equal((await users.getUserById(1)).balanceCents, 1000);
+    const deleted = await within(admin.deleteBatch({ ids: ids.slice(0, 9) }), "batch deletion with unsettled usage");
+    assert.equal(deleted.success, true);
+    assert.deepEqual(deleted.deletedIds, ids.slice(0, 9));
+    assert.equal((await users.getUserById(1)).balanceCents, 775);
+    let records = await billing.listTrafficBillingRecords({ userId: 1 });
+    assert.equal(records.length, 9);
+    assert.ok(records.every(record => record.amountCents === 25 && record.bytes === 268435456));
+    assert.deepEqual(records.map(record => Number(record.ruleId)).sort((a, b) => a - b), ids.slice(0, 9));
+    assert.equal((await billing.getTrafficBillingSummary(1)).totalAmountCents, 225);
+    await groups.syncForwardGroupRules(10);
+    await groups.syncForwardGroupRules(10);
+    assert.equal((await users.getUserById(1)).balanceCents, 775);
+    assert.equal((await billing.listTrafficBillingRecords({ userId: 1 })).length, 9);
+
+    const { setUserBalance } = await import("./server/repositories/billingRepository.ts");
+    await setUserBalance(1, 10, { type: "adjustment", description: "low balance fixture" });
+    const lowBalance = await within(admin.deleteBatch({ ids: [ids[9]] }), "deletion crossing the balance limit");
+    assert.equal(lowBalance.success, true);
+    assert.deepEqual(lowBalance.deletedIds, [ids[9]]);
+    const account = await users.getUserById(1);
+    assert.equal(account.balanceCents, -15);
+    assert.equal(account.canAddRules, false);
+    assert.equal(account.allowForwardXTunnel, false);
+    assert.equal(account.forwardAccessPauseReason, "traffic_billing_balance");
+    records = await billing.listTrafficBillingRecords({ userId: 1 });
+    assert.equal(records.length, 10);
+    assert.equal(records.find(record => Number(record.ruleId) === ids[9]).amountCents, 25);
+    for (const id of ids.slice(10)) {
+      const saved = await admin.getById({ id });
+      assert.equal(saved.isEnabled, false);
+      assert.equal(saved.disabledByUser, true);
+    }
+    for (const hostId of [1, 2]) assert.equal(splitter(await heartbeat(hostId)), undefined);
+    await groups.syncForwardGroupRules(10);
+    assert.equal((await users.getUserById(1)).balanceCents, -15);
+    assert.equal((await billing.listTrafficBillingRecords({ userId: 1 })).length, 10);
+  `);
+});
+
+test("SNI batch deletion reports unauthorized and missing rules while deleting permitted selections", () => {
+  verifySniGroupDeletion(String.raw`
+    const ids = await createRules("permitted", 5);
+    await insert("forward_rules", { id: 9999, hostId: 1, userId: 2, name: "other-owner", sourcePort: 18444, protocol: "tcp", forwardType: "nftables", targetIp: "203.0.113.20", targetPort: 443, isEnabled: 1 });
+    const owner = rulesRouter.createCaller(context({ id: 1, username: "admin", role: "user", accountEnabled: true }));
+    const result = await within(owner.deleteBatch({ ids: [...ids.slice(0, 4), 9999, 99999, ids[0]] }), "mixed batch deletion");
+    assert.equal(result.success, false);
+    assert.equal(result.requested, 6, "duplicate selections count only once");
+    assert.deepEqual(result.deletedIds, ids.slice(0, 4));
+    assert.deepEqual(result.failures.map(item => item.id), [9999, 99999]);
+    assert.match(result.failures[0].error, /无权/);
+    assert.match(result.failures[1].error, /不存在|已删除/);
+    assert.equal((await savedRules.getForwardRuleById(9999)).pendingDelete, false);
+    assert.deepEqual((await owner.list()).map(rule => Number(rule.id)), [ids[4]]);
+    for (const hostId of [1, 2]) {
+      const config = splitter(await heartbeat(hostId)).fxp;
+      assert.deepEqual(config.sniRoutes.map(route => route.sni), ["permitted-4.example.test"]);
+    }
+    await within(settings.setSetting("mixedBatchProgress", "saved"), "database write after a partial result");
+    assert.equal(await settings.getSetting("mixedBatchProgress"), "saved");
+  `);
+});
+
 test("host failover SNI lifecycle preserves readiness, atomic saves, imports and accounting", () => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), "forwardx-sni-group-"));
   const script = String.raw`
