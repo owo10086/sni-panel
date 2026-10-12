@@ -4,6 +4,23 @@
 
 ## [Unreleased]
 
+## [3.3.2] - 2026-10-12
+
+### Fixes and improvements
+
+- Fix DDNS being blocked on host-based SNI failover groups when individual destination probes are missing. An entrance qualifies when its Agent is online, all currently required SNI routes are confirmed active, enabled China-connectivity checks pass, and any required recovery observation has completed. Failed, missing or expired SNI destination probes no longer independently block selection or trigger whole-group failover. Ordinary rules in mixed groups still require their existing destination checks.
+- Track SNI, China-connectivity and ordinary-rule failures and recoveries independently, without borrowing or resetting another source's observation time. A recovered standby must complete its own recovery window. Reevaluate automatically when observation settings change, and keep missing-report deadlines fixed.
+- Accept SNI confirmation only after verifying the complete current configuration, and expire it after five minutes without renewal. Presence, successful China checks and configuration acknowledgements alone cannot renew it. Reject stale reports from before an outage, retired processes, merged or concurrent heartbeats, and unsafe clock-skew or rollback cases. Preserve required recovery observation across panel restarts.
+- Actually update a new entrance hostname even when the selected member and address are unchanged. Do not record failed DDNS requests as successful. Recheck entrance eligibility, configuration, member order and failback settings before accepting a response, then reconcile the latest valid state if anything changed. Preserve existing DNS records when all entrances fail.
+- Prevent old SNI tables from restoring disabled, deleted, expired, quota-exhausted or unauthorized hostnames, including after their generated member records have been purged. Update Chinese/English entrance states, reasons and usage guides.
+- Fix generated manual Docker upgrade commands to use the selected version's fixed image, discover the existing deployment directory, project and service, back up and update the original configuration, and verify the running version after upgrading. Avoid retaining an old image or assuming the default directory.
+
+### Versions and upgrade notes
+
+- Panel: `3.3.2`; Agent and ForwardX FXP runtime: `3.3.0`. Only the panel requires upgrading; existing Agent/FXP binaries remain compatible.
+- DNS caches still affect SNI entrance failover. Established connections cannot migrate and interrupted connections must reconnect.
+- Native Android and iOS/iPadOS applications remain excluded under the standing agreement. This release does not publish APK or IPA packages.
+
 ## [3.3.1] - 2026-10-11
 
 ### Features and fixes
