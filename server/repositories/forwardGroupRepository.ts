@@ -71,7 +71,7 @@ import {
   nextForwardGroupHealthRecheckAt,
 } from "../forwardGroupHealthRecheck";
 import { notifyForwardGroupSwitch } from "../forwardGroupSwitchNotifier";
-import { trafficBillingUserLockKey, withKeyedTaskLock } from "../keyedTaskLock";
+import { trafficBillingUserLockKey, withKeyedTaskLock, withResourceTaskLock } from "../keyedTaskLock";
 import {
   releaseHostPortReservations,
   reserveAvailableHostPort,
@@ -2841,7 +2841,7 @@ async function setTunnelsEnabledByGroup(groupId: number, groupMode: "entry" | "e
   for (const row of rows as any[]) {
     const tunnelId = Number(row.id || 0);
     if (tunnelId <= 0) continue;
-    await withKeyedTaskLock(`tunnel:${tunnelId}`, async () => {
+    await withResourceTaskLock(`tunnel:${tunnelId}`, async () => {
       const tunnel = await getTunnelById(tunnelId) as any;
       if (!tunnel) return;
       if (!isEnabled) {
@@ -2898,10 +2898,10 @@ export async function setForwardGroupEnabled(groupId: number, isEnabled: boolean
       : [groupId];
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.update(forwardGroups).set({
+  await withForwardGroupSyncLocks([groupId], () => db.update(forwardGroups).set({
     isEnabled,
     updatedAt: nowDate(),
-  } as any).where(eq(forwardGroups.id, groupId));
+  } as any).where(eq(forwardGroups.id, groupId)).then(() => undefined));
 
   let affectedRules = 0;
   let affectedTunnels = 0;
@@ -2926,7 +2926,7 @@ export async function setForwardGroupEnabled(groupId: number, isEnabled: boolean
   } catch (error) {
     if (isEnabled && !wasEnabled) {
       try {
-        await db.update(forwardGroups).set({ isEnabled: false, updatedAt: nowDate() } as any).where(eq(forwardGroups.id, groupId));
+        await withForwardGroupSyncLocks([groupId], () => db.update(forwardGroups).set({ isEnabled: false, updatedAt: nowDate() } as any).where(eq(forwardGroups.id, groupId)).then(() => undefined));
         await disableForwardRulesByGroupIds(ruleGroupIds, `${mode}-group-enable-rollback`);
         if (!options.skipSync) for (const id of ruleGroupIds) await syncForwardGroupRules(id);
         if (mode === "entry" || mode === "exit") await setTunnelsEnabledByGroup(groupId, mode, false);
@@ -3769,7 +3769,7 @@ export async function withForwardGroupsSyncTransaction<T>(
 export function withForwardGroupSyncLocks<T>(groupIds: number[], work: () => Promise<T>): Promise<T> {
   const ids = [...new Set(groupIds)].filter(id => Number.isInteger(id) && id > 0).sort((a, b) => a - b);
   const acquire = (index: number): Promise<T> => index < ids.length
-    ? withKeyedTaskLock(`forward-group-sync:${ids[index]}`, () => acquire(index + 1))
+    ? withResourceTaskLock(`forward-group-sync:${ids[index]}`, () => acquire(index + 1))
     : work();
   return acquire(0);
 }
@@ -3778,7 +3778,7 @@ export async function syncForwardGroupRules(groupId: number, options: SyncForwar
   if (isDatabaseTransactionActive()) {
     throw new Error("Forward group sync lock must be acquired before starting a database transaction");
   }
-  return withKeyedTaskLock(
+  return withResourceTaskLock(
     `forward-group-sync:${groupId}`,
     () => syncForwardGroupRulesWithLockHeld(groupId, options),
   );
@@ -3969,6 +3969,7 @@ export async function replaceForwardGroupMembers(
 }
 
 export async function deleteForwardGroup(id: number) {
+  return withForwardGroupSyncLocks([id], async () => {
   const db = await getDb();
   const childRules = await getForwardGroupChildRules(id);
   for (const rule of childRules as any[]) await removeManagedRule(Number(rule.id));
@@ -3990,9 +3991,11 @@ export async function deleteForwardGroup(id: number) {
   await db.delete(forwardGroupMembers).where(eq(forwardGroupMembers.groupId, id));
   await db.delete(userForwardGroupPermissions).where(eq(userForwardGroupPermissions.forwardGroupId, id));
   await db.delete(forwardGroups).where(eq(forwardGroups.id, id));
+  });
 }
 
 export async function reorderForwardGroupMembers(groupId: number, memberIds: number[]) {
+  return withForwardGroupSyncLocks([groupId], async () => {
   const db = await getDb();
   for (const [index, memberId] of memberIds.entries()) {
     await db.update(forwardGroupMembers).set({ priority: index, updatedAt: nowDate() }).where(and(
@@ -4001,6 +4004,7 @@ export async function reorderForwardGroupMembers(groupId: number, memberIds: num
     ));
   }
   await insertForwardGroupEvent(groupId, null, "reorder", "Member priority updated.");
+  });
 }
 
 export async function syncForwardChainsForHost(hostId: number, previousHost?: any) {

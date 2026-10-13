@@ -268,26 +268,26 @@ export async function updateForwardGroupFromInput(id: number, input: ForwardGrou
   const shouldResetChinaHealth = !normalized.data.chinaHealthCheckEnabled
     || !!existing?.chinaHealthCheckEnabled !== !!normalized.data.chinaHealthCheckEnabled
     || String(existing?.chinaHealthCheckTarget || "") !== String(normalized.data.chinaHealthCheckTarget || "");
-  const persistConfiguration = async (options: { deferRefresh?: boolean; skipMemberSync?: boolean } = {}) => {
+  const persistConfiguration = async (options: { deferRefresh?: boolean } = {}) => db.withForwardGroupSyncLocks([id], async () => {
     await db.updateForwardGroup(id, {
       ...normalized.data,
       isEnabled: enabledChanged ? !!existing.isEnabled : desiredEnabled,
     } as any, { skipSync: true });
     if (membersChanged) {
       await db.replaceForwardGroupMembers(id, normalized.members as any, {
-        skipSync: enabledChanged || options.skipMemberSync,
+        skipSync: true,
         deferRefresh: options.deferRefresh,
       });
     }
     if (shouldResetChinaHealth) await db.resetForwardGroupChinaHealth(id);
-  };
+  });
   const hasSniRules = (await db.getForwardGroupTemplateRules(id) as any[]).some(rule => String(rule.sni || "").trim());
   if (hasSniRules && String(existing.groupMode) === "failover") {
     if (normalized.data.groupMode !== "failover" || normalized.data.groupType !== "host") {
       throw new Error("承载 SNI 分流规则的转发组必须保持主机型转发组");
     }
     await db.withForwardGroupSyncTransaction(id, async () => {
-      await persistConfiguration({ deferRefresh: true, skipMemberSync: true });
+      await persistConfiguration({ deferRefresh: true });
       if (enabledChanged) await db.setForwardGroupEnabled(id, desiredEnabled, { skipSync: true });
     }, { preserveRuntime: true });
     await db.runForwardGroupFailover(id, { forcePriority: memberPriorityChanged });
@@ -296,7 +296,7 @@ export async function updateForwardGroupFromInput(id: number, input: ForwardGrou
   if (normalized.data.groupMode === "chain" && !enabledChanged) {
     await db.withForwardGroupSyncTransaction(
       id,
-      () => persistConfiguration({ deferRefresh: true, skipMemberSync: true }),
+      () => persistConfiguration({ deferRefresh: true }),
       membersChanged ? {} : { preserveRuntime: true },
     );
     return db.getForwardGroupById(id);
@@ -315,9 +315,10 @@ export async function updateForwardGroupFromInput(id: number, input: ForwardGrou
     return db.getForwardGroupById(id);
   }
   if (normalized.data.groupMode === "chain" || normalized.data.groupMode === "port") {
-    if (!membersChanged) await db.syncForwardGroupRules(id, { preserveRuntime: true });
+    await db.syncForwardGroupRules(id, membersChanged ? {} : { preserveRuntime: true });
   } else if (normalized.data.groupMode === "entry" || normalized.data.groupMode === "exit") {
-    if (!membersChanged) await db.runForwardGroupFailover(id, { manual: true });
+    await db.runForwardGroupFailover(id, { manual: true, forceSync: membersChanged });
+    if (membersChanged) await db.refreshForwardGroupReferences(id, { reason: `${normalized.data.groupMode}-group-members-updated`, previousHostIds });
     if (!membersChanged && entryDomainChanged) {
       await db.refreshForwardGroupReferences(id, { reason: "entry-group-domain-updated" });
     } else if (!membersChanged && exitStrategyChanged) {

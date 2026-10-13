@@ -22,7 +22,7 @@ import { getHostById } from "./hostRepository";
 import { getForwardRulesByTunnel } from "./forwardRuleRepository";
 import { sqlBool } from "./repositoryUtils";
 import { mapWithConcurrency } from "../asyncPool";
-import { withKeyedTaskLock } from "../keyedTaskLock";
+import { withResourceTaskLock } from "../keyedTaskLock";
 import { pageResult, pageWindowForTotal, type PageRequest } from "../../shared/pagination";
 import { normalizeExitGroupStrategy } from "../../shared/exitStrategy";
 import { recordConfigAuditEvent, shouldAuditConfigPatch } from "../configAudit";
@@ -2172,7 +2172,7 @@ export async function syncTunnelExitGroupEndpoints(
 ) {
   const tunnelId = Number(tunnelInput?.id || 0);
   if (tunnelId <= 0) return { tunnel: tunnelInput, changed: false, previousHostIds: [], nextHostIds: [] };
-  return withKeyedTaskLock(`tunnel:${tunnelId}`, async () => {
+  return withResourceTaskLock(`tunnel:${tunnelId}`, async () => {
     const currentTunnel = await getTunnelById(tunnelId) as any;
     if (!currentTunnel) return { tunnel: tunnelInput, changed: false, previousHostIds: [], nextHostIds: [] };
 
@@ -2568,7 +2568,7 @@ export async function reconcileForwardRuleTunnelExits(
   const ruleId = Number(rule?.id || 0);
   const tunnelId = Number(tunnel?.id || rule?.tunnelId || 0);
   if (!ruleId || !tunnelId) return [];
-  return withKeyedTaskLock(`rule-tunnel-exits:${ruleId}`, async () => {
+  return withResourceTaskLock(`rule-tunnel-exits:${ruleId}`, async () => {
   /*
    * The lowest-id active runtime unit is the primary route for every managed
    * GOST/Nginx tunnel. A normal rule is one unit; SNI rules with the same

@@ -8,6 +8,7 @@ type PendingTask = {
 const pendingTasks = new Map<string, PendingTask>();
 type TrafficBillingLockToken = { active: boolean };
 const trafficBillingLockContext = new AsyncLocalStorage<Map<string, TrafficBillingLockToken>>();
+const resourceLockContext = new AsyncLocalStorage<Map<string, TrafficBillingLockToken>>();
 
 export function trafficBillingUserLockKey(userId: unknown) {
   const id = Number(userId || 0);
@@ -46,6 +47,25 @@ export async function withTrafficBillingUserLock<T>(userId: unknown, task: () =>
     const heldLocks = new Map(inheritedLocks);
     heldLocks.set(key, token);
     return trafficBillingLockContext.run(heldLocks, async () => {
+      try {
+        return await task();
+      } finally {
+        token.active = false;
+      }
+    });
+  });
+}
+
+// Route writes may already hold a resource's save position when the existing
+// reconciliation path enters it again. Only that active async scope can reuse it.
+export async function withResourceTaskLock<T>(key: string, task: () => Promise<T>): Promise<T> {
+  const inherited = resourceLockContext.getStore();
+  if (inherited?.get(key)?.active) return task();
+  return withKeyedTaskLock(key, () => {
+    const token = { active: true };
+    const held = new Map(inherited);
+    held.set(key, token);
+    return resourceLockContext.run(held, async () => {
       try {
         return await task();
       } finally {

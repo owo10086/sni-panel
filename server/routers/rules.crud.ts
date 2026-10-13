@@ -34,6 +34,7 @@ import {
 } from "../repositories/tunnelRepository";
 import { trafficBillingUserLockKey, withKeyedTaskLock } from "../keyedTaskLock";
 import { mapWithConcurrency } from "../asyncPool";
+import { afterSniRuleWrite, withSniRuleWrite } from "../sniRuleWrite";
 import { reserveRuleCreateQuota, type RuleQuotaReservation } from "../ruleQuotaReservations";
 import { isAgentVersionAtLeast } from "../agentRouteUtils";
 import { isValidSniValue, normalizeSniValue, SNI_SPLITTER_MIN_AGENT_VERSION } from "@shared/sni";
@@ -1069,7 +1070,11 @@ async function markTemplateChildrenPendingDelete(
   reason: string,
   options: { deferRefresh?: boolean } = {},
 ) {
-  const childRules = await db.getForwardGroupChildRulesForTemplate(templateRuleId);
+  // Earlier migrations leave retired children awaiting Agent cleanup. A move
+  // back may reuse those rows; do not schedule deletion again for old retirees
+  // or its post-commit settlement would disable the freshly reused member.
+  const childRules = (await db.getForwardGroupChildRulesForTemplate(templateRuleId))
+    .filter((child: any) => !dbBool(child.pendingDelete));
   for (const child of childRules as any[]) {
     if (isDatabaseTransactionActive()) {
       await db.markForwardRulePendingDelete(Number(child.id));
@@ -1154,13 +1159,13 @@ export async function toggleForwardRuleForActor(
   isEnabled: boolean,
   options: { reasonPrefix?: string } = {},
 ) {
-  return withKeyedTaskLock(`rule:${ruleId}`, async () => {
+  return withKeyedTaskLock(`rule:${ruleId}`, () => withSniRuleWrite(ruleId, {}, async () => {
     let sourcePortReservation: HostPortReservation | null = null;
     let sniSplitterPortReservation: HostPortReservation | null = null;
     const directTunnelSniReservations: HostPortReservation[] = [];
     try {
       const rule = await db.getForwardRuleById(ruleId);
-      if (!rule) throw new Error("规则不存在");
+      if (!rule || dbBool((rule as any).pendingDelete)) throw new Error("规则不存在或已删除");
       if (actor.role !== "admin" && rule.userId !== actor.id) throw new Error("无权操作此规则");
       assertRuleWritable(actor, rule);
       if ((rule as any).forwardGroupRuleId) throw new Error("转发组成员规则由系统维护，不能直接开关");
@@ -1261,7 +1266,7 @@ export async function toggleForwardRuleForActor(
           await saveTemplate();
           await db.syncForwardGroupRules(templateGroupId);
         }
-        await db.runForwardGroupFailover(Number((rule as any).forwardGroupId));
+        await afterSniRuleWrite(() => db.runForwardGroupFailover(Number((rule as any).forwardGroupId)));
         for (const entryHostId of await db.getForwardGroupRuleEntryHostIds(Number((rule as any).forwardGroupId))) {
           await refreshRulePortWarningsForHost(entryHostId);
         }
@@ -1374,7 +1379,7 @@ export async function toggleForwardRuleForActor(
       sniSplitterPortReservation?.release();
       releaseHostPortReservations(directTunnelSniReservations);
     }
-  });
+  }));
 }
 
 export async function createDirectForwardRuleForActor(
@@ -1382,6 +1387,7 @@ export async function createDirectForwardRuleForActor(
   input: any,
   options: { reasonPrefix?: string; operationActor?: { id: number; role: string } } = {},
 ) {
+  return withSniRuleWrite(undefined, input, async () => {
   await requireRuleTelegramNotifyReady(!!input.telegramErrorNotifyEnabled);
   const normalizedSni = normalizeSniInput(input.sni);
   assertSniRuleAdmin(options.operationActor ?? actor, normalizedSni);
@@ -1560,39 +1566,46 @@ export async function createDirectForwardRuleForActor(
     const runtimeOptionInput = tunnelId ? tunnelRuntimeOptionInput(selectedTunnelForRule) : ruleInput;
     const proxyProtocol = normalizeProxyProtocolInput(runtimeOptionInput, ruleProtocol, ruleInput.forwardType, false, { tunnelRoute: !!tunnelId, clearUnsupported: !!tunnelId });
     const transportTuning = normalizeTransportTuningInput(runtimeOptionInput, ruleProtocol, ruleInput.forwardType, false, { tunnelRoute: !!tunnelId, forwardxTunnel: String(selectedTunnelForRule?.mode || "").toLowerCase() === "forwardx", clearUnsupported: !!tunnelId });
-    const id = await db.createForwardRule({
-      ...ruleInput,
-      ...normalizeFailoverInput(ruleInput, ruleProtocol),
-      ...proxyProtocol,
-      ...transportTuning,
-      telegramErrorNotifyEnabled: !!input.telegramErrorNotifyEnabled,
-      blockHttp: false,
-      blockSocks: false,
-      blockTls: false,
-      sourcePort,
-      hostId,
-      targetIp: normalizeRuleTargetIp(ruleInput.targetIp, { tunnelId }),
-      gostMode: "direct",
-      gostRelayHost: null,
-      gostRelayPort: null,
-      tunnelId,
-      tunnelExitPort,
-      sni: normalizedSni,
-      sniSplitterPort,
-      userId: actor.id,
-    });
+    const persistDirectRule = async () => {
+      const id = await db.createForwardRule({
+        ...ruleInput,
+        ...normalizeFailoverInput(ruleInput, ruleProtocol),
+        ...proxyProtocol,
+        ...transportTuning,
+        telegramErrorNotifyEnabled: !!input.telegramErrorNotifyEnabled,
+        blockHttp: false,
+        blockSocks: false,
+        blockTls: false,
+        sourcePort,
+        hostId,
+        targetIp: normalizeRuleTargetIp(ruleInput.targetIp, { tunnelId }),
+        gostMode: "direct",
+        gostRelayHost: null,
+        gostRelayPort: null,
+        tunnelId,
+        tunnelExitPort,
+        sni: normalizedSni,
+        sniSplitterPort,
+        userId: actor.id,
+      });
+      if (tunnelId) {
+        const tunnel = await db.getTunnelById(tunnelId);
+        // Mapping reconciliation has its own reservation scope. Release the
+        // primary allocation after the rule row exists so a same-port mapping
+        // is not mistaken for an unrelated in-flight allocation.
+        tunnelExitPortReservation?.release();
+        tunnelExitPortReservation = null;
+        releaseHostPortReservations(sniRuntimePortReservations);
+        if (tunnel) await db.reconcileForwardRuleTunnelExits({ ...ruleInput, id, hostId, tunnelExitPort, sourcePort, tunnelId }, tunnel);
+        await db.updateTunnel(tunnelId, { isRunning: false } as any);
+      }
+      return id;
+    };
+    const id = normalizedSni ? await db.withDatabaseTransaction(persistDirectRule) : await persistDirectRule();
     await quotaReservation.release();
     quotaReservation = null;
     if (tunnelId) {
       const tunnel = await db.getTunnelById(tunnelId);
-      // Mapping reconciliation has its own reservation scope. Release the
-      // primary allocation after the rule row exists so a same-port mapping
-      // is not mistaken for an unrelated in-flight allocation.
-      tunnelExitPortReservation?.release();
-      tunnelExitPortReservation = null;
-      releaseHostPortReservations(sniRuntimePortReservations);
-      if (tunnel) await db.reconcileForwardRuleTunnelExits({ ...ruleInput, id, hostId, tunnelExitPort, sourcePort, tunnelId }, tunnel);
-      await db.updateTunnel(tunnelId, { isRunning: false } as any);
       if (tunnel) await pushTunnelEndpointRefresh(tunnel, `${options.reasonPrefix || "forward-rule"}-created`);
     } else {
       pushAgentRefresh(hostId, `${options.reasonPrefix || "forward-rule"}-created`);
@@ -1605,6 +1618,7 @@ export async function createDirectForwardRuleForActor(
     releaseHostPortReservations(sniRuntimePortReservations);
     sourcePortReservation?.release();
   }
+  });
 }
 
 export const crudRulesRouter = router({
@@ -1730,7 +1744,7 @@ export const crudRulesRouter = router({
       if (result.ok && (hasRuleLimitInput(input) || (input as any).adminManaged)) await reconcileRuleLimits([Number((result.data as any).id)], true);
       return result;
     })
-    .mutation(async ({ input, ctx }) => {
+    .mutation(async ({ input, ctx }) => withSniRuleWrite(undefined, input, async () => {
       validateRuleLimitInput(ctx.user.role, input);
       await validateRuleRateLimitTargets(input);
       if (ctx.user.role === "admin" && (hasRuleLimitInput(input) || (input.userId && input.userId !== ctx.user.id))) {
@@ -1744,7 +1758,10 @@ export const crudRulesRouter = router({
       assertSniRuleAdmin(ctx.user, normalizedSni);
       if (input.forwardGroupId) {
         const forwardGroupId = Number(input.forwardGroupId);
-        return withKeyedTaskLock(`forward-group:${forwardGroupId}`, async () => {
+        const withCreatePosition = normalizedSni
+          ? async <T>(work: () => Promise<T>) => work()
+          : <T>(work: () => Promise<T>) => withKeyedTaskLock(`forward-group:${forwardGroupId}`, work);
+        return withCreatePosition(async () => {
         const groupReservations: HostPortReservation[] = [];
         let quotaReservation: RuleQuotaReservation | null = null;
         try {
@@ -1955,7 +1972,7 @@ export const crudRulesRouter = router({
         }
         await quotaReservation?.release();
         quotaReservation = null;
-        await db.runForwardGroupFailover(forwardGroupId);
+        await afterSniRuleWrite(() => db.runForwardGroupFailover(forwardGroupId));
         for (const entryHostId of entryHostIds) await refreshRulePortWarningsForHost(entryHostId);
         return { id, sourcePort };
         } finally {
@@ -1973,7 +1990,7 @@ export const crudRulesRouter = router({
         ));
       }
       return createDirectForwardRuleForActor(ownerContext.user, input, { operationActor: ctx.user });
-    }),
+    })),
   update: protectedProcedure
     .input(z.object({
       ...ruleLimitInputShape,
@@ -2010,7 +2027,7 @@ export const crudRulesRouter = router({
       if (result.ok && hasRuleLimitInput(input)) await reconcileRuleLimits([input.id], true);
       return result;
     })
-    .mutation(async ({ input, ctx }) => withKeyedTaskLock(`rule:${input.id}`, async () => {
+    .mutation(async ({ input, ctx }) => withKeyedTaskLock(`rule:${input.id}`, () => withSniRuleWrite(input.id, input, async () => {
       const heldReservations: HostPortReservation[] = [];
       let portQuotaReservation: RuleQuotaReservation | null = null;
       // Keep the primary tunnel-exit reservation separate from source-port
@@ -2054,7 +2071,7 @@ export const crudRulesRouter = router({
       };
       try {
       const rule = await db.getForwardRuleById(input.id);
-      if (!rule) throw new Error("规则不存在");
+      if (!rule || dbBool((rule as any).pendingDelete)) throw new Error("规则不存在或已删除");
       validateRuleLimitInput(ctx.user.role, input, rule);
       if (ctx.user.role !== "admin" && rule.userId !== ctx.user.id) throw new Error("无权操作此规则");
       assertRuleWritable(ctx.user, rule);
@@ -2443,7 +2460,7 @@ export const crudRulesRouter = router({
           } else {
             pushAgentRefresh(nextHostId, "forward-group-rule-converted");
           }
-          await db.runForwardGroupFailover(groupId);
+          await afterSniRuleWrite(() => db.runForwardGroupFailover(groupId));
           await refreshUpdatedRulePortWarnings();
           return { success: true, reset: true };
         }
@@ -2610,17 +2627,17 @@ export const crudRulesRouter = router({
             await markTemplateChildrenPendingDelete(input.id, "forward-group-rule-route-changed");
             await db.updateForwardRule(input.id, data);
           }, { preserveRuntime: true, prioritizeTemplateRuleId: input.id });
-          await db.runForwardGroupFailover(groupId);
+          await afterSniRuleWrite(() => db.runForwardGroupFailover(groupId));
         } else {
           if (groupChanged) await markTemplateChildrenPendingDelete(input.id, "forward-group-rule-route-changed");
           await db.updateForwardRule(input.id, data);
           if (groupChanged) {
             await db.syncForwardGroupRules(groupId);
-            await db.runForwardGroupFailover(groupId);
+            await afterSniRuleWrite(() => db.runForwardGroupFailover(groupId));
           }
           await db.syncForwardGroupRules(activeGroupId);
         }
-        await db.runForwardGroupFailover(activeGroupId);
+        await afterSniRuleWrite(() => db.runForwardGroupFailover(activeGroupId));
         await refreshUpdatedRulePortWarnings();
         return { success: true, reset: keyFieldChanged || groupChanged };
       }
@@ -2767,7 +2784,7 @@ export const crudRulesRouter = router({
         } else if (Number((rule as any).hostId || 0) > 0) {
           pushAgentRefresh(Number((rule as any).hostId), "forward-rule-route-changed");
         }
-        await db.runForwardGroupFailover(groupId);
+        await afterSniRuleWrite(() => db.runForwardGroupFailover(groupId));
         await refreshUpdatedRulePortWarnings();
         return { success: true, reset: true };
       }
@@ -3111,7 +3128,6 @@ export const crudRulesRouter = router({
         } else {
           (data as any).tunnelExitPort = null;
           (data as any).sniSplitterPort = null;
-          await db.clearForwardRuleTunnelExits(id);
         }
       }
       if (dbBool(data.isEnabled)) {
@@ -3184,52 +3200,56 @@ export const crudRulesRouter = router({
       const oldHostIdForRule = Number(rule.hostId);
       const hostChanged = Number(oldHostIdForRule) !== Number(nextHostIdForRule);
       const affectedTunnelIdsForRefresh = new Set<number>();
-      if (keyFieldChanged && !failoverHotUpdate) {
-        (data as any).isRunning = false;
-        if ((rule as any).tunnelId) affectedTunnelIdsForRefresh.add((rule as any).tunnelId);
-        if ((data as any).tunnelId) affectedTunnelIdsForRefresh.add((data as any).tunnelId);
-        for (const affectedTunnelId of affectedTunnelIdsForRefresh) {
-          await db.updateTunnel(affectedTunnelId, { isRunning: false } as any);
+      const persistDirectUpdate = async () => {
+        if (keyFieldChanged && !failoverHotUpdate) {
+          (data as any).isRunning = false;
+          if ((rule as any).tunnelId) affectedTunnelIdsForRefresh.add((rule as any).tunnelId);
+          if ((data as any).tunnelId) affectedTunnelIdsForRefresh.add((data as any).tunnelId);
+          for (const affectedTunnelId of affectedTunnelIdsForRefresh) {
+            await db.updateTunnel(affectedTunnelId, { isRunning: false } as any);
+          }
         }
-      }
-      await db.updateForwardRule(id, data);
-      await refreshUpdatedRulePortWarnings();
-      // The mapping reconciler performs its own per-endpoint reservation. Do
-      // not leave the primary reservation held while it runs; release is
-      // idempotent and the finalizer below still covers error paths.
-      tunnelExitPortReservationForUpdate?.release();
-      tunnelExitPortReservationForUpdate = null;
-      releaseHostPortReservations(heldReservations);
-      const tunnelUnitChanged = input.sni !== undefined
-        || input.sourcePort !== undefined
-        || input.tunnelId !== undefined
-        || input.forwardType !== undefined
-        || input.isEnabled !== undefined;
-      if (tunnelUnitChanged) {
-        const affectedTunnelIds = normalizePositiveIds([
-          Number((rule as any).tunnelId || 0),
-          Number(nextTunnelIdForRule || 0),
-        ]);
-        for (const affectedTunnelId of affectedTunnelIds) {
-          await reconcileSharedTunnelRulePorts(await db.getTunnelById(affectedTunnelId));
+        await db.updateForwardRule(id, data);
+        // The mapping reconciler performs its own per-endpoint reservation. Do
+        // not leave the primary reservation held while it runs; release is
+        // idempotent and the finalizer below still covers error paths.
+        tunnelExitPortReservationForUpdate?.release();
+        tunnelExitPortReservationForUpdate = null;
+        releaseHostPortReservations(heldReservations);
+        const tunnelUnitChanged = input.sni !== undefined
+          || input.sourcePort !== undefined
+          || input.tunnelId !== undefined
+          || input.forwardType !== undefined
+          || input.isEnabled !== undefined;
+        if (tunnelUnitChanged) {
+          const affectedTunnelIds = normalizePositiveIds([
+            Number((rule as any).tunnelId || 0),
+            Number(nextTunnelIdForRule || 0),
+          ]);
+          for (const affectedTunnelId of affectedTunnelIds) {
+            await reconcileSharedTunnelRulePorts(await db.getTunnelById(affectedTunnelId));
+          }
         }
-      }
-      if ((data.forwardType ?? rule.forwardType) === "gost") {
-        const activeTunnelId = Number(nextTunnelIdForRule || 0);
-        if (activeTunnelId) {
-          const tunnel = selectedTunnelForRule ?? await db.getTunnelById(activeTunnelId);
-          if (tunnel) {
-            await db.reconcileForwardRuleTunnelExits(
-              { ...rule, ...data, id, tunnelId: activeTunnelId, tunnelExitPort: (data as any).tunnelExitPort ?? (rule as any).tunnelExitPort },
-              tunnel,
-            );
+        if ((data.forwardType ?? rule.forwardType) === "gost") {
+          const activeTunnelId = Number(nextTunnelIdForRule || 0);
+          if (activeTunnelId) {
+            const tunnel = selectedTunnelForRule ?? await db.getTunnelById(activeTunnelId);
+            if (tunnel) {
+              await db.reconcileForwardRuleTunnelExits(
+                { ...rule, ...data, id, tunnelId: activeTunnelId, tunnelExitPort: (data as any).tunnelExitPort ?? (rule as any).tunnelExitPort },
+                tunnel,
+              );
+            }
+          } else {
+            await db.clearForwardRuleTunnelExits(id);
           }
         } else {
           await db.clearForwardRuleTunnelExits(id);
         }
-      } else {
-        await db.clearForwardRuleTunnelExits(id);
-      }
+      };
+      if (normalizeSniValue(rule.sni) || nextDirectRuleSni) await db.withDatabaseTransaction(persistDirectUpdate);
+      else await persistDirectUpdate();
+      await refreshUpdatedRulePortWarnings();
       for (const affectedTunnelId of affectedTunnelIdsForRefresh) {
         const affectedTunnel = await db.getTunnelById(affectedTunnelId);
         if (affectedTunnel) await pushTunnelEndpointRefresh(affectedTunnel, "forward-rule-updated");
@@ -3253,7 +3273,7 @@ export const crudRulesRouter = router({
         tunnelExitPortReservationForConversion?.release();
         releaseHostPortReservations(heldReservations);
       }
-    })),
+    }))),
   delete: protectedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input, ctx }) => deleteForwardRuleForActor(ctx.user, input.id)),

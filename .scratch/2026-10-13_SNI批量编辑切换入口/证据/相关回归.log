@@ -1,0 +1,64 @@
+TAP version 13
+# Subtest: forward group and tunnel controlled toggles preserve independent restore causes
+ok 1 - forward group and tunnel controlled toggles preserve independent restore causes
+  ---
+  duration_ms: 860.978792
+  type: 'test'
+  ...
+# Subtest: managed forward children recover stale automatic-disable state from enabled templates
+ok 2 - managed forward children recover stale automatic-disable state from enabled templates
+  ---
+  duration_ms: 691.877375
+  type: 'test'
+  ...
+# Subtest: forward chain rules deploy downstream first and external entries last
+ok 3 - forward chain rules deploy downstream first and external entries last
+  ---
+  duration_ms: 692.245291
+  type: 'test'
+  ...
+# Subtest: SNI group batch deletion completes, preserves unselected routes and removes the final listener
+ok 4 - SNI group batch deletion completes, preserves unselected routes and removes the final listener
+  ---
+  duration_ms: 5411.444875
+  type: 'test'
+  ...
+# Subtest: SNI member removal commits before waiting for billing and sends no refresh on rollback
+ok 5 - SNI member removal commits before waiting for billing and sends no refresh on rollback
+  ---
+  duration_ms: 738.678625
+  type: 'test'
+  ...
+# Subtest: SNI batch deletion settles selected usage once and retains low-balance access controls
+ok 6 - SNI batch deletion settles selected usage once and retains low-balance access controls
+  ---
+  duration_ms: 1966.427458
+  type: 'test'
+  ...
+# Subtest: SNI batch deletion reports unauthorized and missing rules while deleting permitted selections
+ok 7 - SNI batch deletion reports unauthorized and missing rules while deleting permitted selections
+  ---
+  duration_ms: 1076.914875
+  type: 'test'
+  ...
+# Subtest: host failover SNI lifecycle preserves readiness, atomic saves, imports and accounting
+ok 8 - host failover SNI lifecycle preserves readiness, atomic saves, imports and accounting
+  ---
+  duration_ms: 2290.374792
+  type: 'test'
+  ...
+# Subtest: listen port explicit hint distinguishes re-entered value from form replay
+ok 9 - listen port explicit hint distinguishes re-entered value from form replay
+  ---
+  duration_ms: 0.349083
+  type: 'test'
+  ...
+1..9
+# tests 9
+# suites 0
+# pass 9
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 11613.757292

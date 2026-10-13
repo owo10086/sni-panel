@@ -1,0 +1,59 @@
+TAP version 13
+# Subtest: different SNI domains can edit the same multi-host entry concurrently on port 443
+not ok 1 - different SNI domains can edit the same multi-host entry concurrently on port 443
+  ---
+  duration_ms: 1034.803542
+  type: 'test'
+  location: '/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx/server/sniBatchEdit.test.ts:31:426'
+  failureType: 'testCodeFailure'
+  error: |-
+    node:internal/modules/run_main:123
+        triggerUncaughtException(
+        ^
+    
+    AssertionError [ERR_ASSERTION]: [{"status":"fulfilled","value":{"success":true,"reset":true}},{"status":"rejected","reason":{"cause":{},"code":"INTERNAL_SERVER_ERROR","name":"TRPCError"}}]
+    + actual - expected
+    
+      [
+        'fulfilled',
+    +   'rejected'
+    -   'fulfilled'
+      ]
+    
+        at file:///Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx/[eval1]:33:12 {
+      generatedMessage: false,
+      code: 'ERR_ASSERTION',
+      actual: [ 'fulfilled', 'rejected' ],
+      expected: [ 'fulfilled', 'fulfilled' ],
+      operator: 'deepStrictEqual',
+      diff: 'simple'
+    }
+    
+    Node.js v22.22.3
+    
+    
+    1 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 1
+  operator: 'strictEqual'
+  stack: |-
+    file:///Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx/[eval1]:33:12 {
+    verifySniWrites (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx/server/sniBatchEdit.test.ts:45:12)
+    TestContext.<anonymous> (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx/server/sniBatchEdit.test.ts:52:3)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.start (node:internal/test_runner/test:944:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:296:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1183.762292
