@@ -24,4 +24,4 @@ ForwardX 一直强制同一主机上的源端口唯一（`isPortUsedOnHost`）�
 
 这种顺序保护只在当前单面板进程内生效。不同主机继续各自保存，DNS 等外部等待前释放保存位置，避免合法共享变成整组长时间等待。迁回曾经使用的入口时，延后的旧清理不能停用已经重新使用的成员；保存阶段失败须完整保留原配置。这些保证落实原有共享与配置正确要求，不改变共享资格、费用政策或运行确认标准。
 
-具体重试上限、保存回退和测试边界见[本次修复规格](../../.scratch/2026-10-13_SNI批量编辑切换入口/spec.md)，失败复现及修复后证据见[验证记录](../../.scratch/2026-10-13_SNI批量编辑切换入口/验证记录.md#测试发现与决策对应)。创建、修改时的数据库端口检查与外部监听报告分别遵守 [ADR-0004](0004-no-host-occupancy-check-during-rule-creation.md) 和 [ADR-0003](0003-bounded-derived-data-declares-exact-coverage.md)，共享保存通过不等于已确认主机上没有外部监听。
+具体重试上限、保存回退和测试边界见[本次修复规格](https://github.com/owo10086/sni-panel/blob/3b0394a0efd087a38708591089f3dc212c34c1ff/.scratch/2026-10-13_SNI批量编辑切换入口/spec.md)，失败复现及修复后证据见[验证记录](https://github.com/owo10086/sni-panel/blob/3b0394a0efd087a38708591089f3dc212c34c1ff/.scratch/2026-10-13_SNI批量编辑切换入口/验证记录.md#测试发现与决策对应)。创建、修改时的数据库端口检查与外部监听报告分别遵守 [ADR-0004](0004-no-host-occupancy-check-during-rule-creation.md) 和 [ADR-0003](0003-bounded-derived-data-declares-exact-coverage.md)，共享保存通过不等于已确认主机上没有外部监听。

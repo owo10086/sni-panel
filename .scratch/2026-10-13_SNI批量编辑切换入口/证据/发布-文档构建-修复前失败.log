@@ -1,0 +1,38 @@
+build	Build VitePress docs	﻿2026-10-14T02:19:29.1787802Z ##[group]Run pnpm docs:build
+build	Build VitePress docs	2026-10-14T02:19:29.1787990Z [36;1mpnpm docs:build[0m
+build	Build VitePress docs	2026-10-14T02:19:29.1840052Z shell: /usr/bin/bash -e {0}
+build	Build VitePress docs	2026-10-14T02:19:29.1840198Z env:
+build	Build VitePress docs	2026-10-14T02:19:29.1840358Z   PNPM_HOME: /home/runner/setup-pnpm/node_modules/.bin
+build	Build VitePress docs	2026-10-14T02:19:29.1840535Z   GITHUB_PAGES: true
+build	Build VitePress docs	2026-10-14T02:19:29.1840665Z   VITEPRESS_BASE: /sni-panel/
+build	Build VitePress docs	2026-10-14T02:19:29.1840800Z ##[endgroup]
+build	Build VitePress docs	2026-10-14T02:19:29.3500686Z 
+build	Build VitePress docs	2026-10-14T02:19:29.3501750Z > forwardx@3.3.4 docs:build /home/runner/work/sni-panel/sni-panel
+build	Build VitePress docs	2026-10-14T02:19:29.3502185Z > vitepress build docs
+build	Build VitePress docs	2026-10-14T02:19:29.3502321Z 
+build	Build VitePress docs	2026-10-14T02:19:29.5678136Z 
+build	Build VitePress docs	2026-10-14T02:19:29.5685118Z   [32m[1mvitepress[22m v1.6.4[39m
+build	Build VitePress docs	2026-10-14T02:19:29.5709498Z 
+build	Build VitePress docs	2026-10-14T02:19:29.5734213Z - building client + server bundles...
+build	Build VitePress docs	2026-10-14T02:19:32.1016907Z [33m
+build	Build VitePress docs	2026-10-14T02:19:32.1017157Z [36m
+build	Build VitePress docs	2026-10-14T02:19:32.1017600Z If this is expected, you can disable this check via config. Refer: https://vitepress.dev/reference/site-config#ignoredeadlinks
+build	Build VitePress docs	2026-10-14T02:19:32.1018098Z [39m
+build	Build VitePress docs	2026-10-14T02:19:32.1018276Z 
+build	Build VitePress docs	2026-10-14T02:19:32.1019091Z (!) Found dead link [36m./../../.scratch/2026-10-13_SNI%E6%89%B9%E9%87%8F%E7%BC%96%E8%BE%91%E5%88%87%E6%8D%A2%E5%85%A5%E5%8F%A3/spec[33m in file [37m[2madr/0002-sni-rules-share-one-entry-port.md[22m[33m[39m
+build	Build VitePress docs	2026-10-14T02:19:32.1020425Z [33m(!) Found dead link [36m./../../.scratch/2026-10-13_SNI%E6%89%B9%E9%87%8F%E7%BC%96%E8%BE%91%E5%88%87%E6%8D%A2%E5%85%A5%E5%8F%A3/%E9%AA%8C%E8%AF%81%E8%AE%B0%E5%BD%95[33m in file [37m[2madr/0002-sni-rules-share-one-entry-port.md[22m[33m[39m
+build	Build VitePress docs	2026-10-14T02:19:32.1021500Z [33m(!) Found dead link [36m./../../.scratch/2026-10-13_SNI%E6%89%B9%E9%87%8F%E7%BC%96%E8%BE%91%E5%88%87%E6%8D%A2%E5%85%A5%E5%8F%A3/%E9%AA%8C%E8%AF%81%E8%AE%B0%E5%BD%95[33m in file [37m[2madr/0001-sni-splitting-runs-as-a-standalone-fxp-role-at-the-exit.md[22m[33m[39m
+build	Build VitePress docs	2026-10-14T02:19:32.1071846Z [31mx[39m Build failed in 2.30s
+build	Build VitePress docs	2026-10-14T02:19:32.1074314Z [31m✖[0m building client + server bundles...
+build	Build VitePress docs	2026-10-14T02:19:32.1082983Z [31mbuild error:[39m
+build	Build VitePress docs	2026-10-14T02:19:32.1083999Z [31m[vitepress] 3 dead link(s) found.[39m
+build	Build VitePress docs	2026-10-14T02:19:32.1084494Z [31m[vitepress] 3 dead link(s) found.[39m
+build	Build VitePress docs	2026-10-14T02:19:32.1085605Z     at Object.renderStart (file:///home/runner/work/sni-panel/sni-panel/node_modules/.pnpm/vitepress@1.6.4_@algolia+client-search@5.55.1_@types+node@22.19.17_@types+react@19.2.14_c4aca79dd16a2b1c921fba8734293db5/node_modules/vitepress/dist/node/chunk-D3CUZ4fa.js:45027:15)
+build	Build VitePress docs	2026-10-14T02:19:32.1086402Z     at file:///home/runner/work/sni-panel/sni-panel/node_modules/.pnpm/rollup@4.60.2/node_modules/rollup/dist/es/shared/node-entry.js:22981:40
+build	Build VitePress docs	2026-10-14T02:19:32.1086745Z     at async Promise.all (index 0)
+build	Build VitePress docs	2026-10-14T02:19:32.1087202Z     at async PluginDriver.hookParallel (file:///home/runner/work/sni-panel/sni-panel/node_modules/.pnpm/rollup@4.60.2/node_modules/rollup/dist/es/shared/node-entry.js:22891:9)
+build	Build VitePress docs	2026-10-14T02:19:32.1087828Z     at async Bundle.generate (file:///home/runner/work/sni-panel/sni-panel/node_modules/.pnpm/rollup@4.60.2/node_modules/rollup/dist/es/shared/node-entry.js:21005:13)
+build	Build VitePress docs	2026-10-14T02:19:32.1088487Z     at async file:///home/runner/work/sni-panel/sni-panel/node_modules/.pnpm/rollup@4.60.2/node_modules/rollup/dist/es/shared/node-entry.js:23968:27
+build	Build VitePress docs	2026-10-14T02:19:32.1089144Z     at async catchUnfinishedHookActions (file:///home/runner/work/sni-panel/sni-panel/node_modules/.pnpm/rollup@4.60.2/node_modules/rollup/dist/es/shared/node-entry.js:23335:16)
+build	Build VitePress docs	2026-10-14T02:19:32.1455821Z  ELIFECYCLE  Command failed with exit code 1.
+build	Build VitePress docs	2026-10-14T02:19:32.1640306Z ##[error]Process completed with exit code 1.
