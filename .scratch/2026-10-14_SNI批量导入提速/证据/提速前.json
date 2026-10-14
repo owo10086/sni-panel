@@ -1,0 +1,309 @@
+{
+  "measuredAt": "2026-10-14T16:15:26.544Z",
+  "commit": "192e994ee2258a855187152c45bb04d2724b35fd",
+  "node": "v22.22.3",
+  "platform": "darwin",
+  "architecture": "arm64",
+  "ruleRouterSha256": "d316d3d01b0d00b203c3050fe946e761c795a698c1151ffbab9cb1397190a627",
+  "samples": {
+    "0": "eb4d1234e03357254db331551a6d56d67c58b1b2954d02359a0d46fb94b8aec4",
+    "56": "6665458c41af3f5e19cff7410f3d8444ff2e5ebfa75cb87cecb32f32af20e3ae"
+  },
+  "notificationReceiver": "immediate SSE response; no network backpressure",
+  "scenarios": [
+    {
+      "name": "small",
+      "existingCount": 0,
+      "count": 12,
+      "medianMs": 1730,
+      "measurements": [
+        {
+          "round": 1,
+          "existingCount": 0,
+          "count": 12,
+          "hosts": 3,
+          "concurrency": 6,
+          "durationMs": 1734,
+          "notifications": {
+            "1": {
+              "forward-group-child-created": 12,
+              "forward-group-synced": 24,
+              "forward-group-child-updated": 155,
+              "rule-limits-changed": 12
+            },
+            "2": {
+              "forward-group-child-created": 12,
+              "forward-group-synced": 24,
+              "forward-group-child-updated": 155,
+              "rule-limits-changed": 12
+            },
+            "3": {
+              "forward-group-child-created": 12,
+              "forward-group-synced": 24,
+              "forward-group-child-updated": 155,
+              "rule-limits-changed": 12
+            }
+          },
+          "rootCount": 12,
+          "childCount": 36
+        },
+        {
+          "round": 2,
+          "existingCount": 0,
+          "count": 12,
+          "hosts": 3,
+          "concurrency": 6,
+          "durationMs": 1730,
+          "notifications": {
+            "1": {
+              "forward-group-child-created": 12,
+              "forward-group-synced": 24,
+              "forward-group-child-updated": 155,
+              "rule-limits-changed": 12
+            },
+            "2": {
+              "forward-group-child-created": 12,
+              "forward-group-synced": 24,
+              "forward-group-child-updated": 155,
+              "rule-limits-changed": 12
+            },
+            "3": {
+              "forward-group-child-created": 12,
+              "forward-group-synced": 24,
+              "forward-group-child-updated": 155,
+              "rule-limits-changed": 12
+            }
+          },
+          "rootCount": 12,
+          "childCount": 36
+        },
+        {
+          "round": 3,
+          "existingCount": 0,
+          "count": 12,
+          "hosts": 3,
+          "concurrency": 6,
+          "durationMs": 1728,
+          "notifications": {
+            "1": {
+              "forward-group-child-created": 12,
+              "forward-group-synced": 24,
+              "forward-group-child-updated": 155,
+              "rule-limits-changed": 12
+            },
+            "2": {
+              "forward-group-child-created": 12,
+              "forward-group-synced": 24,
+              "forward-group-child-updated": 155,
+              "rule-limits-changed": 12
+            },
+            "3": {
+              "forward-group-child-created": 12,
+              "forward-group-synced": 24,
+              "forward-group-child-updated": 155,
+              "rule-limits-changed": 12
+            }
+          },
+          "rootCount": 12,
+          "childCount": 36
+        }
+      ]
+    },
+    {
+      "name": "empty",
+      "existingCount": 0,
+      "count": 56,
+      "medianMs": 29417,
+      "measurements": [
+        {
+          "round": 1,
+          "existingCount": 0,
+          "count": 56,
+          "hosts": 3,
+          "concurrency": 6,
+          "durationMs": 29417,
+          "notifications": {
+            "1": {
+              "forward-group-child-created": 56,
+              "forward-group-synced": 112,
+              "forward-group-child-updated": 3191,
+              "rule-limits-changed": 56
+            },
+            "2": {
+              "forward-group-child-created": 56,
+              "forward-group-synced": 112,
+              "forward-group-child-updated": 3191,
+              "rule-limits-changed": 56
+            },
+            "3": {
+              "forward-group-child-created": 56,
+              "forward-group-synced": 112,
+              "forward-group-child-updated": 3191,
+              "rule-limits-changed": 56
+            }
+          },
+          "rootCount": 56,
+          "childCount": 168
+        },
+        {
+          "round": 2,
+          "existingCount": 0,
+          "count": 56,
+          "hosts": 3,
+          "concurrency": 6,
+          "durationMs": 29433,
+          "notifications": {
+            "1": {
+              "forward-group-child-created": 56,
+              "forward-group-synced": 112,
+              "forward-group-child-updated": 3191,
+              "rule-limits-changed": 56
+            },
+            "2": {
+              "forward-group-child-created": 56,
+              "forward-group-synced": 112,
+              "forward-group-child-updated": 3191,
+              "rule-limits-changed": 56
+            },
+            "3": {
+              "forward-group-child-created": 56,
+              "forward-group-synced": 112,
+              "forward-group-child-updated": 3191,
+              "rule-limits-changed": 56
+            }
+          },
+          "rootCount": 56,
+          "childCount": 168
+        },
+        {
+          "round": 3,
+          "existingCount": 0,
+          "count": 56,
+          "hosts": 3,
+          "concurrency": 6,
+          "durationMs": 29398,
+          "notifications": {
+            "1": {
+              "forward-group-child-created": 56,
+              "forward-group-synced": 112,
+              "forward-group-child-updated": 3191,
+              "rule-limits-changed": 56
+            },
+            "2": {
+              "forward-group-child-created": 56,
+              "forward-group-synced": 112,
+              "forward-group-child-updated": 3191,
+              "rule-limits-changed": 56
+            },
+            "3": {
+              "forward-group-child-created": 56,
+              "forward-group-synced": 112,
+              "forward-group-child-updated": 3191,
+              "rule-limits-changed": 56
+            }
+          },
+          "rootCount": 56,
+          "childCount": 168
+        }
+      ]
+    },
+    {
+      "name": "existing",
+      "existingCount": 56,
+      "count": 56,
+      "medianMs": 112866,
+      "measurements": [
+        {
+          "round": 1,
+          "existingCount": 56,
+          "count": 56,
+          "hosts": 3,
+          "concurrency": 6,
+          "durationMs": 112406,
+          "notifications": {
+            "1": {
+              "forward-group-child-created": 56,
+              "forward-group-child-updated": 9463,
+              "forward-group-synced": 112,
+              "rule-limits-changed": 56
+            },
+            "2": {
+              "forward-group-child-created": 56,
+              "forward-group-child-updated": 9463,
+              "forward-group-synced": 112,
+              "rule-limits-changed": 56
+            },
+            "3": {
+              "forward-group-child-created": 56,
+              "forward-group-child-updated": 9463,
+              "forward-group-synced": 112,
+              "rule-limits-changed": 56
+            }
+          },
+          "rootCount": 112,
+          "childCount": 336
+        },
+        {
+          "round": 2,
+          "existingCount": 56,
+          "count": 56,
+          "hosts": 3,
+          "concurrency": 6,
+          "durationMs": 112866,
+          "notifications": {
+            "1": {
+              "forward-group-child-created": 56,
+              "forward-group-child-updated": 9463,
+              "forward-group-synced": 112,
+              "rule-limits-changed": 56
+            },
+            "2": {
+              "forward-group-child-created": 56,
+              "forward-group-child-updated": 9463,
+              "forward-group-synced": 112,
+              "rule-limits-changed": 56
+            },
+            "3": {
+              "forward-group-child-created": 56,
+              "forward-group-child-updated": 9463,
+              "forward-group-synced": 112,
+              "rule-limits-changed": 56
+            }
+          },
+          "rootCount": 112,
+          "childCount": 336
+        },
+        {
+          "round": 3,
+          "existingCount": 56,
+          "count": 56,
+          "hosts": 3,
+          "concurrency": 6,
+          "durationMs": 113032,
+          "notifications": {
+            "1": {
+              "forward-group-child-created": 56,
+              "forward-group-child-updated": 9463,
+              "forward-group-synced": 112,
+              "rule-limits-changed": 56
+            },
+            "2": {
+              "forward-group-child-created": 56,
+              "forward-group-child-updated": 9463,
+              "forward-group-synced": 112,
+              "rule-limits-changed": 56
+            },
+            "3": {
+              "forward-group-child-created": 56,
+              "forward-group-child-updated": 9463,
+              "forward-group-synced": 112,
+              "rule-limits-changed": 56
+            }
+          },
+          "rootCount": 112,
+          "childCount": 336
+        }
+      ]
+    }
+  ]
+}

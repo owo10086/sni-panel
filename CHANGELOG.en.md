@@ -4,6 +4,20 @@
 
 ## [Unreleased]
 
+## [3.3.5] - 2026-10-15
+
+### Improvements
+
+- Speed up bulk SNI rule imports by skipping a duplicate whole-group synchronization during entrance health evaluation when SNI or forwarding-chain creation has already synchronized the rules. Preserve existing runtime confirmations and complete entrance configurations.
+- Skip unnecessary forced limit refreshes when administrators create rules with no rate limit, traffic quota or expiry. Explicit zero values still produce administrator-managed rules that their ordinary owners can only view. Usage continues to accumulate, with duplicate traffic reports counted only once.
+- Continue immediately refreshing rules with an actual rate limit, traffic quota or expiry. Preserve per-rule checks, concurrency of up to six operations, individual success or failure results and complete rollback when a save fails.
+
+### Versions and upgrade notes
+
+- Panel: `3.3.5`; Agent and ForwardX FXP runtime: `3.3.0`. Only the panel requires upgrading; existing Agent/FXP binaries remain compatible.
+- Import time still depends on existing rule counts, the database and entrance state; this release does not promise a fixed duration. A successful save still requires the existing entrance runtime confirmations.
+- Native Android and iOS/iPadOS applications remain excluded under the standing agreement. This release does not publish APK or IPA packages.
+
 ## [3.3.4] - 2026-10-14
 
 ### Fixes

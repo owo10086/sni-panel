@@ -1,0 +1,175 @@
+TAP version 13
+# [Database] SQLite opened at /var/folders/43/bm25dvt57lbbzppp5zx168n00000gn/T/forwardx-sni-writes-f6khj4/test.db
+# [Database] SQLite opened at /var/folders/43/bm25dvt57lbbzppp5zx168n00000gn/T/forwardx-sni-writes-aJG4jr/test.db
+# {"kind":"failover","batches":20,"rulesPerBatch":7,"concurrency":6,"port":443,"longestBatchMs":1165,"limitMs":5000}
+# [Database] SQLite opened at /var/folders/43/bm25dvt57lbbzppp5zx168n00000gn/T/forwardx-sni-writes-eB5Jft/test.db
+# {"kind":"port","batches":20,"rulesPerBatch":7,"concurrency":6,"port":443,"longestBatchMs":297,"limitMs":5000}
+# [Database] SQLite opened at /var/folders/43/bm25dvt57lbbzppp5zx168n00000gn/T/forwardx-sni-writes-OHFb0l/test.db
+# {"kind":"chain","batches":20,"rulesPerBatch":7,"concurrency":6,"port":443,"longestBatchMs":1269,"limitMs":5000}
+# [Database] SQLite opened at /var/folders/43/bm25dvt57lbbzppp5zx168n00000gn/T/forwardx-sni-writes-sZbH5Y/test.db
+# {"kind":"tunnel","batches":20,"rulesPerBatch":7,"concurrency":6,"port":443,"longestBatchMs":180,"limitMs":5000}
+# [Database] SQLite opened at /var/folders/43/bm25dvt57lbbzppp5zx168n00000gn/T/forwardx-sni-writes-jYCNHD/test.db
+# [Database] SQLite opened at /var/folders/43/bm25dvt57lbbzppp5zx168n00000gn/T/forwardx-sni-writes-RSe0nC/test.db
+# [Database] SQLite opened at /var/folders/43/bm25dvt57lbbzppp5zx168n00000gn/T/forwardx-sni-writes-iKZMyy/test.db
+# [Database] SQLite opened at /var/folders/43/bm25dvt57lbbzppp5zx168n00000gn/T/forwardx-sni-writes-ZY0O8M/test.db
+# [Database] SQLite opened at /var/folders/43/bm25dvt57lbbzppp5zx168n00000gn/T/forwardx-sni-writes-mp1t1q/test.db
+# [Database] SQLite opened at /var/folders/43/bm25dvt57lbbzppp5zx168n00000gn/T/forwardx-sni-writes-e4E8iB/test.db
+# [Database] SQLite opened at /var/folders/43/bm25dvt57lbbzppp5zx168n00000gn/T/forwardx-sni-writes-8x5KmO/test.db
+# [Database] SQLite opened at /var/folders/43/bm25dvt57lbbzppp5zx168n00000gn/T/forwardx-sni-writes-iJSFUD/test.db
+# [Database] SQLite opened at /var/folders/43/bm25dvt57lbbzppp5zx168n00000gn/T/forwardx-sni-writes-UOcliH/test.db
+# [Database] SQLite opened at /var/folders/43/bm25dvt57lbbzppp5zx168n00000gn/T/forwardx-sni-writes-rKhfeE/test.db
+# [Database] SQLite opened at /var/folders/43/bm25dvt57lbbzppp5zx168n00000gn/T/forwardx-sni-writes-FlPGSJ/test.db
+# [Database] SQLite opened at /var/folders/43/bm25dvt57lbbzppp5zx168n00000gn/T/forwardx-sni-writes-g6WrJQ/test.db
+# [Database] SQLite opened at /var/folders/43/bm25dvt57lbbzppp5zx168n00000gn/T/forwardx-sni-writes-SMRlGc/test.db
+# [Database] SQLite opened at /var/folders/43/bm25dvt57lbbzppp5zx168n00000gn/T/forwardx-sni-writes-BXdGbo/test.db
+# [Database] SQLite opened at /var/folders/43/bm25dvt57lbbzppp5zx168n00000gn/T/forwardx-sni-writes-kfwTor/test.db
+# [Database] SQLite opened at /var/folders/43/bm25dvt57lbbzppp5zx168n00000gn/T/forwardx-sni-writes-S6MWkw/test.db
+# [Database] SQLite opened at /var/folders/43/bm25dvt57lbbzppp5zx168n00000gn/T/forwardx-sni-writes-FamVXx/test.db
+# [Database] SQLite opened at /var/folders/43/bm25dvt57lbbzppp5zx168n00000gn/T/forwardx-sni-writes-RhgvOc/test.db
+# Subtest: different SNI domains can edit the same multi-host entry concurrently on port 443
+ok 1 - different SNI domains can edit the same multi-host entry concurrently on port 443
+  ---
+  duration_ms: 1254.101792
+  type: 'test'
+  ...
+# Subtest: failover SNI batches keep 443 across ten same-entry edits and ten entry migrations
+ok 2 - failover SNI batches keep 443 across ten same-entry edits and ten entry migrations
+  ---
+  duration_ms: 18223.18725
+  type: 'test'
+  ...
+# Subtest: port SNI batches keep 443 across ten same-entry edits and ten entry migrations
+ok 3 - port SNI batches keep 443 across ten same-entry edits and ten entry migrations
+  ---
+  duration_ms: 6448.441041
+  type: 'test'
+  ...
+# Subtest: chain SNI batches keep 443 across ten same-entry edits and ten entry migrations
+ok 4 - chain SNI batches keep 443 across ten same-entry edits and ten entry migrations
+  ---
+  duration_ms: 24497.817042
+  type: 'test'
+  ...
+# Subtest: tunnel SNI batches keep 443 across ten same-entry edits and ten entry migrations
+ok 5 - tunnel SNI batches keep 443 across ten same-entry edits and ten entry migrations
+  ---
+  duration_ms: 5066.703167
+  type: 'test'
+  ...
+# Subtest: waiting for resource saving leaves ports free and rechecks changed entry hosts
+ok 6 - waiting for resource saving leaves ports free and rechecks changed entry hosts
+  ---
+  duration_ms: 869.222125
+  type: 'test'
+  ...
+# Subtest: SNI creation, import, edits and toggles share current domains across resources on one host
+ok 7 - SNI creation, import, edits and toggles share current domains across resources on one host
+  ---
+  duration_ms: 1327.475833
+  type: 'test'
+  ...
+# Subtest: opposite multi-host moves between a forward group and a direct TLS tunnel finish together
+ok 8 - opposite multi-host moves between a forward group and a direct TLS tunnel finish together
+  ---
+  duration_ms: 1189.363917
+  type: 'test'
+  ...
+# Subtest: a failed member save rolls back the root and releases ports for the next edit
+ok 9 - a failed member save rolls back the root and releases ports for the next edit
+  ---
+  duration_ms: 899.579167
+  type: 'test'
+  ...
+# Subtest: migration commits before billing waits, unrelated hosts keep saving, and usage settles once
+ok 10 - migration commits before billing waits, unrelated hosts keep saving, and usage settles once
+  ---
+  duration_ms: 976.62
+  type: 'test'
+  ...
+# Subtest: editing and deleting concurrently never revives deleted or pending-delete SNI rules
+ok 11 - editing and deleting concurrently never revives deleted or pending-delete SNI rules
+  ---
+  duration_ms: 932.953
+  type: 'test'
+  ...
+# Subtest: returning to a previous entry keeps reused member rules after deferred settlement
+ok 12 - returning to a previous entry keeps reused member rules after deferred settlement
+  ---
+  duration_ms: 845.927583
+  type: 'test'
+  ...
+# Subtest: continually changing routes exhaust one retry budget without saving or leaving reservations
+ok 13 - continually changing routes exhaust one retry budget without saving or leaving reservations
+  ---
+  duration_ms: 839.379333
+  type: 'test'
+  ...
+# Subtest: a route changed while waiting behind another host write is reread before saving
+ok 14 - a route changed while waiting behind another host write is reread before saving
+  ---
+  duration_ms: 967.21975
+  type: 'test'
+  ...
+# Subtest: unchanged host sets still use the latest chain connection address after resource waiting
+ok 15 - unchanged host sets still use the latest chain connection address after resource waiting
+  ---
+  duration_ms: 831.341208
+  type: 'test'
+  ...
+# Subtest: known tunnel listeners and incompatible resources still reject SNI sharing
+ok 16 - known tunnel listeners and incompatible resources still reject SNI sharing
+  ---
+  duration_ms: 835.103542
+  type: 'test'
+  ...
+# Subtest: direct TLS SNI mapping failure keeps the previous rule and mappings
+ok 17 - direct TLS SNI mapping failure keeps the previous rule and mappings
+  ---
+  duration_ms: 760.774041
+  type: 'test'
+  ...
+# Subtest: tunnel route changes during resource waiting are reread before direct SNI saving
+ok 18 - tunnel route changes during resource waiting are reread before direct SNI saving
+  ---
+  duration_ms: 854.5575
+  type: 'test'
+  ...
+# Subtest: entry-group route changes during resource waiting are reread before direct SNI saving
+ok 19 - entry-group route changes during resource waiting are reread before direct SNI saving
+  ---
+  duration_ms: 915.497334
+  type: 'test'
+  ...
+# Subtest: a rule-triggered DDNS wait releases saving positions and a provider failure keeps committed edits
+ok 20 - a rule-triggered DDNS wait releases saving positions and a provider failure keeps committed edits
+  ---
+  duration_ms: 1059.96
+  type: 'test'
+  ...
+# Subtest: entry group toggle waits until a related SNI save releases its route
+ok 21 - entry group toggle waits until a related SNI save releases its route
+  ---
+  duration_ms: 880.725958
+  type: 'test'
+  ...
+# Subtest: entry group reorder waits until a related SNI save releases its route
+ok 22 - entry group reorder waits until a related SNI save releases its route
+  ---
+  duration_ms: 869.49375
+  type: 'test'
+  ...
+# Subtest: entry group delete waits until a related SNI save releases its route
+ok 23 - entry group delete waits until a related SNI save releases its route
+  ---
+  duration_ms: 869.42075
+  type: 'test'
+  ...
+1..23
+# tests 23
+# suites 0
+# pass 23
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 72381.954291

@@ -1741,7 +1741,10 @@ export const crudRulesRouter = router({
     }))
     .use(async ({ input, next }) => {
       const result = await next();
-      if (result.ok && (hasRuleLimitInput(input) || (input as any).adminManaged)) await reconcileRuleLimits([Number((result.data as any).id)], true);
+      if (result.ok && (hasRuleLimitInput(input) || (input as any).adminManaged)) {
+        const forceRefresh = Number(input.rateLimitMbps) > 0 || Number(input.trafficLimit) > 0 || !!input.expiresAt;
+        await reconcileRuleLimits([Number((result.data as any).id)], forceRefresh);
+      }
       return result;
     })
     .mutation(async ({ input, ctx }) => withSniRuleWrite(undefined, input, async () => {
@@ -1972,7 +1975,10 @@ export const crudRulesRouter = router({
         }
         await quotaReservation?.release();
         quotaReservation = null;
-        await afterSniRuleWrite(() => db.runForwardGroupFailover(forwardGroupId));
+        await afterSniRuleWrite(() => db.runForwardGroupFailover(
+          forwardGroupId,
+          isForwardChain || normalizedSni ? { skipRuleSync: true } : undefined,
+        ));
         for (const entryHostId of entryHostIds) await refreshRulePortWarningsForHost(entryHostId);
         return { id, sourcePort };
         } finally {

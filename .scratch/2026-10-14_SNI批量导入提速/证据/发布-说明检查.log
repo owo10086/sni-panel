@@ -1,0 +1,44 @@
+
+> forwardx@3.3.5 test:release-notes /Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx
+> node --test scripts/release-notes.test.mjs
+
+TAP version 13
+# Subtest: release version accepts a tag or version and rejects malformed values
+ok 1 - release version accepts a tag or version and rejects malformed values
+  ---
+  duration_ms: 0.568708
+  type: 'test'
+  ...
+# Subtest: extract only the exact release, supporting CRLF and excluding adjacent sections
+ok 2 - extract only the exact release, supporting CRLF and excluding adjacent sections
+  ---
+  duration_ms: 0.224
+  type: 'test'
+  ...
+# Subtest: bilingual releases fail closed when either translation is missing or empty
+ok 3 - bilingual releases fail closed when either translation is missing or empty
+  ---
+  duration_ms: 0.238583
+  type: 'test'
+  ...
+# Subtest: Chinese and English release histories have matching versions and dates
+ok 4 - Chinese and English release histories have matching versions and dates
+  ---
+  duration_ms: 1.669125
+  type: 'test'
+  ...
+# Subtest: CLI emits both languages for the current release and rejects unknown versions
+ok 5 - CLI emits both languages for the current release and rejects unknown versions
+  ---
+  duration_ms: 61.783208
+  type: 'test'
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 5
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 107.982916

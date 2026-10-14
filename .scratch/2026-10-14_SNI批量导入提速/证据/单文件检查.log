@@ -1,0 +1,70 @@
+TAP version 13
+# Subtest: SNI import distinguishes omitted limits from explicit administrator-managed zero limits
+ok 1 - SNI import distinguishes omitted limits from explicit administrator-managed zero limits
+  ---
+  duration_ms: 814.260542
+  type: 'test'
+  ...
+# Subtest: SNI import creates one complete configuration refresh per entrance and preserves confirmed shared routes
+ok 2 - SNI import creates one complete configuration refresh per entrance and preserves confirmed shared routes
+  ---
+  duration_ms: 2282.391958
+  type: 'test'
+  ...
+# Subtest: SNI import skips zero-limit refresh while preserving managed access, first traffic and actual limits
+ok 3 - SNI import skips zero-limit refresh while preserving managed access, first traffic and actual limits
+  ---
+  duration_ms: 3385.870208
+  type: 'test'
+  ...
+# Subtest: Zero-limit creation preserves configurations and managed meaning for ordinary rules, chains and direct TLS tunnels
+ok 4 - Zero-limit creation preserves configurations and managed meaning for ordinary rules, chains and direct TLS tunnels
+  ---
+  duration_ms: 878.580416
+  type: 'test'
+  ...
+# Subtest: SNI import preserves successful items and rolls back incomplete member writes without notifications
+ok 5 - SNI import preserves successful items and rolls back incomplete member writes without notifications
+  ---
+  duration_ms: 1982.248333
+  type: 'test'
+  ...
+# Subtest: SNI group batch deletion completes, preserves unselected routes and removes the final listener
+ok 6 - SNI group batch deletion completes, preserves unselected routes and removes the final listener
+  ---
+  duration_ms: 4273.248416
+  type: 'test'
+  ...
+# Subtest: SNI member removal commits before waiting for billing and sends no refresh on rollback
+ok 7 - SNI member removal commits before waiting for billing and sends no refresh on rollback
+  ---
+  duration_ms: 802.270834
+  type: 'test'
+  ...
+# Subtest: SNI batch deletion settles selected usage once and retains low-balance access controls
+ok 8 - SNI batch deletion settles selected usage once and retains low-balance access controls
+  ---
+  duration_ms: 1794.69225
+  type: 'test'
+  ...
+# Subtest: SNI batch deletion reports unauthorized and missing rules while deleting permitted selections
+ok 9 - SNI batch deletion reports unauthorized and missing rules while deleting permitted selections
+  ---
+  duration_ms: 1060.938375
+  type: 'test'
+  ...
+# Subtest: host failover SNI lifecycle preserves readiness, atomic saves, imports and accounting
+ok 10 - host failover SNI lifecycle preserves readiness, atomic saves, imports and accounting
+  ---
+  duration_ms: 2375.280167
+  type: 'test'
+  ...
+1..10
+# tests 10
+# suites 0
+# pass 10
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 19765.04575

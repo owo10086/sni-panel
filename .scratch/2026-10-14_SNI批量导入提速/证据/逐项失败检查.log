@@ -1,0 +1,55 @@
+TAP version 13
+# Subtest: SNI import preserves successful items and rolls back incomplete member writes without notifications
+not ok 1 - SNI import preserves successful items and rolls back incomplete member writes without notifications
+  ---
+  duration_ms: 1610.725625
+  type: 'test'
+  location: '/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx/server/sniForwardGroup.test.ts:1:1536'
+  failureType: 'testCodeFailure'
+  error: |-
+    node:internal/modules/run_main:123
+        triggerUncaughtException(
+        ^
+
+    AssertionError [ERR_ASSERTION]: [{"item":{"forwardGroupId":10,"name":"mixed-0","sourcePort":18443,"forwardType":"nftables","protocol":"tcp","targetIp":"203.0.113.10","targetPort":19443,"sni":"mixed-0.example.test","isEnabled":true,"rateLimitMbps":0,"trafficLimit":0,"trafficMode":"outbound","expiresAt":null},"status":"fulfilled","value":{"id":1,"sourcePort":18443}},{"item":{"forwardGroupId":10,"name":"mixed-1","sourcePort":18443,"forwardType":"nftables","protocol":"tcp","targetIp":"203.0.113.10","targetPort":19444,"sni":"mixed-1.example.test","isEnabled":true,"rateLimitMbps":0,"trafficLimit":0,"trafficMode":"outbound","expiresAt":null},"status":"fulfilled","value":{"id":5,"sourcePort":18443}},{"item":{"forwardGroupId":10,"name":"mixed-2","sourcePort":18443,"forwardType":"nftables","protocol":"tcp","targetIp":"203.0.113.10","targetPort":19445,"sni":"mixed-2.example.test","isEnabled":true,"rateLimitMbps":0,"trafficLimit":0,"trafficMode":"outbound","expiresAt":null},"status":"fulfilled","value":{"id":9,"sourcePort":18443}},{"item":{"forwardGroupId":10,"name":"mixed-3","sourcePort":18443,"forwardType":"nftables","protocol":"tcp","targetIp":"203.0.113.10","targetPort":19446,"sni":"mixed-3.example.test","isEnabled":true,"rateLimitMbps":0,"trafficLimit":0,"trafficMode":"outbound","expiresAt":null},"status":"fulfilled","value":{"id":13,"sourcePort":18443}},{"item":{"forwardGroupId":10,"name":"mixed-4","sourcePort":18443,"forwardType":"nftables","protocol":"tcp","targetIp":"203.0.113.10","targetPort":19447,"sni":"mixed-4.example.test","isEnabled":true,"rateLimitMbps":0,"trafficLimit":0,"trafficMode":"outbound","expiresAt":null},"status":"fulfilled","value":{"id":17,"sourcePort":18443}},{"item":{"forwardGroupId":10,"name":"mixed-5","sourcePort":18443,"forwardType":"nftables","protocol":"tcp","targetIp":"203.0.113.10","targetPort":19448,"sni":"mixed-5.example.test","isEnabled":true,"rateLimitMbps":0,"trafficLimit":0,"trafficMode":"outbound","expiresAt":null},"status":"fulfilled","value":{"id":21,"sourcePort":18443}},{"item":{"forwardGroupId":10,"name":"mixed-6","sourcePort":18443,"forwardType":"nftables","protocol":"tcp","targetIp":"203.0.113.10","targetPort":19449,"sni":"mixed-0.example.test","isEnabled":true,"rateLimitMbps":0,"trafficLimit":0,"trafficMode":"outbound","expiresAt":null},"status":"rejected","reason":"第 7 行：SNI 域名 mixed-0.example.test 与规则 「mixed-0」（ID 1） 冲突"},{"item":{"forwardGroupId":10,"name":"mixed-7","sourcePort":18443,"forwardType":"nftables","protocol":"tcp","targetIp":"203.0.113.10","targetPort":19450,"sni":"mixed-7.example.test","isEnabled":true,"rateLimitMbps":0,"trafficLimit":0,"trafficMode":"outbound","expiresAt":null},"status":"rejected","reason":"第 8 行：Entry agent port 18443 is already used"},{"item":{"forwardGroupId":10,"name":"mixed-8","sourcePort":18443,"forwardType":"nftables","protocol":"tcp","targetIp":"203.0.113.10","targetPort":19451,"sni":"mixed-8.example.test","isEnabled":true,"rateLimitMbps":0,"trafficLimit":0,"trafficMode":"outbound","expiresAt":null},"status":"fulfilled","value":{"id":25,"sourcePort":18443}},{"item":{"forwardGroupId":10,"name":"mixed-9","sourcePort":18443,"forwardType":"nftables","protocol":"tcp","targetIp":"203.0.113.10","targetPort":19452,"sni":"mixed-9.example.test","isEnabled":true,"rateLimitMbps":0,"trafficLimit":0,"trafficMode":"outbound","expiresAt":null},"status":"fulfilled","value":{"id":29,"sourcePort":18443}},{"item":{"forwardGroupId":10,"name":"mixed-10","sourcePort":18443,"forwardType":"nftables","protocol":"tcp","targetIp":"203.0.113.10","targetPort":19453,"sni":"mixed-10.example.test","isEnabled":true,"rateLimitMbps":0,"trafficLimit":0,"trafficMode":"outbound","expiresAt":null},"status":"fulfilled","value":{"id":33,"sourcePort":18443}},{"item":{"forwardGroupId":10,"name":"mixed-11","sourcePort":18443,"forwardType":"nftables","protocol":"tcp","targetIp":"203.0.113.10","targetPort":19454,"sni":"mixed-11.example.test","isEnabled":true,"rateLimitMbps":0,"trafficLimit":0,"trafficMode":"outbound","expiresAt":null},"status":"fulfilled","value":{"id":37,"sourcePort":18443}}]
+
+    10 !== 11
+
+        at file:///Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx/server/test-support/sniImportHarness.mjs:281:14 {
+      generatedMessage: false,
+      code: 'ERR_ASSERTION',
+      actual: 10,
+      expected: 11,
+      operator: 'strictEqual',
+      diff: 'simple'
+    }
+
+    Node.js v22.22.3
+    [Database] SQLite opened at /var/folders/43/bm25dvt57lbbzppp5zx168n00000gn/T/forwardx-sni-import-4KozbT/test.db
+
+
+    1 !== 0
+
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 1
+  operator: 'strictEqual'
+  stack: |-
+    file:///Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx/server/test-support/sniImportHarness.mjs:281:14 {
+    verifySniImportScenario (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx/server/sniForwardGroup.test.ts:15:12)
+    TestContext.<anonymous> (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx/server/sniForwardGroup.test.ts:38:3)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.start (node:internal/test_runner/test:944:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:296:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1741.134625

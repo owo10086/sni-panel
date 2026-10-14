@@ -5,6 +5,39 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 
+function verifySniImportScenario(scenario: string) {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "forwardx-sni-import-"));
+  try {
+    const result = spawnSync(process.execPath, ["--import", "tsx", "server/test-support/sniImportHarness.mjs", scenario], {
+      cwd: process.cwd(), encoding: "utf8", timeout: 60_000,
+      env: { ...process.env, DATABASE_TYPE: "sqlite", FORWARDX_TEST_DB: path.join(directory, "test.db"), FORWARDX_LOG_DIR: path.join(directory, "logs") },
+    });
+    assert.equal(result.status, 0, result.error?.message || result.stderr + result.stdout);
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true });
+  }
+}
+
+test("SNI import distinguishes omitted limits from explicit administrator-managed zero limits", () => {
+  verifySniImportScenario("baseline-control");
+});
+
+test("SNI import creates one complete configuration refresh per entrance and preserves confirmed shared routes", () => {
+  verifySniImportScenario("sync");
+});
+
+test("SNI import skips zero-limit refresh while preserving managed access, first traffic and actual limits", () => {
+  verifySniImportScenario("limits");
+});
+
+test("Zero-limit creation preserves configurations and managed meaning for ordinary rules, chains and direct TLS tunnels", () => {
+  verifySniImportScenario("cross-resource");
+});
+
+test("SNI import preserves successful items and rolls back incomplete member writes without notifications", () => {
+  verifySniImportScenario("partial-failure");
+});
+
 function verifySniGroupDeletion(body: string) {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), "forwardx-sni-group-delete-"));
   const script = String.raw`

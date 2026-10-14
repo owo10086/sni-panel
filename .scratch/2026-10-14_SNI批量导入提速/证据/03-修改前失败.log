@@ -1,0 +1,59 @@
+TAP version 13
+# Subtest: SNI import skips zero-limit refresh while preserving managed access, first traffic and actual limits
+not ok 1 - SNI import skips zero-limit refresh while preserving managed access, first traffic and actual limits
+  ---
+  duration_ms: 794.512666
+  type: 'test'
+  location: '/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx/server/sniForwardGroup.test.ts:1:1216'
+  failureType: 'testCodeFailure'
+  error: |-
+    node:internal/modules/run_main:123
+        triggerUncaughtException(
+        ^
+
+    AssertionError [ERR_ASSERTION]: host 1 reason rule-limits-changed
+
+    1 !== 0
+
+        at assertRefreshCount (file:///Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx/server/test-support/sniImportHarness.mjs:74:79)
+        at file:///Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx/server/test-support/sniImportHarness.mjs:185:7
+        at process.processTicksAndRejections (node:internal/process/task_queues:103:5) {
+      generatedMessage: false,
+      code: 'ERR_ASSERTION',
+      actual: 1,
+      expected: 0,
+      operator: 'strictEqual',
+      diff: 'simple'
+    }
+
+    Node.js v22.22.3
+    [Database] SQLite opened at /var/folders/43/bm25dvt57lbbzppp5zx168n00000gn/T/forwardx-sni-import-zKMgQL/test.db
+
+
+    1 !== 0
+
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 1
+  operator: 'strictEqual'
+  stack: |-
+    assertRefreshCount (file:///Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx/server/test-support/sniImportHarness.mjs:74:79)
+    file:///Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx/server/test-support/sniImportHarness.mjs:185:7
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5) {
+    verifySniImportScenario (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx/server/sniForwardGroup.test.ts:15:12)
+    TestContext.<anonymous> (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx/server/sniForwardGroup.test.ts:30:3)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.start (node:internal/test_runner/test:944:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:296:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 933.215625

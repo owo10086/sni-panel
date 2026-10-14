@@ -1,0 +1,345 @@
+TAP version 13
+# Subtest: forward group switches after its configured heartbeat failure window
+ok 1 - forward group switches after its configured heartbeat failure window
+  ---
+  duration_ms: 3892.285
+  type: 'test'
+  ...
+# Subtest: entry group health windows suppress transient DDNS flaps
+ok 2 - entry group health windows suppress transient DDNS flaps
+  ---
+  duration_ms: 1076.231833
+  type: 'test'
+  ...
+# Subtest: failover groups return to the highest-priority recovered member after multiple failures
+ok 3 - failover groups return to the highest-priority recovered member after multiple failures
+  ---
+  duration_ms: 1160.6455
+  type: 'test'
+  ...
+# Subtest: rule quota uses cumulative directional totals; optional expiry doesn't depend on creation time
+ok 4 - rule quota uses cumulative directional totals; optional expiry doesn't depend on creation time
+  ---
+  duration_ms: 0.616292
+  type: 'test'
+  ...
+# Subtest: per-rule speed caps reuse supported backend guards and cannot relax wider caps
+ok 5 - per-rule speed caps reuse supported backend guards and cannot relax wider caps
+  ---
+  duration_ms: 0.760209
+  type: 'test'
+  ...
+# Subtest: real SQLite rule quotas, admin permissions, expiry, resets, member inheritance and migration defaults
+ok 6 - real SQLite rule quotas, admin permissions, expiry, resets, member inheritance and migration defaults
+  ---
+  duration_ms: 2042.895542
+  type: 'test'
+  ...
+# Subtest: SNI import distinguishes omitted limits from explicit administrator-managed zero limits
+ok 7 - SNI import distinguishes omitted limits from explicit administrator-managed zero limits
+  ---
+  duration_ms: 1109.673625
+  type: 'test'
+  ...
+# Subtest: SNI import creates one complete configuration refresh per entrance and preserves confirmed shared routes
+ok 8 - SNI import creates one complete configuration refresh per entrance and preserves confirmed shared routes
+  ---
+  duration_ms: 3000.06125
+  type: 'test'
+  ...
+# Subtest: SNI import skips zero-limit refresh while preserving managed access, first traffic and actual limits
+ok 9 - SNI import skips zero-limit refresh while preserving managed access, first traffic and actual limits
+  ---
+  duration_ms: 4212.6915
+  type: 'test'
+  ...
+# Subtest: Zero-limit creation preserves configurations and managed meaning for ordinary rules, chains and direct TLS tunnels
+ok 10 - Zero-limit creation preserves configurations and managed meaning for ordinary rules, chains and direct TLS tunnels
+  ---
+  duration_ms: 1052.420166
+  type: 'test'
+  ...
+# Subtest: SNI import preserves successful items and rolls back incomplete member writes without notifications
+not ok 11 - SNI import preserves successful items and rolls back incomplete member writes without notifications
+  ---
+  duration_ms: 1983.82375
+  type: 'test'
+  location: '/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx/server/sniForwardGroup.test.ts:1:1536'
+  failureType: 'testCodeFailure'
+  error: |-
+    file:///Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx/server/test-support/sniImportHarness.mjs:96
+    const splitter = result => result.desiredState.actions.find(action => action.op === "apply" && action.fxp?.role === "sni-splitter" && action.sourcePort === 18443)?.fxp;
+                                                   ^
+
+    TypeError: Cannot read properties of undefined (reading 'actions')
+        at splitter (file:///Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx/server/test-support/sniImportHarness.mjs:96:48)
+        at file:///Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx/server/test-support/sniImportHarness.mjs:288:50
+        at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+
+    Node.js v22.22.3
+    [Database] SQLite opened at /var/folders/43/bm25dvt57lbbzppp5zx168n00000gn/T/forwardx-sni-import-oSXVE2/test.db
+
+
+    1 !== 0
+
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 1
+  operator: 'strictEqual'
+  stack: |-
+    splitter (file:///Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx/server/test-support/sniImportHarness.mjs:96:48)
+    file:///Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx/server/test-support/sniImportHarness.mjs:288:50
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    verifySniImportScenario (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx/server/sniForwardGroup.test.ts:15:12)
+    TestContext.<anonymous> (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx/server/sniForwardGroup.test.ts:38:3)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: SNI group batch deletion completes, preserves unselected routes and removes the final listener
+ok 12 - SNI group batch deletion completes, preserves unselected routes and removes the final listener
+  ---
+  duration_ms: 4412.94975
+  type: 'test'
+  ...
+# Subtest: SNI member removal commits before waiting for billing and sends no refresh on rollback
+ok 13 - SNI member removal commits before waiting for billing and sends no refresh on rollback
+  ---
+  duration_ms: 812.641667
+  type: 'test'
+  ...
+# Subtest: SNI batch deletion settles selected usage once and retains low-balance access controls
+ok 14 - SNI batch deletion settles selected usage once and retains low-balance access controls
+  ---
+  duration_ms: 1851.770125
+  type: 'test'
+  ...
+# Subtest: SNI batch deletion reports unauthorized and missing rules while deleting permitted selections
+ok 15 - SNI batch deletion reports unauthorized and missing rules while deleting permitted selections
+  ---
+  duration_ms: 1118.040125
+  type: 'test'
+  ...
+# Subtest: host failover SNI lifecycle preserves readiness, atomic saves, imports and accounting
+ok 16 - host failover SNI lifecycle preserves readiness, atomic saves, imports and accounting
+  ---
+  duration_ms: 2509.008417
+  type: 'test'
+  ...
+# Subtest: SNI entrance selection checks all configurations and ignores destination results
+ok 17 - SNI entrance selection checks all configurations and ignores destination results
+  ---
+  duration_ms: 3918.711667
+  type: 'test'
+  ...
+# Subtest: SNI, China health and recovery windows advance independently through Agent reports
+ok 18 - SNI, China health and recovery windows advance independently through Agent reports
+  ---
+  duration_ms: 4364.457041
+  type: 'test'
+  ...
+# Subtest: SNI confirmation expiry, reconnect, process restart and unchanged reports use current evidence
+ok 19 - SNI confirmation expiry, reconnect, process restart and unchanged reports use current evidence
+  ---
+  duration_ms: 7370.954958
+  type: 'test'
+  ...
+# Subtest: SNI DDNS reconciles renamed domains, retries failures and rejects obsolete provider responses
+ok 20 - SNI DDNS reconciles renamed domains, retries failures and rejects obsolete provider responses
+  ---
+  duration_ms: 3475.498209
+  type: 'test'
+  ...
+# Subtest: recently recovered SNI backups wait with failback on or off and respond to setting changes
+ok 21 - recently recovered SNI backups wait with failback on or off and respond to setting changes
+  ---
+  duration_ms: 5611.521
+  type: 'test'
+  ...
+# Subtest: mixed groups retain ordinary probes, China health and allowed-rule exclusions
+ok 22 - mixed groups retain ordinary probes, China health and allowed-rule exclusions
+  ---
+  duration_ms: 4897.215583
+  type: 'test'
+  ...
+# Subtest: changing failure delays replaces pending deadlines and reevaluates automatically
+ok 23 - changing failure delays replaces pending deadlines and reevaluates automatically
+  ---
+  duration_ms: 2569.084667
+  type: 'test'
+  ...
+# Subtest: a qualified third entrance wins while the preferred backup is recovering
+ok 24 - a qualified third entrance wins while the preferred backup is recovering
+  ---
+  duration_ms: 2488.344208
+  type: 'test'
+  ...
+# Subtest: expired China probes block selection independently of fresh SNI confirmations
+ok 25 - expired China probes block selection independently of fresh SNI confirmations
+  ---
+  duration_ms: 4014.088625
+  type: 'test'
+  ...
+# Subtest: confirmation expiry discards unfinished recovery instead of combining healthy segments
+ok 26 - confirmation expiry discards unfinished recovery instead of combining healthy segments
+  ---
+  duration_ms: 5864.605667
+  type: 'test'
+  ...
+# Subtest: coalesced heartbeats invalidate runtime confirmation after an Agent restart
+ok 27 - coalesced heartbeats invalidate runtime confirmation after an Agent restart
+  ---
+  duration_ms: 1912.208459
+  type: 'test'
+  ...
+# Subtest: an old in-flight heartbeat cannot restore runtime confirmation after a new process arrives
+ok 28 - an old in-flight heartbeat cannot restore runtime confirmation after a new process arrives
+  ---
+  duration_ms: 1875.158542
+  type: 'test'
+  ...
+# Subtest: a briefly missing rule resets recovery even when runtime reports are coalesced
+ok 29 - a briefly missing rule resets recovery even when runtime reports are coalesced
+  ---
+  duration_ms: 2548.310708
+  type: 'test'
+  ...
+# Subtest: deleted domains still present in an old table block entrance readiness
+ok 30 - deleted domains still present in an old table block entrance readiness
+  ---
+  duration_ms: 2195.613
+  type: 'test'
+  ...
+# Subtest: clockless reports with a slow Agent clock preserve reconnect and late-report protections
+ok 31 - clockless reports with a slow Agent clock preserve reconnect and late-report protections
+  ---
+  duration_ms: 2607.979333
+  type: 'test'
+  ...
+# Subtest: clockless reports with a fast Agent clock preserve reconnect and late-report protections
+ok 32 - clockless reports with a fast Agent clock preserve reconnect and late-report protections
+  ---
+  duration_ms: 2589.483125
+  type: 'test'
+  ...
+# Subtest: unknown Agent clocks require a new session receipt, full runtime and current China evidence
+ok 33 - unknown Agent clocks require a new session receipt, full runtime and current China evidence
+  ---
+  duration_ms: 2861.825542
+  type: 'test'
+  ...
+# Subtest: an Agent clock moving backward still permits verified current recovery
+ok 34 - an Agent clock moving backward still permits verified current recovery
+  ---
+  duration_ms: 2592.757458
+  type: 'test'
+  ...
+# Subtest: failed splitter apply receipts switch automatically and require recovery observation
+ok 35 - failed splitter apply receipts switch automatically and require recovery observation
+  ---
+  duration_ms: 2298.247209
+  type: 'test'
+  ...
+# Subtest: automatic switch notifications and events follow provider success and manual sync semantics
+ok 36 - automatic switch notifications and events follow provider success and manual sync semantics
+  ---
+  duration_ms: 2945.788417
+  type: 'test'
+  ...
+# Subtest: an in-flight DDNS refresh requires the current entrance to finish recovery again
+ok 37 - an in-flight DDNS refresh requires the current entrance to finish recovery again
+  ---
+  duration_ms: 2218.622625
+  type: 'test'
+  ...
+# Subtest: disabling failback during a provider request preserves the healthy backup
+ok 38 - disabling failback during a provider request preserves the healthy backup
+  ---
+  duration_ms: 2446.327292
+  type: 'test'
+  ...
+# Subtest: missing ordinary reports have a fixed waiting deadline in mixed groups
+ok 39 - missing ordinary reports have a fixed waiting deadline in mixed groups
+  ---
+  duration_ms: 3929.418709
+  type: 'test'
+  ...
+# Subtest: missing China reports have a fixed waiting deadline despite continuous runtime reports
+ok 40 - missing China reports have a fixed waiting deadline despite continuous runtime reports
+  ---
+  duration_ms: 3788.577917
+  type: 'test'
+  ...
+# Subtest: a real panel process restart rebuilds missing history and waits before failback
+ok 41 - a real panel process restart rebuilds missing history and waits before failback
+  ---
+  duration_ms: 3516.233584
+  type: 'test'
+  ...
+# Subtest: a panel restart replaces a current entrance that stays online without reconfirming its runtime
+ok 42 - a panel restart replaces a current entrance that stays online without reconfirming its runtime
+  ---
+  duration_ms: 3491.560667
+  type: 'test'
+  ...
+# Subtest: forward-chain SNI rule creation is admin-only and prepares splitter metadata
+ok 43 - forward-chain SNI rule creation is admin-only and prepares splitter metadata
+  ---
+  duration_ms: 1178.848208
+  type: 'test'
+  ...
+# Subtest: SNI rule creation rejects unsupported group modes and old agents
+ok 44 - SNI rule creation rejects unsupported group modes and old agents
+  ---
+  duration_ms: 1370.176625
+  type: 'test'
+  ...
+# Subtest: SNI splitter port belongs to the chain exit host for host port checks
+ok 45 - SNI splitter port belongs to the chain exit host for host port checks
+  ---
+  duration_ms: 922.945625
+  type: 'test'
+  ...
+# Subtest: SNI splitter port is reallocated when the stored port is occupied before re-enable
+ok 46 - SNI splitter port is reallocated when the stored port is occupied before re-enable
+  ---
+  duration_ms: 964.445292
+  type: 'test'
+  ...
+# Subtest: forward-chain SNI rules share one entry port and reject duplicate or mixed ports
+ok 47 - forward-chain SNI rules share one entry port and reject duplicate or mixed ports
+  ---
+  duration_ms: 1406.054458
+  type: 'test'
+  ...
+# Subtest: checkSni enforces domain-only validation, exclusions, and administrator access
+ok 48 - checkSni enforces domain-only validation, exclusions, and administrator access
+  ---
+  duration_ms: 931.962834
+  type: 'test'
+  ...
+# Subtest: SNI rule queries expose entry and exit runtime status and require both ends
+ok 49 - SNI rule queries expose entry and exit runtime status and require both ends
+  ---
+  duration_ms: 826.114083
+  type: 'test'
+  ...
+# Subtest: SNI entry port overview reports routes, entry differences, and agent support
+ok 50 - SNI entry port overview reports routes, entry differences, and agent support
+  ---
+  duration_ms: 819.707667
+  type: 'test'
+  ...
+1..50
+# tests 50
+# suites 0
+# pass 49
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 88523.264125
