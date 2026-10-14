@@ -1,0 +1,666 @@
+build	Set up job	﻿2026-10-14T16:49:11.5943910Z Current runner version: '2.337.0'
+build	Set up job	2026-10-14T16:49:11.5963969Z ##[group]Runner Image Provisioner
+build	Set up job	2026-10-14T16:49:11.5964754Z Hosted Compute Agent
+build	Set up job	2026-10-14T16:49:11.5965281Z Version: 20261002.596
+build	Set up job	2026-10-14T16:49:11.5965875Z Commit: c3d12f3313a95f25162a1503be624f3b0617f8c0
+build	Set up job	2026-10-14T16:49:11.5966468Z Build Date: 2026-10-02T22:28:27Z
+build	Set up job	2026-10-14T16:49:11.5967076Z Worker ID: {82a049f9-99fd-48ab-b657-1dae6c69de45}
+build	Set up job	2026-10-14T16:49:11.5967674Z Region: centralus
+build	Set up job	2026-10-14T16:49:11.5968158Z Cloud: Azure
+build	Set up job	2026-10-14T16:49:11.5968651Z ##[endgroup]
+build	Set up job	2026-10-14T16:49:11.5969713Z ##[group]Operating System
+build	Set up job	2026-10-14T16:49:11.5970202Z Ubuntu
+build	Set up job	2026-10-14T16:49:11.5970690Z 24.04.5
+build	Set up job	2026-10-14T16:49:11.5971401Z LTS
+build	Set up job	2026-10-14T16:49:11.5972199Z ##[endgroup]
+build	Set up job	2026-10-14T16:49:11.5972677Z ##[group]Runner Image
+build	Set up job	2026-10-14T16:49:11.5973149Z Image: ubuntu-24.04
+build	Set up job	2026-10-14T16:49:11.5973670Z Version: 20261004.327.1
+build	Set up job	2026-10-14T16:49:11.5974552Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20261004.327/images/ubuntu/Ubuntu2404-Readme.md
+build	Set up job	2026-10-14T16:49:11.5975996Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20261004.327
+build	Set up job	2026-10-14T16:49:11.5976757Z ##[endgroup]
+build	Set up job	2026-10-14T16:49:11.5977804Z ##[group]GITHUB_TOKEN Permissions
+build	Set up job	2026-10-14T16:49:11.5979671Z Contents: read
+build	Set up job	2026-10-14T16:49:11.5980246Z Metadata: read
+build	Set up job	2026-10-14T16:49:11.5980719Z Pages: write
+build	Set up job	2026-10-14T16:49:11.5981551Z ##[endgroup]
+build	Set up job	2026-10-14T16:49:11.5983296Z Secret source: Actions
+build	Set up job	2026-10-14T16:49:11.5984098Z Cache mode: write
+build	Set up job	2026-10-14T16:49:11.5984662Z Prepare workflow directory
+build	Set up job	2026-10-14T16:49:11.6247891Z Prepare all required actions
+build	Set up job	2026-10-14T16:49:11.6291167Z Getting action download info
+build	Set up job	2026-10-14T16:49:11.9274072Z Download action repository 'actions/checkout@v7' (SHA:3d3c42e5aac5ba805825da76410c181273ba90b1)
+build	Set up job	2026-10-14T16:49:12.0318452Z Download action repository 'pnpm/action-setup@v6' (SHA:0977fd99725f1db4007ccb2928dbb4e90d06cc86)
+build	Set up job	2026-10-14T16:49:12.4105007Z Download action repository 'actions/setup-node@v6' (SHA:249970729cb0ef3589644e2896645e5dc5ba9c38)
+build	Set up job	2026-10-14T16:49:12.5710186Z Download action repository 'actions/configure-pages@v6' (SHA:45bfe0192ca1faeb007ade9deae92b16b8254a0d)
+build	Set up job	2026-10-14T16:49:13.0976372Z Download action repository 'actions/upload-pages-artifact@v5' (SHA:fc324d3547104276b827a68afc52ff2a11cc49c9)
+build	Set up job	2026-10-14T16:49:13.4037579Z Getting action download info
+build	Set up job	2026-10-14T16:49:13.5153876Z Download action repository 'actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f' (SHA:bbbca2ddaa5d8feaa63e36b76fdaad77386f024f)
+build	Set up job	2026-10-14T16:49:13.7037929Z Complete job name: build
+build	Checkout	﻿2026-10-14T16:49:13.7671071Z ##[group]Run actions/checkout@v7
+build	Checkout	2026-10-14T16:49:13.7671820Z with:
+build	Checkout	2026-10-14T16:49:13.7672146Z   repository: owo10086/sni-panel
+build	Checkout	2026-10-14T16:49:13.7674566Z   token: ***
+build	Checkout	2026-10-14T16:49:13.7674989Z   ssh-strict: true
+build	Checkout	2026-10-14T16:49:13.7675297Z   ssh-user: git
+build	Checkout	2026-10-14T16:49:13.7675667Z   persist-credentials: true
+build	Checkout	2026-10-14T16:49:13.7676007Z   clean: true
+build	Checkout	2026-10-14T16:49:13.7676378Z   sparse-checkout-cone-mode: true
+build	Checkout	2026-10-14T16:49:13.7676772Z   fetch-depth: 1
+build	Checkout	2026-10-14T16:49:13.7677097Z   fetch-tags: false
+build	Checkout	2026-10-14T16:49:13.7677431Z   show-progress: true
+build	Checkout	2026-10-14T16:49:13.7677754Z   lfs: false
+build	Checkout	2026-10-14T16:49:13.7678094Z   submodules: false
+build	Checkout	2026-10-14T16:49:13.7678437Z   set-safe-directory: true
+build	Checkout	2026-10-14T16:49:13.7678782Z   allow-unsafe-pr-checkout: false
+build	Checkout	2026-10-14T16:49:13.7679307Z ##[endgroup]
+build	Checkout	2026-10-14T16:49:13.8580032Z Syncing repository: owo10086/sni-panel
+build	Checkout	2026-10-14T16:49:13.8589820Z ##[group]Getting Git version info
+build	Checkout	2026-10-14T16:49:13.8590479Z Working directory is '/home/runner/work/sni-panel/sni-panel'
+build	Checkout	2026-10-14T16:49:13.8591563Z [command]/usr/bin/git version
+build	Checkout	2026-10-14T16:49:13.8666979Z git version 2.55.0
+build	Checkout	2026-10-14T16:49:13.8683028Z ##[endgroup]
+build	Checkout	2026-10-14T16:49:13.8691663Z Temporarily overriding HOME='/home/runner/work/_temp/90332f1e-0ddb-4ddc-a0a0-5f7c42ed514e' before making global git config changes
+build	Checkout	2026-10-14T16:49:13.8692886Z Adding repository directory to the temporary git global config as a safe directory
+build	Checkout	2026-10-14T16:49:13.8697212Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/sni-panel/sni-panel
+build	Checkout	2026-10-14T16:49:13.8740612Z Deleting the contents of '/home/runner/work/sni-panel/sni-panel'
+build	Checkout	2026-10-14T16:49:13.8742910Z ##[group]Determining repository object format
+build	Checkout	2026-10-14T16:49:13.8744333Z ##[endgroup]
+build	Checkout	2026-10-14T16:49:13.8745334Z ##[group]Initializing the repository
+build	Checkout	2026-10-14T16:49:13.8748892Z [command]/usr/bin/git init /home/runner/work/sni-panel/sni-panel
+build	Checkout	2026-10-14T16:49:13.8858405Z hint: Using 'master' as the name for the initial branch. This default branch name
+build	Checkout	2026-10-14T16:49:13.8859465Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+build	Checkout	2026-10-14T16:49:13.8860463Z hint: to use in all of your new repositories, which will suppress this warning,
+build	Checkout	2026-10-14T16:49:13.8861286Z hint: call:
+build	Checkout	2026-10-14T16:49:13.8861756Z hint:
+build	Checkout	2026-10-14T16:49:13.8862232Z hint: 	git config --global init.defaultBranch <name>
+build	Checkout	2026-10-14T16:49:13.8862674Z hint:
+build	Checkout	2026-10-14T16:49:13.8863089Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+build	Checkout	2026-10-14T16:49:13.8863684Z hint: 'development'. The just-created branch can be renamed via this command:
+build	Checkout	2026-10-14T16:49:13.8864129Z hint:
+build	Checkout	2026-10-14T16:49:13.8864514Z hint: 	git branch -m <name>
+build	Checkout	2026-10-14T16:49:13.8864852Z hint:
+build	Checkout	2026-10-14T16:49:13.8865276Z hint: Disable this message with "git config set advice.defaultBranchName false"
+build	Checkout	2026-10-14T16:49:13.8869095Z Initialized empty Git repository in /home/runner/work/sni-panel/sni-panel/.git/
+build	Checkout	2026-10-14T16:49:13.8882940Z [command]/usr/bin/git remote add origin https://github.com/owo10086/sni-panel
+build	Checkout	2026-10-14T16:49:13.8922836Z ##[endgroup]
+build	Checkout	2026-10-14T16:49:13.8923390Z ##[group]Disabling automatic garbage collection
+build	Checkout	2026-10-14T16:49:13.8925789Z [command]/usr/bin/git config --local gc.auto 0
+build	Checkout	2026-10-14T16:49:13.8953958Z ##[endgroup]
+build	Checkout	2026-10-14T16:49:13.8954761Z ##[group]Setting up auth
+build	Checkout	2026-10-14T16:49:13.8955699Z Removing SSH command configuration
+build	Checkout	2026-10-14T16:49:13.8959967Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+build	Checkout	2026-10-14T16:49:13.8984432Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+build	Checkout	2026-10-14T16:49:13.9308173Z Removing HTTP extra header
+build	Checkout	2026-10-14T16:49:13.9312198Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+build	Checkout	2026-10-14T16:49:13.9336993Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+build	Checkout	2026-10-14T16:49:13.9491853Z Removing includeIf entries pointing to credentials config files
+build	Checkout	2026-10-14T16:49:13.9496119Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+build	Checkout	2026-10-14T16:49:13.9522740Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+build	Checkout	2026-10-14T16:49:13.9701925Z [command]/usr/bin/git config --file /home/runner/work/_temp/git-credentials-6da0d7cd-786b-4c7f-828e-9c204c05afc0.config http.https://github.com/.extraheader AUTHORIZATION: basic ***
+build	Checkout	2026-10-14T16:49:13.9728644Z [command]/usr/bin/git config --local includeIf.gitdir:/home/runner/work/sni-panel/sni-panel/.git.path /home/runner/work/_temp/git-credentials-6da0d7cd-786b-4c7f-828e-9c204c05afc0.config
+build	Checkout	2026-10-14T16:49:13.9752958Z [command]/usr/bin/git config --local includeIf.gitdir:/home/runner/work/sni-panel/sni-panel/.git/worktrees/*.path /home/runner/work/_temp/git-credentials-6da0d7cd-786b-4c7f-828e-9c204c05afc0.config
+build	Checkout	2026-10-14T16:49:13.9779572Z [command]/usr/bin/git config --local includeIf.gitdir:/github/workspace/.git.path /github/runner_temp/git-credentials-6da0d7cd-786b-4c7f-828e-9c204c05afc0.config
+build	Checkout	2026-10-14T16:49:13.9805011Z [command]/usr/bin/git config --local includeIf.gitdir:/github/workspace/.git/worktrees/*.path /github/runner_temp/git-credentials-6da0d7cd-786b-4c7f-828e-9c204c05afc0.config
+build	Checkout	2026-10-14T16:49:13.9855985Z ##[endgroup]
+build	Checkout	2026-10-14T16:49:13.9856860Z ##[group]Fetching the repository
+build	Checkout	2026-10-14T16:49:13.9861014Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +b8eb489f0461f7a24b133975db9fd7b7295a7a58:refs/remotes/origin/main
+build	Checkout	2026-10-14T16:49:15.5681837Z From https://github.com/owo10086/sni-panel
+build	Checkout	2026-10-14T16:49:15.5682740Z  * [new ref]         b8eb489f0461f7a24b133975db9fd7b7295a7a58 -> origin/main
+build	Checkout	2026-10-14T16:49:15.5691372Z [command]/usr/bin/git branch --list --remote origin/main
+build	Checkout	2026-10-14T16:49:15.5713906Z   origin/main
+build	Checkout	2026-10-14T16:49:15.5721554Z [command]/usr/bin/git rev-parse refs/remotes/origin/main
+build	Checkout	2026-10-14T16:49:15.5741209Z b8eb489f0461f7a24b133975db9fd7b7295a7a58
+build	Checkout	2026-10-14T16:49:15.5743546Z ##[endgroup]
+build	Checkout	2026-10-14T16:49:15.5744234Z ##[group]Determining the checkout info
+build	Checkout	2026-10-14T16:49:15.5745355Z ##[endgroup]
+build	Checkout	2026-10-14T16:49:15.5768683Z [command]/usr/bin/git sparse-checkout disable
+build	Checkout	2026-10-14T16:49:15.5795776Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+build	Checkout	2026-10-14T16:49:15.5820210Z ##[group]Checking out the ref
+build	Checkout	2026-10-14T16:49:15.5823408Z [command]/usr/bin/git checkout --progress --force -B main refs/remotes/origin/main
+build	Checkout	2026-10-14T16:49:15.7741021Z Switched to a new branch 'main'
+build	Checkout	2026-10-14T16:49:15.7745843Z branch 'main' set up to track 'origin/main'.
+build	Checkout	2026-10-14T16:49:15.7756289Z ##[endgroup]
+build	Checkout	2026-10-14T16:49:15.7871696Z [command]/usr/bin/git log -1 --format=%H
+build	Checkout	2026-10-14T16:49:15.7889332Z b8eb489f0461f7a24b133975db9fd7b7295a7a58
+build	Setup pnpm	﻿2026-10-14T16:49:15.8101603Z ##[group]Run pnpm/action-setup@v6
+build	Setup pnpm	2026-10-14T16:49:15.8101995Z with:
+build	Setup pnpm	2026-10-14T16:49:15.8102255Z   version: 10.28.1
+build	Setup pnpm	2026-10-14T16:49:15.8102632Z   dest: ~/setup-pnpm
+build	Setup pnpm	2026-10-14T16:49:15.8102920Z   run_install: null
+build	Setup pnpm	2026-10-14T16:49:15.8103226Z   cache: false
+build	Setup pnpm	2026-10-14T16:49:15.8103557Z   cache_dependency_path: pnpm-lock.yaml
+build	Setup pnpm	2026-10-14T16:49:15.8103969Z   package_json_file: package.json
+build	Setup pnpm	2026-10-14T16:49:15.8104353Z   standalone: false
+build	Setup pnpm	2026-10-14T16:49:15.8104669Z ##[endgroup]
+build	Setup pnpm	2026-10-14T16:49:15.9324122Z ##[group]Running self-installer...
+build	Setup pnpm	2026-10-14T16:49:19.3520124Z
+build	Setup pnpm	2026-10-14T16:49:19.3521199Z added 1 package, and audited 2 packages in 3s
+build	Setup pnpm	2026-10-14T16:49:19.3522002Z
+build	Setup pnpm	2026-10-14T16:49:19.3522992Z 1 package is looking for funding
+build	Setup pnpm	2026-10-14T16:49:19.3523489Z   run `npm fund` for details
+build	Setup pnpm	2026-10-14T16:49:19.3527696Z
+build	Setup pnpm	2026-10-14T16:49:19.3528498Z found 0 vulnerabilities
+build	Setup pnpm	2026-10-14T16:49:19.8342003Z Checking for updates...
+build	Setup pnpm	2026-10-14T16:49:19.9921776Z Switching pnpm from v11.19.0 to v10.28.1...
+build	Setup pnpm	2026-10-14T16:49:20.6979533Z .../v11/849-1a13b518458-f95617d40d9480fb | Progress: resolved 1, reused 0, downloaded 0, added 0
+build	Setup pnpm	2026-10-14T16:49:20.6996661Z .../v11/849-1a13b518458-f95617d40d9480fb |   +1 +
+build	Setup pnpm	2026-10-14T16:49:20.9033065Z .../v11/849-1a13b518458-f95617d40d9480fb | Progress: resolved 1, reused 0, downloaded 1, added 1, done
+build	Setup pnpm	2026-10-14T16:49:21.2526507Z [WARN] Detected a pnpm v10 installation layout at PNPM_HOME. The pnpm shims at PNPM_HOME have been refreshed so the new version is active, but pnpm v11 expects bins in PNPM_HOME/bin. Run "pnpm setup" to migrate your PATH to the v11 layout.
+build	Setup pnpm	2026-10-14T16:49:21.2552653Z Successfully updated pnpm to v10.28.1
+build	Setup pnpm	2026-10-14T16:49:21.2791181Z ##[endgroup]
+build	Setup pnpm	2026-10-14T16:49:21.2791858Z Installation Completed!
+build	Setup Node	﻿2026-10-14T16:49:21.2933201Z ##[group]Run actions/setup-node@v6
+build	Setup Node	2026-10-14T16:49:21.2933552Z with:
+build	Setup Node	2026-10-14T16:49:21.2933843Z   node-version: 22
+build	Setup Node	2026-10-14T16:49:21.2934103Z   cache: pnpm
+build	Setup Node	2026-10-14T16:49:21.2934344Z   check-latest: false
+build	Setup Node	2026-10-14T16:49:21.2936540Z   token: ***
+build	Setup Node	2026-10-14T16:49:21.2936829Z   package-manager-cache: true
+build	Setup Node	2026-10-14T16:49:21.2937142Z env:
+build	Setup Node	2026-10-14T16:49:21.2937433Z   PNPM_HOME: /home/runner/setup-pnpm/node_modules/.bin
+build	Setup Node	2026-10-14T16:49:21.2937758Z ##[endgroup]
+build	Setup Node	2026-10-14T16:49:21.4164568Z Found in cache @ /opt/hostedtoolcache/node/22.23.3/x64
+build	Setup Node	2026-10-14T16:49:21.4168088Z ##[group]Environment details
+build	Setup Node	2026-10-14T16:49:25.7263236Z node: v22.23.3
+build	Setup Node	2026-10-14T16:49:25.7263798Z npm: 10.9.9
+build	Setup Node	2026-10-14T16:49:25.7264070Z yarn: 1.22.22
+build	Setup Node	2026-10-14T16:49:25.7265192Z ##[endgroup]
+build	Setup Node	2026-10-14T16:49:25.7283718Z [command]/home/runner/setup-pnpm/node_modules/.bin/bin/pnpm store path --silent
+build	Setup Node	2026-10-14T16:49:26.1913206Z /home/runner/setup-pnpm/node_modules/.bin/store/v10
+build	Setup Node	2026-10-14T16:49:26.3623317Z Cache hit for: node-cache-Linux-x64-pnpm-c661ed6cda6694528c3d359dfaea4bd7a020f3bcdc6ead2c36c5e1f7d42c84d8
+build	Setup Node	2026-10-14T16:49:27.5026921Z Received 121634816 of 186306896 (65.3%), 116.0 MBs/sec
+build	Setup Node	2026-10-14T16:49:28.0402087Z Received 186306896 of 186306896 (100.0%), 115.6 MBs/sec
+build	Setup Node	2026-10-14T16:49:28.0432351Z Cache Size: ~178 MB (186306896 B)
+build	Setup Node	2026-10-14T16:49:28.0524127Z [command]/usr/bin/tar -xf /home/runner/work/_temp/36072355-5f87-40c2-ac98-791ecfbd55e4/cache.tzst -P -C /home/runner/work/sni-panel/sni-panel --use-compress-program unzstd
+build	Setup Node	2026-10-14T16:49:29.2074033Z Cache restored successfully
+build	Setup Node	2026-10-14T16:49:29.2144633Z Cache restored from key: node-cache-Linux-x64-pnpm-c661ed6cda6694528c3d359dfaea4bd7a020f3bcdc6ead2c36c5e1f7d42c84d8
+build	Install dependencies	﻿2026-10-14T16:49:29.2514165Z ##[group]Run pnpm install --frozen-lockfile
+build	Install dependencies	2026-10-14T16:49:29.2514748Z [36;1mpnpm install --frozen-lockfile[0m
+build	Install dependencies	2026-10-14T16:49:29.3137172Z shell: /usr/bin/bash -e {0}
+build	Install dependencies	2026-10-14T16:49:29.3137837Z env:
+build	Install dependencies	2026-10-14T16:49:29.3138208Z   PNPM_HOME: /home/runner/setup-pnpm/node_modules/.bin
+build	Install dependencies	2026-10-14T16:49:29.3138694Z ##[endgroup]
+build	Install dependencies	2026-10-14T16:49:29.6473795Z Lockfile is up to date, resolution step is skipped
+build	Install dependencies	2026-10-14T16:49:29.7340454Z Progress: resolved 1, reused 0, downloaded 0, added 0
+build	Install dependencies	2026-10-14T16:49:29.7974056Z Packages: +751
+build	Install dependencies	2026-10-14T16:49:29.7975290Z ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+build	Install dependencies	2026-10-14T16:49:30.7342257Z Progress: resolved 751, reused 751, downloaded 0, added 308
+build	Install dependencies	2026-10-14T16:49:31.2648664Z Progress: resolved 751, reused 751, downloaded 0, added 751, done
+build	Install dependencies	2026-10-14T16:49:32.2427854Z
+build	Install dependencies	2026-10-14T16:49:32.2428900Z dependencies:
+build	Install dependencies	2026-10-14T16:49:32.2429475Z + @cap.js/server 4.0.5
+build	Install dependencies	2026-10-14T16:49:32.2429858Z + @cap.js/widget 0.1.57
+build	Install dependencies	2026-10-14T16:49:32.2430402Z + @capacitor/android 8.3.4
+build	Install dependencies	2026-10-14T16:49:32.2430751Z + @capacitor/app 8.1.0
+build	Install dependencies	2026-10-14T16:49:32.2431248Z + @capacitor/browser 8.0.3
+build	Install dependencies	2026-10-14T16:49:32.2431560Z + @capacitor/core 8.3.4
+build	Install dependencies	2026-10-14T16:49:32.2431966Z + @capacitor/local-notifications 8.2.0
+build	Install dependencies	2026-10-14T16:49:32.2432364Z + @capacitor/preferences 8.0.1
+build	Install dependencies	2026-10-14T16:49:32.2432686Z + @deck.gl/layers 9.3.3
+build	Install dependencies	2026-10-14T16:49:32.2433053Z + @deck.gl/react 9.3.3
+build	Install dependencies	2026-10-14T16:49:32.2433343Z + @dnd-kit/core 6.3.1
+build	Install dependencies	2026-10-14T16:49:32.2433686Z + @dnd-kit/sortable 10.0.0
+build	Install dependencies	2026-10-14T16:49:32.2433987Z + @dnd-kit/utilities 3.2.2
+build	Install dependencies	2026-10-14T16:49:32.2434507Z + @formkit/auto-animate 0.9.0
+build	Install dependencies	2026-10-14T16:49:32.2434983Z + @radix-ui/react-avatar 1.1.11
+build	Install dependencies	2026-10-14T16:49:32.2435499Z + @radix-ui/react-dialog 1.1.15
+build	Install dependencies	2026-10-14T16:49:32.2435929Z + @radix-ui/react-dropdown-menu 2.1.16
+build	Install dependencies	2026-10-14T16:49:32.2436292Z + @radix-ui/react-label 2.1.8
+build	Install dependencies	2026-10-14T16:49:32.2436651Z + @radix-ui/react-progress 1.1.8
+build	Install dependencies	2026-10-14T16:49:32.2437109Z + @radix-ui/react-scroll-area 1.2.10
+build	Install dependencies	2026-10-14T16:49:32.2437609Z + @radix-ui/react-select 2.2.6
+build	Install dependencies	2026-10-14T16:49:32.2438127Z + @radix-ui/react-separator 1.1.8
+build	Install dependencies	2026-10-14T16:49:32.2438622Z + @radix-ui/react-slot 1.2.4
+build	Install dependencies	2026-10-14T16:49:32.2439001Z + @radix-ui/react-switch 1.2.6
+build	Install dependencies	2026-10-14T16:49:32.2439313Z + @radix-ui/react-tabs 1.1.13
+build	Install dependencies	2026-10-14T16:49:32.2439706Z + @radix-ui/react-tooltip 1.2.8
+build	Install dependencies	2026-10-14T16:49:32.2440204Z + @trpc/server 11.16.0
+build	Install dependencies	2026-10-14T16:49:32.2440511Z + @types/pg 8.20.0
+build	Install dependencies	2026-10-14T16:49:32.2440908Z + avataaars 2.0.0
+build	Install dependencies	2026-10-14T16:49:32.2441462Z + better-sqlite3 11.10.0
+build	Install dependencies	2026-10-14T16:49:32.2441800Z + cookie-parser 1.4.7
+build	Install dependencies	2026-10-14T16:49:32.2442122Z + countup.js 2.10.0
+build	Install dependencies	2026-10-14T16:49:32.2442439Z + dotenv 16.6.1
+build	Install dependencies	2026-10-14T16:49:32.2442776Z + drizzle-orm 0.36.4
+build	Install dependencies	2026-10-14T16:49:32.2443262Z + express 4.22.1
+build	Install dependencies	2026-10-14T16:49:32.2443631Z + jsonwebtoken 9.0.3
+build	Install dependencies	2026-10-14T16:49:32.2443916Z + maplibre-gl 5.24.0
+build	Install dependencies	2026-10-14T16:49:32.2444179Z + motion 12.40.0
+build	Install dependencies	2026-10-14T16:49:32.2444527Z + mysql2 3.22.3
+build	Install dependencies	2026-10-14T16:49:32.2444804Z + nanoid 5.1.9
+build	Install dependencies	2026-10-14T16:49:32.2445125Z + nodemailer 6.10.1
+build	Install dependencies	2026-10-14T16:49:32.2445419Z + pg 8.21.0
+build	Install dependencies	2026-10-14T16:49:32.2445707Z + qrcode 1.5.4
+build	Install dependencies	2026-10-14T16:49:32.2445991Z + react-globe.gl 2.38.0
+build	Install dependencies	2026-10-14T16:49:32.2446290Z + react-map-gl 8.1.1
+build	Install dependencies	2026-10-14T16:49:32.2446669Z + recharts 2.15.4
+build	Install dependencies	2026-10-14T16:49:32.2446948Z + superjson 2.2.6
+build	Install dependencies	2026-10-14T16:49:32.2447244Z + svg-captcha 1.4.0
+build	Install dependencies	2026-10-14T16:49:32.2447552Z + zod 3.25.76
+build	Install dependencies	2026-10-14T16:49:32.2447681Z
+build	Install dependencies	2026-10-14T16:49:32.2447815Z devDependencies:
+build	Install dependencies	2026-10-14T16:49:32.2448168Z + @capacitor/cli 8.3.4
+build	Install dependencies	2026-10-14T16:49:32.2448495Z + @tailwindcss/vite 4.2.4
+build	Install dependencies	2026-10-14T16:49:32.2448879Z + @tanstack/react-query 5.100.2
+build	Install dependencies	2026-10-14T16:49:32.2449181Z + @trpc/client 11.16.0
+build	Install dependencies	2026-10-14T16:49:32.2449542Z + @trpc/react-query 11.16.0
+build	Install dependencies	2026-10-14T16:49:32.2449888Z + @types/better-sqlite3 7.6.13
+build	Install dependencies	2026-10-14T16:49:32.2450203Z + @types/cookie-parser 1.4.10
+build	Install dependencies	2026-10-14T16:49:32.2450566Z + @types/express 5.0.6
+build	Install dependencies	2026-10-14T16:49:32.2451078Z + @types/jsonwebtoken 9.0.10
+build	Install dependencies	2026-10-14T16:49:32.2451873Z + @types/node 22.19.17
+build	Install dependencies	2026-10-14T16:49:32.2452299Z + @types/nodemailer 6.4.23
+build	Install dependencies	2026-10-14T16:49:32.2452728Z + @types/qrcode 1.5.6
+build	Install dependencies	2026-10-14T16:49:32.2453065Z + @types/react 19.2.14
+build	Install dependencies	2026-10-14T16:49:32.2453373Z + @types/react-dom 19.2.3
+build	Install dependencies	2026-10-14T16:49:32.2453832Z + @vitejs/plugin-react 4.7.0
+build	Install dependencies	2026-10-14T16:49:32.2454172Z + autoprefixer 10.5.0
+build	Install dependencies	2026-10-14T16:49:32.2454547Z + class-variance-authority 0.7.1
+build	Install dependencies	2026-10-14T16:49:32.2454865Z + clsx 2.1.1
+build	Install dependencies	2026-10-14T16:49:32.2455155Z + drizzle-kit 0.30.6
+build	Install dependencies	2026-10-14T16:49:32.2455972Z + esbuild 0.28.0
+build	Install dependencies	2026-10-14T16:49:32.2456261Z + lucide-react 0.469.0
+build	Install dependencies	2026-10-14T16:49:32.2456563Z + react 19.2.5
+build	Install dependencies	2026-10-14T16:49:32.2456850Z + react-dom 19.2.5
+build	Install dependencies	2026-10-14T16:49:32.2457160Z + sonner 1.7.4
+build	Install dependencies	2026-10-14T16:49:32.2457503Z + tailwind-merge 2.6.1
+build	Install dependencies	2026-10-14T16:49:32.2457786Z + tailwindcss 4.2.4
+build	Install dependencies	2026-10-14T16:49:32.2458113Z + tsx 4.21.0
+build	Install dependencies	2026-10-14T16:49:32.2458406Z + tw-animate-css 1.4.0
+build	Install dependencies	2026-10-14T16:49:32.2458673Z + typescript 5.9.3
+build	Install dependencies	2026-10-14T16:49:32.2459020Z + vite 6.4.2
+build	Install dependencies	2026-10-14T16:49:32.2459351Z + vitepress 1.6.4
+build	Install dependencies	2026-10-14T16:49:32.2459877Z + wouter 3.9.0
+build	Install dependencies	2026-10-14T16:49:32.2460117Z
+build	Install dependencies	2026-10-14T16:49:32.3706708Z Done in 3s using pnpm v10.28.1
+build	Setup Pages	﻿2026-10-14T16:49:32.3916781Z ##[group]Run actions/configure-pages@v6
+build	Setup Pages	2026-10-14T16:49:32.3917178Z with:
+build	Setup Pages	2026-10-14T16:49:32.3919739Z   token: ***
+build	Setup Pages	2026-10-14T16:49:32.3920040Z   enablement: false
+build	Setup Pages	2026-10-14T16:49:32.3920524Z env:
+build	Setup Pages	2026-10-14T16:49:32.3921208Z   PNPM_HOME: /home/runner/setup-pnpm/node_modules/.bin
+build	Setup Pages	2026-10-14T16:49:32.3921804Z ##[endgroup]
+build	Build VitePress docs	﻿2026-10-14T16:49:32.7262604Z ##[group]Run pnpm docs:build
+build	Build VitePress docs	2026-10-14T16:49:32.7262965Z [36;1mpnpm docs:build[0m
+build	Build VitePress docs	2026-10-14T16:49:32.7298905Z shell: /usr/bin/bash -e {0}
+build	Build VitePress docs	2026-10-14T16:49:32.7299370Z env:
+build	Build VitePress docs	2026-10-14T16:49:32.7299708Z   PNPM_HOME: /home/runner/setup-pnpm/node_modules/.bin
+build	Build VitePress docs	2026-10-14T16:49:32.7300111Z   GITHUB_PAGES: true
+build	Build VitePress docs	2026-10-14T16:49:32.7300477Z   VITEPRESS_BASE: /sni-panel/
+build	Build VitePress docs	2026-10-14T16:49:32.7300760Z ##[endgroup]
+build	Build VitePress docs	2026-10-14T16:49:32.9571615Z
+build	Build VitePress docs	2026-10-14T16:49:32.9572670Z > forwardx@3.3.5 docs:build /home/runner/work/sni-panel/sni-panel
+build	Build VitePress docs	2026-10-14T16:49:32.9573592Z > vitepress build docs
+build	Build VitePress docs	2026-10-14T16:49:32.9573898Z
+build	Build VitePress docs	2026-10-14T16:49:33.3202964Z
+build	Build VitePress docs	2026-10-14T16:49:33.3232661Z   [32m[1mvitepress[22m v1.6.4[39m
+build	Build VitePress docs	2026-10-14T16:49:33.3241619Z
+build	Build VitePress docs	2026-10-14T16:49:33.3245332Z - building client + server bundles...
+build	Build VitePress docs	2026-10-14T16:49:38.6177415Z [32m✓[0m building client + server bundles...
+build	Build VitePress docs	2026-10-14T16:49:38.6272861Z - rendering pages...
+build	Build VitePress docs	2026-10-14T16:49:39.0230658Z [32m✓[0m rendering pages...
+build	Build VitePress docs	2026-10-14T16:49:39.0263495Z build complete in 5.75s.
+build	Validate Pages artifact	﻿2026-10-14T16:49:39.0741485Z ##[group]Run set -euo pipefail
+build	Validate Pages artifact	2026-10-14T16:49:39.0741986Z [36;1mset -euo pipefail[0m
+build	Validate Pages artifact	2026-10-14T16:49:39.0742356Z [36;1martifact_dir="docs/.vitepress/dist"[0m
+build	Validate Pages artifact	2026-10-14T16:49:39.0742881Z [36;1mif [ ! -d "$artifact_dir" ]; then[0m
+build	Validate Pages artifact	2026-10-14T16:49:39.0743367Z [36;1m  echo "::error::Pages artifact directory does not exist: $artifact_dir"[0m
+build	Validate Pages artifact	2026-10-14T16:49:39.0743813Z [36;1m  exit 1[0m
+build	Validate Pages artifact	2026-10-14T16:49:39.0744118Z [36;1mfi[0m
+build	Validate Pages artifact	2026-10-14T16:49:39.0744430Z [36;1mif [ ! -f "$artifact_dir/index.html" ]; then[0m
+build	Validate Pages artifact	2026-10-14T16:49:39.0744976Z [36;1m  echo "::error::Pages artifact is missing index.html: $artifact_dir/index.html"[0m
+build	Validate Pages artifact	2026-10-14T16:49:39.0745412Z [36;1m  exit 1[0m
+build	Validate Pages artifact	2026-10-14T16:49:39.0745701Z [36;1mfi[0m
+build	Validate Pages artifact	2026-10-14T16:49:39.0746112Z [36;1mfile_count="$(find "$artifact_dir" -type f | wc -l | tr -d '[:space:]')"[0m
+build	Validate Pages artifact	2026-10-14T16:49:39.0746633Z [36;1mtotal_bytes="$(du -sb "$artifact_dir" | awk '{print $1}')"[0m
+build	Validate Pages artifact	2026-10-14T16:49:39.0747217Z [36;1mecho "Pages artifact directory: $artifact_dir"[0m
+build	Validate Pages artifact	2026-10-14T16:49:39.0747733Z [36;1mecho "Pages artifact files: $file_count"[0m
+build	Validate Pages artifact	2026-10-14T16:49:39.0748222Z [36;1mecho "Pages artifact bytes: $total_bytes"[0m
+build	Validate Pages artifact	2026-10-14T16:49:39.0748650Z [36;1mif [ "$file_count" -le 0 ]; then[0m
+build	Validate Pages artifact	2026-10-14T16:49:39.0749096Z [36;1m  echo "::error::Pages artifact is empty: $artifact_dir"[0m
+build	Validate Pages artifact	2026-10-14T16:49:39.0749510Z [36;1m  exit 1[0m
+build	Validate Pages artifact	2026-10-14T16:49:39.0749777Z [36;1mfi[0m
+build	Validate Pages artifact	2026-10-14T16:49:39.0788202Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+build	Validate Pages artifact	2026-10-14T16:49:39.0788620Z env:
+build	Validate Pages artifact	2026-10-14T16:49:39.0788958Z   PNPM_HOME: /home/runner/setup-pnpm/node_modules/.bin
+build	Validate Pages artifact	2026-10-14T16:49:39.0789376Z   GITHUB_PAGES: true
+build	Validate Pages artifact	2026-10-14T16:49:39.0789643Z ##[endgroup]
+build	Validate Pages artifact	2026-10-14T16:49:39.0892223Z Pages artifact directory: docs/.vitepress/dist
+build	Validate Pages artifact	2026-10-14T16:49:39.0892768Z Pages artifact files: 166
+build	Validate Pages artifact	2026-10-14T16:49:39.0893526Z Pages artifact bytes: 4310563
+build	Upload Pages artifact	﻿2026-10-14T16:49:39.0977788Z ##[group]Run actions/upload-pages-artifact@v5
+build	Upload Pages artifact	2026-10-14T16:49:39.0978330Z with:
+build	Upload Pages artifact	2026-10-14T16:49:39.0978753Z   path: docs/.vitepress/dist
+build	Upload Pages artifact	2026-10-14T16:49:39.0979288Z   name: github-pages
+build	Upload Pages artifact	2026-10-14T16:49:39.0979705Z   retention-days: 1
+build	Upload Pages artifact	2026-10-14T16:49:39.0980186Z   include-hidden-files: false
+build	Upload Pages artifact	2026-10-14T16:49:39.0980622Z env:
+build	Upload Pages artifact	2026-10-14T16:49:39.0981280Z   PNPM_HOME: /home/runner/setup-pnpm/node_modules/.bin
+build	Upload Pages artifact	2026-10-14T16:49:39.0981919Z   GITHUB_PAGES: true
+build	Upload Pages artifact	2026-10-14T16:49:39.0982322Z ##[endgroup]
+build	Upload Pages artifact	2026-10-14T16:49:39.1060646Z ##[start-action display=Archive artifact;id=__actions_upload-pages-artifact.__run]
+build	Upload Pages artifact	2026-10-14T16:49:39.1101425Z ##[group]Run echo ::group::Archive artifact
+build	Upload Pages artifact	2026-10-14T16:49:39.1101869Z [36;1mecho ::group::Archive artifact[0m
+build	Upload Pages artifact	2026-10-14T16:49:39.1102205Z [36;1mtar \[0m
+build	Upload Pages artifact	2026-10-14T16:49:39.1102532Z [36;1m  --dereference --hard-dereference \[0m
+build	Upload Pages artifact	2026-10-14T16:49:39.1102899Z [36;1m  --directory "$INPUT_PATH" \[0m
+build	Upload Pages artifact	2026-10-14T16:49:39.1103276Z [36;1m  -cvf "$RUNNER_TEMP/artifact.tar" \[0m
+build	Upload Pages artifact	2026-10-14T16:49:39.1103714Z [36;1m  --exclude=.git \[0m
+build	Upload Pages artifact	2026-10-14T16:49:39.1104064Z [36;1m  --exclude=.github \[0m
+build	Upload Pages artifact	2026-10-14T16:49:39.1104374Z [36;1m  --exclude=.[^/]* \[0m
+build	Upload Pages artifact	2026-10-14T16:49:39.1104715Z [36;1m  .[0m
+build	Upload Pages artifact	2026-10-14T16:49:39.1104989Z [36;1mecho ::endgroup::[0m
+build	Upload Pages artifact	2026-10-14T16:49:39.1116992Z shell: /usr/bin/sh -e {0}
+build	Upload Pages artifact	2026-10-14T16:49:39.1117309Z env:
+build	Upload Pages artifact	2026-10-14T16:49:39.1117680Z   PNPM_HOME: /home/runner/setup-pnpm/node_modules/.bin
+build	Upload Pages artifact	2026-10-14T16:49:39.1118047Z   GITHUB_PAGES: true
+build	Upload Pages artifact	2026-10-14T16:49:39.1118364Z   INPUT_PATH: docs/.vitepress/dist
+build	Upload Pages artifact	2026-10-14T16:49:39.1118700Z ##[endgroup]
+build	Upload Pages artifact	2026-10-14T16:49:39.1146141Z ##[group]Archive artifact
+build	Upload Pages artifact	2026-10-14T16:49:39.1158956Z ./
+build	Upload Pages artifact	2026-10-14T16:49:39.1159550Z ./adr/
+build	Upload Pages artifact	2026-10-14T16:49:39.1160272Z ./adr/0003-bounded-derived-data-declares-exact-coverage.html
+build	Upload Pages artifact	2026-10-14T16:49:39.1161190Z ./adr/0002-sni-rules-share-one-entry-port.html
+build	Upload Pages artifact	2026-10-14T16:49:39.1162111Z ./adr/0001-sni-splitting-runs-as-a-standalone-fxp-role-at-the-exit.html
+build	Upload Pages artifact	2026-10-14T16:49:39.1163045Z ./adr/0004-no-host-occupancy-check-during-rule-creation.html
+build	Upload Pages artifact	2026-10-14T16:49:39.1163679Z ./hashmap.json
+build	Upload Pages artifact	2026-10-14T16:49:39.1164077Z ./logo-options/
+build	Upload Pages artifact	2026-10-14T16:49:39.1164741Z ./logo-options/README.html
+build	Upload Pages artifact	2026-10-14T16:49:39.1165179Z ./assets/
+build	Upload Pages artifact	2026-10-14T16:49:39.1165644Z ./assets/guide_deploy-local.md.D-8h7j0b.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1166367Z ./assets/guide_env-vars.md.CvzeeZCf.lean.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1166898Z ./assets/index.md.CwBTTx6A.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1167498Z ./assets/guide_deploy-panel.md.qit9naiV.lean.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1168136Z ./assets/guide_preparation.md.05Brep1Y.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1168730Z ./assets/guide_paths-logs.md.Bq6R_S6g.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1169354Z ./assets/inter-italic-cyrillic.By2_1cv3.woff2
+build	Upload Pages artifact	2026-10-14T16:49:39.1170047Z ./assets/guide_migration.md.02mK2OaP.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1170709Z ./assets/guide_sni-routing.md.Djl5hsUS.lean.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1171572Z ./assets/guide_plugins.md.CZfTmX6m.lean.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1172462Z ./assets/adr_0004-no-host-occupancy-check-during-rule-creation.md.3nvlTzR6.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1173288Z ./assets/logo-options_README.md.CDUahXhT.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1173862Z ./assets/guide_port-chains.md.CO9v0iu3.lean.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1174559Z ./assets/guide_paths-logs.md.Bq6R_S6g.lean.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1175265Z ./assets/adr_0002-sni-rules-share-one-entry-port.md.Dfivvr3l.lean.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1176045Z ./assets/guide_ddns.md.DCAhBsj2.lean.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1176709Z ./assets/guide_notifications.md.rHo5FeE6.lean.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1177347Z ./assets/guide_rules.md.SxklHR0X.lean.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1177894Z ./assets/guide_rules.md.SxklHR0X.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1178504Z ./assets/guide_development.md.BGd-vd3T.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1179146Z ./assets/guide_upgrade-backup.md.B74-BDj4.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1179771Z ./assets/guide_upgrade-backup.md.B74-BDj4.lean.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1180518Z ./assets/agents_triage-labels.md.BzMg3ML2.lean.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1181453Z ./assets/guide_google-login.md.CFg_JgjA.lean.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1182258Z ./assets/guide_database.md.BnUon7t2.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1182925Z ./assets/inter-italic-latin.C2AdPX0b.woff2
+build	Upload Pages artifact	2026-10-14T16:49:39.1183505Z ./assets/guide_tunnels.md.9DLnn_OC.lean.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1184290Z ./assets/adr_0002-sni-rules-share-one-entry-port.md.Dfivvr3l.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1185056Z ./assets/logo-options_README.md.CDUahXhT.lean.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1185747Z ./assets/guide_agent.md.CyCxAUEV.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1186327Z ./assets/inter-italic-vietnamese.BSbpV94h.woff2
+build	Upload Pages artifact	2026-10-14T16:49:39.1187007Z ./assets/rules-create.BJxBk4TL.png
+build	Upload Pages artifact	2026-10-14T16:49:39.1187570Z ./assets/guide_uninstall.md.BUnh21Lm.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1188180Z ./assets/inter-italic-cyrillic-ext.r48I6akx.woff2
+build	Upload Pages artifact	2026-10-14T16:49:39.1189132Z ./assets/adr_0003-bounded-derived-data-declares-exact-coverage.md.u2r8zcmV.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1189900Z ./assets/setup-public-address.1qDqdB5a.png
+build	Upload Pages artifact	2026-10-14T16:49:39.1190497Z ./assets/guide_hosts.md.CKbgLNaV.lean.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1191198Z ./assets/agents_domain.md.DD0Ru1Oa.lean.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1191892Z ./assets/guide_ai-assistant.md.CKo4F2TL.lean.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1192805Z ./assets/adr_0001-sni-splitting-runs-as-a-standalone-fxp-role-at-the-exit.md.CnzvmRyx.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1193679Z ./assets/inter-roman-vietnamese.BjW4sHH5.woff2
+build	Upload Pages artifact	2026-10-14T16:49:39.1194388Z ./assets/inter-roman-greek.BBVDIX6e.woff2
+build	Upload Pages artifact	2026-10-14T16:49:39.1195003Z ./assets/guide_traffic-latency.md.fP5UE3W3.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1195718Z ./assets/guide_users-billing.md.Cwbt2Vcm.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1196314Z ./assets/inter-italic-greek.DJ8dCoTZ.woff2
+build	Upload Pages artifact	2026-10-14T16:49:39.1196905Z ./assets/guide_sni-routing.en.md.BHuwu4V4.lean.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1197614Z ./assets/guide_plugins.md.CZfTmX6m.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1198194Z ./assets/guide_deploy-panel.md.qit9naiV.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1198842Z ./assets/guide_sni-routing.en.md.BHuwu4V4.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1199421Z ./assets/style.Dwqe0k53.css
+build	Upload Pages artifact	2026-10-14T16:49:39.1200031Z ./assets/guide_notifications.md.rHo5FeE6.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1200657Z ./assets/guide_reverse-proxy.md.DBDyPppZ.lean.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1201493Z ./assets/agents_domain.md.DD0Ru1Oa.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1202077Z ./assets/inter-roman-latin.Di8DUHzh.woff2
+build	Upload Pages artifact	2026-10-14T16:49:39.1202824Z ./assets/guide_port-chains.md.CO9v0iu3.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1203439Z ./assets/hosts-overview.Bq5UPipa.png
+build	Upload Pages artifact	2026-10-14T16:49:39.1204024Z ./assets/guide_first-setup.md.-CoXbaIO.lean.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1204708Z ./assets/inter-roman-latin-ext.4ZJIpNVo.woff2
+build	Upload Pages artifact	2026-10-14T16:49:39.1205352Z ./assets/guide_first-setup.md.-CoXbaIO.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1205876Z ./assets/guide_groups.md.CJ5BnfPS.lean.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1206604Z ./assets/agent-token-management.BxwAdErc.png
+build	Upload Pages artifact	2026-10-14T16:49:39.1207208Z ./assets/PAYMENT_CN.md.DL631uwU.lean.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1207861Z ./assets/guide_preparation.md.05Brep1Y.lean.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1208464Z ./assets/index.md.CwBTTx6A.lean.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1209018Z ./assets/guide_env-vars.md.CvzeeZCf.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1209594Z ./assets/guide_ai-assistant.md.CKo4F2TL.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1210261Z ./assets/guide_account-recovery.md.Do5g39NP.lean.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1211032Z ./assets/chunks/
+build	Upload Pages artifact	2026-10-14T16:49:39.1211581Z ./assets/chunks/@localSearchIndexroot.-rl-8FYU.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1212169Z ./assets/chunks/theme.BLu9HdGj.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1212695Z ./assets/chunks/VPLocalSearchBox.CJENJqvS.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1213222Z ./assets/chunks/framework.DmawGQaA.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1213808Z ./assets/inter-roman-cyrillic.C5lxZ8CY.woff2
+build	Upload Pages artifact	2026-10-14T16:49:39.1214344Z ./assets/guide_quick-start.md.Ckae7LiN.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1215002Z ./assets/guide_cloudflare-cdn.md.L2X0yzqe.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1215753Z ./assets/tunnels-overview.C6nQ3wB0.png
+build	Upload Pages artifact	2026-10-14T16:49:39.1216263Z ./assets/guide_troubleshooting.md.DnAVmob9.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1216753Z ./assets/agents_issue-tracker.md.BOfdmkDI.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1217154Z ./assets/agents_triage-labels.md.BzMg3ML2.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1217543Z ./assets/guide_users-billing.md.Cwbt2Vcm.lean.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1218146Z ./assets/guide_traffic-latency.md.fP5UE3W3.lean.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1218543Z ./assets/guide_proxy-protocol.md.CJIYzJ6X.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1219137Z ./assets/adr_0001-sni-splitting-runs-as-a-standalone-fxp-role-at-the-exit.md.CnzvmRyx.lean.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1219703Z ./assets/users-traffic.B_JaAKnh.png
+build	Upload Pages artifact	2026-10-14T16:49:39.1220071Z ./assets/guide_uninstall.md.BUnh21Lm.lean.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1220477Z ./assets/troubleshooting-logs.D7-6KJql.png
+build	Upload Pages artifact	2026-10-14T16:49:39.1221117Z ./assets/guide_deploy-local.md.D-8h7j0b.lean.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1221562Z ./assets/agents_issue-tracker.md.BOfdmkDI.lean.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1221940Z ./assets/ARCHITECTURE_CN.md.3BJGO1rX.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1222360Z ./assets/guide_groups.md.CJ5BnfPS.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1222723Z ./assets/guide_index.md.Dkp22bnP.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1223073Z ./assets/guide_sni-routing.md.Djl5hsUS.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1223511Z ./assets/inter-italic-latin-ext.CN1xVJS-.woff2
+build	Upload Pages artifact	2026-10-14T16:49:39.1223895Z ./assets/guide_ddns.md.DCAhBsj2.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1224250Z ./assets/guide_index.md.Dkp22bnP.lean.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1224630Z ./assets/guide_quick-start.md.Ckae7LiN.lean.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1225031Z ./assets/guide_migration.md.02mK2OaP.lean.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1225433Z ./assets/guide_database.md.BnUon7t2.lean.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1225832Z ./assets/inter-italic-greek-ext.1u6EdAuj.woff2
+build	Upload Pages artifact	2026-10-14T16:49:39.1226265Z ./assets/guide_deploy-docker.md.-dCX6_7i.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1226633Z ./assets/guide_agent.md.CyCxAUEV.lean.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1226981Z ./assets/guide_reverse-proxy.md.DBDyPppZ.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1227424Z ./assets/guide_account-recovery.md.Do5g39NP.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1227845Z ./assets/inter-roman-greek-ext.CqjqNYQ-.woff2
+build	Upload Pages artifact	2026-10-14T16:49:39.1228386Z ./assets/adr_0003-bounded-derived-data-declares-exact-coverage.md.u2r8zcmV.lean.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1228921Z ./assets/guide_development.md.BGd-vd3T.lean.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1229333Z ./assets/guide_troubleshooting.md.DnAVmob9.lean.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1229728Z ./assets/app.CF-039wb.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1230138Z ./assets/inter-roman-cyrillic-ext.BBPuwvHQ.woff2
+build	Upload Pages artifact	2026-10-14T16:49:39.1230652Z ./assets/guide_tunnels.md.9DLnn_OC.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1231278Z ./assets/adr_0004-no-host-occupancy-check-during-rule-creation.md.3nvlTzR6.lean.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1231812Z ./assets/guide_hosts.md.CKbgLNaV.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1232188Z ./assets/guide_google-login.md.CFg_JgjA.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1232551Z ./assets/guide_deploy-docker.md.-dCX6_7i.lean.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1233020Z ./assets/guide_proxy-protocol.md.CJIYzJ6X.lean.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1233394Z ./assets/PAYMENT_CN.md.DL631uwU.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1233774Z ./assets/ARCHITECTURE_CN.md.3BJGO1rX.lean.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1234235Z ./assets/guide_cloudflare-cdn.md.L2X0yzqe.lean.js
+build	Upload Pages artifact	2026-10-14T16:49:39.1234583Z ./ARCHITECTURE_CN.html
+build	Upload Pages artifact	2026-10-14T16:49:39.1234866Z ./index.html
+build	Upload Pages artifact	2026-10-14T16:49:39.1235134Z ./agents/
+build	Upload Pages artifact	2026-10-14T16:49:39.1235467Z ./agents/issue-tracker.html
+build	Upload Pages artifact	2026-10-14T16:49:39.1235770Z ./agents/triage-labels.html
+build	Upload Pages artifact	2026-10-14T16:49:39.1236121Z ./agents/domain.html
+build	Upload Pages artifact	2026-10-14T16:49:39.1236390Z ./vp-icons.css
+build	Upload Pages artifact	2026-10-14T16:49:39.1236633Z ./img/
+build	Upload Pages artifact	2026-10-14T16:49:39.1236964Z ./404.html
+build	Upload Pages artifact	2026-10-14T16:49:39.1237206Z ./guide/
+build	Upload Pages artifact	2026-10-14T16:49:39.1237581Z ./guide/rules.html
+build	Upload Pages artifact	2026-10-14T16:49:39.1237864Z ./guide/upgrade-backup.html
+build	Upload Pages artifact	2026-10-14T16:49:39.1238237Z ./guide/reverse-proxy.html
+build	Upload Pages artifact	2026-10-14T16:49:39.1238555Z ./guide/deploy-panel.html
+build	Upload Pages artifact	2026-10-14T16:49:39.1238859Z ./guide/cloudflare-cdn.html
+build	Upload Pages artifact	2026-10-14T16:49:39.1239212Z ./guide/traffic-latency.html
+build	Upload Pages artifact	2026-10-14T16:49:39.1239508Z ./guide/plugins.html
+build	Upload Pages artifact	2026-10-14T16:49:39.1239825Z ./guide/preparation.html
+build	Upload Pages artifact	2026-10-14T16:49:39.1240158Z ./guide/agent.html
+build	Upload Pages artifact	2026-10-14T16:49:39.1240427Z ./guide/paths-logs.html
+build	Upload Pages artifact	2026-10-14T16:49:39.1240747Z ./guide/env-vars.html
+build	Upload Pages artifact	2026-10-14T16:49:39.1241188Z ./guide/tunnels.html
+build	Upload Pages artifact	2026-10-14T16:49:39.1241529Z ./guide/notifications.html
+build	Upload Pages artifact	2026-10-14T16:49:39.1241829Z ./guide/google-login.html
+build	Upload Pages artifact	2026-10-14T16:49:39.1242176Z ./guide/quick-start.html
+build	Upload Pages artifact	2026-10-14T16:49:39.1242532Z ./guide/uninstall.html
+build	Upload Pages artifact	2026-10-14T16:49:39.1242846Z ./guide/port-chains.html
+build	Upload Pages artifact	2026-10-14T16:49:39.1243168Z ./guide/first-setup.html
+build	Upload Pages artifact	2026-10-14T16:49:39.1243493Z ./guide/deploy-local.html
+build	Upload Pages artifact	2026-10-14T16:49:39.1243795Z ./guide/database.html
+build	Upload Pages artifact	2026-10-14T16:49:39.1244079Z ./guide/index.html
+build	Upload Pages artifact	2026-10-14T16:49:39.1244401Z ./guide/account-recovery.html
+build	Upload Pages artifact	2026-10-14T16:49:39.1244730Z ./guide/ddns.html
+build	Upload Pages artifact	2026-10-14T16:49:39.1245009Z ./guide/sni-routing.en.html
+build	Upload Pages artifact	2026-10-14T16:49:39.1245352Z ./guide/development.html
+build	Upload Pages artifact	2026-10-14T16:49:39.1245664Z ./guide/proxy-protocol.html
+build	Upload Pages artifact	2026-10-14T16:49:39.1245946Z ./guide/sni-routing.html
+build	Upload Pages artifact	2026-10-14T16:49:39.1246277Z ./guide/troubleshooting.html
+build	Upload Pages artifact	2026-10-14T16:49:39.1246608Z ./guide/ai-assistant.html
+build	Upload Pages artifact	2026-10-14T16:49:39.1246929Z ./guide/migration.html
+build	Upload Pages artifact	2026-10-14T16:49:39.1247226Z ./guide/groups.html
+build	Upload Pages artifact	2026-10-14T16:49:39.1247558Z ./guide/users-billing.html
+build	Upload Pages artifact	2026-10-14T16:49:39.1247865Z ./guide/deploy-docker.html
+build	Upload Pages artifact	2026-10-14T16:49:39.1248154Z ./guide/hosts.html
+build	Upload Pages artifact	2026-10-14T16:49:39.1248479Z ./PAYMENT_CN.html
+build	Upload Pages artifact	2026-10-14T16:49:39.1248964Z ##[endgroup]
+build	Upload Pages artifact	2026-10-14T16:49:39.1257972Z ##[end-action id=__actions_upload-pages-artifact.__run;outcome=success;conclusion=success;duration_ms=19]
+build	Upload Pages artifact	2026-10-14T16:49:39.1261424Z ##[start-action display=Archive artifact;id=__actions_upload-pages-artifact.__run_2]
+build	Upload Pages artifact	2026-10-14T16:49:39.1266836Z ##[end-action id=__actions_upload-pages-artifact.__run_2;outcome=skipped;conclusion=skipped;duration_ms=0]
+build	Upload Pages artifact	2026-10-14T16:49:39.1269445Z ##[start-action display=Archive artifact;id=__actions_upload-pages-artifact.__run_3]
+build	Upload Pages artifact	2026-10-14T16:49:39.1273664Z ##[end-action id=__actions_upload-pages-artifact.__run_3;outcome=skipped;conclusion=skipped;duration_ms=0]
+build	Upload Pages artifact	2026-10-14T16:49:39.1275707Z ##[start-action display=Upload artifact;id=__actions_upload-pages-artifact.upload-artifact]
+build	Upload Pages artifact	2026-10-14T16:49:39.1309428Z ##[group]Run actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
+build	Upload Pages artifact	2026-10-14T16:49:39.1309860Z with:
+build	Upload Pages artifact	2026-10-14T16:49:39.1310109Z   name: github-pages
+build	Upload Pages artifact	2026-10-14T16:49:39.1310448Z   path: /home/runner/work/_temp/artifact.tar
+build	Upload Pages artifact	2026-10-14T16:49:39.1310980Z   retention-days: 1
+build	Upload Pages artifact	2026-10-14T16:49:39.1311414Z   if-no-files-found: error
+build	Upload Pages artifact	2026-10-14T16:49:39.1311721Z   compression-level: 6
+build	Upload Pages artifact	2026-10-14T16:49:39.1311980Z   overwrite: false
+build	Upload Pages artifact	2026-10-14T16:49:39.1312345Z   include-hidden-files: false
+build	Upload Pages artifact	2026-10-14T16:49:39.1312634Z   archive: true
+build	Upload Pages artifact	2026-10-14T16:49:39.1312914Z env:
+build	Upload Pages artifact	2026-10-14T16:49:39.1313199Z   PNPM_HOME: /home/runner/setup-pnpm/node_modules/.bin
+build	Upload Pages artifact	2026-10-14T16:49:39.1313592Z   GITHUB_PAGES: true
+build	Upload Pages artifact	2026-10-14T16:49:39.1313886Z ##[endgroup]
+build	Upload Pages artifact	2026-10-14T16:49:39.2560669Z With the provided path, there will be 1 file uploaded
+build	Upload Pages artifact	2026-10-14T16:49:39.2579739Z Artifact name is valid!
+build	Upload Pages artifact	2026-10-14T16:49:39.2584264Z Root directory input is valid!
+build	Upload Pages artifact	2026-10-14T16:49:39.5719524Z Uploading artifact: github-pages.zip
+build	Upload Pages artifact	2026-10-14T16:49:39.5756541Z Beginning upload of artifact content to blob storage
+build	Upload Pages artifact	2026-10-14T16:49:40.0547359Z Uploaded bytes 1680798
+build	Upload Pages artifact	2026-10-14T16:49:40.0951001Z Finished uploading artifact content to blob storage!
+build	Upload Pages artifact	2026-10-14T16:49:40.0951985Z SHA256 digest of uploaded artifact is e541a96aed261de192a10a06b7e4b4f305602126306c7d2b8411a14cfb05cddf
+build	Upload Pages artifact	2026-10-14T16:49:40.0953004Z Finalizing artifact upload
+build	Upload Pages artifact	2026-10-14T16:49:40.5815556Z Artifact github-pages successfully finalized. Artifact ID 11913591959
+build	Upload Pages artifact	2026-10-14T16:49:40.5817019Z Artifact github-pages has been successfully uploaded! Final size is 1680798 bytes. Artifact ID is 11913591959
+build	Upload Pages artifact	2026-10-14T16:49:40.5819856Z Artifact download URL: https://github.com/owo10086/sni-panel/actions/runs/38601295307/artifacts/11913591959
+build	Upload Pages artifact	2026-10-14T16:49:40.5904837Z ##[end-action id=__actions_upload-pages-artifact.upload-artifact;outcome=success;conclusion=success;duration_ms=1462]
+build	Post Setup Node	﻿2026-10-14T16:49:40.6008133Z Post job cleanup.
+build	Post Setup Node	2026-10-14T16:49:40.7017963Z Cache hit occurred on the primary key node-cache-Linux-x64-pnpm-c661ed6cda6694528c3d359dfaea4bd7a020f3bcdc6ead2c36c5e1f7d42c84d8, not saving cache.
+build	Post Setup pnpm	﻿2026-10-14T16:49:40.7101227Z Post job cleanup.
+build	Post Setup pnpm	2026-10-14T16:49:40.8278429Z Pruning is unnecessary.
+build	Post Checkout	﻿2026-10-14T16:49:40.8452795Z Post job cleanup.
+build	Post Checkout	2026-10-14T16:49:40.9275931Z [command]/usr/bin/git version
+build	Post Checkout	2026-10-14T16:49:40.9332534Z git version 2.55.0
+build	Post Checkout	2026-10-14T16:49:40.9368862Z Temporarily overriding HOME='/home/runner/work/_temp/88093aad-4b2a-4d97-b0ce-b0071a085f09' before making global git config changes
+build	Post Checkout	2026-10-14T16:49:40.9372136Z Adding repository directory to the temporary git global config as a safe directory
+build	Post Checkout	2026-10-14T16:49:40.9374497Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/sni-panel/sni-panel
+build	Post Checkout	2026-10-14T16:49:40.9407251Z Removing SSH command configuration
+build	Post Checkout	2026-10-14T16:49:40.9413875Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+build	Post Checkout	2026-10-14T16:49:40.9448525Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+build	Post Checkout	2026-10-14T16:49:40.9687321Z Removing HTTP extra header
+build	Post Checkout	2026-10-14T16:49:40.9692594Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+build	Post Checkout	2026-10-14T16:49:40.9734608Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+build	Post Checkout	2026-10-14T16:49:40.9960999Z Removing includeIf entries pointing to credentials config files
+build	Post Checkout	2026-10-14T16:49:40.9968703Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+build	Post Checkout	2026-10-14T16:49:41.0002336Z includeif.gitdir:/home/runner/work/sni-panel/sni-panel/.git.path
+build	Post Checkout	2026-10-14T16:49:41.0003508Z includeif.gitdir:/home/runner/work/sni-panel/sni-panel/.git/worktrees/*.path
+build	Post Checkout	2026-10-14T16:49:41.0004414Z includeif.gitdir:/github/workspace/.git.path
+build	Post Checkout	2026-10-14T16:49:41.0005211Z includeif.gitdir:/github/workspace/.git/worktrees/*.path
+build	Post Checkout	2026-10-14T16:49:41.0007437Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/home/runner/work/sni-panel/sni-panel/.git.path
+build	Post Checkout	2026-10-14T16:49:41.0026423Z /home/runner/work/_temp/git-credentials-6da0d7cd-786b-4c7f-828e-9c204c05afc0.config
+build	Post Checkout	2026-10-14T16:49:41.0034300Z [command]/usr/bin/git config --local --unset includeif.gitdir:/home/runner/work/sni-panel/sni-panel/.git.path \/home\/runner\/work\/_temp\/git\-credentials\-6da0d7cd\-786b\-4c7f\-828e\-9c204c05afc0\.config
+build	Post Checkout	2026-10-14T16:49:41.0232264Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/home/runner/work/sni-panel/sni-panel/.git/worktrees/*.path
+build	Post Checkout	2026-10-14T16:49:41.0233406Z /home/runner/work/_temp/git-credentials-6da0d7cd-786b-4c7f-828e-9c204c05afc0.config
+build	Post Checkout	2026-10-14T16:49:41.0235600Z [command]/usr/bin/git config --local --unset includeif.gitdir:/home/runner/work/sni-panel/sni-panel/.git/worktrees/*.path \/home\/runner\/work\/_temp\/git\-credentials\-6da0d7cd\-786b\-4c7f\-828e\-9c204c05afc0\.config
+build	Post Checkout	2026-10-14T16:49:41.0236842Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/github/workspace/.git.path
+build	Post Checkout	2026-10-14T16:49:41.0237386Z /github/runner_temp/git-credentials-6da0d7cd-786b-4c7f-828e-9c204c05afc0.config
+build	Post Checkout	2026-10-14T16:49:41.0238846Z [command]/usr/bin/git config --local --unset includeif.gitdir:/github/workspace/.git.path \/github\/runner_temp\/git\-credentials\-6da0d7cd\-786b\-4c7f\-828e\-9c204c05afc0\.config
+build	Post Checkout	2026-10-14T16:49:41.0240490Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/github/workspace/.git/worktrees/*.path
+build	Post Checkout	2026-10-14T16:49:41.0251915Z /github/runner_temp/git-credentials-6da0d7cd-786b-4c7f-828e-9c204c05afc0.config
+build	Post Checkout	2026-10-14T16:49:41.0261303Z [command]/usr/bin/git config --local --unset includeif.gitdir:/github/workspace/.git/worktrees/*.path \/github\/runner_temp\/git\-credentials\-6da0d7cd\-786b\-4c7f\-828e\-9c204c05afc0\.config
+build	Post Checkout	2026-10-14T16:49:41.0290961Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+build	Post Checkout	2026-10-14T16:49:41.0460640Z Removing credentials config '/home/runner/work/_temp/git-credentials-6da0d7cd-786b-4c7f-828e-9c204c05afc0.config'
+build	Complete job	﻿2026-10-14T16:49:41.0572052Z Cleaning up orphan processes
+deploy	Set up job	﻿2026-10-14T16:49:48.8194574Z Current runner version: '2.337.0'
+deploy	Set up job	2026-10-14T16:49:48.8222106Z ##[group]Runner Image Provisioner
+deploy	Set up job	2026-10-14T16:49:48.8223085Z Hosted Compute Agent
+deploy	Set up job	2026-10-14T16:49:48.8223723Z Version: 20261002.596
+deploy	Set up job	2026-10-14T16:49:48.8224427Z Commit: c3d12f3313a95f25162a1503be624f3b0617f8c0
+deploy	Set up job	2026-10-14T16:49:48.8225423Z Build Date: 2026-10-02T22:28:27Z
+deploy	Set up job	2026-10-14T16:49:48.8226148Z Worker ID: {40fe5fbf-301b-4cd4-8465-791394e7ac22}
+deploy	Set up job	2026-10-14T16:49:48.8226955Z Region: westcentralus
+deploy	Set up job	2026-10-14T16:49:48.8227607Z Cloud: Azure
+deploy	Set up job	2026-10-14T16:49:48.8228236Z ##[endgroup]
+deploy	Set up job	2026-10-14T16:49:48.8229888Z ##[group]Operating System
+deploy	Set up job	2026-10-14T16:49:48.8230528Z Ubuntu
+deploy	Set up job	2026-10-14T16:49:48.8231159Z 24.04.5
+deploy	Set up job	2026-10-14T16:49:48.8231707Z LTS
+deploy	Set up job	2026-10-14T16:49:48.8232264Z ##[endgroup]
+deploy	Set up job	2026-10-14T16:49:48.8232858Z ##[group]Runner Image
+deploy	Set up job	2026-10-14T16:49:48.8233461Z Image: ubuntu-24.04
+deploy	Set up job	2026-10-14T16:49:48.8234078Z Version: 20261004.327.1
+deploy	Set up job	2026-10-14T16:49:48.8235431Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20261004.327/images/ubuntu/Ubuntu2404-Readme.md
+deploy	Set up job	2026-10-14T16:49:48.8237752Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20261004.327
+deploy	Set up job	2026-10-14T16:49:48.8238741Z ##[endgroup]
+deploy	Set up job	2026-10-14T16:49:48.8240036Z ##[group]GITHUB_TOKEN Permissions
+deploy	Set up job	2026-10-14T16:49:48.8242212Z Contents: read
+deploy	Set up job	2026-10-14T16:49:48.8242935Z Metadata: read
+deploy	Set up job	2026-10-14T16:49:48.8243502Z Pages: write
+deploy	Set up job	2026-10-14T16:49:48.8244085Z ##[endgroup]
+deploy	Set up job	2026-10-14T16:49:48.8246607Z Secret source: Actions
+deploy	Set up job	2026-10-14T16:49:48.8247672Z Cache mode: write
+deploy	Set up job	2026-10-14T16:49:48.8248442Z Prepare workflow directory
+deploy	Set up job	2026-10-14T16:49:48.8682154Z Prepare all required actions
+deploy	Set up job	2026-10-14T16:49:48.8736134Z Getting action download info
+deploy	Set up job	2026-10-14T16:49:49.1761567Z Download action repository 'actions/deploy-pages@v5' (SHA:368f82528645a54fb793d4d04e342629a3f51346)
+deploy	Set up job	2026-10-14T16:49:50.7715226Z Complete job name: deploy
+deploy	Deploy to GitHub Pages	﻿2026-10-14T16:49:50.8732316Z ##[group]Run actions/deploy-pages@v5
+deploy	Deploy to GitHub Pages	2026-10-14T16:49:50.8733986Z with:
+deploy	Deploy to GitHub Pages	2026-10-14T16:49:50.8734880Z   timeout: 600000
+deploy	Deploy to GitHub Pages	2026-10-14T16:49:50.8744795Z   token: ***
+deploy	Deploy to GitHub Pages	2026-10-14T16:49:50.8746045Z   error_count: 10
+deploy	Deploy to GitHub Pages	2026-10-14T16:49:50.8747043Z   reporting_interval: 5000
+deploy	Deploy to GitHub Pages	2026-10-14T16:49:50.8748141Z   artifact_name: github-pages
+deploy	Deploy to GitHub Pages	2026-10-14T16:49:50.8749255Z   preview: false
+deploy	Deploy to GitHub Pages	2026-10-14T16:49:50.8750550Z ##[endgroup]
+deploy	Deploy to GitHub Pages	2026-10-14T16:49:51.0832038Z (node:2271) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+deploy	Deploy to GitHub Pages	2026-10-14T16:49:51.0835365Z (Use `node --trace-deprecation ...` to show where the warning was created)
+deploy	Deploy to GitHub Pages	2026-10-14T16:49:51.3286517Z Fetching artifact metadata for "github-pages" in this workflow run
+deploy	Deploy to GitHub Pages	2026-10-14T16:49:51.5459623Z Found 1 artifact(s)
+deploy	Deploy to GitHub Pages	2026-10-14T16:49:51.5478492Z Creating Pages deployment with payload:
+deploy	Deploy to GitHub Pages	2026-10-14T16:49:51.5479208Z {
+deploy	Deploy to GitHub Pages	2026-10-14T16:49:51.5479846Z 	"artifact_id": 11913591959,
+deploy	Deploy to GitHub Pages	2026-10-14T16:49:51.5480578Z 	"pages_build_version": "b8eb489f0461f7a24b133975db9fd7b7295a7a58",
+deploy	Deploy to GitHub Pages	2026-10-14T16:49:51.5513652Z 	"oidc_token": "***"
+deploy	Deploy to GitHub Pages	2026-10-14T16:49:51.5514066Z }
+deploy	Deploy to GitHub Pages	2026-10-14T16:49:53.0143732Z Created deployment for b8eb489f0461f7a24b133975db9fd7b7295a7a58, ID: b8eb489f0461f7a24b133975db9fd7b7295a7a58
+deploy	Deploy to GitHub Pages	2026-10-14T16:49:57.3497376Z Getting Pages deployment status...
+deploy	Deploy to GitHub Pages	2026-10-14T16:49:57.5507410Z Current status: updating_pages
+deploy	Deploy to GitHub Pages	2026-10-14T16:50:05.7806586Z Getting Pages deployment status...
+deploy	Deploy to GitHub Pages	2026-10-14T16:50:06.0600525Z Current status: updating_pages
+deploy	Deploy to GitHub Pages	2026-10-14T16:50:18.4404600Z Getting Pages deployment status...
+deploy	Deploy to GitHub Pages	2026-10-14T16:50:18.7352921Z Reported success!
+deploy	Complete job	﻿2026-10-14T16:50:18.7690083Z Evaluate and set environment url
+deploy	Complete job	2026-10-14T16:50:18.7695572Z Evaluated environment url: https://owo10086.github.io/sni-panel/
+deploy	Complete job	2026-10-14T16:50:18.7696696Z Cleaning up orphan processes

@@ -1,0 +1,18 @@
+forwardx-agent-linux-amd64 10948760 SHA256 27282f22298951a0442914c37f6e3060e73bdc803f950c5aaceeb839f500ea95 OK
+forwardx-fxp-linux-amd64 6168728 SHA256 97dc28eb25e4ec8c9421f446bf5faf5c35ef8abd5b28cbf0e69f370d321b3af6 OK
+forwardx-panel-v3.3.5.tar.gz 35698239 SHA256 62621e35cdaf54f0ae0affb3d682dda3322d0cefd17406227a72cfc3d10c2735 OK
+forwardx-runtime-linux-amd64 9673064 SHA256 a2aea24efb4597b5f57b35b8e1bbcc59f439b80723854d4371f6828b46682ffb OK
+SHA256SUMS 426 SHA256 5d302f99df4a4e0208f1b8bfb4b7de2dbb2f38da7c347f23d2f636c774825014 OK
+THIRD_PARTY_NOTICES.md 1472 SHA256 d3572e3ddda1ee140458bcceee17babef7876a859738cd7892b50f97ca21fe72 OK
+Checksums: forwardx-agent-linux-amd64 OK
+Checksums: forwardx-fxp-linux-amd64 OK
+Checksums: forwardx-runtime-linux-amd64 OK
+Panel package 3.3.5, server, migration and web assets: OK
+Checksums: forwardx-agent-linux-amd64 OK
+Checksums: forwardx-fxp-linux-amd64 OK
+Checksums: forwardx-runtime-linux-amd64 OK
+Traceback (most recent call last):
+  File "/tmp/sni-v3.3.5-release.ihIQ3e/verify_release.py", line 37, in <module>
+    if name.startswith('forwardx-agent-'):assert 'main.Version=3.3.0' in build
+                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError
