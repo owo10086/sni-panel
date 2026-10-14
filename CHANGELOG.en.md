@@ -4,6 +4,21 @@
 
 ## [Unreleased]
 
+## [3.3.4] - 2026-10-14
+
+### Fixes
+
+- Fix valid SNI rules with different hostnames being reported as port conflicts when editing them in batches or moving them between entries while sharing port 443. Host-based forwarding groups, port forwarding, forwarding chains and direct TLS tunnels share the same save ordering, including different resources using the same host.
+- Reread entry routes and shared rules after waiting. Release old saving positions and retry against the latest route when entries change; report persistent changes with a refresh-and-retry message. Preserve duplicate-hostname, ordinary-rule port conflict, permission and resource checks, and retain the requested business port.
+- Fix deferred cleanup disabling reused members when a rule returns to a previous entry. Roll back the rule, port mappings and required tunnel state together if a direct TLS tunnel rule cannot be created or updated, avoiding partial changes after an error.
+- Release saving protection before DNS updates so a slow provider does not block other rules in the same group. Keep traffic settlement after the database commit, existing per-item editing results, unselected rules and runtime confirmation standards.
+
+### Versions and upgrade notes
+
+- Panel: `3.3.4`; Agent and ForwardX FXP runtime: `3.3.0`. Only the panel requires upgrading; existing Agent/FXP binaries remain compatible.
+- Upgrading does not automatically retry previously failed batch edits. Check each rule's current resource, hostname, port and destination against the per-item results before retrying unfinished items. A successful save still requires the existing entry/exit runtime confirmations.
+- Native Android and iOS/iPadOS applications remain excluded under the standing agreement. This release does not publish APK or IPA packages.
+
 ## [3.3.3] - 2026-10-12
 
 ### Fixes
