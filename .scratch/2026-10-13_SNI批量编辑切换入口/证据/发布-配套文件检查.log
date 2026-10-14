@@ -1,0 +1,413 @@
+build-agent	Set up job	﻿2026-10-14T02:19:14.0513719Z Current runner version: '2.337.0'
+build-agent	Set up job	2026-10-14T02:19:14.0568441Z ##[group]Runner Image Provisioner
+build-agent	Set up job	2026-10-14T02:19:14.0569913Z Hosted Compute Agent
+build-agent	Set up job	2026-10-14T02:19:14.0571508Z Version: 20261002.596
+build-agent	Set up job	2026-10-14T02:19:14.0572726Z Commit: c3d12f3313a95f25162a1503be624f3b0617f8c0
+build-agent	Set up job	2026-10-14T02:19:14.0574045Z Build Date: 2026-10-02T22:28:27Z
+build-agent	Set up job	2026-10-14T02:19:14.0575464Z Worker ID: {f55e7a4e-8300-4999-8f5e-0e24116df394}
+build-agent	Set up job	2026-10-14T02:19:14.0576980Z Region: westus2
+build-agent	Set up job	2026-10-14T02:19:14.0578466Z Cloud: Azure
+build-agent	Set up job	2026-10-14T02:19:14.0579499Z ##[endgroup]
+build-agent	Set up job	2026-10-14T02:19:14.0582650Z ##[group]Operating System
+build-agent	Set up job	2026-10-14T02:19:14.0583874Z Ubuntu
+build-agent	Set up job	2026-10-14T02:19:14.0584813Z 24.04.5
+build-agent	Set up job	2026-10-14T02:19:14.0585769Z LTS
+build-agent	Set up job	2026-10-14T02:19:14.0587091Z ##[endgroup]
+build-agent	Set up job	2026-10-14T02:19:14.0588139Z ##[group]Runner Image
+build-agent	Set up job	2026-10-14T02:19:14.0589371Z Image: ubuntu-24.04
+build-agent	Set up job	2026-10-14T02:19:14.0590422Z Version: 20261004.327.1
+build-agent	Set up job	2026-10-14T02:19:14.0592837Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20261004.327/images/ubuntu/Ubuntu2404-Readme.md
+build-agent	Set up job	2026-10-14T02:19:14.0596270Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20261004.327
+build-agent	Set up job	2026-10-14T02:19:14.0598722Z ##[endgroup]
+build-agent	Set up job	2026-10-14T02:19:14.0600726Z ##[group]GITHUB_TOKEN Permissions
+build-agent	Set up job	2026-10-14T02:19:14.0603948Z Contents: write
+build-agent	Set up job	2026-10-14T02:19:14.0605011Z Metadata: read
+build-agent	Set up job	2026-10-14T02:19:14.0606221Z ##[endgroup]
+build-agent	Set up job	2026-10-14T02:19:14.0609590Z Secret source: Actions
+build-agent	Set up job	2026-10-14T02:19:14.0611307Z Cache mode: write
+build-agent	Set up job	2026-10-14T02:19:14.0612955Z Prepare workflow directory
+build-agent	Set up job	2026-10-14T02:19:14.1196835Z Prepare all required actions
+build-agent	Set up job	2026-10-14T02:19:14.1273755Z Getting action download info
+build-agent	Set up job	2026-10-14T02:19:14.6412278Z Download action repository 'actions/checkout@v7' (SHA:3d3c42e5aac5ba805825da76410c181273ba90b1)
+build-agent	Set up job	2026-10-14T02:19:14.7804385Z Download action repository 'actions/setup-go@v6' (SHA:924ae3a1cded613372ab5595356fb5720e22ba16)
+build-agent	Set up job	2026-10-14T02:19:15.2429168Z Download action repository 'actions/setup-node@v6' (SHA:249970729cb0ef3589644e2896645e5dc5ba9c38)
+build-agent	Set up job	2026-10-14T02:19:15.5699066Z Complete job name: build-agent
+build-agent	Checkout	﻿2026-10-14T02:19:15.6968748Z ##[group]Run actions/checkout@v7
+build-agent	Checkout	2026-10-14T02:19:15.6970244Z with:
+build-agent	Checkout	2026-10-14T02:19:15.6971055Z   repository: owo10086/sni-panel
+build-agent	Checkout	2026-10-14T02:19:15.6977253Z   token: ***
+build-agent	Checkout	2026-10-14T02:19:15.6978006Z   ssh-strict: true
+build-agent	Checkout	2026-10-14T02:19:15.6978703Z   ssh-user: git
+build-agent	Checkout	2026-10-14T02:19:15.6979393Z   persist-credentials: true
+build-agent	Checkout	2026-10-14T02:19:15.6980100Z   clean: true
+build-agent	Checkout	2026-10-14T02:19:15.6980788Z   sparse-checkout-cone-mode: true
+build-agent	Checkout	2026-10-14T02:19:15.6981451Z   fetch-depth: 1
+build-agent	Checkout	2026-10-14T02:19:15.6981966Z   fetch-tags: false
+build-agent	Checkout	2026-10-14T02:19:15.6982609Z   show-progress: true
+build-agent	Checkout	2026-10-14T02:19:15.6983176Z   lfs: false
+build-agent	Checkout	2026-10-14T02:19:15.6983812Z   submodules: false
+build-agent	Checkout	2026-10-14T02:19:15.6984393Z   set-safe-directory: true
+build-agent	Checkout	2026-10-14T02:19:15.6985145Z   allow-unsafe-pr-checkout: false
+build-agent	Checkout	2026-10-14T02:19:15.6986519Z ##[endgroup]
+build-agent	Checkout	2026-10-14T02:19:15.8976908Z Syncing repository: owo10086/sni-panel
+build-agent	Checkout	2026-10-14T02:19:15.8980389Z ##[group]Getting Git version info
+build-agent	Checkout	2026-10-14T02:19:15.8982013Z Working directory is '/home/runner/work/sni-panel/sni-panel'
+build-agent	Checkout	2026-10-14T02:19:15.8984319Z [command]/usr/bin/git version
+build-agent	Checkout	2026-10-14T02:19:15.8985686Z git version 2.55.0
+build-agent	Checkout	2026-10-14T02:19:15.8992286Z ##[endgroup]
+build-agent	Checkout	2026-10-14T02:19:15.9003780Z Temporarily overriding HOME='/home/runner/work/_temp/6777407f-a393-4164-b437-ee1caefc11fc' before making global git config changes
+build-agent	Checkout	2026-10-14T02:19:15.9059120Z Adding repository directory to the temporary git global config as a safe directory
+build-agent	Checkout	2026-10-14T02:19:15.9063227Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/sni-panel/sni-panel
+build-agent	Checkout	2026-10-14T02:19:15.9069644Z Deleting the contents of '/home/runner/work/sni-panel/sni-panel'
+build-agent	Checkout	2026-10-14T02:19:15.9072921Z ##[group]Determining repository object format
+build-agent	Checkout	2026-10-14T02:19:15.9075596Z ##[endgroup]
+build-agent	Checkout	2026-10-14T02:19:15.9078247Z ##[group]Initializing the repository
+build-agent	Checkout	2026-10-14T02:19:15.9080969Z [command]/usr/bin/git init /home/runner/work/sni-panel/sni-panel
+build-agent	Checkout	2026-10-14T02:19:15.9248557Z hint: Using 'master' as the name for the initial branch. This default branch name
+build-agent	Checkout	2026-10-14T02:19:15.9252570Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+build-agent	Checkout	2026-10-14T02:19:15.9254744Z hint: to use in all of your new repositories, which will suppress this warning,
+build-agent	Checkout	2026-10-14T02:19:15.9256606Z hint: call:
+build-agent	Checkout	2026-10-14T02:19:15.9258094Z hint:
+build-agent	Checkout	2026-10-14T02:19:15.9260944Z hint: 	git config --global init.defaultBranch <name>
+build-agent	Checkout	2026-10-14T02:19:15.9285025Z hint:
+build-agent	Checkout	2026-10-14T02:19:15.9286820Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+build-agent	Checkout	2026-10-14T02:19:15.9289075Z hint: 'development'. The just-created branch can be renamed via this command:
+build-agent	Checkout	2026-10-14T02:19:15.9290883Z hint:
+build-agent	Checkout	2026-10-14T02:19:15.9291974Z hint: 	git branch -m <name>
+build-agent	Checkout	2026-10-14T02:19:15.9293352Z hint:
+build-agent	Checkout	2026-10-14T02:19:15.9297883Z hint: Disable this message with "git config set advice.defaultBranchName false"
+build-agent	Checkout	2026-10-14T02:19:15.9300328Z Initialized empty Git repository in /home/runner/work/sni-panel/sni-panel/.git/
+build-agent	Checkout	2026-10-14T02:19:15.9304450Z [command]/usr/bin/git remote add origin https://github.com/owo10086/sni-panel
+build-agent	Checkout	2026-10-14T02:19:15.9398482Z ##[endgroup]
+build-agent	Checkout	2026-10-14T02:19:15.9427729Z ##[group]Disabling automatic garbage collection
+build-agent	Checkout	2026-10-14T02:19:15.9447311Z [command]/usr/bin/git config --local gc.auto 0
+build-agent	Checkout	2026-10-14T02:19:15.9484113Z ##[endgroup]
+build-agent	Checkout	2026-10-14T02:19:15.9489405Z ##[group]Setting up auth
+build-agent	Checkout	2026-10-14T02:19:15.9491177Z Removing SSH command configuration
+build-agent	Checkout	2026-10-14T02:19:15.9493887Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+build-agent	Checkout	2026-10-14T02:19:15.9592671Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+build-agent	Checkout	2026-10-14T02:19:16.0336355Z Removing HTTP extra header
+build-agent	Checkout	2026-10-14T02:19:16.0347768Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+build-agent	Checkout	2026-10-14T02:19:16.0406146Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+build-agent	Checkout	2026-10-14T02:19:16.0735939Z Removing includeIf entries pointing to credentials config files
+build-agent	Checkout	2026-10-14T02:19:16.0743518Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+build-agent	Checkout	2026-10-14T02:19:16.0809285Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+build-agent	Checkout	2026-10-14T02:19:16.1348787Z [command]/usr/bin/git config --file /home/runner/work/_temp/git-credentials-710053e5-8563-464a-b9f4-9bf6ab15a036.config http.https://github.com/.extraheader AUTHORIZATION: basic ***
+build-agent	Checkout	2026-10-14T02:19:16.1422467Z [command]/usr/bin/git config --local includeIf.gitdir:/home/runner/work/sni-panel/sni-panel/.git.path /home/runner/work/_temp/git-credentials-710053e5-8563-464a-b9f4-9bf6ab15a036.config
+build-agent	Checkout	2026-10-14T02:19:16.1534926Z [command]/usr/bin/git config --local includeIf.gitdir:/home/runner/work/sni-panel/sni-panel/.git/worktrees/*.path /home/runner/work/_temp/git-credentials-710053e5-8563-464a-b9f4-9bf6ab15a036.config
+build-agent	Checkout	2026-10-14T02:19:16.1607667Z [command]/usr/bin/git config --local includeIf.gitdir:/github/workspace/.git.path /github/runner_temp/git-credentials-710053e5-8563-464a-b9f4-9bf6ab15a036.config
+build-agent	Checkout	2026-10-14T02:19:16.1638718Z [command]/usr/bin/git config --local includeIf.gitdir:/github/workspace/.git/worktrees/*.path /github/runner_temp/git-credentials-710053e5-8563-464a-b9f4-9bf6ab15a036.config
+build-agent	Checkout	2026-10-14T02:19:16.1690984Z ##[endgroup]
+build-agent	Checkout	2026-10-14T02:19:16.1693417Z ##[group]Fetching the repository
+build-agent	Checkout	2026-10-14T02:19:16.1703508Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +refs/tags/v3.3.4:refs/tags/v3.3.4
+build-agent	Checkout	2026-10-14T02:19:17.6442247Z From https://github.com/owo10086/sni-panel
+build-agent	Checkout	2026-10-14T02:19:17.6445207Z  * [new tag]         v3.3.4     -> v3.3.4
+build-agent	Checkout	2026-10-14T02:19:17.6471431Z [command]/usr/bin/git tag --list v3.3.4
+build-agent	Checkout	2026-10-14T02:19:17.6518923Z v3.3.4
+build-agent	Checkout	2026-10-14T02:19:17.6549302Z [command]/usr/bin/git rev-parse refs/tags/v3.3.4^{commit}
+build-agent	Checkout	2026-10-14T02:19:17.6579339Z 7334b2a27fdc1e12ccad91f29b0f5067789857bc
+build-agent	Checkout	2026-10-14T02:19:17.6605460Z ##[endgroup]
+build-agent	Checkout	2026-10-14T02:19:17.6607349Z ##[group]Determining the checkout info
+build-agent	Checkout	2026-10-14T02:19:17.6608721Z ##[endgroup]
+build-agent	Checkout	2026-10-14T02:19:17.6609621Z [command]/usr/bin/git sparse-checkout disable
+build-agent	Checkout	2026-10-14T02:19:17.6693121Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+build-agent	Checkout	2026-10-14T02:19:17.6767176Z ##[group]Checking out the ref
+build-agent	Checkout	2026-10-14T02:19:17.6776188Z [command]/usr/bin/git checkout --progress --force refs/tags/v3.3.4
+build-agent	Checkout	2026-10-14T02:19:17.9804874Z Note: switching to 'refs/tags/v3.3.4'.
+build-agent	Checkout	2026-10-14T02:19:17.9815654Z 
+build-agent	Checkout	2026-10-14T02:19:17.9819422Z You are in 'detached HEAD' state. You can look around, make experimental
+build-agent	Checkout	2026-10-14T02:19:17.9823128Z changes and commit them, and you can discard any commits you make in this
+build-agent	Checkout	2026-10-14T02:19:17.9824602Z state without impacting any branches by switching back to a branch.
+build-agent	Checkout	2026-10-14T02:19:17.9825150Z 
+build-agent	Checkout	2026-10-14T02:19:17.9825551Z If you want to create a new branch to retain commits you create, you may
+build-agent	Checkout	2026-10-14T02:19:17.9828392Z do so (now or later) by using -c with the switch command. Example:
+build-agent	Checkout	2026-10-14T02:19:17.9829374Z 
+build-agent	Checkout	2026-10-14T02:19:17.9829575Z   git switch -c <new-branch-name>
+build-agent	Checkout	2026-10-14T02:19:17.9830473Z 
+build-agent	Checkout	2026-10-14T02:19:17.9830809Z Or undo this operation with:
+build-agent	Checkout	2026-10-14T02:19:17.9831326Z 
+build-agent	Checkout	2026-10-14T02:19:17.9831853Z   git switch -
+build-agent	Checkout	2026-10-14T02:19:17.9832151Z 
+build-agent	Checkout	2026-10-14T02:19:17.9833197Z Turn off this advice by setting config variable advice.detachedHead to false
+build-agent	Checkout	2026-10-14T02:19:17.9834142Z 
+build-agent	Checkout	2026-10-14T02:19:17.9834945Z HEAD is now at 7334b2a release: publish panel v3.3.4 with SNI batch editing fixes
+build-agent	Checkout	2026-10-14T02:19:17.9854736Z ##[endgroup]
+build-agent	Checkout	2026-10-14T02:19:17.9945301Z [command]/usr/bin/git log -1 --format=%H
+build-agent	Checkout	2026-10-14T02:19:17.9988672Z 7334b2a27fdc1e12ccad91f29b0f5067789857bc
+build-agent	Setup Go	﻿2026-10-14T02:19:18.0535014Z ##[group]Run actions/setup-go@v6
+build-agent	Setup Go	2026-10-14T02:19:18.0535415Z with:
+build-agent	Setup Go	2026-10-14T02:19:18.0535793Z   go-version: 1.23.x
+build-agent	Setup Go	2026-10-14T02:19:18.0536648Z   cache-dependency-path: agent/go.mod
+build-agent	Setup Go	forwardx-fxp/go.mod
+build-agent	Setup Go	forwardx-fxp/go.sum
+build-agent	Setup Go	
+build-agent	Setup Go	2026-10-14T02:19:18.0537427Z   check-latest: false
+build-agent	Setup Go	2026-10-14T02:19:18.0541983Z   token: ***
+build-agent	Setup Go	2026-10-14T02:19:18.0542386Z   cache: true
+build-agent	Setup Go	2026-10-14T02:19:18.0542748Z ##[endgroup]
+build-agent	Setup Go	2026-10-14T02:19:18.2917910Z Setup go version spec 1.23.x
+build-agent	Setup Go	2026-10-14T02:19:18.3026600Z Attempting to download 1.23.x...
+build-agent	Setup Go	2026-10-14T02:19:19.0676516Z matching 1.23.x...
+build-agent	Setup Go	2026-10-14T02:19:19.0820928Z Acquiring 1.23.12 from https://github.com/actions/go-versions/releases/download/1.23.12-16792118003/go-1.23.12-linux-x64.tar.gz
+build-agent	Setup Go	2026-10-14T02:19:20.2640916Z Extracting Go...
+build-agent	Setup Go	2026-10-14T02:19:20.2828921Z [command]/usr/bin/tar xz --warning=no-unknown-keyword --overwrite -C /home/runner/work/_temp/3601717f-8654-492e-aa43-380dab61e91e -f /home/runner/work/_temp/a6f58b39-0dad-486c-9596-5d427af7f081
+build-agent	Setup Go	2026-10-14T02:19:22.9691643Z Successfully extracted go to /home/runner/work/_temp/3601717f-8654-492e-aa43-380dab61e91e
+build-agent	Setup Go	2026-10-14T02:19:22.9693256Z Adding to the cache ...
+build-agent	Setup Go	2026-10-14T02:19:32.2501844Z Successfully cached go to /opt/hostedtoolcache/go/1.23.12/x64
+build-agent	Setup Go	2026-10-14T02:19:32.2502589Z Added go to the path
+build-agent	Setup Go	2026-10-14T02:19:32.2503168Z Successfully set up Go version 1.23.x
+build-agent	Setup Go	2026-10-14T02:19:32.2878399Z [command]/opt/hostedtoolcache/go/1.23.12/x64/bin/go env GOMODCACHE
+build-agent	Setup Go	2026-10-14T02:19:32.2926741Z [command]/opt/hostedtoolcache/go/1.23.12/x64/bin/go env GOCACHE
+build-agent	Setup Go	2026-10-14T02:19:32.3004515Z /home/runner/go/pkg/mod
+build-agent	Setup Go	2026-10-14T02:19:32.3024140Z /home/runner/.cache/go-build
+build-agent	Setup Go	2026-10-14T02:19:32.7189092Z Cache hit for: setup-go-Linux-x64-ubuntu24-go-1.23.12-be40c5a8fab4cd827fa629498a5e979fa638a427aa79207b138e750bf7b36b19
+build-agent	Setup Go	2026-10-14T02:19:34.2111989Z Received 0 of 56392268 (0.0%), 0.0 MBs/sec
+build-agent	Setup Go	2026-10-14T02:19:35.2003050Z Received 56392268 of 56392268 (100.0%), 27.0 MBs/sec
+build-agent	Setup Go	2026-10-14T02:19:35.2016529Z Cache Size: ~54 MB (56392268 B)
+build-agent	Setup Go	2026-10-14T02:19:35.2181849Z [command]/usr/bin/tar -xf /home/runner/work/_temp/2e000f44-5d31-47ba-9b15-9468123036f9/cache.tzst -P -C /home/runner/work/sni-panel/sni-panel --use-compress-program unzstd
+build-agent	Setup Go	2026-10-14T02:19:36.1806227Z Cache restored successfully
+build-agent	Setup Go	2026-10-14T02:19:36.1857431Z Cache restored from key: setup-go-Linux-x64-ubuntu24-go-1.23.12-be40c5a8fab4cd827fa629498a5e979fa638a427aa79207b138e750bf7b36b19
+build-agent	Setup Go	2026-10-14T02:19:36.1921967Z go version go1.23.12 linux/amd64
+build-agent	Setup Go	2026-10-14T02:19:36.1922330Z 
+build-agent	Setup Go	2026-10-14T02:19:36.1922779Z ##[group]go env
+build-agent	Setup Go	2026-10-14T02:19:36.2116947Z GO111MODULE=''
+build-agent	Setup Go	2026-10-14T02:19:36.2117851Z GOARCH='amd64'
+build-agent	Setup Go	2026-10-14T02:19:36.2118485Z GOBIN=''
+build-agent	Setup Go	2026-10-14T02:19:36.2119095Z GOCACHE='/home/runner/.cache/go-build'
+build-agent	Setup Go	2026-10-14T02:19:36.2119895Z GOENV='/home/runner/.config/go/env'
+build-agent	Setup Go	2026-10-14T02:19:36.2120507Z GOEXE=''
+build-agent	Setup Go	2026-10-14T02:19:36.2121050Z GOEXPERIMENT=''
+build-agent	Setup Go	2026-10-14T02:19:36.2121595Z GOFLAGS=''
+build-agent	Setup Go	2026-10-14T02:19:36.2122066Z GOHOSTARCH='amd64'
+build-agent	Setup Go	2026-10-14T02:19:36.2122571Z GOHOSTOS='linux'
+build-agent	Setup Go	2026-10-14T02:19:36.2123073Z GOINSECURE=''
+build-agent	Setup Go	2026-10-14T02:19:36.2123599Z GOMODCACHE='/home/runner/go/pkg/mod'
+build-agent	Setup Go	2026-10-14T02:19:36.2124186Z GONOPROXY=''
+build-agent	Setup Go	2026-10-14T02:19:36.2124659Z GONOSUMDB=''
+build-agent	Setup Go	2026-10-14T02:19:36.2125119Z GOOS='linux'
+build-agent	Setup Go	2026-10-14T02:19:36.2125617Z GOPATH='/home/runner/go'
+build-agent	Setup Go	2026-10-14T02:19:36.2126419Z GOPRIVATE=''
+build-agent	Setup Go	2026-10-14T02:19:36.2127021Z GOPROXY='https://proxy.golang.org,direct'
+build-agent	Setup Go	2026-10-14T02:19:36.2127747Z GOROOT='/opt/hostedtoolcache/go/1.23.12/x64'
+build-agent	Setup Go	2026-10-14T02:19:36.2128414Z GOSUMDB='sum.golang.org'
+build-agent	Setup Go	2026-10-14T02:19:36.2128949Z GOTMPDIR=''
+build-agent	Setup Go	2026-10-14T02:19:36.2129435Z GOTOOLCHAIN='local'
+build-agent	Setup Go	2026-10-14T02:19:36.2130133Z GOTOOLDIR='/opt/hostedtoolcache/go/1.23.12/x64/pkg/tool/linux_amd64'
+build-agent	Setup Go	2026-10-14T02:19:36.2130897Z GOVCS=''
+build-agent	Setup Go	2026-10-14T02:19:36.2131375Z GOVERSION='go1.23.12'
+build-agent	Setup Go	2026-10-14T02:19:36.2131894Z GODEBUG=''
+build-agent	Setup Go	2026-10-14T02:19:36.2132365Z GOTELEMETRY='local'
+build-agent	Setup Go	2026-10-14T02:19:36.2133003Z GOTELEMETRYDIR='/home/runner/.config/go/telemetry'
+build-agent	Setup Go	2026-10-14T02:19:36.2133673Z GCCGO='gccgo'
+build-agent	Setup Go	2026-10-14T02:19:36.2134565Z GOAMD64='v1'
+build-agent	Setup Go	2026-10-14T02:19:36.2135048Z AR='ar'
+build-agent	Setup Go	2026-10-14T02:19:36.2135515Z CC='gcc'
+build-agent	Setup Go	2026-10-14T02:19:36.2136295Z CXX='g++'
+build-agent	Setup Go	2026-10-14T02:19:36.2142049Z CGO_ENABLED='1'
+build-agent	Setup Go	2026-10-14T02:19:36.2142798Z GOMOD='/dev/null'
+build-agent	Setup Go	2026-10-14T02:19:36.2143643Z GOWORK=''
+build-agent	Setup Go	2026-10-14T02:19:36.2144109Z CGO_CFLAGS='-O2 -g'
+build-agent	Setup Go	2026-10-14T02:19:36.2144553Z CGO_CPPFLAGS=''
+build-agent	Setup Go	2026-10-14T02:19:36.2145411Z CGO_CXXFLAGS='-O2 -g'
+build-agent	Setup Go	2026-10-14T02:19:36.2146505Z CGO_FFLAGS='-O2 -g'
+build-agent	Setup Go	2026-10-14T02:19:36.2147183Z CGO_LDFLAGS='-O2 -g'
+build-agent	Setup Go	2026-10-14T02:19:36.2148192Z PKG_CONFIG='pkg-config'
+build-agent	Setup Go	2026-10-14T02:19:36.2150875Z GOGCCFLAGS='-fPIC -m64 -pthread -Wl,--no-gc-sections -fmessage-length=0 -ffile-prefix-map=/tmp/go-build3496484328=/tmp/go-build -gno-record-gcc-switches'
+build-agent	Setup Go	2026-10-14T02:19:36.2152976Z 
+build-agent	Setup Go	2026-10-14T02:19:36.2154772Z ##[endgroup]
+build-agent	Setup Node	﻿2026-10-14T02:19:36.2485500Z ##[group]Run actions/setup-node@v6
+build-agent	Setup Node	2026-10-14T02:19:36.2486284Z with:
+build-agent	Setup Node	2026-10-14T02:19:36.2486658Z   node-version: 22
+build-agent	Setup Node	2026-10-14T02:19:36.2487062Z   check-latest: false
+build-agent	Setup Node	2026-10-14T02:19:36.2491392Z   token: ***
+build-agent	Setup Node	2026-10-14T02:19:36.2491829Z   package-manager-cache: true
+build-agent	Setup Node	2026-10-14T02:19:36.2492291Z env:
+build-agent	Setup Node	2026-10-14T02:19:36.2492630Z   GOTOOLCHAIN: local
+build-agent	Setup Node	2026-10-14T02:19:36.2493012Z ##[endgroup]
+build-agent	Setup Node	2026-10-14T02:19:36.4976906Z Found in cache @ /opt/hostedtoolcache/node/22.23.3/x64
+build-agent	Setup Node	2026-10-14T02:19:36.4985373Z ##[group]Environment details
+build-agent	Setup Node	2026-10-14T02:19:37.2285022Z node: v22.23.3
+build-agent	Setup Node	2026-10-14T02:19:37.2287105Z npm: 10.9.9
+build-agent	Setup Node	2026-10-14T02:19:37.2287587Z yarn: 1.22.22
+build-agent	Setup Node	2026-10-14T02:19:37.2288789Z ##[endgroup]
+build-agent	Resolve release version	﻿2026-10-14T02:19:37.2495540Z ##[group]Run if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+build-agent	Resolve release version	2026-10-14T02:19:37.2497326Z [36;1mif [[ "$GITHUB_REF" == refs/tags/* ]]; then[0m
+build-agent	Resolve release version	2026-10-14T02:19:37.2498132Z [36;1m  VERSION="$GITHUB_REF_NAME"[0m
+build-agent	Resolve release version	2026-10-14T02:19:37.2499046Z [36;1melse[0m
+build-agent	Resolve release version	2026-10-14T02:19:37.2499605Z [36;1m  VERSION="v$(node -p "require('./package.json').version")"[0m
+build-agent	Resolve release version	2026-10-14T02:19:37.2501261Z [36;1mfi[0m
+build-agent	Resolve release version	2026-10-14T02:19:37.2502852Z [36;1mecho "version=$VERSION" >> "$GITHUB_OUTPUT"[0m
+build-agent	Resolve release version	2026-10-14T02:19:37.2928059Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+build-agent	Resolve release version	2026-10-14T02:19:37.2928717Z env:
+build-agent	Resolve release version	2026-10-14T02:19:37.2929086Z   GOTOOLCHAIN: local
+build-agent	Resolve release version	2026-10-14T02:19:37.2929516Z ##[endgroup]
+build-agent	Check release versions and tag	﻿2026-10-14T02:19:37.3223329Z ##[group]Run npm run check:versions
+build-agent	Check release versions and tag	2026-10-14T02:19:37.3223719Z [36;1mnpm run check:versions[0m
+build-agent	Check release versions and tag	2026-10-14T02:19:37.3318102Z shell: /usr/bin/bash -e {0}
+build-agent	Check release versions and tag	2026-10-14T02:19:37.3318545Z env:
+build-agent	Check release versions and tag	2026-10-14T02:19:37.3318909Z   GOTOOLCHAIN: local
+build-agent	Check release versions and tag	2026-10-14T02:19:37.3319327Z   FORWARDX_RELEASE_TAG: v3.3.4
+build-agent	Check release versions and tag	2026-10-14T02:19:37.3319769Z ##[endgroup]
+build-agent	Check release versions and tag	2026-10-14T02:19:37.5346921Z 
+build-agent	Check release versions and tag	2026-10-14T02:19:37.5358513Z > forwardx@3.3.4 check:versions
+build-agent	Check release versions and tag	2026-10-14T02:19:37.5359298Z > node scripts/check-versions.mjs
+build-agent	Check release versions and tag	2026-10-14T02:19:37.5359639Z 
+build-agent	Check release versions and tag	2026-10-14T02:19:37.5940176Z versions ok: panel=3.3.4 android=2.3.98 apkRelease=3.2.5 agent=3.3.0 fxp=3.3.0 tag=v3.3.4
+build-agent	Run Agent tests and vet	﻿2026-10-14T02:19:37.6238326Z ##[group]Run (cd agent && go test ./... && go vet ./...)
+build-agent	Run Agent tests and vet	2026-10-14T02:19:37.6239007Z [36;1m(cd agent && go test ./... && go vet ./...)[0m
+build-agent	Run Agent tests and vet	2026-10-14T02:19:37.6239625Z [36;1m(cd forwardx-fxp && go test ./... && go vet ./...)[0m
+build-agent	Run Agent tests and vet	2026-10-14T02:19:37.6404113Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+build-agent	Run Agent tests and vet	2026-10-14T02:19:37.6404698Z env:
+build-agent	Run Agent tests and vet	2026-10-14T02:19:37.6405032Z   GOTOOLCHAIN: local
+build-agent	Run Agent tests and vet	2026-10-14T02:19:37.6405401Z ##[endgroup]
+build-agent	Run Agent tests and vet	2026-10-14T02:19:47.3882538Z ok  	github.com/poouo/Forwardx/agent	3.169s
+build-agent	Run Agent tests and vet	2026-10-14T02:19:58.3648005Z ok  	github.com/poouo/Forwardx/forwardx-fxp	2.729s
+build-agent	Build Linux Agent binaries	﻿2026-10-14T02:19:58.8868009Z ##[group]Run bash scripts/build-agent-release.sh
+build-agent	Build Linux Agent binaries	2026-10-14T02:19:58.8868704Z [36;1mbash scripts/build-agent-release.sh[0m
+build-agent	Build Linux Agent binaries	2026-10-14T02:19:58.8967444Z shell: /usr/bin/bash -e {0}
+build-agent	Build Linux Agent binaries	2026-10-14T02:19:58.8967911Z env:
+build-agent	Build Linux Agent binaries	2026-10-14T02:19:58.8968261Z   GOTOOLCHAIN: local
+build-agent	Build Linux Agent binaries	2026-10-14T02:19:58.8968651Z ##[endgroup]
+build-agent	Build Linux Agent binaries	2026-10-14T02:19:58.9343668Z [agent] using Go 1.23.12 (/opt/hostedtoolcache/go/1.23.12/x64/bin/go)
+build-agent	Build Linux Agent binaries	2026-10-14T02:19:58.9389877Z [agent] building linux/amd64 -> forwardx-agent-linux-amd64
+build-agent	Build Linux Agent binaries	2026-10-14T02:20:26.3261593Z [fxp] building linux/amd64 -> forwardx-fxp-linux-amd64
+build-agent	Build Linux Agent binaries	2026-10-14T02:20:27.8397222Z [runtime] downloading go-gost v3.2.6 linux/amd64 -> forwardx-runtime-linux-amd64
+build-agent	Build Linux Agent binaries	2026-10-14T02:20:28.6416091Z [agent] release artifacts:
+build-agent	Build Linux Agent binaries	2026-10-14T02:20:28.6437131Z total 26M
+build-agent	Build Linux Agent binaries	2026-10-14T02:20:28.6440099Z -rw-r--r-- 1 runner runner  426 Oct 14 02:20 SHA256SUMS
+build-agent	Build Linux Agent binaries	2026-10-14T02:20:28.6442148Z -rw-r--r-- 1 runner runner 1.5K Oct 14 02:20 THIRD_PARTY_NOTICES.md
+build-agent	Build Linux Agent binaries	2026-10-14T02:20:28.6444828Z -rwxr-xr-x 1 runner runner  11M Oct 14 02:20 forwardx-agent-linux-amd64
+build-agent	Build Linux Agent binaries	2026-10-14T02:20:28.6456901Z -rwxr-xr-x 1 runner runner 5.9M Oct 14 02:20 forwardx-fxp-linux-amd64
+build-agent	Build Linux Agent binaries	2026-10-14T02:20:28.6458638Z -rwxr-xr-x 1 runner runner 9.3M Oct 14 02:20 forwardx-runtime-linux-amd64
+build-agent	Upload Agent binaries to GitHub Release	﻿2026-10-14T02:20:28.6525647Z ##[group]Run set -euo pipefail
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:20:28.6526670Z [36;1mset -euo pipefail[0m
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:20:28.6527138Z [36;1m[0m
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:20:28.6527765Z [36;1mfiles=([0m
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:20:28.6528244Z [36;1m  dist/agent/forwardx-agent-linux-amd64[0m
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:20:28.6529164Z [36;1m  dist/agent/forwardx-fxp-linux-amd64[0m
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:20:28.6529791Z [36;1m  dist/agent/forwardx-runtime-linux-amd64[0m
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:20:28.6530754Z [36;1m  dist/agent/SHA256SUMS[0m
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:20:28.6531261Z [36;1m  dist/agent/THIRD_PARTY_NOTICES.md[0m
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:20:28.6531741Z [36;1m)[0m
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:20:28.6532053Z [36;1m[0m
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:20:28.6532391Z [36;1mfor file in "${files[@]}"; do[0m
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:20:28.6532873Z [36;1m  if [ ! -f "$file" ]; then[0m
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:20:28.6533430Z [36;1m    echo "Missing release artifact: $file" >&2[0m
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:20:28.6533991Z [36;1m    exit 1[0m
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:20:28.6534376Z [36;1m  fi[0m
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:20:28.6534747Z [36;1mdone[0m
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:20:28.6535160Z [36;1m[0m
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:20:28.6535492Z [36;1mattempt=1[0m
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:20:28.6536709Z [36;1muntil gh release view "$RELEASE_VERSION" >/dev/null 2>&1; do[0m
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:20:28.6537376Z [36;1m  if [ "$attempt" -ge 120 ]; then[0m
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:20:28.6538288Z [36;1m    echo "::error::GitHub Release $RELEASE_VERSION was not created by the panel workflow within 30 minutes"[0m
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:20:28.6539189Z [36;1m    exit 1[0m
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:20:28.6539587Z [36;1m  fi[0m
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:20:28.6540352Z [36;1m  echo "Waiting for panel workflow to create GitHub Release $RELEASE_VERSION (attempt ${attempt}/120)..."[0m
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:20:28.6541258Z [36;1m  sleep 15[0m
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:20:28.6541673Z [36;1m  attempt=$((attempt + 1))[0m
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:20:28.6542147Z [36;1mdone[0m
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:20:28.6542487Z [36;1m[0m
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:20:28.6542842Z [36;1mupload_with_retry() {[0m
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:20:28.6543304Z [36;1m  local attempt=1[0m
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:20:28.6543787Z [36;1m  local max_attempts=5[0m
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:20:28.6544262Z [36;1m  local delay=8[0m
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:20:28.6544920Z [36;1m  until gh release upload "$RELEASE_VERSION" "${files[@]}" --clobber; do[0m
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:20:28.6546400Z [36;1m    if [ "$attempt" -ge "$max_attempts" ]; then[0m
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:20:28.6547201Z [36;1m      echo "GitHub Release upload failed after ${attempt} attempts" >&2[0m
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:20:28.6547965Z [36;1m      return 1[0m
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:20:28.6548387Z [36;1m    fi[0m
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:20:28.6549169Z [36;1m    echo "GitHub Release upload failed, retrying in ${delay}s (attempt ${attempt}/${max_attempts})..." >&2[0m
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:20:28.6550101Z [36;1m    sleep "$delay"[0m
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:20:28.6550574Z [36;1m    attempt=$((attempt + 1))[0m
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:20:28.6551473Z [36;1m    delay=$((delay * 2))[0m
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:20:28.6551936Z [36;1m  done[0m
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:20:28.6552673Z [36;1m}[0m
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:20:28.6553031Z [36;1m[0m
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:20:28.6553700Z [36;1mupload_with_retry[0m
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:20:28.6653557Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:20:28.6654205Z env:
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:20:28.6654583Z   GOTOOLCHAIN: local
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:20:28.6659916Z   GH_TOKEN: ***
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:20:28.6660344Z   RELEASE_VERSION: v3.3.4
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:20:28.6660761Z ##[endgroup]
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:20:31.1243502Z Waiting for panel workflow to create GitHub Release v3.3.4 (attempt 1/120)...
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:20:46.6854793Z Waiting for panel workflow to create GitHub Release v3.3.4 (attempt 2/120)...
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:21:02.1847693Z Waiting for panel workflow to create GitHub Release v3.3.4 (attempt 3/120)...
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:21:17.7164917Z Waiting for panel workflow to create GitHub Release v3.3.4 (attempt 4/120)...
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:21:33.2870060Z Waiting for panel workflow to create GitHub Release v3.3.4 (attempt 5/120)...
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:21:48.8235550Z Waiting for panel workflow to create GitHub Release v3.3.4 (attempt 6/120)...
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:22:04.3663704Z Waiting for panel workflow to create GitHub Release v3.3.4 (attempt 7/120)...
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:22:19.9233088Z Waiting for panel workflow to create GitHub Release v3.3.4 (attempt 8/120)...
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:22:35.6695599Z Waiting for panel workflow to create GitHub Release v3.3.4 (attempt 9/120)...
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:22:51.2399816Z Waiting for panel workflow to create GitHub Release v3.3.4 (attempt 10/120)...
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:23:06.7992707Z Waiting for panel workflow to create GitHub Release v3.3.4 (attempt 11/120)...
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:23:22.3919528Z Waiting for panel workflow to create GitHub Release v3.3.4 (attempt 12/120)...
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:23:37.9403173Z Waiting for panel workflow to create GitHub Release v3.3.4 (attempt 13/120)...
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:23:53.5413835Z Waiting for panel workflow to create GitHub Release v3.3.4 (attempt 14/120)...
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:24:09.0863565Z Waiting for panel workflow to create GitHub Release v3.3.4 (attempt 15/120)...
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:24:24.6144421Z Waiting for panel workflow to create GitHub Release v3.3.4 (attempt 16/120)...
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:24:40.2213431Z Waiting for panel workflow to create GitHub Release v3.3.4 (attempt 17/120)...
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:24:55.8248085Z Waiting for panel workflow to create GitHub Release v3.3.4 (attempt 18/120)...
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:25:11.4434739Z Waiting for panel workflow to create GitHub Release v3.3.4 (attempt 19/120)...
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:25:26.9695921Z Waiting for panel workflow to create GitHub Release v3.3.4 (attempt 20/120)...
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:25:42.5095304Z Waiting for panel workflow to create GitHub Release v3.3.4 (attempt 21/120)...
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:25:58.0576858Z Waiting for panel workflow to create GitHub Release v3.3.4 (attempt 22/120)...
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:26:13.6305223Z Waiting for panel workflow to create GitHub Release v3.3.4 (attempt 23/120)...
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:26:29.1369329Z Waiting for panel workflow to create GitHub Release v3.3.4 (attempt 24/120)...
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:26:44.7323275Z Waiting for panel workflow to create GitHub Release v3.3.4 (attempt 25/120)...
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:27:00.2617450Z Waiting for panel workflow to create GitHub Release v3.3.4 (attempt 26/120)...
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:27:15.8119741Z Waiting for panel workflow to create GitHub Release v3.3.4 (attempt 27/120)...
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:27:31.3828837Z Waiting for panel workflow to create GitHub Release v3.3.4 (attempt 28/120)...
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:27:47.0882806Z Waiting for panel workflow to create GitHub Release v3.3.4 (attempt 29/120)...
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:28:02.5899779Z Waiting for panel workflow to create GitHub Release v3.3.4 (attempt 30/120)...
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:28:18.2289027Z Waiting for panel workflow to create GitHub Release v3.3.4 (attempt 31/120)...
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:28:33.7908009Z Waiting for panel workflow to create GitHub Release v3.3.4 (attempt 32/120)...
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:28:49.3733046Z Waiting for panel workflow to create GitHub Release v3.3.4 (attempt 33/120)...
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:29:04.9269236Z Waiting for panel workflow to create GitHub Release v3.3.4 (attempt 34/120)...
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:29:20.4401646Z Waiting for panel workflow to create GitHub Release v3.3.4 (attempt 35/120)...
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:29:35.9641314Z Waiting for panel workflow to create GitHub Release v3.3.4 (attempt 36/120)...
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:29:51.4700110Z Waiting for panel workflow to create GitHub Release v3.3.4 (attempt 37/120)...
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:30:06.9941898Z Waiting for panel workflow to create GitHub Release v3.3.4 (attempt 38/120)...
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:30:22.5367755Z Waiting for panel workflow to create GitHub Release v3.3.4 (attempt 39/120)...
+build-agent	Upload Agent binaries to GitHub Release	2026-10-14T02:30:38.0771725Z Waiting for panel workflow to create GitHub Release v3.3.4 (attempt 40/120)...
+build-agent	Post Setup Node	﻿2026-10-14T02:30:55.8991289Z Post job cleanup.
+build-agent	Post Setup Go	﻿2026-10-14T02:30:56.1368855Z Post job cleanup.
+build-agent	Post Setup Go	2026-10-14T02:30:56.3779269Z [command]/opt/hostedtoolcache/go/1.23.12/x64/bin/go env GOMODCACHE
+build-agent	Post Setup Go	2026-10-14T02:30:56.3902624Z [command]/opt/hostedtoolcache/go/1.23.12/x64/bin/go env GOCACHE
+build-agent	Post Setup Go	2026-10-14T02:30:56.3961530Z /home/runner/go/pkg/mod
+build-agent	Post Setup Go	2026-10-14T02:30:56.4054411Z /home/runner/.cache/go-build
+build-agent	Post Setup Go	2026-10-14T02:30:56.4057203Z Cache hit occurred on the primary key setup-go-Linux-x64-ubuntu24-go-1.23.12-be40c5a8fab4cd827fa629498a5e979fa638a427aa79207b138e750bf7b36b19, not saving cache.
+build-agent	Post Checkout	﻿2026-10-14T02:30:56.4325359Z Post job cleanup.
+build-agent	Post Checkout	2026-10-14T02:30:56.5928645Z [command]/usr/bin/git version
+build-agent	Post Checkout	2026-10-14T02:30:56.6000615Z git version 2.55.0
+build-agent	Post Checkout	2026-10-14T02:30:56.6058556Z Temporarily overriding HOME='/home/runner/work/_temp/a6637ce2-771d-4026-bd73-a39dba5f312d' before making global git config changes
+build-agent	Post Checkout	2026-10-14T02:30:56.6062009Z Adding repository directory to the temporary git global config as a safe directory
+build-agent	Post Checkout	2026-10-14T02:30:56.6080262Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/sni-panel/sni-panel
+build-agent	Post Checkout	2026-10-14T02:30:56.6197534Z Removing SSH command configuration
+build-agent	Post Checkout	2026-10-14T02:30:56.6219655Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+build-agent	Post Checkout	2026-10-14T02:30:56.6394014Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+build-agent	Post Checkout	2026-10-14T02:30:56.7368459Z Removing HTTP extra header
+build-agent	Post Checkout	2026-10-14T02:30:56.7369688Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+build-agent	Post Checkout	2026-10-14T02:30:56.7468875Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+build-agent	Post Checkout	2026-10-14T02:30:56.8006994Z Removing includeIf entries pointing to credentials config files
+build-agent	Post Checkout	2026-10-14T02:30:56.8010668Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+build-agent	Post Checkout	2026-10-14T02:30:56.8088182Z includeif.gitdir:/home/runner/work/sni-panel/sni-panel/.git.path
+build-agent	Post Checkout	2026-10-14T02:30:56.8109747Z includeif.gitdir:/home/runner/work/sni-panel/sni-panel/.git/worktrees/*.path
+build-agent	Post Checkout	2026-10-14T02:30:56.8114115Z includeif.gitdir:/github/workspace/.git.path
+build-agent	Post Checkout	2026-10-14T02:30:56.8116877Z includeif.gitdir:/github/workspace/.git/worktrees/*.path
+build-agent	Post Checkout	2026-10-14T02:30:56.8133318Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/home/runner/work/sni-panel/sni-panel/.git.path
+build-agent	Post Checkout	2026-10-14T02:30:56.8146623Z /home/runner/work/_temp/git-credentials-710053e5-8563-464a-b9f4-9bf6ab15a036.config
+build-agent	Post Checkout	2026-10-14T02:30:56.8166101Z [command]/usr/bin/git config --local --unset includeif.gitdir:/home/runner/work/sni-panel/sni-panel/.git.path \/home\/runner\/work\/_temp\/git\-credentials\-710053e5\-8563\-464a\-b9f4\-9bf6ab15a036\.config
+build-agent	Post Checkout	2026-10-14T02:30:56.8246592Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/home/runner/work/sni-panel/sni-panel/.git/worktrees/*.path
+build-agent	Post Checkout	2026-10-14T02:30:56.8308341Z /home/runner/work/_temp/git-credentials-710053e5-8563-464a-b9f4-9bf6ab15a036.config
+build-agent	Post Checkout	2026-10-14T02:30:56.8312295Z [command]/usr/bin/git config --local --unset includeif.gitdir:/home/runner/work/sni-panel/sni-panel/.git/worktrees/*.path \/home\/runner\/work\/_temp\/git\-credentials\-710053e5\-8563\-464a\-b9f4\-9bf6ab15a036\.config
+build-agent	Post Checkout	2026-10-14T02:30:56.8408694Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/github/workspace/.git.path
+build-agent	Post Checkout	2026-10-14T02:30:56.8451468Z /github/runner_temp/git-credentials-710053e5-8563-464a-b9f4-9bf6ab15a036.config
+build-agent	Post Checkout	2026-10-14T02:30:56.8465627Z [command]/usr/bin/git config --local --unset includeif.gitdir:/github/workspace/.git.path \/github\/runner_temp\/git\-credentials\-710053e5\-8563\-464a\-b9f4\-9bf6ab15a036\.config
+build-agent	Post Checkout	2026-10-14T02:30:56.8577796Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/github/workspace/.git/worktrees/*.path
+build-agent	Post Checkout	2026-10-14T02:30:56.8625556Z /github/runner_temp/git-credentials-710053e5-8563-464a-b9f4-9bf6ab15a036.config
+build-agent	Post Checkout	2026-10-14T02:30:56.8651876Z [command]/usr/bin/git config --local --unset includeif.gitdir:/github/workspace/.git/worktrees/*.path \/github\/runner_temp\/git\-credentials\-710053e5\-8563\-464a\-b9f4\-9bf6ab15a036\.config
+build-agent	Post Checkout	2026-10-14T02:30:56.8754581Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+build-agent	Post Checkout	2026-10-14T02:30:56.9301408Z Removing credentials config '/home/runner/work/_temp/git-credentials-710053e5-8563-464a-b9f4-9bf6ab15a036.config'
+build-agent	Complete job	﻿2026-10-14T02:30:56.9589243Z Cleaning up orphan processes

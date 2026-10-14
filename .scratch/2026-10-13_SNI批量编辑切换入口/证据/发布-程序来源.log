@@ -1,0 +1,83 @@
+/tmp/forwardx-v3.3.4-release.bCwhaZ/forwardx-agent-linux-amd64: go1.23.12
+	path	github.com/poouo/Forwardx/agent
+	mod	github.com/poouo/Forwardx/agent	(devel)	
+	dep	github.com/google/btree	v1.1.2	h1:xf4v41cLI2Z6FxbKm+8Bu+m8ifhj15JuZ9sa0jZCMUU=
+	dep	golang.org/x/crypto	v0.37.0	h1:kJNSjF/Xp7kU0iB2Z+9viTPMW4EqqsrywMXLJOOsXSE=
+	dep	golang.org/x/net	v0.39.0	h1:ZCu7HMWDxpXpaiKdhzIfaltL9Lp31x/3fCP11bc6/fY=
+	dep	golang.org/x/sys	v0.32.0	h1:s77OFDvIQeibCmezSnk/q6iAfkdiQaJi4VzroCFrN20=
+	dep	golang.org/x/time	v0.7.0	h1:ntUhktv3OPE6TgYxXWv9vKvUSJyIFJlyohwbkEwPrKQ=
+	dep	golang.zx2c4.com/wireguard	v0.0.0-20250521234502-f333402bd9cb	h1:whnFRlWMcXI9d+ZbWg+4sHnLp52d5yiIPUxMBSt4X9A=
+	dep	gvisor.dev/gvisor	v0.0.0-20250503011706-39ed1f5ac29c	h1:m/r7OM+Y2Ty1sgBQ7Qb27VgIMBW8ZZhT4gLnUyDIhzI=
+	build	-buildmode=exe
+	build	-compiler=gc
+	build	-trimpath=true
+	build	CGO_ENABLED=0
+	build	GOARCH=amd64
+	build	GOOS=linux
+	build	GOAMD64=v1
+	build	vcs=git
+	build	vcs.revision=7334b2a27fdc1e12ccad91f29b0f5067789857bc
+	build	vcs.time=2026-10-14T02:18:47Z
+	build	vcs.modified=false
+
+/tmp/forwardx-v3.3.4-release.bCwhaZ/bundled/forwardx-agent-linux-amd64: go1.23.12
+	path	github.com/poouo/Forwardx/agent
+	mod	github.com/poouo/Forwardx/agent	(devel)	
+	dep	github.com/google/btree	v1.1.2	h1:xf4v41cLI2Z6FxbKm+8Bu+m8ifhj15JuZ9sa0jZCMUU=
+	dep	golang.org/x/crypto	v0.37.0	h1:kJNSjF/Xp7kU0iB2Z+9viTPMW4EqqsrywMXLJOOsXSE=
+	dep	golang.org/x/net	v0.39.0	h1:ZCu7HMWDxpXpaiKdhzIfaltL9Lp31x/3fCP11bc6/fY=
+	dep	golang.org/x/sys	v0.32.0	h1:s77OFDvIQeibCmezSnk/q6iAfkdiQaJi4VzroCFrN20=
+	dep	golang.org/x/time	v0.7.0	h1:ntUhktv3OPE6TgYxXWv9vKvUSJyIFJlyohwbkEwPrKQ=
+	dep	golang.zx2c4.com/wireguard	v0.0.0-20250521234502-f333402bd9cb	h1:whnFRlWMcXI9d+ZbWg+4sHnLp52d5yiIPUxMBSt4X9A=
+	dep	gvisor.dev/gvisor	v0.0.0-20250503011706-39ed1f5ac29c	h1:m/r7OM+Y2Ty1sgBQ7Qb27VgIMBW8ZZhT4gLnUyDIhzI=
+	build	-buildmode=exe
+	build	-compiler=gc
+	build	-trimpath=true
+	build	CGO_ENABLED=0
+	build	GOARCH=amd64
+	build	GOOS=linux
+	build	GOAMD64=v1
+	build	vcs=git
+	build	vcs.revision=7334b2a27fdc1e12ccad91f29b0f5067789857bc
+	build	vcs.time=2026-10-14T02:18:47Z
+	build	vcs.modified=true
+
+forwardx-agent-linux-amd64: build metadata matches except vcs.modified; same source commit, toolchain, modules and flags.
+
+/tmp/forwardx-v3.3.4-release.bCwhaZ/forwardx-fxp-linux-amd64: go1.23.12
+	path	github.com/poouo/Forwardx/forwardx-fxp
+	mod	github.com/poouo/Forwardx/forwardx-fxp	(devel)	
+	dep	github.com/klauspost/cpuid/v2	v2.0.9	h1:lgaqFMSdTdQYdZ04uHyN2d/eKdOMyi2YLSvlQIBFYa4=
+	dep	lukechampine.com/blake3	v1.4.1	h1:I3Smz7gso8w4/TunLKec6K2fn+kyKtDxr/xcQEN84Wg=
+	build	-buildmode=exe
+	build	-compiler=gc
+	build	-trimpath=true
+	build	DefaultGODEBUG=asynctimerchan=1,gotypesalias=0,httpservecontentkeepheaders=1,tls3des=1,tlskyber=0,winreadlinkvolume=0,winsymlink=0,x509keypairleaf=0,x509negativeserial=1
+	build	CGO_ENABLED=0
+	build	GOARCH=amd64
+	build	GOOS=linux
+	build	GOAMD64=v1
+	build	vcs=git
+	build	vcs.revision=7334b2a27fdc1e12ccad91f29b0f5067789857bc
+	build	vcs.time=2026-10-14T02:18:47Z
+	build	vcs.modified=false
+
+/tmp/forwardx-v3.3.4-release.bCwhaZ/bundled/forwardx-fxp-linux-amd64: go1.23.12
+	path	github.com/poouo/Forwardx/forwardx-fxp
+	mod	github.com/poouo/Forwardx/forwardx-fxp	(devel)	
+	dep	github.com/klauspost/cpuid/v2	v2.0.9	h1:lgaqFMSdTdQYdZ04uHyN2d/eKdOMyi2YLSvlQIBFYa4=
+	dep	lukechampine.com/blake3	v1.4.1	h1:I3Smz7gso8w4/TunLKec6K2fn+kyKtDxr/xcQEN84Wg=
+	build	-buildmode=exe
+	build	-compiler=gc
+	build	-trimpath=true
+	build	DefaultGODEBUG=asynctimerchan=1,gotypesalias=0,httpservecontentkeepheaders=1,tls3des=1,tlskyber=0,winreadlinkvolume=0,winsymlink=0,x509keypairleaf=0,x509negativeserial=1
+	build	CGO_ENABLED=0
+	build	GOARCH=amd64
+	build	GOOS=linux
+	build	GOAMD64=v1
+	build	vcs=git
+	build	vcs.revision=7334b2a27fdc1e12ccad91f29b0f5067789857bc
+	build	vcs.time=2026-10-14T02:18:47Z
+	build	vcs.modified=true
+
+forwardx-fxp-linux-amd64: build metadata matches except vcs.modified; same source commit, toolchain, modules and flags.

@@ -1,0 +1,11 @@
+Release is public, final and latest; bilingual notes match the committed changelogs.
+forwardx-agent-linux-amd64: 10948760 bytes, sha256:fc48d894efb6af9eccaad71e68bedf50014cc0844e21ae11f913d6f7231e6dee
+forwardx-fxp-linux-amd64: 6168728 bytes, sha256:1121276ac8469fa23c9ef7e194f42390de81345fa12775080a13172d408a9523
+forwardx-panel-v3.3.4.tar.gz: 35698231 bytes, sha256:0d1dbb1deb0e072935a4d05d4691432923e06fc07b936f2da389ff6bea0dd22b
+forwardx-runtime-linux-amd64: 9673064 bytes, sha256:a2aea24efb4597b5f57b35b8e1bbcc59f439b80723854d4371f6828b46682ffb
+SHA256SUMS: 426 bytes, sha256:0a5f70c3f1103e627624f0a84a75295f74b27b5dad21d343aa24d1949ff09772
+THIRD_PARTY_NOTICES.md: 1472 bytes, sha256:d3572e3ddda1ee140458bcceee17babef7876a859738cd7892b50f97ca21fe72
+forwardx-agent-linux-amd64: bundled/public identical=False
+forwardx-fxp-linux-amd64: bundled/public identical=False
+forwardx-runtime-linux-amd64: bundled/public identical=True
+Public and bundled binary checksums independently verified; package version, web/server files and SNI fix are present.

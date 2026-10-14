@@ -1,0 +1,8 @@
+{
+  "image": "ghcr.io/owo10086/sni-panel",
+  "version_tag": "v3.3.4",
+  "latest_tag": "latest",
+  "digest": "sha256:76a9ff7759562cb124071e3d4b476068371b6cd4e2a5bb77183e33178ee5447d",
+  "platform": "linux/amd64",
+  "config_version": "3.3.4"
+}

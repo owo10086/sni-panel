@@ -1,0 +1,5 @@
+
+> forwardx@3.3.4 check:versions /Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx
+> node scripts/check-versions.mjs
+
+versions ok: panel=3.3.4 android=2.3.98 apkRelease=3.2.5 agent=3.3.0 fxp=3.3.0 tag=v3.3.4
