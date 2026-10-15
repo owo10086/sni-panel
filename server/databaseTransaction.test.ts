@@ -227,6 +227,45 @@ test("SQLite billing transactions roll back and serialize concurrent updates", (
       assert.deepEqual(releasedItems, ["failed", "saved", "outer-rollback"]);
       await runtime.executeRaw('UPDATE "users" SET "balanceCents" = 1000 WHERE id = 1');
 
+      const deferredCallbacks = [];
+      await runtime.withDeferredDatabaseCommitCallbacks(async () => {
+        await runtime.withDatabaseTransaction(async () => {
+          await runtime.afterDatabaseCommit(async () => {
+            deferredCallbacks.push("committed");
+            await runtime.withDatabaseTransaction(async () => {
+              await runtime.afterDatabaseCommit(() => deferredCallbacks.push("follow-up"));
+            });
+          });
+          await runtime.withDatabaseSavepoint(async () => {
+            await runtime.afterDatabaseCommit(() => deferredCallbacks.push("saved-item"));
+          });
+          await assert.rejects(runtime.withDatabaseSavepoint(async () => {
+            await runtime.afterDatabaseCommit(() => deferredCallbacks.push("failed-item"));
+            throw new Error("failed-item");
+          }), /failed-item/);
+        });
+        assert.deepEqual(deferredCallbacks, [], "callbacks must wait for the enclosing lock scope to exit");
+        deferredCallbacks.push("unlocked");
+      });
+      assert.deepEqual(deferredCallbacks, ["unlocked", "committed", "follow-up", "saved-item"]);
+      await assert.rejects(runtime.withDeferredDatabaseCommitCallbacks(async () => {
+        await runtime.withDatabaseTransaction(async () => {
+          await runtime.afterDatabaseCommit(() => deferredCallbacks.push("before-error"));
+        });
+        throw new Error("error-after-save");
+      }), /error-after-save/);
+      assert.equal(deferredCallbacks.at(-1), "before-error", "saved work must survive a later error");
+      await assert.rejects(runtime.withDeferredDatabaseCommitCallbacks(() => runtime.withDatabaseTransaction(async () => {
+        await runtime.afterDatabaseCommit(() => deferredCallbacks.push("settled-error-saved"));
+        await runtime.afterDatabaseTransactionSettled(() => { throw new Error("settled-error"); });
+      })), /settled-error/);
+      assert.equal(deferredCallbacks.at(-1), "settled-error-saved");
+      await assert.rejects(runtime.withDeferredDatabaseCommitCallbacks(() => runtime.withDatabaseTransaction(async () => {
+        await runtime.afterDatabaseCommit(() => deferredCallbacks.push("must-not-run"));
+        throw new Error("outer-rollback");
+      })), /outer-rollback/);
+      assert.equal(deferredCallbacks.at(-1), "settled-error-saved");
+
       const delayedDb = await runtime.getDb();
       let markDelayedTransactionStarted;
       const delayedTransactionStarted = new Promise((resolve) => { markDelayedTransactionStarted = resolve; });

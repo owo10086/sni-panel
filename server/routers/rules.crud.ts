@@ -1,4 +1,4 @@
-import { afterDatabaseCommit, isDatabaseTransactionActive, withDatabaseSavepoint, DatabaseSavepointRollbackError } from "../dbRuntime";
+import { afterDatabaseCommit, isDatabaseTransactionActive, withDatabaseSavepoint, DatabaseSavepointRollbackError, withDeferredDatabaseCommitCallbacks } from "../dbRuntime";
 import { protectedProcedure, router } from "../_core/trpc";
 import { z } from "zod";
 import { isIP } from "node:net";
@@ -2052,9 +2052,9 @@ export const crudRulesRouter = router({
         try {
           // Billing and quota queues precede the DB transaction. Ordinary
           // creation can use these same queues without a DB/queue deadlock.
-          await withTrafficBillingUserLock(userId, () => withRuleCreateQuotaLock(userId, () => groupId
+          await withDeferredDatabaseCommitCallbacks(() => withTrafficBillingUserLock(userId, () => withRuleCreateQuotaLock(userId, () => groupId
             ? db.withForwardGroupSyncTransaction(groupId, save, { preserveRuntime: true })
-            : db.withDatabaseTransaction(save)));
+            : db.withDatabaseTransaction(save))));
         } catch (error) {
           if (error === noSuccessfulItems) return { results };
           if (!committed) throw error;

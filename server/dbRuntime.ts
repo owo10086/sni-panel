@@ -89,6 +89,11 @@ type DatabaseTransactionContext = {
 };
 
 const transactionContext = new AsyncLocalStorage<DatabaseTransactionContext>();
+type DeferredCommitCallbacks = {
+  active: boolean;
+  callbacks: Array<() => Promise<void> | void>;
+};
+const deferredCommitCallbacks = new AsyncLocalStorage<DeferredCommitCallbacks>();
 
 type SqliteConnectionLockContext = {
   sqlite: Database.Database;
@@ -733,6 +738,28 @@ async function runAfterSettledCallbacks(callbacks: Array<() => Promise<void> | v
   for (const callback of callbacks) await callback();
 }
 
+// A caller may protect a save with user locks. Release those locks before
+// committed work that can involve other users (for example stale-member billing).
+export async function withDeferredDatabaseCommitCallbacks<T>(work: () => Promise<T>): Promise<T> {
+  if (deferredCommitCallbacks.getStore()?.active) return work();
+  if (isDatabaseTransactionActive()) throw new Error("Commit callback scope must start before a database transaction");
+  const scope: DeferredCommitCallbacks = { active: true, callbacks: [] };
+  try {
+    return await deferredCommitCallbacks.run(scope, work);
+  } finally {
+    scope.active = false;
+    await runAfterCommitCallbacks(scope.callbacks);
+  }
+}
+
+function deferCommittedCallbacks(callbacks: Array<() => Promise<void> | void>) {
+  const scope = deferredCommitCallbacks.getStore();
+  if (!scope?.active) return;
+  // Capture immediately after COMMIT, before release/settled work can fail.
+  scope.callbacks.push(...callbacks);
+  callbacks.length = 0;
+}
+
 export async function withDatabaseTransaction<T>(work: () => Promise<T>): Promise<T> {
   return seamlessDatabaseOperation("BEGIN", () => reportDatabaseErrors(() => runDatabaseTransaction(work)));
 }
@@ -788,6 +815,7 @@ async function runDatabaseTransaction<T>(work: () => Promise<T>): Promise<T> {
         const db = drizzleMysql(reportingDatabaseClient(connection) as any) as Db;
         result = await transactionContext.run({ db, mysqlConnection: connection, afterCommit, afterSettled }, work);
         await connection.commit();
+        deferCommittedCallbacks(afterCommit);
       } catch (error) {
         await connection.rollback().catch(() => undefined);
         throw error;
@@ -812,6 +840,7 @@ async function runDatabaseTransaction<T>(work: () => Promise<T>): Promise<T> {
         const db = drizzlePostgres(reportingDatabaseClient(client) as any) as Db;
         result = await transactionContext.run({ db, postgresClient: client, afterCommit, afterSettled }, work);
         await client.query("COMMIT");
+        deferCommittedCallbacks(afterCommit);
       } catch (error) {
         await client.query("ROLLBACK").catch(() => undefined);
         throw error;
@@ -838,6 +867,7 @@ async function runDatabaseTransaction<T>(work: () => Promise<T>): Promise<T> {
           sqlite.exec("BEGIN IMMEDIATE");
           transactionResult = await transactionContext.run({ db, sqlite, afterCommit, afterSettled }, work);
           sqlite.exec("COMMIT");
+          deferCommittedCallbacks(afterCommit);
         } catch (error) {
           try { sqlite.exec("ROLLBACK"); } catch { /* transaction may already be closed */ }
           throw error;

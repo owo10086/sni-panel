@@ -1,0 +1,2 @@
+[Database] SQLite opened at /var/folders/43/bm25dvt57lbbzppp5zx168n00000gn/T/forwardx-live-import-_ainaudn/test.db
+PASS: one live TLS connection survived batch creation and heartbeat route replacement; all 13 domains accept new TLS connections; the same FXP process remains alive

@@ -48,6 +48,10 @@ test("SNI batches coordinate with ordinary saves and recheck changed entries aft
   verifyBatchImport("batch-concurrency");
 });
 
+test("SNI batch cleanup and multi-user traffic reports finish without waiting on each other", () => {
+  verifyBatchImport("batch-billing-concurrency");
+});
+
 for (const kind of ["port", "chain", "tunnel"]) {
   test(kind + " SNI batch removes failed writes and rolls back final commit failures without changing old configuration", () => {
     verifyBatchImport("batch-failure-" + kind);

@@ -1,0 +1,130 @@
+TAP version 13
+# Subtest: database pool capacity scales automatically with the host count
+ok 1 - database pool capacity scales automatically with the host count
+  ---
+  duration_ms: 0.687875
+  type: 'test'
+  ...
+# Subtest: MySQL pool tiers retain opened connections and bound queued work
+ok 2 - MySQL pool tiers retain opened connections and bound queued work
+  ---
+  duration_ms: 0.09375
+  type: 'test'
+  ...
+# Subtest: MySQL pool does not start the rapid excess-idle connection reaper
+ok 3 - MySQL pool does not start the rapid excess-idle connection reaper
+  ---
+  duration_ms: 0.4385
+  type: 'test'
+  ...
+# Subtest: PostgreSQL pool retains opened clients without synchronized lifetime rotation
+ok 4 - PostgreSQL pool retains opened clients without synchronized lifetime rotation
+  ---
+  duration_ms: 0.1825
+  type: 'test'
+  ...
+# Subtest: database checks allow user-provided loopback MySQL and PostgreSQL hosts
+ok 5 - database checks allow user-provided loopback MySQL and PostgreSQL hosts
+  ---
+  duration_ms: 12.398375
+  type: 'test'
+  ...
+# Subtest: SQLite billing transactions roll back and serialize concurrent updates
+ok 6 - SQLite billing transactions roll back and serialize concurrent updates
+  ---
+  duration_ms: 701.446417
+  type: 'test'
+  ...
+# Subtest: SNI batch import saves complete configurations on three failover entries and preserves confirmed routes
+ok 7 - SNI batch import saves complete configurations on three failover entries and preserves confirmed routes
+  ---
+  duration_ms: 1515.617292
+  type: 'test'
+  ...
+# Subtest: SNI batch import removes failed item writes at early and late positions while keeping other successes
+ok 8 - SNI batch import removes failed item writes at early and late positions while keeping other successes
+  ---
+  duration_ms: 1085.601542
+  type: 'test'
+  ...
+# Subtest: SNI batch import rolls back all new rules if final member saving fails and keeps the old confirmed configuration
+ok 9 - SNI batch import rolls back all new rules if final member saving fails and keeps the old confirmed configuration
+  ---
+  duration_ms: 1005.191667
+  type: 'test'
+  ...
+# Subtest: port SNI batch import preserves shared listeners, partial results and complete entry/exit configurations
+ok 10 - port SNI batch import preserves shared listeners, partial results and complete entry/exit configurations
+  ---
+  duration_ms: 873.497959
+  type: 'test'
+  ...
+# Subtest: chain SNI batch import preserves shared listeners, partial results and complete entry/exit configurations
+ok 11 - chain SNI batch import preserves shared listeners, partial results and complete entry/exit configurations
+  ---
+  duration_ms: 1164.195334
+  type: 'test'
+  ...
+# Subtest: tunnel SNI batch import preserves shared listeners, partial results and complete entry/exit configurations
+ok 12 - tunnel SNI batch import preserves shared listeners, partial results and complete entry/exit configurations
+  ---
+  duration_ms: 891.057833
+  type: 'test'
+  ...
+# Subtest: SNI batch creation preserves managed permissions, first and repeated traffic, rate limits and expiry
+ok 13 - SNI batch creation preserves managed permissions, first and repeated traffic, rate limits and expiry
+  ---
+  duration_ms: 2556.309167
+  type: 'test'
+  ...
+# Subtest: SNI batch import preserves owner permissions, input bounds and shared-port quotas
+ok 14 - SNI batch import preserves owner permissions, input bounds and shared-port quotas
+  ---
+  duration_ms: 924.971833
+  type: 'test'
+  ...
+# Subtest: SNI batches coordinate with ordinary saves and recheck changed entries after waiting
+ok 15 - SNI batches coordinate with ordinary saves and recheck changed entries after waiting
+  ---
+  duration_ms: 1072.005084
+  type: 'test'
+  ...
+# Subtest: SNI batch cleanup and multi-user traffic reports finish without waiting on each other
+ok 16 - SNI batch cleanup and multi-user traffic reports finish without waiting on each other
+  ---
+  duration_ms: 811.348792
+  type: 'test'
+  ...
+# Subtest: port SNI batch removes failed writes and rolls back final commit failures without changing old configuration
+ok 17 - port SNI batch removes failed writes and rolls back final commit failures without changing old configuration
+  ---
+  duration_ms: 883.132667
+  type: 'test'
+  ...
+# Subtest: chain SNI batch removes failed writes and rolls back final commit failures without changing old configuration
+ok 18 - chain SNI batch removes failed writes and rolls back final commit failures without changing old configuration
+  ---
+  duration_ms: 1049.512042
+  type: 'test'
+  ...
+# Subtest: tunnel SNI batch removes failed writes and rolls back final commit failures without changing old configuration
+ok 19 - tunnel SNI batch removes failed writes and rolls back final commit failures without changing old configuration
+  ---
+  duration_ms: 792.974
+  type: 'test'
+  ...
+# Subtest: SNI batch import returns saved results when notification delivery disconnects
+ok 20 - SNI batch import returns saved results when notification delivery disconnects
+  ---
+  duration_ms: 873.283417
+  type: 'test'
+  ...
+1..20
+# tests 20
+# suites 0
+# pass 20
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 15612.765709

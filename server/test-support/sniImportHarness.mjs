@@ -163,7 +163,18 @@ try {
     for (let index = 0; index < existingCount; index++) await admin.create(ruleInput("seed", index));
   } else {
     captureNotifications();
-    if (scenario === "batch-group") {
+    if (scenario === "batch-live-connection") {
+      const { verifyBatchKeepsConnection } = await import("./sniLiveConnection.mjs");
+      await verifyBatchKeepsConnection(async target => {
+        await admin.create(ruleInput("live-kept", 0, target));
+        const before = splitter(await heartbeat(1));
+        return { before, importBatch: async () => {
+          const imported = await admin.createSniBatch({ rules: Array.from({ length: 12 }, (_, index) => ruleInput("live-added", index, target)) });
+          assert.ok(imported.results.every(result => result.status === "fulfilled"), JSON.stringify(imported));
+          return splitter(await heartbeat(1));
+        } };
+      });
+    } else if (scenario === "batch-group") {
       const kept = ruleInput("seed", 0);
       const saved = await admin.create(kept);
       const initial = await verifyImported([{ status: "fulfilled", item: kept, value: saved }]);
@@ -305,6 +316,37 @@ try {
       const saved = await admin.createSniBatch({ rules: [omitted, managed] });
       assert.equal((await admin.getById({ id: saved.results[0].value.id })).adminManaged, false);
       assert.equal((await admin.getById({ id: saved.results[1].value.id })).adminManaged, true);
+    } else if (scenario === "batch-billing-concurrency") {
+      const { keyedTaskDepth, trafficBillingUserLockKey, withTrafficBillingUserLock } = await import("../keyedTaskLock.ts");
+      const old = await admin.create(ruleInput("removed", 0));
+      await db.markForwardRulePendingDelete(old.id);
+      let releaseReport;
+      const reportGate = new Promise(resolve => { releaseReport = resolve; });
+      let reportHeld;
+      const held = new Promise(resolve => { reportHeld = resolve; });
+      const report = withTrafficBillingUserLock(1, async () => {
+        reportHeld();
+        await reportGate;
+        // Agent reports acquire affected users in ascending order.
+        await withTrafficBillingUserLock(2, () => db.setSetting("multi-user-report", "complete"));
+      });
+      await held;
+      const batch = admin.createSniBatch({ rules: [ruleInput("other-owner", 0, { userId: 2 })] });
+      const deadline = Date.now() + 5000;
+      while (keyedTaskDepth(trafficBillingUserLockKey(1)) < 2 && Date.now() < deadline) {
+        await new Promise(resolve => setTimeout(resolve, 5));
+      }
+      assert.equal(keyedTaskDepth(trafficBillingUserLockKey(1)), 2, "cleanup must reach the old owner's billing queue");
+      releaseReport();
+      let timer;
+      try {
+        const [saved] = await Promise.race([
+          Promise.all([batch, report]),
+          new Promise((_, reject) => { timer = setTimeout(() => reject(new Error("batch cleanup and traffic report deadlocked")), 2000); }),
+        ]);
+        assert.equal(saved.results[0].status, "fulfilled");
+        assert.equal(await db.getSetting("multi-user-report"), "complete");
+      } finally { clearTimeout(timer); }
     } else if (scenario === "batch-concurrency") {
       const { withResourceTaskLock, withTrafficBillingUserLock } = await import("../keyedTaskLock.ts");
       const deferred = () => {
