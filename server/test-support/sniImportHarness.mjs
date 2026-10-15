@@ -667,6 +667,79 @@ try {
       const explicit = await admin.create(ruleInput("explicit", 0));
       assert.equal((await admin.getById({ id: explicit.id })).adminManaged, true);
       console.log("SNI_IMPORT_RESULT=" + JSON.stringify({ notifications: notificationCounts(), omittedManaged: false, explicitManaged: true }));
+    } else if (["member-release-entry-chain", "member-release-entry-tunnel"].includes(scenario)) {
+      const tunnel = scenario.endsWith("tunnel");
+      const { forwardGroupsRouter } = await import("../routers/forwardGroups.ts");
+      const groups = forwardGroupsRouter.createCaller(context(1, "admin"));
+      for (const id of [4, 5]) await insert("hosts", {
+        id, name: "extra-entry-" + id, ip: "192.0.2." + id, ipv4: "192.0.2." + id,
+        agentToken: "token-" + id, userId: 1, isOnline: 1,
+        lastHeartbeat: Math.floor(Date.now() / 1000), agentVersion: "3.3.0",
+        portRangeStart: 18000, portRangeEnd: 30000,
+      });
+      await insert("forward_groups", {
+        id: 30, name: "entries", groupType: "host", groupMode: "entry",
+        domain: "entry.example.test", ddnsAutoResolveEnabled: 0,
+        targetIp: "0.0.0.0", userId: 1, isEnabled: 1,
+      });
+      for (const id of [4, 5]) await insert("forward_group_members", {
+        id: 300 + id, groupId: 30, memberType: "host", hostId: id,
+        priority: id, isEnabled: 1,
+      });
+      let route;
+      if (tunnel) {
+        await insert("tunnels", {
+          id: 20, name: "direct TLS", entryHostId: 1, exitHostId: 3, entryGroupId: 30,
+          mode: "tls", listenPort: 26000, userId: 1, isEnabled: 1,
+        });
+        route = { forwardGroupId: null, tunnelId: 20, hostId: 1, forwardType: "gost" };
+      } else {
+        await insert("forward_groups", {
+          id: 20, name: "entry-chain", groupType: "host", groupMode: "chain",
+          entryGroupId: 30, forwardType: "nftables", targetIp: "0.0.0.0", userId: 1, isEnabled: 1,
+        });
+        for (const id of [1, 3]) await insert("forward_group_members", {
+          id: 200 + id, groupId: 20, memberType: "host", hostId: id, priority: id, isEnabled: 1,
+        });
+        route = { forwardGroupId: 20 };
+      }
+      const created = await admin.create(ruleInput("retained", 0, route));
+      const oldBefore = await heartbeat(4);
+      const newBefore = await heartbeat(5);
+      const domainList = reply => (reply.desiredState?.actions || [])
+        .filter(action => action.op === "apply").flatMap(action => action.fxp?.sniRoutes || [])
+        .map(row => row.sni).sort();
+      const services = reply => (reply.desiredState?.actions || [])
+        .filter(action => action.op === "apply" && action.forwardType === "gost-runtime-sync")
+        .flatMap(action => action.managedConfigs || [])
+        .flatMap(config => JSON.parse(Buffer.from(config.contentBase64, "base64").toString("utf8")).services || []);
+      if (tunnel) {
+        assert.ok(services(oldBefore).length > 0);
+        assert.ok(services(newBefore).length > 0);
+      } else {
+        assert.deepEqual(domainList(oldBefore), ["retained-0.example.test"]);
+        assert.deepEqual(domainList(newBefore), ["retained-0.example.test"]);
+      }
+      await groups.updateFields({ id: 30, members: [
+        { memberType: "host", hostId: 5, priority: 0, isEnabled: true },
+      ] });
+      const oldReply = await heartbeat(4, oldBefore.runningRules);
+      const newReply = await heartbeat(5);
+      const exitReply = await heartbeat(3);
+      if (tunnel) {
+        // Runtime-sync may still carry an empty cleanup config: inspect its actual services.
+        assert.deepEqual(services(oldReply), []);
+        assert.ok(services(newReply).some(service => /(?:^|:)18443$/.test(String(service.addr))));
+        const independent = await heartbeat(1);
+        assert.ok(services(independent).some(service => /(?:^|:)18443$/.test(String(service.addr))));
+        assert.equal((await runtime.queryRaw('SELECT entryHostId FROM tunnels WHERE id=20'))[0].entryHostId, 1);
+      } else {
+        assert.deepEqual(domainList(oldReply), []);
+        assert.deepEqual(domainList(newReply), ["retained-0.example.test"]);
+      }
+      assert.deepEqual(domainList(exitReply), ["retained-0.example.test"]);
+      assert.equal((await admin.getById({ id: created.id })).id, created.id);
+
     } else if (scenario === "benchmark") {
       const inputs = Array.from({ length: count }, (_, index) => ruleInput("import", index));
       const useBatch = process.env.FORWARDX_BATCH_IMPORT === "1";

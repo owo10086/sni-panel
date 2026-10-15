@@ -6,6 +6,8 @@ import path from "node:path";
 import test from "node:test";
 
 for (const [scenario, description] of [
+  ["member-release", "removed SNI group hosts stop receiving routes while roots and new entrance remain"],
+  ["member-release-ddns-error", "DNS failure preserves committed member release and old entrance cleanup"],
   ["configuration", "SNI entrance selection checks all configurations and ignores destination results"],
   ["windows", "SNI, China health and recovery windows advance independently through Agent reports"],
   ["lifecycle", "SNI confirmation expiry, reconnect, process restart and unchanged reports use current evidence"],

@@ -148,6 +148,63 @@ try {
   }
   await settle();
   for (const id of [1, 2]) await presence(id);
+  if (scenario === "member-release" || scenario === "member-release-ddns-error") {
+    await advance(25, { renew: [1, 2] });
+    const rootSql =
+      'SELECT id,name,userId,sourcePort,targetIp,targetPort,sni,quotaUsedIn,quotaUsedOut ' +
+      'FROM forward_rules WHERE forwardGroupId=10 AND isForwardGroupTemplate=1 ORDER BY id';
+    const before = await runtime.queryRaw(rootSql);
+    const expectedDomains = before.map(rule => rule.sni).sort();
+    assert.equal(expectedDomains.length, 12);
+    assert.ok(expectedDomains.every(domain => typeof domain === "string" && domain.length > 0));
+    const requestCount = requests.length;
+    dnsFailure = scenario === "member-release-ddns-error";
+    const save = () => groups.updateFields({
+      id: 10, members: [
+        { memberType: "host", hostId: 2, priority: 0, isEnabled: true },
+      ],
+    });
+    if (dnsFailure) await assert.rejects(save, error => {
+      assert.match(error.message, /配置已保存/);
+      const aggregate = error instanceof AggregateError ? error : error.cause;
+      assert.ok(aggregate instanceof AggregateError);
+      assert.ok(aggregate.errors.some(cause => /simulated DDNS failure/.test(String(cause.message))));
+      return true;
+    });
+    else await save();
+
+    assert.deepEqual((await state()).members.map(member => member.hostId), [2]);
+    assert.notEqual((await state()).activeMemberId, 101);
+    assert.deepEqual(await runtime.queryRaw(rootSql), before);
+    assert.deepEqual(await runtime.queryRaw(
+      'SELECT DISTINCT hostId FROM forward_rules WHERE forwardGroupId=10 ' +
+      'AND isForwardGroupTemplate=1'
+    ), [{ hostId: 2 }]);
+    assert.equal(Number((await runtime.queryRaw(
+      'SELECT COUNT(*) AS count FROM forward_rules WHERE forwardGroupId=10 ' +
+      'AND hostId=1 AND isForwardGroupTemplate=0 AND pendingDelete=0'
+    ))[0].count), 0);
+
+    const oldReply = await heartbeat(1, configurations[0]);
+    // The retained member already acknowledged this unchanged configuration.
+    // Request a complete desired state to inspect its actual route table.
+    receivedHashes.delete(2);
+    const newReply = await heartbeat(2, []);
+    const domainsIn = reply => (reply.desiredState?.actions || [])
+      .filter(action => action.op === "apply")
+      .flatMap(action => action.fxp?.sniRoutes || [])
+      .map(route => route.sni).sort();
+    assert.deepEqual(domainsIn(oldReply), []);
+    assert.deepEqual(domainsIn(newReply), expectedDomains);
+    assert.ok(requests.length > requestCount, "member removal must reach the local DNS provider");
+    if (dnsFailure) {
+      assert.equal((await state()).lastStatus, "error");
+      assert.equal((await state()).lastDdnsValue, "127.0.0.1");
+    } else {
+      assert.equal((await state()).lastDdnsValue, "127.0.0.2");
+    }
+  }
+
   if (scenario === "restart-prepare") {
     await heartbeat(1, []);
     await advance(19, { renew: [2] });

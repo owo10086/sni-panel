@@ -60,3 +60,8 @@ test("equal priorities use member ids and enabled candidates come first", () => 
 test("empty candidates do not authorize deleting a rule", () => {
   assert.deepEqual(planTemplateHostRepairs([]), []);
 });
+
+test("reversing valid candidates preserves the selected owner", () => {
+  const candidates = [row(), row({ hostId: 3, memberId: 103, priority: 1 })];
+  assert.deepEqual(planTemplateHostRepairs([...candidates].reverse()), planTemplateHostRepairs(candidates));
+});

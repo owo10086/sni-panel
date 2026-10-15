@@ -4,6 +4,21 @@
 
 ## [Unreleased]
 
+## [3.3.8] - 2026-10-16
+
+### Fixes and improvements
+
+- Removing and saving a forwarding-group or entry-group member now transfers saved business-rule ownership to a remaining configured member. Stale ownership no longer keeps the removed host in use. Covers ordinary and SNI rules, failover groups, and forwarding chains that use entry groups.
+- Save member lists, rule ownership, and affected chains together, rolling them back together on failure. Request old-configuration cleanup after saving. DNS or individual cleanup failures report that configuration was saved and allow other cleanup work to continue.
+- Normal synchronization and deletion checks repair historical ownership while preserving business rules, accumulated traffic, and billing relationships. Hosts used by other rules, groups, or independent tunnels remain protected. Token deletion checks every associated host.
+- Ordinary rules, SNI text, and mixed rule files submit in batches and save together, reducing repeated reconciliation during large imports. Retain per-item results, explicit source ports, authorization checks, and failed-item retries.
+
+### Versions and upgrade notes
+
+- Panel: `3.3.8`; Agent and ForwardX FXP runtime: `3.3.0`. Only the panel needs upgrading; existing Agent/FXP installations remain compatible.
+- Releasing a host from a group does not delete the host or confirm DNS or live traffic cutover. Offline hosts receive configuration cleanup when they reconnect. Independent tunnel entry settings are preserved.
+- Native Android and iOS/iPadOS applications remain excluded under the standing agreement; this release provides no APK/IPA.
+
 ## [3.3.7] - 2026-10-15
 
 ### Features and improvements

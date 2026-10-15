@@ -105,3 +105,9 @@ test("all five webpage input combinations make one real batch request and save c
 test("an invalid first item cannot narrow coordination for later valid tunnel rules", () => {
   verifyBatchImport("import-leading-failure");
 });
+
+for (const kind of ["chain", "tunnel"]) {
+  test("entry member removal withdraws real " + kind + " configurations", () => {
+    verifyBatchImport("member-release-entry-" + kind);
+  });
+}
