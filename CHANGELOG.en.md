@@ -4,6 +4,21 @@
 
 ## [Unreleased]
 
+## [3.3.7] - 2026-10-15
+
+### Features and improvements
+
+- Manual bulk import of ordinary rules now supports `Rule name#Source port#Target address#Target port`, preserving the supplied rule name and entry port for port forwarding, tunnels, forwarding chains, and forwarding groups. The existing `address:port` format continues to assign a random available source port, and both formats can be mixed.
+- Complete all specified-port rules before processing random-port rules so random allocation cannot take a port requested by another item in the batch. Previews and results remain in input order, and individual failures preserve other successful items.
+- When a specified port is occupied or outside the allowed range, retain the complete failed line, rule name, ports, and original line number for correction and retry. Do not silently switch it to a random port. Successful items are not resubmitted, and file imports retain their existing port-conflict handling.
+- Validate decimal port ranges and bracketed IPv6 in the new format, and add Chinese/English guidance, mixed-format examples, and usage documentation. Preserve the existing address format and dedicated SNI imports.
+
+### Versions and upgrade notes
+
+- Panel: `3.3.7`; Agent and ForwardX FXP runtime: `3.3.0`. Only the panel needs upgrading; existing Agent/FXP installations remain compatible.
+- Import up to 500 nonempty rules at a time. Both ports in the four-field format must be decimal integers from 1–65535. A successful save still requires entry runtime confirmation.
+- Native Android and iOS/iPadOS applications remain excluded under the standing agreement; this release provides no APK/IPA.
+
 ## [3.3.6] - 2026-10-15
 
 ### Improvements

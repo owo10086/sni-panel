@@ -5,12 +5,13 @@ type ImportResult<R> = { status: "fulfilled"; value: R } | { status: "rejected";
 
 // The page owns parsing and retry content. This boundary submits all SNI items
 // together and keeps ordinary-rule results aligned with their original input.
-export async function runRuleImport<T extends { sni?: unknown }, R>(
+export async function runRuleImport<T extends { sni?: unknown; sourcePort?: number }, R>(
   items: readonly T[],
   operations: {
     createOne: (item: T) => Promise<R>;
     createSniBatch: (items: T[]) => Promise<{ results: ImportResult<R>[] }>;
   },
+  options: { fixedPortFirst?: boolean } = {},
 ): Promise<Array<BatchOperationResult<T, R>>> {
   const indexed = items.map((item, index) => ({ item, index }));
   const sniItems = indexed.filter(({ item }) => !!normalizeSniValue(item.sni));
@@ -28,8 +29,13 @@ export async function runRuleImport<T extends { sni?: unknown }, R>(
     }
   };
   const saveOrdinary = async () => {
-    const outcomes = await runBatchOperations(ordinaryItems, 6, ({ item }) => operations.createOne(item));
-    for (const outcome of outcomes) results[outcome.item.index] = { ...outcome, item: outcome.item.item };
+    const groups = options.fixedPortFirst
+      ? [ordinaryItems.filter(({ item }) => Number(item.sourcePort || 0) > 0), ordinaryItems.filter(({ item }) => Number(item.sourcePort || 0) <= 0)]
+      : [ordinaryItems];
+    for (const group of groups) {
+      const outcomes = await runBatchOperations(group, 6, ({ item }) => operations.createOne(item));
+      for (const outcome of outcomes) results[outcome.item.index] = { ...outcome, item: outcome.item.item };
+    }
   };
   await Promise.all([saveSni(), saveOrdinary()]);
   return results;

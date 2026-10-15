@@ -76,11 +76,14 @@ import {
   RULE_TRANSFER_MAX_FILE_SIZE,
   RULE_TRANSFER_MAX_IMPORT_COUNT,
   SNI_BULK_IMPORT_LINE_FORMAT,
+  MANUAL_BULK_IMPORT_LINE_FORMAT,
   exportRuleForTransfer,
+  formatManualBulkImportRuleLine,
   formatSniBulkImportRuleLine,
   isSniBulkImportRule,
   normalizeSniImportDomain,
   parseSniBulkImportText,
+  parseManualBulkImportText,
   parseRuleTransferFile,
   type RuleBulkImportRule,
   type RuleTransferFile,
@@ -5549,60 +5552,10 @@ function RulesContent() {
     [exportScopeType, exportResourceId, getRulesForTransferScope]
   );
 
-  const manualImportValidation = useMemo<{ ok: boolean; message: string; rules: RuleBulkImportRule[] }>(() => {
-    const lines = String(importManualText || "").split(/\r?\n/)
-      .map((line, index) => ({ text: line.trim(), lineNumber: index + 1 }))
-      .filter((line) => !!line.text);
-    if (lines.length === 0) {
-      return { ok: false, message: translateText("请输入目标地址，每行一个 地址:端口"), rules: [] };
-    }
-    if (lines.length > RULE_TRANSFER_MAX_IMPORT_COUNT) {
-      return { ok: false, message: translateText("单次最多导入 {0} 条规则", [RULE_TRANSFER_MAX_IMPORT_COUNT]), rules: [] };
-    }
-    const rules: RuleBulkImportRule[] = [];
-    for (let index = 0; index < lines.length; index += 1) {
-      const parsed = splitFailoverTargetLine(lines[index].text);
-      if (!parsed) continue;
-      if ("error" in parsed) {
-        return { ok: false, message: translateText("第 {0} 行：{1}", [lines[index].lineNumber, parsed.error]), rules: [] };
-      }
-      const targetIp = String(parsed.targetIp || "").trim();
-      const targetPort = Number(parsed.targetPort || 0);
-      if (!isValidTargetHost(targetIp)) {
-        return { ok: false, message: translateText("第 {0} 行：地址格式不正确", [lines[index].lineNumber]), rules: [] };
-      }
-      if (!isValidPort(targetPort)) {
-        return { ok: false, message: translateText("第 {0} 行：端口必须在 1-65535 之间", [lines[index].lineNumber]), rules: [] };
-      }
-      rules.push({
-        sourceLineNumber: lines[index].lineNumber,
-        name: formatAddressWithPort(targetIp, targetPort),
-        forwardType: defaultForm.forwardType,
-        protocol: defaultForm.protocol,
-        sourcePort: 0,
-        targetIp,
-        targetPort,
-        isEnabled: true,
-        telegramErrorNotifyEnabled: false,
-        proxyProtocolReceive: false,
-        proxyProtocolSend: false,
-        proxyProtocolExitReceive: false,
-        proxyProtocolExitSend: false,
-        proxyProtocolVersion: 1,
-        tcpFastOpen: false,
-        zeroCopy: false,
-        udpOverTcp: false,
-        udpOverTcpPort: 0,
-        failoverEnabled: false,
-        failoverStrategy: "fallback",
-        failoverTargets: [],
-        failoverSeconds: 60,
-        recoverSeconds: 120,
-        autoFailback: true,
-      });
-    }
-    return { ok: true, message: translateText("已识别 {0} 条手动输入规则", [rules.length]), rules };
-  }, [defaultForm.forwardType, defaultForm.protocol, importManualText]);
+  const manualImportValidation = useMemo(
+    () => parseManualBulkImportText(importManualText, { forwardType: defaultForm.forwardType, protocol: defaultForm.protocol }),
+    [defaultForm.forwardType, defaultForm.protocol, importManualText],
+  );
 
   const sniImportValidation = useMemo<{ ok: boolean; message: string; rules: RuleBulkImportRule[] }>(() => {
     if (user?.role !== "admin") {
@@ -5773,15 +5726,18 @@ function RulesContent() {
           try {
             return await importCreateMutation.mutateAsync(payload);
           } catch (error) {
-            if (rule.sourcePort <= 0 || !isBatchPortConflictError(error)) throw error;
+            if (importSourceMode !== "file" || rule.sourcePort <= 0 || !isBatchPortConflictError(error)) throw error;
             return importCreateMutation.mutateAsync({ ...payload, sourcePort: 0 });
           }
         },
-      });
+      }, { fixedPortFirst: importSourceMode === "manual" });
       const importedCount = results.filter((result) => result.status === "fulfilled").length;
       const failures = results.filter((result) => result.status === "rejected");
-      setImportFailures(results.filter(result => result.status === "rejected").map(result =>
-        `${result.item.name}: ${batchOperationErrorMessage(result.reason)}`));
+      setImportFailures(failures.map(result => {
+        const prefix = result.item.sourceLineNumber ? translateText("第 {0} 行：", [result.item.sourceLineNumber]) : "";
+        const message = batchOperationErrorMessage(result.reason);
+        return `${prefix}${result.item.name}: ${message.startsWith(prefix) ? message.slice(prefix.length) : message}`;
+      }));
       await Promise.all([
         utils.rules.list.invalidate(),
         utils.rules.listPage.invalidate(),
@@ -5800,7 +5756,7 @@ function RulesContent() {
             .join("\n"));
         } else {
           setImportManualText(failedRules
-            .map((rule) => formatAddressWithPort(rule.targetIp, rule.targetPort))
+            .map(formatManualBulkImportRuleLine)
             .join("\n"));
         }
         const firstFailure = failures[0];
@@ -8620,7 +8576,9 @@ function RulesContent() {
                       <div className="text-xs text-muted-foreground">
                         {importSourceMode === "sni"
                           ? translateText("填写一次入口端口，按行粘贴 SNI 分流规则。")
-                          : translateText("支持从文件导入，或手动输入目标地址与端口后批量导入。")}
+                          : importSourceMode === "manual"
+                            ? translateText("每行一条，支持目标地址或指定名称和源端口，可混合填写。")
+                            : translateText("支持从文件导入，或手动输入目标地址与端口后批量导入。")}
                       </div>
                     </div>
                     <div className="inline-flex shrink-0 items-center gap-2 self-start whitespace-nowrap rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
@@ -8702,7 +8660,7 @@ function RulesContent() {
                     </div>
                   )}
                   <div className="space-y-2">
-                    <Label>{importSourceMode === "file" ? translateText("规则文件") : importSourceMode === "sni" ? translateText("SNI 规则列表") : translateText("目标地址列表")}</Label>
+                    <Label>{importSourceMode === "file" ? translateText("规则文件") : importSourceMode === "sni" ? translateText("SNI 规则列表") : translateText("规则列表")}</Label>
                     {importSourceMode === "file" ? (
                       <Input key={importFileInputKey} type="file" accept=".json,application/json" onChange={handleImportFileChange} />
                     ) : (
@@ -8711,9 +8669,14 @@ function RulesContent() {
                         onChange={(event) => setImportManualText(event.target.value)}
                         placeholder={importSourceMode === "sni"
                           ? translateText("{0}\n官网#www.example.com#203.0.113.10#443\nIPv6站点#ipv6.example.com#[2408:xxxx::1]#8443", [translateText(SNI_BULK_IMPORT_LINE_FORMAT)])
-                          : translateText("每行一个目标地址，格式如：\nexample.com:443\n10.0.0.8:8080\n[2408:xxxx::1]:8443")}
-                        className={importSourceMode === "sni" ? "min-h-[11rem] resize-y font-mono text-sm" : "min-h-[7.5rem] resize-y"}
+                          : translateText("支持两种格式，可混合填写：\n{0}\n官网#10443#example.com#443\nIPv6服务#18443#[2001:db8::1]#8443\nexample.net:443\n[2001:db8::2]:8443", [translateText(MANUAL_BULK_IMPORT_LINE_FORMAT)])}
+                        className="min-h-[11rem] resize-y font-mono text-sm"
                       />
+                    )}
+                    {importSourceMode === "manual" && (
+                      <p className="text-xs leading-5 text-muted-foreground">
+                        {translateText("地址:端口 会随机分配源端口；四段格式使用指定源端口（1-65535），失败时保留原文供修改。混合导入先处理指定端口，再处理随机端口。")}
+                      </p>
                     )}
                   </div>
                   {(importSourceMode === "file" || importFileName || importFileError || importValidation.ok || String(importManualText || "").trim()) && (

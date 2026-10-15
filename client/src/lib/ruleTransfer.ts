@@ -12,6 +12,7 @@ export const RULE_TRANSFER_FILE_VERSION = 1;
 export const RULE_TRANSFER_MAX_IMPORT_COUNT = 500;
 export const RULE_TRANSFER_MAX_FILE_SIZE = 5 * 1024 * 1024;
 export const SNI_BULK_IMPORT_LINE_FORMAT = "规则名#SNI域名#目标地址#目标端口";
+export const MANUAL_BULK_IMPORT_LINE_FORMAT = "规则名称#源端口#目标地址#目标端口";
 
 export type ProxyProtocolVersion = 1 | 2;
 export type FailoverStrategy = "fallback" | "round_robin" | "random" | "ip_hash";
@@ -128,6 +129,105 @@ const ruleTransferRuleSchema = z.object({
   recoverSeconds: z.number().int().min(10).max(3600).optional().default(120),
   autoFailback: z.boolean().optional().default(true),
 });
+
+function formatManualImportTarget(targetIp: string, targetPort: number) {
+  return `${targetIp.includes(":") ? `[${targetIp}]` : targetIp}:${targetPort}`;
+}
+
+export function formatManualBulkImportRuleLine(rule: RuleBulkImportRule) {
+  if (rule.sourceLine) return rule.sourceLine;
+  if (rule.sourcePort <= 0) return formatManualImportTarget(rule.targetIp, rule.targetPort);
+  const targetIp = rule.targetIp.includes(":") ? `[${rule.targetIp}]` : rule.targetIp;
+  return `${rule.name}#${rule.sourcePort}#${targetIp}#${rule.targetPort}`;
+}
+
+export function parseManualBulkImportText(
+  raw: unknown,
+  defaults: Pick<RuleTransferFileRule, "forwardType" | "protocol">,
+): { ok: boolean; message: string; rules: RuleBulkImportRule[] } {
+  const lines = String(raw || "").split(/\r?\n/)
+    .map((line, index) => ({ text: line.trim(), lineNumber: index + 1 }))
+    .filter(line => !!line.text);
+  if (!lines.length) {
+    return { ok: false, message: translateText("请输入规则，每行使用 地址:端口 或 {0}", [translateText(MANUAL_BULK_IMPORT_LINE_FORMAT)]), rules: [] };
+  }
+  if (lines.length > RULE_TRANSFER_MAX_IMPORT_COUNT) {
+    return { ok: false, message: translateText("单次最多导入 {0} 条规则", [RULE_TRANSFER_MAX_IMPORT_COUNT]), rules: [] };
+  }
+  const rules: RuleBulkImportRule[] = [];
+  for (const { text, lineNumber } of lines) {
+    const fail = (message: string) => ({ ok: false, message: translateText("第 {0} 行：{1}", [lineNumber, message]), rules: [] });
+    let name: string;
+    let sourcePort = 0;
+    let targetIp: string;
+    let targetPort: number;
+    if (text.includes("#")) {
+      const parts = text.split("#").map(part => part.trim());
+      if (parts.length !== 4) return fail(translateText("请按 {0} 格式填写", [translateText(MANUAL_BULK_IMPORT_LINE_FORMAT)]));
+      const [nameRaw, sourcePortRaw, targetIpRaw, targetPortRaw] = parts;
+      if (!nameRaw) return fail(translateText("规则名不能为空"));
+      if (nameRaw.length > 128) return fail(translateText("规则名不能超过 128 个字符"));
+      sourcePort = Number(sourcePortRaw);
+      targetPort = Number(targetPortRaw);
+      if (!/^\d+$/.test(sourcePortRaw) || !Number.isInteger(sourcePort) || sourcePort < 1 || sourcePort > 65535) {
+        return fail(translateText("源端口必须是 1-65535 之间的十进制整数"));
+      }
+      if (!/^\d+$/.test(targetPortRaw) || !Number.isInteger(targetPort) || targetPort < 1 || targetPort > 65535) {
+        return fail(translateText("目标端口必须是 1-65535 之间的十进制整数"));
+      }
+      const bracketed = targetIpRaw.startsWith("[") && targetIpRaw.endsWith("]");
+      targetIp = bracketed ? targetIpRaw.slice(1, -1).trim() : targetIpRaw;
+      if (targetIp.includes(":") && !bracketed) return fail(translateText("IPv6 地址请使用 [地址] 格式"));
+      if (bracketed && !ipv6AddressSchema.safeParse(targetIp).success) return fail(translateText("IPv6 地址格式不正确"));
+      if (!targetHostSchema.safeParse(targetIp).success) return fail(translateText("目标地址格式不正确"));
+      name = nameRaw;
+    } else {
+      // Keep the legacy Number conversion and last-colon split, including its
+      // accepted numeric notation and unbracketed IPv6 addresses.
+      if (text.startsWith("[")) {
+        const end = text.indexOf("]");
+        if (end <= 1 || text[end + 1] !== ":") return fail(translateText("IPv6 地址请使用 [地址]:端口 格式"));
+        targetIp = text.slice(1, end).trim();
+        targetPort = Number(text.slice(end + 2).trim());
+      } else {
+        const index = text.lastIndexOf(":");
+        if (index <= 0 || index === text.length - 1) return fail(translateText("请按 地址:端口 格式填写"));
+        targetIp = text.slice(0, index).trim();
+        targetPort = Number(text.slice(index + 1).trim());
+      }
+      if (!/^[a-zA-Z0-9]([a-zA-Z0-9\-_.]*[a-zA-Z0-9])?$|^[a-fA-F0-9:.]+$/.test(targetIp)) {
+        return fail(translateText("地址格式不正确"));
+      }
+      if (!Number.isInteger(targetPort) || targetPort < 1 || targetPort > 65535) return fail(translateText("端口必须在 1-65535 之间"));
+      name = formatManualImportTarget(targetIp, targetPort);
+    }
+    rules.push({
+      name, sourcePort, targetIp, targetPort,
+      forwardType: defaults.forwardType,
+      protocol: defaults.protocol,
+      isEnabled: true,
+      telegramErrorNotifyEnabled: false,
+      proxyProtocolReceive: false,
+      proxyProtocolSend: false,
+      proxyProtocolExitReceive: false,
+      proxyProtocolExitSend: false,
+      proxyProtocolVersion: 1,
+      tcpFastOpen: false,
+      zeroCopy: false,
+      udpOverTcp: false,
+      udpOverTcpPort: 0,
+      failoverEnabled: false,
+      failoverStrategy: "fallback",
+      failoverTargets: [],
+      failoverSeconds: 60,
+      recoverSeconds: 120,
+      autoFailback: true,
+      sourceLine: text,
+      sourceLineNumber: lineNumber,
+    });
+  }
+  return { ok: true, message: translateText("已识别 {0} 条手动输入规则", [rules.length]), rules };
+}
 
 export function normalizeSniImportDomain(value: unknown) {
   return normalizeSniValue(value);

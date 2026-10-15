@@ -5,6 +5,91 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 
+test("manual imports preserve fixed ports before random allocation and save all four resource types", () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "forwardx-manual-import-"));
+  const script = String.raw`
+    import assert from "node:assert/strict";
+    const runtime = await import("./server/dbRuntime.ts");
+    const schema = await import("./server/dbSchema.ts");
+    const { rulesRouter } = await import("./server/routers/rules.ts");
+    const { runRuleImport } = await import("./client/src/lib/ruleImport.ts");
+    const { parseManualBulkImportText } = await import("./client/src/lib/ruleTransfer.ts");
+    const quote = name => '"' + name + '"';
+    const insert = (table, columns, values) => runtime.executeRaw(
+      "INSERT INTO " + quote(table) + " (" + columns.map(quote).join(",") + ") VALUES (" + values.map(() => "?").join(",") + ")", values);
+    const host = id => insert("hosts", ["id","name","ip","ipv4","userId","isOnline","lastHeartbeat","portRangeStart","portRangeEnd"],
+      [id,"entry-" + id,"198.51.100." + id,"198.51.100." + id,1,1,Math.floor(Date.now()/1000),17500,17501]);
+    const group = (id, mode, hostIds) => {
+      return insert("forward_groups", ["id","name","groupType","groupMode","domain","targetIp","userId","isEnabled"],
+        [id,"resource-" + id,"host",mode,"","0.0.0.0",1,1])
+        .then(async () => {
+          for (const [index, hostId] of hostIds.entries()) await insert("forward_group_members", ["id","groupId","memberType","hostId","priority","isEnabled"], [id*10+index,id,"host",hostId,index,1]);
+        });
+    };
+    try {
+      await runtime.connectDatabase({type:"sqlite",sqlite:{path:process.env.FORWARDX_TEST_DB}});
+      await schema.ensureDatabaseSchema();
+      await insert("users", ["id","username","password","role","canAddRules"], [1,"admin","x","admin",1]);
+      const caller = rulesRouter.createCaller({req:{headers:{}},res:{clearCookie(){}},user:{id:1,username:"admin",role:"admin",accountEnabled:true},authSession:null,authFailureReason:null});
+      const defaults = {forwardType:"iptables",protocol:"both"};
+      const scenarios = [
+        "example.net:443\n官网#17500#example.com#443",
+        "官网#17500#example.com#443\nexample.net:443",
+        "官网#17500#example.com#443",
+        "example.net:443",
+      ];
+      for (const [index, text] of scenarios.entries()) {
+        const id = index+1;
+        await host(id);
+        await group(id,"port",[id]);
+        const parsed = parseManualBulkImportText(text,defaults);
+        assert.equal(parsed.ok,true);
+        const random = Math.random;
+        let results;
+        try {
+          Math.random = () => 0;
+          results = await runRuleImport(parsed.rules,{
+            createOne: rule => caller.create({forwardGroupId:id,name:rule.name,forwardType:rule.forwardType,protocol:rule.protocol,sourcePort:rule.sourcePort,targetIp:rule.targetIp,targetPort:rule.targetPort}),
+            createSniBatch:async()=>{throw new Error("unexpected SNI");},
+          },{fixedPortFirst:true});
+        } finally {Math.random=random;}
+        assert.ok(results.every(result=>result.status==="fulfilled"),JSON.stringify(results));
+        assert.deepEqual(results.map(result=>result.item.name),parsed.rules.map(rule=>rule.name));
+        for (const result of results) {
+          if(result.item.sourcePort>0) assert.equal(result.value.sourcePort,17500);
+          else assert.equal(result.value.sourcePort,index<2?17501:17500);
+          const saved = await runtime.queryRaw('SELECT "name","sourcePort","targetIp","targetPort" FROM "forward_rules" WHERE "id"=?',[result.value.id]);
+          assert.deepEqual(saved,[{name:result.item.name,sourcePort:result.value.sourcePort,targetIp:result.item.targetIp,targetPort:result.item.targetPort}]);
+        }
+      }
+      for (const id of [5,6,7,8,9,10]) await host(id);
+      await insert("tunnels", ["id","name","entryHostId","exitHostId","listenPort","userId"], [50,"import-tunnel",5,6,17501,1]);
+      await group(60,"chain",[7,8]);
+      await group(70,"failover",[9,10]);
+      for (const [name, resource, forwardType] of [
+        ["隧道",{hostId:5,tunnelId:50},"gost"],
+        ["转发链",{forwardGroupId:60},"iptables"],
+        ["转发组",{forwardGroupId:70},"iptables"],
+      ]) {
+        const parsed = parseManualBulkImportText(name+"#17500#203.0.113.20#443",{forwardType,protocol:"both"});
+        assert.equal(parsed.ok,true);
+        const rule = parsed.rules[0];
+        const result = await caller.create({...resource,name:rule.name,forwardType:rule.forwardType,protocol:rule.protocol,sourcePort:rule.sourcePort,targetIp:rule.targetIp,targetPort:rule.targetPort});
+        assert.equal(result.sourcePort,17500);
+        const saved=await runtime.queryRaw('SELECT "name","sourcePort","targetIp","targetPort" FROM "forward_rules" WHERE "id"=?',[result.id]);
+        assert.deepEqual(saved,[{name,sourcePort:17500,targetIp:"203.0.113.20",targetPort:443}]);
+      }
+    } finally {await runtime.closeDatabase();}
+  `;
+  try {
+    const result = spawnSync(process.execPath, ["--import", "tsx", "--input-type=module", "-e", script], {
+      cwd: process.cwd(), env: { ...process.env, DATABASE_TYPE: "sqlite", FORWARDX_TEST_DB: path.join(directory, "import.db") },
+      encoding: "utf8", timeout: 60_000,
+    });
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+  } finally { fs.rmSync(directory, { recursive: true, force: true }); }
+});
+
 test("forward-group port checks cover every entry and exclude the edited template children", () => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), "forwardx-rule-port-check-"));
   const databasePath = path.join(directory, "port-check.db");
