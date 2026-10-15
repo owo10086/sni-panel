@@ -1,0 +1,472 @@
+{
+  "stage": "after",
+  "sourceHashes": {
+    "server/routers/rules.crud.ts": "77e0fc1fd9175d956356e46938c1325699be091704fe4ddc6dee78873bbb4358",
+    "server/sniRuleWrite.ts": "2df56cb69801de12b917c400967242d4e7d30890ef89818aebb68391de476378",
+    "client/src/lib/ruleImport.ts": "c62a6708ec6228be4db582e0422afee7bbaeb0cbfc4bb1d1c5fc1fb76d51d847",
+    "client/src/pages/Rules.tsx": "b3e8049549b3ac390c79d1159afdde791483c3c0b651f1403031104bfc93e75b",
+    "shared/ruleImport.ts": "f25f36e0093b5ac65774c12345185cd23b56cf37f299ab91623dcff7edbe4747"
+  },
+  "version": "088a47d86f0969f4be41960607435376b044f426",
+  "measurements": [
+    {
+      "name": "ordinary44",
+      "round": 1,
+      "sample": "ordinary",
+      "existingCount": 0,
+      "count": 44,
+      "hosts": 4,
+      "durationMs": 689,
+      "seedConfirmed": false,
+      "roots": 44,
+      "children": 176,
+      "notifications": {
+        "1": {
+          "forward-group-synced": 1
+        },
+        "2": {
+          "forward-group-synced": 1
+        },
+        "3": {
+          "forward-group-synced": 1
+        },
+        "4": {
+          "forward-group-synced": 1
+        }
+      }
+    },
+    {
+      "name": "ordinary44",
+      "round": 2,
+      "sample": "ordinary",
+      "existingCount": 0,
+      "count": 44,
+      "hosts": 4,
+      "durationMs": 690,
+      "seedConfirmed": false,
+      "roots": 44,
+      "children": 176,
+      "notifications": {
+        "1": {
+          "forward-group-synced": 1
+        },
+        "2": {
+          "forward-group-synced": 1
+        },
+        "3": {
+          "forward-group-synced": 1
+        },
+        "4": {
+          "forward-group-synced": 1
+        }
+      }
+    },
+    {
+      "name": "ordinary44",
+      "round": 3,
+      "sample": "ordinary",
+      "existingCount": 0,
+      "count": 44,
+      "hosts": 4,
+      "durationMs": 689,
+      "seedConfirmed": false,
+      "roots": 44,
+      "children": 176,
+      "notifications": {
+        "1": {
+          "forward-group-synced": 1
+        },
+        "2": {
+          "forward-group-synced": 1
+        },
+        "3": {
+          "forward-group-synced": 1
+        },
+        "4": {
+          "forward-group-synced": 1
+        }
+      }
+    },
+    {
+      "name": "ordinary56",
+      "round": 1,
+      "sample": "ordinary",
+      "existingCount": 0,
+      "count": 56,
+      "hosts": 4,
+      "durationMs": 858,
+      "seedConfirmed": false,
+      "roots": 56,
+      "children": 224,
+      "notifications": {
+        "1": {
+          "forward-group-synced": 1
+        },
+        "2": {
+          "forward-group-synced": 1
+        },
+        "3": {
+          "forward-group-synced": 1
+        },
+        "4": {
+          "forward-group-synced": 1
+        }
+      }
+    },
+    {
+      "name": "ordinary56",
+      "round": 2,
+      "sample": "ordinary",
+      "existingCount": 0,
+      "count": 56,
+      "hosts": 4,
+      "durationMs": 867,
+      "seedConfirmed": false,
+      "roots": 56,
+      "children": 224,
+      "notifications": {
+        "1": {
+          "forward-group-synced": 1
+        },
+        "2": {
+          "forward-group-synced": 1
+        },
+        "3": {
+          "forward-group-synced": 1
+        },
+        "4": {
+          "forward-group-synced": 1
+        }
+      }
+    },
+    {
+      "name": "ordinary56",
+      "round": 3,
+      "sample": "ordinary",
+      "existingCount": 0,
+      "count": 56,
+      "hosts": 4,
+      "durationMs": 858,
+      "seedConfirmed": false,
+      "roots": 56,
+      "children": 224,
+      "notifications": {
+        "1": {
+          "forward-group-synced": 1
+        },
+        "2": {
+          "forward-group-synced": 1
+        },
+        "3": {
+          "forward-group-synced": 1
+        },
+        "4": {
+          "forward-group-synced": 1
+        }
+      }
+    },
+    {
+      "name": "existing56plus56",
+      "round": 1,
+      "sample": "ordinary",
+      "existingCount": 56,
+      "count": 56,
+      "hosts": 4,
+      "durationMs": 1097,
+      "seedConfirmed": false,
+      "roots": 112,
+      "children": 448,
+      "notifications": {
+        "1": {
+          "forward-group-synced": 1
+        },
+        "2": {
+          "forward-group-synced": 1
+        },
+        "3": {
+          "forward-group-synced": 1
+        },
+        "4": {
+          "forward-group-synced": 1
+        }
+      }
+    },
+    {
+      "name": "existing56plus56",
+      "round": 2,
+      "sample": "ordinary",
+      "existingCount": 56,
+      "count": 56,
+      "hosts": 4,
+      "durationMs": 1098,
+      "seedConfirmed": false,
+      "roots": 112,
+      "children": 448,
+      "notifications": {
+        "1": {
+          "forward-group-synced": 1
+        },
+        "2": {
+          "forward-group-synced": 1
+        },
+        "3": {
+          "forward-group-synced": 1
+        },
+        "4": {
+          "forward-group-synced": 1
+        }
+      }
+    },
+    {
+      "name": "existing56plus56",
+      "round": 3,
+      "sample": "ordinary",
+      "existingCount": 56,
+      "count": 56,
+      "hosts": 4,
+      "durationMs": 1156,
+      "seedConfirmed": false,
+      "roots": 112,
+      "children": 448,
+      "notifications": {
+        "1": {
+          "forward-group-synced": 1
+        },
+        "2": {
+          "forward-group-synced": 1
+        },
+        "3": {
+          "forward-group-synced": 1
+        },
+        "4": {
+          "forward-group-synced": 1
+        }
+      }
+    },
+    {
+      "name": "mixed56",
+      "round": 1,
+      "sample": "mixed",
+      "existingCount": 0,
+      "count": 56,
+      "hosts": 4,
+      "durationMs": 1301,
+      "seedConfirmed": false,
+      "roots": 56,
+      "children": 224,
+      "notifications": {
+        "1": {
+          "forward-group-synced": 1
+        },
+        "2": {
+          "forward-group-synced": 1
+        },
+        "3": {
+          "forward-group-synced": 1
+        },
+        "4": {
+          "forward-group-synced": 1
+        }
+      }
+    },
+    {
+      "name": "mixed56",
+      "round": 2,
+      "sample": "mixed",
+      "existingCount": 0,
+      "count": 56,
+      "hosts": 4,
+      "durationMs": 1283,
+      "seedConfirmed": false,
+      "roots": 56,
+      "children": 224,
+      "notifications": {
+        "1": {
+          "forward-group-synced": 1
+        },
+        "2": {
+          "forward-group-synced": 1
+        },
+        "3": {
+          "forward-group-synced": 1
+        },
+        "4": {
+          "forward-group-synced": 1
+        }
+      }
+    },
+    {
+      "name": "mixed56",
+      "round": 3,
+      "sample": "mixed",
+      "existingCount": 0,
+      "count": 56,
+      "hosts": 4,
+      "durationMs": 1312,
+      "seedConfirmed": false,
+      "roots": 56,
+      "children": 224,
+      "notifications": {
+        "1": {
+          "forward-group-synced": 1
+        },
+        "2": {
+          "forward-group-synced": 1
+        },
+        "3": {
+          "forward-group-synced": 1
+        },
+        "4": {
+          "forward-group-synced": 1
+        }
+      }
+    },
+    {
+      "name": "sni56four",
+      "round": 1,
+      "sample": "sni4",
+      "existingCount": 0,
+      "count": 56,
+      "hosts": 4,
+      "durationMs": 1737,
+      "seedConfirmed": false,
+      "roots": 56,
+      "children": 224,
+      "notifications": {
+        "1": {
+          "forward-group-synced": 1
+        },
+        "2": {
+          "forward-group-synced": 1
+        },
+        "3": {
+          "forward-group-synced": 1
+        },
+        "4": {
+          "forward-group-synced": 1
+        }
+      }
+    },
+    {
+      "name": "sni56four",
+      "round": 2,
+      "sample": "sni4",
+      "existingCount": 0,
+      "count": 56,
+      "hosts": 4,
+      "durationMs": 1730,
+      "seedConfirmed": false,
+      "roots": 56,
+      "children": 224,
+      "notifications": {
+        "1": {
+          "forward-group-synced": 1
+        },
+        "2": {
+          "forward-group-synced": 1
+        },
+        "3": {
+          "forward-group-synced": 1
+        },
+        "4": {
+          "forward-group-synced": 1
+        }
+      }
+    },
+    {
+      "name": "sni56four",
+      "round": 3,
+      "sample": "sni4",
+      "existingCount": 0,
+      "count": 56,
+      "hosts": 4,
+      "durationMs": 1743,
+      "seedConfirmed": false,
+      "roots": 56,
+      "children": 224,
+      "notifications": {
+        "1": {
+          "forward-group-synced": 1
+        },
+        "2": {
+          "forward-group-synced": 1
+        },
+        "3": {
+          "forward-group-synced": 1
+        },
+        "4": {
+          "forward-group-synced": 1
+        }
+      }
+    },
+    {
+      "name": "sni56three",
+      "round": 1,
+      "sample": "sni3",
+      "existingCount": 0,
+      "count": 56,
+      "hosts": 3,
+      "durationMs": 1290,
+      "seedConfirmed": false,
+      "roots": 56,
+      "children": 168,
+      "notifications": {
+        "1": {
+          "forward-group-synced": 1
+        },
+        "2": {
+          "forward-group-synced": 1
+        },
+        "3": {
+          "forward-group-synced": 1
+        }
+      }
+    },
+    {
+      "name": "sni56three",
+      "round": 2,
+      "sample": "sni3",
+      "existingCount": 0,
+      "count": 56,
+      "hosts": 3,
+      "durationMs": 1294,
+      "seedConfirmed": false,
+      "roots": 56,
+      "children": 168,
+      "notifications": {
+        "1": {
+          "forward-group-synced": 1
+        },
+        "2": {
+          "forward-group-synced": 1
+        },
+        "3": {
+          "forward-group-synced": 1
+        }
+      }
+    },
+    {
+      "name": "sni56three",
+      "round": 3,
+      "sample": "sni3",
+      "existingCount": 0,
+      "count": 56,
+      "hosts": 3,
+      "durationMs": 1271,
+      "seedConfirmed": false,
+      "roots": 56,
+      "children": 168,
+      "notifications": {
+        "1": {
+          "forward-group-synced": 1
+        },
+        "2": {
+          "forward-group-synced": 1
+        },
+        "3": {
+          "forward-group-synced": 1
+        }
+      }
+    }
+  ]
+}

@@ -49,8 +49,7 @@ test("manual imports preserve fixed ports before random allocation and save all 
         try {
           Math.random = () => 0;
           results = await runRuleImport(parsed.rules,{
-            createOne: rule => caller.create({forwardGroupId:id,name:rule.name,forwardType:rule.forwardType,protocol:rule.protocol,sourcePort:rule.sourcePort,targetIp:rule.targetIp,targetPort:rule.targetPort}),
-            createSniBatch:async()=>{throw new Error("unexpected SNI");},
+            createBatch: (rules, options) => caller.createBatch({...options,rules:rules.map(rule=>({forwardGroupId:id,name:rule.name,forwardType:rule.forwardType,protocol:rule.protocol,sourcePort:rule.sourcePort,targetIp:rule.targetIp,targetPort:rule.targetPort}))}),
           },{fixedPortFirst:true});
         } finally {Math.random=random;}
         assert.ok(results.every(result=>result.status==="fulfilled"),JSON.stringify(results));

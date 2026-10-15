@@ -18,6 +18,22 @@ function verifyBatchImport(scenario: string) {
   }
 }
 
+test("ordinary users can import ordinary rules in one batch with complete entry configurations", () => {
+  verifyBatchImport("import-ordinary");
+});
+
+test("batch imports preserve manual fixed ports and retry only ordinary file port conflicts", () => {
+  verifyBatchImport("import-ports");
+});
+
+test("mixed imports use original file order for quota and port competition and release failed items", () => {
+  verifyBatchImport("import-order");
+});
+
+test("mixed imports roll back ordinary and SNI candidates together on final save and commit failures", () => {
+  verifyBatchImport("import-final-failure");
+});
+
 test("SNI batch import saves complete configurations on three failover entries and preserves confirmed routes", () => {
   verifyBatchImport("batch-group");
 });
@@ -60,4 +76,32 @@ for (const kind of ["port", "chain", "tunnel"]) {
 
 test("SNI batch import returns saved results when notification delivery disconnects", () => {
   verifyBatchImport("batch-notification-failure");
+});
+
+for (const kind of ["port", "chain", "tunnel"]) {
+  test(kind + " mixed imports save ordinary protocols alongside complete SNI configurations", () => {
+    verifyBatchImport("import-resource-" + kind);
+  });
+}
+
+test("ordinary batches coordinate with single and mixed creates and recheck changed entry members", () => {
+  verifyBatchImport("import-concurrency");
+});
+
+for (const kind of ["port", "chain", "tunnel"]) {
+  test(kind + " mixed imports isolate failed writes and roll back both kinds on commit failure", () => {
+    verifyBatchImport("import-failure-" + kind);
+  });
+}
+
+test("ordinary batch rules preserve managed limits and count the first traffic reports exactly once", () => {
+  verifyBatchImport("import-usage");
+});
+
+test("all five webpage input combinations make one real batch request and save complete configurations", () => {
+  verifyBatchImport("import-web");
+});
+
+test("an invalid first item cannot narrow coordination for later valid tunnel rules", () => {
+  verifyBatchImport("import-leading-failure");
 });

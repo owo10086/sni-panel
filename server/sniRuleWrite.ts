@@ -9,9 +9,9 @@ type RuleRoute = { hostId?: unknown; forwardGroupId?: unknown; tunnelId?: unknow
 type WriteContext = { active: boolean; afterSave: Array<() => Promise<unknown>> };
 const writeContext = new AsyncLocalStorage<WriteContext>();
 
-async function readWriteRoute(ruleId: number | undefined, input: RuleRoute) {
+async function readWriteRoute(ruleId: number | undefined, input: RuleRoute, includePlain = false) {
   const rule = ruleId ? await getForwardRuleById(ruleId) : undefined;
-  if (!normalizeSniValue(rule?.sni) && !normalizeSniValue(input.sni)) return null;
+  if (!includePlain && !normalizeSniValue(rule?.sni) && !normalizeSniValue(input.sni)) return null;
   const hosts = new Set<number>();
   const groups = new Set<number>();
   const tunnels = new Set<number>();
@@ -57,7 +57,9 @@ async function readWriteRoute(ruleId: number | undefined, input: RuleRoute) {
   const nextGroupId = input.forwardGroupId !== undefined ? input.forwardGroupId : rule?.forwardGroupId;
   addHost(input.hostId ?? rule?.hostId);
   await visitGroup(nextGroupId);
-  if (!Number(nextGroupId) && (input.forwardType ?? rule?.forwardType) === "gost") {
+  // Creates/imports coordinate the selected resource before individual checks.
+  // An invalid first item's backend must not hide a later item's tunnel route.
+  if (!Number(nextGroupId) && (includePlain || (input.forwardType ?? rule?.forwardType) === "gost")) {
     await visitTunnel(input.tunnelId !== undefined ? input.tunnelId : rule?.tunnelId);
   }
   return {
@@ -69,15 +71,17 @@ async function readWriteRoute(ruleId: number | undefined, input: RuleRoute) {
 
 // Per-host ordering also covers different resources and different ports: the
 // SNI domain namespace belongs to the actual host, not to a resource or port.
-export async function withSniRuleWrite<T>(ruleId: number | undefined, input: RuleRoute, save: () => Promise<T>): Promise<T> {
+// includePlain lets ordinary creates/imports share this ordering for ports,
+// member changes and mixed batches; existing SNI updates keep their old gate.
+export async function withSniRuleWrite<T>(ruleId: number | undefined, input: RuleRoute, save: () => Promise<T>, options: { includePlain?: boolean } = {}): Promise<T> {
   if (writeContext.getStore()?.active) return save();
   const changed = Symbol("route changed while waiting");
   // Both waits share this retry budget. Every retry fully unwinds the old
   // resource and host positions before reading and joining the new route.
   for (let retry = 0; retry <= 3; retry++) {
-    const route = await readWriteRoute(ruleId, input);
+    const route = await readWriteRoute(ruleId, input, options.includePlain);
     if (!route) return save();
-    const sameRoute = async () => JSON.stringify(await readWriteRoute(ruleId, input)) === JSON.stringify(route);
+    const sameRoute = async () => JSON.stringify(await readWriteRoute(ruleId, input, options.includePlain)) === JSON.stringify(route);
     const context: WriteContext = { active: true, afterSave: [] };
     const keys = [
       ...route.groups.map(id => `forward-group-sync:${id}`),

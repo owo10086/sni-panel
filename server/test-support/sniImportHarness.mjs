@@ -18,7 +18,7 @@ import { runBatchOperations } from "../../client/src/lib/batchOperations.ts";
 const [scenario, existingValue = "0", countValue = "12"] = process.argv.slice(2);
 const existingCount = Number(existingValue);
 const count = Number(countValue);
-const hostIds = [1, 2, 3];
+const hostIds = ["import-benchmark", "import-ordinary", "import-order", "import-final-failure", "import-ports"].includes(scenario) && process.env.RULE_IMPORT_SAMPLE !== "sni3" ? [1, 2, 3, 4] : [1, 2, 3];
 const context = (id, role) => ({ user: { id, username: role, role, accountEnabled: true }, req: { headers: {} }, res: { clearCookie() {} } });
 const admin = rulesRouter.createCaller(context(1, "admin"));
 const customer = rulesRouter.createCaller(context(2, "user"));
@@ -163,7 +163,213 @@ try {
     for (let index = 0; index < existingCount; index++) await admin.create(ruleInput("seed", index));
   } else {
     captureNotifications();
-    if (scenario === "batch-live-connection") {
+    if (scenario === "import-benchmark") {
+      const sample = process.env.RULE_IMPORT_SAMPLE || "ordinary";
+      const makeInput = (prefix, index) => ruleInput(prefix, index, sample.startsWith("sni") || (sample === "mixed" && index % 2)
+        ? {} : { sni: null, sourcePort: (prefix === "seed" ? 20000 : 21000) + index, protocol: ["tcp", "udp", "both"][index % 3] });
+      for (let index = 0; index < existingCount; index++) await admin.create(makeInput("seed", index));
+      clearNotifications();
+      const inputs = Array.from({ length: count }, (_, index) => makeInput("import", index));
+      const start = performance.now();
+      let results;
+      if (process.env.FORWARDX_BATCH_IMPORT === "1") results = (await admin.createBatch({ rules: inputs })).results;
+      else {
+        results = new Array(inputs.length);
+        await Promise.all([
+          (async () => {
+            const entries = inputs.map((item, index) => ({ item, index })).filter(({ item }) => item.sni);
+            if (!entries.length) return;
+            const batch = await admin.createSniBatch({ rules: entries.map(({ item }) => item) });
+            entries.forEach(({ index }, position) => { results[index] = batch.results[position]; });
+          })(),
+          (async () => {
+            const entries = inputs.map((item, index) => ({ item, index })).filter(({ item }) => !item.sni);
+            const saved = await runBatchOperations(entries, 6, ({ item }) => admin.create(item));
+            saved.forEach(result => { results[result.item.index] = result; });
+          })(),
+        ]);
+      }
+      const durationMs = Math.round(performance.now() - start);
+      assert.ok(results.every(result => result.status === "fulfilled"), JSON.stringify(results));
+      const roots = (await admin.list()).filter(rule => rule.forwardGroupId === 10);
+      assert.equal(roots.length, existingCount + count);
+      for (const hostId of hostIds) {
+        const state = await heartbeat(hostId);
+        const ordinary = roots.filter(rule => !rule.sni);
+        for (const root of ordinary) assert.ok(state.runningRules.some(rule => rule.sourcePort === root.sourcePort && rule.targetPort === root.targetPort), "ordinary configuration missing on " + hostId);
+        const sniRoots = roots.filter(rule => rule.sni);
+        if (sniRoots.length) assert.equal(splitter(state).sniRoutes.length, sniRoots.length);
+      }
+      console.log("RULE_IMPORT_RESULT=" + JSON.stringify({ sample, existingCount, count, hosts: hostIds.length, durationMs, seedConfirmed: false, roots: roots.length, children: roots.length * hostIds.length, notifications: notificationCounts() }));
+    } else if (scenario === "import-web") {
+      const { createExpressMiddleware } = await import("@trpc/server/adapters/express");
+      const { createTRPCClient, httpLink } = await import("@trpc/client");
+      const { default: superjson } = await import("superjson");
+      const { router } = await import("../_core/trpc.ts");
+      const { runRuleImport } = await import("../../client/src/lib/ruleImport.ts");
+      const { parseManualBulkImportText, parseSniBulkImportText, parseRuleTransferFile } = await import("../../client/src/lib/ruleTransfer.ts");
+      const paths = [];
+      app.use("/api/trpc", (req, _res, next) => { paths.push(req.path); next(); }, createExpressMiddleware({
+        router: router({ rules: rulesRouter }), createContext: ({ req, res }) => ({ ...context(1, "admin"), req, res }),
+      }));
+      const client = createTRPCClient({ links: [httpLink({ url: "http://127.0.0.1:" + server.address().port + "/api/trpc", transformer: superjson })] });
+      const manual = parseManualBulkImportText("example.net:443\nfixed#23001#203.0.113.10#443", { forwardType: "nftables", protocol: "both" });
+      const sniText = parseSniBulkImportText("web-sni#web.example.test#203.0.113.10#443", 23443);
+      assert.equal(manual.ok, true); assert.equal(sniText.ok, true);
+      const variants = [[manual.rules, { fixedPortFirst: true }], [sniText.rules, {}]];
+      for (const rules of [[manual.rules[1]], sniText.rules, [manual.rules[1], sniText.rules[0], manual.rules[0]]]) {
+        const file = parseRuleTransferFile({ kind: "forwardx.forward-rules", version: 1, rules });
+        assert.equal(file.ok, true);
+        variants.push([file.file.rules, { retryPortConflicts: true }]);
+      }
+      const saved = [];
+      for (const [position, [rules, options]] of variants.entries()) {
+        const inputs = rules.map((rule, index) => ({ ...rule, name: "web-" + position + "-" + index, ...(rule.sni ? { sni: "web-" + position + "-" + index + ".example.test" } : rule.sourcePort ? { sourcePort: 23000 + position * 10 + index } : {}) }));
+        const before = paths.length;
+        const results = await runRuleImport(inputs, { createBatch: (items, flags) => client.rules.createBatch.mutate({ ...flags, rules: items.map(item => ({ ...item, forwardGroupId: 10 })) }) }, options);
+        assert.deepEqual(paths.slice(before), ["/rules.createBatch"], "each webpage input makes exactly one real save request");
+        assert.ok(results.every(result => result.status === "fulfilled"), JSON.stringify(results));
+        for (const result of results) {
+          const root = await admin.getById({ id: result.value.id });
+          assert.equal(root.name, result.item.name);
+          saved.push(root);
+        }
+      }
+      for (const hostId of hostIds) {
+        const state = await heartbeat(hostId);
+        for (const rule of saved.filter(rule => !rule.sni)) assert.ok(state.runningRules.some(row => row.sourcePort === rule.sourcePort && row.targetPort === rule.targetPort));
+        assert.equal(state.desiredState.actions.find(action => action.fxp?.role === "sni-splitter" && action.sourcePort === 23443).fxp.sniRoutes.length, 3);
+      }
+    } else if (scenario === "import-leading-failure") {
+      const { withResourceTaskLock, keyedTaskDepth } = await import("../keyedTaskLock.ts");
+      await insert("tunnels", { id: 20, name: "leading error route", entryHostId: 1, exitHostId: 3, mode: "tls", listenPort: 26000, userId: 1, isEnabled: 1 });
+      let held, release;
+      const ready = new Promise(resolve => { held = resolve; });
+      const gate = new Promise(resolve => { release = resolve; });
+      const moving = withResourceTaskLock("tunnel:20", async () => { held(); await gate; });
+      await ready;
+      const route = { forwardGroupId: null, tunnelId: 20, hostId: 1 };
+      const saving = admin.createBatch({ rules: [ruleInput("bad-leading", 0, { ...route, sni: null, forwardType: "nftables", sourcePort: 22900 }), ruleInput("valid-after-leading", 0, { ...route, forwardType: "gost" })] });
+      let settled = false;
+      void saving.then(() => { settled = true; }, () => { settled = true; });
+      let timer;
+      try {
+        const deadline = Date.now() + 2000;
+        while (!settled && keyedTaskDepth("tunnel:20") < 2 && Date.now() < deadline) await new Promise(resolve => setTimeout(resolve, 5));
+        assert.equal(settled, false, "batch must wait for the selected tunnel even when its first item is invalid");
+        await Promise.race([db.setSetting("leading-error-independent-write", "complete"), new Promise((_, reject) => { timer = setTimeout(() => reject(new Error("invalid first item let batch wait for its actual route while holding the database")), 1000); })]);
+      } finally { clearTimeout(timer); release(); await moving; }
+      const saved = await saving;
+      assert.deepEqual(saved.results.map(result => result.status), ["rejected", "fulfilled"], JSON.stringify(saved));
+      assert.equal((await admin.getById({ id: saved.results[1].value.id })).tunnelId, 20);
+    } else if (scenario === "import-order") {
+      await insert("users", { id: 3, username: "second-owner", password: "unused", role: "user", canAddRules: 1, manualCanAddRules: 1, balanceCents: 1000 });
+      await db.setUserHostPermissions(3, hostIds);
+      await db.setUserForwardGroupPermissions(3, [10]);
+      await runtime.executeRaw('UPDATE users SET "maxRules" = 1, "manualMaxRules" = 1 WHERE id IN (2, 3)');
+      await runtime.executeRaw(`CREATE TRIGGER reject_order_item AFTER INSERT ON forward_rules WHEN NEW."isForwardGroupTemplate" = 1 AND NEW."targetPort" = 19999 BEGIN SELECT RAISE(FAIL, 'item save failure'); END`);
+      for (const [owner, sniFirst] of [[2, false], [3, true]]) {
+        const inputs = [
+          ruleInput("failed-owner" + owner, 0, { userId: owner, sni: null, sourcePort: 22300 + owner, targetPort: 19999 }),
+          ruleInput("first-owner" + owner, 0, { userId: owner, sni: sniFirst ? "first-owner3.example.test" : null, sourcePort: 22300 + owner }),
+          ruleInput("later-owner" + owner, 0, { userId: owner, sni: sniFirst ? null : "later-owner2.example.test", sourcePort: 22310 + owner }),
+        ];
+        const saved = await admin.createBatch({ rules: inputs });
+        assert.deepEqual(saved.results.map(result => result.status), ["rejected", "fulfilled", "rejected"], JSON.stringify(saved));
+        assert.match(saved.results[0].reason, /item save failure/);
+        assert.match(saved.results[2].reason, /最大规则数量/);
+        assert.equal((await admin.getById({ id: saved.results[1].value.id })).name, inputs[1].name);
+      }
+      const portCompetition = await admin.createBatch({ rules: [ruleInput("sni-first", 0, { sourcePort: 22400 }), ruleInput("plain-later", 0, { sni: null, sourcePort: 22400 }), ruleInput("sni-shared", 0, { sourcePort: 22400 }), ruleInput("plain-first", 0, { sni: null, sourcePort: 22401 }), ruleInput("sni-later", 0, { sourcePort: 22401 }), ruleInput("plain-duplicate", 0, { sni: null, sourcePort: 22401 })] });
+      assert.deepEqual(portCompetition.results.map(result => result.status), ["fulfilled", "rejected", "fulfilled", "fulfilled", "rejected", "rejected"], JSON.stringify(portCompetition));
+      const userInputs = [ruleInput("user-normal", 0, { sni: null, sourcePort: 22410 }), ruleInput("user-denied", 0), ruleInput("user-normal", 1, { sni: null, sourcePort: 22411 })].map(rule => ({ ...rule, ...Object.fromEntries(Object.keys(zeroLimits).map(key => [key, undefined])) }));
+      await runtime.executeRaw('UPDATE users SET "maxRules" = 0, "manualMaxRules" = 0 WHERE id = 2');
+      const userResults = await customer.createBatch({ rules: userInputs });
+      assert.deepEqual(userResults.results.map(result => result.status), ["fulfilled", "rejected", "fulfilled"], JSON.stringify(userResults));
+      assert.match(userResults.results[1].reason, /仅管理员/);
+      await assert.rejects(admin.createBatch({ rules: [] }));
+      await assert.rejects(admin.createBatch({ rules: Array.from({ length: 501 }, (_, index) => ruleInput("too-many", index)) }));
+      await assert.rejects(admin.createBatch({ rules: [ruleInput("same", 0), ruleInput("different", 0, { forwardGroupId: 99 })] }), /同一个/);
+    } else if (scenario === "import-final-failure") {
+      const keptPlain = await admin.create(ruleInput("kept-plain", 0, { sni: null, sourcePort: 22500 }));
+      const keptSni = await admin.create(ruleInput("kept-sni", 0));
+      await runtime.executeRaw('UPDATE forward_rules SET "quotaUsedIn" = 123, "quotaUsedOut" = 456 WHERE id = ?', [keptPlain.id]);
+      clearNotifications();
+      await runtime.executeRaw(`CREATE TRIGGER reject_mixed_final BEFORE INSERT ON forward_rules WHEN NEW."hostId" = 3 AND NEW."isForwardGroupTemplate" = 0 AND NEW."targetPort" = 19999 BEGIN SELECT RAISE(ABORT, 'mixed final failure'); END`);
+      const inputs = [ruleInput("new-plain", 0, { sni: null, sourcePort: 22501 }), ruleInput("new-sni", 0, { targetPort: 19999 })];
+      await assert.rejects(admin.createBatch({ rules: inputs }), /mixed final failure/);
+      assert.deepEqual((await admin.list()).map(rule => rule.id).sort((a, b) => a - b), [keptPlain.id, keptSni.id]);
+      for (const counts of Object.values(notificationCounts())) assert.deepEqual(counts, {});
+      assert.equal((await admin.getById({ id: keptPlain.id })).quotaUsedOut, 456);
+      await runtime.executeRaw('DROP TRIGGER reject_mixed_final');
+      await runtime.executeRaw('CREATE TABLE mixed_commit_guard (id INTEGER REFERENCES users(id) DEFERRABLE INITIALLY DEFERRED)');
+      await runtime.executeRaw(`CREATE TRIGGER reject_mixed_commit AFTER INSERT ON forward_rules WHEN NEW."targetPort" = 19998 BEGIN INSERT INTO mixed_commit_guard VALUES (999999); END`);
+      await assert.rejects(admin.createBatch({ rules: [inputs[0], { ...inputs[1], targetPort: 19998 }] }), /FOREIGN KEY/);
+      assert.equal((await admin.list()).length, 2);
+      for (const counts of Object.values(notificationCounts())) assert.deepEqual(counts, {});
+      await runtime.executeRaw('DROP TRIGGER reject_mixed_commit');
+      for (const hostId of hostIds) {
+        const state = await heartbeat(hostId);
+        assert.deepEqual(splitter(state).sniRoutes.map(route => route.sni), ["kept-sni-0.example.test"]);
+        assert.ok(state.runningRules.some(rule => rule.sourcePort === 22500));
+        assert.ok(!state.runningRules.some(rule => rule.sourcePort === 22501));
+      }
+      const retried = await admin.createBatch({ rules: [inputs[0], { ...inputs[1], targetPort: 19443 }] });
+      assert.ok(retried.results.every(result => result.status === "fulfilled"), JSON.stringify(retried));
+    } else if (scenario === "import-usage") {
+      const inputs = [ruleInput("managed-plain", 0, { sni: null, sourcePort: 22800, userId: 2, rateLimitMbps: 8, trafficLimit: 1000 }), ruleInput("managed-sni", 0, { userId: 2 })];
+      const { results } = await admin.createBatch({ rules: inputs });
+      assert.ok(results.every(result => result.status === "fulfilled"), JSON.stringify(results));
+      const id = results[0].value.id;
+      await assert.rejects(customer.update({ id, name: "forbidden" }), /仅可查看/);
+      const children = await db.getForwardGroupChildRulesForTemplate(id);
+      const report = (hostId, bytesOut) => agentPost(hostId, "traffic", { reportId: "ordinary-first-" + hostId, reportProducerId: "ordinary-usage", stats: [{ ruleId: children.find(child => child.hostId === hostId).id, bytesIn: 10, bytesOut, connections: 1 }] });
+      await report(1, 200); await report(2, 300); await report(1, 200);
+      const saved = await customer.getById({ id });
+      assert.equal(saved.quotaUsedIn, 20);
+      assert.equal(saved.quotaUsedOut, 500);
+      assert.equal(saved.ruleLimitReason, null);
+      const state = await heartbeat(1);
+      assert.ok(state.runningRules.some(rule => rule.sourcePort === 22800));
+      assert.equal(saved.rateLimitMbps, 8);
+      assert.equal(state.guardRules.find(rule => rule.listenPort === 22800).limitIn, 1_000_000);
+      const added = await admin.createBatch({ rules: [ruleInput("after-usage", 0, { sni: null, sourcePort: 22801 })] });
+      assert.equal(added.results[0].status, "fulfilled");
+      assert.equal((await customer.getById({ id })).quotaUsedOut, 500);
+      await admin.update({ id, trafficLimit: 400 });
+      assert.equal((await customer.getById({ id })).ruleLimitReason, "traffic_limit");
+    } else if (scenario === "import-ports") {
+      Math.random = () => 0;
+      await runtime.executeRaw('UPDATE hosts SET "portRangeStart" = 22000, "portRangeEnd" = 22001');
+      const ordinary = (index, port) => ruleInput("ports", index, { sni: null, sourcePort: port });
+      const manual = await admin.createBatch({ rules: [ordinary(0, 0), ordinary(1, 22000)], fixedPortFirst: true });
+      assert.deepEqual(manual.results.map(result => result.status), ["fulfilled", "fulfilled"], JSON.stringify(manual));
+      assert.deepEqual(manual.results.map(result => result.value.sourcePort), [22001, 22000]);
+      const conflict = await admin.createBatch({ rules: [ordinary(2, 22000)] });
+      assert.equal(conflict.results[0].status, "rejected", "manual fixed ports never silently change");
+      await runtime.executeRaw('UPDATE hosts SET "portRangeEnd" = 22006');
+      const file = await admin.createBatch({ retryPortConflicts: true, rules: [ordinary(3, 22000), ordinary(4, 45000), ruleInput("no-sni-retry", 0, { sourcePort: 22000 }), ordinary(5, 22005), ordinary(6, 22005)] });
+      assert.deepEqual(file.results.map(result => result.status), ["fulfilled", "fulfilled", "rejected", "fulfilled", "fulfilled"], JSON.stringify(file));
+      assert.deepEqual(file.results.filter(result => result.status === "fulfilled").map(result => result.value.sourcePort), [22002, 22003, 22005, 22004]);
+      await runtime.executeRaw('UPDATE hosts SET "portRangeEnd" = 22007');
+      const mixed = await admin.createBatch({ rules: [ruleInput("auto-after-sni", 0, { sourcePort: 22006 }), ordinary(7, 0)] });
+      assert.deepEqual(mixed.results.map(result => result.status), ["fulfilled", "fulfilled"], JSON.stringify(mixed));
+      assert.equal(mixed.results[1].value.sourcePort, 22007);
+    } else if (scenario === "import-ordinary") {
+      const inputs = [ruleInput("ordinary", 0, { sni: null, sourcePort: 22000, rateLimitMbps: undefined, trafficLimit: undefined, trafficMode: undefined, expiresAt: undefined }), ruleInput("ordinary", 1, { sni: null, sourcePort: 22001, protocol: "udp", rateLimitMbps: undefined, trafficLimit: undefined, trafficMode: undefined, expiresAt: undefined })];
+      const { results } = await customer.createBatch({ rules: inputs });
+      assert.deepEqual(results.map(result => result.status), ["fulfilled", "fulfilled"], JSON.stringify(results));
+      for (const result of results) {
+        const saved = await customer.getById({ id: result.value.id });
+        assert.equal(saved.userId, 2);
+        assert.equal(saved.adminManaged, false);
+      }
+      for (const hostId of hostIds) {
+        const state = await heartbeat(hostId);
+        assert.ok(state.runningRules.some(rule => rule.sourcePort === 22000 && rule.protocol === "tcp"));
+        assert.ok(state.runningRules.some(rule => rule.sourcePort === 22001 && rule.protocol === "udp"));
+      }
+    } else if (scenario === "batch-live-connection") {
       const { verifyBatchKeepsConnection } = await import("./sniLiveConnection.mjs");
       await verifyBatchKeepsConnection(async target => {
         await admin.create(ruleInput("live-kept", 0, target));
@@ -224,8 +430,9 @@ try {
       Date.now = now;
       await runtime.executeRaw('DROP TRIGGER reject_final_member');
       assert.equal((await admin.createSniBatch({ rules: [ruleInput("retry", 0)] })).results[0].status, "fulfilled");
-    } else if (["batch-port", "batch-chain", "batch-tunnel"].includes(scenario)) {
-      const kind = scenario.slice(6);
+    } else if (["batch-port", "batch-chain", "batch-tunnel"].includes(scenario) || scenario.startsWith("import-resource-")) {
+      const generic = scenario.startsWith("import-resource-");
+      const kind = generic ? scenario.slice("import-resource-".length) : scenario.slice(6);
       for (const id of [4, 5]) await insert("hosts", { id, name: "extra-entry-" + id, ip: "192.0.2." + id, ipv4: "192.0.2." + id, agentToken: "token-" + id, userId: 1, isOnline: 1, lastHeartbeat: Math.floor(Date.now() / 1000), agentVersion: "3.3.0", portRangeStart: 18000, portRangeEnd: 30000 });
       await insert("forward_groups", { id: 30, name: "entries", groupType: "host", groupMode: "entry", forwardType: "nftables", domain: "entry.example.test", targetIp: "0.0.0.0", targetPort: 1, userId: 1, isEnabled: 1 });
       for (const id of [4, 5]) await insert("forward_group_members", { id: 300 + id, groupId: 30, memberType: "host", hostId: id, priority: id * 10, isEnabled: 1 });
@@ -242,9 +449,13 @@ try {
       const kept = await admin.create(keptInput);
       const initialAction = (await heartbeat(kind === "port" ? 1 : 3)).desiredState.actions.find(action => action.fxp?.role === "sni-splitter");
       const inputs = Array.from({ length: 6 }, (_, index) => ruleInput(kind, index, { ...route, rateLimitMbps: 16, maxConnections: 33 }));
+      if (generic) {
+        Object.assign(inputs[0], { sni: null, sourcePort: 22400, protocol: "udp" });
+        Object.assign(inputs[3], { sni: null, sourcePort: 22401, protocol: "both" });
+      }
       inputs[1].sni = keptInput.sni;
       inputs[4].sni = inputs[2].sni;
-      const { results } = await admin.createSniBatch({ rules: inputs });
+      const { results } = await (generic ? admin.createBatch({ rules: inputs }) : admin.createSniBatch({ rules: inputs }));
       assert.deepEqual(results.map(result => result.status), ["fulfilled", "rejected", "fulfilled", "fulfilled", "rejected", "fulfilled"], JSON.stringify(results));
       const expected = [keptInput, ...inputs.filter((_, index) => results[index].status === "fulfilled")];
       assert.equal((await admin.list()).length, expected.length);
@@ -255,8 +466,9 @@ try {
       Date.now = now;
       const exit = states.get(kind === "port" ? 1 : 3).desiredState.actions.find(action => action.fxp?.role === "sni-splitter");
       assert.equal(exit.ruleId, initialAction.ruleId, "shared listener identity stays stable");
-      assert.equal(exit.fxp.sniRoutes.length, expected.length);
-      for (const input of expected) {
+      const sniExpected = expected.filter(input => input.sni);
+      assert.equal(exit.fxp.sniRoutes.length, sniExpected.length);
+      for (const input of sniExpected) {
         const actual = exit.fxp.sniRoutes.find(item => item.sni === input.sni);
         assert.ok(actual, input.sni);
         assert.equal(actual.targetIp, input.targetIp);
@@ -268,7 +480,7 @@ try {
       }
       if (kind === "chain") for (const id of [4, 5]) {
         const entry = states.get(id).desiredState.actions.find(action => action.fxp?.role === "sni-splitter" && action.sourcePort === 18443);
-        assert.equal(entry.fxp.sniRoutes.length, expected.length);
+        assert.equal(entry.fxp.sniRoutes.length, sniExpected.length);
         for (const item of entry.fxp.sniRoutes) {
           assert.equal(item.targetIp, "192.0.2.1");
           assert.ok(states.get(1).desiredState.actions.some(action => action.op === "apply" && action.sourcePort === item.targetPort));
@@ -278,6 +490,12 @@ try {
         const state = states.get(id);
         assert.ok(state.desiredState.actions.some(action => action.op === "apply" && action.forwardType === "gost-runtime-sync"), "direct TLS entry uses its tunnel configuration on host " + id);
         assert.ok(state.runningRules.some(rule => Number(rule.tunnelId) === 20 && Number(rule.sourcePort) === 18443 && Number(rule.ruleId) === kept.id), "shared tunnel keeps the original runtime identity");
+      }
+      for (const input of expected.filter(input => !input.sni)) {
+        for (const id of kind === "port" ? [1] : kind === "chain" ? [4, 5] : [1, 4, 5]) {
+          assert.ok(states.get(id).runningRules.some(rule => rule.sourcePort === input.sourcePort && rule.protocol === input.protocol), "ordinary entry configuration missing on " + id);
+        }
+        assert.ok(states.get(kind === "port" ? 1 : 3).runningRules.some(rule => rule.targetPort === input.targetPort), "ordinary final target missing");
       }
       for (const result of results.filter(result => result.status === "fulfilled")) {
         const saved = await admin.getById({ id: result.value.id });
@@ -347,7 +565,9 @@ try {
         assert.equal(saved.results[0].status, "fulfilled");
         assert.equal(await db.getSetting("multi-user-report"), "complete");
       } finally { clearTimeout(timer); }
-    } else if (scenario === "batch-concurrency") {
+    } else if (scenario === "batch-concurrency" || scenario === "import-concurrency") {
+      const generic = scenario === "import-concurrency";
+      const createBatch = input => generic ? admin.createBatch(input) : admin.createSniBatch(input);
       const { withResourceTaskLock, withTrafficBillingUserLock } = await import("../keyedTaskLock.ts");
       const deferred = () => {
         let resolve;
@@ -357,20 +577,31 @@ try {
       const held = deferred(); const release = deferred();
       const billing = withTrafficBillingUserLock(2, async () => { held.resolve(); await release.promise; });
       await held.promise;
-      const waiting = admin.createSniBatch({ rules: [ruleInput("billing", 0, { userId: 2 })] });
+      const waiting = createBatch({ rules: [ruleInput("billing", 0, { userId: 2 })] });
       await new Promise(resolve => setImmediate(resolve));
       // The batch must wait before owning SQLite, so independent writes finish.
       await db.setSetting("batch-independent-write", "available");
       release.resolve(); await billing;
       assert.equal((await waiting).results[0].status, "fulfilled");
       const concurrent = await Promise.all([
-        admin.createSniBatch({ rules: [ruleInput("race", 0), ruleInput("unique", 0)] }),
-        admin.createSniBatch({ rules: [ruleInput("race", 0, { sourcePort: 18444 }), ruleInput("unique", 1)] }),
+        createBatch({ rules: [ruleInput("race", 0), ruleInput("unique", 0)] }),
+        createBatch({ rules: [ruleInput("race", 0, { sourcePort: 18444 }), ruleInput("unique", 1)] }),
         admin.create(ruleInput("single", 0)),
       ]);
       const outcomes = concurrent.slice(0, 2).flatMap(item => item.results);
       assert.equal(outcomes.filter(item => item.status === "fulfilled").length, 3, JSON.stringify(concurrent));
       assert.equal(outcomes.filter(item => item.status === "rejected").length, 1);
+      if (generic) {
+        const plain = index => ruleInput("plain-race", index, { sni: null, sourcePort: 22600 });
+        const raced = await Promise.allSettled([
+          admin.createBatch({ rules: [plain(0), ruleInput("mixed-race", 0)] }),
+          admin.createBatch({ rules: [plain(1), ruleInput("plain-after-race", 0, { sni: null, sourcePort: 22601 })] }),
+          admin.create(plain(2)),
+        ]);
+        const outcomes = raced.flatMap(result => result.status === "fulfilled" && result.value.results ? result.value.results : [result]);
+        assert.equal(outcomes.filter(result => result.status === "fulfilled").length, 3, JSON.stringify(raced));
+        assert.equal((await admin.list()).filter(rule => rule.sourcePort === 22600).length, 1);
+      }
       await insert("hosts", { id: 4, name: "new-entry", ip: "192.0.2.4", agentToken: "token-4", userId: 1, isOnline: 1, lastHeartbeat: Math.floor(Date.now() / 1000), agentVersion: "3.3.0", portRangeStart: 18000, portRangeEnd: 30000 });
       await insert("forward_groups", { id: 20, name: "new-host", groupType: "host", groupMode: "port", forwardType: "nftables", domain: "", targetIp: "0.0.0.0", targetPort: 1, userId: 1, isEnabled: 1 });
       await insert("forward_group_members", { id: 204, groupId: 20, memberType: "host", hostId: 4, priority: 0, isEnabled: 1 });
@@ -381,15 +612,17 @@ try {
         await insert("forward_group_members", { id: 104, groupId: 10, memberType: "host", hostId: 4, priority: 0, isEnabled: 1 });
       });
       await groupHeld.promise;
-      const pending = admin.createSniBatch({ rules: [ruleInput("occupied", 0)] });
+      const pending = createBatch({ rules: [ruleInput("occupied", 0, generic ? { sni: null, sourcePort: 18445 } : {})] });
       await new Promise(resolve => setTimeout(resolve, 25));
       groupRelease.resolve(); await moving;
       const afterMove = await pending;
       assert.equal(afterMove.results[0].status, "rejected");
-      assert.match(afterMove.results[0].reason, /SNI|域名/);
-      assert.equal((await admin.createSniBatch({ rules: [ruleInput("after-move", 0)] })).results[0].status, "fulfilled");
-    } else if (scenario.startsWith("batch-failure-")) {
-      const kind = scenario.slice("batch-failure-".length);
+      assert.match(afterMove.results[0].reason, generic ? /端口|port/ : /SNI|域名/);
+      assert.equal((await createBatch({ rules: [ruleInput("after-move", 0)] })).results[0].status, "fulfilled");
+    } else if (scenario.startsWith("batch-failure-") || scenario.startsWith("import-failure-")) {
+      const generic = scenario.startsWith("import-failure-");
+      const kind = scenario.split("-").at(-1);
+      const createBatch = input => generic ? admin.createBatch(input) : admin.createSniBatch(input);
       let route;
       if (kind === "tunnel") {
         await insert("tunnels", { id: 20, name: "TLS failure", entryHostId: 1, exitHostId: 3, mode: "tls", listenPort: 26000, userId: 1, isEnabled: 1 });
@@ -407,23 +640,25 @@ try {
         await runtime.executeRaw(`CREATE TRIGGER reject_item AFTER INSERT ON forward_rules WHEN NEW."isForwardGroupTemplate" = 1 AND NEW."targetPort" = 19999 BEGIN SELECT RAISE(FAIL, 'item save failure'); END`);
       }
       const inputs = Array.from({ length: 5 }, (_, index) => ruleInput("items", index, { ...route, ...(index === 0 || index === 3 ? { targetPort: 19999 } : {}) }));
-      const { results } = await admin.createSniBatch({ rules: inputs });
+      if (generic) for (const index of [0, 2]) Object.assign(inputs[index], { sni: null, sourcePort: 22700 + index });
+      const { results } = await createBatch({ rules: inputs });
       assert.deepEqual(results.map(result => result.status), ["rejected", "fulfilled", "fulfilled", "rejected", "fulfilled"], JSON.stringify(results));
       assert.equal((await admin.list()).length, 4);
       await runtime.executeRaw('DROP TRIGGER reject_item');
       await runtime.executeRaw('CREATE TABLE batch_commit_guard (id INTEGER REFERENCES users(id) DEFERRABLE INITIALLY DEFERRED)');
       await runtime.executeRaw(`CREATE TRIGGER reject_commit AFTER INSERT ON forward_rules WHEN NEW."targetPort" = 19998 BEGIN INSERT INTO batch_commit_guard VALUES (999999); END`);
       clearNotifications();
-      await assert.rejects(admin.createSniBatch({ rules: [ruleInput("commit", 0, route), ruleInput("commit", 1, { ...route, targetPort: 19998 })] }), /FOREIGN KEY/);
+      await assert.rejects(createBatch({ rules: [ruleInput("commit", 0, { ...route, ...(generic ? { sni: null, sourcePort: 22710 } : {}) }), ruleInput("commit", 1, { ...route, targetPort: 19998 })] }), /FOREIGN KEY/);
       assert.equal((await admin.list()).length, 4);
       assert.equal((await admin.getById({ id: kept.id })).targetPort, 19443);
       for (const counts of Object.values(notificationCounts())) assert.deepEqual(counts, {});
       const exitHost = kind === "port" ? 1 : 3;
       const state = await heartbeat(exitHost);
       const domains = state.desiredState.actions.flatMap(action => action.fxp?.sniRoutes || []).map(item => item.sni).sort();
-      assert.deepEqual(domains, ["items-1.example.test", "items-2.example.test", "items-4.example.test", "kept-0.example.test"]);
+      assert.deepEqual(domains, generic ? ["items-1.example.test", "items-4.example.test", "kept-0.example.test"] : ["items-1.example.test", "items-2.example.test", "items-4.example.test", "kept-0.example.test"]);
+      if (generic) assert.ok(state.runningRules.some(rule => rule.targetPort === 19445), "ordinary successful item remains complete after later rollback");
       await runtime.executeRaw('DROP TRIGGER reject_commit');
-      assert.equal((await admin.createSniBatch({ rules: [ruleInput("retry", 0, route)] })).results[0].status, "fulfilled");
+      assert.equal((await createBatch({ rules: [ruleInput("retry", 0, route)] })).results[0].status, "fulfilled");
     } else if (scenario === "baseline-control") {
       const omitted = await admin.create(ruleInput("omitted", 0, { rateLimitMbps: undefined, trafficLimit: undefined, trafficMode: undefined, expiresAt: undefined }));
       assert.equal((await admin.getById({ id: omitted.id })).adminManaged, false);

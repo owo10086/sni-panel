@@ -1,3 +1,4 @@
+import { isRuleImportPortConflictError } from "@shared/ruleImport";
 import { t as translateText } from "@/i18n";
 export type BatchOperationResult<T, R> =
   | { item: T; status: "fulfilled"; value: R }
@@ -35,10 +36,7 @@ export function batchOperationErrorMessage(reason: unknown) {
   return reason instanceof Error ? reason.message : String(reason || translateText("未知错误"));
 }
 
-export function isBatchPortConflictError(reason: unknown) {
-  const message = batchOperationErrorMessage(reason);
-  return /(?:端口.*(?:占用|冲突|正在被.*分配)|(?:源|入口|监听|套餐)端口.*(?:必须|仅限|不在|超出).*?(?:范围|区间|允许|内)|(?:source|entry|listener|plan) port.*?(?:range|allowed)|(?:port|entry agent port).*?(?:already (?:used|in use)|being allocated)|EADDRINUSE)/i.test(message);
-}
+export const isBatchPortConflictError = isRuleImportPortConflictError;
 
 export function chunkBatchItems<T>(items: readonly T[], sizeValue: number): T[][] {
   const size = Math.max(1, Math.floor(Number(sizeValue) || 1));

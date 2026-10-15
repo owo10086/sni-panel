@@ -38,6 +38,7 @@ import { afterSniRuleWrite, withSniRuleWrite } from "../sniRuleWrite";
 import { reserveRuleCreateQuota, withRuleCreateQuotaLock, type RuleQuotaReservation } from "../ruleQuotaReservations";
 import { isAgentVersionAtLeast } from "../agentRouteUtils";
 import { isValidSniValue, normalizeSniValue, SNI_SPLITTER_MIN_AGENT_VERSION } from "@shared/sni";
+import { isRuleImportPortConflictError } from "@shared/ruleImport";
 import { normalizePositiveIds } from "../repositories/repositoryUtils";
 import {
   assertDirectTunnelSniEntryPortUse,
@@ -1618,7 +1619,7 @@ export async function createDirectForwardRuleForActor(
     releaseHostPortReservations(sniRuntimePortReservations);
     sourcePortReservation?.release();
   }
-  });
+  }, { includePlain: true });
 }
 
 const createRuleInputSchema = z.object({
@@ -1657,7 +1658,7 @@ type CreateRuleContext = { user: Parameters<typeof resolveRuleOperationOwner>[0]
 async function createForwardRuleForContext(
   ctx: CreateRuleContext,
   input: CreateRuleInput,
-  options: { batch?: boolean } = {},
+  options: { batch?: boolean; entryReservations?: HostPortReservation[]; allocatedPorts?: Set<number> } = {},
 ) {
   return withSniRuleWrite(undefined, input, async () => {
     validateRuleLimitInput(ctx.user.role, input);
@@ -1673,10 +1674,6 @@ async function createForwardRuleForContext(
     assertSniRuleAdmin(ctx.user, normalizedSni);
     if (input.forwardGroupId) {
       const forwardGroupId = Number(input.forwardGroupId);
-      const withCreatePosition = normalizedSni
-        ? async <T>(work: () => Promise<T>) => work()
-        : <T>(work: () => Promise<T>) => withKeyedTaskLock(`forward-group:${forwardGroupId}`, work);
-      return withCreatePosition(async () => {
       const groupReservations: HostPortReservation[] = [];
       let quotaReservation: RuleQuotaReservation | null = null;
       try {
@@ -1739,7 +1736,7 @@ async function createForwardRuleForContext(
         (entryHostId, candidate) => db.isHostPortUnavailableForExplicitUse(entryHostId, candidate, undefined, ruleProtocol),
       );
       if (randomSourcePort) {
-        const unavailablePorts = new Set(entryHostIds.flatMap((hostId) => reservedHostPorts(hostId, ruleProtocol)));
+        const unavailablePorts = new Set([...entryHostIds.flatMap((hostId) => reservedHostPorts(hostId, ruleProtocol)), ...(options.allocatedPorts || [])]);
         for (let attempt = 0; attempt < 256; attempt += 1) {
           const availablePort = await db.findAvailableForwardGroupPort(
             forwardGroupId,
@@ -1894,12 +1891,16 @@ async function createForwardRuleForContext(
         isForwardChain || normalizedSni ? { skipRuleSync: true } : undefined,
       ));
       if (!options.batch) for (const entryHostId of entryHostIds) await refreshRulePortWarningsForHost(entryHostId);
+      // Templates do not yet have member listeners. Hold ordinary entry ports
+      // until all candidates are checked, then release before the final sync.
+      if (options.entryReservations && !normalizedSni && input.isEnabled !== false) {
+        options.entryReservations.push(...groupReservations.splice(0, entryHostIds.length));
+      }
       return { id, sourcePort };
       } finally {
         await quotaReservation?.release();
         releaseHostPortReservations(groupReservations);
       }
-      });
     }
 
     if (normalizedSni) {
@@ -1910,7 +1911,106 @@ async function createForwardRuleForContext(
       ));
     }
     return createDirectForwardRuleForActor(ownerContext.user, input, { operationActor: ctx.user, deferRefresh: options.batch });
-  });
+  }, { includePlain: true });
+}
+
+async function createRuleBatchForContext(ctx: CreateRuleContext, input: { rules: CreateRuleInput[]; fixedPortFirst?: boolean; retryPortConflicts?: boolean }) {
+  const receivedAt = Date.now();
+  let saveStartedAt: number | undefined;
+  let itemsFinishedAt: number | undefined;
+  let committedAt: number | undefined;
+  let entryHosts: number[] = [];
+  const results: Array<
+    { status: "fulfilled"; value: { id: number; sourcePort: number } }
+    | { status: "rejected"; reason: string }
+  > = [];
+  try {
+    return await withSniRuleWrite(undefined, input.rules[0], () => withAgentRefreshBatch(async () => {
+      const noSuccessfulItems = Symbol("no successful import items");
+      let committed = false;
+      const save = async () => {
+        // Register first: post-commit delivery errors cannot invalidate saved rules.
+        saveStartedAt = Date.now();
+        const tunnel = !groupId && input.rules[0].tunnelId ? await db.getTunnelById(Number(input.rules[0].tunnelId)) : null;
+        const entryGroup = tunnel?.entryGroupId ? await db.getForwardGroupById(Number(tunnel.entryGroupId)) : null;
+        entryHosts = groupId ? await db.getForwardGroupRuleEntryHostIds(groupId)
+          : normalizePositiveIds([tunnel?.entryHostId || input.rules[0].hostId,
+            ...(entryGroup?.members || []).filter((member: ForwardGroupRuntimeMember) => dbBool(member.isEnabled)).map((member: ForwardGroupRuntimeMember) => member.hostId)]);
+        await afterDatabaseCommit(() => { committed = true; committedAt = Date.now(); });
+        const entryReservations: HostPortReservation[] = [];
+        const allocatedPorts = new Set<number>();
+        const indexed = input.rules.map((rule, index) => ({ rule, index }));
+        const ordered = input.fixedPortFirst
+          ? [...indexed.filter(({ rule }) => rule.sourcePort > 0), ...indexed.filter(({ rule }) => rule.sourcePort === 0)]
+          : indexed;
+        const createItem = (rule: CreateRuleInput) => withDatabaseSavepoint(() => createForwardRuleForContext(ctx, rule, { batch: true, entryReservations, allocatedPorts }));
+        try {
+          for (const { rule, index } of ordered) {
+            try {
+              let value;
+              try { value = await createItem(rule); }
+              catch (error) {
+                if (error instanceof DatabaseSavepointRollbackError || !input.retryPortConflicts
+                  || normalizeSniValue(rule.sni) || rule.sourcePort <= 0 || !isRuleImportPortConflictError(error)) throw error;
+                value = await createItem({ ...rule, sourcePort: 0 });
+              }
+              if (rule.isEnabled !== false) allocatedPorts.add(value.sourcePort);
+              results[index] = { status: "fulfilled", value };
+            } catch (error) {
+              if (error instanceof DatabaseSavepointRollbackError) throw error;
+              results[index] = { status: "rejected", reason: error instanceof Error ? error.message : String(error) };
+            }
+          }
+          if (!results.some(result => result.status === "fulfilled")) throw noSuccessfulItems;
+        } finally { releaseHostPortReservations(entryReservations); itemsFinishedAt = Date.now(); }
+      };
+      const groupId = Number(input.rules[0].forwardGroupId || 0);
+      const userId = input.rules[0].userId ?? ctx.user.id;
+      try {
+        // Billing and quota queues precede the DB transaction. Ordinary
+        // creation can use these same queues without a DB/queue deadlock.
+        await withDeferredDatabaseCommitCallbacks(() => withTrafficBillingUserLock(userId, () => withRuleCreateQuotaLock(userId, () => groupId
+          ? db.withForwardGroupSyncTransaction(groupId, save, { preserveRuntime: true })
+          : db.withDatabaseTransaction(save))));
+      } catch (error) {
+        if (error === noSuccessfulItems) return { results };
+        if (!committed) throw error;
+        console.warn("[RuleImport] Rules saved; post-commit refresh failed", error);
+      }
+      const afterSave = async (work: () => Promise<unknown>) => {
+        try { await work(); }
+        catch (error) { console.warn("[RuleImport] Rules saved; follow-up failed", error); }
+      };
+      const savedIds = results.flatMap(result => result.status === "fulfilled" ? [result.value.id] : []);
+      const forceLimitRefresh = input.rules.some((rule, index) => results[index].status === "fulfilled"
+        && (Number(rule.rateLimitMbps) > 0 || Number(rule.trafficLimit) > 0 || !!rule.expiresAt));
+      await afterSave(() => reconcileRuleLimits(savedIds, forceLimitRefresh));
+      if (groupId) {
+        await afterSniRuleWrite(() => afterSave(() => db.runForwardGroupFailover(groupId, { skipRuleSync: true })));
+      } else {
+        await afterSave(async () => {
+          const tunnel = await db.getTunnelById(Number(input.rules[0].tunnelId));
+          if (tunnel) await pushTunnelEndpointRefresh(tunnel, "rule-batch-created", { urgent: true });
+          else pushAgentRefresh(Number(input.rules[0].hostId), "rule-batch-created", { urgent: true });
+        });
+      }
+      await afterSave(async () => {
+        for (const hostId of entryHosts) if (hostId > 0) await refreshRulePortWarningsForHost(hostId);
+      });
+      return { results };
+    }), { includePlain: true });
+  } finally {
+    const saved = committedAt === undefined ? 0 : results.filter(result => result.status === "fulfilled").length;
+    const sni = input.rules.filter(rule => !!normalizeSniValue(rule.sni)).length;
+    console.info("[RuleImport] " + JSON.stringify({
+      receivedAt, count: input.rules.length, ordinary: input.rules.length - sni, sni, entries: entryHosts.length,
+      saved, failed: input.rules.length - saved,
+      validationAndWaitMs: saveStartedAt === undefined ? Date.now() - receivedAt : saveStartedAt - receivedAt,
+      itemSaveMs: itemsFinishedAt === undefined || saveStartedAt === undefined ? null : itemsFinishedAt - saveStartedAt,
+      finalizeAndCommitMs: committedAt === undefined || itemsFinishedAt === undefined ? null : committedAt - itemsFinishedAt,
+      totalMs: Date.now() - receivedAt,
+    }));
+  }
 }
 
 export const crudRulesRouter = router({
@@ -2012,6 +2112,19 @@ export const crudRulesRouter = router({
       return result;
     })
     .mutation(({ input, ctx }) => createForwardRuleForContext(ctx, input)),
+  createBatch: protectedProcedure
+    .input(z.object({
+      rules: z.array(createRuleInputSchema).min(1).max(SNI_BULK_IMPORT_MAX_COUNT),
+      fixedPortFirst: z.boolean().optional(),
+      retryPortConflicts: z.boolean().optional(),
+    })
+      .refine(({ rules }) => {
+        const first = rules[0];
+        return !first || (!(first.forwardGroupId && first.tunnelId) && rules.every(rule =>
+          rule.forwardGroupId === first.forwardGroupId && rule.tunnelId === first.tunnelId
+          && rule.hostId === first.hostId && rule.userId === first.userId));
+      }, { message: "一批规则只能导入同一个用户和链路资源" }))
+    .mutation(({ input, ctx }) => createRuleBatchForContext(ctx, input)),
   createSniBatch: protectedProcedure
     .input(z.object({
       rules: z.array(createRuleInputSchema.extend({
@@ -2023,66 +2136,9 @@ export const crudRulesRouter = router({
         rule.forwardGroupId === first.forwardGroupId && rule.tunnelId === first.tunnelId
         && rule.hostId === first.hostId && rule.userId === first.userId));
     }, { message: "一批 SNI 规则只能导入同一个用户和链路资源" }))
-    .mutation(async ({ input, ctx }) => {
+    .mutation(({ input, ctx }) => {
       assertSniRuleAdmin(ctx.user, input.rules[0].sni);
-      return withSniRuleWrite(undefined, input.rules[0], () => withAgentRefreshBatch(async () => {
-        const results: Array<
-          { status: "fulfilled"; value: { id: number; sourcePort: number } }
-          | { status: "rejected"; reason: string }
-        > = [];
-        const noSuccessfulItems = Symbol("no successful SNI items");
-        let committed = false;
-        const save = async () => {
-          // Register first: later post-commit delivery errors cannot turn saved
-          // rules into failures that the webpage would offer to create again.
-          await afterDatabaseCommit(() => { committed = true; });
-          for (const rule of input.rules) {
-            try {
-              const value = await withDatabaseSavepoint(() => createForwardRuleForContext(ctx, rule, { batch: true }));
-              results.push({ status: "fulfilled", value });
-            } catch (error) {
-              if (error instanceof DatabaseSavepointRollbackError) throw error;
-              results.push({ status: "rejected", reason: error instanceof Error ? error.message : String(error) });
-            }
-          }
-          if (!results.some(result => result.status === "fulfilled")) throw noSuccessfulItems;
-        };
-        const groupId = Number(input.rules[0].forwardGroupId || 0);
-        const userId = input.rules[0].userId ?? ctx.user.id;
-        try {
-          // Billing and quota queues precede the DB transaction. Ordinary
-          // creation can use these same queues without a DB/queue deadlock.
-          await withDeferredDatabaseCommitCallbacks(() => withTrafficBillingUserLock(userId, () => withRuleCreateQuotaLock(userId, () => groupId
-            ? db.withForwardGroupSyncTransaction(groupId, save, { preserveRuntime: true })
-            : db.withDatabaseTransaction(save))));
-        } catch (error) {
-          if (error === noSuccessfulItems) return { results };
-          if (!committed) throw error;
-          console.warn("[SNIImport] Rules saved; post-commit refresh failed", error);
-        }
-        const afterSave = async (work: () => Promise<unknown>) => {
-          try { await work(); }
-          catch (error) { console.warn("[SNIImport] Rules saved; follow-up failed", error); }
-        };
-        const savedIds = results.flatMap(result => result.status === "fulfilled" ? [result.value.id] : []);
-        const forceLimitRefresh = input.rules.some((rule, index) => results[index].status === "fulfilled"
-          && (Number(rule.rateLimitMbps) > 0 || Number(rule.trafficLimit) > 0 || !!rule.expiresAt));
-        await afterSave(() => reconcileRuleLimits(savedIds, forceLimitRefresh));
-        if (groupId) {
-          await afterSniRuleWrite(() => afterSave(() => db.runForwardGroupFailover(groupId, { skipRuleSync: true })));
-        } else {
-          await afterSave(async () => {
-            const tunnel = await db.getTunnelById(Number(input.rules[0].tunnelId));
-            if (tunnel) await pushTunnelEndpointRefresh(tunnel, "sni-batch-created", { urgent: true });
-          });
-        }
-        await afterSave(async () => {
-          const hosts = groupId ? await db.getForwardGroupRuleEntryHostIds(groupId)
-            : [Number((await db.getTunnelById(Number(input.rules[0].tunnelId)))?.entryHostId)];
-          for (const hostId of hosts) if (hostId > 0) await refreshRulePortWarningsForHost(hostId);
-        });
-        return { results };
-      }));
+      return createRuleBatchForContext(ctx, input);
     }),
   update: protectedProcedure
     .input(z.object({

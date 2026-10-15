@@ -2523,8 +2523,7 @@ function RulesContent() {
   const batchUpdateMutation = trpc.rules.update.useMutation();
   const batchDeleteMutation = trpc.rules.deleteBatch.useMutation();
 
-  const importCreateMutation = trpc.rules.create.useMutation();
-  const importSniBatchMutation = trpc.rules.createSniBatch.useMutation();
+  const importBatchMutation = trpc.rules.createBatch.useMutation();
 
   const [trafficDetailRule, setTrafficDetailRule] = useState<{ id: number; name: string; isForwardChain?: boolean; probeMethod?: "tcping" | "ping" } | null>(null);
   const [selfTestRule, setSelfTestRule] = useState<{ id: number; name: string } | null>(null);
@@ -5713,24 +5712,20 @@ function RulesContent() {
       toast.error(importValidation.message);
       return;
     }
+    const clickedAt = performance.now();
+    let saveResultsAt: number | undefined;
+    let displayed = false;
     importingRulesRef.current = true;
     setImportingRules(true);
     try {
       setImportFailures([]);
       const results = await runRuleImport(importValidation.rules, {
-        createSniBatch: rules => importSniBatchMutation.mutateAsync({
-          rules: rules.map(rule => ({ ...buildImportRulePayload(rule), sni: normalizeSniImportDomain(rule.sni) })),
+        createBatch: (rules, options) => importBatchMutation.mutateAsync({
+          ...options,
+          rules: rules.map(buildImportRulePayload),
         }),
-        createOne: async rule => {
-          const payload = buildImportRulePayload(rule);
-          try {
-            return await importCreateMutation.mutateAsync(payload);
-          } catch (error) {
-            if (importSourceMode !== "file" || rule.sourcePort <= 0 || !isBatchPortConflictError(error)) throw error;
-            return importCreateMutation.mutateAsync({ ...payload, sourcePort: 0 });
-          }
-        },
-      }, { fixedPortFirst: importSourceMode === "manual" });
+      }, { fixedPortFirst: importSourceMode === "manual", retryPortConflicts: importSourceMode === "file" });
+      saveResultsAt = performance.now();
       const importedCount = results.filter((result) => result.status === "fulfilled").length;
       const failures = results.filter((result) => result.status === "rejected");
       setImportFailures(failures.map(result => {
@@ -5738,14 +5733,15 @@ function RulesContent() {
         const message = batchOperationErrorMessage(result.reason);
         return `${prefix}${result.item.name}: ${message.startsWith(prefix) ? message.slice(prefix.length) : message}`;
       }));
-      await Promise.all([
+      // A list refresh cannot turn committed import results into save failures.
+      await Promise.allSettled([
         utils.rules.list.invalidate(),
         utils.rules.listPage.invalidate(),
         utils.rules.mapItems.invalidate(),
         utils.rules.listSummary.invalidate(),
         utils.rules.trafficSummary.invalidate(),
+        ...(showCopyDialog ? [fullRulesQuery.refetch()] : []),
       ]);
-      if (showCopyDialog) await fullRulesQuery.refetch();
       if (failures.length > 0) {
         const failedRules = failures.map((result) => result.item);
         if (importSourceMode === "file") {
@@ -5771,9 +5767,15 @@ function RulesContent() {
         setShowCopyDialog(false);
         resetImportDialog();
       }
+      displayed = true;
     } catch (error: any) {
       toast.error(translateText("批量导入处理失败：{0}", [error?.message || translateText("请检查规则配置")]));
     } finally {
+      console.info("[RuleImport] " + JSON.stringify({
+        count: importValidation.rules.length, source: importSourceMode, displayed,
+        saveResponseMs: saveResultsAt === undefined ? null : Math.round(saveResultsAt - clickedAt),
+        clickToResultsMs: Math.round(performance.now() - clickedAt),
+      }));
       importingRulesRef.current = false;
       setImportingRules(false);
     }
