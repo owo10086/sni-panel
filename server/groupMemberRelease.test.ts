@@ -847,3 +847,102 @@ test("structure blocker counts deduplicate a tunnel and ignore orphaned links", 
     assert.deepEqual(await hosts.getHostLinkDeleteBlockers(1), { groupCount: 0, tunnelCount: 1 });
   `);
 });
+
+for (const stage of ["pending-cleanup", "token-unbind", "later-host-delete"]) {
+  for (const usage of ["ordinary-rule", "rule-exit"]) {
+    test("token deletion rolls back a live reference introduced during " + stage + ": " + usage, () => {
+      runGroupMemberReleaseCase(`
+        const stage = "` + stage + `";
+        const usage = "` + usage + `";
+        await insert("forward_rules", {
+          id: 9001, hostId: 1, userId: 1, name: "pending", sourcePort: 29001,
+          targetIp: "192.0.2.90", targetPort: 80, pendingDelete: 1, isRunning: 1,
+        });
+        await insert("agent_tokens", { id: 50, token: "late-token-use", hostId: 1, userId: 1 });
+        await runtime.executeRaw("UPDATE hosts SET agentToken='late-token-use' WHERE id=1");
+        await insert("user_host_permissions", { userId: 1, hostId: 1 });
+        await insert("tunnels", {
+          id: 70, name: "independent", entryHostId: 3, exitHostId: 4,
+          mode: "tls", listenPort: 25070, userId: 1,
+        });
+        if (stage === "later-host-delete") {
+          // Host 1 legitimately survives automatic cleanup; host 2 deletes later.
+          await runtime.executeRaw("UPDATE hosts SET agentToken='late-token-use' WHERE id=2");
+          await insert("subscription_plans", { id: 80, name: "retained", durationDays: 30 });
+          await insert("subscription_plan_hosts", { planId: 80, hostId: 1 });
+        }
+        const statements = usage === "ordinary-rule"
+          ? "INSERT INTO forward_rules (id,hostId,userId,name,sourcePort,targetIp,targetPort) " +
+            "VALUES (9002,1,1,'late-rule',29002,'192.0.2.90',80);"
+          : "INSERT INTO forward_rules (id,hostId,userId,name,sourcePort,targetIp,targetPort) " +
+            "VALUES (9002,3,1,'late-exit',29002,'192.0.2.90',80); " +
+            "INSERT INTO forward_rule_tunnel_exits (ruleId,tunnelId,exitNodeId,exitSeq,exitHostId,tunnelExitPort) " +
+            "VALUES (9002,70,701,0,1,25071);";
+        const trigger = stage === "pending-cleanup"
+          ? 'AFTER UPDATE OF isRunning ON forward_rules WHEN OLD.id=9001'
+          : stage === "token-unbind"
+            ? 'AFTER UPDATE OF agentToken ON hosts WHEN OLD.id=1 AND NEW.agentToken IS NULL'
+            : 'AFTER DELETE ON hosts WHEN OLD.id=2';
+        await runtime.executeRaw('CREATE TRIGGER late_token_reference ' + trigger + ' BEGIN ' + statements + ' END');
+        const before = await deleteSnapshot();
+        const auditBefore = await runtime.queryRaw('SELECT * FROM config_audit_events ORDER BY id');
+        await assert.rejects(() => tokenCaller.delete({ id: 50 }), /主机引用已变化/);
+        assert.deepEqual(await deleteSnapshot(), before);
+        assert.deepEqual(await runtime.queryRaw('SELECT * FROM forward_rule_tunnel_exits'), []);
+        assert.deepEqual(await runtime.queryRaw('SELECT * FROM config_audit_events ORDER BY id'), auditBefore);
+      `);
+    });
+  }
+}
+
+for (const retainedBy of ["plan", "other-token"]) {
+  test("token deletion still permits legitimate automatic host retention: " + retainedBy, () => {
+    runGroupMemberReleaseCase(`
+      await insert("agent_tokens", { id: 50, token: "remove-only-token", hostId: 1, userId: 1 });
+      await runtime.executeRaw("UPDATE hosts SET agentToken='remove-only-token' WHERE id=1");
+      if ("` + retainedBy + `" === "plan") {
+        await insert("subscription_plans", { id: 80, name: "retained", durationDays: 30 });
+        await insert("subscription_plan_hosts", { planId: 80, hostId: 1 });
+      } else {
+        await insert("agent_tokens", { id: 51, token: "keep-other-token", hostId: 1, userId: 1 });
+      }
+      const result = await tokenCaller.delete({ id: 50 });
+      assert.equal(result.removedHosts, 0);
+      assert.equal((await runtime.queryRaw('SELECT id FROM agent_tokens WHERE id=50')).length, 0);
+      assert.deepEqual(await runtime.queryRaw('SELECT id,agentToken FROM hosts WHERE id=1'), [{ id: 1, agentToken: null }]);
+      if ("` + retainedBy + `" === "plan") {
+        assert.equal((await runtime.queryRaw('SELECT hostId FROM subscription_plan_hosts WHERE hostId=1')).length, 1);
+      } else {
+        assert.equal((await runtime.queryRaw('SELECT id FROM agent_tokens WHERE id=51')).length, 1);
+      }
+    `);
+  });
+}
+
+test("host deletion rechecks current ownership in the final save after historical repair", () => {
+  runGroupMemberReleaseCase(`
+    await seedFailover();
+    await runtime.executeRaw('DELETE FROM forward_group_members WHERE hostId=1');
+    await insert("users", { id: 2, username: "new-owner", password: "test", role: "user" });
+    await insert("agent_tokens", { id: 50, token: "new-owner-token", hostId: 1, userId: 1 });
+    await runtime.executeRaw("UPDATE hosts SET agentToken='new-owner-token' WHERE id=1");
+    await insert("user_host_permissions", { userId: 1, hostId: 1 });
+    await insert("forward_rules", {
+      id: 9001, hostId: 1, userId: 1, name: "pending", sourcePort: 29001,
+      targetIp: "192.0.2.90", targetPort: 80, pendingDelete: 1, isRunning: 1,
+    });
+    await runtime.executeRaw(
+      'CREATE TRIGGER transfer_host_during_repair AFTER UPDATE OF hostId ON forward_rules ' +
+      'WHEN OLD.id=1000 BEGIN UPDATE hosts SET userId=2 WHERE id=1; END'
+    );
+    const userContext = { ...context, user: { ...context.user, role: "user" } };
+    await assert.rejects(() => hostsRouter.createCaller(userContext).delete({ id: 1 }), /无权/);
+    assert.deepEqual(await runtime.queryRaw('SELECT userId,agentToken FROM hosts WHERE id=1'),
+      [{ userId: 2, agentToken: "new-owner-token" }]);
+    assert.equal((await runtime.queryRaw('SELECT id FROM agent_tokens WHERE id=50')).length, 1);
+    assert.equal((await runtime.queryRaw('SELECT userId FROM user_host_permissions WHERE hostId=1')).length, 1);
+    assert.deepEqual(await runtime.queryRaw('SELECT isRunning FROM forward_rules WHERE id=9001'), [{ isRunning: 1 }]);
+    assert.deepEqual(await runtime.queryRaw('SELECT hostId FROM forward_rules WHERE id=1000'), [{ hostId: 2 }]);
+    assert.equal((await runtime.queryRaw("SELECT id FROM config_audit_events WHERE resourceType='host' AND resourceId=1 AND action='delete'")).length, 0);
+  `);
+});

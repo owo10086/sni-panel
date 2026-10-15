@@ -675,12 +675,19 @@ async function deleteHostRowsUnlocked(id: number): Promise<void> {
   await afterDatabaseCommit(async () => { await refreshDatabasePoolSettings().catch(() => undefined); });
 }
 
-export async function deleteHost(id: number): Promise<void> {
+export async function deleteHost(
+  id: number,
+  options: { assertCanDelete?: () => Promise<void> } = {},
+): Promise<void> {
   return withGroupMemberMutation(async () => {
     const { repairForwardGroupTemplateHostReferences } = await import("./forwardGroupRepository");
     await repairForwardGroupTemplateHostReferences({ hostId: id });
     await repairForwardGroupRuleIntegrity(id);
-    await withDatabaseTransaction(() => deleteHostRowsUnlocked(id));
+    await withDatabaseTransaction(async () => {
+      // Authorization must read the final saved owner after historical repair.
+      await options.assertCanDelete?.();
+      await deleteHostRowsUnlocked(id);
+    });
   });
 }
 

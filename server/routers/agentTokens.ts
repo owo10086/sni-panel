@@ -108,11 +108,17 @@ export const agentTokensRouter = router({
           }
           let releasedPendingCleanup = 0;
           for (const hostId of hostIds) releasedPendingCleanup += await db.releaseHostPendingRuleCleanup(hostId);
+          // Pending cleanup can itself expose a new use; reject before clearing bindings.
+          for (const hostId of hostIds) await db.assertHostHasNoForwardingReferences(hostId);
           await db.deleteAgentToken(input.id);
           let removedHosts = 0;
           for (const hostId of hostIds) {
             if (await db.deleteHostIfUnreferenced(hostId)) removedHosts += 1;
           }
+          // Automatic cleanup may retain a host for a plan or another Token. New
+          // forwarding uses must still abort the entire Token deletion, including
+          // uses introduced while a later host was being cleaned up.
+          for (const hostId of hostIds) await db.assertHostHasNoForwardingReferences(hostId);
           return { success: true, releasedPendingCleanup, removedHosts };
         });
       });

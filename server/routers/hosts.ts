@@ -1302,9 +1302,12 @@ export const hostsRouter = router({
         if (!host) throw new Error("主机不存在");
         if (ctx.user.role !== "admin" && host.userId !== ctx.user.id) throw new Error("无权操作此主机");
         return withGroupMemberMutation(async () => {
-          const latest = await db.getHostById(input.id);
-          if (!latest) throw new Error("主机不存在");
-          if (ctx.user.role !== "admin" && latest.userId !== ctx.user.id) throw new Error("无权操作此主机");
+          const assertCanDelete = async () => {
+            const latest = await db.getHostById(input.id);
+            if (!latest) throw new Error("主机不存在");
+            if (ctx.user.role !== "admin" && latest.userId !== ctx.user.id) throw new Error("无权操作此主机");
+          };
+          await assertCanDelete();
           // 检查是否存在仍会占用此主机的规则。已标记删除且停止运行的历史记录不应阻止删除主机。
           const blockers = await db.getHostRuleDeleteBlockers(input.id);
           if (blockers.ruleCount > 0) {
@@ -1320,7 +1323,7 @@ export const hostsRouter = router({
           if (links.tunnelCount > 0) {
             throw new Error("该主机仍被隧道的独立入口、中继或出口使用，请先移除对应引用");
           }
-          await db.deleteHost(input.id);
+          await db.deleteHost(input.id, { assertCanDelete });
           return { success: true };
         });
       }),
