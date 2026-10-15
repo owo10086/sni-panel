@@ -1,0 +1,862 @@
+[
+  {
+    "conclusion": "success",
+    "databaseId": 38690490850,
+    "headBranch": "main",
+    "headSha": "f89f057181e836b20907b6007209c9ff20503baa",
+    "jobs": [
+      {
+        "completedAt": "2026-10-15T06:16:34Z",
+        "conclusion": "success",
+        "databaseId": 116275078812,
+        "name": "verify",
+        "startedAt": "2026-10-15T06:06:57Z",
+        "status": "completed",
+        "steps": [
+          {
+            "completedAt": "2026-10-15T06:06:58Z",
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "startedAt": "2026-10-15T06:06:57Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:07:00Z",
+            "conclusion": "success",
+            "name": "Checkout",
+            "number": 2,
+            "startedAt": "2026-10-15T06:06:58Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:07:01Z",
+            "conclusion": "success",
+            "name": "Setup pnpm",
+            "number": 3,
+            "startedAt": "2026-10-15T06:07:00Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:07:06Z",
+            "conclusion": "success",
+            "name": "Setup Node",
+            "number": 4,
+            "startedAt": "2026-10-15T06:07:01Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:07:14Z",
+            "conclusion": "success",
+            "name": "Setup Go",
+            "number": 5,
+            "startedAt": "2026-10-15T06:07:06Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:07:17Z",
+            "conclusion": "success",
+            "name": "Install dependencies",
+            "number": 6,
+            "startedAt": "2026-10-15T06:07:14Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:16:19Z",
+            "conclusion": "success",
+            "name": "Verify panel",
+            "number": 7,
+            "startedAt": "2026-10-15T06:07:17Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:16:31Z",
+            "conclusion": "success",
+            "name": "Verify Agent and FXP",
+            "number": 8,
+            "startedAt": "2026-10-15T06:16:19Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:16:31Z",
+            "conclusion": "success",
+            "name": "Post Setup Go",
+            "number": 13,
+            "startedAt": "2026-10-15T06:16:31Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:16:31Z",
+            "conclusion": "success",
+            "name": "Post Setup Node",
+            "number": 14,
+            "startedAt": "2026-10-15T06:16:31Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:16:31Z",
+            "conclusion": "success",
+            "name": "Post Setup pnpm",
+            "number": 15,
+            "startedAt": "2026-10-15T06:16:31Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:16:32Z",
+            "conclusion": "success",
+            "name": "Post Checkout",
+            "number": 16,
+            "startedAt": "2026-10-15T06:16:31Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:16:32Z",
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 17,
+            "startedAt": "2026-10-15T06:16:32Z",
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/owo10086/sni-panel/actions/runs/38690490850/job/116275078812"
+      }
+    ],
+    "name": "CI",
+    "status": "completed",
+    "url": "https://github.com/owo10086/sni-panel/actions/runs/38690490850"
+  },
+  {
+    "conclusion": "success",
+    "databaseId": 38690490855,
+    "headBranch": "main",
+    "headSha": "f89f057181e836b20907b6007209c9ff20503baa",
+    "jobs": [
+      {
+        "completedAt": "2026-10-15T06:07:08Z",
+        "conclusion": "success",
+        "databaseId": 116274998906,
+        "name": "build",
+        "startedAt": "2026-10-15T06:06:41Z",
+        "status": "completed",
+        "steps": [
+          {
+            "completedAt": "2026-10-15T06:06:44Z",
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "startedAt": "2026-10-15T06:06:42Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:06:46Z",
+            "conclusion": "success",
+            "name": "Checkout",
+            "number": 2,
+            "startedAt": "2026-10-15T06:06:44Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:06:50Z",
+            "conclusion": "success",
+            "name": "Setup pnpm",
+            "number": 3,
+            "startedAt": "2026-10-15T06:06:46Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:06:54Z",
+            "conclusion": "success",
+            "name": "Setup Node",
+            "number": 4,
+            "startedAt": "2026-10-15T06:06:50Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:06:57Z",
+            "conclusion": "success",
+            "name": "Install dependencies",
+            "number": 5,
+            "startedAt": "2026-10-15T06:06:54Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:06:58Z",
+            "conclusion": "success",
+            "name": "Setup Pages",
+            "number": 6,
+            "startedAt": "2026-10-15T06:06:57Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:07:04Z",
+            "conclusion": "success",
+            "name": "Build VitePress docs",
+            "number": 7,
+            "startedAt": "2026-10-15T06:06:58Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:07:04Z",
+            "conclusion": "success",
+            "name": "Validate Pages artifact",
+            "number": 8,
+            "startedAt": "2026-10-15T06:07:04Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:07:06Z",
+            "conclusion": "success",
+            "name": "Upload Pages artifact",
+            "number": 9,
+            "startedAt": "2026-10-15T06:07:04Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:07:06Z",
+            "conclusion": "success",
+            "name": "Post Setup Node",
+            "number": 16,
+            "startedAt": "2026-10-15T06:07:06Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:07:06Z",
+            "conclusion": "success",
+            "name": "Post Setup pnpm",
+            "number": 17,
+            "startedAt": "2026-10-15T06:07:06Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:07:07Z",
+            "conclusion": "success",
+            "name": "Post Checkout",
+            "number": 18,
+            "startedAt": "2026-10-15T06:07:06Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:07:07Z",
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 19,
+            "startedAt": "2026-10-15T06:07:07Z",
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/owo10086/sni-panel/actions/runs/38690490855/job/116274998906"
+      },
+      {
+        "completedAt": "2026-10-15T06:07:23Z",
+        "conclusion": "success",
+        "databaseId": 116275149259,
+        "name": "deploy",
+        "startedAt": "2026-10-15T06:07:12Z",
+        "status": "completed",
+        "steps": [
+          {
+            "completedAt": "2026-10-15T06:07:15Z",
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "startedAt": "2026-10-15T06:07:13Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:07:21Z",
+            "conclusion": "success",
+            "name": "Deploy to GitHub Pages",
+            "number": 2,
+            "startedAt": "2026-10-15T06:07:15Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:07:21Z",
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 3,
+            "startedAt": "2026-10-15T06:07:21Z",
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/owo10086/sni-panel/actions/runs/38690490855/job/116275149259"
+      }
+    ],
+    "name": "Docs",
+    "status": "completed",
+    "url": "https://github.com/owo10086/sni-panel/actions/runs/38690490855"
+  },
+  {
+    "conclusion": "success",
+    "databaseId": 38690182910,
+    "headBranch": "v3.3.6",
+    "headSha": "6396672c892f33b843cb02b5d17fb4fbc85e1fa7",
+    "jobs": [
+      {
+        "completedAt": "2026-10-15T06:10:31Z",
+        "conclusion": "success",
+        "databaseId": 116274034418,
+        "name": "release-panel",
+        "startedAt": "2026-10-15T06:03:31Z",
+        "status": "completed",
+        "steps": [
+          {
+            "completedAt": "2026-10-15T06:03:33Z",
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "startedAt": "2026-10-15T06:03:31Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:03:35Z",
+            "conclusion": "success",
+            "name": "Checkout",
+            "number": 2,
+            "startedAt": "2026-10-15T06:03:33Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:03:36Z",
+            "conclusion": "success",
+            "name": "Setup pnpm",
+            "number": 3,
+            "startedAt": "2026-10-15T06:03:35Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:03:40Z",
+            "conclusion": "success",
+            "name": "Setup Node",
+            "number": 4,
+            "startedAt": "2026-10-15T06:03:36Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:03:48Z",
+            "conclusion": "success",
+            "name": "Setup Go",
+            "number": 5,
+            "startedAt": "2026-10-15T06:03:40Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:03:48Z",
+            "conclusion": "success",
+            "name": "Resolve release version",
+            "number": 6,
+            "startedAt": "2026-10-15T06:03:48Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:03:50Z",
+            "conclusion": "success",
+            "name": "Install dependencies",
+            "number": 7,
+            "startedAt": "2026-10-15T06:03:48Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:03:51Z",
+            "conclusion": "success",
+            "name": "Check release versions and tag",
+            "number": 8,
+            "startedAt": "2026-10-15T06:03:50Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:04:08Z",
+            "conclusion": "success",
+            "name": "Type check",
+            "number": 9,
+            "startedAt": "2026-10-15T06:03:51Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:04:22Z",
+            "conclusion": "success",
+            "name": "Build panel assets",
+            "number": 10,
+            "startedAt": "2026-10-15T06:04:08Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:09:47Z",
+            "conclusion": "success",
+            "name": "Run panel tests",
+            "number": 11,
+            "startedAt": "2026-10-15T06:04:22Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:10:09Z",
+            "conclusion": "success",
+            "name": "Run Agent tests and vet",
+            "number": 12,
+            "startedAt": "2026-10-15T06:09:47Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:10:09Z",
+            "conclusion": "success",
+            "name": "Prepare release notes",
+            "number": 13,
+            "startedAt": "2026-10-15T06:10:09Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:10:20Z",
+            "conclusion": "success",
+            "name": "Build bundled Agent assets",
+            "number": 14,
+            "startedAt": "2026-10-15T06:10:09Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:10:20Z",
+            "conclusion": "success",
+            "name": "Verify bundled FXP behavior",
+            "number": 15,
+            "startedAt": "2026-10-15T06:10:20Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:10:22Z",
+            "conclusion": "success",
+            "name": "Package panel runtime bundle",
+            "number": 16,
+            "startedAt": "2026-10-15T06:10:20Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:10:24Z",
+            "conclusion": "success",
+            "name": "Upload panel bundle artifact",
+            "number": 17,
+            "startedAt": "2026-10-15T06:10:22Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:10:28Z",
+            "conclusion": "success",
+            "name": "Publish panel bundle to GitHub Release",
+            "number": 18,
+            "startedAt": "2026-10-15T06:10:24Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:10:28Z",
+            "conclusion": "success",
+            "name": "Post Setup Go",
+            "number": 33,
+            "startedAt": "2026-10-15T06:10:28Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:10:28Z",
+            "conclusion": "success",
+            "name": "Post Setup Node",
+            "number": 34,
+            "startedAt": "2026-10-15T06:10:28Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:10:28Z",
+            "conclusion": "success",
+            "name": "Post Setup pnpm",
+            "number": 35,
+            "startedAt": "2026-10-15T06:10:28Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:10:28Z",
+            "conclusion": "success",
+            "name": "Post Checkout",
+            "number": 36,
+            "startedAt": "2026-10-15T06:10:28Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:10:28Z",
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 37,
+            "startedAt": "2026-10-15T06:10:28Z",
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/owo10086/sni-panel/actions/runs/38690182910/job/116274034418"
+      },
+      {
+        "completedAt": "2026-10-15T06:10:40Z",
+        "conclusion": "success",
+        "databaseId": 116276179853,
+        "name": "docker-image / prepare",
+        "startedAt": "2026-10-15T06:10:34Z",
+        "status": "completed",
+        "steps": [
+          {
+            "completedAt": "2026-10-15T06:10:35Z",
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "startedAt": "2026-10-15T06:10:35Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:10:38Z",
+            "conclusion": "success",
+            "name": "Checkout",
+            "number": 2,
+            "startedAt": "2026-10-15T06:10:35Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:10:38Z",
+            "conclusion": "success",
+            "name": "Read package version",
+            "number": 3,
+            "startedAt": "2026-10-15T06:10:38Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:10:38Z",
+            "conclusion": "success",
+            "name": "Post Checkout",
+            "number": 6,
+            "startedAt": "2026-10-15T06:10:38Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:10:38Z",
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 7,
+            "startedAt": "2026-10-15T06:10:38Z",
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/owo10086/sni-panel/actions/runs/38690182910/job/116276179853"
+      },
+      {
+        "completedAt": "2026-10-15T06:15:42Z",
+        "conclusion": "success",
+        "databaseId": 116276225338,
+        "name": "docker-image / Build linux/amd64",
+        "startedAt": "2026-10-15T06:10:43Z",
+        "status": "completed",
+        "steps": [
+          {
+            "completedAt": "2026-10-15T06:10:46Z",
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "startedAt": "2026-10-15T06:10:44Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:10:48Z",
+            "conclusion": "success",
+            "name": "Checkout",
+            "number": 2,
+            "startedAt": "2026-10-15T06:10:46Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:10:59Z",
+            "conclusion": "success",
+            "name": "Set up Docker Buildx",
+            "number": 3,
+            "startedAt": "2026-10-15T06:10:48Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:11:00Z",
+            "conclusion": "success",
+            "name": "Log in to GHCR",
+            "number": 4,
+            "startedAt": "2026-10-15T06:10:59Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:15:07Z",
+            "conclusion": "success",
+            "name": "Build and push by digest",
+            "number": 5,
+            "startedAt": "2026-10-15T06:11:00Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:15:19Z",
+            "conclusion": "success",
+            "name": "Verify native runtime",
+            "number": 6,
+            "startedAt": "2026-10-15T06:15:07Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:15:19Z",
+            "conclusion": "success",
+            "name": "Export digest",
+            "number": 7,
+            "startedAt": "2026-10-15T06:15:19Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:15:20Z",
+            "conclusion": "success",
+            "name": "Upload digest",
+            "number": 8,
+            "startedAt": "2026-10-15T06:15:19Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:15:22Z",
+            "conclusion": "success",
+            "name": "Post Build and push by digest",
+            "number": 13,
+            "startedAt": "2026-10-15T06:15:20Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:15:22Z",
+            "conclusion": "success",
+            "name": "Post Log in to GHCR",
+            "number": 14,
+            "startedAt": "2026-10-15T06:15:22Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:15:40Z",
+            "conclusion": "success",
+            "name": "Post Set up Docker Buildx",
+            "number": 15,
+            "startedAt": "2026-10-15T06:15:22Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:15:40Z",
+            "conclusion": "success",
+            "name": "Post Checkout",
+            "number": 16,
+            "startedAt": "2026-10-15T06:15:40Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:15:40Z",
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 17,
+            "startedAt": "2026-10-15T06:15:40Z",
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/owo10086/sni-panel/actions/runs/38690182910/job/116276225338"
+      },
+      {
+        "completedAt": "2026-10-15T06:16:00Z",
+        "conclusion": "success",
+        "databaseId": 116277776749,
+        "name": "docker-image / merge",
+        "startedAt": "2026-10-15T06:15:45Z",
+        "status": "completed",
+        "steps": [
+          {
+            "completedAt": "2026-10-15T06:15:48Z",
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "startedAt": "2026-10-15T06:15:46Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:15:53Z",
+            "conclusion": "success",
+            "name": "Set up Docker Buildx",
+            "number": 2,
+            "startedAt": "2026-10-15T06:15:48Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:15:53Z",
+            "conclusion": "success",
+            "name": "Log in to GHCR",
+            "number": 3,
+            "startedAt": "2026-10-15T06:15:53Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:15:54Z",
+            "conclusion": "success",
+            "name": "Download digests",
+            "number": 4,
+            "startedAt": "2026-10-15T06:15:53Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:15:57Z",
+            "conclusion": "success",
+            "name": "Create and verify image manifest",
+            "number": 5,
+            "startedAt": "2026-10-15T06:15:54Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:15:57Z",
+            "conclusion": "success",
+            "name": "Post Log in to GHCR",
+            "number": 9,
+            "startedAt": "2026-10-15T06:15:57Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:15:58Z",
+            "conclusion": "success",
+            "name": "Post Set up Docker Buildx",
+            "number": 10,
+            "startedAt": "2026-10-15T06:15:57Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:15:58Z",
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 11,
+            "startedAt": "2026-10-15T06:15:58Z",
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/owo10086/sni-panel/actions/runs/38690182910/job/116277776749"
+      }
+    ],
+    "name": "Release Panel",
+    "status": "completed",
+    "url": "https://github.com/owo10086/sni-panel/actions/runs/38690182910"
+  },
+  {
+    "conclusion": "success",
+    "databaseId": 38690182870,
+    "headBranch": "v3.3.6",
+    "headSha": "6396672c892f33b843cb02b5d17fb4fbc85e1fa7",
+    "jobs": [
+      {
+        "completedAt": "2026-10-15T06:10:44Z",
+        "conclusion": "success",
+        "databaseId": 116274033935,
+        "name": "build-agent",
+        "startedAt": "2026-10-15T06:03:31Z",
+        "status": "completed",
+        "steps": [
+          {
+            "completedAt": "2026-10-15T06:03:32Z",
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "startedAt": "2026-10-15T06:03:31Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:03:34Z",
+            "conclusion": "success",
+            "name": "Checkout",
+            "number": 2,
+            "startedAt": "2026-10-15T06:03:32Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:03:45Z",
+            "conclusion": "success",
+            "name": "Setup Go",
+            "number": 3,
+            "startedAt": "2026-10-15T06:03:34Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:03:45Z",
+            "conclusion": "success",
+            "name": "Setup Node",
+            "number": 4,
+            "startedAt": "2026-10-15T06:03:45Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:03:46Z",
+            "conclusion": "success",
+            "name": "Resolve release version",
+            "number": 5,
+            "startedAt": "2026-10-15T06:03:45Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:03:46Z",
+            "conclusion": "success",
+            "name": "Check release versions and tag",
+            "number": 6,
+            "startedAt": "2026-10-15T06:03:46Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:04:00Z",
+            "conclusion": "success",
+            "name": "Run Agent tests and vet",
+            "number": 7,
+            "startedAt": "2026-10-15T06:03:46Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:04:17Z",
+            "conclusion": "success",
+            "name": "Build Linux Agent binaries",
+            "number": 8,
+            "startedAt": "2026-10-15T06:04:00Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:10:41Z",
+            "conclusion": "success",
+            "name": "Upload Agent binaries to GitHub Release",
+            "number": 9,
+            "startedAt": "2026-10-15T06:04:17Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:10:41Z",
+            "conclusion": "success",
+            "name": "Post Setup Node",
+            "number": 16,
+            "startedAt": "2026-10-15T06:10:41Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:10:41Z",
+            "conclusion": "success",
+            "name": "Post Setup Go",
+            "number": 17,
+            "startedAt": "2026-10-15T06:10:41Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:10:42Z",
+            "conclusion": "success",
+            "name": "Post Checkout",
+            "number": 18,
+            "startedAt": "2026-10-15T06:10:42Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-15T06:10:42Z",
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 19,
+            "startedAt": "2026-10-15T06:10:42Z",
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/owo10086/sni-panel/actions/runs/38690182870/job/116274033935"
+      }
+    ],
+    "name": "Release Agent",
+    "status": "completed",
+    "url": "https://github.com/owo10086/sni-panel/actions/runs/38690182870"
+  }
+]
