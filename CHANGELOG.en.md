@@ -4,6 +4,20 @@
 
 ## [Unreleased]
 
+## [3.3.6] - 2026-10-15
+
+### Improvements
+
+- SNI text and rule files now submit all SNI items in one batch. The server saves them together and reconciles complete configurations at the end, reducing repeated work on existing rules. Covers single-host port forwarding, host failover groups, forwarding chains, and supported direct tunnels.
+- Preserve per-item results: an individual validation or write failure rolls back that item while retaining successful items; a final shared save failure rolls back the new batch and preserves the previous configuration. Ordinary items in mixed files keep their existing creation path, and only failed items remain for retry.
+- Combine repeated refreshes while retaining permissions, quotas, shared-port checks, limits, accumulated traffic, existing listeners, and runtime confirmation. Notification failures after saving do not report persisted rules as failed saves.
+
+### Versions and upgrade notes
+
+- Panel: `3.3.6`; Agent and ForwardX FXP runtime: `3.3.0`. Only the panel needs upgrading; existing Agent/FXP installations remain compatible.
+- Saving and runtime activation remain separate. Import time depends on rule count, database, and host state. This release does not add import history, batch recovery after disconnection, or restart recovery.
+- Native Android and iOS/iPadOS applications remain excluded under the standing agreement; this release provides no APK/IPA.
+
 ## [3.3.5] - 2026-10-15
 
 ### Improvements
