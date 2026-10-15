@@ -3484,6 +3484,60 @@ async function removeManagedRule(
   await refreshRuleEndpoints(rule, "forward-group-child-deleted");
 }
 
+export async function repairForwardGroupTemplateHostReferences(
+  options: { hostId?: number; groupIds?: number[] } = {},
+): Promise<TemplateHostRepair[]> {
+  if (isDatabaseTransactionActive()) {
+    throw new Error("主规则归属修正必须在数据库保存前取得组保存位置");
+  }
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const lockIds = await getTemplateReferenceRepairGroupIds(options);
+    try {
+      return await withForwardGroupSyncLocks(lockIds, () =>
+        withDatabaseTransaction(async () => {
+          const latestGroupIds = await getTemplateReferenceRepairGroupIds(options);
+          if (latestGroupIds.some(id => !lockIds.includes(id))) {
+            throw new TemplateReferenceScopeChangedError();
+          }
+          const repairs: TemplateHostRepair[] = [];
+          for (const id of lockIds) {
+            repairs.push(...await repairForwardGroupTemplateHostsUnlocked(id));
+          }
+          return repairs;
+        }));
+    } catch (error) {
+      if (!(error instanceof TemplateReferenceScopeChangedError)) throw error;
+      if (attempt === 2) throw new Error("组成员持续变化，请刷新后重试");
+    }
+  }
+  throw new Error("组成员持续变化，请刷新后重试");
+}
+
+class TemplateReferenceScopeChangedError extends Error {}
+async function getTemplateReferenceRepairGroupIds(
+  options: { hostId?: number; groupIds?: number[] } = {},
+): Promise<number[]> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const conditions = [
+    eq(forwardRules.isForwardGroupTemplate, true),
+    eq(forwardRules.pendingDelete, false),
+  ];
+  if (options.hostId !== undefined) conditions.push(eq(forwardRules.hostId, options.hostId));
+  if (options.groupIds !== undefined) {
+    if (options.groupIds.length === 0) return [];
+    conditions.push(inArray(forwardRules.forwardGroupId, options.groupIds));
+  }
+  const rows: Array<{ id: number; entryGroupId: number | null }> = await db.select({
+    id: forwardGroups.id, entryGroupId: forwardGroups.entryGroupId,
+  }).from(forwardRules).innerJoin(
+    forwardGroups, eq(forwardRules.forwardGroupId, forwardGroups.id),
+  ).where(and(...conditions));
+  return [...new Set(rows.flatMap(row => [
+    Number(row.id), Number(row.entryGroupId || 0),
+  ]).filter(id => Number.isInteger(id) && id > 0))].sort((a, b) => a - b);
+}
+
 async function repairForwardGroupTemplateHostsUnlocked(
   groupId: number,
 ): Promise<TemplateHostRepair[]> {

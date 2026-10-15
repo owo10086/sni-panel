@@ -2,7 +2,6 @@ import { and, asc, desc, eq, inArray, isNotNull, or, sql, type SQLWrapper } from
 import {
   agentTokens,
   forwardGroupMembers,
-  forwardRuleTunnelExits,
   forwardRules,
   hostGroupMembers,
   hostGroups,
@@ -15,15 +14,12 @@ import {
   trafficBillingConfigs,
   trafficStats,
   trafficStatBuckets,
-  tunnelExitNodes,
-  tunnelHops,
-  tunnels,
   userHostPermissions,
   users,
 } from "../../drizzle/schema";
-import { executeRaw, getDb, insertAndGetId, nowDate, queryRaw, rawAffectedRows, refreshDatabasePoolSettings, withDatabaseTransaction } from "../dbRuntime";
+import { afterDatabaseCommit, isDatabaseTransactionActive, executeRaw, getDb, insertAndGetId, nowDate, queryRaw, rawAffectedRows, refreshDatabasePoolSettings, withDatabaseTransaction } from "../dbRuntime";
 import { boolValue, inList, quoteIdentifier, sqlCountAll } from "../dbCompat";
-import { repairPortForwardRuleHostReferences } from "../portForwardRuleHosts";
+import { assertGroupMemberMutationHeld, withGroupMemberMutation } from "../groupMemberMutation";
 import { sqlBool } from "./repositoryUtils";
 import { repairForwardGroupRuleIntegrity } from "../forwardGroupRuleIntegrity";
 import { pageResult, pageWindowForTotal, type PageRequest } from "../../shared/pagination";
@@ -610,14 +606,56 @@ export async function reorderVisibleHostsForUser(ids: number[], userId: number, 
   await setSetting(userHostDisplayOrderKey(normalizedUserId), JSON.stringify(nextIds));
 }
 
-export async function deleteHost(id: number) {
+async function deleteHostRowsUnlocked(id: number): Promise<void> {
+  assertGroupMemberMutationHeld();
+  if (!isDatabaseTransactionActive()) throw new Error("主机删除必须在数据库保存中执行");
   const db = await getDb();
-  if (!db) return;
-  const before = await getHostById(id).catch(() => undefined);
-  await repairPortForwardRuleHostReferences();
-  await db.delete(forwardRules).where(eq(forwardRules.hostId, id));
-  await db.delete(forwardRuleTunnelExits).where(eq(forwardRuleTunnelExits.exitHostId, id));
-  await db.delete(agentTokens).where(eq(agentTokens.hostId, id));
+  if (!db) throw new Error("Database not available");
+  const before = await getHostById(id);
+  await assertHostHasNoForwardingReferences(id);
+  await releaseHostPendingRuleCleanup(id);
+  const q = quoteIdentifier;
+  const result = await executeRaw(
+    "DELETE FROM " + q("hosts") + " WHERE " + q("id") + "=?" +
+    " AND NOT EXISTS (SELECT 1 FROM " + q("forward_rules") + " r WHERE r." + q("hostId") +
+      "=? AND r." + q("pendingDelete") + "=?)" +
+    " AND NOT EXISTS (SELECT 1 FROM " + q("forward_group_members") + " m JOIN " +
+      q("forward_groups") + " g ON g." + q("id") + "=m." + q("groupId") +
+      " WHERE m." + q("memberType") + "=? AND m." + q("hostId") + "=?)" +
+    " AND NOT EXISTS (SELECT 1 FROM " + q("tunnels") + " t WHERE t." + q("entryHostId") +
+      "=? OR t." + q("exitHostId") + "=?)" +
+    " AND NOT EXISTS (SELECT 1 FROM " + q("tunnel_hops") + " h JOIN " + q("tunnels") +
+      " t ON t." + q("id") + "=h." + q("tunnelId") + " WHERE h." + q("hostId") + "=?)" +
+    " AND NOT EXISTS (SELECT 1 FROM " + q("tunnel_exit_nodes") + " e JOIN " + q("tunnels") +
+      " t ON t." + q("id") + "=e." + q("tunnelId") + " WHERE e." + q("hostId") + "=?)" +
+    " AND NOT EXISTS (SELECT 1 FROM " + q("forward_rule_tunnel_exits") + " x JOIN " +
+      q("forward_rules") + " r ON r." + q("id") + "=x." + q("ruleId") + " JOIN " +
+      q("tunnels") + " t ON t." + q("id") + "=x." + q("tunnelId") +
+      " WHERE x." + q("exitHostId") + "=? AND r." + q("pendingDelete") + "=?)",
+    [id, id, boolValue(false), "host", id, id, id, id, id, id, boolValue(false)],
+  );
+  if (rawAffectedRows(result) !== 1) throw new Error("主机引用已变化，请刷新后重试");
+
+  // Keep live exit choices intact until the guarded host deletion succeeds.
+  await executeRaw(
+    "DELETE FROM " + q("forward_rule_tunnel_exits") + " WHERE " + q("ruleId") +
+    " IN (SELECT " + q("id") + " FROM " + q("forward_rules") + " WHERE " +
+    q("pendingDelete") + "=? AND (" + q("hostId") + "=? OR " +
+    q("forward_rule_tunnel_exits") + "." + q("exitHostId") + "=?))",
+    [boolValue(true), id, id],
+  );
+  await db.delete(forwardRules).where(and(eq(forwardRules.hostId, id), eq(forwardRules.pendingDelete, true)));
+  const associatedTokens = await db.select().from(agentTokens).where(eq(agentTokens.hostId, id));
+  for (const token of associatedTokens) {
+    const otherHosts = await db.select({ id: hosts.id }).from(hosts).where(and(
+      eq(hosts.agentToken, token.token), sql`${hosts.id} <> ${id}`,
+    )).limit(1);
+    if (otherHosts.length) {
+      await db.update(agentTokens).set({ hostId: null }).where(eq(agentTokens.id, token.id));
+    } else {
+      await db.delete(agentTokens).where(eq(agentTokens.id, token.id));
+    }
+  }
   await db.delete(userHostPermissions).where(eq(userHostPermissions.hostId, id));
   await db.delete(subscriptionPlanHosts).where(eq(subscriptionPlanHosts.hostId, id));
   await db.delete(hostGroupMembers).where(eq(hostGroupMembers.hostId, id));
@@ -630,44 +668,54 @@ export async function deleteHost(id: number) {
     eq(trafficBillingConfigs.resourceType, "host"),
     eq(trafficBillingConfigs.resourceId, id),
   ));
-  await db.delete(hosts).where(eq(hosts.id, id));
-  removePresenceCapableHost(id);
-  invalidateAgentAuthTokenCandidates();
+
   if (before) await recordConfigAuditEvent({ resourceType: "host", resourceId: id, hostId: id, action: "delete", before });
-  await refreshDatabasePoolSettings().catch(() => undefined);
+  await afterDatabaseCommit(() => { removePresenceCapableHost(id); });
+  await afterDatabaseCommit(() => invalidateAgentAuthTokenCandidates());
+  await afterDatabaseCommit(async () => { await refreshDatabasePoolSettings().catch(() => undefined); });
 }
 
-async function hostHasLiveReferences(hostId: number) {
+export async function deleteHost(id: number): Promise<void> {
+  return withGroupMemberMutation(async () => {
+    const { repairForwardGroupTemplateHostReferences } = await import("./forwardGroupRepository");
+    await repairForwardGroupTemplateHostReferences({ hostId: id });
+    await repairForwardGroupRuleIntegrity(id);
+    await withDatabaseTransaction(() => deleteHostRowsUnlocked(id));
+  });
+}
+
+async function hostHasLiveReferences(hostId: number): Promise<boolean> {
   const db = await getDb();
   if (!db) return true;
-  const [ruleBlockers, forwardGroupRows, tunnelRows, tunnelHopRows, tunnelExitRows, planRows, tokenRows] = await Promise.all([
-    getHostRuleDeleteBlockers(hostId),
-    db.select({ count: sqlCountAll() }).from(forwardGroupMembers).where(and(
-      eq(forwardGroupMembers.memberType, "host"),
-      eq(forwardGroupMembers.hostId, hostId),
-    )),
-    db.select({ count: sqlCountAll() }).from(tunnels).where(sql`${tunnels.entryHostId} = ${hostId} OR ${tunnels.exitHostId} = ${hostId}`),
-    db.select({ count: sqlCountAll() }).from(tunnelHops).where(eq(tunnelHops.hostId, hostId)),
-    db.select({ count: sqlCountAll() }).from(tunnelExitNodes).where(eq(tunnelExitNodes.hostId, hostId)),
-    db.select({ count: sqlCountAll() }).from(subscriptionPlanHosts).where(eq(subscriptionPlanHosts.hostId, hostId)),
-    db.select({ count: sqlCountAll() }).from(agentTokens).where(eq(agentTokens.hostId, hostId)),
+  const [rules, links, plans, tokens] = await Promise.all([
+    readHostRuleDeleteBlockers(hostId), getHostLinkDeleteBlockers(hostId),
+    db.select({ count: sqlCountAll() }).from(subscriptionPlanHosts)
+      .where(eq(subscriptionPlanHosts.hostId, hostId)),
+    db.select({ count: sqlCountAll() }).from(agentTokens)
+      .where(eq(agentTokens.hostId, hostId)),
   ]);
-  return ruleBlockers.ruleCount > 0
-    || ruleBlockers.managedRuleCount > 0
-    || Number(forwardGroupRows[0]?.count) > 0
-    || Number(tunnelRows[0]?.count) > 0
-    || Number(tunnelHopRows[0]?.count) > 0
-    || Number(tunnelExitRows[0]?.count) > 0
-    || Number(planRows[0]?.count) > 0
-    || Number(tokenRows[0]?.count) > 0;
+  return Boolean(rules.ruleCount || rules.managedRuleCount || links.groupCount || links.tunnelCount
+    || Number(plans[0]?.count || 0) || Number(tokens[0]?.count || 0));
 }
 
-export async function deleteHostIfUnreferenced(hostId: number) {
+export async function deleteHostIfUnreferenced(hostId: number): Promise<boolean> {
   const id = Number(hostId || 0);
   if (!Number.isInteger(id) || id <= 0) return false;
-  if (await hostHasLiveReferences(id)) return false;
-  await deleteHost(id);
-  return true;
+  const remove = async () => {
+    if (!(await getHostById(id)) || await hostHasLiveReferences(id)) return false;
+    await deleteHostRowsUnlocked(id);
+    return true;
+  };
+  if (isDatabaseTransactionActive()) {
+    assertGroupMemberMutationHeld();
+    return remove();
+  }
+  return withGroupMemberMutation(async () => {
+    const { repairForwardGroupTemplateHostReferences } = await import("./forwardGroupRepository");
+    await repairForwardGroupTemplateHostReferences({ hostId: id });
+    await repairForwardGroupRuleIntegrity(id);
+    return withDatabaseTransaction(remove);
+  });
 }
 
 export async function purgeOrphanedAgentHosts() {
@@ -1006,7 +1054,75 @@ export async function getHostAgentPresenceById(id: number) {
   return rows[0];
 }
 
+export async function assertHostHasNoForwardingReferences(hostId: number): Promise<void> {
+  const [rules, links] = await Promise.all([
+    readHostRuleDeleteBlockers(hostId), getHostLinkDeleteBlockers(hostId),
+  ]);
+  if (rules.ruleCount || rules.managedRuleCount || links.groupCount || links.tunnelCount) {
+    throw new Error("主机引用已变化，请刷新后重试");
+  }
+}
+
+export async function getAgentTokenAffectedHostIds(
+  token: { hostId?: number | null; token?: string | null },
+): Promise<number[]> {
+  const q = quoteIdentifier;
+  const rows = token.token ? await queryRaw<{ id: number }>(
+    "SELECT " + q("id") + " FROM " + q("hosts") + " WHERE " + q("agentToken") + "=?",
+    [token.token],
+  ) : [];
+  return [...new Set([Number(token.hostId || 0), ...rows.map(row => Number(row.id))])]
+    .filter(id => Number.isInteger(id) && id > 0).sort((a, b) => a - b);
+}
+
+export async function getHostLinkDeleteBlockers(
+  hostId: number,
+): Promise<{ groupCount: number; tunnelCount: number }> {
+  const q = quoteIdentifier;
+  const [groups, tunnels] = await Promise.all([
+    queryRaw<{ count: unknown }>(
+      "SELECT COUNT(DISTINCT m." + q("groupId") + ") AS " + q("count") +
+      " FROM " + q("forward_group_members") + " m" +
+      " INNER JOIN " + q("forward_groups") + " g ON g." + q("id") + "=m." + q("groupId") +
+      " WHERE m." + q("memberType") + "=? AND m." + q("hostId") + "=?",
+      ["host", hostId],
+    ),
+    queryRaw<{ count: unknown }>(
+      "SELECT COUNT(*) AS " + q("count") + " FROM (" +
+      " SELECT t." + q("id") + " AS " + q("tunnelId") +
+      " FROM " + q("tunnels") + " t WHERE t." + q("entryHostId") + "=?" +
+      " OR t." + q("exitHostId") + "=?" +
+      " UNION SELECT h." + q("tunnelId") +
+      " FROM " + q("tunnel_hops") + " h" +
+      " INNER JOIN " + q("tunnels") + " t ON t." + q("id") + "=h." + q("tunnelId") +
+      " WHERE h." + q("hostId") + "=?" +
+      " UNION SELECT e." + q("tunnelId") +
+      " FROM " + q("tunnel_exit_nodes") + " e" +
+      " INNER JOIN " + q("tunnels") + " t ON t." + q("id") + "=e." + q("tunnelId") +
+      " WHERE e." + q("hostId") + "=?" +
+      " UNION SELECT x." + q("tunnelId") +
+      " FROM " + q("forward_rule_tunnel_exits") + " x" +
+      " INNER JOIN " + q("tunnels") + " t ON t." + q("id") + "=x." + q("tunnelId") +
+      " INNER JOIN " + q("forward_rules") + " r ON r." + q("id") + "=x." + q("ruleId") +
+      " WHERE x." + q("exitHostId") + "=? AND r." + q("pendingDelete") + "=?" +
+      ") " + q("linked_tunnels"),
+      [hostId, hostId, hostId, hostId, hostId, boolValue(false)],
+    ),
+  ]);
+  return {
+    groupCount: Number(groups[0]?.count || 0),
+    tunnelCount: Number(tunnels[0]?.count || 0),
+  };
+}
+
 export async function getHostRuleDeleteBlockers(hostId: number) {
+  const { repairForwardGroupTemplateHostReferences } = await import("./forwardGroupRepository");
+  await repairForwardGroupTemplateHostReferences({ hostId });
+  await repairForwardGroupRuleIntegrity(hostId);
+  return readHostRuleDeleteBlockers(hostId);
+}
+
+export async function readHostRuleDeleteBlockers(hostId: number) {
   const db = await getDb();
   if (!db) return {
     ruleCount: 0,
@@ -1015,8 +1131,6 @@ export async function getHostRuleDeleteBlockers(hostId: number) {
     managedRuleOwners: [],
     pendingCleanupCount: 0,
   };
-  await repairPortForwardRuleHostReferences();
-  await repairForwardGroupRuleIntegrity(hostId);
   const managedRuleSql = sql`
     ${forwardRules.forwardGroupId} IS NOT NULL
     OR ${forwardRules.forwardGroupRuleId} IS NOT NULL

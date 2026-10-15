@@ -1,6 +1,6 @@
 ﻿import { asc, desc, eq } from "drizzle-orm";
 import { agentTokens, hosts, InsertAgentToken } from "../../drizzle/schema";
-import { executeRaw, getDb, insertAndGetId, nowDate, queryRaw } from "../dbRuntime";
+import { afterDatabaseCommit, executeRaw, getDb, insertAndGetId, nowDate, queryRaw } from "../dbRuntime";
 import { inList, quoteIdentifier } from "../dbCompat";
 import { HOST_ONLINE_TTL_MS } from "../hostHeartbeatPolicy";
 
@@ -182,6 +182,6 @@ export async function deleteAgentToken(id: number) {
     }).where(eq(hosts.agentToken, token.token));
   }
   await db.delete(agentTokens).where(eq(agentTokens.id, id));
-  invalidateAgentAuthTokenCandidates();
+  await afterDatabaseCommit(() => invalidateAgentAuthTokenCandidates());
 }
 

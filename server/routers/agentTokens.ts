@@ -1,3 +1,5 @@
+import { withGroupMemberMutation } from "../groupMemberMutation";
+import { withDatabaseTransaction } from "../dbRuntime";
 import { z } from "zod";
 import { nanoid } from "nanoid";
 import { protectedProcedure, router } from "../_core/trpc";
@@ -63,33 +65,57 @@ export const agentTokensRouter = router({
       if (ctx.user.role !== "admin" && token.userId !== ctx.user.id) {
         throw new Error("无权删除该 Token");
       }
-      let releasedPendingCleanup = 0;
-      const hostIds = new Set<number>();
-      if (token.hostId) hostIds.add(Number(token.hostId));
-      if (token.token) {
-        const boundHost = await db.getHostByAgentToken(token.token);
-        if (boundHost?.id) hostIds.add(Number(boundHost.id));
-      }
-      for (const hostId of hostIds) {
-        const blockers = await db.getHostRuleDeleteBlockers(hostId);
-        if (blockers.ruleCount > 0) {
-          const ownerSummary = ctx.user.role === "admin" ? ruleOwnerSummary(blockers.ruleOwners) : "";
-          const ownerHint = ownerSummary ? `：${ownerSummary}` : "";
-          throw new Error(`该 Token 关联主机下还有 ${blockers.ruleCount} 条未删除的转发规则${ownerHint}。请先删除这些规则后再删除 Token`);
+      return withGroupMemberMutation(async () => {
+        const checkedToken = await db.getAgentTokenById(input.id);
+        if (!checkedToken) throw new Error("Token 不存在");
+        if (ctx.user.role !== "admin" && checkedToken.userId !== ctx.user.id) throw new Error("无权删除该 Token");
+        const hostIds = await db.getAgentTokenAffectedHostIds(checkedToken);
+        const assertHostOwnership = async (hostId: number) => {
+          const host = await db.getHostById(hostId);
+          if (host && ctx.user.role !== "admin" && host.userId !== ctx.user.id) {
+            throw new Error("无权操作此主机");
+          }
+        };
+        // Check the whole set's ownership before any historical repair.
+        for (const hostId of hostIds) await assertHostOwnership(hostId);
+        for (const hostId of hostIds) {
+          const blockers = await db.getHostRuleDeleteBlockers(hostId);
+          if (blockers.ruleCount > 0) {
+            const ownerSummary = ctx.user.role === "admin" ? ruleOwnerSummary(blockers.ruleOwners) : "";
+            const ownerHint = ownerSummary ? `：${ownerSummary}` : "";
+            throw new Error(`该 Token 关联主机下还有 ${blockers.ruleCount} 条未删除的转发规则${ownerHint}。请先删除这些规则后再删除 Token`);
+          }
+          if (blockers.managedRuleCount > 0) {
+            const ownerSummary = ctx.user.role === "admin" ? ruleOwnerSummary(blockers.managedRuleOwners) : "";
+            const ownerHint = ownerSummary ? `：${ownerSummary}` : "";
+            throw new Error(`该 Token 关联主机仍被 ${blockers.managedRuleCount} 条未删除的转发组/转发链规则引用${ownerHint}。请先移除引用后再删除 Token`);
+          }
+          const links = await db.getHostLinkDeleteBlockers(hostId);
+          if (links.groupCount > 0) throw new Error("该主机仍是转发组或入口组的成员，请先从组中移除");
+          if (links.tunnelCount > 0) throw new Error("该主机仍被隧道的独立入口、中继或出口使用，请先移除对应引用");
         }
-        if (blockers.managedRuleCount > 0) {
-          const ownerSummary = ctx.user.role === "admin" ? ruleOwnerSummary(blockers.managedRuleOwners) : "";
-          const ownerHint = ownerSummary ? `：${ownerSummary}` : "";
-          throw new Error(`该 Token 关联主机仍被 ${blockers.managedRuleCount} 条未删除的转发组/转发链规则引用${ownerHint}。请先移除引用后再删除 Token`);
-        }
-        releasedPendingCleanup += await db.releaseHostPendingRuleCleanup(hostId);
-      }
-      await db.deleteAgentToken(input.id);
-      let removedHosts = 0;
-      for (const hostId of hostIds) {
-        if (await db.deleteHostIfUnreferenced(hostId)) removedHosts += 1;
-      }
-      return { success: true, releasedPendingCleanup, removedHosts };
+        return withDatabaseTransaction(async () => {
+          const latest = await db.getAgentTokenById(input.id);
+          const latestHostIds = latest ? await db.getAgentTokenAffectedHostIds(latest) : [];
+          if (!latest || latest.token !== checkedToken.token || latest.userId !== checkedToken.userId
+            || latest.hostId !== checkedToken.hostId || JSON.stringify(latestHostIds) !== JSON.stringify(hostIds)) {
+            throw new Error("主机引用已变化，请刷新后重试");
+          }
+          if (ctx.user.role !== "admin" && latest.userId !== ctx.user.id) throw new Error("无权删除该 Token");
+          for (const hostId of hostIds) {
+            await assertHostOwnership(hostId);
+            await db.assertHostHasNoForwardingReferences(hostId);
+          }
+          let releasedPendingCleanup = 0;
+          for (const hostId of hostIds) releasedPendingCleanup += await db.releaseHostPendingRuleCleanup(hostId);
+          await db.deleteAgentToken(input.id);
+          let removedHosts = 0;
+          for (const hostId of hostIds) {
+            if (await db.deleteHostIfUnreferenced(hostId)) removedHosts += 1;
+          }
+          return { success: true, releasedPendingCleanup, removedHosts };
+        });
+      });
     }),
   getInstallToken: protectedProcedure
     .input(z.object({ id: z.number().optional(), token: z.string().optional() }))

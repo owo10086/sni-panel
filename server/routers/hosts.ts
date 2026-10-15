@@ -1,3 +1,4 @@
+import { withGroupMemberMutation } from "../groupMemberMutation";
 import { protectedProcedure, adminProcedure, publicProcedure, router } from "../_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
@@ -1300,20 +1301,28 @@ export const hostsRouter = router({
         const host = await db.getHostById(input.id);
         if (!host) throw new Error("主机不存在");
         if (ctx.user.role !== "admin" && host.userId !== ctx.user.id) throw new Error("无权操作此主机");
-        // 检查是否存在仍会占用此主机的规则。已标记删除且停止运行的历史记录不应阻止删除主机。
-        const blockers = await db.getHostRuleDeleteBlockers(input.id);
-        if (blockers.ruleCount > 0) {
-          throw new Error(`该主机下还有 ${blockers.ruleCount} 条转发规则，请先删除所有规则后再删除主机`);
-        }
-        if (blockers.managedRuleCount > 0) {
-          throw new Error(`该主机仍被 ${blockers.managedRuleCount} 条转发组/转发链规则引用，请先在转发组中移除该主机或删除对应转发组`);
-        }
-        if (blockers.pendingCleanupCount > 0) {
-          await db.releaseHostPendingRuleCleanup(input.id);
-        }
-        await db.deleteHostPermissions(input.id);
-        await db.deleteHost(input.id);
-        return { success: true };
+        return withGroupMemberMutation(async () => {
+          const latest = await db.getHostById(input.id);
+          if (!latest) throw new Error("主机不存在");
+          if (ctx.user.role !== "admin" && latest.userId !== ctx.user.id) throw new Error("无权操作此主机");
+          // 检查是否存在仍会占用此主机的规则。已标记删除且停止运行的历史记录不应阻止删除主机。
+          const blockers = await db.getHostRuleDeleteBlockers(input.id);
+          if (blockers.ruleCount > 0) {
+            throw new Error(`该主机下还有 ${blockers.ruleCount} 条转发规则，请先删除所有规则后再删除主机`);
+          }
+          if (blockers.managedRuleCount > 0) {
+            throw new Error(`该主机仍被 ${blockers.managedRuleCount} 条转发组/转发链规则引用，请先在转发组中移除该主机或删除对应转发组`);
+          }
+          const links = await db.getHostLinkDeleteBlockers(input.id);
+          if (links.groupCount > 0) {
+            throw new Error("该主机仍是转发组或入口组的成员，请先从组中移除");
+          }
+          if (links.tunnelCount > 0) {
+            throw new Error("该主机仍被隧道的独立入口、中继或出口使用，请先移除对应引用");
+          }
+          await db.deleteHost(input.id);
+          return { success: true };
+        });
       }),
     metrics: protectedProcedure
       .input(z.object({ hostId: z.number(), limit: z.number().default(60), live: z.boolean().optional() }))
