@@ -1,3 +1,4 @@
+import { withGroupMemberMutation } from "../groupMemberMutation";
 import { z } from "zod";
 import { adminProcedure, protectedProcedure, router } from "../_core/trpc";
 import * as db from "../db";
@@ -280,7 +281,7 @@ export const forwardGroupsRouter = router({
   // Automation sends a patch, not a stale copy of the entire edit form.
   updateFields: adminProcedure
     .input(baseSchema.partial().extend({ id: z.number().int().positive() }).strict())
-    .mutation(async ({ input }) => withKeyedTaskLock(`forward-group:${input.id}`, async () => {
+    .mutation(async ({ input }) => withKeyedTaskLock(`forward-group:${input.id}`, () => withGroupMemberMutation(async () => {
       const existing = await db.getForwardGroupById(input.id) as any;
       if (!existing) throw new Error("转发资源不存在");
       const current = Object.fromEntries(Object.keys(baseSchema.shape).filter(key => existing[key] !== undefined && existing[key] !== null).map(key => [key, existing[key]]));
@@ -288,7 +289,7 @@ export const forwardGroupsRouter = router({
       const merged = baseSchema.parse({ ...current, ...input });
       const group = await updateForwardGroupFromInput(input.id, merged);
       return { success: true, group };
-    })),
+    }))),
 
   toggle: adminProcedure
     .input(z.object({ id: z.number().int().positive(), isEnabled: z.boolean() }))

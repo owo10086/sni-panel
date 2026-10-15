@@ -90,6 +90,7 @@ type DatabaseTransactionContext = {
 
 const transactionContext = new AsyncLocalStorage<DatabaseTransactionContext>();
 type DeferredCommitCallbacks = {
+  continueOnError: boolean;
   active: boolean;
   callbacks: Array<() => Promise<void> | void>;
 };
@@ -730,8 +731,18 @@ export async function afterDatabaseTransactionSettled(work: () => Promise<void> 
   await work();
 }
 
-async function runAfterCommitCallbacks(callbacks: Array<() => Promise<void> | void>) {
-  for (const callback of callbacks) await callback();
+async function runAfterCommitCallbacks(
+  callbacks: Array<() => Promise<void> | void>, continueOnError = false,
+) {
+  const errors: unknown[] = [];
+  for (const callback of callbacks) {
+    try { await callback(); }
+    catch (error) {
+      if (!continueOnError) throw error;
+      errors.push(error);
+    }
+  }
+  if (errors.length) throw new AggregateError(errors, "配置已保存，部分提交后处理失败");
 }
 
 async function runAfterSettledCallbacks(callbacks: Array<() => Promise<void> | void>) {
@@ -740,16 +751,31 @@ async function runAfterSettledCallbacks(callbacks: Array<() => Promise<void> | v
 
 // A caller may protect a save with user locks. Release those locks before
 // committed work that can involve other users (for example stale-member billing).
-export async function withDeferredDatabaseCommitCallbacks<T>(work: () => Promise<T>): Promise<T> {
-  if (deferredCommitCallbacks.getStore()?.active) return work();
-  if (isDatabaseTransactionActive()) throw new Error("Commit callback scope must start before a database transaction");
-  const scope: DeferredCommitCallbacks = { active: true, callbacks: [] };
-  try {
-    return await deferredCommitCallbacks.run(scope, work);
-  } finally {
-    scope.active = false;
-    await runAfterCommitCallbacks(scope.callbacks);
+export async function withDeferredDatabaseCommitCallbacks<T>(
+  work: () => Promise<T>, options: { continueOnError?: boolean } = {},
+): Promise<T> {
+  const inherited = deferredCommitCallbacks.getStore();
+  if (inherited?.active) {
+    if (options.continueOnError) inherited.continueOnError = true;
+    return work();
   }
+  if (isDatabaseTransactionActive()) throw new Error("Commit callback scope must start before a database transaction");
+  const scope: DeferredCommitCallbacks = {
+    active: true, callbacks: [], continueOnError: options.continueOnError === true,
+  };
+  let result!: T;
+  let workFailed = false;
+  let workError: unknown;
+  try { result = await deferredCommitCallbacks.run(scope, work); }
+  catch (error) { workFailed = true; workError = error; }
+  finally { scope.active = false; }
+  try { await runAfterCommitCallbacks(scope.callbacks, scope.continueOnError); }
+  catch (error) {
+    if (workFailed) throw new AggregateError([workError, error], "保存或提交后处理失败");
+    throw error;
+  }
+  if (workFailed) throw workError;
+  return result;
 }
 
 function deferCommittedCallbacks(callbacks: Array<() => Promise<void> | void>) {

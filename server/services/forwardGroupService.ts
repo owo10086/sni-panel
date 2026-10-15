@@ -1,3 +1,4 @@
+import { withGroupMemberMutation } from "../groupMemberMutation";
 import * as db from "../db";
 import { notificationSettings } from "../notificationSettings";
 import { getDdnsSettings } from "../ddns";
@@ -238,7 +239,11 @@ async function normalizeForwardGroupInput(input: ForwardGroupInput, userId?: num
     members,
   };
 }
-export async function createForwardGroupFromInput(input: ForwardGroupInput, userId: number) {
+export function createForwardGroupFromInput(input: ForwardGroupInput, userId: number) {
+  return withGroupMemberMutation(() => createForwardGroupFromInputUnlocked(input, userId));
+}
+
+async function createForwardGroupFromInputUnlocked(input: ForwardGroupInput, userId: number) {
   const normalized = await normalizeForwardGroupInput(input, userId);
   const id = await db.createForwardGroup(normalized.createData as any, normalized.members as any);
   if (normalized.data.groupMode === "chain" || normalized.data.groupMode === "port") await db.syncForwardGroupRules(id);
@@ -246,7 +251,11 @@ export async function createForwardGroupFromInput(input: ForwardGroupInput, user
   return id;
 }
 
-export async function updateForwardGroupFromInput(id: number, input: ForwardGroupInput) {
+export function updateForwardGroupFromInput(id: number, input: ForwardGroupInput) {
+  return withGroupMemberMutation(() => updateForwardGroupFromInputUnlocked(id, input));
+}
+
+async function updateForwardGroupFromInputUnlocked(id: number, input: ForwardGroupInput) {
   const existing = await db.getForwardGroupById(id) as any;
   if (!existing) throw new Error("转发资源不存在");
   const normalized = await normalizeForwardGroupInput(input);
@@ -282,6 +291,33 @@ export async function updateForwardGroupFromInput(id: number, input: ForwardGrou
     if (shouldResetChinaHealth) await db.resetForwardGroupChinaHealth(id);
   });
   const hasSniRules = (await db.getForwardGroupTemplateRules(id) as any[]).some(rule => String(rule.sni || "").trim());
+  if (hasSniRules && String(existing.groupMode) === "failover"
+    && (normalized.data.groupMode !== "failover" || normalized.data.groupType !== "host")) {
+    throw new Error("承载 SNI 分流规则的转发组必须保持主机型转发组");
+  }
+  if (membersChanged && ["port", "failover", "chain"].includes(normalized.data.groupMode)) {
+    await db.commitForwardGroupMemberChange([id], async () => {
+      await persistConfiguration({ deferRefresh: true });
+      if (enabledChanged) {
+        await db.setForwardGroupEnabled(id, desiredEnabled, { skipSync: true });
+      }
+    }, { preserveRuntime: hasSniRules }, [
+      async () => {
+        if (normalized.data.groupMode !== "failover") return;
+        await db.runForwardGroupFailover(id, {
+          manual: true, forcePriority: memberPriorityChanged,
+          forceSync: memberPriorityChanged, skipRuleSync: true,
+        });
+      },
+      async () => {
+        if (rateLimitChanged && ["port", "failover"].includes(normalized.data.groupMode)) {
+          await db.refreshForwardGroupRuntime(id, "forward-group-rate-limit-updated");
+        }
+      },
+    ]);
+    return db.getForwardGroupById(id);
+  }
+
   if (hasSniRules && String(existing.groupMode) === "failover") {
     if (normalized.data.groupMode !== "failover" || normalized.data.groupType !== "host") {
       throw new Error("承载 SNI 分流规则的转发组必须保持主机型转发组");

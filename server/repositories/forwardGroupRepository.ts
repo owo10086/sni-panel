@@ -1,3 +1,9 @@
+import {
+  planTemplateHostRepairs,
+  type TemplateHostCandidate,
+  type TemplateHostRepair,
+} from "../forwardGroupTemplateHosts";
+import { assertGroupMemberMutationHeld, withGroupMemberMutation } from "../groupMemberMutation";
 import { gateForwardRulesForRuntime } from "../linkAccessView";
 import { getSniRuntimeGroupStatus, isFailoverSniRuleApplied, sniRuntimeConfirmationBoundary, invalidateSniRuntimeConfirmation } from "../sniRuntimeObservability";
 import { evaluateSniMemberHealthWindows, isSniChinaHealthDecisionFinal, recordSniChinaHealthDecision, sniMemberHealthSummary, type SniMemberHealthObservation } from "../forwardGroupSniHealth";
@@ -18,7 +24,7 @@ import {
 import { pushAgentRefresh } from "../agentEvents";
 import { appendPanelLog } from "../_core/panelLogger";
 import { getDdnsSettings, updateDdnsRecordValues } from "../ddns";
-import { afterDatabaseCommit, afterDatabaseTransactionSettled, executeRaw, getDb, insertAndGetId, isDatabaseTransactionActive, nowDate, queryRaw, withDatabaseTransaction } from "../dbRuntime";
+import { afterDatabaseCommit, afterDatabaseTransactionSettled, rawAffectedRows, withDeferredDatabaseCommitCallbacks, executeRaw, getDb, insertAndGetId, isDatabaseTransactionActive, nowDate, queryRaw, withDatabaseTransaction } from "../dbRuntime";
 import { boolValue, countAll, inList, quoteIdentifier } from "../dbCompat";
 import { pageResult, pageWindowForTotal, type PageRequest } from "../../shared/pagination";
 import {
@@ -78,7 +84,6 @@ import {
   reserveSpecificHostPort,
   type HostPortReservation,
 } from "../portReservations";
-import { repairPortForwardRuleHostReferences } from "../portForwardRuleHosts";
 import { summarizeForwardGroupRuntime } from "../forwardGroupRuntimeStatus";
 import { normalizePositiveIds, normalizeSniValue, sqlBool } from "./repositoryUtils";
 import { normalizeExitGroupStrategy } from "@shared/exitStrategy";
@@ -948,7 +953,9 @@ async function refreshTunnelsUsingForwardGroup(
   const exitMembers = group ? sortedMembers(group) : [];
   const hasEnabledExitMember = exitMembers.some((member: any) => member?.memberType === "host" && dbBool(member?.isEnabled));
 
+  const errors: unknown[] = [];
   for (const tunnel of affectedTunnels) {
+    try {
     if (exitStrategy && group && hasEnabledExitMember) {
       const synced = await syncTunnelExitGroupEndpoints(tunnel, exitMembers, exitStrategy);
       Object.assign(tunnel, synced.tunnel);
@@ -956,7 +963,12 @@ async function refreshTunnelsUsingForwardGroup(
       throw new Error("Enabled exit group must contain at least one enabled host");
     }
     await refreshControlledTunnelRuntime(tunnel, reason, { resetRules: true, extraHostIds: referencedHostIds });
+    } catch (error) {
+      if (groupMode !== "entry") throw error;
+      errors.push(error);
+    }
   }
+  if (errors.length) throw new AggregateError(errors, "配置已保存，部分隧道刷新失败");
 }
 
 export async function refreshForwardGroupReferences(
@@ -3427,18 +3439,20 @@ async function removeManagedRule(
   if (options.deferRefresh || isDatabaseTransactionActive()) {
     await markForwardRulePendingDelete(Number(rule.id));
     await afterDatabaseCommit(async () => {
-      const billed = resource
-        ? await withTrafficBillingUserLock(Number(rule?.userId), () => settleTrafficBillingRuleOnDelete({
-            userId: Number(rule?.userId || 0),
-            ruleId: Number(rule?.id || 0),
-            resourceType: resource.resourceType,
-            resourceId: Number(resource.resourceId || 0),
-          }))
-        : null;
-      if (billed && Number(billed.balanceAfterCents) < 0) {
-        await setUserForwardAccess(Number((rule as any).userId), false, "traffic_billing_balance");
-      }
-      await refreshRuleEndpoints(rule, "forward-group-child-deleted");
+const errors: unknown[] = [];
+try {
+  const billed = resource ? await withTrafficBillingUserLock(Number(rule.userId), () =>
+    settleTrafficBillingRuleOnDelete({ userId: Number(rule.userId || 0),
+      ruleId: Number(rule.id), resourceType: resource.resourceType,
+      resourceId: Number(resource.resourceId || 0) })) : null;
+  if (billed && Number(billed.balanceAfterCents) < 0) {
+    await setUserForwardAccess(Number(rule.userId), false, "traffic_billing_balance");
+  }
+} catch (error) { errors.push(error); }
+try { await refreshRuleEndpoints(rule, "forward-group-child-deleted"); }
+catch (error) { errors.push(error); }
+if (errors.length) throw new AggregateError(errors, "配置已保存，旧规则清理部分失败");
+
     });
     return;
   }
@@ -3454,6 +3468,64 @@ async function removeManagedRule(
   await refreshRuleEndpoints(rule, "forward-group-child-deleted");
 }
 
+async function repairForwardGroupTemplateHostsUnlocked(
+  groupId: number,
+): Promise<TemplateHostRepair[]> {
+  const group = await getForwardGroupById(groupId);
+  if (!group) return [];
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const activeMemberId = Number(group.activeMemberId || 0);
+  if (activeMemberId > 0 && !(group.members || []).some(
+    (member: any) => Number(member.id) === activeMemberId,
+  )) {
+    await db.update(forwardGroups).set({ activeMemberId: null, updatedAt: nowDate() })
+      .where(and(eq(forwardGroups.id, groupId), eq(forwardGroups.activeMemberId, activeMemberId)));
+  }
+  const mode = groupModeOf(group);
+  if (mode !== "port" && mode !== "failover" && mode !== "chain") return [];
+  const externalEntry = mode === "chain" && Number(group.entryGroupId || 0) > 0;
+  const sourceGroup = externalEntry
+    ? await getForwardGroupById(Number(group.entryGroupId)) : group;
+  if (!sourceGroup || (externalEntry && groupModeOf(sourceGroup) !== "entry")) return [];
+  const memberCandidates = [];
+  for (const member of sortedMembers(sourceGroup)) {
+    const hostId = await memberEntryHostId(member);
+    if (!hostId || !(await getHostById(hostId))) continue;
+    memberCandidates.push({
+      memberId: Number(member.id), hostId,
+      priority: Number(member.priority || 0),
+      enabled: dbBool(member.isEnabled),
+    });
+  }
+  const templates = await getForwardGroupTemplateRules(groupId);
+  const rows: TemplateHostCandidate[] = [];
+  for (const template of templates as any[]) {
+    if (dbBool(template.pendingDelete)) continue;
+    for (const candidate of memberCandidates) rows.push({
+      ...candidate, ruleId: Number(template.id), groupId,
+      storedHostId: Number(template.hostId), groupMode: mode, externalEntry,
+    });
+  }
+  const repairs = planTemplateHostRepairs(rows);
+  const q = quoteIdentifier;
+  for (const repair of repairs) {
+    const result = await executeRaw(
+      "UPDATE " + q("forward_rules") + " SET " + q("hostId") + "=?," +
+      q("isRunning") + "=?," + q("updatedAt") + "=? WHERE " +
+      q("id") + "=? AND " + q("forwardGroupId") + "=? AND " +
+      q("hostId") + "=? AND " + q("isForwardGroupTemplate") + "=? AND " +
+      q("pendingDelete") + "=?",
+      [repair.toHostId, boolValue(false), nowDate(), repair.ruleId, repair.groupId,
+        repair.fromHostId, boolValue(true), boolValue(false)],
+    );
+    if (rawAffectedRows(result) !== 1) {
+      throw new Error("规则归属发生变化，请刷新后重试");
+    }
+  }
+  return repairs;
+}
+
 async function syncForwardGroupRulesUnlocked(groupId: number, options: SyncForwardGroupRulesOptions = {}) {
   const group = await getForwardGroupById(groupId);
   if (!group) return;
@@ -3466,9 +3538,9 @@ async function syncForwardGroupRulesUnlocked(groupId: number, options: SyncForwa
     if (members.length !== 1) throw new Error("端口转发需要配置 1 台所属主机");
     if (String(group.groupType || "host") !== "host") throw new Error("端口转发仅支持主机成员");
     if (members.some((member) => member.memberType !== "host")) throw new Error("端口转发仅支持主机成员");
-    await repairPortForwardRuleHostReferences(groupId);
   }
 
+  await repairForwardGroupTemplateHostsUnlocked(groupId);
   const templates = await getForwardGroupTemplateRules(groupId);
   const preserveRuntime = !!options.preserveRuntime || (groupMode === "failover" && templates.some((template: any) => normalizeSniValue(template.sni)));
   options = { ...options, preserveRuntime };
@@ -3739,6 +3811,29 @@ async function syncForwardGroupRulesWithLockHeld(groupId: number, options: SyncF
   });
 }
 
+export async function commitForwardGroupMemberChange(
+  groupIds: number[], work: () => Promise<void>,
+  options: SyncForwardGroupRulesOptions = {},
+  afterCommit: Array<() => Promise<unknown>> = [],
+): Promise<void> {
+  let committed = false;
+  const errors: unknown[] = [];
+  try {
+    await withDeferredDatabaseCommitCallbacks(() =>
+      withForwardGroupsSyncTransaction(groupIds, async () => {
+        await work();
+        await afterDatabaseCommit(() => { committed = true; });
+      }, options), { continueOnError: true });
+  } catch (error) {
+    if (!committed) throw error;
+    errors.push(error);
+  }
+  for (const stage of afterCommit) {
+    try { await stage(); } catch (error) { errors.push(error); }
+  }
+  if (errors.length) throw new AggregateError(errors, "配置已保存，部分提交后处理失败");
+}
+
 export async function withForwardGroupSyncTransaction<T>(
   groupId: number,
   work: () => Promise<T>,
@@ -3790,7 +3885,15 @@ export async function syncForwardGroupTemplateRule(templateRuleId: number) {
   await syncForwardGroupRules(Number((template as any).forwardGroupId));
 }
 
-export async function createForwardGroup(data: InsertForwardGroup, members: ForwardGroupMemberInput[]) {
+export function createForwardGroup(data: InsertForwardGroup, members: ForwardGroupMemberInput[]) {
+  return withGroupMemberMutation(() => createForwardGroupUnlocked(data, members));
+}
+
+async function createForwardGroupUnlocked(data: InsertForwardGroup, members: ForwardGroupMemberInput[]) {
+  if (Number((data as any).entryGroupId || 0) > 0) {
+    const entry = await getForwardGroupById(Number((data as any).entryGroupId));
+    if (!entry || groupModeOf(entry) !== "entry") throw new Error("入口组不存在或类型不正确");
+  }
   if (members.length === 0) throw new Error("转发组至少需要一个成员");
   const groupMode = groupModeOf(data);
   validateForwardGroupModeMembers(groupMode, String((data as any).groupType || "host"), members, {
@@ -3900,6 +4003,22 @@ export async function replaceForwardGroupMembers(
   members: ForwardGroupMemberInput[],
   options: { skipSync?: boolean; deferRefresh?: boolean } = {},
 ) {
+  if (!options.skipSync) return withGroupMemberMutation(async () => {
+    const group = await getForwardGroupById(groupId);
+    if (isCollectionGroupMode(groupModeOf(group))) {
+      return replaceForwardGroupMembersUnlocked(groupId, members, options);
+    }
+    return commitForwardGroupMemberChange([groupId], () =>
+      replaceForwardGroupMembersUnlocked(groupId, members, { ...options, skipSync: true, deferRefresh: true }));
+  });
+  assertGroupMemberMutationHeld();
+  return replaceForwardGroupMembersUnlocked(groupId, members, options);
+}
+
+async function replaceForwardGroupMembersUnlocked(
+  groupId: number, members: ForwardGroupMemberInput[],
+  options: { skipSync?: boolean; deferRefresh?: boolean } = {},
+) {
   if (members.length === 0) throw new Error("转发组至少需要一个成员");
   const group = await getForwardGroupById(groupId);
   const groupMode = groupModeOf(group);
@@ -3925,6 +4044,8 @@ export async function replaceForwardGroupMembers(
       const childRules = await getForwardGroupChildRulesForMember(Number(old.id));
       for (const rule of childRules as any[]) await removeManagedRule(Number(rule.id), options);
       if (old.ruleId) await removeManagedRule(Number(old.ruleId), options);
+      await db.update(forwardGroups).set({ activeMemberId: null, updatedAt: nowDate() })
+        .where(and(eq(forwardGroups.id, groupId), eq(forwardGroups.activeMemberId, Number(old.id))));
       await db.delete(forwardGroupMembers).where(eq(forwardGroupMembers.id, old.id));
     }
   }

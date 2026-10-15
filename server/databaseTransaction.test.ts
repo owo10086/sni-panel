@@ -228,6 +228,27 @@ test("SQLite billing transactions roll back and serialize concurrent updates", (
       await runtime.executeRaw('UPDATE "users" SET "balanceCents" = 1000 WHERE id = 1');
 
       const deferredCallbacks = [];
+      const seen = [];
+      await assert.rejects(() => runtime.withDeferredDatabaseCommitCallbacks(() =>
+        runtime.withDatabaseTransaction(async () => {
+          await runtime.afterDatabaseCommit(() => { seen.push("first"); throw new Error("first callback failed"); });
+          await runtime.afterDatabaseCommit(() => { seen.push("second"); });
+        }), { continueOnError: true }), /配置已保存/);
+      assert.deepEqual(seen, ["first", "second"]);
+      seen.length = 0;
+      await assert.rejects(() => runtime.withDeferredDatabaseCommitCallbacks(() =>
+        runtime.withDatabaseTransaction(async () => {
+          await runtime.afterDatabaseCommit(() => { seen.push("must not run"); });
+          throw new Error("save failed");
+        }), { continueOnError: true }), /save failed/);
+      assert.deepEqual(seen, []);
+      await assert.rejects(() => runtime.withDeferredDatabaseCommitCallbacks(() =>
+        runtime.withDatabaseTransaction(async () => {
+          await runtime.afterDatabaseCommit(() => { seen.push("first"); throw new Error("default failure"); });
+          await runtime.afterDatabaseCommit(() => { seen.push("second"); });
+        })), /default failure/);
+      assert.deepEqual(seen, ["first"], "other callers retain their existing default behavior");
+
       await runtime.withDeferredDatabaseCommitCallbacks(async () => {
         await runtime.withDatabaseTransaction(async () => {
           await runtime.afterDatabaseCommit(async () => {

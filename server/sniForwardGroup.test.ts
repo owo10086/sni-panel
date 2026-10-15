@@ -196,11 +196,12 @@ test("SNI member removal commits before waiting for billing and sends no refresh
     };
     const remainingMembers = [{ memberType: "host", hostId: 2, priority: 20, isEnabled: true }];
     try {
-      await assert.rejects(() => within(groups.withForwardGroupSyncTransaction(10, async () => {
+      const { withGroupMemberMutation } = await import("./server/groupMemberMutation.ts");
+      await assert.rejects(() => within(withGroupMemberMutation(() => groups.withForwardGroupSyncTransaction(10, async () => {
         // Intentionally omit deferRefresh: the cleanup boundary must detect the transaction itself.
         await groups.replaceForwardGroupMembers(10, remainingMembers, { skipSync: true });
         throw new Error("intentional rollback");
-      }), "member removal rollback"), /intentional rollback/);
+      })), "member removal rollback"), /intentional rollback/);
       assert.equal((await savedRules.getForwardRuleById(Number(removed.id))).pendingDelete, false);
       assert.deepEqual((await groups.getForwardGroupById(10)).members.map(member => Number(member.hostId)).sort(), [1, 2]);
       assert.deepEqual(await billing.listTrafficBillingRecords({ userId: 1 }), []);
@@ -216,10 +217,10 @@ test("SNI member removal commits before waiting for billing and sends no refresh
       });
       await held.promise;
       let finished = false;
-      const save = groups.withForwardGroupSyncTransaction(10, async () => {
+      const save = withGroupMemberMutation(() => groups.withForwardGroupSyncTransaction(10, async () => {
         await runtime.afterDatabaseCommit(() => { committed.resolve(); });
         await groups.replaceForwardGroupMembers(10, remainingMembers, { skipSync: true });
-      }).finally(() => { finished = true; });
+      })).finally(() => { finished = true; });
       try {
         await within(committed.promise, "database commit with billing held");
         await within(users.updateUserProfile(1, { name: "database available" }), "independent write while billing waits");
