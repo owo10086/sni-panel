@@ -4,7 +4,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-export function runGroupMemberReleaseCase(body: string): void {
+export function runGroupMemberReleaseCase(body: string, options: { timeout?: number } = {}): void {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), "forwardx-member-release-"));
   const setup = String.raw`
     import assert from "node:assert/strict";
@@ -188,7 +188,7 @@ export function runGroupMemberReleaseCase(body: string): void {
     const result = spawnSync(process.execPath, [
       "--import", "tsx", "--input-type=module", "--eval", setup + body + cleanup,
     ], {
-      cwd: process.cwd(), encoding: "utf8", timeout: 30_000,
+      cwd: process.cwd(), encoding: "utf8", timeout: options.timeout ?? 30_000,
       env: {
         ...process.env, DATABASE_TYPE: "sqlite",
         FORWARDX_TEST_DB: path.join(directory, "test.db"),

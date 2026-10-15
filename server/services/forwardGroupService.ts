@@ -313,7 +313,7 @@ async function updateForwardGroupFromInputUnlocked(id: number, input: ForwardGro
       () => db.runForwardGroupFailover(id, {
         manual: true, forceSync: true, skipRuleSync: true,
       }),
-    ]);
+    ], enabledChanged ? [id] : []);
     return db.getForwardGroupById(id);
   }
 

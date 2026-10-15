@@ -946,3 +946,216 @@ test("host deletion rechecks current ownership in the final save after historica
     assert.equal((await runtime.queryRaw("SELECT id FROM config_audit_events WHERE resourceType='host' AND resourceId=1 AND action='delete'")).length, 0);
   `);
 });
+
+for (const enable of [false, true]) {
+  for (const tunnelFirst of [true, false]) {
+    test(`entry members and toggle finish with tunnel save queued first=${tunnelFirst}, enable=${enable}`, () => {
+      runGroupMemberReleaseCase(`
+        // Keep a stuck child alive so the parent timeout proves it cannot hang the suite.
+        const keepAlive = setInterval(() => {}, 1000);
+        const { withResourceTaskLock, withKeyedTaskLock } = await import('./server/keyedTaskLock.ts');
+        const { tunnelsRouter } = await import('./server/routers/tunnels.ts');
+        await seedEntryChain();
+        if (${enable}) await links.setForwardGroupEnabled(30, false);
+        // Insert in reverse order: acquisition must use numeric ids, not query order.
+        for (const id of [71, 70]) {
+          await insert('tunnels', { id, name:'queued-' + id, entryHostId:4, exitHostId:3,
+            entryGroupId:30, mode:'tls', listenPort:25000 + id, userId:1,
+            isEnabled:${enable ? 0 : 1}, disabledByGroup:${enable ? 1 : 0} });
+          await insert('forward_rules', { id:9000 + id, name:'tunnel-rule-' + id,
+            hostId:4, userId:1, tunnelId:id, forwardType:'gost', protocol:'tcp',
+            sourcePort:26000 + id, targetIp:'192.0.2.90', targetPort:8443,
+            isEnabled:${enable ? 0 : 1}, disabledByTunnel:${enable ? 1 : 0} });
+          tunnelState.bumpTunnelRuntimeGeneration(id);
+          tunnelState.recordTunnelRuntimeHostStatus(id, 4, true);
+        }
+        const frames = captureAgentFrames([1,2,3,4,5,6]);
+        const before = frames();
+        const generations = [70,71].map(id => tunnelState.getTunnelRuntimeGeneration(id));
+        const waitDepth = async (key, expected) => {
+          for (let i=0;i<2000;i++) {
+            if (keyedTaskDepth(key) === expected) return;
+            await new Promise(resolve => setImmediate(resolve));
+          }
+          assert.fail(key + ' did not reach depth ' + expected);
+        };
+        let release, entered;
+        const gate = new Promise(resolve => { release=resolve; });
+        const ready = new Promise(resolve => { entered=resolve; });
+        let groupSave, tunnelSave;
+        if (${tunnelFirst}) {
+          // Queue the real route before the group, then release the gate only
+          // after both reached the same tunnel position. Old code holds the DB
+          // at that point, so the real tunnel route and group wait on each other.
+          const holding = withKeyedTaskLock('tunnel:70', async () => {
+            entered(); await gate;
+          });
+          await ready;
+          tunnelSave = tunnelsRouter.createCaller(context).update({id:70,name:'concurrent-save'});
+          await waitDepth('tunnel:70', 2);
+          groupSave = saveMembers(30, [5], { isEnabled:${enable} });
+          await waitDepth('tunnel:70', 3);
+          assert.equal(keyedTaskDepth('tunnel:71'), 0, 'acquire smaller tunnel first');
+          release();
+          await holding;
+        } else {
+          // Pause before the second tunnel position, outside the DB transaction.
+          const holding = withResourceTaskLock('tunnel:71', async () => {
+            entered(); await gate;
+          });
+          await ready;
+          groupSave = saveMembers(30, [5], { isEnabled:${enable} });
+          await waitDepth('tunnel:71', 2);
+          assert.equal(keyedTaskDepth('forward-group-sync:30'), 1);
+          assert.equal(keyedTaskDepth('forward-group-sync:40'), 1);
+          assert.equal(keyedTaskDepth('tunnel:70'), 1);
+          assert.deepEqual(frames(), before, 'queued save must not notify');
+          for (const [index,id] of [70,71].entries()) {
+            assert.equal(tunnelState.getTunnelRuntimeGeneration(id), generations[index]);
+            assert.equal(tunnelState.getTunnelRuntimeHostStatus(id,4), true);
+          }
+          // This direction calls the real tunnel update route, queued behind the group.
+          tunnelSave = tunnelsRouter.createCaller(context).update({id:70,name:'concurrent-save'});
+          await waitDepth('tunnel:70', 2);
+          release();
+          await holding;
+        }
+        await Promise.all([groupSave,tunnelSave]);
+        assert.deepEqual((await links.getForwardGroupById(30)).members.map(m => m.hostId), [5]);
+        assert.equal(Boolean((await links.getForwardGroupById(30)).isEnabled), ${enable});
+        await assertGroupReleased(40,4,5);
+        assert.deepEqual(await runtime.queryRaw(
+          'SELECT id,isEnabled,disabledByGroup,entryHostId FROM tunnels ORDER BY id'),
+          [70,71].map(id => ({id,isEnabled:${enable ? 1 : 0},disabledByGroup:${enable ? 0 : 1},entryHostId:4})));
+        assert.equal((await runtime.queryRaw('SELECT name FROM tunnels WHERE id=70'))[0].name,'concurrent-save');
+        const tunnelRules = await runtime.queryRaw('SELECT isEnabled,disabledByTunnel FROM forward_rules WHERE tunnelId IN (70,71) ORDER BY id');
+        assert.deepEqual(tunnelRules, [70,71].map(() => ({isEnabled:${enable ? 1 : 0},disabledByTunnel:${enable ? 0 : 1}})));
+        for (const [index,id] of [70,71].entries()) {
+          assert.ok(tunnelState.getTunnelRuntimeGeneration(id)>generations[index]);
+          assert.notEqual(tunnelState.getTunnelRuntimeHostStatus(id,4),true);
+        }
+        assert.ok(frames().some(([id,values]) => values.length>before.find(([old])=>old===id)[1].length));
+        clearInterval(keepAlive);
+      `, { timeout: 8_000 });
+    });
+  }
+}
+
+for (const enable of [false, true]) {
+  test('entry toggle rolls back both tunnel saves and runtime, enable=' + enable, () => {
+    runGroupMemberReleaseCase(`
+      await seedEntryChain();
+      if (${enable}) await links.setForwardGroupEnabled(30, false);
+      for (const id of [71,70]) {
+        await insert('tunnels', { id,name:'rollback-' + id,entryHostId:4,exitHostId:3,
+          entryGroupId:30,mode:'tls',listenPort:25000 + id,userId:1,
+          isEnabled:${enable ? 0 : 1},disabledByGroup:${enable ? 1 : 0} });
+        await insert('forward_rules', { id:9000 + id,name:'rollback-rule-' + id,
+          hostId:4,userId:1,tunnelId:id,forwardType:'gost',protocol:'tcp',
+          sourcePort:26000 + id,targetIp:'192.0.2.90',targetPort:8443,
+          isEnabled:${enable ? 0 : 1},disabledByTunnel:${enable ? 1 : 0} });
+        tunnelState.bumpTunnelRuntimeGeneration(id);
+        tunnelState.recordTunnelRuntimeHostStatus(id,4,true);
+      }
+      const members = await runtime.queryRaw('SELECT * FROM forward_group_members ORDER BY id');
+      const rules = await runtime.queryRaw('SELECT * FROM forward_rules ORDER BY id');
+      const tunnels = await runtime.queryRaw('SELECT * FROM tunnels ORDER BY id');
+      const groupsBefore = await runtime.queryRaw('SELECT * FROM forward_groups ORDER BY id');
+      const frames = captureAgentFrames([1,2,3,4,5,6]);
+      const before = frames();
+      const generations = [70,71].map(id => tunnelState.getTunnelRuntimeGeneration(id));
+      await runtime.executeRaw('CREATE TRIGGER reject_second_tunnel BEFORE UPDATE OF isEnabled ON tunnels ' +
+        'WHEN OLD.id=71 AND NEW.isEnabled=${enable ? 1 : 0} ' +
+        "BEGIN SELECT RAISE(ABORT,'injected-second-tunnel-toggle'); END");
+      await assert.rejects(() => saveMembers(30,[5],{isEnabled:${enable}}), /injected-second-tunnel-toggle/);
+      assert.deepEqual(await runtime.queryRaw('SELECT * FROM forward_group_members ORDER BY id'),members);
+      assert.deepEqual(await runtime.queryRaw('SELECT * FROM forward_rules ORDER BY id'),rules);
+      assert.deepEqual(await runtime.queryRaw('SELECT * FROM tunnels ORDER BY id'),tunnels);
+      assert.deepEqual(await runtime.queryRaw('SELECT * FROM forward_groups ORDER BY id'),groupsBefore);
+      assert.deepEqual(frames(),before);
+      for (const [index,id] of [70,71].entries()) {
+        assert.equal(tunnelState.getTunnelRuntimeGeneration(id),generations[index]);
+        assert.equal(tunnelState.getTunnelRuntimeHostStatus(id,4),true);
+      }
+      await runtime.executeRaw('DROP TRIGGER reject_second_tunnel');
+      // All positions must also be released after rollback.
+      await saveMembers(30,[5],{isEnabled:${enable}});
+      await assertGroupReleased(40,4,5);
+    `, {timeout:8_000});
+  });
+}
+
+test('entry toggle rejects a newly attached tunnel before saving any group state', () => {
+  runGroupMemberReleaseCase(`
+    const { withKeyedTaskLock } = await import('./server/keyedTaskLock.ts');
+    await seedEntryChain();
+    await insert('tunnels', {id:70,name:'scope',entryHostId:4,exitHostId:3,
+      entryGroupId:30,mode:'tls',listenPort:25070,userId:1,isEnabled:1});
+    const frames = captureAgentFrames([1,2,3,4,5,6]);
+    const before = frames();
+    const rules = await runtime.queryRaw('SELECT * FROM forward_rules ORDER BY id');
+    let release,entered;
+    const gate = new Promise(resolve => {release=resolve;});
+    const ready = new Promise(resolve => {entered=resolve;});
+    const edit = withKeyedTaskLock('tunnel:70',async () => {
+      entered(); await gate;
+      await runtime.withDatabaseTransaction(() => insert('tunnels',{
+        id:71,name:'late-reference',entryHostId:6,exitHostId:3,entryGroupId:30,
+        mode:'tls',listenPort:25071,userId:1,isEnabled:1}));
+    });
+    await ready;
+    const save = saveMembers(30,[5],{isEnabled:false});
+    // Attach rejection immediately: the held edit will change the saved scope.
+    const rejected = assert.rejects(save,/入口组引用发生变化/);
+    for (let turn=0;turn<2000 && keyedTaskDepth('tunnel:70')!==2;turn++) {
+      await new Promise(resolve => setImmediate(resolve));
+    }
+    assert.equal(keyedTaskDepth('tunnel:70'),2);
+    release();
+    await Promise.all([edit,rejected]);
+    const current = await links.getForwardGroupById(30);
+    assert.deepEqual(current.members.map(m=>m.hostId),[4,5]);
+    assert.equal(Boolean(current.isEnabled),true);
+    assert.deepEqual(await runtime.queryRaw('SELECT * FROM forward_rules ORDER BY id'),rules);
+    assert.deepEqual(await runtime.queryRaw('SELECT id,isEnabled FROM tunnels ORDER BY id'),
+      [{id:70,isEnabled:1},{id:71,isEnabled:1}]);
+    assert.deepEqual(frames(),before);
+    await saveMembers(30,[5],{isEnabled:false});
+    assert.deepEqual(await runtime.queryRaw('SELECT id,isEnabled FROM tunnels ORDER BY id'),
+      [{id:70,isEnabled:0},{id:71,isEnabled:0}]);
+  `, {timeout:8_000});
+});
+
+test('entry toggle follows existing SNI group then tunnel save order', () => {
+  runGroupMemberReleaseCase(`
+    const { withResourceTaskLock } = await import('./server/keyedTaskLock.ts');
+    const { withSniRuleWrite } = await import('./server/sniRuleWrite.ts');
+    await seedEntryChain(true);
+    await insert('tunnels',{id:70,name:'sni-order',entryHostId:6,exitHostId:3,
+      entryGroupId:30,mode:'tls',listenPort:25070,userId:1,isEnabled:1});
+    let release,entered;
+    const gate = new Promise(resolve=>{release=resolve;});
+    const ready = new Promise(resolve=>{entered=resolve;});
+    // The existing SNI coordinator holds all group positions before tunnels.
+    // Reuse that active group scope so its real coordinator can pause between them.
+    const sniSave = withResourceTaskLock('forward-group-sync:30',async()=>{
+      entered(); await gate;
+      return withSniRuleWrite(undefined,{tunnelId:70,forwardType:'gost',sni:'order.example.test'},
+        ()=>runtime.withDatabaseTransaction(()=>runtime.executeRaw(
+          "UPDATE tunnels SET name='sni-coordinated-save' WHERE id=70")));
+    });
+    await ready;
+    const groupSave = saveMembers(30,[5],{isEnabled:false});
+    for(let turn=0;turn<2000 && keyedTaskDepth('forward-group-sync:30')!==2;turn++) {
+      await new Promise(resolve=>setImmediate(resolve));
+    }
+    assert.equal(keyedTaskDepth('forward-group-sync:30'),2);
+    assert.equal(keyedTaskDepth('tunnel:70'),0,
+      'group save must not hold a tunnel while waiting for the SNI group position');
+    release();
+    await Promise.all([sniSave,groupSave]);
+    await assertGroupReleased(40,4,5);
+    assert.deepEqual(await runtime.queryRaw('SELECT name,isEnabled,entryHostId FROM tunnels WHERE id=70'),
+      [{name:'sni-coordinated-save',isEnabled:0,entryHostId:6}]);
+  `,{timeout:8_000});
+});

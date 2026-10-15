@@ -3912,6 +3912,7 @@ export async function commitForwardGroupMemberChange(
   groupIds: number[], work: () => Promise<void>,
   options: SyncForwardGroupRulesOptions = {},
   afterCommit: Array<() => Promise<unknown>> = [],
+  tunnelGroupIds: number[] = [],
 ): Promise<void> {
   let committed = false;
   const errors: unknown[] = [];
@@ -3920,7 +3921,7 @@ export async function commitForwardGroupMemberChange(
       withForwardGroupsSyncTransaction(groupIds, async () => {
         await work();
         await afterDatabaseCommit(() => { committed = true; });
-      }, options), { continueOnError: true });
+      }, options, tunnelGroupIds), { continueOnError: true });
   } catch (error) {
     if (!committed) throw error;
     errors.push(error);
@@ -3945,16 +3946,41 @@ export async function withForwardGroupsSyncTransaction<T>(
   groupIds: number[],
   work: () => Promise<T>,
   options: SyncForwardGroupRulesOptions = {},
+  tunnelGroupIds: number[] = [],
 ): Promise<T> {
   if (isDatabaseTransactionActive()) {
     throw new Error("Forward group sync transaction must start before a database transaction");
   }
   const ids = [...new Set(groupIds)].sort((a, b) => a - b);
-  return withForwardGroupSyncLocks(ids, () => withDatabaseTransaction(async () => {
-    const result = await work();
-    for (const id of ids) await syncForwardGroupRulesWithLockHeld(id, options);
-    return result;
-  }));
+  const tunnelIds = await forwardGroupControlledTunnelIds(tunnelGroupIds);
+  // Match SNI writes: all groups -> all tunnels -> database, each in numeric
+  // order. Tunnel edits take tunnel -> database without acquiring group locks.
+  // Both enable and disable must finish waiting before starting the transaction.
+  const acquireTunnels = (index: number): Promise<T> => index < tunnelIds.length
+    ? withResourceTaskLock(`tunnel:${tunnelIds[index]}`, () => acquireTunnels(index + 1))
+    : withDatabaseTransaction(async () => {
+      // An edit may have attached another tunnel while we waited. Reject before
+      // writing rather than taking another position inside the transaction.
+      const currentTunnelIds = await forwardGroupControlledTunnelIds(tunnelGroupIds);
+      if (currentTunnelIds.join(",") !== tunnelIds.join(",")) {
+        throw new Error("入口组引用发生变化，请刷新后重试");
+      }
+      const result = await work();
+      for (const id of ids) await syncForwardGroupRulesWithLockHeld(id, options);
+      return result;
+    });
+  return withForwardGroupSyncLocks(ids, () => acquireTunnels(0));
+}
+
+async function forwardGroupControlledTunnelIds(groupIds: number[]): Promise<number[]> {
+  const ids = normalizePositiveIds(groupIds);
+  if (!ids.length) return [];
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const rows = await db.select({ id: tunnels.id }).from(tunnels).where(or(
+    inArray(tunnels.entryGroupId, ids), inArray(tunnels.exitGroupId, ids),
+  ));
+  return normalizePositiveIds(rows.map((row: { id: unknown }) => row.id)).sort((a, b) => a - b);
 }
 
 // Health reports and final selection commits must see a complete saved group.
