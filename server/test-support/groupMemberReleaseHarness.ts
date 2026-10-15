@@ -17,7 +17,7 @@ export function runGroupMemberReleaseCase(body: string): void {
     import { hostsRouter } from "./server/routers/hosts.ts";
     import { agentTokensRouter } from "./server/routers/agentTokens.ts";
     import * as tunnelState from "./server/tunnelRuntimeStatus.ts";
-    import { registerAgentEventClient } from "./server/agentEvents.ts";
+    import { registerAgentEventClient, pushAgentRefresh } from "./server/agentEvents.ts";
     import { withGroupMemberMutation } from "./server/groupMemberMutation.ts";
     import { keyedTaskDepth } from "./server/keyedTaskLock.ts";
     const streams = [];
@@ -32,6 +32,7 @@ export function runGroupMemberReleaseCase(body: string): void {
         const response = new Response();
         responses.set(hostId, response);
         streams.push(registerAgentEventClient(hostId, "test-token-" + hostId, response));
+        pushAgentRefresh(hostId, "capture-established", { urgent: true });
       }
       return () => [...responses].map(([id, response]) => [id, [...response.frames]]);
     };
@@ -120,6 +121,35 @@ export function runGroupMemberReleaseCase(body: string): void {
       });
       await links.syncForwardGroupRules(10);
     };
+    const seedEntryChain = async (sni = false) => {
+      await insert("forward_groups", {
+        id: 30, name: "entry-group", groupType: "host", groupMode: "entry",
+        domain: "entry.example.test", ddnsAutoResolveEnabled: 0,
+        targetIp: "0.0.0.0", userId: 1, isEnabled: 1,
+      });
+      for (const hostId of [4, 5]) await insert("forward_group_members", {
+        id: 300 + hostId, groupId: 30, memberType: "host",
+        hostId, priority: hostId - 4, isEnabled: 1,
+      });
+      await insert("forward_groups", {
+        id: 40, name: "chain", groupType: "host", groupMode: "chain",
+        entryGroupId: 30, forwardType: "iptables", targetIp: "0.0.0.0",
+        userId: 1, isEnabled: 1,
+      });
+      for (const hostId of [1, 2]) await insert("forward_group_members", {
+        id: 400 + hostId, groupId: 40, memberType: "host",
+        hostId, priority: hostId - 1, isEnabled: 1,
+      });
+      await insert("forward_rules", {
+        id: 400, hostId: 4, name: "chain-rule", forwardType: "iptables",
+        protocol: "tcp", forwardGroupId: 40, isForwardGroupTemplate: 1,
+        sourcePort: 42005, targetIp: "192.0.2.90", targetPort: 8443,
+        sni: sni ? "chain.example.test" : null, sniSplitterPort: sni ? 42005 : null,
+        userId: 1, isEnabled: 1, isRunning: 0, quotaUsedIn: 123, quotaUsedOut: 456,
+      });
+      await links.syncForwardGroupRules(40);
+    };
+
     const saveMembers = async (id, hostIds, patch = {}) => {
       const old = await links.getForwardGroupById(id);
       return groups.update({

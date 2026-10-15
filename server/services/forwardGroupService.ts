@@ -295,6 +295,28 @@ async function updateForwardGroupFromInputUnlocked(id: number, input: ForwardGro
     && (normalized.data.groupMode !== "failover" || normalized.data.groupType !== "host")) {
     throw new Error("承载 SNI 分流规则的转发组必须保持主机型转发组");
   }
+  if (membersChanged && normalized.data.groupMode === "entry") {
+    const groupIds = await db.getForwardGroupMemberUpdateIds(id);
+    await db.commitForwardGroupMemberChange(groupIds, async () => {
+      const currentIds = await db.getForwardGroupMemberUpdateIds(id);
+      if (currentIds.join(",") !== groupIds.join(",")) {
+        throw new Error("入口组引用发生变化，请刷新后重试");
+      }
+      await persistConfiguration({ deferRefresh: true });
+      if (enabledChanged) {
+        await db.setForwardGroupEnabled(id, desiredEnabled, { skipSync: true });
+      }
+    }, {}, [
+      () => db.refreshForwardGroupReferences(id, {
+        reason: "entry-group-members-updated", previousHostIds, syncDependentChains: false,
+      }),
+      () => db.runForwardGroupFailover(id, {
+        manual: true, forceSync: true, skipRuleSync: true,
+      }),
+    ]);
+    return db.getForwardGroupById(id);
+  }
+
   if (membersChanged && ["port", "failover", "chain"].includes(normalized.data.groupMode)) {
     await db.commitForwardGroupMemberChange([id], async () => {
       await persistConfiguration({ deferRefresh: true });

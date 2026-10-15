@@ -905,7 +905,6 @@ async function refreshControlledTunnelRuntime(
 ) {
   const tunnelId = Number(tunnel?.id || 0);
   if (!Number.isFinite(tunnelId) || tunnelId <= 0) return;
-  clearTunnelRuntimeStatus(tunnelId);
   await updateTunnel(tunnelId, { isRunning: false } as any);
   if (options.resetRules) await resetForwardRulesByTunnel(tunnelId);
 
@@ -927,7 +926,10 @@ async function refreshControlledTunnelRuntime(
     const hostId = Number(node?.hostId || 0);
     if (Number.isFinite(hostId) && hostId > 0) hostIds.add(hostId);
   }
-  for (const hostId of hostIds) pushAgentRefresh(hostId, `${reason}-tunnel-${tunnelId}`, { urgent: true });
+  await afterDatabaseCommit(() => {
+    clearTunnelRuntimeStatus(tunnelId);
+    for (const hostId of hostIds) pushAgentRefresh(hostId, `${reason}-tunnel-${tunnelId}`, { urgent: true });
+  });
 }
 
 async function refreshTunnelsUsingForwardGroup(
@@ -956,19 +958,34 @@ async function refreshTunnelsUsingForwardGroup(
   const errors: unknown[] = [];
   for (const tunnel of affectedTunnels) {
     try {
-    if (exitStrategy && group && hasEnabledExitMember) {
-      const synced = await syncTunnelExitGroupEndpoints(tunnel, exitMembers, exitStrategy);
-      Object.assign(tunnel, synced.tunnel);
-    } else if (exitStrategy && dbBool(group?.isEnabled)) {
-      throw new Error("Enabled exit group must contain at least one enabled host");
-    }
-    await refreshControlledTunnelRuntime(tunnel, reason, { resetRules: true, extraHostIds: referencedHostIds });
+      if (exitStrategy && group && hasEnabledExitMember) {
+        const synced = await syncTunnelExitGroupEndpoints(tunnel, exitMembers, exitStrategy);
+        Object.assign(tunnel, synced.tunnel);
+      } else if (exitStrategy && dbBool(group?.isEnabled)) {
+        throw new Error("Enabled exit group must contain at least one enabled host");
+      }
+      await refreshControlledTunnelRuntime(tunnel, reason, { resetRules: true, extraHostIds: referencedHostIds });
     } catch (error) {
       if (groupMode !== "entry") throw error;
       errors.push(error);
     }
   }
   if (errors.length) throw new AggregateError(errors, "配置已保存，部分隧道刷新失败");
+}
+
+export async function getForwardGroupMemberUpdateIds(groupId: number): Promise<number[]> {
+  const group = await getForwardGroupById(groupId);
+  if (!group) throw new Error("转发资源不存在");
+  if (groupModeOf(group) !== "entry") return [groupId];
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const chains = await db.select({ id: forwardGroups.id }).from(forwardGroups)
+    .where(and(
+      eq(forwardGroups.groupMode, "chain"),
+      eq(forwardGroups.entryGroupId, groupId),
+    ));
+  return [...new Set([groupId, ...chains.map((row: { id: unknown }) => Number(row.id))])]
+    .sort((a, b) => a - b);
 }
 
 export async function refreshForwardGroupReferences(
@@ -3439,20 +3456,19 @@ async function removeManagedRule(
   if (options.deferRefresh || isDatabaseTransactionActive()) {
     await markForwardRulePendingDelete(Number(rule.id));
     await afterDatabaseCommit(async () => {
-const errors: unknown[] = [];
-try {
-  const billed = resource ? await withTrafficBillingUserLock(Number(rule.userId), () =>
-    settleTrafficBillingRuleOnDelete({ userId: Number(rule.userId || 0),
-      ruleId: Number(rule.id), resourceType: resource.resourceType,
-      resourceId: Number(resource.resourceId || 0) })) : null;
-  if (billed && Number(billed.balanceAfterCents) < 0) {
-    await setUserForwardAccess(Number(rule.userId), false, "traffic_billing_balance");
-  }
-} catch (error) { errors.push(error); }
-try { await refreshRuleEndpoints(rule, "forward-group-child-deleted"); }
-catch (error) { errors.push(error); }
-if (errors.length) throw new AggregateError(errors, "配置已保存，旧规则清理部分失败");
-
+      const errors: unknown[] = [];
+      try {
+        const billed = resource ? await withTrafficBillingUserLock(Number(rule.userId), () =>
+          settleTrafficBillingRuleOnDelete({ userId: Number(rule.userId || 0),
+            ruleId: Number(rule.id), resourceType: resource.resourceType,
+            resourceId: Number(resource.resourceId || 0) })) : null;
+        if (billed && Number(billed.balanceAfterCents) < 0) {
+          await setUserForwardAccess(Number(rule.userId), false, "traffic_billing_balance");
+        }
+      } catch (error) { errors.push(error); }
+      try { await refreshRuleEndpoints(rule, "forward-group-child-deleted"); }
+      catch (error) { errors.push(error); }
+      if (errors.length) throw new AggregateError(errors, "配置已保存，旧规则清理部分失败");
     });
     return;
   }
@@ -3563,6 +3579,33 @@ async function syncForwardGroupRulesUnlocked(groupId: number, options: SyncForwa
   if (options.prioritizeTemplateRuleId) {
     const updatedIndex = templates.findIndex((template: { id: unknown }) => Number(template.id) === options.prioritizeTemplateRuleId);
     if (updatedIndex > 0) templates.unshift(...templates.splice(updatedIndex, 1));
+  }
+
+  if (groupMode === "chain") {
+    const configuredKeys = new Set<string>();
+    const configuredEntry = Number(group.entryGroupId || 0) > 0
+      ? await getForwardGroupById(Number(group.entryGroupId)) : null;
+    const entryHosts = configuredEntry && groupModeOf(configuredEntry) === "entry"
+      ? sortedMembers(configuredEntry).filter((member: any) => member.memberType === "host")
+      : [];
+    const firstMember = members.find(member => dbBool(member.isEnabled)) || members[0];
+    for (const template of templates as any[]) {
+      for (const member of members) {
+        const hostId = await memberEntryHostId(member);
+        if (hostId > 0) configuredKeys.add(`${template.id}:${member.id}:${hostId}`);
+      }
+      if (firstMember) for (const entry of entryHosts) {
+        const hostId = Number(entry.hostId || 0);
+        if (hostId > 0) configuredKeys.add(`${template.id}:${firstMember.id}:${hostId}`);
+      }
+    }
+    for (const child of await getForwardGroupChildRules(groupId) as any[]) {
+      if (dbBool(child.pendingDelete)) continue;
+      const key = `${child.forwardGroupRuleId}:${child.forwardGroupMemberId}:${child.hostId}`;
+      if (!configuredKeys.has(key)) {
+        await removeManagedRule(Number(child.id), options);
+      }
+    }
   }
 
   const runtimeDependenciesEnabled = await forwardGroupRuntimeDependenciesEnabled(group);
@@ -4002,23 +4045,53 @@ export async function replaceForwardGroupMembers(
   groupId: number,
   members: ForwardGroupMemberInput[],
   options: { skipSync?: boolean; deferRefresh?: boolean } = {},
-) {
-  if (!options.skipSync) return withGroupMemberMutation(async () => {
-    const group = await getForwardGroupById(groupId);
-    if (isCollectionGroupMode(groupModeOf(group))) {
-      return replaceForwardGroupMembersUnlocked(groupId, members, options);
+): Promise<void> {
+  if (options.skipSync) {
+    assertGroupMemberMutationHeld();
+    return replaceForwardGroupMembersUnlocked(groupId, members, options);
+  }
+  return withGroupMemberMutation(() => replaceForwardGroupMembersWithSync(groupId, members));
+}
+async function replaceForwardGroupMembersWithSync(
+  groupId: number, members: ForwardGroupMemberInput[],
+): Promise<void> {
+  if (isDatabaseTransactionActive()) {
+    throw new Error("成员更新必须在数据库保存前取得组保存位置");
+  }
+  const groupIds = await getForwardGroupMemberUpdateIds(groupId);
+  let previousHostIds: number[] = [];
+  let mode = "";
+  await commitForwardGroupMemberChange(groupIds, async () => {
+    const latestIds = await getForwardGroupMemberUpdateIds(groupId);
+    if (latestIds.join(",") !== groupIds.join(",")) {
+      throw new Error("入口组引用发生变化，请刷新后重试");
     }
-    return commitForwardGroupMemberChange([groupId], () =>
-      replaceForwardGroupMembersUnlocked(groupId, members, { ...options, skipSync: true, deferRefresh: true }));
-  });
-  assertGroupMemberMutationHeld();
-  return replaceForwardGroupMembersUnlocked(groupId, members, options);
+    const group = await getForwardGroupById(groupId);
+    mode = groupModeOf(group);
+    previousHostIds = await groupHostIds(groupId);
+    await replaceForwardGroupMembersUnlocked(groupId, members, {
+      skipSync: true, deferRefresh: true,
+    });
+  }, {}, [async () => {
+    if (mode === "entry") await refreshForwardGroupReferences(groupId, {
+      reason: "entry-group-members-updated", previousHostIds,
+      syncDependentChains: false,
+    });
+    else if (mode === "exit") await runForwardGroupFailover(groupId, { forceSync: true, manual: true });
+  }, async () => {
+    if (mode === "entry") await runForwardGroupFailover(groupId, {
+      forceSync: true, manual: true, skipRuleSync: true,
+    });
+    else if (mode === "exit") await refreshForwardGroupReferences(groupId, {
+      reason: "exit-group-members-updated", previousHostIds,
+    });
+  }]);
 }
 
 async function replaceForwardGroupMembersUnlocked(
   groupId: number, members: ForwardGroupMemberInput[],
   options: { skipSync?: boolean; deferRefresh?: boolean } = {},
-) {
+): Promise<void> {
   if (members.length === 0) throw new Error("转发组至少需要一个成员");
   const group = await getForwardGroupById(groupId);
   const groupMode = groupModeOf(group);
@@ -4032,10 +4105,6 @@ async function replaceForwardGroupMembersUnlocked(
   await validateForwardGroupSniMembers(groupId, normalizedMembers);
   const db = await getDb();
   const existing = await db.select().from(forwardGroupMembers).where(eq(forwardGroupMembers.groupId, groupId));
-  const previousHostIds = (existing as any[])
-    .filter((member) => member.memberType === "host")
-    .map((member) => Number(member.hostId || 0))
-    .filter((hostId) => Number.isFinite(hostId) && hostId > 0);
   const keepKeys = new Set(normalizedMembers.map((m) => `${m.memberType}:${m.memberType === "host" ? m.hostId : m.tunnelId}`));
 
   for (const old of existing as any[]) {
@@ -4076,16 +4145,6 @@ async function replaceForwardGroupMembersUnlocked(
         updatedAt: nowDate(),
       });
     }
-  }
-  if (options.skipSync) return;
-  if (isCollectionGroupMode(groupMode)) {
-    await runForwardGroupFailover(groupId, { forceSync: true, manual: true });
-    await refreshForwardGroupReferences(groupId, {
-      reason: `${groupMode}-group-members-updated`,
-      previousHostIds,
-    });
-  } else {
-    await syncForwardGroupRules(groupId);
   }
 }
 
