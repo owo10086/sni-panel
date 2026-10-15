@@ -192,6 +192,41 @@ test("SQLite billing transactions roll back and serialize concurrent updates", (
       assert.deepEqual(settledCallbacks, ["commit", "nested-commit", "rollback", "outside"]);
       await runtime.executeRaw('UPDATE "users" SET "balanceCents" = ? WHERE "id" = ?', [1000, 1]);
 
+      const itemCallbacks = [];
+      const releasedItems = [];
+      await runtime.withDatabaseTransaction(async () => {
+        await runtime.executeRaw('UPDATE "users" SET "balanceCents" = 800 WHERE id = 1');
+        await assert.rejects(runtime.withDatabaseSavepoint(async () => {
+          await runtime.executeRaw('UPDATE "users" SET "balanceCents" = 1 WHERE id = 1');
+          await runtime.afterDatabaseCommit(() => itemCallbacks.push("failed"));
+          await runtime.afterDatabaseTransactionSettled(() => releasedItems.push("failed"));
+          throw new Error("reject-item");
+        }), /reject-item/);
+        assert.equal((await runtime.queryRaw('SELECT "balanceCents" FROM users WHERE id = 1'))[0].balanceCents, 800);
+        assert.deepEqual(releasedItems, ["failed"]);
+        await runtime.withDatabaseSavepoint(async () => {
+          await runtime.executeRaw('UPDATE "users" SET "balanceCents" = 700 WHERE id = 1');
+          await runtime.afterDatabaseCommit(() => itemCallbacks.push("saved"));
+          await runtime.afterDatabaseTransactionSettled(() => releasedItems.push("saved"));
+        });
+        assert.deepEqual(itemCallbacks, []);
+      });
+      assert.deepEqual(itemCallbacks, ["saved"]);
+      assert.deepEqual(releasedItems, ["failed", "saved"]);
+      assert.equal((await runtime.queryRaw('SELECT "balanceCents" FROM users WHERE id = 1'))[0].balanceCents, 700);
+      await assert.rejects(runtime.withDatabaseTransaction(async () => {
+        await runtime.withDatabaseSavepoint(async () => {
+          await runtime.executeRaw('UPDATE "users" SET "balanceCents" = 2 WHERE id = 1');
+          await runtime.afterDatabaseCommit(() => itemCallbacks.push("outer-rollback"));
+          await runtime.afterDatabaseTransactionSettled(() => releasedItems.push("outer-rollback"));
+        });
+        throw new Error("reject-final-save");
+      }), /reject-final-save/);
+      assert.equal((await runtime.queryRaw('SELECT "balanceCents" FROM users WHERE id = 1'))[0].balanceCents, 700);
+      assert.deepEqual(itemCallbacks, ["saved"]);
+      assert.deepEqual(releasedItems, ["failed", "saved", "outer-rollback"]);
+      await runtime.executeRaw('UPDATE "users" SET "balanceCents" = 1000 WHERE id = 1');
+
       const delayedDb = await runtime.getDb();
       let markDelayedTransactionStarted;
       const delayedTransactionStarted = new Promise((resolve) => { markDelayedTransactionStarted = resolve; });

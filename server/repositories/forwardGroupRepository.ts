@@ -71,7 +71,7 @@ import {
   nextForwardGroupHealthRecheckAt,
 } from "../forwardGroupHealthRecheck";
 import { notifyForwardGroupSwitch } from "../forwardGroupSwitchNotifier";
-import { trafficBillingUserLockKey, withKeyedTaskLock, withResourceTaskLock } from "../keyedTaskLock";
+import { trafficBillingUserLockKey, withKeyedTaskLock, withResourceTaskLock, withTrafficBillingUserLock } from "../keyedTaskLock";
 import {
   releaseHostPortReservations,
   reserveAvailableHostPort,
@@ -3428,7 +3428,7 @@ async function removeManagedRule(
     await markForwardRulePendingDelete(Number(rule.id));
     await afterDatabaseCommit(async () => {
       const billed = resource
-        ? await withKeyedTaskLock(trafficBillingUserLockKey(rule?.userId), () => settleTrafficBillingRuleOnDelete({
+        ? await withTrafficBillingUserLock(Number(rule?.userId), () => settleTrafficBillingRuleOnDelete({
             userId: Number(rule?.userId || 0),
             ruleId: Number(rule?.id || 0),
             resourceType: resource.resourceType,

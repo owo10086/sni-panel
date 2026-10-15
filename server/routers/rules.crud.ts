@@ -1,4 +1,4 @@
-import { afterDatabaseCommit, isDatabaseTransactionActive } from "../dbRuntime";
+import { afterDatabaseCommit, isDatabaseTransactionActive, withDatabaseSavepoint, DatabaseSavepointRollbackError } from "../dbRuntime";
 import { protectedProcedure, router } from "../_core/trpc";
 import { z } from "zod";
 import { isIP } from "node:net";
@@ -6,7 +6,7 @@ import { ruleLimitInputShape, ruleLimitPatch, hasRuleLimitInput, validateRuleLim
 import { assertRuleWritable, isAdminManagedRule } from "../../shared/ruleLimits";
 import { reconcileRuleLimits } from "../ruleLimits";
 import * as db from "../db";
-import { pushAgentRefresh } from "../agentEvents";
+import { pushAgentRefresh, withAgentRefreshBatch } from "../agentEvents";
 import { refreshRulePortWarningsForHost } from "../rulePortOccupancy";
 import { forwardTypeSchema } from "./schemas";
 import {
@@ -32,10 +32,10 @@ import {
   reserveTunnelExitPort,
   usesSharedTunnelPrimaryListener,
 } from "../repositories/tunnelRepository";
-import { trafficBillingUserLockKey, withKeyedTaskLock } from "../keyedTaskLock";
+import { trafficBillingUserLockKey, withKeyedTaskLock, withTrafficBillingUserLock } from "../keyedTaskLock";
 import { mapWithConcurrency } from "../asyncPool";
 import { afterSniRuleWrite, withSniRuleWrite } from "../sniRuleWrite";
-import { reserveRuleCreateQuota, type RuleQuotaReservation } from "../ruleQuotaReservations";
+import { reserveRuleCreateQuota, withRuleCreateQuotaLock, type RuleQuotaReservation } from "../ruleQuotaReservations";
 import { isAgentVersionAtLeast } from "../agentRouteUtils";
 import { isValidSniValue, normalizeSniValue, SNI_SPLITTER_MIN_AGENT_VERSION } from "@shared/sni";
 import { normalizePositiveIds } from "../repositories/repositoryUtils";
@@ -1385,7 +1385,7 @@ export async function toggleForwardRuleForActor(
 export async function createDirectForwardRuleForActor(
   actor: { id: number; role: string; allowedForwardTypes?: string | null },
   input: any,
-  options: { reasonPrefix?: string; operationActor?: { id: number; role: string } } = {},
+  options: { reasonPrefix?: string; operationActor?: { id: number; role: string }; deferRefresh?: boolean } = {},
 ) {
   return withSniRuleWrite(undefined, input, async () => {
   await requireRuleTelegramNotifyReady(!!input.telegramErrorNotifyEnabled);
@@ -1604,13 +1604,13 @@ export async function createDirectForwardRuleForActor(
     const id = normalizedSni ? await db.withDatabaseTransaction(persistDirectRule) : await persistDirectRule();
     await quotaReservation.release();
     quotaReservation = null;
-    if (tunnelId) {
+    if (!options.deferRefresh && tunnelId) {
       const tunnel = await db.getTunnelById(tunnelId);
       if (tunnel) await pushTunnelEndpointRefresh(tunnel, `${options.reasonPrefix || "forward-rule"}-created`);
-    } else {
+    } else if (!options.deferRefresh) {
       pushAgentRefresh(hostId, `${options.reasonPrefix || "forward-rule"}-created`);
     }
-    await refreshRulePortWarningsForHost(hostId);
+    if (!options.deferRefresh) await refreshRulePortWarningsForHost(hostId);
     return { id, sourcePort };
   } finally {
     await quotaReservation?.release();
@@ -1618,6 +1618,298 @@ export async function createDirectForwardRuleForActor(
     releaseHostPortReservations(sniRuntimePortReservations);
     sourcePortReservation?.release();
   }
+  });
+}
+
+const createRuleInputSchema = z.object({
+  ...ruleLimitInputShape,
+  userId: z.number().int().positive().optional(),
+  hostId: z.number().optional(),
+  name: z.string().min(1).max(128),
+  forwardType: forwardTypeSchema.default("iptables"),
+  protocol: z.enum(["tcp", "udp", "both"]).default("both"),
+  gostMode: z.enum(["direct", "reverse"]).default("direct"),
+  gostRelayHost: z.string().max(128).nullable().optional(),
+  gostRelayPort: z.number().min(1).max(65535).nullable().optional(),
+  tunnelId: z.number().nullable().optional(),
+  forwardGroupId: z.number().nullable().optional(),
+  sourcePort: z.number().min(0).max(65535), // 0 = 随机分配
+  sni: sniInputSchema,
+  targetIp: z.string().min(1).max(253).refine(
+    (v) => /^[a-zA-Z0-9]([a-zA-Z0-9\-_.]*[a-zA-Z0-9])?$|^[a-fA-F0-9:.]+$/.test(v.trim()),
+    "请输入有效的 IP 地址或域名"
+  ),
+  targetPort: z.number().min(1).max(65535),
+  isEnabled: z.boolean().optional().default(true),
+  telegramErrorNotifyEnabled: z.boolean().optional().default(false),
+  blockHttp: z.boolean().optional(),
+  blockSocks: z.boolean().optional(),
+  blockTls: z.boolean().optional(),
+  ...failoverInputShape,
+  ...proxyProtocolInputShape,
+  ...transportTuningInputShape,
+  ...sniRuleLimitInputShape,
+});
+
+type CreateRuleInput = z.infer<typeof createRuleInputSchema>;
+type CreateRuleContext = { user: Parameters<typeof resolveRuleOperationOwner>[0] };
+
+async function createForwardRuleForContext(
+  ctx: CreateRuleContext,
+  input: CreateRuleInput,
+  options: { batch?: boolean } = {},
+) {
+  return withSniRuleWrite(undefined, input, async () => {
+    validateRuleLimitInput(ctx.user.role, input);
+    await validateRuleRateLimitTargets(input);
+    if (ctx.user.role === "admin" && (hasRuleLimitInput(input) || (input.userId && input.userId !== ctx.user.id))) {
+      Object.assign(input, { adminManaged: true });
+    }
+    const ownerContext = { ...ctx, user: await resolveRuleOperationOwner(ctx.user, input.userId) };
+    await requireRuleTelegramNotifyReady(input.telegramErrorNotifyEnabled);
+    // 权限检查：管理员或有 canAddRules 权限的用户
+    let currentUser = await db.getUserById(ownerContext.user.id);
+    const normalizedSni = normalizeSniInput(input.sni);
+    assertSniRuleAdmin(ctx.user, normalizedSni);
+    if (input.forwardGroupId) {
+      const forwardGroupId = Number(input.forwardGroupId);
+      const withCreatePosition = normalizedSni
+        ? async <T>(work: () => Promise<T>) => work()
+        : <T>(work: () => Promise<T>) => withKeyedTaskLock(`forward-group:${forwardGroupId}`, work);
+      return withCreatePosition(async () => {
+      const groupReservations: HostPortReservation[] = [];
+      let quotaReservation: RuleQuotaReservation | null = null;
+      try {
+      const randomSourcePort = input.sourcePort === 0;
+      let sourcePort = input.sourcePort;
+      const ruleProtocol = normalizedSni ? "tcp" : input.protocol;
+      let planRange: Awaited<ReturnType<typeof db.getUserForwardGroupPlanPortRange>> = null;
+      let groupAccess = { isTrafficBillingResource: false };
+      if (ownerContext.user.role !== "admin") {
+        groupAccess = await requireForwardGroupUseAccess(ownerContext, forwardGroupId);
+        currentUser = await requireForwardAccessReady(ownerContext.user.id, { allowTrafficBillingRecovery: groupAccess.isTrafficBillingResource });
+        if (currentUser?.expiresAt && new Date(currentUser.expiresAt) <= new Date()) {
+          throw new Error("您的账户已到期，无法添加规则");
+        }
+        planRange = await db.getUserForwardGroupPlanPortRange(ownerContext.user.id, forwardGroupId);
+        if (sourcePort > 0 && planRange && !db.isPortAllowedByUserPlanRange(sourcePort, planRange)) {
+          const ranges = planRange.ranges.map((range) => `${range.start}-${range.end}`).join(",");
+          throw new Error(`套餐端口必须在 ${ranges} 内`);
+        }
+      }
+      if (normalizedSni) {
+        const sniGroup = await db.getForwardGroupById(forwardGroupId);
+        if (!sniGroup) throw new Error("Forward group does not exist");
+        await validateForwardGroupSniHosts(sniGroup);
+      }
+      const entryHostIds = await db.getForwardGroupRuleEntryHostIds(forwardGroupId);
+      if (normalizedSni) await assertSniEntryAgentVersions(entryHostIds, forwardGroupId);
+      let sniEntryPortValidation: SniEntryPortValidation | null = null;
+      const reserveEntryPortFor = async (
+        port: number,
+        isUnavailable: (hostId: number, candidate: number) => Promise<boolean>,
+      ) => {
+        const reservations: HostPortReservation[] = [];
+        try {
+          for (const entryHostId of entryHostIds) {
+            const reservation = await reserveSpecificHostPort({
+              hostId: entryHostId,
+              port,
+              protocol: ruleProtocol,
+              isUsed: (candidate) => isUnavailable(entryHostId, candidate),
+            });
+            if (!reservation) {
+              releaseHostPortReservations(reservations);
+              return null;
+            }
+            reservations.push(reservation);
+          }
+          return reservations;
+        } catch (error) {
+          releaseHostPortReservations(reservations);
+          throw error;
+        }
+      };
+      const reserveEntryPortForAllocation = (port: number) => reserveEntryPortFor(
+        port,
+        (entryHostId, candidate) => db.isHostPortUnavailableForAllocation(entryHostId, candidate, undefined, ruleProtocol),
+      );
+      const reserveEntryPortForExplicitUse = (port: number) => reserveEntryPortFor(
+        port,
+        (entryHostId, candidate) => db.isHostPortUnavailableForExplicitUse(entryHostId, candidate, undefined, ruleProtocol),
+      );
+      if (randomSourcePort) {
+        const unavailablePorts = new Set(entryHostIds.flatMap((hostId) => reservedHostPorts(hostId, ruleProtocol)));
+        for (let attempt = 0; attempt < 256; attempt += 1) {
+          const availablePort = await db.findAvailableForwardGroupPort(
+            forwardGroupId,
+            undefined,
+            planRange,
+            ruleProtocol,
+            unavailablePorts,
+          );
+          if (!availablePort) break;
+          unavailablePorts.add(availablePort);
+          const reservations = await reserveEntryPortForAllocation(availablePort);
+          if (!reservations) continue;
+          sourcePort = availablePort;
+          groupReservations.push(...reservations);
+          break;
+        }
+        if (sourcePort === 0) throw new Error("转发组入口端口区间内已无可用端口");
+      } else {
+        sniEntryPortValidation = await validateSniEntryPortUse({
+          groupId: forwardGroupId,
+          sourcePort,
+          entryHostIds,
+          sni: normalizedSni,
+        });
+        const reservations = normalizedSni
+          ? await reserveEntryPortFor(
+            sourcePort,
+            (entryHostId, candidate) => db.isHostPortUnavailableForExplicitUse(entryHostId, candidate, sniEntryPortValidation?.portUsageIgnoreRuleIds || [], ruleProtocol),
+          )
+          : await reserveEntryPortForExplicitUse(sourcePort);
+        if (!reservations) throw new Error(`入口 Agent 端口 ${sourcePort} 已被占用或正在分配`);
+        groupReservations.push(...reservations);
+      }
+      sniEntryPortValidation = sniEntryPortValidation || await validateSniEntryPortUse({
+        groupId: forwardGroupId,
+        sourcePort,
+        entryHostIds,
+        sni: normalizedSni,
+      });
+      const preparedGroupRuntime = await prepareForwardGroupRuntimePorts({
+        groupId: forwardGroupId,
+        sourcePort,
+        protocol: ruleProtocol,
+        sni: normalizedSni,
+        sniEntryPortValidation,
+        reservations: groupReservations,
+      });
+      const { group, isForwardChain, isPortGroup, sniSplitterPort } = preparedGroupRuntime;
+      if (ownerContext.user.role !== "admin") {
+        await requireTrafficBillingBalanceForRule(ownerContext.user.id, groupAccess.isTrafficBillingResource);
+      }
+      const hostId = await db.getForwardGroupDefaultHostId(forwardGroupId);
+      const forwardType = lockedForwardTypeForGroup(group, input.forwardType);
+      requireForwardTypeAllowedForActor(ownerContext.user, forwardType);
+      const groupIsTunnel = !isForwardChain && group.groupType === "tunnel";
+      if (!isForwardChain && !groupIsTunnel) {
+        const host = await db.getHostById(hostId);
+        assertNoDirectSelfForwardLoop({
+          host,
+          sourcePort,
+          targetIp: input.targetIp,
+          targetPort: input.targetPort,
+          tunnelId: null,
+        });
+      }
+      const groupTunnelSupportsFailover = groupIsTunnel ? await forwardGroupTunnelMembersSupportMainBackup(group) : true;
+      const groupSupportsFailover = !isForwardChain && ruleProtocol === "tcp" && forwardType === "gost" && (!groupIsTunnel || groupTunnelSupportsFailover);
+      const createFailoverEnabled = groupSupportsFailover ? input.failoverEnabled : false;
+      requireMainBackupAllowed({
+        enabled: createFailoverEnabled,
+        protocol: ruleProtocol,
+        forwardType,
+        isTunnelRoute: groupIsTunnel,
+        isPortForwardGroup: isPortGroup,
+        isAdmin: ctx.user.role === "admin",
+      });
+      if (ownerContext.user.role !== "admin") {
+        quotaReservation = await reserveRuleCreateQuota({
+          userId: ownerContext.user.id,
+          maxRules: Number(currentUser?.maxRules || 0),
+          maxPorts: Number(currentUser?.maxPorts || 0),
+          getRuleCount: () => db.getUserRuleCount(ownerContext.user.id),
+          getPortCount: () => db.getUserPortCount(ownerContext.user.id),
+          sourcePort,
+          hasSourcePort: () => db.userHasRuleSourcePort(ownerContext.user.id, sourcePort),
+        });
+      }
+      await requireRuleProtocolEnabled({ forwardType, tunnelId: null });
+      const createTemplateRule = () => db.createForwardRule({
+        ...ruleLimitPatch(input),
+        hostId,
+        name: input.name,
+        forwardType,
+        protocol: ruleProtocol,
+        gostMode: "direct",
+        gostRelayHost: null,
+        gostRelayPort: null,
+        tunnelId: null,
+        tunnelExitPort: null,
+        forwardGroupId,
+        forwardGroupRuleId: null,
+        forwardGroupMemberId: null,
+        isForwardGroupTemplate: true,
+        sourcePort,
+        sni: normalizedSni,
+        sniSplitterPort,
+        ...resolveSniRuleLimits(normalizedSni, input),
+        targetIp: normalizeRuleTargetIp(input.targetIp, { tunnelId: forwardType === "gost" && !isForwardChain && group.groupType === "tunnel" ? 1 : null }),
+        targetPort: input.targetPort,
+        isEnabled: input.isEnabled,
+        telegramErrorNotifyEnabled: !!input.telegramErrorNotifyEnabled,
+        blockHttp: false,
+        blockSocks: false,
+        blockTls: false,
+        ...normalizeProxyProtocolInput(
+          input,
+          ruleProtocol,
+          forwardType,
+          isForwardChain,
+          { tunnelRoute: !isForwardChain && group.groupType === "tunnel", clearUnsupported: true },
+        ),
+        ...normalizeTransportTuningInput(
+          input,
+          ruleProtocol,
+          forwardType,
+          isForwardChain,
+          { tunnelRoute: !isForwardChain && group.groupType === "tunnel", forwardxTunnel: false, clearUnsupported: true },
+        ),
+        ...normalizeFailoverInput({
+          ...input,
+          failoverEnabled: createFailoverEnabled,
+          failoverTargets: createFailoverEnabled ? input.failoverTargets : [],
+        }, ruleProtocol),
+        isRunning: false,
+        userId: ownerContext.user.id,
+      } as any);
+      let id = 0;
+      if (options.batch) {
+        id = await createTemplateRule();
+      } else if (isForwardChain || normalizedSni) {
+        // Adding a template must not re-dispatch unchanged, healthy listeners
+        // belonging to the existing chain. Runtime-field changes still apply.
+        id = await db.withForwardGroupSyncTransaction(forwardGroupId, createTemplateRule, { preserveRuntime: true });
+      } else {
+        id = await createTemplateRule();
+        await db.syncForwardGroupRules(forwardGroupId);
+      }
+      await quotaReservation?.release();
+      quotaReservation = null;
+      if (!options.batch) await afterSniRuleWrite(() => db.runForwardGroupFailover(
+        forwardGroupId,
+        isForwardChain || normalizedSni ? { skipRuleSync: true } : undefined,
+      ));
+      if (!options.batch) for (const entryHostId of entryHostIds) await refreshRulePortWarningsForHost(entryHostId);
+      return { id, sourcePort };
+      } finally {
+        await quotaReservation?.release();
+        releaseHostPortReservations(groupReservations);
+      }
+      });
+    }
+
+    if (normalizedSni) {
+      const tunnelId = input.forwardType === "gost" ? Number(input.tunnelId || 0) : 0;
+      if (!tunnelId) throw new Error("SNI 分流仅支持端口转发、隧道或转发链");
+      return withKeyedTaskLock(`tunnel-sni:${tunnelId}:${Number(input.sourcePort || 0)}`, () => (
+        createDirectForwardRuleForActor(ownerContext.user, { ...input, protocol: "tcp", sni: normalizedSni }, { operationActor: ctx.user, deferRefresh: options.batch })
+      ));
+    }
+    return createDirectForwardRuleForActor(ownerContext.user, input, { operationActor: ctx.user, deferRefresh: options.batch });
   });
 }
 
@@ -1710,35 +2002,7 @@ export const crudRulesRouter = router({
       return { ok: true };
     }),
   create: protectedProcedure
-    .input(z.object({
-      ...ruleLimitInputShape,
-      userId: z.number().int().positive().optional(),
-      hostId: z.number().optional(),
-      name: z.string().min(1).max(128),
-      forwardType: forwardTypeSchema.default("iptables"),
-      protocol: z.enum(["tcp", "udp", "both"]).default("both"),
-      gostMode: z.enum(["direct", "reverse"]).default("direct"),
-      gostRelayHost: z.string().max(128).nullable().optional(),
-      gostRelayPort: z.number().min(1).max(65535).nullable().optional(),
-      tunnelId: z.number().nullable().optional(),
-      forwardGroupId: z.number().nullable().optional(),
-      sourcePort: z.number().min(0).max(65535), // 0 = 随机分配
-      sni: sniInputSchema,
-      targetIp: z.string().min(1).max(253).refine(
-        (v) => /^[a-zA-Z0-9]([a-zA-Z0-9\-_.]*[a-zA-Z0-9])?$|^[a-fA-F0-9:.]+$/.test(v.trim()),
-        "请输入有效的 IP 地址或域名"
-      ),
-      targetPort: z.number().min(1).max(65535),
-      isEnabled: z.boolean().optional().default(true),
-      telegramErrorNotifyEnabled: z.boolean().optional().default(false),
-      blockHttp: z.boolean().optional(),
-      blockSocks: z.boolean().optional(),
-      blockTls: z.boolean().optional(),
-      ...failoverInputShape,
-      ...proxyProtocolInputShape,
-      ...transportTuningInputShape,
-      ...sniRuleLimitInputShape,
-    }))
+    .input(createRuleInputSchema)
     .use(async ({ input, next }) => {
       const result = await next();
       if (result.ok && (hasRuleLimitInput(input) || (input as any).adminManaged)) {
@@ -1747,256 +2011,79 @@ export const crudRulesRouter = router({
       }
       return result;
     })
-    .mutation(async ({ input, ctx }) => withSniRuleWrite(undefined, input, async () => {
-      validateRuleLimitInput(ctx.user.role, input);
-      await validateRuleRateLimitTargets(input);
-      if (ctx.user.role === "admin" && (hasRuleLimitInput(input) || (input.userId && input.userId !== ctx.user.id))) {
-        Object.assign(input, { adminManaged: true });
-      }
-      const ownerContext = { ...ctx, user: await resolveRuleOperationOwner(ctx.user, input.userId) };
-      await requireRuleTelegramNotifyReady(input.telegramErrorNotifyEnabled);
-      // 权限检查：管理员或有 canAddRules 权限的用户
-      let currentUser = await db.getUserById(ownerContext.user.id);
-      const normalizedSni = normalizeSniInput(input.sni);
-      assertSniRuleAdmin(ctx.user, normalizedSni);
-      if (input.forwardGroupId) {
-        const forwardGroupId = Number(input.forwardGroupId);
-        const withCreatePosition = normalizedSni
-          ? async <T>(work: () => Promise<T>) => work()
-          : <T>(work: () => Promise<T>) => withKeyedTaskLock(`forward-group:${forwardGroupId}`, work);
-        return withCreatePosition(async () => {
-        const groupReservations: HostPortReservation[] = [];
-        let quotaReservation: RuleQuotaReservation | null = null;
-        try {
-        const randomSourcePort = input.sourcePort === 0;
-        let sourcePort = input.sourcePort;
-        const ruleProtocol = normalizedSni ? "tcp" : input.protocol;
-        let planRange: Awaited<ReturnType<typeof db.getUserForwardGroupPlanPortRange>> = null;
-        let groupAccess = { isTrafficBillingResource: false };
-        if (ownerContext.user.role !== "admin") {
-          groupAccess = await requireForwardGroupUseAccess(ownerContext, forwardGroupId);
-          currentUser = await requireForwardAccessReady(ownerContext.user.id, { allowTrafficBillingRecovery: groupAccess.isTrafficBillingResource });
-          if (currentUser?.expiresAt && new Date(currentUser.expiresAt) <= new Date()) {
-            throw new Error("您的账户已到期，无法添加规则");
-          }
-          planRange = await db.getUserForwardGroupPlanPortRange(ownerContext.user.id, forwardGroupId);
-          if (sourcePort > 0 && planRange && !db.isPortAllowedByUserPlanRange(sourcePort, planRange)) {
-            const ranges = planRange.ranges.map((range) => `${range.start}-${range.end}`).join(",");
-            throw new Error(`套餐端口必须在 ${ranges} 内`);
-          }
-        }
-        if (normalizedSni) {
-          const sniGroup = await db.getForwardGroupById(forwardGroupId);
-          if (!sniGroup) throw new Error("Forward group does not exist");
-          await validateForwardGroupSniHosts(sniGroup);
-        }
-        const entryHostIds = await db.getForwardGroupRuleEntryHostIds(forwardGroupId);
-        if (normalizedSni) await assertSniEntryAgentVersions(entryHostIds, forwardGroupId);
-        let sniEntryPortValidation: SniEntryPortValidation | null = null;
-        const reserveEntryPortFor = async (
-          port: number,
-          isUnavailable: (hostId: number, candidate: number) => Promise<boolean>,
-        ) => {
-          const reservations: HostPortReservation[] = [];
-          try {
-            for (const entryHostId of entryHostIds) {
-              const reservation = await reserveSpecificHostPort({
-                hostId: entryHostId,
-                port,
-                protocol: ruleProtocol,
-                isUsed: (candidate) => isUnavailable(entryHostId, candidate),
-              });
-              if (!reservation) {
-                releaseHostPortReservations(reservations);
-                return null;
-              }
-              reservations.push(reservation);
+    .mutation(({ input, ctx }) => createForwardRuleForContext(ctx, input)),
+  createSniBatch: protectedProcedure
+    .input(z.object({
+      rules: z.array(createRuleInputSchema.extend({
+        sni: z.string().min(1).max(1024).refine(value => !!normalizeSniValue(value), "SNI 域名不能为空"),
+      })).min(1).max(SNI_BULK_IMPORT_MAX_COUNT),
+    }).refine(({ rules }) => {
+      const first = rules[0];
+      return !first || (!!first.forwardGroupId !== !!first.tunnelId && rules.every(rule =>
+        rule.forwardGroupId === first.forwardGroupId && rule.tunnelId === first.tunnelId
+        && rule.hostId === first.hostId && rule.userId === first.userId));
+    }, { message: "一批 SNI 规则只能导入同一个用户和链路资源" }))
+    .mutation(async ({ input, ctx }) => {
+      assertSniRuleAdmin(ctx.user, input.rules[0].sni);
+      return withSniRuleWrite(undefined, input.rules[0], () => withAgentRefreshBatch(async () => {
+        const results: Array<
+          { status: "fulfilled"; value: { id: number; sourcePort: number } }
+          | { status: "rejected"; reason: string }
+        > = [];
+        const noSuccessfulItems = Symbol("no successful SNI items");
+        let committed = false;
+        const save = async () => {
+          // Register first: later post-commit delivery errors cannot turn saved
+          // rules into failures that the webpage would offer to create again.
+          await afterDatabaseCommit(() => { committed = true; });
+          for (const rule of input.rules) {
+            try {
+              const value = await withDatabaseSavepoint(() => createForwardRuleForContext(ctx, rule, { batch: true }));
+              results.push({ status: "fulfilled", value });
+            } catch (error) {
+              if (error instanceof DatabaseSavepointRollbackError) throw error;
+              results.push({ status: "rejected", reason: error instanceof Error ? error.message : String(error) });
             }
-            return reservations;
-          } catch (error) {
-            releaseHostPortReservations(reservations);
-            throw error;
           }
+          if (!results.some(result => result.status === "fulfilled")) throw noSuccessfulItems;
         };
-        const reserveEntryPortForAllocation = (port: number) => reserveEntryPortFor(
-          port,
-          (entryHostId, candidate) => db.isHostPortUnavailableForAllocation(entryHostId, candidate, undefined, ruleProtocol),
-        );
-        const reserveEntryPortForExplicitUse = (port: number) => reserveEntryPortFor(
-          port,
-          (entryHostId, candidate) => db.isHostPortUnavailableForExplicitUse(entryHostId, candidate, undefined, ruleProtocol),
-        );
-        if (randomSourcePort) {
-          const unavailablePorts = new Set(entryHostIds.flatMap((hostId) => reservedHostPorts(hostId, ruleProtocol)));
-          for (let attempt = 0; attempt < 256; attempt += 1) {
-            const availablePort = await db.findAvailableForwardGroupPort(
-              forwardGroupId,
-              undefined,
-              planRange,
-              ruleProtocol,
-              unavailablePorts,
-            );
-            if (!availablePort) break;
-            unavailablePorts.add(availablePort);
-            const reservations = await reserveEntryPortForAllocation(availablePort);
-            if (!reservations) continue;
-            sourcePort = availablePort;
-            groupReservations.push(...reservations);
-            break;
-          }
-          if (sourcePort === 0) throw new Error("转发组入口端口区间内已无可用端口");
+        const groupId = Number(input.rules[0].forwardGroupId || 0);
+        const userId = input.rules[0].userId ?? ctx.user.id;
+        try {
+          // Billing and quota queues precede the DB transaction. Ordinary
+          // creation can use these same queues without a DB/queue deadlock.
+          await withTrafficBillingUserLock(userId, () => withRuleCreateQuotaLock(userId, () => groupId
+            ? db.withForwardGroupSyncTransaction(groupId, save, { preserveRuntime: true })
+            : db.withDatabaseTransaction(save)));
+        } catch (error) {
+          if (error === noSuccessfulItems) return { results };
+          if (!committed) throw error;
+          console.warn("[SNIImport] Rules saved; post-commit refresh failed", error);
+        }
+        const afterSave = async (work: () => Promise<unknown>) => {
+          try { await work(); }
+          catch (error) { console.warn("[SNIImport] Rules saved; follow-up failed", error); }
+        };
+        const savedIds = results.flatMap(result => result.status === "fulfilled" ? [result.value.id] : []);
+        const forceLimitRefresh = input.rules.some((rule, index) => results[index].status === "fulfilled"
+          && (Number(rule.rateLimitMbps) > 0 || Number(rule.trafficLimit) > 0 || !!rule.expiresAt));
+        await afterSave(() => reconcileRuleLimits(savedIds, forceLimitRefresh));
+        if (groupId) {
+          await afterSniRuleWrite(() => afterSave(() => db.runForwardGroupFailover(groupId, { skipRuleSync: true })));
         } else {
-          sniEntryPortValidation = await validateSniEntryPortUse({
-            groupId: forwardGroupId,
-            sourcePort,
-            entryHostIds,
-            sni: normalizedSni,
-          });
-          const reservations = normalizedSni
-            ? await reserveEntryPortFor(
-              sourcePort,
-              (entryHostId, candidate) => db.isHostPortUnavailableForExplicitUse(entryHostId, candidate, sniEntryPortValidation?.portUsageIgnoreRuleIds || [], ruleProtocol),
-            )
-            : await reserveEntryPortForExplicitUse(sourcePort);
-          if (!reservations) throw new Error(`入口 Agent 端口 ${sourcePort} 已被占用或正在分配`);
-          groupReservations.push(...reservations);
-        }
-        sniEntryPortValidation = sniEntryPortValidation || await validateSniEntryPortUse({
-          groupId: forwardGroupId,
-          sourcePort,
-          entryHostIds,
-          sni: normalizedSni,
-        });
-        const preparedGroupRuntime = await prepareForwardGroupRuntimePorts({
-          groupId: forwardGroupId,
-          sourcePort,
-          protocol: ruleProtocol,
-          sni: normalizedSni,
-          sniEntryPortValidation,
-          reservations: groupReservations,
-        });
-        const { group, isForwardChain, isPortGroup, sniSplitterPort } = preparedGroupRuntime;
-        if (ownerContext.user.role !== "admin") {
-          await requireTrafficBillingBalanceForRule(ownerContext.user.id, groupAccess.isTrafficBillingResource);
-        }
-        const hostId = await db.getForwardGroupDefaultHostId(forwardGroupId);
-        const forwardType = lockedForwardTypeForGroup(group, input.forwardType);
-        requireForwardTypeAllowedForActor(ownerContext.user, forwardType);
-        const groupIsTunnel = !isForwardChain && group.groupType === "tunnel";
-        if (!isForwardChain && !groupIsTunnel) {
-          const host = await db.getHostById(hostId);
-          assertNoDirectSelfForwardLoop({
-            host,
-            sourcePort,
-            targetIp: input.targetIp,
-            targetPort: input.targetPort,
-            tunnelId: null,
+          await afterSave(async () => {
+            const tunnel = await db.getTunnelById(Number(input.rules[0].tunnelId));
+            if (tunnel) await pushTunnelEndpointRefresh(tunnel, "sni-batch-created", { urgent: true });
           });
         }
-        const groupTunnelSupportsFailover = groupIsTunnel ? await forwardGroupTunnelMembersSupportMainBackup(group) : true;
-        const groupSupportsFailover = !isForwardChain && ruleProtocol === "tcp" && forwardType === "gost" && (!groupIsTunnel || groupTunnelSupportsFailover);
-        const createFailoverEnabled = groupSupportsFailover ? input.failoverEnabled : false;
-        requireMainBackupAllowed({
-          enabled: createFailoverEnabled,
-          protocol: ruleProtocol,
-          forwardType,
-          isTunnelRoute: groupIsTunnel,
-          isPortForwardGroup: isPortGroup,
-          isAdmin: ctx.user.role === "admin",
+        await afterSave(async () => {
+          const hosts = groupId ? await db.getForwardGroupRuleEntryHostIds(groupId)
+            : [Number((await db.getTunnelById(Number(input.rules[0].tunnelId)))?.entryHostId)];
+          for (const hostId of hosts) if (hostId > 0) await refreshRulePortWarningsForHost(hostId);
         });
-        if (ownerContext.user.role !== "admin") {
-          quotaReservation = await reserveRuleCreateQuota({
-            userId: ownerContext.user.id,
-            maxRules: Number(currentUser?.maxRules || 0),
-            maxPorts: Number(currentUser?.maxPorts || 0),
-            getRuleCount: () => db.getUserRuleCount(ownerContext.user.id),
-            getPortCount: () => db.getUserPortCount(ownerContext.user.id),
-            sourcePort,
-            hasSourcePort: () => db.userHasRuleSourcePort(ownerContext.user.id, sourcePort),
-          });
-        }
-        await requireRuleProtocolEnabled({ forwardType, tunnelId: null });
-        const createTemplateRule = () => db.createForwardRule({
-          ...ruleLimitPatch(input),
-          hostId,
-          name: input.name,
-          forwardType,
-          protocol: ruleProtocol,
-          gostMode: "direct",
-          gostRelayHost: null,
-          gostRelayPort: null,
-          tunnelId: null,
-          tunnelExitPort: null,
-          forwardGroupId,
-          forwardGroupRuleId: null,
-          forwardGroupMemberId: null,
-          isForwardGroupTemplate: true,
-          sourcePort,
-          sni: normalizedSni,
-          sniSplitterPort,
-          ...resolveSniRuleLimits(normalizedSni, input),
-          targetIp: normalizeRuleTargetIp(input.targetIp, { tunnelId: forwardType === "gost" && !isForwardChain && group.groupType === "tunnel" ? 1 : null }),
-          targetPort: input.targetPort,
-          isEnabled: input.isEnabled,
-          telegramErrorNotifyEnabled: !!input.telegramErrorNotifyEnabled,
-          blockHttp: false,
-          blockSocks: false,
-          blockTls: false,
-          ...normalizeProxyProtocolInput(
-            input,
-            ruleProtocol,
-            forwardType,
-            isForwardChain,
-            { tunnelRoute: !isForwardChain && group.groupType === "tunnel", clearUnsupported: true },
-          ),
-          ...normalizeTransportTuningInput(
-            input,
-            ruleProtocol,
-            forwardType,
-            isForwardChain,
-            { tunnelRoute: !isForwardChain && group.groupType === "tunnel", forwardxTunnel: false, clearUnsupported: true },
-          ),
-          ...normalizeFailoverInput({
-            ...input,
-            failoverEnabled: createFailoverEnabled,
-            failoverTargets: createFailoverEnabled ? input.failoverTargets : [],
-          }, ruleProtocol),
-          isRunning: false,
-          userId: ownerContext.user.id,
-        } as any);
-        let id = 0;
-        if (isForwardChain || normalizedSni) {
-          // Adding a template must not re-dispatch unchanged, healthy listeners
-          // belonging to the existing chain. Runtime-field changes still apply.
-          id = await db.withForwardGroupSyncTransaction(forwardGroupId, createTemplateRule, { preserveRuntime: true });
-        } else {
-          id = await createTemplateRule();
-          await db.syncForwardGroupRules(forwardGroupId);
-        }
-        await quotaReservation?.release();
-        quotaReservation = null;
-        await afterSniRuleWrite(() => db.runForwardGroupFailover(
-          forwardGroupId,
-          isForwardChain || normalizedSni ? { skipRuleSync: true } : undefined,
-        ));
-        for (const entryHostId of entryHostIds) await refreshRulePortWarningsForHost(entryHostId);
-        return { id, sourcePort };
-        } finally {
-          await quotaReservation?.release();
-          releaseHostPortReservations(groupReservations);
-        }
-        });
-      }
-
-      if (normalizedSni) {
-        const tunnelId = input.forwardType === "gost" ? Number(input.tunnelId || 0) : 0;
-        if (!tunnelId) throw new Error("SNI 分流仅支持端口转发、隧道或转发链");
-        return withKeyedTaskLock(`tunnel-sni:${tunnelId}:${Number(input.sourcePort || 0)}`, () => (
-          createDirectForwardRuleForActor(ownerContext.user, { ...input, protocol: "tcp", sni: normalizedSni }, { operationActor: ctx.user })
-        ));
-      }
-      return createDirectForwardRuleForActor(ownerContext.user, input, { operationActor: ctx.user });
-    })),
+        return { results };
+      }));
+    }),
   update: protectedProcedure
     .input(z.object({
       ...ruleLimitInputShape,

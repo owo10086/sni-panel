@@ -1,4 +1,6 @@
 import type { Response } from "express";
+import { AsyncLocalStorage } from "node:async_hooks";
+import { afterDatabaseCommit, isDatabaseTransactionActive } from "./dbRuntime";
 import { AGENT_VERSION } from "./_core/systemRouter";
 import { encryptPayload } from "./agentCrypto";
 import { invalidateAgentStableHeartbeatPlan } from "./agentHeartbeatGate";
@@ -38,6 +40,21 @@ type AgentRefreshOptions = {
   urgent?: boolean;
   forceMimicCheck?: boolean;
 };
+
+type PendingAgentRefresh = { reason: string; options: AgentRefreshOptions };
+const refreshBatch = new AsyncLocalStorage<{ active: boolean; pending: Map<number, PendingAgentRefresh> }>();
+
+// Used by a complete import, including post-save limit processing. Failed
+// saves discard the collection; a successful save sends the final update once.
+export async function withAgentRefreshBatch<T>(work: () => Promise<T>): Promise<T> {
+  if (refreshBatch.getStore()?.active) return work();
+  const context = { active: true, pending: new Map<number, PendingAgentRefresh>() };
+  let result: T;
+  try { result = await refreshBatch.run(context, work); }
+  finally { context.active = false; }
+  for (const [hostId, { reason, options }] of context.pending) pushAgentRefresh(hostId, reason, options);
+  return result;
+}
 
 const agentEventClients = new Map<number, AgentEventClient>();
 const hostMetricsWatchUntil = new Map<number, number>();
@@ -320,6 +337,20 @@ function sendAgentEvent(hostId: number, event: string, data: any) {
 
 export function pushAgentRefresh(hostId: number, reason: string, options: AgentRefreshOptions = {}) {
   const id = Number(hostId);
+  const batch = refreshBatch.getStore();
+  if (batch?.active) {
+    if (isDatabaseTransactionActive()) {
+      // Registration is synchronous; a rolled-back item's savepoint discards it.
+      void afterDatabaseCommit(() => { pushAgentRefresh(hostId, reason, options); });
+      return true;
+    }
+    const previous = batch.pending.get(id);
+    batch.pending.set(id, { reason, options: {
+      urgent: previous?.options.urgent === true || options.urgent === true,
+      forceMimicCheck: previous?.options.forceMimicCheck === true || options.forceMimicCheck === true,
+    } });
+    return true;
+  }
   invalidateAgentStableHeartbeatPlan(id);
   const now = Date.now();
   const urgent = options.urgent === true;

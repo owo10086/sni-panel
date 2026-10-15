@@ -737,6 +737,42 @@ export async function withDatabaseTransaction<T>(work: () => Promise<T>): Promis
   return seamlessDatabaseOperation("BEGIN", () => reportDatabaseErrors(() => runDatabaseTransaction(work)));
 }
 
+export class DatabaseSavepointRollbackError extends Error {
+  constructor(cause: unknown) {
+    super("无法撤回单条保存，已停止整批保存", { cause });
+  }
+}
+
+let savepointSequence = 0;
+
+// Nested transactions deliberately share the outer commit. A savepoint is an
+// explicit item boundary: failed writes and their callbacks must both disappear.
+export async function withDatabaseSavepoint<T>(work: () => Promise<T>): Promise<T> {
+  const parent = transactionContext.getStore();
+  if (!parent) return withDatabaseTransaction(work);
+  const name = `forwardx_item_${++savepointSequence}`;
+  const child: DatabaseTransactionContext = { ...parent, afterCommit: [], afterSettled: [] };
+  await executeRaw(`SAVEPOINT ${name}`);
+  let result: T;
+  try {
+    result = await transactionContext.run(child, work);
+    await executeRaw(`RELEASE SAVEPOINT ${name}`);
+  } catch (error) {
+    try {
+      await executeRaw(`ROLLBACK TO SAVEPOINT ${name}`);
+      await executeRaw(`RELEASE SAVEPOINT ${name}`);
+    } catch (rollbackError) {
+      parent.afterSettled.push(...child.afterSettled);
+      throw new DatabaseSavepointRollbackError(rollbackError);
+    }
+    await runAfterSettledCallbacks(child.afterSettled);
+    throw error;
+  }
+  parent.afterCommit.push(...child.afterCommit);
+  parent.afterSettled.push(...child.afterSettled);
+  return result;
+}
+
 async function runDatabaseTransaction<T>(work: () => Promise<T>): Promise<T> {
   if (transactionContext.getStore()) return work();
   if (!_db || !_kind) await connectDatabase();

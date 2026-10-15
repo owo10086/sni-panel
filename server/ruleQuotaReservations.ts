@@ -1,4 +1,4 @@
-import { withKeyedTaskLock } from "./keyedTaskLock";
+import { withResourceTaskLock } from "./keyedTaskLock";
 
 type PendingQuota = {
   rules: number;
@@ -11,6 +11,12 @@ export type RuleQuotaReservation = {
 };
 
 const pendingByUser = new Map<number, PendingQuota>();
+
+// Batch saves acquire this before the DB transaction, then reuse it for each
+// reservation. Other creates cannot hold the quota queue while waiting for DB.
+export function withRuleCreateQuotaLock<T>(userId: number, work: () => Promise<T>): Promise<T> {
+  return withResourceTaskLock(`rule-create-quota:${userId}`, work);
+}
 
 export async function reserveRuleCreateQuota(input: {
   userId: number;
@@ -26,7 +32,7 @@ export async function reserveRuleCreateQuota(input: {
   const maxPorts = Math.max(0, Number(input.maxPorts) || 0);
   if (maxRules === 0 && maxPorts === 0) return { release: async () => undefined };
 
-  return withKeyedTaskLock(`rule-create-quota:${userId}`, async () => {
+  return withRuleCreateQuotaLock(userId, async () => {
     const pending = pendingByUser.get(userId) || { rules: 0, ports: 0, portHolders: new Map<number, number>() };
     const [ruleCount, portCount] = await Promise.all([
       maxRules > 0 ? input.getRuleCount() : Promise.resolve(0),
@@ -56,7 +62,7 @@ export async function reserveRuleCreateQuota(input: {
       release: async () => {
         if (released) return;
         released = true;
-        await withKeyedTaskLock(`rule-create-quota:${userId}`, async () => {
+        await withRuleCreateQuotaLock(userId, async () => {
           const current = pendingByUser.get(userId);
           if (!current) return;
           let releasedPorts = holdPort && !portKey ? 1 : 0;

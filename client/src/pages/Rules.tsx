@@ -69,6 +69,7 @@ import {
   type RuleVisualStatusSnapshot,
 } from "@/lib/ruleStatusCache";
 import { batchOperationErrorMessage, chunkBatchItems, isBatchPortConflictError, runBatchOperations } from "@/lib/batchOperations";
+import { runRuleImport } from "@/lib/ruleImport";
 import {
   RULE_TRANSFER_FILE_KIND,
   RULE_TRANSFER_FILE_VERSION,
@@ -2520,7 +2521,7 @@ function RulesContent() {
   const batchDeleteMutation = trpc.rules.deleteBatch.useMutation();
 
   const importCreateMutation = trpc.rules.create.useMutation();
-  const checkSniImportMutation = trpc.rules.checkSniImport.useMutation();
+  const importSniBatchMutation = trpc.rules.createSniBatch.useMutation();
 
   const [trafficDetailRule, setTrafficDetailRule] = useState<{ id: number; name: string; isForwardChain?: boolean; probeMethod?: "tcping" | "ping" } | null>(null);
   const [selfTestRule, setSelfTestRule] = useState<{ id: number; name: string } | null>(null);
@@ -5763,26 +5764,19 @@ function RulesContent() {
     setImportingRules(true);
     try {
       setImportFailures([]);
-      const results = await runBatchOperations(importValidation.rules, 6, async (rule) => {
-      if (importSourceMode === "sni") {
-        await checkSniImportMutation.mutateAsync({
-          userId: createOwnerUserId,
-          forwardGroupId: importScopeType === "tunnel" ? null : Number(importResourceId),
-          tunnelId: importScopeType === "tunnel" ? Number(importResourceId) : null,
-          sourcePort: Number(importSniSourcePort),
-          rules: [{
-            lineNumber: Number(rule.sourceLineNumber),
-            sni: normalizeSniImportDomain(rule.sni),
-          }],
-        });
-      }
-        const payload = buildImportRulePayload(rule);
-        try {
-          return await importCreateMutation.mutateAsync(payload);
-        } catch (error) {
-          if (isSniBulkImportRule(rule) || rule.sourcePort <= 0 || !isBatchPortConflictError(error)) throw error;
-          return importCreateMutation.mutateAsync({ ...payload, sourcePort: 0 });
-        }
+      const results = await runRuleImport(importValidation.rules, {
+        createSniBatch: rules => importSniBatchMutation.mutateAsync({
+          rules: rules.map(rule => ({ ...buildImportRulePayload(rule), sni: normalizeSniImportDomain(rule.sni) })),
+        }),
+        createOne: async rule => {
+          const payload = buildImportRulePayload(rule);
+          try {
+            return await importCreateMutation.mutateAsync(payload);
+          } catch (error) {
+            if (rule.sourcePort <= 0 || !isBatchPortConflictError(error)) throw error;
+            return importCreateMutation.mutateAsync({ ...payload, sourcePort: 0 });
+          }
+        },
       });
       const importedCount = results.filter((result) => result.status === "fulfilled").length;
       const failures = results.filter((result) => result.status === "rejected");

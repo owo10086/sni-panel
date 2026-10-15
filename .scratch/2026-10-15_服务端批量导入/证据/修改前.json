@@ -1,0 +1,282 @@
+{
+  "measuredAt": "2026-10-15T04:28:12.303Z",
+  "commit": "a6f0c0ffa52492ab0ccca5c1ed8f04596364b3e5",
+  "node": "v22.22.3",
+  "platform": "darwin",
+  "architecture": "arm64",
+  "ruleRouterSha256": "02651bdd180b10f2fbde60bd856e177a0742139f56b472ad17059be249dedb6b",
+  "samples": {
+    "0": "e0a6d65f966cd3b8649bd6ff12bc7831fb5b22bb5cd7ed54be28b02a8aa24ba1",
+    "56": "a10b8a86e67837e869035b3e07157283d8f9140844478c7f8c162df65b26aca1"
+  },
+  "notificationReceiver": "immediate SSE response; no network backpressure",
+  "scenarios": [
+    {
+      "name": "small",
+      "existingCount": 0,
+      "count": 12,
+      "medianMs": 1066,
+      "measurements": [
+        {
+          "round": 1,
+          "existingCount": 0,
+          "count": 12,
+          "hosts": 3,
+          "concurrency": 6,
+          "durationMs": 1066,
+          "notifications": {
+            "1": {
+              "forward-group-child-created": 12,
+              "forward-group-synced": 12,
+              "forward-group-child-updated": 66
+            },
+            "2": {
+              "forward-group-child-created": 12,
+              "forward-group-synced": 12,
+              "forward-group-child-updated": 66
+            },
+            "3": {
+              "forward-group-child-created": 12,
+              "forward-group-synced": 12,
+              "forward-group-child-updated": 66
+            }
+          },
+          "rootCount": 12,
+          "childCount": 36
+        },
+        {
+          "round": 2,
+          "existingCount": 0,
+          "count": 12,
+          "hosts": 3,
+          "concurrency": 6,
+          "durationMs": 1045,
+          "notifications": {
+            "1": {
+              "forward-group-child-created": 12,
+              "forward-group-synced": 12,
+              "forward-group-child-updated": 66
+            },
+            "2": {
+              "forward-group-child-created": 12,
+              "forward-group-synced": 12,
+              "forward-group-child-updated": 66
+            },
+            "3": {
+              "forward-group-child-created": 12,
+              "forward-group-synced": 12,
+              "forward-group-child-updated": 66
+            }
+          },
+          "rootCount": 12,
+          "childCount": 36
+        },
+        {
+          "round": 3,
+          "existingCount": 0,
+          "count": 12,
+          "hosts": 3,
+          "concurrency": 6,
+          "durationMs": 1075,
+          "notifications": {
+            "1": {
+              "forward-group-child-created": 12,
+              "forward-group-synced": 12,
+              "forward-group-child-updated": 66
+            },
+            "2": {
+              "forward-group-child-created": 12,
+              "forward-group-synced": 12,
+              "forward-group-child-updated": 66
+            },
+            "3": {
+              "forward-group-child-created": 12,
+              "forward-group-synced": 12,
+              "forward-group-child-updated": 66
+            }
+          },
+          "rootCount": 12,
+          "childCount": 36
+        }
+      ]
+    },
+    {
+      "name": "empty",
+      "existingCount": 0,
+      "count": 56,
+      "medianMs": 14637,
+      "measurements": [
+        {
+          "round": 1,
+          "existingCount": 0,
+          "count": 56,
+          "hosts": 3,
+          "concurrency": 6,
+          "durationMs": 14637,
+          "notifications": {
+            "1": {
+              "forward-group-child-created": 56,
+              "forward-group-synced": 56,
+              "forward-group-child-updated": 1540
+            },
+            "2": {
+              "forward-group-child-created": 56,
+              "forward-group-synced": 56,
+              "forward-group-child-updated": 1540
+            },
+            "3": {
+              "forward-group-child-created": 56,
+              "forward-group-synced": 56,
+              "forward-group-child-updated": 1540
+            }
+          },
+          "rootCount": 56,
+          "childCount": 168
+        },
+        {
+          "round": 2,
+          "existingCount": 0,
+          "count": 56,
+          "hosts": 3,
+          "concurrency": 6,
+          "durationMs": 14530,
+          "notifications": {
+            "1": {
+              "forward-group-child-created": 56,
+              "forward-group-synced": 56,
+              "forward-group-child-updated": 1540
+            },
+            "2": {
+              "forward-group-child-created": 56,
+              "forward-group-synced": 56,
+              "forward-group-child-updated": 1540
+            },
+            "3": {
+              "forward-group-child-created": 56,
+              "forward-group-synced": 56,
+              "forward-group-child-updated": 1540
+            }
+          },
+          "rootCount": 56,
+          "childCount": 168
+        },
+        {
+          "round": 3,
+          "existingCount": 0,
+          "count": 56,
+          "hosts": 3,
+          "concurrency": 6,
+          "durationMs": 15023,
+          "notifications": {
+            "1": {
+              "forward-group-child-created": 56,
+              "forward-group-synced": 56,
+              "forward-group-child-updated": 1540
+            },
+            "2": {
+              "forward-group-child-created": 56,
+              "forward-group-synced": 56,
+              "forward-group-child-updated": 1540
+            },
+            "3": {
+              "forward-group-child-created": 56,
+              "forward-group-synced": 56,
+              "forward-group-child-updated": 1540
+            }
+          },
+          "rootCount": 56,
+          "childCount": 168
+        }
+      ]
+    },
+    {
+      "name": "existing",
+      "existingCount": 56,
+      "count": 56,
+      "medianMs": 53369,
+      "measurements": [
+        {
+          "round": 1,
+          "existingCount": 56,
+          "count": 56,
+          "hosts": 3,
+          "concurrency": 6,
+          "durationMs": 53373,
+          "notifications": {
+            "1": {
+              "forward-group-child-created": 56,
+              "forward-group-child-updated": 4676,
+              "forward-group-synced": 56
+            },
+            "2": {
+              "forward-group-child-created": 56,
+              "forward-group-child-updated": 4676,
+              "forward-group-synced": 56
+            },
+            "3": {
+              "forward-group-child-created": 56,
+              "forward-group-child-updated": 4676,
+              "forward-group-synced": 56
+            }
+          },
+          "rootCount": 112,
+          "childCount": 336
+        },
+        {
+          "round": 2,
+          "existingCount": 56,
+          "count": 56,
+          "hosts": 3,
+          "concurrency": 6,
+          "durationMs": 53124,
+          "notifications": {
+            "1": {
+              "forward-group-child-created": 56,
+              "forward-group-child-updated": 4676,
+              "forward-group-synced": 56
+            },
+            "2": {
+              "forward-group-child-created": 56,
+              "forward-group-child-updated": 4676,
+              "forward-group-synced": 56
+            },
+            "3": {
+              "forward-group-child-created": 56,
+              "forward-group-child-updated": 4676,
+              "forward-group-synced": 56
+            }
+          },
+          "rootCount": 112,
+          "childCount": 336
+        },
+        {
+          "round": 3,
+          "existingCount": 56,
+          "count": 56,
+          "hosts": 3,
+          "concurrency": 6,
+          "durationMs": 53369,
+          "notifications": {
+            "1": {
+              "forward-group-child-created": 56,
+              "forward-group-child-updated": 4676,
+              "forward-group-synced": 56
+            },
+            "2": {
+              "forward-group-child-created": 56,
+              "forward-group-child-updated": 4676,
+              "forward-group-synced": 56
+            },
+            "3": {
+              "forward-group-child-created": 56,
+              "forward-group-child-updated": 4676,
+              "forward-group-synced": 56
+            }
+          },
+          "rootCount": 112,
+          "childCount": 336
+        }
+      ]
+    }
+  ]
+}
