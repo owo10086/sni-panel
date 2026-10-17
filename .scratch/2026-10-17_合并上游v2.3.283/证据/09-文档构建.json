@@ -1,0 +1,20 @@
+{
+  "buildInfo": {
+    "version": "3.3.8",
+    "commit": "ac632b5b4622ab30507f0554e75cc7ae5d8726ac",
+    "sourceDirty": true,
+    "sourceSha256": "8d8c9c86b428b49549572086c0f5c55fcfa33bec798331da9e297ccbdabcdba9",
+    "builtAt": "2026-10-17T16:22:36.740Z"
+  },
+  "pages": {
+    "index.html": 17069,
+    "guide/index.html": 37166,
+    "guide/interface.html": 34209,
+    "guide/releases.html": 34707,
+    "guide/rules.html": 46810,
+    "guide/hosts.html": 42641,
+    "guide/users-billing.html": 34852
+  },
+  "published": false,
+  "nativeChanged": false
+}

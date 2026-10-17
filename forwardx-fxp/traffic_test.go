@@ -2,6 +2,11 @@ package main
 
 import (
 	"bytes"
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"log"
 	"net/http"
@@ -28,11 +33,57 @@ func TestTrafficBatchRetainsFailedReportsAndAcknowledgesSuccess(t *testing.T) {
 	resetTrafficBatchesForTest()
 	var fail atomic.Bool
 	fail.Store(true)
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+	var receivedMu sync.Mutex
+	received := map[string]trafficBatchValue{}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
 		if fail.Load() {
 			w.WriteHeader(http.StatusServiceUnavailable)
 			return
 		}
+		var encrypted envelope
+		if err := json.NewDecoder(request.Body).Decode(&encrypted); err != nil {
+			t.Error(err)
+			w.WriteHeader(400)
+			return
+		}
+		iv, err := hex.DecodeString(encrypted.IV)
+		if err != nil || len(iv) != aes.BlockSize {
+			t.Error("invalid fixture IV")
+			w.WriteHeader(400)
+			return
+		}
+		data, err := hex.DecodeString(encrypted.CT)
+		if err != nil {
+			t.Error(err)
+			w.WriteHeader(400)
+			return
+		}
+		key := sha256.Sum256([]byte("traffic-test-token|forwardx-agent-v1"))
+		block, _ := aes.NewCipher(key[:])
+		cipher.NewCTR(block, iv).XORKeyStream(data, data)
+		var payload struct {
+			ReportID string `json:"reportId"`
+			Stats    []struct {
+				RuleID      int    `json:"ruleId"`
+				BytesIn     uint64 `json:"bytesIn"`
+				BytesOut    uint64 `json:"bytesOut"`
+				Connections uint64 `json:"connections"`
+			} `json:"stats"`
+		}
+		if err := json.Unmarshal(data, &payload); err != nil {
+			t.Error(err)
+			w.WriteHeader(400)
+			return
+		}
+		if len(payload.Stats) != 1 || payload.Stats[0].RuleID != 42 {
+			t.Error("unexpected traffic batch")
+			w.WriteHeader(400)
+			return
+		}
+		value := payload.Stats[0]
+		receivedMu.Lock()
+		received[payload.ReportID] = trafficBatchValue{bytesIn: value.BytesIn, bytesOut: value.BytesOut, connections: value.Connections}
+		receivedMu.Unlock()
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer server.Close()
@@ -74,14 +125,23 @@ func TestTrafficBatchRetainsFailedReportsAndAcknowledgesSuccess(t *testing.T) {
 
 	fail.Store(false)
 	flushTrafficBatches()
-	remaining := trafficBatchSnapshot()[key][42]
-	if remaining.bytesIn != 13 || remaining.bytesOut != 17 || remaining.connections != 4 {
-		t.Fatalf("new traffic was not retained for the next report: %+v", remaining)
-	}
-	if len(trafficPendingReports) != 0 {
-		t.Fatalf("acknowledged pending report was not cleared: %#v", trafficPendingReports)
-	}
+	// The real background worker can acknowledge the next batch before a
+	// queue snapshot is read. Observe the delivered report boundaries instead.
 	flushTrafficBatches()
+	receivedMu.Lock()
+	defer receivedMu.Unlock()
+	if got := received[firstPending.reportID]; got != (trafficBatchValue{bytesIn: 107, bytesOut: 211, connections: 3}) {
+		t.Fatalf("retry was changed or lost on delivery: %+v", got)
+	}
+	var total trafficBatchValue
+	for _, value := range received {
+		total.bytesIn += value.bytesIn
+		total.bytesOut += value.bytesOut
+		total.connections += value.connections
+	}
+	if len(received) != 2 || total != (trafficBatchValue{bytesIn: 120, bytesOut: 228, connections: 7}) {
+		t.Fatalf("new traffic was lost or counted twice: reports=%d total=%+v", len(received), total)
+	}
 	if snapshot := trafficBatchSnapshot(); len(snapshot) != 0 {
 		t.Fatalf("second successful report was not acknowledged: %#v", snapshot)
 	}

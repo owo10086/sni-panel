@@ -1,0 +1,1271 @@
+[
+  {
+    "id": "001",
+    "file": ".github/workflows/ci.yml",
+    "ticket": "10",
+    "result": "合并兼容本地内容",
+    "initialLocalSha256": "562c80b45f3f556b93c63498c8b5b4b589ae6d3846d61ee5b4a57d23f7e02859",
+    "upstreamTargetSha256": "f7425e1ea7b7b269eaf16a31e04e0213db566acffe285fb0475461d8747869b0",
+    "currentSha256": "c855bd8f58847e91da49376474d07d078f586afd04b3d2c062d9e670e77e3bcd"
+  },
+  {
+    "id": "002",
+    "file": ".github/workflows/docs.yml",
+    "ticket": "09",
+    "result": "合并兼容本地内容",
+    "initialLocalSha256": "c75b8b8b8039136699812cc5f584f022a9a8ae6eb4237403423ca6063511a1ec",
+    "upstreamTargetSha256": "1177c0c36aa5b95394d2c501095881eb62448703a12456a07684cab4950e173c",
+    "currentSha256": "f82d05fcb0952b60d8e4e1433e8455775e88a793dcacabdbc23e19f1fd5e85e5"
+  },
+  {
+    "id": "003",
+    "file": "CHANGELOG.en.md",
+    "ticket": "09",
+    "result": "保留已发布历史，本轮另记未发布",
+    "initialLocalSha256": "6a43cc98d0d8c4753b8dcde5ee198cdf93001f92d355c72705ea9a25f72b53db",
+    "upstreamTargetSha256": "0b6186e8acfd5c5c4733f9ed31c8bd68124a2f4c0cafe47643c12f8e05eb1197",
+    "currentSha256": "6a43cc98d0d8c4753b8dcde5ee198cdf93001f92d355c72705ea9a25f72b53db"
+  },
+  {
+    "id": "004",
+    "file": "CHANGELOG.md",
+    "ticket": "09",
+    "result": "保留已发布历史，本轮另记未发布",
+    "initialLocalSha256": "ad5e104c2ad00c363102b13c7b0625eabe03695aa2184dfd7f88c2a742a146cc",
+    "upstreamTargetSha256": "2802a86834f247d105b40b4cda6c39f3a1cef7ee4947c4bf0d4773e69696ff2d",
+    "currentSha256": "ad5e104c2ad00c363102b13c7b0625eabe03695aa2184dfd7f88c2a742a146cc"
+  },
+  {
+    "id": "005",
+    "file": "README.en.md",
+    "ticket": "09",
+    "result": "合并兼容本地内容",
+    "initialLocalSha256": "99c6820d6327de113ad90ba06a660e888c458c62f2df669f3b205f630a990770",
+    "upstreamTargetSha256": "5368c4607b3700ae53d99544655896a20fc5685cb03673cdf40480bbd867d8f7",
+    "currentSha256": "b6574b17bfd02a448ec05298e53a7ec987228ea529fc7755e924683cad70a8f6"
+  },
+  {
+    "id": "006",
+    "file": "README.md",
+    "ticket": "09",
+    "result": "合并兼容本地内容",
+    "initialLocalSha256": "a1cc898666988b347a8c944c28a33db2e9fe7402a82d44f7d075aa76581c6ab9",
+    "upstreamTargetSha256": "ca59aa9206651d6379df623c5c4bb71ae5edeef57d945e518dcd8e80bf881d68",
+    "currentSha256": "5e69cc26ecd60463128ca7dba450d579a0621921a7d5470cb042c97f683b9901"
+  },
+  {
+    "id": "007",
+    "file": "THIRD_PARTY_NOTICES.md",
+    "ticket": "01",
+    "result": "采用上游内容",
+    "initialLocalSha256": "d3572e3ddda1ee140458bcceee17babef7876a859738cd7892b50f97ca21fe72",
+    "upstreamTargetSha256": "6cd8fb28ff65410f888e4afe5d7e4966490a09e9ea8f937c141ee8757c4d6cf1",
+    "currentSha256": "6cd8fb28ff65410f888e4afe5d7e4966490a09e9ea8f937c141ee8757c4d6cf1"
+  },
+  {
+    "id": "008",
+    "file": "agent/fxp_additive_sync.go",
+    "ticket": "06",
+    "result": "合并兼容本地内容",
+    "initialLocalSha256": null,
+    "upstreamTargetSha256": "b4f0b8394f6db31244ab86949c1da070cbdeb3cc780130e4402436a74ee1731d",
+    "currentSha256": "a4399517062983eba7c6fe3c3a029011e337133d9c12271ca864ce0547a56ede"
+  },
+  {
+    "id": "009",
+    "file": "agent/fxp_additive_sync_test.go",
+    "ticket": "06",
+    "result": "采用上游内容",
+    "initialLocalSha256": null,
+    "upstreamTargetSha256": "172ec1685ed52ca30b5cbabf4b4fd0d28ee741568ac75b6d048ae1dc24a04033",
+    "currentSha256": "172ec1685ed52ca30b5cbabf4b4fd0d28ee741568ac75b6d048ae1dc24a04033"
+  },
+  {
+    "id": "010",
+    "file": "agent/gost_additive_sync.go",
+    "ticket": "05",
+    "result": "合并兼容本地内容",
+    "initialLocalSha256": "47a9f8353b732d03c24d42f280cd33908a314324604ee1fccfa3e8f63f738ae2",
+    "upstreamTargetSha256": "9473cdb247779ea0cf06698c7b5b86dfadc95df8eda5cc0483333856f83cc72c",
+    "currentSha256": "4bd824512b28bd748b077099df217d07500ee1dc62fc60af173b02cce9785092"
+  },
+  {
+    "id": "011",
+    "file": "agent/gost_additive_sync_test.go",
+    "ticket": "05",
+    "result": "合并兼容本地内容",
+    "initialLocalSha256": "fff7f08976e9db5c42d916a8f54a74f153c39d7876f65953956b80e38a7b0c3d",
+    "upstreamTargetSha256": "e6214e5c4a55ca98abb238b28a45d2263c6f3d0c5ed91db3a7d2da9822c80349",
+    "currentSha256": "7c6f358f2005b757275f46c34b69f29e964e58ec9b302561e1f4e82d7154c2af"
+  },
+  {
+    "id": "012",
+    "file": "agent/gost_probe_replacement_test.go",
+    "ticket": "05",
+    "result": "合并兼容本地内容",
+    "initialLocalSha256": null,
+    "upstreamTargetSha256": "4b2a2f03093c40bfc5d19a1863a9b1a75d67f57be9fa1575a1871edd52424192",
+    "currentSha256": "68e9bdb4a8a22cf0d9569103cd057bb1bd25d6341332440ab87b3964472c16fb"
+  },
+  {
+    "id": "013",
+    "file": "agent/main.go",
+    "ticket": "04",
+    "result": "合并兼容本地内容",
+    "initialLocalSha256": "edc076f771799069dd09be905ea40181b6f0888ad85182cfc6b1af410c048f27",
+    "upstreamTargetSha256": "d10c30ba7140ead6a99e562eab11dd1e8bd015d8280ee4dbdf4eb8e57202d99b",
+    "currentSha256": "5657b543734ae1618e2dbb3ac7eca8dc033ad3c39067724eb08e409cbb5e2d87"
+  },
+  {
+    "id": "014",
+    "file": "agent/port_access_limits.go",
+    "ticket": "04",
+    "result": "采用上游内容",
+    "initialLocalSha256": null,
+    "upstreamTargetSha256": "be4d2d2ce9cf53f088f2580ef6ab406542dbc36a38dc8d716c84f9c58e7dcedf",
+    "currentSha256": "be4d2d2ce9cf53f088f2580ef6ab406542dbc36a38dc8d716c84f9c58e7dcedf"
+  },
+  {
+    "id": "015",
+    "file": "agent/port_access_limits_linux_test.go",
+    "ticket": "04",
+    "result": "合并兼容本地内容",
+    "initialLocalSha256": null,
+    "upstreamTargetSha256": "36bb3414b0a48bfb26d67d0c2d8e637fd98930a03f9c981a7542dba0bb8ae99d",
+    "currentSha256": "c1b741742979e44b2d8fd8f20d739c5d024aba6a0d5559c6d4a1425c1cd1dc18"
+  },
+  {
+    "id": "016",
+    "file": "agent/port_access_limits_test.go",
+    "ticket": "04",
+    "result": "采用上游内容",
+    "initialLocalSha256": null,
+    "upstreamTargetSha256": "e0e6cf477d1005d08cdc5f805ef5b7984372943480362f46f9a4729783ff5fd8",
+    "currentSha256": "e0e6cf477d1005d08cdc5f805ef5b7984372943480362f46f9a4729783ff5fd8"
+  },
+  {
+    "id": "017",
+    "file": "agent/wireguard_runtime.go",
+    "ticket": "06",
+    "result": "采用上游内容",
+    "initialLocalSha256": "6836a33ba447591fe712de70869818839d18c85babc4fdb8eb185bb84bec2bb2",
+    "upstreamTargetSha256": "e57e4252189f225673c8f4873579c507a826038f98fc52a0f03df49bff8fe006",
+    "currentSha256": "e57e4252189f225673c8f4873579c507a826038f98fc52a0f03df49bff8fe006"
+  },
+  {
+    "id": "018",
+    "file": "agent/wireguard_runtime_test.go",
+    "ticket": "06",
+    "result": "采用上游内容",
+    "initialLocalSha256": "85a3dcf32d3e28008798a3570868809335dc9b5e391e554b19783a1b478f8ee4",
+    "upstreamTargetSha256": "ab5814a272b2b28e46074cbb02f67a5341d2cdf38a48b2404be5991dbbb916f7",
+    "currentSha256": "ab5814a272b2b28e46074cbb02f67a5341d2cdf38a48b2404be5991dbbb916f7"
+  },
+  {
+    "id": "019",
+    "file": "client/public/pearl-ui-license.txt",
+    "ticket": "01",
+    "result": "采用上游内容",
+    "initialLocalSha256": null,
+    "upstreamTargetSha256": "fe2e69c03fc3b9978f6885a368fb204b13e0c3658f66a160fb1848a2f2a9ac90",
+    "currentSha256": "fe2e69c03fc3b9978f6885a368fb204b13e0c3658f66a160fb1848a2f2a9ac90"
+  },
+  {
+    "id": "020",
+    "file": "client/src/App.tsx",
+    "ticket": "01",
+    "result": "合并兼容本地内容",
+    "initialLocalSha256": "c20c1fd64d788597de8392ac4bd9b8d6b6927237421cf552945eda5aa482667b",
+    "upstreamTargetSha256": "fc5e79021385fe133823c14c43af11c4985cf993063276ef280aec52058c6d5f",
+    "currentSha256": "5b1ccd0c522496aa4e904cc536a08001e04959a7ebeb8ee289840a8c56ad18bd"
+  },
+  {
+    "id": "021",
+    "file": "client/src/components/AvatarPicker.tsx",
+    "ticket": "01",
+    "result": "本地已有等价翻译，保留现有功能",
+    "initialLocalSha256": "04dd12afb56600bb293019c7250e0bc93f9421691bf54a8fd8281e56df3a5d1c",
+    "upstreamTargetSha256": "04dd12afb56600bb293019c7250e0bc93f9421691bf54a8fd8281e56df3a5d1c",
+    "currentSha256": "04dd12afb56600bb293019c7250e0bc93f9421691bf54a8fd8281e56df3a5d1c"
+  },
+  {
+    "id": "022",
+    "file": "client/src/components/DashboardLayout.tsx",
+    "ticket": "01",
+    "result": "合并兼容本地内容",
+    "initialLocalSha256": "83e537ef016c79774361dca8cb733ef97ca6c8fdac72b9859d8fed506dd96b28",
+    "upstreamTargetSha256": "d3cf25fb3e981685f6a9cf5f86e3441cf38119d7f618013d69d413b36e6ca216",
+    "currentSha256": "0646f77682674b01df4dc9270d7bb43b9c1d47c24ac52ba49c5f5a42a67d31c0"
+  },
+  {
+    "id": "023",
+    "file": "client/src/components/GoogleLoginSettingsCard.tsx",
+    "ticket": "01",
+    "result": "采用上游内容",
+    "initialLocalSha256": "1e640a2e8d6be3166983c0485b69f0ba7a268358a14951a73285120b04f5a579",
+    "upstreamTargetSha256": "56ad5a3835263123c94e93c1005ceb90c0c62573b1521bf66b725dcb68e28789",
+    "currentSha256": "56ad5a3835263123c94e93c1005ceb90c0c62573b1521bf66b725dcb68e28789"
+  },
+  {
+    "id": "024",
+    "file": "client/src/components/HostFlatMap.tsx",
+    "ticket": "01",
+    "result": "本地已有等价翻译，保留现有功能",
+    "initialLocalSha256": "1800fff18b7977f77a9a6e86d646852c26336a78f2ca4140b92cd8efe1d3e3f6",
+    "upstreamTargetSha256": "9b6d3e610c2d6a389f1732ae78ae3e81d834feb11f9a6d00f6be8bd526d3a3d6",
+    "currentSha256": "1800fff18b7977f77a9a6e86d646852c26336a78f2ca4140b92cd8efe1d3e3f6"
+  },
+  {
+    "id": "025",
+    "file": "client/src/components/LanguageSelector.tsx",
+    "ticket": "01",
+    "result": "合并兼容本地内容",
+    "initialLocalSha256": "49adf45fb78a2f31dbcc3ff13c175b59d5ca86f45b2fcfd0923490b6b31dd454",
+    "upstreamTargetSha256": "50dfae8055dd6817f967c7ef39f40f1b70c31423e5117a604aafd35395e814e7",
+    "currentSha256": "b7b88e545333598bc28b9c702318751122432aea99a6e2817f0cb88ef39c08e2"
+  },
+  {
+    "id": "026",
+    "file": "client/src/components/LatencyRating.tsx",
+    "ticket": "01",
+    "result": "本地已有等价翻译，保留现有功能",
+    "initialLocalSha256": "817c872f63001e291b1960be545a4f815effc941acc7614758ef83fe0246941c",
+    "upstreamTargetSha256": "817c872f63001e291b1960be545a4f815effc941acc7614758ef83fe0246941c",
+    "currentSha256": "817c872f63001e291b1960be545a4f815effc941acc7614758ef83fe0246941c"
+  },
+  {
+    "id": "027",
+    "file": "client/src/components/LatencyStabilityStats.tsx",
+    "ticket": "01",
+    "result": "合并兼容本地内容",
+    "initialLocalSha256": "b408eac1db5d35c00adde2ff84c033fd09046d341c6fca38f925cf7aea218639",
+    "upstreamTargetSha256": "29e24d71e1008d908972a64c0dbf937a702ba8f4f8224d38891dc486735d84c7",
+    "currentSha256": "5581abefd2f6ad031e81a0e7fda470af8ef2141108953de6af84d65e2625293e"
+  },
+  {
+    "id": "028",
+    "file": "client/src/components/LinkCreateTypeSelector.tsx",
+    "ticket": "01",
+    "result": "采用上游内容",
+    "initialLocalSha256": "9a85314affaf2133edb4f753567d51ebf3056dbcdff4449394a9879411248cde",
+    "upstreamTargetSha256": "abefcb477f32e90117856c9a70d0b0a902c5cf058b778c1d1e6fb84e8df01f98",
+    "currentSha256": "abefcb477f32e90117856c9a70d0b0a902c5cf058b778c1d1e6fb84e8df01f98"
+  },
+  {
+    "id": "029",
+    "file": "client/src/components/MotionPolicy.tsx",
+    "ticket": "01",
+    "result": "采用上游内容",
+    "initialLocalSha256": null,
+    "upstreamTargetSha256": "25a0ef5461516567a592df8fc8279b631bffce1b072066842eefabf4e2058844",
+    "currentSha256": "25a0ef5461516567a592df8fc8279b631bffce1b072066842eefabf4e2058844"
+  },
+  {
+    "id": "030",
+    "file": "client/src/components/NotificationSettingsCard.tsx",
+    "ticket": "01",
+    "result": "采用上游内容",
+    "initialLocalSha256": "368b675e42939a6dac88c2cea4b19008d79d33a0e0ce51cb486f27104bc173dd",
+    "upstreamTargetSha256": "ad730ea0c6a189f3fc428c3f8964cb25268f208c5b840e9b49db680e4e395173",
+    "currentSha256": "ad730ea0c6a189f3fc428c3f8964cb25268f208c5b840e9b49db680e4e395173"
+  },
+  {
+    "id": "031",
+    "file": "client/src/components/PearlSidebarContent.tsx",
+    "ticket": "01",
+    "result": "采用上游内容",
+    "initialLocalSha256": null,
+    "upstreamTargetSha256": "1f5045e071363f67cdd6c17e65afc221c90fcc3b3682b7c9d56de19ab2c48189",
+    "currentSha256": "1f5045e071363f67cdd6c17e65afc221c90fcc3b3682b7c9d56de19ab2c48189"
+  },
+  {
+    "id": "032",
+    "file": "client/src/components/PersistentPagination.tsx",
+    "ticket": "01",
+    "result": "采用上游内容",
+    "initialLocalSha256": "98ba3115a6101ca84d143f9511a106228959fda57f2f0014d56f8d7a8e2c76e9",
+    "upstreamTargetSha256": "06513240aa0557d8d8b7625fc0ae77624ed2dcf48719dbeab7ed9e9099d5724b",
+    "currentSha256": "06513240aa0557d8d8b7625fc0ae77624ed2dcf48719dbeab7ed9e9099d5724b"
+  },
+  {
+    "id": "033",
+    "file": "client/src/components/PlanDetails.test.tsx",
+    "ticket": "08",
+    "result": "采用上游内容",
+    "initialLocalSha256": null,
+    "upstreamTargetSha256": "9d2c5deb96fdc1522c9e25483e79b577616aecd2d278a8c6e6db6a96687943eb",
+    "currentSha256": "9d2c5deb96fdc1522c9e25483e79b577616aecd2d278a8c6e6db6a96687943eb"
+  },
+  {
+    "id": "034",
+    "file": "client/src/components/PlanDetails.tsx",
+    "ticket": "08",
+    "result": "采用上游内容",
+    "initialLocalSha256": null,
+    "upstreamTargetSha256": "57ae7676401c81ca5f797d1c8604136bbb310b59cdd79c9d8435f10414aa314c",
+    "currentSha256": "57ae7676401c81ca5f797d1c8604136bbb310b59cdd79c9d8435f10414aa314c"
+  },
+  {
+    "id": "035",
+    "file": "client/src/components/TrafficBillingConfigManager.tsx",
+    "ticket": "01",
+    "result": "合并兼容本地内容",
+    "initialLocalSha256": "3d69f74799224851a8cfe7273206a8c8a50d56db181f838b2f8d7a1ac4007abe",
+    "upstreamTargetSha256": "08fb81875f7d9076e85377379f8435a59be5b1b7ed450d7a58f6311aa9aef86d",
+    "currentSha256": "33f9ca0024f279828cd22150bedaf5ecff780516e89b87505a4c19b477e94a68"
+  },
+  {
+    "id": "036",
+    "file": "client/src/components/hosts/HostCard.tsx",
+    "ticket": "03",
+    "result": "采用上游内容",
+    "initialLocalSha256": "4d49f596201e0959d854e85b777d59be31638f6d55175de534cbc0c2c6be5ae3",
+    "upstreamTargetSha256": "81ba6b76b8a0c08da0c2cf3e00e6d16d09b982bb08a600c41db06609c36f2c74",
+    "currentSha256": "81ba6b76b8a0c08da0c2cf3e00e6d16d09b982bb08a600c41db06609c36f2c74"
+  },
+  {
+    "id": "037",
+    "file": "client/src/components/hosts/HostDeleteDialog.tsx",
+    "ticket": "03",
+    "result": "合并兼容本地内容",
+    "initialLocalSha256": null,
+    "upstreamTargetSha256": "7686f7574761a0ec5bffe9a715c7cfae80ec5dea37233aa0a5afaa7494de89b8",
+    "currentSha256": "4055783b05b1e44cc34c73483bae5d02c7e4b272738d365b062abf7a7e4a1324"
+  },
+  {
+    "id": "038",
+    "file": "client/src/components/hosts/HostGroupManager.tsx",
+    "ticket": "01",
+    "result": "本地已有等价翻译，保留现有功能",
+    "initialLocalSha256": "26a67d7b9006fd5900c997d62b5b5a578840dc95eee2d448f6e6bba97cb6b22a",
+    "upstreamTargetSha256": "295b2952bc0e73a8cbd61cd12373e5bbf3daf37e872f6d0cfb3448d5192b8347",
+    "currentSha256": "26a67d7b9006fd5900c997d62b5b5a578840dc95eee2d448f6e6bba97cb6b22a"
+  },
+  {
+    "id": "039",
+    "file": "client/src/components/hosts/HostProbeServiceManager.tsx",
+    "ticket": "01",
+    "result": "本地已有等价翻译，保留现有功能",
+    "initialLocalSha256": "01528b621994a8e951ec74feabd747697ad25211e2b9ef278eb0e8622244979c",
+    "upstreamTargetSha256": "5b6cda0a05b3db0210bca4f4138a97f20618cc22d4d71351b161fad40384ab95",
+    "currentSha256": "01528b621994a8e951ec74feabd747697ad25211e2b9ef278eb0e8622244979c"
+  },
+  {
+    "id": "040",
+    "file": "client/src/components/hosts/hostDisplay.tsx",
+    "ticket": "01",
+    "result": "本地已有等价翻译，保留现有功能",
+    "initialLocalSha256": "b70f3455057c8fc8a9cac1b433db71eab1540958dbde16364f7562d3d6f9eba9",
+    "upstreamTargetSha256": "b70f3455057c8fc8a9cac1b433db71eab1540958dbde16364f7562d3d6f9eba9",
+    "currentSha256": "b70f3455057c8fc8a9cac1b433db71eab1540958dbde16364f7562d3d6f9eba9"
+  },
+  {
+    "id": "041",
+    "file": "client/src/components/plugins/AgentResourceManager.tsx",
+    "ticket": "01",
+    "result": "本地已有等价翻译，保留现有功能",
+    "initialLocalSha256": "75a138f1f351f29c2d277a40dec40f0ae7f1bb90bf4e3cbc876213ec6ced9d69",
+    "upstreamTargetSha256": "cb5528d0c2a5a36c27b89a2b71b434e0fbe6448f7ae62b7f78fee940cb66c822",
+    "currentSha256": "75a138f1f351f29c2d277a40dec40f0ae7f1bb90bf4e3cbc876213ec6ced9d69"
+  },
+  {
+    "id": "042",
+    "file": "client/src/components/rules/RuleLimitsForm.test.tsx",
+    "ticket": "01",
+    "result": "采用上游内容",
+    "initialLocalSha256": "c12674e92e6faf78b6e8a3b4a7dba179fe1b25d75f8696d2efa1d3d9757e9704",
+    "upstreamTargetSha256": "b2ef525f4d69dc18500afc837e74304254250565213cc7069a1f529af741f6a2",
+    "currentSha256": "b2ef525f4d69dc18500afc837e74304254250565213cc7069a1f529af741f6a2"
+  },
+  {
+    "id": "043",
+    "file": "client/src/components/rules/RuleLimitsForm.tsx",
+    "ticket": "01",
+    "result": "合并兼容本地内容",
+    "initialLocalSha256": "953a29e3e4728436508dd47b7a4ceabc95bc89465108fb6c435387237fd83997",
+    "upstreamTargetSha256": "55e1c19ea2322bf5d2e335bb7b57ea4510bacff6e1d7b635ce14501e394fa824",
+    "currentSha256": "2fc79b820d06e2000caaf0840cfc01656654ae7f63828cb7ba53c9c90b85427f"
+  },
+  {
+    "id": "044",
+    "file": "client/src/components/rules/TcpingDetailDialog.tsx",
+    "ticket": "01",
+    "result": "本地已有等价翻译，保留现有功能",
+    "initialLocalSha256": "88975afa58bc44780b76c144a70c0ff1aa4e41ea7555d1aa8dd05ed6a29035cd",
+    "upstreamTargetSha256": "0e7956a238b910d4257c312074820c677636a4579e3a550bbe93cdee1c639843",
+    "currentSha256": "88975afa58bc44780b76c144a70c0ff1aa4e41ea7555d1aa8dd05ed6a29035cd"
+  },
+  {
+    "id": "045",
+    "file": "client/src/components/ui/alert.tsx",
+    "ticket": "01",
+    "result": "采用上游内容",
+    "initialLocalSha256": "8084dcad9f99417dcaba3d96ed13c614184def6471b6b886807957560b1b025d",
+    "upstreamTargetSha256": "128490dc897786cb9fae1627bf3a259fac3ec2748f15fff8706f6434ef031cbc",
+    "currentSha256": "128490dc897786cb9fae1627bf3a259fac3ec2748f15fff8706f6434ef031cbc"
+  },
+  {
+    "id": "046",
+    "file": "client/src/components/ui/badge.tsx",
+    "ticket": "01",
+    "result": "采用上游内容",
+    "initialLocalSha256": "bc085ccee212cbce17fe26f23ba72a01be318df8da75e9767b89453e87db88bf",
+    "upstreamTargetSha256": "6a3094f45af7391ba59c31efaa1eccfa9850c52229cdf790c53b538f6fe73447",
+    "currentSha256": "6a3094f45af7391ba59c31efaa1eccfa9850c52229cdf790c53b538f6fe73447"
+  },
+  {
+    "id": "047",
+    "file": "client/src/components/ui/button.tsx",
+    "ticket": "01",
+    "result": "采用上游内容",
+    "initialLocalSha256": "e42cc72d526c1217f813bdbb4f141f11b6633ee7410345fead89c4deb6a24df9",
+    "upstreamTargetSha256": "9e6b3150048756c4f27004a171809c473f6c088cc0324fa5cedd9e615978acef",
+    "currentSha256": "9e6b3150048756c4f27004a171809c473f6c088cc0324fa5cedd9e615978acef"
+  },
+  {
+    "id": "048",
+    "file": "client/src/components/ui/card.tsx",
+    "ticket": "01",
+    "result": "采用上游内容",
+    "initialLocalSha256": "3fce39eeea0c8c0facce5b6b380a9d8c03894be25747748c9a42bbdc0ca6da56",
+    "upstreamTargetSha256": "98f4f8a7e3cb4f3aba618c226a44d924fe98e88ff02bf7a6cdb9900cdf3365e3",
+    "currentSha256": "98f4f8a7e3cb4f3aba618c226a44d924fe98e88ff02bf7a6cdb9900cdf3365e3"
+  },
+  {
+    "id": "049",
+    "file": "client/src/components/ui/confirm-dialog-context.ts",
+    "ticket": "01",
+    "result": "采用上游内容",
+    "initialLocalSha256": null,
+    "upstreamTargetSha256": "589502d489b365106c06ab2dd7762d40b0808c42f9fd03813485c5cbdfffc26d",
+    "currentSha256": "589502d489b365106c06ab2dd7762d40b0808c42f9fd03813485c5cbdfffc26d"
+  },
+  {
+    "id": "050",
+    "file": "client/src/components/ui/confirm-dialog.test.tsx",
+    "ticket": "01",
+    "result": "采用上游内容",
+    "initialLocalSha256": null,
+    "upstreamTargetSha256": "d85d79bd76150f68cd9c6f679526d83e2497ecca2dfee3593d132897c945773c",
+    "currentSha256": "d85d79bd76150f68cd9c6f679526d83e2497ecca2dfee3593d132897c945773c"
+  },
+  {
+    "id": "051",
+    "file": "client/src/components/ui/confirm-dialog.tsx",
+    "ticket": "01",
+    "result": "采用上游内容",
+    "initialLocalSha256": "63de7cd6700e8b514e6bba74bdfe22cba85b9d1e7718da87866c7e4e76d2e8bb",
+    "upstreamTargetSha256": "7681e498c3a4a9e3302e233edb9e98f0ad1a9321cf6f2ee752e17b6587ec7ae3",
+    "currentSha256": "7681e498c3a4a9e3302e233edb9e98f0ad1a9321cf6f2ee752e17b6587ec7ae3"
+  },
+  {
+    "id": "052",
+    "file": "client/src/components/ui/content-transition.tsx",
+    "ticket": "01",
+    "result": "采用上游内容",
+    "initialLocalSha256": null,
+    "upstreamTargetSha256": "87e74a3cddd878c4a5101a766b6ee22c41a7fbb1a28ecf334d3de2189a0a9f10",
+    "currentSha256": "87e74a3cddd878c4a5101a766b6ee22c41a7fbb1a28ecf334d3de2189a0a9f10"
+  },
+  {
+    "id": "053",
+    "file": "client/src/components/ui/dialog.tsx",
+    "ticket": "01",
+    "result": "采用上游内容",
+    "initialLocalSha256": "f41104f1230f24992b1de671ad6e6f256e5a05f0fadc9c8b622b5eca522ba5a9",
+    "upstreamTargetSha256": "13e6e11248d5594370d94ffa2bbcb262541e077df8ae379d5bf6ccc1001b9ca0",
+    "currentSha256": "13e6e11248d5594370d94ffa2bbcb262541e077df8ae379d5bf6ccc1001b9ca0"
+  },
+  {
+    "id": "054",
+    "file": "client/src/components/ui/help-details.tsx",
+    "ticket": "01",
+    "result": "采用上游内容",
+    "initialLocalSha256": null,
+    "upstreamTargetSha256": "17cc8c1ef7c9ac9f8eb5f0f057ec26792dd0376cd41c4b2988666b6f6ac394cd",
+    "currentSha256": "17cc8c1ef7c9ac9f8eb5f0f057ec26792dd0376cd41c4b2988666b6f6ac394cd"
+  },
+  {
+    "id": "055",
+    "file": "client/src/components/ui/input.tsx",
+    "ticket": "01",
+    "result": "采用上游内容",
+    "initialLocalSha256": "c8ac199050b9807197945b7b6a554a4f8c19e788e9a32dbfbd34de1d548fd872",
+    "upstreamTargetSha256": "f72c2c1331a9e5fea3f04a73ed5200383e6188abfbd57db1a82dedb4da6da82e",
+    "currentSha256": "f72c2c1331a9e5fea3f04a73ed5200383e6188abfbd57db1a82dedb4da6da82e"
+  },
+  {
+    "id": "056",
+    "file": "client/src/components/ui/pearl-ui.test.tsx",
+    "ticket": "01",
+    "result": "采用上游内容",
+    "initialLocalSha256": null,
+    "upstreamTargetSha256": "5fdcb608c45e996efabf30481e9e608c4146d07d8cba72333046af8ecc4500a7",
+    "currentSha256": "5fdcb608c45e996efabf30481e9e608c4146d07d8cba72333046af8ecc4500a7"
+  },
+  {
+    "id": "057",
+    "file": "client/src/components/ui/progress.tsx",
+    "ticket": "01",
+    "result": "采用上游内容",
+    "initialLocalSha256": "5ca45d2324d098b58234eef2f5f93231568fea5dfd0d5dcf684233a602731973",
+    "upstreamTargetSha256": "cfd690706c8d2d1e1c818bca8a6e305129299bcad558042c8a141c8e7c20ef8f",
+    "currentSha256": "cfd690706c8d2d1e1c818bca8a6e305129299bcad558042c8a141c8e7c20ef8f"
+  },
+  {
+    "id": "058",
+    "file": "client/src/components/ui/segmented.ts",
+    "ticket": "01",
+    "result": "采用上游内容",
+    "initialLocalSha256": "d3968bb731018a18f21448c5861ec85d3a4ed791d7c4b33b85498d69eace9d31",
+    "upstreamTargetSha256": "f00aa2e22d311cde9706eeafd58c3b2727862e13c1e2fe60a338771c9d699ef2",
+    "currentSha256": "f00aa2e22d311cde9706eeafd58c3b2727862e13c1e2fe60a338771c9d699ef2"
+  },
+  {
+    "id": "059",
+    "file": "client/src/components/ui/select.tsx",
+    "ticket": "01",
+    "result": "采用上游内容",
+    "initialLocalSha256": "a99018ea7ca10437b67c9f64793ccdd69a6d2aff353a7717b52f9825a789ab68",
+    "upstreamTargetSha256": "8ae20632e5919dc09e3106cab10ec4df52ef537245fecd75c30f76d6efc4e488",
+    "currentSha256": "8ae20632e5919dc09e3106cab10ec4df52ef537245fecd75c30f76d6efc4e488"
+  },
+  {
+    "id": "060",
+    "file": "client/src/components/ui/sidebar.tsx",
+    "ticket": "01",
+    "result": "采用上游内容",
+    "initialLocalSha256": "cb09b84964af4aa0f6b92dc4eee859da1bd121dc9a609e0016cd8c0aa82cbdbf",
+    "upstreamTargetSha256": "9a626c05ea686485f3ae33f5edf5339cc39d2a10189979e1ce3399342622e650",
+    "currentSha256": "9a626c05ea686485f3ae33f5edf5339cc39d2a10189979e1ce3399342622e650"
+  },
+  {
+    "id": "061",
+    "file": "client/src/components/ui/skeleton.tsx",
+    "ticket": "01",
+    "result": "采用上游内容",
+    "initialLocalSha256": "f474a86bd81d315325efd548280cbaf8b37d7161dbda48ac9fc925ccbb93a9de",
+    "upstreamTargetSha256": "40cd85e690f3c2845181d7e2044f27eb3f346c535b1b315b1936b5db7aae2ed2",
+    "currentSha256": "40cd85e690f3c2845181d7e2044f27eb3f346c535b1b315b1936b5db7aae2ed2"
+  },
+  {
+    "id": "062",
+    "file": "client/src/components/ui/sliding-tabs.test.tsx",
+    "ticket": "01",
+    "result": "采用上游内容",
+    "initialLocalSha256": "b55cfadcdba5b23de0d33e521f7d6e660adc069dfb6d245821d433653d9f0486",
+    "upstreamTargetSha256": "9e4f7fea1c4810f75b86f9981d185a8541cf7a6b9c886e69dcfe871edf8fd2a5",
+    "currentSha256": "9e4f7fea1c4810f75b86f9981d185a8541cf7a6b9c886e69dcfe871edf8fd2a5"
+  },
+  {
+    "id": "063",
+    "file": "client/src/components/ui/sliding-tabs.tsx",
+    "ticket": "01",
+    "result": "采用上游内容",
+    "initialLocalSha256": "7c842b1cdc9b0b8f45b931fdd5b05c34a86cde4d9c5addbef6b12663ef84f08b",
+    "upstreamTargetSha256": "3b19e2ca84c7b80bb37870b9b590b04ecdc54de5fb58a6c88ad35431fe0d7ab4",
+    "currentSha256": "3b19e2ca84c7b80bb37870b9b590b04ecdc54de5fb58a6c88ad35431fe0d7ab4"
+  },
+  {
+    "id": "064",
+    "file": "client/src/components/ui/sonner.tsx",
+    "ticket": "01",
+    "result": "采用上游内容",
+    "initialLocalSha256": "dcca9769fc624ba10833813631aab626d417be49a6b5cea25d542000b107bd9b",
+    "upstreamTargetSha256": "12d37b25ff87530dcdb8a753e1c62868b621f87269601dc1ed95d8a547c0b62c",
+    "currentSha256": "12d37b25ff87530dcdb8a753e1c62868b621f87269601dc1ed95d8a547c0b62c"
+  },
+  {
+    "id": "065",
+    "file": "client/src/components/ui/switch.tsx",
+    "ticket": "01",
+    "result": "采用上游内容",
+    "initialLocalSha256": "7a73aecf5c96822d0ad3964e16271b3d2709aa8b7b02f2e32ea6dc6d6a486b11",
+    "upstreamTargetSha256": "de3f7c9997f79c97229c8f89eb943c8270ae9291f4b8cbac5be4d02b9de65bd8",
+    "currentSha256": "de3f7c9997f79c97229c8f89eb943c8270ae9291f4b8cbac5be4d02b9de65bd8"
+  },
+  {
+    "id": "066",
+    "file": "client/src/components/ui/table.tsx",
+    "ticket": "01",
+    "result": "采用上游内容",
+    "initialLocalSha256": "ec6cb1f2e695280fc89b74642f8cbbbc42ea1bcfd7e3030eaad8d60f0e4a36de",
+    "upstreamTargetSha256": "280cb637106c077ded8bcd121e5c19131a344a40a06ef34fe5ce4fa09ce9ed89",
+    "currentSha256": "280cb637106c077ded8bcd121e5c19131a344a40a06ef34fe5ce4fa09ce9ed89"
+  },
+  {
+    "id": "067",
+    "file": "client/src/components/ui/tabs.tsx",
+    "ticket": "01",
+    "result": "采用上游内容",
+    "initialLocalSha256": "c2f869b9ea7c531b8f142dc1c1a4b23bbf48b741546449bde9a53e9de9994953",
+    "upstreamTargetSha256": "6e86219b481b12c45f9c3b34a567266b22d03b6a0f9b21e977e6fad148812663",
+    "currentSha256": "6e86219b481b12c45f9c3b34a567266b22d03b6a0f9b21e977e6fad148812663"
+  },
+  {
+    "id": "068",
+    "file": "client/src/components/ui/textarea.tsx",
+    "ticket": "01",
+    "result": "采用上游内容",
+    "initialLocalSha256": "12f6a31ab8b6ba6ca746f8f78075428a00fca3de6dfa2033bb35cbea71ae2da2",
+    "upstreamTargetSha256": "731449d82809296b9d95954dd8392133dd1ca448214e4be782602c60ce29c77d",
+    "currentSha256": "731449d82809296b9d95954dd8392133dd1ca448214e4be782602c60ce29c77d"
+  },
+  {
+    "id": "069",
+    "file": "client/src/components/ui/tooltip.tsx",
+    "ticket": "01",
+    "result": "采用上游内容",
+    "initialLocalSha256": "36c97750cdfc63585adc735b2d311febb40fe724868c939d16f8bcad97d7c65f",
+    "upstreamTargetSha256": "e1d74923cf9de9fd3e69a459f3a9733673e340158ad1182e6e091ff0e2771ec3",
+    "currentSha256": "e1d74923cf9de9fd3e69a459f3a9733673e340158ad1182e6e091ff0e2771ec3"
+  },
+  {
+    "id": "070",
+    "file": "client/src/components/ui/ui-copy.test.tsx",
+    "ticket": "01",
+    "result": "采用上游内容",
+    "initialLocalSha256": null,
+    "upstreamTargetSha256": "84b75b590ea38610c71416fdd7259bd5ea6e4a1c5a7dbd02f80d4bb25ca72c03",
+    "currentSha256": "84b75b590ea38610c71416fdd7259bd5ea6e4a1c5a7dbd02f80d4bb25ca72c03"
+  },
+  {
+    "id": "071",
+    "file": "client/src/i18n/en.json",
+    "ticket": "01",
+    "result": "合并兼容本地内容",
+    "initialLocalSha256": "fc7fe17d241be7b793f1fb3bb5137a9be4a60b5513bccf897218542f3ef1b7fa",
+    "upstreamTargetSha256": "5e7fa6868032a5f494affae4a30a5054fca2502a489538ff84289b5e987139df",
+    "currentSha256": "fe5c55e1465c6f5be462c2d1fed0e2e7aa5719cc39450ec933a8c915577547f2"
+  },
+  {
+    "id": "072",
+    "file": "client/src/i18n/ui-coverage.test.tsx",
+    "ticket": "01",
+    "result": "采用上游内容",
+    "initialLocalSha256": null,
+    "upstreamTargetSha256": "5249f56c76b7949d147369c13f6adb7825e8bb4a2f29a6752e72ccade27b92e4",
+    "currentSha256": "5249f56c76b7949d147369c13f6adb7825e8bb4a2f29a6752e72ccade27b92e4"
+  },
+  {
+    "id": "073",
+    "file": "client/src/index.css",
+    "ticket": "01",
+    "result": "合并兼容本地内容",
+    "initialLocalSha256": "2d932ab532482d5da10836e798525209ef7f06d0e1ed9bb29ee8d3108c5abc67",
+    "upstreamTargetSha256": "76e3fa7889484871e1621c8a12565b4ac42479d7c50973802b2013a27218a57e",
+    "currentSha256": "f2a3dfd78838d0b1a05b580fb461e242540124efb63dbaefabda19882c71947f"
+  },
+  {
+    "id": "074",
+    "file": "client/src/lib/batchOperations.ts",
+    "ticket": "01",
+    "result": "本地已有等价翻译，保留现有功能",
+    "initialLocalSha256": "1a8e636538c31db8efec43a64a42cbe642700b0d8d798bffd90bb6d60cbb4ccf",
+    "upstreamTargetSha256": "99019871dc84b1d8832cbc5ed4ea3d5e70365f4b14cb4971b35934683ce93881",
+    "currentSha256": "1a8e636538c31db8efec43a64a42cbe642700b0d8d798bffd90bb6d60cbb4ccf"
+  },
+  {
+    "id": "075",
+    "file": "client/src/lib/linkAvailability.ts",
+    "ticket": "01",
+    "result": "本地已有等价翻译，保留现有功能",
+    "initialLocalSha256": "b0f16034500d6becc3de746c16583cc56e01c9350faa0a475b172597124f0970",
+    "upstreamTargetSha256": "614b8f6b75874df4072ae01673efbdd44baef33d9ac0ff1690bc83c0cadc51a7",
+    "currentSha256": "b0f16034500d6becc3de746c16583cc56e01c9350faa0a475b172597124f0970"
+  },
+  {
+    "id": "076",
+    "file": "client/src/lib/mobileAppUpdate.test.ts",
+    "ticket": "10",
+    "result": "按长期约定排除，维持本地现状",
+    "initialLocalSha256": null,
+    "upstreamTargetSha256": "83c0a575fa71a77910932dac0739be1a150ea37dfe2cf81aebaf6f999d9b5f65",
+    "currentSha256": null
+  },
+  {
+    "id": "077",
+    "file": "client/src/lib/mobileNotifications.ts",
+    "ticket": "10",
+    "result": "按长期约定排除，维持本地现状",
+    "initialLocalSha256": "9cdd388744c1fedbf02a865d67a934baaa36625079f0f5f2ad28f77ae4a7a8c1",
+    "upstreamTargetSha256": "a81625b2dd06785b8bf76379d8017a57ef91b3f1acc28d81e3e5d0a3279f4f9a",
+    "currentSha256": "9cdd388744c1fedbf02a865d67a934baaa36625079f0f5f2ad28f77ae4a7a8c1"
+  },
+  {
+    "id": "078",
+    "file": "client/src/lib/planDisplay.ts",
+    "ticket": "08",
+    "result": "采用上游内容",
+    "initialLocalSha256": "08bca0cad0451822f1383e6b93e627eeee215c7c48f4eff29a7345c3f94c399d",
+    "upstreamTargetSha256": "eb561bfadf2d38cac6b903791b28f81f746d3d89bb3f8356728fe6eb79a5c776",
+    "currentSha256": "eb561bfadf2d38cac6b903791b28f81f746d3d89bb3f8356728fe6eb79a5c776"
+  },
+  {
+    "id": "079",
+    "file": "client/src/lib/publicMonitor.ts",
+    "ticket": "01",
+    "result": "本地已有等价翻译，保留现有功能",
+    "initialLocalSha256": "8115e49cfc145b79bd04dd7b8b3c129ea24eaa723531e1539e5fba73b326362d",
+    "upstreamTargetSha256": "8115e49cfc145b79bd04dd7b8b3c129ea24eaa723531e1539e5fba73b326362d",
+    "currentSha256": "8115e49cfc145b79bd04dd7b8b3c129ea24eaa723531e1539e5fba73b326362d"
+  },
+  {
+    "id": "080",
+    "file": "client/src/main.tsx",
+    "ticket": "01",
+    "result": "合并兼容本地内容",
+    "initialLocalSha256": "f0768d08e42ceece140df0e9f2703cb3140c1128af6db0b437131e46824ec56b",
+    "upstreamTargetSha256": "7540b3e1dd51796de55f5616e7e74fbbe47dd0697fd6557faf495d556c5eb5b5",
+    "currentSha256": "b764a1a9363d08aac550d91d4646cc5ad00de6551f9c187c728f9f35ec58cfa0"
+  },
+  {
+    "id": "081",
+    "file": "client/src/pages/Announcements.tsx",
+    "ticket": "01",
+    "result": "采用上游内容",
+    "initialLocalSha256": "3b5d6bf82854938f79083023e9c58cfd3ee1f49f6dffe4f0c2b6bf74532ab85a",
+    "upstreamTargetSha256": "346e8fcf41f885c0d532d8649715266ac746f57f45b7e4d93e16eac1798b8129",
+    "currentSha256": "346e8fcf41f885c0d532d8649715266ac746f57f45b7e4d93e16eac1798b8129"
+  },
+  {
+    "id": "082",
+    "file": "client/src/pages/Billing.tsx",
+    "ticket": "01",
+    "result": "采用上游内容",
+    "initialLocalSha256": "c224299403010259a7e022959dbac98b6855561a535ab3f60b6308616a2677c5",
+    "upstreamTargetSha256": "666b115238e57b9342963836f3e78c30df67aad80821c7efca87724c6218ad2f",
+    "currentSha256": "666b115238e57b9342963836f3e78c30df67aad80821c7efca87724c6218ad2f"
+  },
+  {
+    "id": "083",
+    "file": "client/src/pages/EmailSettings.tsx",
+    "ticket": "01",
+    "result": "采用上游内容",
+    "initialLocalSha256": "9a3bcd509936423e3803f65d3b7a4295a1013d1272c528ba900d21ed0d19065e",
+    "upstreamTargetSha256": "44062769f9c2092066c872477a57bb973b14392f2e1045a38df96ce87452216c",
+    "currentSha256": "44062769f9c2092066c872477a57bb973b14392f2e1045a38df96ce87452216c"
+  },
+  {
+    "id": "084",
+    "file": "client/src/pages/ForwardGroups.tsx",
+    "ticket": "01",
+    "result": "合并兼容本地内容",
+    "initialLocalSha256": "48536c06a3fb3cc6cc3629eccc9ca8176cd83270464239293d2a8ea67c0e5100",
+    "upstreamTargetSha256": "ddd1b5ffaaa852d3a7a748f45f9673078a6fbb17c0f5855b090bbc770ba3c31a",
+    "currentSha256": "aaf966f36cfb69c6a0f86b97b95341d111b30248a7e33a31001204a5aabc53be"
+  },
+  {
+    "id": "085",
+    "file": "client/src/pages/Home.tsx",
+    "ticket": "01",
+    "result": "采用上游内容",
+    "initialLocalSha256": "aadd6e39f73474bc60353a674d99942517587afde0f6043451433ace56b0e5b4",
+    "upstreamTargetSha256": "c65d208e01de17a57d9e2fdaa6d791e675db3311b2f4d725ea683546a3d0da67",
+    "currentSha256": "c65d208e01de17a57d9e2fdaa6d791e675db3311b2f4d725ea683546a3d0da67"
+  },
+  {
+    "id": "086",
+    "file": "client/src/pages/HomepagePreview.tsx",
+    "ticket": "01",
+    "result": "采用上游内容",
+    "initialLocalSha256": "c2aa789131fbaeeb7f0c1300b69e57d2a7e67dfbeaad0ee56a0c74a89cb0ab9f",
+    "upstreamTargetSha256": "e8982894dd36bef6966de9da36179d1e75a943e625845fe83f25f88f5ed43d0c",
+    "currentSha256": "e8982894dd36bef6966de9da36179d1e75a943e625845fe83f25f88f5ed43d0c"
+  },
+  {
+    "id": "087",
+    "file": "client/src/pages/Hosts.tsx",
+    "ticket": "03",
+    "result": "合并兼容本地内容",
+    "initialLocalSha256": "1836ef0a08e12c7f94bfc31790462848359bb54767ed5408c06bfa26f1c83c40",
+    "upstreamTargetSha256": "4c82785f77a0bc152a30ceeb2d9fb38c396da59e92350a4a1fc731853f6875e0",
+    "currentSha256": "d97017b837aa4d781ccf8b97fd8a710697f441a725e94df77214e9c4bbca6e2a"
+  },
+  {
+    "id": "088",
+    "file": "client/src/pages/Login.tsx",
+    "ticket": "01",
+    "result": "合并兼容本地内容",
+    "initialLocalSha256": "a1e17fc6f826cf74ac2be27fb4386f731478fbdc13d565ed8a8595a0e876f953",
+    "upstreamTargetSha256": "1f578886db7e251ac6c0efe5632f4f97b3ec91e6f2fbb698e7a099c41382c301",
+    "currentSha256": "e5c21ad79d7e13bc58d63209a38c27e3c60ad10e13d4acb1f356874f2f5cf341"
+  },
+  {
+    "id": "089",
+    "file": "client/src/pages/LookingGlass.tsx",
+    "ticket": "01",
+    "result": "采用上游内容",
+    "initialLocalSha256": "c12e0e2d366f1e7a3d724079f5551f60bb8c89eef2f2e1d60cb68f5cd8dc4884",
+    "upstreamTargetSha256": "0b2713661192ea6da856bd3c3531f99611e2485680cb0b6746e699c405f75d8c",
+    "currentSha256": "0b2713661192ea6da856bd3c3531f99611e2485680cb0b6746e699c405f75d8c"
+  },
+  {
+    "id": "090",
+    "file": "client/src/pages/Payments.tsx",
+    "ticket": "01",
+    "result": "合并兼容本地内容",
+    "initialLocalSha256": "dbbed1d16fbfdb8cb3c198623112dca8b3b0108ab143c4b45327429386ab59b5",
+    "upstreamTargetSha256": "b5dfe502ea126a684fdba5c6471cf0961ff57d76b340399ebe64a0f238db57be",
+    "currentSha256": "b3511fb47aa09c9249aa1c3f7d2aabd30bc8c4e30381047aa0b6b1d5641cd2df"
+  },
+  {
+    "id": "091",
+    "file": "client/src/pages/Plans.tsx",
+    "ticket": "08",
+    "result": "合并兼容本地内容",
+    "initialLocalSha256": "4b1130a577b7d2f934f726ed5e7da0ba7a1c5d4b828470717ccff99a4b9d3072",
+    "upstreamTargetSha256": "0d2300d16bcf09843b4e45068611ff27e10b8577006740587609f2e4786f0a85",
+    "currentSha256": "965f5c53c877de2853ea30e297b005f66f7c550f12ae0e99447a888185fd29ba"
+  },
+  {
+    "id": "092",
+    "file": "client/src/pages/Plugins.tsx",
+    "ticket": "01",
+    "result": "合并兼容本地内容",
+    "initialLocalSha256": "e9d1cc75aa74968e5e83d032ce6b6bb10bb0f860f7aae821a91525df6d76c626",
+    "upstreamTargetSha256": "2205f90ef6e8cc3d0932bd7125a487d4b6b8b177282010ec9f7df4874496732a",
+    "currentSha256": "a658bde819aaa24a96b498e9019f7d8c1538e88764711a58cf34652822666be1"
+  },
+  {
+    "id": "093",
+    "file": "client/src/pages/Profile.tsx",
+    "ticket": "01",
+    "result": "合并兼容本地内容",
+    "initialLocalSha256": "e01c447f59b85670cda57689839e590a0224f03b5d4fcf19d938774f5bb747ef",
+    "upstreamTargetSha256": "54e7f19633da09c3a00d66c523fa3a1b4484837405446c0456ce9c57fd2d4851",
+    "currentSha256": "14433569a04f95c7985ff29341a20435ade1213b32ca5813c20700457041246d"
+  },
+  {
+    "id": "094",
+    "file": "client/src/pages/Rules.tsx",
+    "ticket": "02",
+    "result": "合并兼容本地内容",
+    "initialLocalSha256": "24f1717407a4373b7d8a27943d445d77e6e81d634d6f2642cbdb4ce04f2f6fe3",
+    "upstreamTargetSha256": "e94f3d100ce7ae190c785e05381d57dfbaf19967c61a6bbd36f1848c687712c3",
+    "currentSha256": "06d733db94fab86b7c17dcf620a045c16e7e985e3ca794649add58c0116b3beb"
+  },
+  {
+    "id": "095",
+    "file": "client/src/pages/Settings.tsx",
+    "ticket": "01",
+    "result": "合并兼容本地内容",
+    "initialLocalSha256": "9845661ac5b9057c9bfd335e24bb76d99b2667248ffb8d8ae11b21592790d88e",
+    "upstreamTargetSha256": "1ceb792ef43e98f6d7cf6e8a9b73ae8044234fe14a7dc41df759347797beb960",
+    "currentSha256": "354b3088bfc8b14538a20c21b9375a4d280558c191840a850cb2271d0aaa3678"
+  },
+  {
+    "id": "096",
+    "file": "client/src/pages/Setup.tsx",
+    "ticket": "01",
+    "result": "采用上游内容",
+    "initialLocalSha256": "3e9ef924862a3d1b1dfbd11779041521725d467ea970fd0f7984026c62a23dde",
+    "upstreamTargetSha256": "3968e5c3d2e1ffcac3eae193feccfc44af5c74b9357ad40bfbf90044b0d3b5fa",
+    "currentSha256": "3968e5c3d2e1ffcac3eae193feccfc44af5c74b9357ad40bfbf90044b0d3b5fa"
+  },
+  {
+    "id": "097",
+    "file": "client/src/pages/Store.tsx",
+    "ticket": "08",
+    "result": "合并兼容本地内容",
+    "initialLocalSha256": "12a54fecbcf0bd7b25371cd9027b929cfb9a368bd608732542acc10479a33328",
+    "upstreamTargetSha256": "9e22cf371bcb5e8c11b34b9947019a31dc31b5d3aa629feb34b38c198bf320ad",
+    "currentSha256": "8ec758eefa672b652855ea0e50fab36e1b09cf0be42bdee16917d0a911a33885"
+  },
+  {
+    "id": "098",
+    "file": "client/src/pages/Subscriptions.tsx",
+    "ticket": "01",
+    "result": "采用上游内容",
+    "initialLocalSha256": "52b8d13ec848a8108db91a6322a6c44f7b5cf1bd616df114554a565dc2171a9c",
+    "upstreamTargetSha256": "a57d757b7b19e2c9c84cc32305d12295e072b22b72432759be7bdfc3e036df73",
+    "currentSha256": "a57d757b7b19e2c9c84cc32305d12295e072b22b72432759be7bdfc3e036df73"
+  },
+  {
+    "id": "099",
+    "file": "client/src/pages/Tunnels.tsx",
+    "ticket": "01",
+    "result": "合并兼容本地内容",
+    "initialLocalSha256": "9477a41329306e3f59e250d2a463aa7f965f2bc3400afbc741b2e4303af789dd",
+    "upstreamTargetSha256": "2bd574c7b67d3ecc1841307a71dfeaf04c5a045e2b384cecb84261249cc31b4a",
+    "currentSha256": "00635a51e421b7432c9a94819d3181f1470764f427eda5bedcbafacdc39f9085"
+  },
+  {
+    "id": "100",
+    "file": "client/src/pages/Users.tsx",
+    "ticket": "01",
+    "result": "合并兼容本地内容",
+    "initialLocalSha256": "c6f395397732651edefa04ccd519c6435900642f482aba76ad22f832ab086597",
+    "upstreamTargetSha256": "316aea3271f3b1fd478396ec1d623cd5d443067435b0b44b5d5b1513142c9345",
+    "currentSha256": "65f7fa5ee74144b318a20f4668bfff906179940a39a3f4d70ea20a33f5261626"
+  },
+  {
+    "id": "101",
+    "file": "client/src/pages/Wallet.tsx",
+    "ticket": "01",
+    "result": "采用上游内容",
+    "initialLocalSha256": "44aa5797d2b093ad5eb3d07f1399111c0e1cf976464df9f8a0c574c463cf67eb",
+    "upstreamTargetSha256": "2864d690a496b0162c500c26a323b91000ca2aa54f1d47c7aa505e2f8ca28adc",
+    "currentSha256": "2864d690a496b0162c500c26a323b91000ca2aa54f1d47c7aa505e2f8ca28adc"
+  },
+  {
+    "id": "102",
+    "file": "client/src/styles/README.md",
+    "ticket": "01",
+    "result": "采用上游内容",
+    "initialLocalSha256": null,
+    "upstreamTargetSha256": "7bdcd409a2bf8aa2c5dc60e4b0fcb5aedb952b14dae377dd2fbcff6abdd7efc3",
+    "currentSha256": "7bdcd409a2bf8aa2c5dc60e4b0fcb5aedb952b14dae377dd2fbcff6abdd7efc3"
+  },
+  {
+    "id": "103",
+    "file": "client/src/styles/pearl.css",
+    "ticket": "01",
+    "result": "采用上游内容",
+    "initialLocalSha256": null,
+    "upstreamTargetSha256": "409fcc417e829efd0c3f84b0102c75b6cb56e772f2ef53381f560357cf842abb",
+    "currentSha256": "409fcc417e829efd0c3f84b0102c75b6cb56e772f2ef53381f560357cf842abb"
+  },
+  {
+    "id": "104",
+    "file": "docs/.vitepress/config.mts",
+    "ticket": "09",
+    "result": "合并兼容本地内容",
+    "initialLocalSha256": "821bad68e465f8f72563a9b8bec9f31c7f7da8d73f1399f18643f8e161d0efd9",
+    "upstreamTargetSha256": "cbca7dc1bdaba33e1c8308e1ba8e0a1cf21d8c8ad8e84d3ea4753a4eac2b902b",
+    "currentSha256": "470b78722232ba84987523b66c0485ae0c8fd57e3d6a19f58d9598dd9c5c073c"
+  },
+  {
+    "id": "105",
+    "file": "docs/guide/hosts.md",
+    "ticket": "09",
+    "result": "合并兼容本地内容",
+    "initialLocalSha256": "e5394e9c9d12b0a981df6f3351ce611ec5c3e3e969a7cd4c62d927d228e3f239",
+    "upstreamTargetSha256": "fe5bb592e1a7bb160312badbdabfb63f33617d97345b61dc0560bb2cdd51185c",
+    "currentSha256": "869a79d7d71297b73bafdf9c1e6fe237cbc451b48ecbffa1b34b56f04c434844"
+  },
+  {
+    "id": "106",
+    "file": "docs/guide/index.md",
+    "ticket": "09",
+    "result": "合并兼容本地内容",
+    "initialLocalSha256": "3635bd3bc520e54e84b64711290966f4d3f0744648f3708186a6440f93f6077a",
+    "upstreamTargetSha256": "25e29d5f9ea67d07b484322f0bea654316031616e426d7568333a0ff77fa8bc7",
+    "currentSha256": "ec3512f4c5dbab5a569578dd9705b39d13ecac4747760f9567354cccdeab39c4"
+  },
+  {
+    "id": "107",
+    "file": "docs/guide/interface.md",
+    "ticket": "09",
+    "result": "合并兼容本地内容",
+    "initialLocalSha256": null,
+    "upstreamTargetSha256": "efa9078489c094f3982c2d8b29bc10b6a7d6284519e16eae18a3103b48112d19",
+    "currentSha256": "fde979e3c0531d49e6a5b9a07435ecf64c62588b055df11c22e2a4bfa5c3ea39"
+  },
+  {
+    "id": "108",
+    "file": "docs/guide/mobile-app.md",
+    "ticket": "10",
+    "result": "按长期约定排除，维持本地现状",
+    "initialLocalSha256": null,
+    "upstreamTargetSha256": "c40f392a65fe432efbd1383b8457517e386691e74d6c1522d309578a89ec2d51",
+    "currentSha256": null
+  },
+  {
+    "id": "109",
+    "file": "docs/guide/releases.md",
+    "ticket": "09",
+    "result": "合并兼容本地内容",
+    "initialLocalSha256": null,
+    "upstreamTargetSha256": "c480b362b0bfbda820e5c1770319a623abbe44648cd28d6ec3a49226ea8acd5c",
+    "currentSha256": "c3336fd6431ef2a72e884fc14e3edee8386732dd66ea17d8a218fea9f27d5c2d"
+  },
+  {
+    "id": "110",
+    "file": "docs/guide/rules.md",
+    "ticket": "09",
+    "result": "合并兼容本地内容",
+    "initialLocalSha256": "a15f377c531cfd786f23be93204baf49f84f8325becf809b7ff787ef58c688bf",
+    "upstreamTargetSha256": "49056cf99f3472becb93e5bf5d71e599307655571df9df20abe8bd8bb227034d",
+    "currentSha256": "761bdddadd8f162d708dd96e4643fd800818f6ec8ca33c117f3671c6a699ca69"
+  },
+  {
+    "id": "111",
+    "file": "docs/guide/traffic-latency.md",
+    "ticket": "09",
+    "result": "合并兼容本地内容",
+    "initialLocalSha256": "1e306944a624600bb616fb1983d3b547b12989b07a3663e5f526a8030b8062f0",
+    "upstreamTargetSha256": "5f370d35a9829c79c1e70577b52b0663db55544878e81af3b775475ea8fa3df0",
+    "currentSha256": "50361d0d1c8929db5c703020855ce7dc14a539c82ab062c9b9c46276e616e10f"
+  },
+  {
+    "id": "112",
+    "file": "docs/guide/ui-review.md",
+    "ticket": "09",
+    "result": "合并兼容本地内容",
+    "initialLocalSha256": null,
+    "upstreamTargetSha256": "f3e36906ccfe131d5680ff86fe7f197d0791b2c8ae86e3dec44a9a97338a8794",
+    "currentSha256": "669973619a32c05469122ce99772afb0521cfd00569a48487f4ebe90bafca750"
+  },
+  {
+    "id": "113",
+    "file": "docs/guide/users-billing.md",
+    "ticket": "09",
+    "result": "合并兼容本地内容",
+    "initialLocalSha256": "a3a9000779fa58680bf3503fccbe9325f9c3aeb38e5797bb475f147ff9d931ec",
+    "upstreamTargetSha256": "b5f08c4006322c9e0916ed335041fce16750ffa56863755d76d19418a4daa167",
+    "currentSha256": "0ab92976ee9eab0707934889a1da307632cabcbf029b1a80e07edf5c0dd6c79a"
+  },
+  {
+    "id": "114",
+    "file": "docs/index.md",
+    "ticket": "09",
+    "result": "合并兼容本地内容",
+    "initialLocalSha256": "e9e6d5f53f91eafb3dc5c5397890690056ab0e62f2c49a81da51c694dff0e97c",
+    "upstreamTargetSha256": "1217f6bfb64d8553bfa2b245aeec86e5baaa3493bbac9852793c0241c761fc7a",
+    "currentSha256": "c3293f769c20bc985247bb2df9c7b5538cc2aaae99e82cda49a441469d798ff8"
+  },
+  {
+    "id": "115",
+    "file": "forwardx-fxp/additive_control.go",
+    "ticket": "06",
+    "result": "合并兼容本地内容",
+    "initialLocalSha256": null,
+    "upstreamTargetSha256": "a4d27a0ad78577381885e0ec29304394b3fcb3c627a9533cc558c5469e045177",
+    "currentSha256": "5367768786a1bff42f55639c2418cabad75251ab29047c3d588458ce4f237149"
+  },
+  {
+    "id": "116",
+    "file": "forwardx-fxp/additive_control_test.go",
+    "ticket": "06",
+    "result": "采用上游内容",
+    "initialLocalSha256": null,
+    "upstreamTargetSha256": "7eb94a6261ef0af5c250b6f5593da45e3c25c597b5b7abfb70911e9daee163dc",
+    "currentSha256": "7eb94a6261ef0af5c250b6f5593da45e3c25c597b5b7abfb70911e9daee163dc"
+  },
+  {
+    "id": "117",
+    "file": "forwardx-fxp/config.go",
+    "ticket": "06",
+    "result": "合并兼容本地内容",
+    "initialLocalSha256": "a1b877cc0341d3cae3d02c49c84da1fd345a9418a2bac813129219ae512f18a1",
+    "upstreamTargetSha256": "76ff9a9935dc95a2a1a21953952a2b30111270cdf8fc4e19ee39f889e0e6c112",
+    "currentSha256": "13b74ed7467479cdf3494364f1e8e1163e29f3ded0ecd0c8f81944f888ef6560"
+  },
+  {
+    "id": "118",
+    "file": "forwardx-fxp/config_types.go",
+    "ticket": "06",
+    "result": "合并兼容本地内容",
+    "initialLocalSha256": "a9f251e52b406dde5125a29e8537113b6e12dbb715e1520bbc6132b5ec833e66",
+    "upstreamTargetSha256": "57e88d83d4833691396c2f6cd1451673323e391fe0424c73e973d2c11f9b338e",
+    "currentSha256": "35a1462857db2d01f2a8b1b7611cc0805a7702d41bdcf7b0bf111331bac46c0c"
+  },
+  {
+    "id": "119",
+    "file": "forwardx-fxp/main.go",
+    "ticket": "06",
+    "result": "合并兼容本地内容",
+    "initialLocalSha256": "5b102b30b9f5fee0e23088dbe767af7f1b8ad5b1cdba30970b5e84240e5e656d",
+    "upstreamTargetSha256": "ef33150d4c9d6cecab9474b591e7aebd8c363b81d046dcdfdf3235302e2634f5",
+    "currentSha256": "61ee84def9687cc898d675be95f0baf1121a9e33448f2432b83efe802b8bec1f"
+  },
+  {
+    "id": "120",
+    "file": "forwardx-fxp/udp_direct.go",
+    "ticket": "06",
+    "result": "采用上游内容",
+    "initialLocalSha256": "3315b15f6794631ad4868f18ef3a52d696d69e5f3b989fee086550a5bc15a26d",
+    "upstreamTargetSha256": "e5f6b6386d128a52caca6ce2b3fd02f5da102558077993266f9e96b1b5b75ae4",
+    "currentSha256": "e5f6b6386d128a52caca6ce2b3fd02f5da102558077993266f9e96b1b5b75ae4"
+  },
+  {
+    "id": "121",
+    "file": "ios/App/App.xcodeproj/project.pbxproj",
+    "ticket": "10",
+    "result": "按长期约定排除，维持本地现状",
+    "initialLocalSha256": null,
+    "upstreamTargetSha256": "83272ca20687d280557e6a94a2a557e14a17484b2a4a5b53284e0c8da3d382d9",
+    "currentSha256": null
+  },
+  {
+    "id": "122",
+    "file": "package.json",
+    "ticket": "10",
+    "result": "合并兼容本地内容",
+    "initialLocalSha256": "e2fe6ee3b8a01c4801e395d17489970460f570f68010bec76bd2cbe4573798ab",
+    "upstreamTargetSha256": "3f0ebb8cb4cdfc6bcf6b7f3c4df1da75785bc70214a2e3abc2981032a57f10c6",
+    "currentSha256": "a813b6d2eae338644056d44487bf1a7b783352ceae5951d050011c75b5db4870"
+  },
+  {
+    "id": "123",
+    "file": "scripts/check-versions.mjs",
+    "ticket": "10",
+    "result": "按长期约定排除，维持本地现状",
+    "initialLocalSha256": "daec05996b653ab1fe8c81e9093de04c43ce9180b041c78667e7ad5212102c2c",
+    "upstreamTargetSha256": "b8fcdea29185acd4be0dda07c5a38ca7bb9fb522d90012dc0083d8bd4efa5e89",
+    "currentSha256": "daec05996b653ab1fe8c81e9093de04c43ce9180b041c78667e7ad5212102c2c"
+  },
+  {
+    "id": "124",
+    "file": "scripts/ios-build.test.mjs",
+    "ticket": "10",
+    "result": "按长期约定排除，维持本地现状",
+    "initialLocalSha256": null,
+    "upstreamTargetSha256": "67c30d2ac8d8a9f426099a5846ad1ab6f969454e19ff8eba0e8eeb88fe8d384e",
+    "currentSha256": null
+  },
+  {
+    "id": "125",
+    "file": "server/agentHeartbeatRoute.ts",
+    "ticket": "04",
+    "result": "合并兼容本地内容",
+    "initialLocalSha256": "c0c32c6d6c44a202d5ead7ddad328255f37c43047eae9b65c073995ecbeb5bad",
+    "upstreamTargetSha256": "0dc37ccd213213807bea7f5bbbedee793e770afc676d9499d7f331ae8c137375",
+    "currentSha256": "e11ab144773f4518d7858c72bad7aaf4bb2db9e3c9f826173de83aed40a3faa1"
+  },
+  {
+    "id": "126",
+    "file": "server/agentInstallScripts.test.ts",
+    "ticket": "04",
+    "result": "合并兼容本地内容",
+    "initialLocalSha256": "20ebf55e35044b6ef1fe83dc7679be4da30d66d7ae600a75366659a168c9fd43",
+    "upstreamTargetSha256": "d6be094fbb71045bb96ef3a90f83acae3ac3cfb9ec34067dd1b80fb7b497de0e",
+    "currentSha256": "7ffa3321b03e56ff4df01a997fce8f4ac77aefb8155774716e50114a9f044ddf"
+  },
+  {
+    "id": "127",
+    "file": "server/agentInstallScripts.ts",
+    "ticket": "04",
+    "result": "合并兼容本地内容",
+    "initialLocalSha256": "424328ac5c34527b9eba560adc533a1ece745a986bcce6f05c67298d0f9aa4a2",
+    "upstreamTargetSha256": "5398bd24346ff7c2c2e97dfa71005117debdf29a7214d79af79091b70d1afaa5",
+    "currentSha256": "ec72d4dacf4107a5fcfde1a00edd20382a058c43c407f0e94e663302beabad0d"
+  },
+  {
+    "id": "128",
+    "file": "server/forwardRuleErrorNotifier.test.ts",
+    "ticket": "07",
+    "result": "合并兼容本地内容",
+    "initialLocalSha256": "f62c9075e3ac2add215a2cf9462578dcbd22d7ab4f448d37e47cfc03d375edee",
+    "upstreamTargetSha256": "d1050ad72cf757e7177cc7bfe566a264d38764f27bee3c1cfe495964e52be781",
+    "currentSha256": "d245c253ab60ca8c59e2c256fa157475eb72e2be883bbc7f82f291712d4e8411"
+  },
+  {
+    "id": "129",
+    "file": "server/forwardRuleErrorNotifier.ts",
+    "ticket": "07",
+    "result": "合并兼容本地内容",
+    "initialLocalSha256": "26ee5048def37f901088daf8ed7af35b1b0b5d6e2fda52747c482d9bd8658596",
+    "upstreamTargetSha256": "50045dd01f749c797de1cb0f0d310c51e4796651e3f74c7e697024b38737cc17",
+    "currentSha256": "12a442d537cdb7fa7d256a1e2a0b7a06321b7e2b53d4459289de616bd43ac99c"
+  },
+  {
+    "id": "130",
+    "file": "server/hostDeletion.test.ts",
+    "ticket": "03",
+    "result": "合并兼容本地内容",
+    "initialLocalSha256": null,
+    "upstreamTargetSha256": "6c3479afa208784276d8fa5e1f9119e7ee01dfcf8e790145ae1612d7ebfc7c6e",
+    "currentSha256": "1044d4cd8c6e9bb365bf1a4b2ece1ec41f948033b9b7d0194bee43016410ef37"
+  },
+  {
+    "id": "131",
+    "file": "server/hostDeletion.ts",
+    "ticket": "03",
+    "result": "合并兼容本地内容",
+    "initialLocalSha256": null,
+    "upstreamTargetSha256": "6961af3e296b8d2680279f8bfcd3c712e753a0c5a1cc063c35275462d7378bd3",
+    "currentSha256": "cdae5f76ab02260c3a9d93730cf82cc5e7cb82be0a5e8ee5b585df2b4e5bf5d4"
+  },
+  {
+    "id": "132",
+    "file": "server/paginationQueries.test.ts",
+    "ticket": "02",
+    "result": "合并兼容本地内容",
+    "initialLocalSha256": "141d53391cf91132f0968164bce0bbb08324eab6720f6b61437e693f53cf1bbb",
+    "upstreamTargetSha256": "cafb455e9c34add6628aa6b16fd00a2f0ed867b764e348f8dc5b0208639e503e",
+    "currentSha256": "e80834176ff75f5aec35df63805afbf3b475a3d4526e078231cc047f38c05ca7"
+  },
+  {
+    "id": "133",
+    "file": "server/portAccessLimitRefresh.test.ts",
+    "ticket": "04",
+    "result": "采用上游内容",
+    "initialLocalSha256": null,
+    "upstreamTargetSha256": "2604dac457224a0be551a147b560b194350999b7dd454c4c68f3e4ab9dcaafab",
+    "currentSha256": "2604dac457224a0be551a147b560b194350999b7dd454c4c68f3e4ab9dcaafab"
+  },
+  {
+    "id": "134",
+    "file": "server/portAccessLimits.test.ts",
+    "ticket": "04",
+    "result": "合并兼容本地内容",
+    "initialLocalSha256": null,
+    "upstreamTargetSha256": "f94ec8a577f0c37ed6480f65814481bec270721f6a9f28963e55e1751c361ba9",
+    "currentSha256": "cbe3a1e4333a3d461f04101388e9583bc9de30165badd95fff0d83eac972927c"
+  },
+  {
+    "id": "135",
+    "file": "server/portAccessLimits.ts",
+    "ticket": "04",
+    "result": "合并兼容本地内容",
+    "initialLocalSha256": null,
+    "upstreamTargetSha256": "af686904ab6477e2dbf3db957d436ffaac6e82775d11057ecde4448f645ae7d5",
+    "currentSha256": "a486ca41c42e74b4a974609f6aec062e9e04316955516f00143d8babbc4bceaa"
+  },
+  {
+    "id": "136",
+    "file": "server/repositories/forwardGroupRepository.ts",
+    "ticket": "03",
+    "result": "合并兼容本地内容",
+    "initialLocalSha256": "1c85612049b3a203b9a01ee2ef2ccb7b132667ea168ffa7aecf123d580841430",
+    "upstreamTargetSha256": "9f0893705e9f79267e91b2b8020c0d4f875353d978ff8f0ab177b0672162c157",
+    "currentSha256": "8dd392fc4a64b17818c5ae336f302b2fdbd3a3af615e90132a30a4ab9b8a0c95"
+  },
+  {
+    "id": "137",
+    "file": "server/routers/helpers.ts",
+    "ticket": "04",
+    "result": "采用上游内容",
+    "initialLocalSha256": "dfa9e0130d19b258a9f722b84006f56596be655ad8e9293213d8d0f592685019",
+    "upstreamTargetSha256": "b498a496d937ac267329a4855ba20f9fdf51dfef876b21d997fb14a4ce839e0f",
+    "currentSha256": "b498a496d937ac267329a4855ba20f9fdf51dfef876b21d997fb14a4ce839e0f"
+  },
+  {
+    "id": "138",
+    "file": "server/routers/hosts.ts",
+    "ticket": "03",
+    "result": "合并兼容本地内容",
+    "initialLocalSha256": "cff52e1117dc914dae606c7bd2a1601823139a7fa6f2fb6d5eb345c5d6bf3c48",
+    "upstreamTargetSha256": "8a38cf74fb63e88df9bc3a6e5dcc0600bb25ed6151a183b03a6e0734e84043bb",
+    "currentSha256": "d9951db10c745d0d80d2f13d53c4ab60cafa8c71f251341800e9f7e3c4b016b4"
+  },
+  {
+    "id": "139",
+    "file": "server/routers/users.ts",
+    "ticket": "04",
+    "result": "采用上游内容",
+    "initialLocalSha256": "01c540e4e29a162b18944f739a0172adac50c84502a8d17cf0944949dcb90e46",
+    "upstreamTargetSha256": "959ef68b30bface6297cce9dc69842cdae64de5ffe4dfcd2d64b57e58dae6479",
+    "currentSha256": "959ef68b30bface6297cce9dc69842cdae64de5ffe4dfcd2d64b57e58dae6479"
+  },
+  {
+    "id": "140",
+    "file": "server/services/forwardGroupService.ts",
+    "ticket": "03",
+    "result": "合并兼容本地内容",
+    "initialLocalSha256": "04f53aab87b0bc1d9be970b66d9c956456efee4239120b542877f218d3eb57b2",
+    "upstreamTargetSha256": "30fe0cd78984132d9a75fb28ac06a587a14460c483c5caf284ed6cbb3d77878b",
+    "currentSha256": "5c1ecbe31d07199675e5ad5ce85d791f4e37b29e98149812be34f6d8be26b898"
+  },
+  {
+    "id": "141",
+    "file": "shared/versions.ts",
+    "ticket": "10",
+    "result": "保留本地版本",
+    "initialLocalSha256": "ff32cbe93eeb0f52d12ad10823b9fae340e3119aa97a029b0f5765fd8e184ee3",
+    "upstreamTargetSha256": "537aca80696315f43eac30e8a1ba2b9cbdfaa61da0b05071b31918c6561d68f6",
+    "currentSha256": "ff32cbe93eeb0f52d12ad10823b9fae340e3119aa97a029b0f5765fd8e184ee3"
+  }
+]
