@@ -828,6 +828,27 @@ test("historical repair without a surviving candidate retains the original root 
   `);
 });
 
+test("deletion preview lists the retained root when historical members have no surviving host", () => {
+  runGroupMemberReleaseCase(`
+    await seedFailover();
+    await runtime.executeRaw('UPDATE forward_group_members SET hostId=999 WHERE groupId=10');
+    await runtime.executeRaw('DELETE FROM forward_rules WHERE forwardGroupId=10 AND isForwardGroupTemplate=0');
+    const before = await deleteSnapshot();
+    const preview = await hostCaller.deleteImpact({ id: 1 });
+    assert.equal(preview.blocked, true);
+    assert.deepEqual(preview.rules.items.map(rule => rule.id), [1000]);
+    assert.deepEqual(await deleteSnapshot(), before);
+    const prepared = await hostCaller.prepareDelete({ id: 1 });
+    assert.equal(prepared.blocked, true);
+    assert.deepEqual(prepared.rules.items, preview.rules.items);
+    await assert.rejects(() => hostCaller.delete({ id: 1 }), error => {
+      assert.ok(error.message.includes(preview.rules.items[0].name));
+      return true;
+    });
+    assert.deepEqual(await deleteSnapshot(), before);
+  `);
+});
+
 test("final rule checks are read only and historical repair rejects an already-started save", () => {
   runGroupMemberReleaseCase(`
     await seedFailover();

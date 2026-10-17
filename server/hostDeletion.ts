@@ -15,7 +15,7 @@ function referenceList(rows: Reference[], viewer?: Viewer) {
   return { count: rows.length, hiddenCount: rows.length - visible.length, items: visible.slice(0, 50).map((row) => ({ id: Number(row.id), name: String(row.name || `#${row.id}`) })) };
 }
 
-/** Read-only preview: template host IDs are metadata; members define actual usage. */
+/** Read-only preview of saved references, including roots retained after repair. */
 export async function getHostDeletionImpact(hostId: number, viewer?: Viewer) {
   if (!(await getDb())) throw new Error("Database unavailable");
   const host = await getHostById(hostId);
@@ -25,8 +25,6 @@ export async function getHostDeletionImpact(hostId: number, viewer?: Viewer) {
     queryRaw<Reference>(`SELECT DISTINCT r.${q("id")} AS ${q("id")}, r.${q("name")} AS ${q("name")}, r.${q("userId")} AS ${q("userId")}
       FROM ${q("forward_rules")} r
       WHERE r.${q("pendingDelete")} = ${boolLiteral(false)}
-        AND (r.${q("isForwardGroupTemplate")} = ${boolLiteral(false)} OR NOT EXISTS (
-          SELECT 1 FROM ${q("forward_group_members")} m WHERE m.${q("groupId")} = r.${q("forwardGroupId")}))
         AND (r.${q("hostId")} = ? OR EXISTS (
           SELECT 1 FROM ${q("forward_rule_tunnel_exits")} e
           WHERE e.${q("ruleId")} = r.${q("id")} AND e.${q("exitHostId")} = ?))
