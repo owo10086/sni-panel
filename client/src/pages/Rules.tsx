@@ -144,7 +144,8 @@ import { ruleLatencyProbeMethodForRule } from "@shared/latencyProbe";
 import { getSniRuleGroupKey, isSniEntryAgentVersionSupported, SNI_SPLITTER_MIN_AGENT_VERSION } from "@shared/sni";
 import { formatTrafficMultiplier } from "@shared/trafficMultiplier";
 import { Fragment, lazy, Suspense, useState, useMemo, useEffect, useCallback, useRef, type ReactNode } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { ContentTransition } from "@/components/ui/content-transition";
+import { useMotionEnabled } from "@/components/MotionPolicy";
 import { toast } from "@/lib/localizedToast";
 import { useLocation, useSearch } from "wouter";
 import { TcpingDetailDialog } from "@/components/rules/TcpingDetailDialog";
@@ -684,7 +685,7 @@ function RuleGroupItems({
     <div
       aria-hidden={!open}
       inert={!open}
-      className={`grid transition-[grid-template-rows,opacity] duration-200 ease-out ${open ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}
+      className={`pearl-disclosure-grid grid transition-[grid-template-rows,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${open ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}
     >
       <AutoAnimateContainer layout={layout} className={`min-h-0 overflow-hidden ${className}`}>
         {children}
@@ -702,22 +703,7 @@ function RuleContentTransition({
   className?: string;
   children: ReactNode;
 }) {
-  const reduceMotion = useReducedMotion();
-
-  return (
-    <AnimatePresence mode="wait">
-      <motion.div
-        key={transitionKey}
-        className={className}
-        initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 10, scale: 0.995 }}
-        animate={reduceMotion ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1 }}
-        exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -8, scale: 0.995 }}
-        transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-      >
-        {children}
-      </motion.div>
-    </AnimatePresence>
-  );
+  return <ContentTransition transitionKey={transitionKey} className={className}>{children}</ContentTransition>;
 }
 
 function RuleRouteTransition({
@@ -742,7 +728,7 @@ function RuleCardModeTransition({
   children: ReactNode;
 }) {
   const ref = useRef<HTMLDivElement | null>(null);
-  const reduceMotion = useReducedMotion();
+  const motionEnabled = useMotionEnabled();
   const mountedModeRef = useRef<RuleCardSize | null>(null);
 
   useEffect(() => {
@@ -753,7 +739,7 @@ function RuleCardModeTransition({
     if (mountedModeRef.current === mode) return;
     mountedModeRef.current = mode;
     const element = ref.current;
-    if (!element || reduceMotion || typeof element.animate !== "function") return;
+    if (!element || !motionEnabled || typeof element.animate !== "function") return;
 
     const animation = element.animate(
       [
@@ -763,7 +749,7 @@ function RuleCardModeTransition({
       { duration: 140, easing: "cubic-bezier(0.22, 1, 0.36, 1)" },
     );
     return () => animation.cancel();
-  }, [mode, reduceMotion]);
+  }, [mode, motionEnabled]);
 
   return (
     <div ref={ref} className={className}>
@@ -4006,9 +3992,13 @@ function RulesContent() {
   useEffect(() => {
     if (!scopedRulesReady) return;
     const sourceRules = selectedScopeQueryEnabled ? selectedScopedRules || [] : baseScopedRules;
-    setStableFilteredRules(sourceRules.filter((rule: any) => isForwardRuleVisibleByFilters(rule, ruleFilters)));
+    // Page/map endpoints already apply ownership, route, category and search.
+    // Local option lists are incomplete (especially shared tunnel hosts), so
+    // re-filtering here can hide valid matches while server counts remain > 0.
+    // Keep local filtering only for the separate full-list batch tools below.
+    setStableFilteredRules(sourceRules);
     setFilteredRulesPrimed(true);
-  }, [baseScopedRules, ruleFilters, scopedRulesReady, selectedScopedRules, selectedScopeQueryEnabled]);
+  }, [baseScopedRules, scopedRulesReady, selectedScopedRules, selectedScopeQueryEnabled]);
   const filteredRules = stableFilteredRules;
   // Batch tools need all matching source rules, while the page itself stays
   // on its current server page.  Keep these two data sources separate.
@@ -6180,15 +6170,15 @@ function RulesContent() {
     ) : null;
 
     const panelClass = compact
-      ? "rounded-md border border-border/50 bg-background/55 px-2 py-1.5"
-      : "rounded-md border border-border/50 bg-background/55 px-2.5 py-2";
+      ? "pearl-readout rounded-xl border border-border/50 px-2 py-1.5"
+      : "pearl-readout rounded-xl border border-border/50 px-2.5 py-2";
     const labelClass = "mb-1 flex items-center gap-1 text-[10px] font-medium text-muted-foreground";
     const valueClass = compact
       ? "min-w-0 break-all text-[11px] leading-4"
       : "min-w-0 break-all text-xs leading-5";
 
     return (
-      <div className="min-w-0 space-y-1.5 font-mono text-xs">
+      <div className="pearl-transfer min-w-0 space-y-1.5 font-mono text-xs">
         <div className={panelClass}>
           <div className={labelClass}>{translateText("入口")}</div>
           <div className="flex min-w-0 flex-col gap-1">
@@ -6208,7 +6198,7 @@ function RulesContent() {
           </div>
         </div>
         <div className="flex justify-center">
-          <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-border/50 bg-background text-muted-foreground shadow-sm">
+          <span aria-hidden="true" className="pearl-transfer-connector inline-flex h-5 w-5 items-center justify-center rounded-full border border-border/50 bg-card text-primary shadow-sm">
             <ArrowDownToLine className="h-3 w-3" />
           </span>
         </div>
@@ -7025,9 +7015,10 @@ function RulesContent() {
       return (
         <Card
           key={rule.id}
+          interactive={supported && !sortable?.isDragging}
           {...(sortable?.itemProps || {})}
           className={cn(
-            "group/sortable relative action-card border-border/40 bg-card/60 backdrop-blur-md transition-[box-shadow,opacity]",
+            "group/sortable relative action-card border-border/40 bg-card/60 transition-[box-shadow,opacity]",
             !supported && "opacity-70",
             sortable?.isDragging && "opacity-55 ring-1 ring-primary/35",
             sortable?.isDropTarget && "ring-1 ring-primary/45",
@@ -7112,9 +7103,10 @@ function RulesContent() {
     return (
       <Card
         key={rule.id}
+        interactive={supported && !sortable?.isDragging}
         {...(sortable?.itemProps || {})}
         className={cn(
-          "group/sortable relative action-card border-border/40 bg-card/60 backdrop-blur-md transition-[box-shadow,opacity]",
+          "group/sortable relative action-card border-border/40 bg-card/60 transition-[box-shadow,opacity]",
           !supported && "opacity-70",
           sortable?.isDragging && "opacity-55 ring-1 ring-primary/35",
           sortable?.isDropTarget && "ring-1 ring-primary/45",
@@ -7179,7 +7171,7 @@ function RulesContent() {
               <Badge variant="secondary" className="whitespace-nowrap text-[10px]">{formatForwardRuleProtocol(rule.protocol)}</Badge>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-x-3 gap-y-2 border-t border-border/40 pt-2 text-xs">
+          <div className="pearl-readout grid grid-cols-2 gap-x-3 gap-y-2 rounded-xl border border-border/40 p-2.5 text-xs">
             <div className="min-w-0">
               <div className="mb-1 text-muted-foreground">{translateText("24H 入向")}</div>
               {renderRuleDailyTrafficValue(rule, "in")}
@@ -7274,10 +7266,9 @@ function RulesContent() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
+      <div className="pearl-page-header flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
         <div className="min-w-0">
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight">{translateText("转发规则")}</h1>
-          <p className="text-muted-foreground mt-1 text-xs sm:text-sm">{translateText("管理转发规则和运行状态")}</p>
         </div>
         <div className="responsive-actions grid min-w-0 w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:justify-end">
           <Badge variant="outline" className="justify-center gap-1.5 px-3 py-1.5 text-xs">
@@ -8521,7 +8512,7 @@ function RulesContent() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <ClipboardCopy className="h-5 w-5" />{translateText("批量管理转发规则")}</DialogTitle>
-            <DialogDescription>{translateText("管理当前用户筛选范围内的规则；复制或导入的新规则归属：")}{ruleOperationOwnerLabel}{translateText("。编辑不会改变规则归属。")}</DialogDescription>
+            <DialogDescription>{translateText("复制或导入归属：")}{ruleOperationOwnerLabel}{translateText("；编辑不改变归属。")}</DialogDescription>
           </DialogHeader>
           <div className="min-h-0 min-w-0 space-y-4 overflow-y-auto pr-1">
             <div className={segmentedControlClassName}>
@@ -9179,7 +9170,7 @@ function RulesContent() {
               {isBatchExportMode
                 ? translateText("批量导出会按左侧当前选中的规则生成 JSON 文件，不会受右侧资源范围限制。")
                 : isBatchEditMode
-                ? translateText("批量编辑会按你实际填写的项逐条覆盖：入口资源未选择则保留原入口，目标地址或端口留空则保留原目标值。")
+                ? translateText("仅覆盖已填写项；未选择的入口和留空的目标保持不变。")
                 : translateText("复制会保留原规则基础配置，并按当前选择的目标资源生成副本。")}
             </div>
             </>
