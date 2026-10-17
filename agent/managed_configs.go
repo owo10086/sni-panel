@@ -32,10 +32,11 @@ type managedConfigBackup struct {
 }
 
 type managedConfigTransaction struct {
-	backups    []managedConfigBackup
-	stateMu    sync.Mutex
-	finished   bool
-	rollbackOK bool
+	backups       []managedConfigBackup
+	stateMu       sync.Mutex
+	finished      bool
+	rollbackOK    bool
+	retainApplied bool
 }
 
 var managedConfigMutationMu sync.Mutex
@@ -204,6 +205,11 @@ func (tx *managedConfigTransaction) rollbackLocked(restoreRuntime bool) bool {
 			logf("managed config rollback skipped stale generation path=%s generation=%d current=%d", backup.spec.Path, backup.generation, managedConfigCurrentGeneration[backup.spec.Path])
 			continue
 		}
+		if restoreRuntime && tx.retainApplied {
+			_ = os.Remove(backup.spec.Path + ".sha256")
+			ok = false
+			continue
+		}
 		var err error
 		if backup.hadPrevious {
 			err = writeManagedConfigAtomic(backup.spec.Path, backup.previous, backup.previousMode)
@@ -253,6 +259,18 @@ func (tx *managedConfigTransaction) setRuntimeRestore(path string, restore func(
 			return
 		}
 	}
+}
+
+// Preserve both the desired files and dependent runtime additions when an
+// application outcome is unknown. The failed action remains pending for the
+// next reconciliation; it must not be reported as a successful rollback.
+func (tx *managedConfigTransaction) retainForReconciliation() {
+	if tx == nil {
+		return
+	}
+	tx.stateMu.Lock()
+	defer tx.stateMu.Unlock()
+	tx.retainApplied = true
 }
 
 func (tx *managedConfigTransaction) commit() {

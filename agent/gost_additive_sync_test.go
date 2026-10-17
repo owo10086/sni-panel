@@ -226,7 +226,10 @@ func TestGostRealRuntimeAddAndPortConflictPreserveEstablishedConnections(t *test
 	udpPort.Close()
 	udpService := map[string]any{"name": "fwx-udp", "addr": udpAddr, "handler": map[string]any{"type": "udp"}, "listener": map[string]any{"type": "udp"}, "forwarder": map[string]any{"nodes": []any{map[string]any{"name": "udp-target", "addr": udpEcho.LocalAddr().String(), "connector": map[string]any{"type": "udp"}, "dialer": map[string]any{"type": "udp"}}}}}
 	addr1, addr2 := freeAddress(), freeAddress()
-	config := map[string]any{"services": []any{service("fwx-1", addr1), service("fwx-2", addr2), udpService}, "api": map[string]any{"addr": "unix://" + socket}}
+	probeAddr := freeAddress()
+	probe := service("fwx-tunnel-probe-77", probeAddr)
+	probe["forwarder"] = map[string]any{"nodes": []any{map[string]any{"name": "probe-target", "addr": "127.0.0.1:9", "connector": map[string]any{"type": "tcp"}, "dialer": map[string]any{"type": "tcp"}}}}
+	config := map[string]any{"services": []any{service("fwx-1", addr1), service("fwx-2", addr2), udpService, probe}, "api": map[string]any{"addr": "unix://" + socket}}
 	path := filepath.Join(dir, "gost.json")
 	raw, _ := json.Marshal(config)
 	if err := os.WriteFile(path, raw, 0600); err != nil {
@@ -245,6 +248,7 @@ func TestGostRealRuntimeAddAndPortConflictPreserveEstablishedConnections(t *test
 		t.Fatal(err)
 	}
 	defer func() { _ = cmd.Process.Kill(); _ = cmd.Wait() }()
+	t.Logf("real GOST process pid=%d; TCP and UDP use the same process throughout additions and conflicts", cmd.Process.Pid)
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 	var liveData []byte
@@ -334,6 +338,44 @@ func TestGostRealRuntimeAddAndPortConflictPreserveEstablishedConnections(t *test
 	check(c1)
 	check(c2)
 	checkUDP()
+	// The first business rule replaces an idle probe without restarting the
+	// shared process or disconnecting the other tunnel's established streams.
+	liveData, err = api.request(ctx, "GET", "", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := json.Unmarshal(liveData, &live); err != nil {
+		t.Fatal(err)
+	}
+	services := make([]any, 0)
+	for _, raw := range config["services"].([]any) {
+		if raw.(map[string]any)["name"] != "fwx-tunnel-probe-77" {
+			services = append(services, raw)
+		}
+	}
+	services = append(services, service("fwx-tunnel-exit-77-501-22001", probeAddr))
+	config["services"] = services
+	filtered, probes := planGostProbeReplacements(live, config)
+	plan, reason, err = planGostAdditions(filtered, config)
+	if err != nil || reason != "" || len(probes) != 1 {
+		t.Fatalf("actual probe replacement reason=%s probes=%v err=%v", reason, probes, err)
+	}
+	newData, _ = json.Marshal(config)
+	tx, err = applyManagedConfigs([]managedConfigSpec{{Path: path, ServiceName: "must-not-restart", Format: "json", ContentBase64: base64.StdEncoding.EncodeToString(newData)}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := applyGostProbeReplacements(ctx, api, probes, plan, func(fn func() bool) { tx.setRuntimeRestore(path, fn) }); err != nil {
+		t.Fatal(err)
+	}
+	tx.commit()
+	probeBusiness := connect(probeAddr)
+	defer probeBusiness.Close()
+	check(probeBusiness)
+	check(c1)
+	check(c2)
+	check(c3)
+	checkUDP()
 	occupied, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatal(err)
@@ -368,4 +410,49 @@ func TestGostRealRuntimeAddAndPortConflictPreserveEstablishedConnections(t *test
 	check(c3)
 	checkUDP()
 	t.Log(fmt.Sprintf("GOST PID %d retained all three established connections after add and conflict", cmd.Process.Pid))
+}
+
+func TestGostLostCreationReplyReconcilesLiveStateBeforeRollback(t *testing.T) {
+	created, deletes := false, 0
+	object := map[string]any{"name": "new", "addr": ":22001"}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == "POST" {
+			created = true
+			conn, _, _ := w.(http.Hijacker).Hijack()
+			conn.Close()
+			return
+		}
+		if r.Method == "DELETE" {
+			deletes++
+			return
+		}
+		json.NewEncoder(w).Encode(map[string]any{"services": []any{object}})
+	}))
+	defer server.Close()
+	var restore func() bool
+	err := applyGostAdditions(context.Background(), gostAPIClient{server.Client(), server.URL}, []gostAddition{{"services", "new", object}}, func(fn func() bool) { restore = fn })
+	if err != nil || !created || deletes != 0 || restore == nil {
+		t.Fatalf("applied state was not reconciled: err=%v created=%v deletes=%d", err, created, deletes)
+	}
+}
+
+func TestGostUnknownCreationOutcomeDoesNotRemovePossiblyActiveObjects(t *testing.T) {
+	deletes := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == "DELETE" {
+			deletes++
+			return
+		}
+		conn, _, _ := w.(http.Hijacker).Hijack()
+		conn.Close()
+	}))
+	defer server.Close()
+	var restore func() bool
+	err := applyGostAdditions(context.Background(), gostAPIClient{server.Client(), server.URL}, []gostAddition{{"services", "new", map[string]any{"name": "new"}}}, func(fn func() bool) { restore = fn })
+	if err == nil || restore == nil {
+		t.Fatal("missing uncertain failure")
+	}
+	if restore() || deletes != 0 {
+		t.Fatalf("uncertain objects were removed: deletes=%d", deletes)
+	}
 }

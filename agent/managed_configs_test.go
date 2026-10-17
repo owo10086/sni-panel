@@ -107,3 +107,29 @@ func TestManagedConfigRejectsUnsafeFileMode(t *testing.T) {
 		t.Fatal("expected invalid file mode error")
 	}
 }
+
+func TestManagedConfigUnconfirmedApplicationRetainsDesiredFilesForReconciliation(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "runtime.json")
+	if err := os.WriteFile(path, []byte(`{"version":1}`), 0600); err != nil {
+		t.Fatal(err)
+	}
+	tx, err := applyManagedConfigs([]managedConfigSpec{{Path: path, Format: "json", ContentBase64: base64.StdEncoding.EncodeToString([]byte(`{"version":2}`))}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	restored := false
+	tx.setRuntimeRestore(path, func() bool { restored = true; return true })
+	tx.retainForReconciliation()
+	if tx.rollback() || restored {
+		t.Fatal("unconfirmed live state must not be reported as rolled back")
+	}
+	data, err := os.ReadFile(path)
+	if err != nil || string(data) != `{"version":2}` {
+		t.Fatalf("lost reconciliation input: %s %v", data, err)
+	}
+	retry, err := applyManagedConfigs([]managedConfigSpec{{Path: path, Format: "json", ContentBase64: base64.StdEncoding.EncodeToString(data)}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	retry.commit()
+}

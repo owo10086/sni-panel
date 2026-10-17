@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -13,6 +14,7 @@ import (
 	"reflect"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -28,6 +30,33 @@ type gostAPIClient struct {
 }
 
 type gostAPIError struct{ status, code int }
+
+type gostApplyUncertainError struct{}
+
+func (*gostApplyUncertainError) Error() string {
+	return "GOST application outcome is unconfirmed; keep current listeners and retry reconciliation"
+}
+
+// Use a fresh deadline because the request that lost its reply may have timed
+// out. Compare the real object without logging configuration or credentials.
+func (api gostAPIClient) observedObject(item gostAddition) (exists, matches bool, err error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	raw, err := api.request(ctx, http.MethodGet, "", nil)
+	if err != nil {
+		return false, false, err
+	}
+	var live map[string]any
+	if err = json.Unmarshal(raw, &live); err != nil {
+		return false, false, err
+	}
+	objects, err := gostObjects(live, item.collection)
+	if err != nil {
+		return false, false, err
+	}
+	current, exists := objects[item.name]
+	return exists, exists && reflect.DeepEqual(normalizedGostValue(current), normalizedGostValue(item.object)), nil
+}
 
 func (e *gostAPIError) Error() string {
 	return fmt.Sprintf("GOST API HTTP=%d code=%d", e.status, e.code)
@@ -289,12 +318,121 @@ func planGostAdditions(live, desired map[string]any) ([]gostAddition, string, er
 	return additions, "", nil
 }
 
+// Only synthetic idle probes may be replaced in place. Never delete an old
+// business listener, even when a new service wants the same port.
+func planGostProbeReplacements(live, desired map[string]any) (map[string]any, []gostAddition) {
+	next, err := gostObjects(desired, "services")
+	if err != nil {
+		return live, nil
+	}
+	filtered := make([]any, 0)
+	var probes []gostAddition
+	services, _ := live["services"].([]any)
+	for _, raw := range services {
+		old, _ := raw.(map[string]any)
+		name, _ := old["name"].(string)
+		parts := strings.Split(strings.TrimPrefix(name, "fwx-tunnel-probe-"), "-")
+		id := parts[0]
+		_, idErr := strconv.Atoi(id)
+		handler, _ := old["handler"].(map[string]any)
+		forwarder, _ := old["forwarder"].(map[string]any)
+		nodes, _ := forwarder["nodes"].([]any)
+		probeTarget := false
+		if len(nodes) == 1 {
+			node, _ := nodes[0].(map[string]any)
+			probeTarget = node["addr"] == "127.0.0.1:9"
+		}
+		replace := false
+		if strings.HasPrefix(name, "fwx-tunnel-probe-") && idErr == nil && id != "0" && handler["type"] == "tcp" && probeTarget && next[name] == nil {
+			for newName, service := range next {
+				if strings.HasPrefix(newName, "fwx-tunnel-exit-"+id+"-") && service["addr"] == old["addr"] {
+					replace = true
+					break
+				}
+			}
+		}
+		if replace {
+			// Live status is read-only API output, not part of the POST schema.
+			copy := make(map[string]any, len(old))
+			for key, value := range old {
+				if key != "status" {
+					copy[key] = value
+				}
+			}
+			probes = append(probes, gostAddition{"services", name, copy})
+		} else {
+			filtered = append(filtered, raw)
+		}
+	}
+	copy := make(map[string]any, len(live))
+	for key, value := range live {
+		copy[key] = value
+	}
+	copy["services"] = filtered
+	return copy, probes
+}
+
+func applyGostProbeReplacements(ctx context.Context, api gostAPIClient, probes, additions []gostAddition, setRestore func(func() bool)) error {
+	var restoreAdditions func() bool
+	var removed []gostAddition
+	uncertain := false
+	setRestore(func() bool {
+		if uncertain {
+			return false
+		}
+		ok := true
+		if restoreAdditions != nil {
+			ok = restoreAdditions()
+			if !ok {
+				return false
+			}
+		}
+		rollbackCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+		for _, probe := range removed {
+			if _, err := api.request(rollbackCtx, http.MethodPost, "/services", probe.object); err != nil {
+				if apiErr, yes := err.(*gostAPIError); !yes || apiErr.code != 40002 {
+					logf("gost probe restore failed service=%s error=%v", probe.name, err)
+					ok = false
+				}
+			}
+		}
+		return ok
+	})
+	for _, probe := range probes {
+		// Include before DELETE: a lost reply can conceal a successful removal.
+		removed = append(removed, probe)
+		if _, err := api.request(ctx, http.MethodDelete, "/services/"+probe.name, nil); err != nil {
+			var apiErr *gostAPIError
+			if !errors.As(err, &apiErr) {
+				exists, _, readErr := api.observedObject(probe)
+				if readErr != nil {
+					uncertain = true
+					return &gostApplyUncertainError{}
+				}
+				if !exists {
+					continue
+				}
+			}
+			return err
+		}
+	}
+	err := applyGostAdditions(ctx, api, additions, func(fn func() bool) { restoreAdditions = fn })
+	var outcome *gostApplyUncertainError
+	uncertain = errors.As(err, &outcome)
+	return err
+}
+
 func applyGostAdditions(ctx context.Context, api gostAPIClient, additions []gostAddition, setRestore func(func() bool)) error {
 	// Include the attempted object before issuing POST: a lost response may hide
 	// a successful creation. DELETE-not-found is harmless during rollback.
 	attempted := []gostAddition{}
+	uncertain := false
 	setRestore(func() bool {
 		defer api.client.CloseIdleConnections()
+		if uncertain {
+			return false
+		}
 		rollbackCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 		ok := true
@@ -317,6 +455,21 @@ func applyGostAdditions(ctx context.Context, api gostAPIClient, additions []gost
 	for _, item := range additions {
 		attempted = append(attempted, item)
 		if _, err := api.request(ctx, http.MethodPost, "/"+item.collection, item.object); err != nil {
+			var responseErr *gostAPIError
+			if !errors.As(err, &responseErr) {
+				_, matches, readErr := api.observedObject(item)
+				if readErr != nil {
+					uncertain = true
+					return &gostApplyUncertainError{}
+				}
+				if matches {
+					continue
+				}
+				// A missing object can still be created by the original in-flight
+				// request; a different one may belong to another operator.
+				uncertain = true
+				return &gostApplyUncertainError{}
+			}
 			if apiErr, ok := err.(*gostAPIError); ok && apiErr.code == 40002 {
 				// Another root operator may have added it after our snapshot. It is
 				// not owned by this transaction and must not be deleted on rollback.
@@ -416,11 +569,17 @@ func tryGostAdditiveSync(service, path string, tx *managedConfigTransaction) (ha
 	if err := json.Unmarshal(liveData, &live); err != nil {
 		return true, fmt.Errorf("invalid GOST live config")
 	}
-	additions, reason, err := planGostAdditions(live, desired)
+	additiveLive, probes := planGostProbeReplacements(live, desired)
+	additions, reason, err := planGostAdditions(additiveLive, desired)
 	if err != nil {
 		return true, err
 	}
 	if reason != "" {
+		intendedLive, _ := planGostProbeReplacements(previous, desired)
+		_, intendedReason, intendedErr := planGostAdditions(intendedLive, desired)
+		if reason != "unhealthy-listener" && intendedErr == nil && intendedReason == "" {
+			return true, fmt.Errorf("GOST live configuration differs from the requested addition; existing listeners preserved, retry reconciliation")
+		}
 		// The on-disk hash can be unchanged despite drift in the live API
 		// state (e.g. an interrupted earlier sync). Ensure recovery really
 		// restarts rather than letting the shell's hash check skip it.
@@ -431,15 +590,22 @@ func tryGostAdditiveSync(service, path string, tx *managedConfigTransaction) (ha
 		logf("gost runtime non-additive update requires restart service=%s reason=%s", service, reason)
 		return false, nil
 	}
-	if err := applyGostAdditions(ctx, api, additions, func(restore func() bool) { tx.setRuntimeRestore(path, restore) }); err != nil {
+	if err := applyGostProbeReplacements(ctx, api, probes, additions, func(restore func() bool) { tx.setRuntimeRestore(path, restore) }); err != nil {
+		var uncertain *gostApplyUncertainError
+		if errors.As(err, &uncertain) {
+			tx.retainForReconciliation()
+		}
 		return true, err
 	}
 	hash := sha256.Sum256(data)
 	if err := writeManagedConfigAtomic(path+".sha256", []byte(fmt.Sprintf("sha256:%x", hash)), 0644); err != nil {
+		// The live API already accepted this configuration. A failed disk marker
+		// is not evidence that listeners can safely be removed.
+		tx.retainForReconciliation()
 		return true, err
 	}
 	if len(additions) > 0 {
-		logf("gost runtime additive sync service=%s objectsAdded=%d; existing listeners preserved", service, len(additions))
+		logf("gost runtime additive sync service=%s objectsAdded=%d probesReplaced=%d; existing listeners preserved", service, len(additions), len(probes))
 	}
 	return true, nil
 }
