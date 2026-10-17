@@ -2470,6 +2470,8 @@ type action struct {
 	ForceRuntimeSync          bool                `json:"forceRuntimeSync,omitempty"`
 	RequiresMimicEnvironment  bool                `json:"requiresMimicEnvironment,omitempty"`
 	HandoffOnly               bool                `json:"-"`
+
+	PortAccessLimits []portAccessLimitSpec `json:"portAccessLimits,omitempty"`
 }
 
 type desiredState struct {
@@ -5079,6 +5081,24 @@ func handleActionJobWithRuntimeSnapshot(cfg Config, a action, releaseRuntimeGate
 			}
 			return true
 		}
+		if a.ForwardType == "port-access-limit-sync" {
+			err := syncPortAccessLimits(systemPortLimitFirewall{}, a.PortAccessLimits, false)
+			ok = err == nil
+			rememberPortLimitHealth(a, ok)
+			rememberRuntimeActionResult(a, ok)
+			if err != nil {
+				actionMessage.set("%v", err)
+				if shouldLogAgentReport("port-access-limit-sync", agentReportLogInterval) {
+					logf("%v", err)
+				}
+			} else {
+				actionMessage.set("TCP port access limits synchronized users=%d; existing forwarding connections preserved", len(a.PortAccessLimits))
+			}
+			if a.ReportStatus != nil && *a.ReportStatus {
+				reportActionStatus(cfg, a, ok, actionMessage.get())
+			}
+			return ok
+		}
 		if wireGuardAction {
 			if a.Op == "remove" {
 				stopWireGuardRuntime(a.TunnelID)
@@ -5784,6 +5804,9 @@ func runtimeActionKey(a action) string {
 }
 
 func runtimeActionServicesHealthy(a action) bool {
+	if a.ForwardType == "port-access-limit-sync" {
+		return portAccessLimitsReady(a)
+	}
 	if isWireGuardRuntimeAction(a) {
 		if a.Op == "remove" {
 			return !wireGuardRuntimeReady(a.TunnelID, nil)
@@ -6298,6 +6321,11 @@ func actionCommandSignature(a action) string {
 	write(a.ServiceNameExtra)
 	write(a.Unit)
 	write(a.UnitExtra)
+	if len(a.PortAccessLimits) > 0 {
+		if raw, err := json.Marshal(a.PortAccessLimits); err == nil {
+			write(string(raw))
+		}
+	}
 	if a.ForceRuntimeSync {
 		write("force-runtime-sync")
 	}
@@ -14211,6 +14239,11 @@ func postHeartbeatWithClientIfGeneration(client *http.Client, cfg Config, path s
 }
 
 func postHeartbeatAfterStart(client *http.Client, cfg Config, path string, payload any, out any, finish func(bool)) error {
+	if path == "/api/agent/heartbeat" {
+		if fields, ok := payload.(map[string]any); ok {
+			fields["portAccessLimitsSupported"] = true
+		}
+	}
 	err := postWithClient(client, cfg, path, payload, out)
 	finish(err == nil)
 	return err

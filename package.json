@@ -39,7 +39,8 @@
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
     "test:ui": "node --import tsx --test client/src/components/ui/pearl-ui.test.tsx client/src/components/ui/sliding-tabs.test.tsx client/src/components/ui/confirm-dialog.test.tsx client/src/components/ui/ui-copy.test.tsx",
-    "test:host-deletion": "node --import tsx --test server/hostDeletion.test.ts server/groupMemberRelease.test.ts server/forwardGroupTemplateHosts.test.ts"
+    "test:host-deletion": "node --import tsx --test server/hostDeletion.test.ts server/groupMemberRelease.test.ts server/forwardGroupTemplateHosts.test.ts",
+    "test:port-access-limits": "node --import tsx --test server/portAccessLimits.test.ts server/portAccessLimitRefresh.test.ts"
   },
   "dependencies": {
     "@cap.js/server": "^4.0.5",

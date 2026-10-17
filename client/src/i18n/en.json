@@ -4377,5 +4377,7 @@
   "{0}–{1} / {2} {3}": "{0}–{1} / {2} {3}",
   "第 {0} 页，共 {1} 页": "Page {0} of {1}",
   "校验并同步": "Validate & sync",
-  "另有关联配置需要管理员处理": "Additional linked configurations require an administrator."
+  "另有关联配置需要管理员处理": "Additional linked configurations require an administrator.",
+  "限制每个来源 IP 的 TCP 并发连接数，不是 IP 个数。普通转发按用户、入口主机共享；SNI 不进入普通端口限制，沿用规则最大连接数；V1/V2 普通隧道按规则计数，UDP 不适用。": "Limits concurrent TCP connections per source IP, not the number of IP addresses. Ordinary forwarding shares the limit per user and entry host. SNI uses its existing rule connection cap instead of ordinary port limits. Ordinary V1/V2 tunnels count per rule; UDP is excluded.",
+  "普通 TCP 按用户、入口主机共享；0 不限，SNI 排除。": "Ordinary TCP shares the cap per user and entry host; 0 means unlimited. SNI is excluded."
 }

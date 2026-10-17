@@ -1336,7 +1336,7 @@ export default function Plans() {
             <div className="space-y-2">
               <Label>{translateText("单 IP 接入限制")}</Label>
               <Input type="number" min={0} value={form.maxIPs} onChange={(e) => setForm({ ...form, maxIPs: e.target.value })} />
-              <p className="text-xs text-muted-foreground">{translateText("同组规则共享限制。")}</p>
+              <p className="text-xs text-muted-foreground">{translateText("普通 TCP 按用户、入口主机共享；0 不限，SNI 排除。")}</p>
             </div>
             <div className="space-y-2">
               <Label>{translateText("排序")}</Label>

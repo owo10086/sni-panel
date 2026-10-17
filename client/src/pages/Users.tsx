@@ -2153,7 +2153,7 @@ function UsersContent() {
                     placeholder={translateText("0=不限制")}
                   />
                   <p className="text-xs text-muted-foreground">{translateText("每个来源 IP 的 TCP 并发上限，非 IP 个数；UDP 不适用。")}</p>
-                  <HelpDetails title={translateText("限制范围")}><p>{translateText("限制每个来源 IP 的 TCP 并发连接数，不是 IP 个数。普通转发按用户、入口主机共享；V1/V2 隧道按规则计数，UDP 不适用。")}</p></HelpDetails>
+                  <HelpDetails title={translateText("限制范围")}><p>{translateText("限制每个来源 IP 的 TCP 并发连接数，不是 IP 个数。普通转发按用户、入口主机共享；SNI 不进入普通端口限制，沿用规则最大连接数；V1/V2 普通隧道按规则计数，UDP 不适用。")}</p></HelpDetails>
                 </div>
               </div>
               <Separator />
