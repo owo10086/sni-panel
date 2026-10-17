@@ -269,6 +269,8 @@ test("historic failover references are repaired before real host deletion", () =
     await seedFailover(44);
     const before = await rootSnapshot(10);
     await runtime.executeRaw('DELETE FROM forward_group_members WHERE hostId=1');
+    await assert.rejects(() => hostCaller.delete({ id: 1 }), /清理/);
+    await runtime.executeRaw('UPDATE forward_rules SET isRunning=0 WHERE hostId=1 AND pendingDelete=1');
     await hostCaller.delete({ id: 1 });
     assert.deepEqual(await rootSnapshot(10), before);
     assert.equal((await runtime.queryRaw('SELECT id FROM hosts WHERE id=1')).length, 0);
@@ -351,6 +353,8 @@ test("historic entry ownership repairs before deletion and removed extra entries
     // Recreate the old released-members/stale-root state produced by the faulty version.
     await runtime.executeRaw('UPDATE forward_rules SET hostId=4 WHERE id=400');
     const before = await rootSnapshot(40);
+    await assert.rejects(() => hostCaller.delete({ id: 4 }), /清理/);
+    await runtime.executeRaw("UPDATE forward_rules SET isRunning=0 WHERE hostId=4 AND pendingDelete=1");
     await hostCaller.delete({ id: 4 });
     assert.deepEqual(await rootSnapshot(40), before);
     assert.deepEqual(await runtime.queryRaw('SELECT hostId FROM forward_rules WHERE id=400'), [{ hostId: 5 }]);
@@ -488,6 +492,8 @@ for (const order of ["join-first", "delete-first"]) {
       const holding = withGroupMemberMutation(async () => { started(); await gate; });
       await ready;
       const join = () => saveMembers(10, [1, 2]);
+      // The ordering check starts after the old listener has acknowledged stopping.
+      await runtime.executeRaw("UPDATE forward_rules SET isRunning=0 WHERE hostId=1 AND pendingDelete=1");
       const remove = () => hostCaller.delete({ id: 1 });
       const first = ("` + order + `" === "join-first" ? join() : remove())
         .then(value => ({ value }), error => ({ error }));
@@ -516,12 +522,13 @@ test("a final delete failure restores permissions, bindings and pending cleanup"
     await insert("agent_tokens", { id: 50, token: "rollback-token", hostId: 1, userId: 1 });
     await runtime.executeRaw("UPDATE hosts SET agentToken='rollback-token' WHERE id=1");
     await insert("user_host_permissions", { userId: 1, hostId: 1 });
+    await runtime.executeRaw("UPDATE hosts SET isOnline=0 WHERE id=1");
     const before = await deleteSnapshot();
     await runtime.executeRaw(
       'CREATE TRIGGER reject_host_delete BEFORE DELETE ON hosts WHEN OLD.id=1 ' +
       "BEGIN SELECT RAISE(ABORT,'injected-final-delete-failure'); END"
     );
-    await assert.rejects(() => hostCaller.delete({ id: 1 }), /injected-final-delete-failure/);
+    await assert.rejects(() => hostCaller.delete({ id: 1, confirmOfflineCleanup: true }), /injected-final-delete-failure/);
     assert.deepEqual(await deleteSnapshot(), before);
     await assert.rejects(() => tokenCaller.delete({ id: 50 }), /injected-final-delete-failure/);
     assert.deepEqual(await deleteSnapshot(), before);
@@ -724,6 +731,7 @@ for (const usage of ["ordinary-rule", "rule-exit"]) {
           "VALUES (9002,2,1,'late-exit',29002,'192.0.2.90',80); " +
           "INSERT INTO forward_rule_tunnel_exits (ruleId,tunnelId,exitNodeId,exitSeq,exitHostId,tunnelExitPort) " +
           "VALUES (9002,70,701,0,1,25071);";
+      await runtime.executeRaw("UPDATE hosts SET isOnline=0 WHERE id=1");
       // This fires during pending cleanup, after all read-only final guards.
       await runtime.executeRaw(
         'CREATE TRIGGER add_late_reference AFTER UPDATE OF isRunning ON forward_rules ' +
@@ -731,7 +739,7 @@ for (const usage of ["ordinary-rule", "rule-exit"]) {
       );
       const before = await deleteSnapshot();
       const auditBefore = await runtime.queryRaw('SELECT * FROM config_audit_events ORDER BY id');
-      await assert.rejects(() => hostCaller.delete({ id: 1 }), /主机引用已变化/);
+      await assert.rejects(() => hostCaller.delete({ id: 1, confirmOfflineCleanup: true }), /主机引用已变化/);
       assert.deepEqual(await deleteSnapshot(), before);
       assert.deepEqual(await runtime.queryRaw('SELECT * FROM forward_rule_tunnel_exits'), []);
       assert.deepEqual(await runtime.queryRaw('SELECT * FROM config_audit_events ORDER BY id'), auditBefore);

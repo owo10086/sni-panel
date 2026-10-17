@@ -306,7 +306,7 @@ async function updateForwardGroupFromInputUnlocked(id: number, input: ForwardGro
       if (enabledChanged) {
         await db.setForwardGroupEnabled(id, desiredEnabled, { skipSync: true });
       }
-    }, {}, [
+    }, { preserveRuntime: true }, [
       () => db.refreshForwardGroupReferences(id, {
         reason: "entry-group-members-updated", previousHostIds, syncDependentChains: false,
       }),
@@ -323,7 +323,7 @@ async function updateForwardGroupFromInputUnlocked(id: number, input: ForwardGro
       if (enabledChanged) {
         await db.setForwardGroupEnabled(id, desiredEnabled, { skipSync: true });
       }
-    }, { preserveRuntime: hasSniRules }, [
+    }, { preserveRuntime: true }, [
       async () => {
         if (normalized.data.groupMode !== "failover") return;
         await db.runForwardGroupFailover(id, {
@@ -355,7 +355,7 @@ async function updateForwardGroupFromInputUnlocked(id: number, input: ForwardGro
     await db.withForwardGroupSyncTransaction(
       id,
       () => persistConfiguration({ deferRefresh: true }),
-      membersChanged ? {} : { preserveRuntime: true },
+      { preserveRuntime: true },
     );
     return db.getForwardGroupById(id);
   }

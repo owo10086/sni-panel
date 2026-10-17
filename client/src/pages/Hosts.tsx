@@ -10,6 +10,7 @@ import DateTimePickerInput, {
   parseDateInputValue as parseDateTimeLocal,
 } from "@/components/DatePickerInput";
 import HostCard, { HostActionButtons } from "@/components/hosts/HostCard";
+import HostDeleteDialog from "@/components/hosts/HostDeleteDialog";
 import HostGroupManager, { compareHostGroupDisplayOrder, type HostGroupView, type HostGroupViewMode } from "@/components/hosts/HostGroupManager";
 import HostProbeServiceManager, { type HostProbeServiceViewMode } from "@/components/hosts/HostProbeServiceManager";
 import HostProbeServiceLatencyDialog from "@/components/hosts/HostProbeServiceLatencyDialog";
@@ -750,10 +751,10 @@ function systemNetworkTotalTitle(metric: any) {
   const bytesOut = metricBytesOrNull(metric?.networkOut);
   const total = bytesIn === null && bytesOut === null ? null : (bytesIn ?? 0) + (bytesOut ?? 0);
   return [
-    translateText("系统累计流量（系统重启后重置）"),
-    `\u5165\u7ad9 ${formatOptionalBytes(bytesIn)}`,
-    `\u51fa\u7ad9 ${formatOptionalBytes(bytesOut)}`,
-    `\u5408\u8ba1 ${formatOptionalBytes(total)}`,
+    translateText("\u7cfb\u7edf\u7d2f\u8ba1\u6d41\u91cf\uff08\u7cfb\u7edf\u91cd\u542f\u540e\u91cd\u7f6e\uff09"),
+    translateText("入站 {0}", [formatOptionalBytes(bytesIn)]),
+    translateText("出站 {0}", [formatOptionalBytes(bytesOut)]),
+    translateText("合计 {0}", [formatOptionalBytes(total)]),
   ].join("\n");
 }
 function clampPercent(value: unknown) {
@@ -1459,6 +1460,7 @@ function HostsContent() {
   const [trafficCorrectionInput, setTrafficCorrectionInput] = useState("0");
   const [trafficCorrectionCurrentBytes, setTrafficCorrectionCurrentBytes] = useState(0);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [deletingHostId, setDeletingHostId] = useState<number | null>(null);
   const [hostCardModeTransitionKey, setHostCardModeTransitionKey] = useState(0);
   const [tokenViewMode, setTokenViewMode] = useState<AgentTokenViewMode>(() => getStoredAgentTokenViewMode());
   const [serviceViewMode, setServiceViewMode] = useState<HostProbeServiceViewMode>(() => getStoredHostProbeServiceViewMode());
@@ -1686,7 +1688,9 @@ function HostsContent() {
   });
 
   const deleteMutation = trpc.hosts.delete.useMutation({
+    onSettled: () => { void utils.hosts.deleteImpact.invalidate(); },
     onSuccess: () => {
+      setDeletingHostId(null);
       utils.hosts.list.invalidate();
       utils.hosts.options.invalidate();
       utils.hosts.listPage.invalidate();
@@ -1694,7 +1698,7 @@ function HostsContent() {
       utils.hosts.summary.invalidate();
       toast.success(translateText("主机已删除"));
     },
-    onError: (err) => toast.error(err.message || translateText("删除失败")),
+    onError: (err) => toast.error(err.message ? translateText(err.message) : translateText("删除失败")),
   });
 
   const resetHostTrafficMutation = trpc.hosts.resetTraffic.useMutation({
@@ -2118,7 +2122,7 @@ function HostsContent() {
       key={host.id}
       host={host}
       onEdit={openEdit}
-      onDelete={(id) => deleteMutation.mutate({ id })}
+      onDelete={setDeletingHostId}
       onUpgrade={requestAgentUpgrade}
       canUpgrade={user?.role === "admin"}
       onResetTraffic={user?.role === "admin" ? requestResetHostTraffic : undefined}
@@ -2238,10 +2242,9 @@ function HostsContent() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <div className="pearl-page-header flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight">{translateText("主机管理")}</h1>
-          <p className="text-muted-foreground mt-1 text-sm">{translateText("管理 Agent 主机和运行状态")}</p>
         </div>
         <div className="responsive-actions grid min-w-0 w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:justify-end">
           <Badge variant="outline" className="justify-center gap-1.5 px-3 py-1.5 text-xs">
@@ -2764,7 +2767,7 @@ function HostsContent() {
                           <HostActionButtons
                             host={host}
                             onEdit={openEdit}
-                            onDelete={(id) => deleteMutation.mutate({ id })}
+                            onDelete={setDeletingHostId}
                             onUpgrade={requestAgentUpgrade}
                             onResetTraffic={user?.role === "admin" ? requestResetHostTraffic : undefined}
                             onCorrectTraffic={user?.role === "admin" ? requestCorrectHostTraffic : undefined}
@@ -2865,6 +2868,13 @@ function HostsContent() {
         services={probeServices as any[]}
       />
       {/* Reset Host Traffic Dialog */}
+      {deletingHostId !== null && <HostDeleteDialog
+        key={deletingHostId}
+        hostId={deletingHostId}
+        onClose={() => setDeletingHostId(null)}
+        onDelete={(input) => deleteMutation.mutate(input)}
+        pending={deleteMutation.isPending}
+      />}
       <Dialog open={!!resetTrafficHost} onOpenChange={(open) => !open && !resetHostTrafficMutation.isPending && setResetTrafficHost(null)}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -3334,7 +3344,7 @@ function HostsContent() {
                       <div className="mt-2.5 flex min-h-9 flex-col gap-2 rounded-md bg-muted/35 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
                         <div className="min-w-0 space-y-0.5">
                           <Label className="text-sm font-medium">{translateText("流量故障转移")}</Label>
-                          <p className="text-xs text-muted-foreground">{translateText("达到套餐流量的指定比例后，暂停此主机参与转发组及隧道入口/出口组；流量重置或关闭后恢复，不删除成员配置。")}</p>
+                          <p className="text-xs text-muted-foreground">{translateText("达量后暂停组内使用，流量重置或关闭此项后恢复；不删除成员。")}</p>
                           {editingId && displayHosts.find((host: any) => host.id === editingId)?.trafficFailoverExcluded && (
                             <p className="text-xs text-amber-600 dark:text-amber-400">{translateText("当前已达到流量阈值，已暂停参与组调度（不影响主机在线状态）。")}</p>
                           )}

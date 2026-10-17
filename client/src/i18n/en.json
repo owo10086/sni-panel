@@ -4376,5 +4376,6 @@
   "较大图片自动压缩。": "Larger images are compressed automatically.",
   "{0}–{1} / {2} {3}": "{0}–{1} / {2} {3}",
   "第 {0} 页，共 {1} 页": "Page {0} of {1}",
-  "校验并同步": "Validate & sync"
+  "校验并同步": "Validate & sync",
+  "另有关联配置需要管理员处理": "Additional linked configurations require an administrator."
 }

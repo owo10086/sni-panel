@@ -2,7 +2,6 @@ import { t as translateText } from "@/i18n";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -128,7 +127,6 @@ export function HostActionButtons({
   className = "flex shrink-0 items-center justify-end gap-1",
   buttonClassName = "h-7 w-7",
 }: HostActionButtonsProps) {
-  const confirmDialog = useConfirmDialog();
   const isOnline = !!host.isOnline;
   const agentUpgradeTimedOut = isAgentUpgradeTimedOut(host);
   const upgradeTitle = !isOnline
@@ -137,13 +135,8 @@ export function HostActionButtons({
       ? translateText("升级超时，可重新下发")
       : translateText("升级 Agent");
 
-  const confirmDelete = async () => {
-    if (await confirmDialog({
-      title: translateText("删除主机"),
-      description: translateText("确定要删除此主机吗？删除后相关状态和配置会同步移除。"),
-      confirmText: translateText("删除"),
-      tone: "destructive",
-    })) onDelete(host.id);
+  const confirmDelete = () => {
+    onDelete(host.id);
   };
 
   return (
@@ -363,7 +356,7 @@ export default function HostCard({
     </div>
   );
   const renderTrafficSplitBox = () => (
-    <div className={`rounded-md border px-2.5 py-2 ${trafficPanelClass}`}>
+    <div className={`pearl-readout rounded-xl border px-2.5 py-2 ${trafficPanelClass}`}>
       <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_minmax(0,1fr)] divide-x divide-border/40">
         {renderTrafficColumn({ label: translateText("当前"), inValue: currentTrafficInLabel, outValue: currentTrafficOutLabel, title: currentTrafficTitle, className: "pr-2" })}
         {renderTrafficColumn({ label: translateText("累计"), inValue: systemTrafficInLabel, outValue: systemTrafficOutLabel, title: systemTrafficTitle, className: "pl-2" })}
@@ -387,7 +380,7 @@ export default function HostCard({
       ? "h-1.5 bg-muted [&>div]:bg-muted-foreground/30"
       : "h-1.5 bg-muted [&>div]:bg-muted-foreground/20";
   const infoPanelClass = isOnline
-    ? "border-border/40 bg-background/30"
+    ? "pearl-readout border-border/40"
     : "border-muted-foreground/20 bg-muted/25";
   const trafficPanelClass = isOnline
     ? "border-border/40 bg-muted/20"
@@ -455,7 +448,7 @@ export default function HostCard({
   }, [host.id, metrics]);
 
   return (
-    <Card className={`${cardMinHeightClass} host-card-shell ${dragHandle ? "group/sortable" : ""} ${sortableClassName || ""} backdrop-blur-md transition-[min-height,border-color,background-color,box-shadow,opacity] duration-200 ease-out ${
+    <Card interactive={isOnline} className={`${cardMinHeightClass} host-card-shell ${dragHandle ? "group/sortable" : ""} ${sortableClassName || ""} transition-[min-height,border-color,background-color,box-shadow,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
       isOnline
         ? "border-border/40 bg-card/60 hover:border-border/60"
         : "border-muted-foreground/20 bg-muted/35 shadow-none hover:border-muted-foreground/30"

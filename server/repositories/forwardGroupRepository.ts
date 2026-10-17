@@ -883,7 +883,7 @@ async function syncChainsUsingEntryGroup(entryGroupId: number, options: SyncForw
   ));
   for (const row of rows as any[]) {
     const chainGroupId = Number(row.id);
-    await syncForwardGroupRules(chainGroupId, options);
+    await syncForwardGroupRules(chainGroupId, { preserveRuntime: true, ...options });
   }
 }
 
@@ -4152,7 +4152,7 @@ async function replaceForwardGroupMembersWithSync(
     await replaceForwardGroupMembersUnlocked(groupId, members, {
       skipSync: true, deferRefresh: true,
     });
-  }, {}, [async () => {
+  }, { preserveRuntime: true }, [async () => {
     if (mode === "entry") await refreshForwardGroupReferences(groupId, {
       reason: "entry-group-members-updated", previousHostIds,
       syncDependentChains: false,
