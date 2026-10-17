@@ -2713,6 +2713,7 @@ type selfTest struct {
 }
 
 type fxpSpec struct {
+	ControlSocket            string            `json:"controlSocket,omitempty"`
 	Role                     string            `json:"role"`
 	TransportVersion         string            `json:"transportVersion,omitempty"`
 	Entries                  []fxpSpec         `json:"entries,omitempty"`
@@ -8975,14 +8976,16 @@ func removeState(port int) {
 }
 
 type fxpProcess struct {
-	signature             string
-	cmd                   *exec.Cmd
-	configPath            string
-	spec                  fxpSpec
-	sniLastConfigError    string
-	wireGuardRefID        string
-	runtimeExecutable     os.FileInfo
-	panelCredentialDigest string
+	signature              string
+	cmd                    *exec.Cmd
+	configPath             string
+	spec                   fxpSpec
+	sniLastConfigError     string
+	wireGuardRefID         string
+	wireGuardAdditiveRefID string
+	additivePendingSpec    *fxpSpec
+	runtimeExecutable      os.FileInfo
+	panelCredentialDigest  string
 }
 
 func trackedFXPSNILastConfigError(spec fxpSpec) string {
@@ -10636,6 +10639,16 @@ func startFXPLocked(cfg Config, spec fxpSpec, desiredGroup *fxpSpec, actionMessa
 			actionMessage.set("fxp entry group invalid tunnel=%d rule=%d port=%d", spec.TunnelID, spec.RuleID, spec.ListenPort)
 			return false
 		}
+		fxpMu.Lock()
+		current := fxpServers[fxpServerID(group)]
+		if current != nil && fxpProcessActive(current) {
+			observed := current.spec
+			if current.additivePendingSpec != nil {
+				observed = *current.additivePendingSpec
+			}
+			group = mergeFXPApplyGroup(observed, group)
+		}
+		fxpMu.Unlock()
 		return startFXPProcessLocked(cfg, group, actionMessage)
 	}
 	return startFXPProcessLocked(cfg, spec, actionMessage)
@@ -10696,8 +10709,14 @@ func startFXPProcessLockedWithPersistence(cfg Config, spec fxpSpec, actionMessag
 	existing := fxpServers[id]
 	existingActive := existing != nil && fxpProcessActive(existing)
 	existingMatches := existingActive && existing.signature == signature
+	pendingRemoval := false
 	if existingActive {
 		copy := existing.spec
+		if existing.additivePendingSpec != nil {
+			copy = *existing.additivePendingSpec
+			existingMatches = false
+			pendingRemoval = fxpServerSignature(copy) != signature && !fxpIsAdditiveUpdate(copy, originalSpec)
+		}
 		previousSame = &copy
 	}
 	fxpMu.Unlock()
@@ -10728,6 +10747,13 @@ func startFXPProcessLockedWithPersistence(cfg Config, spec fxpSpec, actionMessag
 			}
 		}
 		return true
+	}
+	additiveRecovery := existingActive && isFXPEntryGroup(spec) && existing.signature == signature &&
+		fxpProcessUsesCurrentExecutable(existing) && fxpProcessUsesPanelCredentialDigest(existing, expectedCredentialDigest)
+	if existingActive && !pendingRemoval && (fxpIsAdditiveUpdate(existing.spec, originalSpec) || additiveRecovery) {
+		// An unavailable/old control API must fail this addition, not restart
+		// the process carrying established sibling connections.
+		return syncFXPAdditive(cfg, existing, originalSpec, persistenceEnabled, actionMessage)
 	}
 	if existingActive && existing.signature == signature {
 		logf("fxp dependency or listener drift detected; rebuilding role=%s version=%s tunnel=%d rule=%d", spec.Role, spec.TransportVersion, spec.TunnelID, spec.RuleID)
@@ -10819,6 +10845,9 @@ func startFXPProcessLockedWithPersistence(cfg Config, spec fxpSpec, actionMessag
 			spec.Entries[index].Token = cfg.Token
 		}
 	}
+	if isFXPEntryGroup(spec) || spec.Role == "exit" {
+		spec.ControlSocket = configPath + ".sock"
+	}
 	logf(
 		"proxy-debug fxp config role=%s tunnel=%d rule=%d listen=%d udpListen=%d protocol=%s exitStrategy=%s proxyReceive=%v proxySend=%v proxyExitReceive=%v proxyExitSend=%v tcpFastOpen=%v exit=%s:%d udpExit=%d relayNext=%s:%d udpRelayNext=%d target=%s:%d udpTargets=%d",
 		spec.Role,
@@ -10902,8 +10931,7 @@ func startFXPProcessLockedWithPersistence(cfg Config, spec fxpSpec, actionMessag
 		}
 	}
 
-	fxpMu.Lock()
-	fxpServers[id] = &fxpProcess{
+	processState := &fxpProcess{
 		signature:             signature,
 		cmd:                   cmd,
 		configPath:            configPath,
@@ -10912,6 +10940,8 @@ func startFXPProcessLockedWithPersistence(cfg Config, spec fxpSpec, actionMessag
 		runtimeExecutable:     runtimeExecutable,
 		panelCredentialDigest: expectedCredentialDigest,
 	}
+	fxpMu.Lock()
+	fxpServers[id] = processState
 	fxpMu.Unlock()
 	desiredStarted = true
 	go func() {
@@ -10921,11 +10951,15 @@ func startFXPProcessLockedWithPersistence(cfg Config, spec fxpSpec, actionMessag
 		if current != nil && current.cmd == cmd {
 			delete(fxpServers, id)
 		}
+		additiveRefID := processState.wireGuardAdditiveRefID
 		fxpMu.Unlock()
 		if err != nil {
 			logf("fxp runtime exited tunnel=%d rule=%d: %v", spec.TunnelID, spec.RuleID, err)
 		}
 		releaseWireGuardRef()
+		if additiveRefID != "" {
+			releaseWireGuardRuntimeRef(originalSpec.TunnelID, additiveRefID)
+		}
 	}()
 	for _, conflicting := range conflictingSpecs {
 		replacement, hasRemaining := fxpSpecWithoutListenConflicts(conflicting, originalSpec)
