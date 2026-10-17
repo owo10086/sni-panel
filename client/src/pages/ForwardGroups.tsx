@@ -72,7 +72,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { ContentTransition } from "@/components/ui/content-transition";
 import { toast } from "@/lib/localizedToast";
 import {
   Area,
@@ -309,21 +309,7 @@ function ForwardGroupViewTransition({
   transitionKey: string;
   children: ReactNode;
 }) {
-  const reduceMotion = useReducedMotion();
-
-  return (
-    <AnimatePresence mode="wait">
-      <motion.div
-        key={transitionKey}
-        initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 10, scale: 0.995 }}
-        animate={reduceMotion ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1 }}
-        exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -8, scale: 0.995 }}
-        transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-      >
-        {children}
-      </motion.div>
-    </AnimatePresence>
-  );
+  return <ContentTransition transitionKey={transitionKey}>{children}</ContentTransition>;
 }
 
 function getStoredForwardGroupViewMode(): ForwardGroupViewMode {
@@ -1867,7 +1853,7 @@ export function ForwardGroupsContent({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className={`${embedded ? "" : "pearl-page-header "}flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between`}>
         <div className="min-w-0">
           {embedded ? (
             <h2 className="text-lg font-semibold tracking-tight sm:text-xl">{pageTitle}</h2>
@@ -1931,6 +1917,7 @@ export function ForwardGroupsContent({
               {({ itemProps, handleProps, isDragging, isDropTarget }) => (
                 <Card
                   {...itemProps}
+                  interactive={!isDragging}
                   className={cn(
                     "group/sortable relative action-card border-border/40 bg-card/60 transition-[box-shadow,opacity]",
                     isDragging && "opacity-55 ring-1 ring-primary/35",
@@ -2029,6 +2016,7 @@ export function ForwardGroupsContent({
               {({ itemProps, handleProps, isDragging, isDropTarget }) => (
                 <Card
                   {...itemProps}
+                  interactive={!isDragging}
                   className={cn(
                     "group/sortable relative action-card border-border/40 bg-card/60 transition-[box-shadow,opacity]",
                     isDragging && "opacity-55 ring-1 ring-primary/35",

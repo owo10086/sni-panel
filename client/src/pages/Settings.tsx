@@ -1,4 +1,4 @@
-import { getFormatLocale } from "@/i18n";
+import { getFormatLocale, getLanguage } from "@/i18n";
 import { t as translateText } from "@/i18n";
 import NotificationSettingsCard from "@/components/NotificationSettingsCard";
 import GoogleLoginSettingsCard from "@/components/GoogleLoginSettingsCard";
@@ -10,6 +10,7 @@ import { EmailSettingsContent } from "./EmailSettings";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { HelpDetails } from "@/components/ui/help-details";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   Dialog,
@@ -323,7 +324,183 @@ function normalizePanelLogSummary(summary?: Partial<PanelLogSummary> | null): Pa
 
 function createDefaultHomepageHtml(themeId: PersonalizationThemePresetId) {
   const theme = getPersonalizationThemePreset(themeId);
-  return translateText("<!doctype html>\n<html lang=\"zh-CN\">\n<head>\n  <meta charset=\"utf-8\" />\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n  <title>ForwardX</title>\n  <style>\n    :root {\n      --fx-primary: {0};\n      --fx-primary-foreground: {1};\n      --fx-ring: {2};\n      --fx-chart-1: {3};\n      --fx-chart-2: {4};\n      --fx-chart-3: {5};\n      --fx-chart-4: {6};\n      --fx-bg: #f8fafc;\n      --fx-ink: #0f172a;\n      --fx-muted: #475569;\n      --fx-border: rgba(15, 23, 42, .10);\n      --fx-card: rgba(255, 255, 255, .76);\n      --fx-card-soft: rgba(248, 250, 252, .72);\n    }\n    @media (prefers-color-scheme: dark) {\n      :root {\n        --fx-primary: {7};\n        --fx-primary-foreground: {8};\n        --fx-ring: {9};\n        --fx-chart-1: {10};\n        --fx-chart-2: {11};\n        --fx-chart-3: {12};\n        --fx-chart-4: {13};\n        --fx-bg: #0b1020;\n        --fx-ink: #f8fafc;\n        --fx-muted: #a8b3c7;\n        --fx-border: rgba(226, 232, 240, .14);\n        --fx-card: rgba(15, 23, 42, .72);\n        --fx-card-soft: rgba(15, 23, 42, .56);\n      }\n    }\n    * { box-sizing: border-box; }\n    body {\n      margin: 0;\n      min-height: 100vh;\n      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif;\n      color: var(--fx-ink);\n      background:\n        radial-gradient(circle at 16% -10%, color-mix(in oklch, var(--fx-chart-1) 20%, transparent) 0, transparent 34rem),\n        radial-gradient(circle at 92% 0%, color-mix(in oklch, var(--fx-chart-2) 16%, transparent) 0, transparent 30rem),\n        linear-gradient(135deg, color-mix(in oklch, var(--fx-bg) 94%, white 6%) 0%, var(--fx-bg) 52%, color-mix(in oklch, var(--fx-bg) 88%, var(--fx-chart-4) 12%) 100%);\n    }\n    .page {\n      min-height: 100vh;\n      display: grid;\n      place-items: center;\n      padding: 32px 18px;\n    }\n    .hero {\n      width: min(1080px, 100%);\n      display: grid;\n      grid-template-columns: 1.1fr .9fr;\n      gap: 36px;\n      align-items: center;\n    }\n    .eyebrow {\n      display: inline-flex;\n      align-items: center;\n      gap: 8px;\n      border: 1px solid color-mix(in oklch, var(--fx-primary) 28%, transparent);\n      background: var(--fx-card);\n      color: var(--fx-primary);\n      padding: 8px 12px;\n      border-radius: 999px;\n      font-size: 13px;\n      font-weight: 600;\n    }\n    .dot {\n      width: 7px;\n      height: 7px;\n      border-radius: 50%;\n      background: var(--fx-primary);\n    }\n    h1 {\n      margin: 18px 0 14px;\n      font-size: clamp(42px, 7vw, 76px);\n      line-height: .95;\n      letter-spacing: 0;\n    }\n    p {\n      max-width: 620px;\n      color: var(--fx-muted);\n      font-size: 17px;\n      line-height: 1.8;\n    }\n    .actions {\n      display: flex;\n      flex-wrap: wrap;\n      gap: 12px;\n      margin-top: 26px;\n    }\n    .btn {\n      display: inline-flex;\n      min-height: 44px;\n      align-items: center;\n      justify-content: center;\n      border-radius: 10px;\n      padding: 0 18px;\n      text-decoration: none;\n      font-weight: 700;\n    }\n    .btn.primary {\n      color: var(--fx-primary-foreground);\n      background: var(--fx-primary);\n      box-shadow: 0 14px 30px color-mix(in oklch, var(--fx-primary) 26%, transparent);\n    }\n    .btn.secondary {\n      color: var(--fx-ink);\n      border: 1px solid var(--fx-border);\n      background: var(--fx-card);\n    }\n    .panel {\n      border: 1px solid var(--fx-border);\n      background: var(--fx-card);\n      border-radius: 16px;\n      padding: 18px;\n      box-shadow: 0 24px 80px color-mix(in oklch, var(--fx-primary) 14%, transparent);\n      backdrop-filter: blur(18px);\n    }\n    .grid {\n      display: grid;\n      grid-template-columns: repeat(2, minmax(0, 1fr));\n      gap: 12px;\n    }\n    .item {\n      border: 1px solid var(--fx-border);\n      border-radius: 12px;\n      padding: 16px;\n      background: var(--fx-card-soft);\n    }\n    .item b {\n      display: block;\n      margin-bottom: 6px;\n    }\n    .item span {\n      color: var(--fx-muted);\n      font-size: 13px;\n      line-height: 1.6;\n    }\n    @media (max-width: 820px) {\n      .hero { grid-template-columns: 1fr; }\n      .grid { grid-template-columns: 1fr; }\n    }\n  </style>\n</head>\n<body>\n  <main class=\"page\">\n    <section class=\"hero\">\n      <div>\n        <span class=\"eyebrow\"><span class=\"dot\"></span>ForwardX 面板</span>\n        <h1>多主机转发管理</h1>\n        <p>管理转发、隧道、用户和流量。</p>\n        <div class=\"actions\">\n          <a class=\"btn primary\" href=\"/login\">进入面板</a>\n          <a class=\"btn secondary\" href=\"/login?mode=register\">创建账号</a>\n        </div>\n      </div>\n      <div class=\"panel\">\n        <div class=\"grid\">\n          <div class=\"item\"><b>多节点</b><span>管理多台 Linux 主机和隧道。</span></div>\n          <div class=\"item\"><b>流量统计</b><span>按用户和规则记录转发用量。</span></div>\n          <div class=\"item\"><b>套餐订阅</b><span>支持余额、套餐和支付配置。</span></div>\n          <div class=\"item\"><b>Telegram</b><span>用户可通过机器人自助查询和管理。</span></div>\n        </div>\n      </div>\n    </section>\n  </main>\n</body>\n</html>", [theme.light.primary, theme.light.primaryForeground, theme.light.ring, theme.light.chart1, theme.light.chart2, theme.light.chart3, theme.light.chart4, theme.dark.primary, theme.dark.primaryForeground, theme.dark.ring, theme.dark.chart1, theme.dark.chart2, theme.dark.chart3, theme.dark.chart4]);
+  return `<!doctype html>
+<html lang="${getLanguage()}">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ForwardX</title>
+  <style>
+    :root {
+      --fx-primary: ${theme.light.primary};
+      --fx-primary-foreground: ${theme.light.primaryForeground};
+      --fx-ring: ${theme.light.ring};
+      --fx-chart-1: ${theme.light.chart1};
+      --fx-chart-2: ${theme.light.chart2};
+      --fx-chart-3: ${theme.light.chart3};
+      --fx-chart-4: ${theme.light.chart4};
+      --fx-bg: #f8fafc;
+      --fx-ink: #0f172a;
+      --fx-muted: #475569;
+      --fx-border: rgba(15, 23, 42, .10);
+      --fx-card: rgba(255, 255, 255, .76);
+      --fx-card-soft: rgba(248, 250, 252, .72);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --fx-primary: ${theme.dark.primary};
+        --fx-primary-foreground: ${theme.dark.primaryForeground};
+        --fx-ring: ${theme.dark.ring};
+        --fx-chart-1: ${theme.dark.chart1};
+        --fx-chart-2: ${theme.dark.chart2};
+        --fx-chart-3: ${theme.dark.chart3};
+        --fx-chart-4: ${theme.dark.chart4};
+        --fx-bg: #0b1020;
+        --fx-ink: #f8fafc;
+        --fx-muted: #a8b3c7;
+        --fx-border: rgba(226, 232, 240, .14);
+        --fx-card: rgba(15, 23, 42, .72);
+        --fx-card-soft: rgba(15, 23, 42, .56);
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--fx-ink);
+      background:
+        radial-gradient(circle at 16% -10%, color-mix(in oklch, var(--fx-chart-1) 20%, transparent) 0, transparent 34rem),
+        radial-gradient(circle at 92% 0%, color-mix(in oklch, var(--fx-chart-2) 16%, transparent) 0, transparent 30rem),
+        linear-gradient(135deg, color-mix(in oklch, var(--fx-bg) 94%, white 6%) 0%, var(--fx-bg) 52%, color-mix(in oklch, var(--fx-bg) 88%, var(--fx-chart-4) 12%) 100%);
+    }
+    .page {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 32px 18px;
+    }
+    .hero {
+      width: min(1080px, 100%);
+      display: grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap: 36px;
+      align-items: center;
+    }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid color-mix(in oklch, var(--fx-primary) 28%, transparent);
+      background: var(--fx-card);
+      color: var(--fx-primary);
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--fx-primary);
+    }
+    h1 {
+      margin: 18px 0 14px;
+      font-size: clamp(42px, 7vw, 76px);
+      line-height: .95;
+      letter-spacing: 0;
+    }
+    p {
+      max-width: 620px;
+      color: var(--fx-muted);
+      font-size: 17px;
+      line-height: 1.8;
+    }
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 26px;
+    }
+    .btn {
+      display: inline-flex;
+      min-height: 44px;
+      align-items: center;
+      justify-content: center;
+      border-radius: 10px;
+      padding: 0 18px;
+      text-decoration: none;
+      font-weight: 700;
+    }
+    .btn.primary {
+      color: var(--fx-primary-foreground);
+      background: var(--fx-primary);
+      box-shadow: 0 14px 30px color-mix(in oklch, var(--fx-primary) 26%, transparent);
+    }
+    .btn.secondary {
+      color: var(--fx-ink);
+      border: 1px solid var(--fx-border);
+      background: var(--fx-card);
+    }
+    .panel {
+      border: 1px solid var(--fx-border);
+      background: var(--fx-card);
+      border-radius: 16px;
+      padding: 18px;
+      box-shadow: 0 24px 80px color-mix(in oklch, var(--fx-primary) 14%, transparent);
+      backdrop-filter: blur(18px);
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .item {
+      border: 1px solid var(--fx-border);
+      border-radius: 12px;
+      padding: 16px;
+      background: var(--fx-card-soft);
+    }
+    .item b {
+      display: block;
+      margin-bottom: 6px;
+    }
+    .item span {
+      color: var(--fx-muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    @media (max-width: 820px) {
+      .hero { grid-template-columns: 1fr; }
+      .grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <div>
+        <span class="eyebrow"><span class="dot"></span>${translateText("ForwardX 面板")}</span>
+        <h1>${translateText("多主机转发管理")}</h1>
+        <p>${translateText("管理转发、隧道、用户和流量。")}</p>
+        <div class="actions">
+          <a class="btn primary" href="/login">${translateText("进入面板")}</a>
+          <a class="btn secondary" href="/login?mode=register">${translateText("创建账号")}</a>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="grid">
+          <div class="item"><b>${translateText("多节点")}</b><span>${translateText("管理多台 Linux 主机和隧道。")}</span></div>
+          <div class="item"><b>${translateText("流量统计")}</b><span>${translateText("按用户和规则记录转发用量。")}</span></div>
+          <div class="item"><b>${translateText("套餐订阅")}</b><span>${translateText("支持余额、套餐和支付配置。")}</span></div>
+          <div class="item"><b>Telegram</b><span>${translateText("用户可通过机器人自助查询和管理。")}</span></div>
+        </div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>`;
 }
 
 function formatCountdown(seconds: number) {
@@ -584,7 +761,7 @@ function SettingsContent() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="pearl-page-header flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight">{translateText("系统设置")}</h1>
         </div>
@@ -596,7 +773,6 @@ function SettingsContent() {
         {/* System Info Tab */}
         <TabsContent value="system" className="space-y-4">
           <SystemInfoSection />
-          <GoogleLoginSettingsCard />
         </TabsContent>
 
         {/* Telegram Bot Tab */}
@@ -1454,7 +1630,7 @@ function BackupRestoreSection({ panelUrl }: { panelUrl: string }) {
         <AlertDescription>
           {backupSummaryReady
             ? translateText("增量迁移会保留新面板现有主机、用户、规则和订单数据，并把旧面板数据追加导入；重复的用户账号、主机 Token、订单号、兑换码会复用现有记录。")
-            : translateText("首次进入没有缓存时会先显示 0；接口返回真实数据后会自动更新并缓存，后续进入可直接展示上次统计。")}
+            : translateText("统计加载中，完成后自动更新。")}
         </AlertDescription>
       </Alert>
 
@@ -2498,9 +2674,12 @@ function DeepSeekSettingsCard() {
             <div>
               <CardTitle className="flex items-center gap-2 text-base">
                 <Key className="h-4 w-4 text-emerald-500" />{translateText("AI 助手模型")}</CardTitle>
-              <CardDescription className="mt-1">{translateText("支持 DeepSeek / SiliconFlow / 自定义 OpenAI 兼容接口，用于所选通知渠道的 AI 指令解析。")}</CardDescription>
-              <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{translateText("复杂请求会按需发送有权限的最少资源信息给 AI 服务，不包含密码、Token 或隧道密钥。待办可发送“继续”恢复，所有修改仍需确认。")}</p>
-              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{translateText("支持规则、到期、设置开关、主机、隧道、转发组、用户额度授权、套餐订阅和公告等常用操作；敏感凭据、迁移和升级仍请使用网页。")}</p>
+              <CardDescription className="mt-1">{translateText("用对话查询和管理；修改前需确认。")}</CardDescription>
+              <HelpDetails className="mt-1">
+                <p>{translateText("支持 DeepSeek / SiliconFlow / 自定义 OpenAI 兼容接口，用于所选通知渠道的 AI 指令解析。")}</p>
+                <p>{translateText("复杂请求会按需发送有权限的最少资源信息给 AI 服务，不包含密码、Token 或隧道密钥。待办可发送“继续”恢复，所有修改仍需确认。")}</p>
+                <p>{translateText("支持规则、到期、设置开关、主机、隧道、转发组、用户额度授权、套餐订阅和公告等常用操作；敏感凭据、迁移和升级仍请使用网页。")}</p>
+              </HelpDetails>
             </div>
             <Badge variant={providerConfigured ? "default" : "outline"} className="w-fit">
               {providerConfigured ? translateText("已配置") : translateText("未配置")}
@@ -3194,7 +3373,6 @@ function PersonalizationSettingsSection() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
               <Globe className="h-4 w-4 text-primary" />{translateText("网站标题")}</CardTitle>
-            <CardDescription>{translateText("配置后台显示的品牌名称。")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex flex-col gap-2 sm:flex-row">
@@ -3337,7 +3515,7 @@ function PersonalizationSettingsSection() {
           <div className="space-y-1.5">
             <CardTitle className="flex items-center gap-2 text-base">
               <Palette className="h-4 w-4 text-primary" />{translateText("默认配色")}</CardTitle>
-            <CardDescription>{translateText("选择后保存，按钮、选中态、提示框、侧边栏主色和背景轻微渐变会同步变化。")}</CardDescription>
+            <CardDescription>{translateText("保存后应用于整个面板。")}</CardDescription>
           </div>
           <Button
             type="button"
@@ -3365,9 +3543,9 @@ function PersonalizationSettingsSection() {
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="font-medium">{preset.name}</p>
+                      <p className="font-medium">{translateText(preset.name)}</p>
                       <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                        {preset.description}
+                        {translateText(preset.description)}
                       </p>
                     </div>
                     <span className="flex h-5 w-5 shrink-0 items-center justify-center">
@@ -3399,7 +3577,7 @@ function PersonalizationSettingsSection() {
           <div className="space-y-1.5">
             <CardTitle className="flex items-center gap-2 text-base">
               <Palette className="h-4 w-4 text-primary" />{translateText("自定义背景")}</CardTitle>
-            <CardDescription>{translateText("默认不使用背景，可选择内置、上传或链接背景。")}</CardDescription>
+            <CardDescription>{translateText("选择内置背景，或上传、粘贴链接。")}</CardDescription>
           </div>
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
             <Button type="button" variant="outline" onClick={handleResetBackground} disabled={isSavingPersonalization("background")} className="w-full gap-2 sm:w-auto">
@@ -3568,12 +3746,12 @@ function PersonalizationSettingsSection() {
                         >
                           <img
                             src={item.url}
-                            alt={item.name}
+                            alt={translateText(item.name)}
                             loading="lazy"
                             decoding="async"
                             className="aspect-[16/9] w-full bg-muted/40 object-contain transition-transform group-hover:scale-[1.02]"
                           />
-                          <div className="px-3 py-2 text-xs font-medium">{item.name}</div>
+                          <div className="px-3 py-2 text-xs font-medium">{translateText(item.name)}</div>
                         </button>
                       );
                     })}
@@ -4501,7 +4679,7 @@ function SystemInfoSection() {
     [translateText("本地部署"), "local"],
     [translateText("Docker 部署"), "docker"],
   ] as const).map(([label, deployment]) => ({
-    label,
+    label: translateText(label),
     command: buildPanelInstallerCommand({
       deployment,
       action: "upgrade",
@@ -4597,7 +4775,6 @@ function SystemInfoSection() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
               <Wifi className="h-4 w-4 text-primary" />{translateText("网络测试")}</CardTitle>
-            <CardDescription>{translateText("配置普通用户是否可见网络测试入口。")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between gap-3">
@@ -4615,7 +4792,6 @@ function SystemInfoSection() {
             <div className="min-w-0 flex-1 basis-40 space-y-1.5">
               <CardTitle className="flex items-center gap-2 text-base">
                 <ShieldCheck className="h-4 w-4 text-primary" />{translateText("转发协议总开关")}</CardTitle>
-              <CardDescription>{translateText("控制用户可用的转发协议。")}</CardDescription>
             </div>
             <Button variant="outline" className="w-full gap-2 sm:w-auto" onClick={openForwardProtocolDialog}>
               <Settings2 className="h-4 w-4" />{translateText("管理协议开关")}</Button>
@@ -4914,7 +5090,6 @@ function SystemInfoSection() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
               <UserPlus className="h-4 w-4 text-primary" />{translateText("用户注册")}</CardTitle>
-            <CardDescription>{translateText("控制新用户自助注册。")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between gap-3 rounded-lg border border-border/40 bg-muted/20 p-3">
@@ -4934,7 +5109,6 @@ function SystemInfoSection() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
               <Shield className="h-4 w-4 text-primary" />{translateText("双重验证")}</CardTitle>
-            <CardDescription>{translateText("账号可绑定 2FA 动态验证码。")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between gap-3 rounded-lg border border-border/40 bg-muted/20 p-3">
@@ -5257,7 +5431,6 @@ function SystemInfoSection() {
             <div className="min-w-0 flex-1 basis-40 space-y-1.5">
               <CardTitle className="flex items-center gap-2 text-base">
                 <PanelLeft className="h-4 w-4 text-primary" />{translateText("左侧导航栏菜单展示设置")}</CardTitle>
-              <CardDescription>{translateText("控制左侧导航栏常用入口是否展示。")}</CardDescription>
             </div>
             <Button variant="outline" className="w-full gap-2 sm:w-auto" onClick={openSidebarMenuDialog}>
               <Settings2 className="h-4 w-4" />{translateText("管理菜单开关")}</Button>
@@ -5377,7 +5550,6 @@ function SystemInfoSection() {
             <div className="space-y-1.5">
               <CardTitle className="flex items-center gap-2 text-base">
                 <Rocket className="h-4 w-4 text-primary" />{translateText("版本升级")}</CardTitle>
-              <CardDescription>{translateText("检查并升级 ForwardX。")}</CardDescription>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -5905,11 +6077,12 @@ function SystemInfoSection() {
         </DialogContent>
       </Dialog>
 
+      <GoogleLoginSettingsCard />
+
       <Card className="border-border/40 bg-card/60 backdrop-blur-md">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <Settings2 className="h-4 w-4 text-primary" />{translateText("开源与联系")}</CardTitle>
-          <CardDescription>{translateText("项目地址与联系渠道。")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="grid gap-3 sm:grid-cols-2">

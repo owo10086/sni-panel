@@ -20,7 +20,7 @@
     "mobile:open": "cap open android",
     "mobile:open:android": "cap open android",
     "mobile:apk": "pnpm mobile:sync:android && cd android && ./gradlew assembleDebug",
-    "test:i18n": "node --import tsx --test client/src/i18n/language.test.ts client/src/i18n/runtime.test.ts client/src/components/ui/sliding-tabs.test.tsx server/localeHint.test.ts",
+    "test:i18n": "node --import tsx --test client/src/i18n/language.test.ts client/src/i18n/runtime.test.ts client/src/i18n/ui-coverage.test.tsx client/src/components/ui/sliding-tabs.test.tsx server/localeHint.test.ts",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
     "docs:preview": "vitepress preview docs",
@@ -37,7 +37,8 @@
     "start": "NODE_ENV=production node dist/index.js",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:push": "drizzle-kit push"
+    "db:push": "drizzle-kit push",
+    "test:ui": "node --import tsx --test client/src/components/ui/pearl-ui.test.tsx client/src/components/ui/sliding-tabs.test.tsx client/src/components/ui/confirm-dialog.test.tsx client/src/components/ui/ui-copy.test.tsx"
   },
   "dependencies": {
     "@cap.js/server": "^4.0.5",

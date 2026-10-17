@@ -5,6 +5,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { t } from "@/i18n";
 import type { RuleTrafficMode } from "@shared/ruleLimits";
 import { ruleTrafficUsed } from "@shared/ruleLimits";
+import { ChevronDown } from "lucide-react";
+import { HelpDetails } from "@/components/ui/help-details";
 
 export type RuleLimitsFormValue = {
   speed: string; quota: string; mode: RuleTrafficMode;
@@ -45,12 +47,12 @@ export function ruleLimitsPayload(value: RuleLimitsFormValue) {
 
 export function RuleLimitsForm({ value, onChange }: { value: RuleLimitsFormValue; onChange: (value: RuleLimitsFormValue) => void }) {
   const patch = (data: Partial<RuleLimitsFormValue>) => onChange({ ...value, ...data });
-  return <details className="rounded-lg border border-border/60 bg-muted/20 p-3">
-    <summary className="cursor-pointer text-sm font-medium">{t("单条规则限额与有效期")}</summary>
+  return <details className="pearl-disclosure rounded-xl border border-border/60 bg-muted/20 p-3">
+    <summary className="flex cursor-pointer items-center justify-between gap-3 text-sm font-medium">
+      <span>{t("限额与有效期")}</span><ChevronDown aria-hidden="true" className="pearl-disclosure-chevron h-4 w-4 shrink-0 text-muted-foreground" />
+    </summary>
     <div className="mt-4 space-y-4">
-      <p className="text-xs text-muted-foreground">{t("管理员可为本人或其他用户的规则设置独立限额；本人账户下提供给他人使用的规则同样适用。")}</p>
-      <p className="text-xs text-muted-foreground">{t("0 或留空表示不限制。规则流量额度单独计算，不影响可创建的规则数、端口数或账户套餐流量；账户限制仍同时生效。")}</p>
-      <p className="text-xs text-muted-foreground">{t("首次设置额度时计入已有累计流量；切换链路或修改日期不会清零用量。")}</p>
+      <p className="text-xs text-muted-foreground">{t("0 或留空不限，与账户限额同时生效。")}</p>
       {value.quotaUsedIn !== null && <p className="text-xs text-muted-foreground">{t("已用额度：{0} 字节", [ruleTrafficUsed(value.mode, value.quotaUsedIn || 0, value.quotaUsedOut || 0).toLocaleString()])}</p>}
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2"><Label>{t("速度限制 (Mbps)")}</Label><Input type="number" min="0" max="1000000" step="1" value={value.speed} placeholder="0" onChange={e => patch({ speed: e.target.value })} /></div>
@@ -64,7 +66,12 @@ export function RuleLimitsForm({ value, onChange }: { value: RuleLimitsFormValue
         <div className="space-y-2"><Label>{t("创建时间")}</Label><DatePickerInput value={value.createdDate} onChange={createdDate => patch({ createdDate })} /><Input aria-label={t("创建时间")} type="time" step="1" value={value.createdTime} onChange={e => patch({ createdTime: e.target.value })} /></div>
         <div className="space-y-2"><Label>{t("到期时间")}</Label><DatePickerInput value={value.expiresDate} placeholder={t("不限制")} onChange={expiresDate => patch({ expiresDate })} /><Input aria-label={t("到期时间")} type="time" step="1" disabled={!value.expiresDate} value={value.expiresTime} onChange={e => patch({ expiresTime: e.target.value })} /></div>
       </div>
-      <p className="text-xs text-muted-foreground">{t("到期时间留空表示永久有效；创建时间仅用于记录，不影响启用时间。修改日期不会清零已用流量。")}</p>
+      <HelpDetails>
+        <p>{t("0 或留空表示不限制。规则流量额度单独计算，不影响可创建的规则数、端口数或账户套餐流量；账户限制仍同时生效。")}</p>
+        <p>{t("首次设置额度时计入已有累计流量；切换链路或修改日期不会清零用量。")}</p>
+        <p>{t("管理员可为本人或其他用户的规则设置独立限额；本人账户下提供给他人使用的规则同样适用。")}</p>
+        <p>{t("到期时间留空表示永久有效；创建时间仅用于记录，不影响启用时间。修改日期不会清零已用流量。")}</p>
+      </HelpDetails>
     </div>
   </details>;
 }

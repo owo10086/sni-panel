@@ -8,6 +8,7 @@ import { mobileAuth } from "@/lib/mobileAuth";
 import NotFound from "@/pages/NotFound";
 import { Redirect, Route, Switch, useLocation } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
+import MotionPolicy from "./components/MotionPolicy";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import PersonalizationLayer from "./components/PersonalizationLayer";
 import Live2DWidgetHost from "./components/plugins/Live2DWidgetHost";
@@ -177,20 +178,22 @@ import { SeamlessMigrationGate } from "./components/SeamlessMigrationGate";
 function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider defaultTheme="light">
-        <TooltipProvider>
-          <ConfirmDialogProvider>
-            <DatabaseHealthGate>
-              <SeamlessMigrationGate>
-              <PersonalizationLayer />
-              <Live2DWidgetHost />
-              <Toaster />
-              <SetupGate />
-              </SeamlessMigrationGate>
-            </DatabaseHealthGate>
-          </ConfirmDialogProvider>
-        </TooltipProvider>
-      </ThemeProvider>
+      <MotionPolicy>
+        <ThemeProvider defaultTheme="light">
+          <TooltipProvider>
+            <ConfirmDialogProvider>
+              <DatabaseHealthGate>
+                <SeamlessMigrationGate>
+                  <PersonalizationLayer />
+                  <Live2DWidgetHost />
+                  <Toaster />
+                  <SetupGate />
+                </SeamlessMigrationGate>
+              </DatabaseHealthGate>
+            </ConfirmDialogProvider>
+          </TooltipProvider>
+        </ThemeProvider>
+      </MotionPolicy>
     </ErrorBoundary>
   );
 }

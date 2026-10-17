@@ -683,6 +683,7 @@ function RuleGroupItems({
   return (
     <div
       aria-hidden={!open}
+      inert={!open}
       className={`grid transition-[grid-template-rows,opacity] duration-200 ease-out ${open ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}
     >
       <AutoAnimateContainer layout={layout} className={`min-h-0 overflow-hidden ${className}`}>

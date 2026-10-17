@@ -246,10 +246,9 @@ export default function Subscriptions() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="pearl-page-header flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">{translateText("我的订阅")}</h1>
-            <p className="text-sm text-muted-foreground">{translateText("已购买和已分配的套餐。")}</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {cancelledCount > 0 && (

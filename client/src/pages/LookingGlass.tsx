@@ -5,6 +5,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { HelpDetails } from "@/components/ui/help-details";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -105,9 +106,9 @@ function resultOk(result?: LookingGlassResult | null) {
   return !!result && !result.timedOut && result.exitCode === 0;
 }
 
-function buildPendingOutput(method: NetworkMethod, hostName: string, target: string, port?: string) {
+export function buildPendingOutput(method: NetworkMethod, hostName: string, target: string, port?: string) {
   const lines = [
-    translateText("[{0}] 已创建网络测试任务", [new Date().toLocaleTimeString(getFormatLocale(), { hour12: false })]),
+    `[${new Date().toLocaleTimeString(getFormatLocale(), { hour12: false })}] ${translateText("已创建网络测试任务")}`,
     translateText("测试主机: {0}", [hostName || "-"]),
     translateText("测试类型: {0}", [methodMeta(method).label]),
     translateText("目标地址: {0}", [target || "-"]),
@@ -127,7 +128,7 @@ function iperf3StateLabel(state?: Iperf3State) {
   return translateText("等待");
 }
 
-function ResultOutput({
+export function ResultOutput({
   result,
   liveOutput,
   state,
@@ -189,7 +190,7 @@ function ResultOutput({
         </div>
       </CardHeader>
       <CardContent className="min-h-0 flex-1 p-0">
-        <pre className="terminal-scrollbar h-full min-h-0 overflow-auto bg-slate-950 px-4 py-4 font-mono text-xs leading-6 text-slate-100">
+        <pre className="pearl-console h-full min-h-0 overflow-auto px-4 py-4 font-mono text-xs leading-6">
           {output}
         </pre>
       </CardContent>
@@ -197,7 +198,7 @@ function ResultOutput({
   );
 }
 
-function Iperf3Output({
+export function Iperf3Output({
   status,
   loading,
   onCopy,
@@ -278,7 +279,7 @@ function Iperf3Output({
         </div>
 
         {status?.error && <p className="shrink-0 text-xs text-destructive">{status.error}</p>}
-        <pre className="terminal-scrollbar min-h-0 flex-1 overflow-auto rounded-lg bg-slate-950 px-4 py-3 font-mono text-xs leading-6 text-slate-100">
+        <pre className="pearl-console min-h-0 flex-1 overflow-auto rounded-lg border border-border/60 px-4 py-3 font-mono text-xs leading-6">
           {output}
         </pre>
       </CardContent>
@@ -350,7 +351,7 @@ export default function LookingGlass() {
   const runningOutput = useMemo(() => {
     if ((runState !== "queued" && runState !== "running") || !runStartedAt) return liveOutput;
     const seconds = Math.max(0, Math.floor((Date.now() - runStartedAt) / 1000));
-    return translateText("{0}\n运行时间: {1}s", [liveOutput, seconds]);
+    return `${liveOutput}\n${translateText("运行时间: {0}s", [seconds])}`;
   }, [liveOutput, runStartedAt, runState, runTick]);
 
   const mutation = trpc.lookingGlass.start.useMutation({
@@ -368,7 +369,7 @@ export default function LookingGlass() {
     onError: (error) => {
       setRunState("error");
       setRunStartedAt(null);
-      setLiveOutput((value) => translateText("{0}\n执行失败: {1}", [value, error.message || translateText("测试失败")]));
+      setLiveOutput((value) => `${value}\n${translateText("执行失败: {0}", [error.message || translateText("测试失败")])}`);
       toast.error(error.message || translateText("测试失败"));
     },
   });
@@ -424,7 +425,7 @@ export default function LookingGlass() {
     if (!taskStatus.error || !activeTaskId) return;
     setRunState("error");
     setRunStartedAt(null);
-    setLiveOutput((value) => translateText("{0}\n状态查询失败: {1}", [value, taskStatus.error.message]));
+    setLiveOutput((value) => `${value}\n${translateText("状态查询失败: {0}", [taskStatus.error.message])}`);
     toast.error(taskStatus.error.message || translateText("状态查询失败"));
     setActiveTaskId("");
   }, [activeTaskId, taskStatus.error]);
@@ -537,24 +538,20 @@ export default function LookingGlass() {
   return (
     <DashboardLayout>
       <div className="space-y-5">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div className="pearl-page-header flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div className="min-w-0">
             <div className="mb-2 flex flex-wrap items-center gap-2">
-              <Badge variant="outline" className="gap-1.5 border-chart-1/30 bg-chart-1/10 text-chart-1">
-                <Globe2 className="h-3.5 w-3.5" />{translateText("网络测试")}</Badge>
               <Badge variant="outline" className="gap-1.5 border-chart-4/30 bg-chart-4/10 text-chart-4">
                 <ShieldCheck className="h-3.5 w-3.5" />{translateText("公网目标限定")}</Badge>
             </div>
             <h1 className="text-xl font-bold tracking-tight sm:text-2xl">{translateText("网络测试")}</h1>
-            <p className="mt-1 text-sm text-muted-foreground">{translateText("从已添加的 Agent 主机发起 Ping、Traceroute、MTR、TCPing，或临时启动 iperf3 服务端进行直连测试。")}</p>
           </div>
         </div>
 
-        <Alert className="border-chart-1/25 bg-chart-1/10 text-foreground [&>svg]:text-chart-1">
-          <Globe2 className="h-4 w-4" />
-          <AlertTitle className="text-chart-1">{translateText("网络测试")}</AlertTitle>
-          <AlertDescription>{translateText("同一时间只允许执行一个测试。普通网络测试会拒绝内网、环回、链路本地或保留地址；iperf3 服务端空闲 3 分钟后会自动停止。")}</AlertDescription>
-        </Alert>
+        <HelpDetails>
+          <p>{translateText("从已添加的 Agent 主机发起 Ping、Traceroute、MTR、TCPing，或临时启动 iperf3 服务端进行直连测试。")}</p>
+          <p>{translateText("同一时间只允许执行一个测试。普通网络测试会拒绝内网、环回、链路本地或保留地址；iperf3 服务端空闲 3 分钟后会自动停止。")}</p>
+        </HelpDetails>
 
         <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,420px)_1fr]">
           <Card className="border-border/40 bg-card/60 backdrop-blur-md">

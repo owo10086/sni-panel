@@ -117,7 +117,7 @@ import {
   EXIT_GROUP_STRATEGY_LABELS,
   normalizeExitGroupStrategy,
 } from "@shared/exitStrategy";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { ContentTransition } from "@/components/ui/content-transition";
 import {
   CartesianGrid,
   Line,
@@ -140,21 +140,7 @@ function TunnelSectionTransition({
   transitionKey: string;
   children: ReactNode;
 }) {
-  const reduceMotion = useReducedMotion();
-
-  return (
-    <AnimatePresence mode="wait">
-      <motion.div
-        key={transitionKey}
-        initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 10, scale: 0.995 }}
-        animate={reduceMotion ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1 }}
-        exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -8, scale: 0.995 }}
-        transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-      >
-        {children}
-      </motion.div>
-    </AnimatePresence>
-  );
+  return <ContentTransition transitionKey={transitionKey}>{children}</ContentTransition>;
 }
 
 type TunnelForm = {
@@ -668,16 +654,33 @@ function renderTunnelGlobeLinkTooltip(link: TunnelGlobeLink) {
     { label: translateText("链路"), value: link.routeText },
     { label: translateText("节点"), value: routeNodes },
   ];
-  return translateText("\n    <div style=\"min-width:280px;max-width:360px;border:1px solid rgba(255,255,255,.14);border-radius:8px;background:rgba(8,13,24,.94);box-shadow:0 18px 44px rgba(0,0,0,.42);backdrop-filter:blur(10px);color:#f8fafc;padding:12px;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;\">\n      <div style=\"display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;\">\n        <div style=\"min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px;font-weight:700;\">{0}</div>\n        <div style=\"display:flex;align-items:center;gap:6px;color:#cbd5e1;font-size:12px;\">\n          <span style=\"width:8px;height:8px;border-radius:999px;background:{1};box-shadow:0 0 14px {2};\"></span>\n          {3}\n        </div>\n      </div>\n      {4}\n      <div style=\"margin-top:10px;color:#93c5fd;font-size:12px;\">点击编辑</div>\n    </div>\n  ", [escapeTooltipHtml(link.name), link.color, link.glowColor, escapeTooltipHtml(link.kind === "tunnel" ? translateText("隧道") : translateText("转发链")), rows.map((row) => `
+  return `
+    <div style="min-width:280px;max-width:360px;border:1px solid rgba(255,255,255,.14);border-radius:8px;background:rgba(8,13,24,.94);box-shadow:0 18px 44px rgba(0,0,0,.42);backdrop-filter:blur(10px);color:#f8fafc;padding:12px;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;">
+        <div style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px;font-weight:700;">${escapeTooltipHtml(link.name)}</div>
+        <div style="display:flex;align-items:center;gap:6px;color:#cbd5e1;font-size:12px;">
+          <span style="width:8px;height:8px;border-radius:999px;background:${link.color};box-shadow:0 0 14px ${link.glowColor};"></span>
+          ${escapeTooltipHtml(link.kind === "tunnel" ? translateText("隧道") : translateText("转发链"))}
+        </div>
+      </div>
+      ${rows.map((row) => `
         <div style="display:grid;grid-template-columns:42px minmax(0,1fr);gap:8px;align-items:start;margin-top:6px;font-size:12px;line-height:1.45;">
           <span style="color:#94a3b8;">${escapeTooltipHtml(row.label)}</span>
           <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;color:#e2e8f0;">${escapeTooltipHtml(row.value)}</span>
         </div>
-      `).join("")]);
+      `).join("")}
+      <div style="margin-top:10px;color:#93c5fd;font-size:12px;">${escapeTooltipHtml(translateText("点击编辑"))}</div>
+    </div>
+  `;
 }
 
 function renderTunnelGlobeHostTooltip(point: TunnelGlobeHostPoint) {
-  return translateText("\n    <div style=\"min-width:220px;border:1px solid rgba(255,255,255,.14);border-radius:8px;background:rgba(8,13,24,.94);box-shadow:0 18px 44px rgba(0,0,0,.42);color:#f8fafc;padding:10px;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;\">\n      <div style=\"font-size:13px;font-weight:700;\">{0}</div>\n      <div style=\"margin-top:6px;color:#cbd5e1;font-size:12px;\">{1}</div>\n    </div>\n  ", [escapeTooltipHtml(point.name), escapeTooltipHtml(point.regionText || translateText("地区获取中"))]);
+  return `
+    <div style="min-width:220px;border:1px solid rgba(255,255,255,.14);border-radius:8px;background:rgba(8,13,24,.94);box-shadow:0 18px 44px rgba(0,0,0,.42);color:#f8fafc;padding:10px;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+      <div style="font-size:13px;font-weight:700;">${escapeTooltipHtml(point.name)}</div>
+      <div style="margin-top:6px;color:#cbd5e1;font-size:12px;">${escapeTooltipHtml(point.regionText || translateText("地区获取中"))}</div>
+    </div>
+  `;
 }
 
 function buildTunnelGlobeDataKey(
@@ -3889,10 +3892,9 @@ function TunnelsContent() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="pearl-page-header flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight">{translateText("链路管理")}</h1>
-          <p className="mt-1 text-xs sm:text-sm text-muted-foreground">{translateText("管理隧道、端口转发、转发链及入口/出口组")}</p>
         </div>
         <div className="responsive-actions grid min-w-0 w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:justify-end">
           <Badge variant="outline" className="justify-center gap-1.5 px-3 py-1.5 text-xs">
@@ -3910,6 +3912,9 @@ function TunnelsContent() {
               size="icon"
               className="h-8 w-8 rounded-none"
               onClick={() => handleActiveViewModeChange("card")}
+              title={translateText("卡片视图")}
+              aria-label={translateText("卡片视图")}
+              aria-pressed={activeViewMode === "card"}
             >
               <LayoutGrid className="h-4 w-4" />
             </Button>
@@ -3918,6 +3923,9 @@ function TunnelsContent() {
               size="icon"
               className="h-8 w-8 rounded-none"
               onClick={() => handleActiveViewModeChange("table")}
+              title={translateText("列表视图")}
+              aria-label={translateText("列表视图")}
+              aria-pressed={activeViewMode === "table"}
             >
               <List className="h-4 w-4" />
             </Button>
@@ -3926,6 +3934,8 @@ function TunnelsContent() {
               size="icon"
               className="h-8 w-8 rounded-none"
               title={translateText("3D 地球视图")}
+              aria-label={translateText("3D 地球视图")}
+              aria-pressed={activeViewMode === "globe"}
               onClick={() => handleActiveViewModeChange("globe")}
             >
               <Globe className="h-4 w-4" />
