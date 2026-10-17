@@ -1,0 +1,495 @@
+{
+  "localBase": "0fb7ce002ed76062b234cc82ea6888871d917b7e",
+  "reviewHead": "c9ed3b494f553b3f2b4610bf1c8c088f5edc2ffb",
+  "versions": {
+    "panel": "3.3.8",
+    "agent": "3.3.0",
+    "fxp": "3.3.0"
+  },
+  "protection": {
+    "protected": {
+      "files": 3,
+      "unchanged": true,
+      "mismatches": []
+    },
+    "native": {
+      "files": 58,
+      "unchanged": true,
+      "mismatches": []
+    },
+    "changelogs": {
+      "CHANGELOG.md": true,
+      "CHANGELOG.en.md": true
+    }
+  },
+  "programs": {
+    "forwardx-agent": {
+      "path": "/private/tmp/forwardx-283-implementation/bin/forwardx-agent",
+      "sha256": "fdc3d6da932af3d92bd26a5bdebac1c91cd60871c7825c990b0a617646e5167e",
+      "source": "283本轮实际源码"
+    },
+    "forwardx-agent-old": {
+      "path": "/private/tmp/forwardx-283-implementation/bin/forwardx-agent-old",
+      "sha256": "db3f72f6b64e46b2679fe2a4b8fd22f2fcf3bda13dc08daed18e3b2e7a2f2f7f",
+      "source": "0fb7ce002ed76062b234cc82ea6888871d917b7e"
+    },
+    "forwardx-fxp": {
+      "path": "/private/tmp/forwardx-283-implementation/bin/forwardx-fxp",
+      "sha256": "d6e758ec31cd517fc648ab9a5182087525e8f3eef9d6e351b25e0d7b577a3355",
+      "source": "283本轮实际源码"
+    },
+    "forwardx-fxp-old": {
+      "path": "/private/tmp/forwardx-283-implementation/bin/forwardx-fxp-old",
+      "sha256": "37a7373f755d63c07e660c4840d381fe8666a1a67d06d4d8ffb38f8a935f0791",
+      "source": "0fb7ce002ed76062b234cc82ea6888871d917b7e"
+    },
+    "gost": {
+      "path": "/private/tmp/forwardx-283-implementation/bin/gost",
+      "sha256": "343c3e003996ca0437b9cc47dd1500cd0475ba09f5a5f17e50851854e06a1ca7",
+      "source": "official GOST 3.2.6 linux arm64"
+    },
+    "dist/index.js": {
+      "path": "/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx/dist/index.js",
+      "sha256": "128750c11c0ed392cdf1f1f281b4b3ae768e50f2ea34d548eee970c15567e77f"
+    },
+    "dist/migrate-legacy.js": {
+      "path": "/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx/dist/migrate-legacy.js",
+      "sha256": "ef587efb52c3d94deda52fa012ef6067fffa265c2059974334e80b6f4ab4b2e3"
+    },
+    "dist/reset-admin-password.js": {
+      "path": "/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx/dist/reset-admin-password.js",
+      "sha256": "423bb28c269820464ae1cfd64f76d3f15b9f4b4f74a23f6ee5ed09eedac43421"
+    },
+    "client/dist/index.html": {
+      "path": "/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx/client/dist/index.html",
+      "sha256": "0ebec1fbe0bb2b1c0f69f540bde6f7ed63e345711cd1c21a9755ead51954cb5d"
+    }
+  },
+  "panelChecks": [
+    {
+      "name": "types",
+      "command": [
+        "pnpm",
+        "exec",
+        "tsc",
+        "--noEmit"
+      ],
+      "exitCode": 0,
+      "tests": 0,
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "log": "/private/tmp/forwardx-283-implementation/ticket-10/review-types.log",
+      "logSha256": "192a478d0b6c67de98f6eed5d2449974dbcf608a0d8bc529ba5feb5f1a405758",
+      "sourceCodeHead": "c9ed3b494f553b3f2b4610bf1c8c088f5edc2ffb"
+    },
+    {
+      "name": "versions",
+      "command": [
+        "pnpm",
+        "check:versions"
+      ],
+      "exitCode": 0,
+      "seconds": 0.17,
+      "tests": 0,
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "log": "/private/tmp/forwardx-283-implementation/ticket-10/panel-versions.log"
+    },
+    {
+      "name": "release-notes",
+      "command": [
+        "pnpm",
+        "test:release-notes"
+      ],
+      "exitCode": 0,
+      "seconds": 0.27,
+      "tests": 5,
+      "passed": 5,
+      "failed": 0,
+      "skipped": 0,
+      "log": "/private/tmp/forwardx-283-implementation/ticket-10/panel-release-notes.log"
+    },
+    {
+      "name": "ui",
+      "command": [
+        "pnpm",
+        "test:ui"
+      ],
+      "exitCode": 0,
+      "seconds": 0.81,
+      "tests": 29,
+      "passed": 29,
+      "failed": 0,
+      "skipped": 0,
+      "log": "/private/tmp/forwardx-283-implementation/ticket-10/panel-ui.log"
+    },
+    {
+      "name": "i18n",
+      "command": [
+        "pnpm",
+        "test:i18n"
+      ],
+      "exitCode": 0,
+      "seconds": 1.04,
+      "tests": 16,
+      "passed": 16,
+      "failed": 0,
+      "skipped": 0,
+      "log": "/private/tmp/forwardx-283-implementation/ticket-10/panel-i18n.log"
+    },
+    {
+      "name": "google-auth",
+      "command": [
+        "pnpm",
+        "test:google-auth"
+      ],
+      "exitCode": 0,
+      "seconds": 1.75,
+      "tests": 7,
+      "passed": 7,
+      "failed": 0,
+      "skipped": 0,
+      "log": "/private/tmp/forwardx-283-implementation/ticket-10/panel-google-auth.log"
+    },
+    {
+      "name": "port-access-limits",
+      "command": [
+        "pnpm",
+        "test:port-access-limits"
+      ],
+      "exitCode": 0,
+      "seconds": 0.94,
+      "tests": 8,
+      "passed": 8,
+      "failed": 0,
+      "skipped": 0,
+      "log": "/private/tmp/forwardx-283-implementation/ticket-10/panel-port-access-limits.log"
+    },
+    {
+      "name": "plan-display",
+      "command": [
+        "pnpm",
+        "test:plan-display"
+      ],
+      "exitCode": 0,
+      "seconds": 0.33,
+      "tests": 4,
+      "passed": 4,
+      "failed": 0,
+      "skipped": 0,
+      "log": "/private/tmp/forwardx-283-implementation/ticket-10/panel-plan-display.log"
+    },
+    {
+      "name": "host-deletion",
+      "command": [
+        "pnpm",
+        "test:host-deletion"
+      ],
+      "exitCode": 0,
+      "tests": 102,
+      "passed": 102,
+      "failed": 0,
+      "skipped": 0,
+      "log": "/private/tmp/forwardx-283-implementation/ticket-10/review-host-deletion.log",
+      "logSha256": "58dec496561c34b0160cb363336fa1cd872a9bebbb1a9d93905c63b5e5c6e0fd",
+      "sourceCodeHead": "c9ed3b494f553b3f2b4610bf1c8c088f5edc2ffb"
+    },
+    {
+      "name": "server",
+      "command": [
+        "pnpm",
+        "test:server"
+      ],
+      "exitCode": 0,
+      "tests": 1097,
+      "passed": 1097,
+      "failed": 0,
+      "skipped": 0,
+      "log": "/private/tmp/forwardx-283-implementation/ticket-10/review-server-full-authorized.log",
+      "logSha256": "53ecf1c780ceb2c5f22482aa2dfb48fb5a44d23e1e955d7b1bf780b69de9efb6",
+      "sourceCodeHead": "c9ed3b494f553b3f2b4610bf1c8c088f5edc2ffb"
+    },
+    {
+      "name": "ai",
+      "command": [
+        "pnpm",
+        "test:ai"
+      ],
+      "exitCode": 0,
+      "seconds": 41.78,
+      "tests": 33,
+      "passed": 33,
+      "failed": 0,
+      "skipped": 0,
+      "log": "/private/tmp/forwardx-283-implementation/ticket-10/panel-ai.log"
+    },
+    {
+      "name": "selftest-dispatch",
+      "command": [
+        "pnpm",
+        "test:selftest-dispatch"
+      ],
+      "exitCode": 0,
+      "seconds": 1.61,
+      "tests": 39,
+      "passed": 39,
+      "failed": 0,
+      "skipped": 0,
+      "log": "/private/tmp/forwardx-283-implementation/ticket-10/panel-selftest-dispatch.log"
+    }
+  ],
+  "linux": {
+    "agent": {
+      "passedTopLevel": 479,
+      "failedTopLevel": 0,
+      "skipped": [
+        "TestSniForwardGroupDestinationProbes",
+        "TestSniForwardGroupFailedRevocation",
+        "TestSniForwardGroupMemberActions",
+        "TestAgentStress3000RuleHeartbeat"
+      ],
+      "log": "/private/tmp/forwardx-283-implementation/ticket-10/agent-full.log",
+      "vetExitCode": 0,
+      "logSha256": "5013d8ee0bc4a7b24c4dc738d095fb990b058bcafe3b1ea3c4144ab2770db3c4"
+    },
+    "fxp": {
+      "passedTopLevel": 128,
+      "failedTopLevel": 0,
+      "skipped": [],
+      "log": "/private/tmp/forwardx-283-implementation/ticket-10/fxp-full-v2.log",
+      "vetExitCode": 0,
+      "logSha256": "4b548ac031c1bd9d8f4989d914183f74d86b12d5d9334cc7a1f105ee641de626"
+    }
+  },
+  "review": {
+    "initialHead": "51ff6a97d97814b36ce16c7b87cbb29123ad136c",
+    "standards": {
+      "findings": 0,
+      "unresolved": 0,
+      "supplementPassed": true
+    },
+    "spec": {
+      "findings": 1,
+      "worstInitialSeverity": "P2",
+      "fixed": 1,
+      "unresolved": 0,
+      "supplementPassed": true,
+      "fixCommit": "c9ed3b494f553b3f2b4610bf1c8c088f5edc2ffb"
+    },
+    "regressionBeforeFix": {
+      "exitCode": 1,
+      "log": "/private/tmp/forwardx-283-implementation/ticket-10/review-regression-red.log"
+    },
+    "regressionAfterFix": {
+      "name": "retained-template-preview",
+      "command": [
+        "node",
+        "--import",
+        "tsx",
+        "--test",
+        "--test-name-pattern=deletion preview lists the retained root",
+        "server/groupMemberRelease.test.ts"
+      ],
+      "exitCode": 0,
+      "tests": 1,
+      "passed": 1,
+      "failed": 0,
+      "skipped": 0,
+      "log": "/private/tmp/forwardx-283-implementation/ticket-10/review-regression-green.log",
+      "logSha256": "5e537ad6ec40e234a1bfeef6d5da22efb0cd933394c0906c08cab50e3f10d7cf",
+      "sourceCodeHead": "c9ed3b494f553b3f2b4610bf1c8c088f5edc2ffb"
+    }
+  },
+  "panelCheckExecutionTotal": 1340,
+  "panelCheckCountNote": "各检查入口的执行次数合计，入口之间有重叠，不是去重后的用例数量；修复后重跑完整服务端、主机删除、类型、构建和三组程序组合。",
+  "environmentAttempts": [
+    {
+      "command": [
+        "pnpm",
+        "test:server"
+      ],
+      "exitCode": 1,
+      "reason": "普通沙箱禁止本机监听，3项迁移前置检查报listen EPERM；随后在允许本机监听的环境重跑完整入口并通过。",
+      "log": "/private/tmp/forwardx-283-implementation/ticket-10/review-server-full.log"
+    }
+  ],
+  "compatibilityCombinations": [
+    {
+      "name": "panel-old-programs-review",
+      "command": [
+        "node",
+        "--import",
+        "tsx",
+        "scripts/verify-seamless-runtime.mjs",
+        "/private/tmp/forwardx-283-implementation/ticket-10/panel-old-programs-review",
+        "/private/tmp/forwardx-283-implementation/bin/forwardx-agent-old",
+        "/private/tmp/forwardx-283-implementation/bin/forwardx-fxp-old",
+        "/private/tmp/forwardx-283-implementation/bin/gost"
+      ],
+      "exitCode": 0,
+      "seconds": 34.15,
+      "log": "/private/tmp/forwardx-283-implementation/ticket-10/panel-old-programs-review.log",
+      "resultFile": "/private/tmp/forwardx-283-implementation/ticket-10/panel-old-programs-review/result.json",
+      "resultSha256": "26dd1bd9d8bbd163006ab44b48046cd7b8f6dec919f3544da113fac6d12ae895",
+      "programSha256": {
+        "agent": "db3f72f6b64e46b2679fe2a4b8fd22f2fcf3bda13dc08daed18e3b2e7a2f2f7f",
+        "fxp": "37a7373f755d63c07e660c4840d381fe8666a1a67d06d4d8ffb38f8a935f0791",
+        "gost": "343c3e003996ca0437b9cc47dd1500cd0475ba09f5a5f17e50851854e06a1ca7"
+      },
+      "panelDistSha256": "128750c11c0ed392cdf1f1f281b4b3ae768e50f2ea34d548eee970c15567e77f",
+      "checks": {
+        "preMigrationReplayDuplicate": true,
+        "uncertainActivationRetained": true,
+        "restartAndResume": true,
+        "managedLongConnections": true
+      },
+      "logSha256": "28efd71916ef6247e904d20ab3de02c24f5b0c41d946f599c16306cd8f0db48e"
+    },
+    {
+      "name": "panel-new-agent-old-fxp-review",
+      "command": [
+        "node",
+        "--import",
+        "tsx",
+        "scripts/verify-seamless-runtime.mjs",
+        "/private/tmp/forwardx-283-implementation/ticket-10/panel-new-agent-old-fxp-review",
+        "/private/tmp/forwardx-283-implementation/bin/forwardx-agent",
+        "/private/tmp/forwardx-283-implementation/bin/forwardx-fxp-old",
+        "/private/tmp/forwardx-283-implementation/bin/gost"
+      ],
+      "exitCode": 0,
+      "seconds": 33.98,
+      "log": "/private/tmp/forwardx-283-implementation/ticket-10/panel-new-agent-old-fxp-review.log",
+      "resultFile": "/private/tmp/forwardx-283-implementation/ticket-10/panel-new-agent-old-fxp-review/result.json",
+      "resultSha256": "bf4a3d244f0414515b48bf5cb61f4884bc8b1b11e1ea34461a0e3780af06bad1",
+      "programSha256": {
+        "agent": "fdc3d6da932af3d92bd26a5bdebac1c91cd60871c7825c990b0a617646e5167e",
+        "fxp": "37a7373f755d63c07e660c4840d381fe8666a1a67d06d4d8ffb38f8a935f0791",
+        "gost": "343c3e003996ca0437b9cc47dd1500cd0475ba09f5a5f17e50851854e06a1ca7"
+      },
+      "panelDistSha256": "128750c11c0ed392cdf1f1f281b4b3ae768e50f2ea34d548eee970c15567e77f",
+      "checks": {
+        "preMigrationReplayDuplicate": true,
+        "uncertainActivationRetained": true,
+        "restartAndResume": true,
+        "managedLongConnections": true
+      },
+      "logSha256": "d592e0951515af92a791799d5017b53a5655386170bd151856ea8c75f56f8f3a"
+    },
+    {
+      "name": "panel-new-programs-review",
+      "command": [
+        "node",
+        "--import",
+        "tsx",
+        "scripts/verify-seamless-runtime.mjs",
+        "/private/tmp/forwardx-283-implementation/ticket-10/panel-new-programs-review",
+        "/private/tmp/forwardx-283-implementation/bin/forwardx-agent",
+        "/private/tmp/forwardx-283-implementation/bin/forwardx-fxp",
+        "/private/tmp/forwardx-283-implementation/bin/gost"
+      ],
+      "exitCode": 0,
+      "seconds": 34.02,
+      "log": "/private/tmp/forwardx-283-implementation/ticket-10/panel-new-programs-review.log",
+      "resultFile": "/private/tmp/forwardx-283-implementation/ticket-10/panel-new-programs-review/result.json",
+      "resultSha256": "97b869291b607ca816a055b4b9479c4c058f94f301867ecadab0bd8a8aadd568",
+      "programSha256": {
+        "agent": "fdc3d6da932af3d92bd26a5bdebac1c91cd60871c7825c990b0a617646e5167e",
+        "fxp": "d6e758ec31cd517fc648ab9a5182087525e8f3eef9d6e351b25e0d7b577a3355",
+        "gost": "343c3e003996ca0437b9cc47dd1500cd0475ba09f5a5f17e50851854e06a1ca7"
+      },
+      "panelDistSha256": "128750c11c0ed392cdf1f1f281b4b3ae768e50f2ea34d548eee970c15567e77f",
+      "checks": {
+        "preMigrationReplayDuplicate": true,
+        "uncertainActivationRetained": true,
+        "restartAndResume": true,
+        "managedLongConnections": true
+      },
+      "logSha256": "eddff3d8f54a46b584dae118bb1ddd96bacc427d0cf437e5f7f2205648a9cfa7"
+    }
+  ],
+  "build": {
+    "command": [
+      "pnpm",
+      "build"
+    ],
+    "exitCode": 0,
+    "log": "/private/tmp/forwardx-283-implementation/ticket-10/review-build.log",
+    "logSha256": "13340693114801d4a76fa62af669a9801a7993800c7abbf0909aac160a5cf645",
+    "builtFrom": "c9ed3b494f553b3f2b4610bf1c8c088f5edc2ffb",
+    "warning": "Vite 提示部分网页构建块大于500kB；构建成功，本轮未做无关拆包。"
+  },
+  "environmentCleanup": {
+    "containers": {
+      "exitCode": 0,
+      "output": []
+    },
+    "networks": {
+      "exitCode": 0,
+      "output": []
+    },
+    "listeners": {
+      "exitCode": 1,
+      "output": []
+    },
+    "chrome": {
+      "exitCode": 1,
+      "output": []
+    },
+    "image": {
+      "exitCode": 0,
+      "output": [
+        "sha256:b191d6dbc4898969d6ea13b5f7a71ec68dca066facad4a6b20542eb36491e063 linux/arm64"
+      ]
+    }
+  },
+  "environment": {
+    "dockerContext": "desktop-linux",
+    "dockerSocket": "local Unix socket",
+    "linuxImage": "forwardx-sni-test:20261006",
+    "linuxImageId": "sha256:b191d6dbc4898969d6ea13b5f7a71ec68dca066facad4a6b20542eb36491e063",
+    "architecture": "linux/arm64",
+    "go": "1.23.12",
+    "firewallIsolation": "本机Docker容器内再使用unshare --net；不修改宿主防火墙"
+  },
+  "notCovered": {
+    "agentOptionalChecks": [
+      "TestSniForwardGroupDestinationProbes",
+      "TestSniForwardGroupFailedRevocation",
+      "TestSniForwardGroupMemberActions",
+      "TestAgentStress3000RuleHeartbeat"
+    ],
+    "reason": "前三项需要专用导出的心跳资料与目的服务；3000规则压力检查需要FORWARDX_AGENT_STRESS=1。",
+    "humanAccepted": false,
+    "productionVerified": false,
+    "published": false,
+    "pushed": false,
+    "tagCreated": false,
+    "nativeAppsExcludedByAgreement": true,
+    "browserScreenshotsSaved": false
+  },
+  "recordedAt": "2026-10-18T00:48:52.893897+08:00",
+  "documentation": {
+    "buildInfo": {
+      "version": "3.3.8",
+      "commit": "ac632b5b4622ab30507f0554e75cc7ae5d8726ac",
+      "sourceDirty": true,
+      "sourceSha256": "8d8c9c86b428b49549572086c0f5c55fcfa33bec798331da9e297ccbdabcdba9",
+      "builtAt": "2026-10-17T16:22:36.740Z"
+    },
+    "pages": {
+      "index.html": 17069,
+      "guide/index.html": 37166,
+      "guide/interface.html": 34209,
+      "guide/releases.html": 34707,
+      "guide/rules.html": 46810,
+      "guide/hosts.html": 42641,
+      "guide/users-billing.html": 34852
+    },
+    "published": false,
+    "nativeChanged": false,
+    "finalContentsMatchBuild": true
+  }
+}
