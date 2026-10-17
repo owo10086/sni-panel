@@ -1,6 +1,34 @@
 import { defineConfig } from "vitepress";
+import { readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { join, relative } from "node:path";
+import { fileURLToPath } from "node:url";
+import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 
 const base = process.env.VITEPRESS_BASE || "/";
+const { version } = JSON.parse(readFileSync(new URL("../../package.json", import.meta.url), "utf8"));
+const root = fileURLToPath(new URL("../../", import.meta.url));
+
+function buildSourceInfo() {
+  const digest = createHash("sha256");
+  const visit = (directory: string) => {
+    for (const entry of readdirSync(directory, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
+      if (directory.endsWith("/.vitepress") && ["dist", "cache", ".temp"].includes(entry.name)) continue;
+      const path = join(directory, entry.name);
+      if (entry.isDirectory()) visit(path);
+      else if (entry.isFile()) digest.update(relative(root, path)).update("\0").update(readFileSync(path)).update("\0");
+    }
+  };
+  visit(join(root, "docs"));
+  digest.update(readFileSync(join(root, "package.json")));
+  let commit = "local";
+  let sourceDirty: boolean | null = null;
+  try {
+    commit = execFileSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8" }).trim();
+    sourceDirty = !!execFileSync("git", ["status", "--porcelain", "--untracked-files=all", "--", "docs", "package.json"], { cwd: root, encoding: "utf8" }).trim();
+  } catch { /* Source archives may not contain Git history. The digest still identifies their contents. */ }
+  return { commit: process.env.GITHUB_SHA || commit, sourceDirty, sourceSha256: digest.digest("hex") };
+}
 
 export default defineConfig({
   base,
@@ -9,12 +37,23 @@ export default defineConfig({
   description: "ForwardX 转发管理面板用户教程",
   cleanUrls: true,
   lastUpdated: true,
+  buildEnd(siteConfig) {
+    writeFileSync(join(siteConfig.outDir, "build-info.json"), JSON.stringify({
+      version,
+      ...buildSourceInfo(),
+      builtAt: new Date().toISOString(),
+    }) + "\n");
+  },
   head: [
     ["meta", { name: "theme-color", content: "#0f766e" }],
     ["meta", { name: "referrer", content: "strict-origin-when-cross-origin" }],
   ],
   themeConfig: {
-    siteTitle: "ForwardX 教程",
+    siteTitle: `ForwardX v${version}`,
+    editLink: {
+      pattern: "https://github.com/owo10086/sni-panel/edit/main/docs/:path",
+      text: "在 GitHub 上改进此页",
+    },
     nav: [
       { text: "快速开始", link: "/guide/quick-start" },
       { text: "部署面板", link: "/guide/deploy-panel" },
@@ -30,6 +69,7 @@ export default defineConfig({
           { text: "快速开始", link: "/guide/quick-start" },
           { text: "部署前准备", link: "/guide/preparation" },
           { text: "首次初始化", link: "/guide/first-setup" },
+          { text: "界面与常用操作", link: "/guide/interface" },
         ],
       },
       {
@@ -74,6 +114,7 @@ export default defineConfig({
           { text: "目录、数据与日志", link: "/guide/paths-logs" },
           { text: "管理员账号恢复", link: "/guide/account-recovery" },
           { text: "升级与备份", link: "/guide/upgrade-backup" },
+          { text: "版本与文档更新", link: "/guide/releases" },
           { text: "迁移到新面板", link: "/guide/migration" },
           { text: "常见问题排查", link: "/guide/troubleshooting" },
           { text: "卸载与数据保留", link: "/guide/uninstall" },
