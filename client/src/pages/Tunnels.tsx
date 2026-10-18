@@ -3,6 +3,7 @@ import { manualProbeDeadline } from "@/lib/manualProbe";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useAuth } from "@/_core/hooks/useAuth";
 import AnimatedStatValue from "@/components/AnimatedStatValue";
+import { ResourceTrafficSummary } from "@/components/ResourceTrafficSummary";
 import { LatencyRating } from "@/components/LatencyRating";
 import { LatencyPeakCutToggle } from "@/components/LatencyPeakCutToggle";
 import { LatencyStabilityStats } from "@/components/LatencyStabilityStats";
@@ -152,7 +153,13 @@ type TunnelForm = {
   hopConnectHosts: Array<string | null>;
   mode: TunnelProtocol;
   relayMode: TunnelRelayMode;
-  forwardxVersion: "v1" | "v2";
+  forwardxVersion: "v1" | "v2" | "v3";
+  v3Transport: "http" | "ws" | "tls";
+  v3Host: string;
+  v3Path: string;
+  v3UserAgent: string;
+  v3ServerName: string;
+  v3Multiplex: boolean;
   certDomain: string;
   certPem: string;
   certKeyPem: string;
@@ -311,6 +318,12 @@ const defaultForm: TunnelForm = {
   mode: "forwardx",
   relayMode: "chain",
   forwardxVersion: "v1",
+  v3Transport: "ws",
+  v3Host: "",
+  v3Path: "",
+  v3UserAgent: "",
+  v3ServerName: "",
+  v3Multiplex: true,
   certDomain: "",
   certPem: "",
   certKeyPem: "",
@@ -765,11 +778,31 @@ function normalizeTunnelModeForForm(mode: unknown): TunnelForm["mode"] {
     : "forwardx";
 }
 
+function normalizeForwardXV3TransportForForm(value: unknown): TunnelForm["v3Transport"] {
+  const normalized = String(value || "").trim().toLowerCase();
+  return normalized === "http" || normalized === "tls" ? normalized : "ws";
+}
+
+// A missing multiplex flag means the runtime default (enabled).
+function forwardXV3MultiplexForForm(value: unknown) {
+  if (value === undefined || value === null || value === "") return true;
+  if (value === true || value === 1) return true;
+  if (value === false || value === 0) return false;
+  const normalized = String(value).trim().toLowerCase();
+  if (normalized === "true" || normalized === "1") return true;
+  if (normalized === "false" || normalized === "0") return false;
+  return true;
+}
+
 function getTunnelModeDisplay(mode: unknown, showNginxLabel = true, forwardxVersion: unknown = "v1") {
   const normalized = String(mode || "").toLowerCase() as TunnelForm["mode"];
   const label = tunnelModeLabels[normalized] || String(mode || "").toUpperCase();
   if (isNginxTunnelModeValue(normalized)) return showNginxLabel ? "Nginx" : "Stream";
-  if (normalized === "forwardx") return normalizeForwardXVersion(forwardxVersion) === "v2" ? "ForwardX V2" : "ForwardX V1";
+  if (normalized === "forwardx") {
+    const version = normalizeForwardXVersion(forwardxVersion);
+    if (version === "v3") return "ForwardX V3";
+    return version === "v2" ? "ForwardX V2" : "ForwardX V1";
+  }
   return gostTunnelModes.includes(normalized) ? `GOST ${label}` : label;
 }
 
@@ -2458,9 +2491,7 @@ function TunnelsContent() {
       ? "forwardx"
       : (enabledGostTunnelModes[0] || enabledNginxTunnelModes[0] || "forwardx");
   };
-  const portGroups = useMemo(() => (forwardGroups || []).filter((group: any) => normalizeForwardGroupMode(group.groupMode) === "port"), [forwardGroups]);
   const chainGroups = useMemo(() => (forwardGroups || []).filter((group: any) => normalizeForwardGroupMode(group.groupMode) === "chain"), [forwardGroups]);
-  const failoverGroups = useMemo(() => (forwardGroups || []).filter((group: any) => normalizeForwardGroupMode(group.groupMode) === "failover"), [forwardGroups]);
   const entryGroups = useMemo(() => (forwardGroups || []).filter((group: any) => normalizeForwardGroupMode(group.groupMode) === "entry"), [forwardGroups]);
   const exitGroups = useMemo(() => (forwardGroups || []).filter((group: any) => normalizeForwardGroupMode(group.groupMode) === "exit"), [forwardGroups]);
   const usableEntryGroups = useMemo(() => entryGroups.filter((group: any) => group.isEnabled && String(group.domain || "").trim()), [entryGroups]);
@@ -2484,11 +2515,7 @@ function TunnelsContent() {
     () => (tunnels || []).filter((tunnel: any) => isAvailableState(tunnelAvailabilityById.get(Number(tunnel.id)))).length,
     [tunnelAvailabilityById, tunnels],
   );
-  const activePortCount = useMemo(() => portGroups.filter((group: any) => isAvailableState(groupAvailabilityById.get(Number(group.id)))).length, [groupAvailabilityById, portGroups]);
   const activeChainCount = useMemo(() => chainGroups.filter((group: any) => isAvailableState(groupAvailabilityById.get(Number(group.id)))).length, [chainGroups, groupAvailabilityById]);
-  const activeFailoverGroupCount = useMemo(() => failoverGroups.filter((group: any) => isAvailableState(groupAvailabilityById.get(Number(group.id)))).length, [failoverGroups, groupAvailabilityById]);
-  const activeEntryGroupCount = useMemo(() => entryGroups.filter((group: any) => isAvailableState(groupAvailabilityById.get(Number(group.id)))).length, [entryGroups, groupAvailabilityById]);
-  const activeExitGroupCount = useMemo(() => exitGroups.filter((group: any) => isAvailableState(groupAvailabilityById.get(Number(group.id)))).length, [exitGroups, groupAvailabilityById]);
   const entryMembersForGroup = (groupId: number | null | undefined) => {
     const group = groupId ? entryGroupById.get(Number(groupId)) : null;
     return enabledHostGroupMembers(group);
@@ -2627,26 +2654,10 @@ function TunnelsContent() {
     getId: (tunnel: any) => Number(tunnel.id),
   });
   const orderedTunnelItems = tunnelOrder.items;
-  const filteredPortGroups = useMemo(() => {
-    if (!normalizedLinkSearchQuery) return portGroups;
-    return portGroups.filter((group: any) => linkForwardGroupMatchesSearch(group, normalizedLinkSearchQuery, hosts, tunnels, entryGroupById));
-  }, [entryGroupById, hosts, normalizedLinkSearchQuery, portGroups, tunnels]);
   const filteredChainGroups = useMemo(() => {
     if (!normalizedLinkSearchQuery) return chainGroups;
     return chainGroups.filter((group: any) => linkForwardGroupMatchesSearch(group, normalizedLinkSearchQuery, hosts, tunnels, entryGroupById));
   }, [chainGroups, entryGroupById, hosts, normalizedLinkSearchQuery, tunnels]);
-  const filteredFailoverGroups = useMemo(() => {
-    if (!normalizedLinkSearchQuery) return failoverGroups;
-    return failoverGroups.filter((group: any) => linkForwardGroupMatchesSearch(group, normalizedLinkSearchQuery, hosts, tunnels, entryGroupById));
-  }, [entryGroupById, failoverGroups, hosts, normalizedLinkSearchQuery, tunnels]);
-  const filteredEntryGroups = useMemo(() => {
-    if (!normalizedLinkSearchQuery) return entryGroups;
-    return entryGroups.filter((group: any) => linkForwardGroupMatchesSearch(group, normalizedLinkSearchQuery, hosts, tunnels, entryGroupById));
-  }, [entryGroupById, entryGroups, hosts, normalizedLinkSearchQuery, tunnels]);
-  const filteredExitGroups = useMemo(() => {
-    if (!normalizedLinkSearchQuery) return exitGroups;
-    return exitGroups.filter((group: any) => linkForwardGroupMatchesSearch(group, normalizedLinkSearchQuery, hosts, tunnels, entryGroupById));
-  }, [entryGroupById, exitGroups, hosts, normalizedLinkSearchQuery, tunnels]);
   const tunnelPagination = useServerPagination(
     needsFullTunnelList || isTunnelGlobeView ? [] : orderedTunnelItems,
     Number(tunnelPageQuery.data?.totalItems || 0),
@@ -2657,10 +2668,6 @@ function TunnelsContent() {
     },
   );
   const pagedTunnels = tunnelPagination.items;
-  const editingTunnel = useMemo(
-    () => editingId ? (tunnels || []).find((tunnel: any) => Number(tunnel.id) === Number(editingId)) || null : null,
-    [editingId, tunnels]
-  );
   const renderTunnelStatusDot = (tunnel: any, supported = true) => {
     if (!supported) return <span title={translateText("当前转发协议未启用")} className="h-2.5 w-2.5 rounded-full bg-destructive/60" />;
     const state = tunnelAvailabilityById.get(Number(tunnel?.id || 0));
@@ -2790,6 +2797,12 @@ function TunnelsContent() {
       mode,
       relayMode: tunnelRelayFailoverSupported(mode) ? normalizeTunnelRelayMode(tunnel.relayMode) : "chain",
       forwardxVersion: normalizeForwardXVersion(tunnel.forwardxVersion),
+      v3Transport: normalizeForwardXV3TransportForForm(tunnel.v3Transport),
+      v3Host: String(tunnel.v3Host || ""),
+      v3Path: String(tunnel.v3Path || ""),
+      v3UserAgent: String(tunnel.v3UserAgent || ""),
+      v3ServerName: String(tunnel.v3ServerName || ""),
+      v3Multiplex: forwardXV3MultiplexForForm(tunnel.v3Multiplex),
       certDomain: String(tunnel.certDomain || ""),
       certPem: String(tunnel.certPem || ""),
       certKeyPem: String(tunnel.certKeyPem || ""),
@@ -3047,6 +3060,11 @@ function TunnelsContent() {
     }
     const trafficMultiplier = trafficMultiplierFromInput(trafficMultiplierValue);
     const forwardxVersion = submitForm.mode === "forwardx" ? submitForm.forwardxVersion : "v1";
+    const originalTunnel = editingId ? (tunnels || []).find((tunnel: any) => Number(tunnel.id) === editingId) : null;
+    if (forwardxVersion === "v3" && !(originalTunnel?.mode === "forwardx" && originalTunnel.forwardxVersion === "v3")) {
+      toast.error(translateText("V3 暂不开放新建或切换，请选择 V1 或 V2"));
+      return;
+    }
     if (!isTunnelSupported(submitForm)) {
       toast.error(unsupportedProtocolTitle);
       return;
@@ -3123,6 +3141,41 @@ function TunnelsContent() {
       submitForm.proxyProtocolExitSend
     );
     const transportTuningSupported = isTunnelTransportTuningSupported(submitForm.mode);
+    // V3 options are only sent for ForwardX tunnels; the API clears the
+    // persisted columns when the tunnel is not a v3 ForwardX tunnel.
+    const forwardXV3Fields = submitForm.mode === "forwardx"
+      ? forwardxVersion === "v3"
+        ? {
+          v3Transport: submitForm.v3Transport,
+          v3Host: submitForm.v3Host.trim() || null,
+          v3Path: submitForm.v3Path.trim() || null,
+          v3UserAgent: submitForm.v3UserAgent.trim() || null,
+          v3ServerName: submitForm.v3Transport === "tls" ? (submitForm.v3ServerName.trim() || null) : null,
+          v3Multiplex: submitForm.v3Multiplex,
+        }
+        : {
+          v3Transport: null,
+          v3Host: null,
+          v3Path: null,
+          v3UserAgent: null,
+          v3ServerName: null,
+          v3Multiplex: null,
+        }
+      : {};
+    if (forwardxVersion === "v3" && submitForm.mode === "forwardx") {
+      if (!submitForm.v3Transport) {
+        toast.error(translateText("V3 隧道必须选择 http、ws 或 tls 传输方式"));
+        return;
+      }
+      if (/[\s\0]/.test(submitForm.v3Host.trim()) || /[\s\0]/.test(submitForm.v3Path.trim())) {
+        toast.error(translateText("V3 Host 和路径不能包含空白字符"));
+        return;
+      }
+      if (submitForm.v3Transport === "tls" && /[\s\0]/.test(submitForm.v3ServerName.trim())) {
+        toast.error(translateText("TLS SNI 服务器名称不能包含空白字符"));
+        return;
+      }
+    }
     const payload: any = {
       name: submitForm.name,
       mode: normalizeTunnelModeForForm(submitForm.mode),
@@ -3130,6 +3183,7 @@ function TunnelsContent() {
         ? submitForm.relayMode
         : "chain",
       forwardxVersion,
+      ...forwardXV3Fields,
       certDomain: isNginxTunnelModeValue(submitForm.mode) ? certDomain || null : null,
       certPem: isNginxTunnelModeValue(submitForm.mode) ? certPem || null : null,
       certKeyPem: isNginxTunnelModeValue(submitForm.mode) ? certKeyPem || null : null,
@@ -3651,7 +3705,7 @@ function TunnelsContent() {
             translateText("需要安装 mimic/mimic-dkms。UDP 丢包时可将业务 MTU 调整为 1200-1300。"),
           )}
         </div>
-        {form.udpOverTcp && form.forwardxVersion === "v1" && (
+        {form.udpOverTcp && form.forwardxVersion !== "v2" && (
           <label className="flex min-h-12 items-center justify-between gap-3 rounded-md border border-primary/25 bg-primary/5 px-3 py-2">
             <span className="min-w-0">
               <span className="block text-sm font-medium">{translateText("mimic UDP 线路端口")}</span>
@@ -3845,19 +3899,6 @@ function TunnelsContent() {
       </Tooltip>
     </TooltipProvider>
   );
-  const renderTunnelLatencyLabel = (tunnel: any, compact = false) => {
-    const latencyValue = tunnelDisplayLatencyMs(tunnel);
-    const latency = typeof latencyValue === "number" && Number.isFinite(latencyValue)
-      ? latencyValue
-      : null;
-    if (latency !== null) {
-      return <LatencyRating latencyMs={latency} className={compact ? "text-xs" : undefined} />;
-    }
-    if (tunnelLatencyIsTimeout(tunnel)) {
-      return <LatencyRating isTimeout timeoutText={translateText("超时")} className={compact ? "text-xs" : undefined} />;
-    }
-    return <span className={compact ? "text-xs text-muted-foreground" : "text-muted-foreground"}>{translateText("未测试")}</span>;
-  };
 
   const renderTunnelLatencyBreakdown = (tunnel: any, compact = false, maxItems?: number) => {
     const items = tunnelDisplayLatencyList(tunnel);
@@ -4022,6 +4063,7 @@ function TunnelsContent() {
                 {({ itemProps, handleProps, isDragging, isDropTarget }) => (
                   <Card
                     {...itemProps}
+                    interactive={!isDragging}
                     className={cn(
                       "group/sortable relative action-card border-border/40 bg-card/60 backdrop-blur-md transition-[box-shadow,opacity]",
                       !supported && "opacity-70",
@@ -4072,6 +4114,8 @@ function TunnelsContent() {
                       <span className="text-muted-foreground">{translateText("延迟")}</span>
                       {renderTunnelLatencyBreakdown(tunnel, true)}
                     </div>
+
+                    <ResourceTrafficSummary summary={tunnel.trafficSummary} />
 
                     <div className="action-card-footer flex justify-end gap-1 border-t border-border/40 pt-2">
                       {supported && (
@@ -4117,6 +4161,7 @@ function TunnelsContent() {
                 {({ itemProps, handleProps, isDragging, isDropTarget }) => (
                   <Card
                     {...itemProps}
+                    interactive={!isDragging}
                     className={cn(
                       "group/sortable relative action-card border-border/40 bg-card/60 backdrop-blur-md transition-[box-shadow,opacity]",
                       !supported && "opacity-70",
@@ -4168,6 +4213,8 @@ function TunnelsContent() {
                       {renderTunnelLatencyBreakdown(tunnel, true)}
                     </div>
 
+                    <ResourceTrafficSummary summary={tunnel.trafficSummary} />
+
                     <div className="action-card-footer flex justify-end gap-1 border-t border-border/40 pt-2">
                       {supported && (
                         <>
@@ -4212,6 +4259,7 @@ function TunnelsContent() {
                     <TableHead>{translateText("链路")}</TableHead>
                     <TableHead className="hidden md:table-cell">{translateText("模式")}</TableHead>
                     <TableHead className="hidden md:table-cell">{translateText("延迟")}</TableHead>
+                    <TableHead>{translateText("引用规则与流量")}</TableHead>
                     <TableHead>{translateText("开关")}</TableHead>
                     <TableHead className="text-right">{translateText("操作")}</TableHead>
                   </TableRow>
@@ -4269,6 +4317,7 @@ function TunnelsContent() {
                       <TableCell className="hidden py-3 md:table-cell">
                         {renderTunnelLatencyBreakdown(tunnel, true, 2)}
                       </TableCell>
+                      <TableCell className="py-3"><ResourceTrafficSummary summary={tunnel.trafficSummary} compact /></TableCell>
                       <TableCell className="py-3">
                         {supported ? (
                           renderTunnelEnabledSwitch(tunnel)

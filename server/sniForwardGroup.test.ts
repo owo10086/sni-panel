@@ -67,7 +67,9 @@ function verifySniGroupDeletion(body: string) {
     app.use((req, _res, next) => { req.agentToken = String(req.headers.authorization || "").replace("Bearer ", ""); next(); });
     registerAgentHeartbeatRoute(app);
     const server = http.createServer(app);
+    let beforeHeartbeat = () => {};
     const heartbeat = async (id, localRules = []) => {
+      beforeHeartbeat();
       const response = await fetch("http://127.0.0.1:" + server.address().port + "/api/agent/heartbeat", {
         method: "POST", headers: { authorization: "Bearer token-" + id, "content-type": "application/json" },
         body: JSON.stringify({ agentVersion: "3.3.0", agentBootId: "delete-boot-" + id, agentProcessId: 1000 + id, forceReconcile: true, localState: { rules: localRules } }),
@@ -769,4 +771,101 @@ test("host failover SNI lifecycle preserves readiness, atomic saves, imports and
   });
   fs.rmSync(directory, { recursive: true, force: true });
   assert.equal(result.status, 0, result.stderr || result.stdout);
+});
+
+
+test("port entry SNI uses each entry directly and confirms all resources before DNS inclusion", () => {
+  verifySniGroupDeletion(String.raw`
+    const { mock } = await import("node:test");
+    mock.timers.enable({ apis: ["Date"], now: Date.now() });
+    beforeHeartbeat = () => mock.timers.tick(100);
+    const service = await import("./server/services/forwardGroupService.ts");
+    const input = { name: "parallel", groupType: "host", forwardType: "gost", protocol: "tcp", isEnabled: true,
+      autoFailback: true, failoverSeconds: 10, recoverSeconds: 10, ddnsAutoResolveEnabled: false };
+    const entryId = await service.createForwardGroupFromInput({ ...input, groupMode: "entry", domain: "parallel.example.test",
+      members: [1, 2].map(hostId => ({ memberType: "host", hostId, isEnabled: true })) }, 1);
+    await service.updateForwardGroupFromInput(10, { ...input, groupMode: "port", entryGroupId: entryId, members: [] });
+    const ids = await createRules("parallel", 2);
+    await admin.update({ id: ids[1], targetIp: "203.0.113.20", targetPort: 20443, rateLimitMbps: 10, maxConnections: 100 });
+    const otherId = await service.createForwardGroupFromInput({ ...input, name: "another-resource", groupMode: "port", entryGroupId: entryId, members: [] }, 1);
+    const third = await admin.create({ forwardGroupId: otherId, name: "third", sourcePort: 18443, targetIp: "203.0.113.30", targetPort: 21443, sni: "third.example.test", isEnabled: true });
+    const requests = [];
+    app.post("/test-entry-dns", (req, res) => { requests.push(req.body); res.json({ success: true }); });
+    await settings.setSettings({ ddnsEnabled: "true", ddnsProvider: "webhook", ddnsWebhookUrl: "http://127.0.0.1:" + server.address().port + "/test-entry-dns", ddnsWebhookMethod: "POST", ddnsTtl: "60" });
+    const entryInput = { ...input, groupMode: "entry", domain: "parallel.example.test", ddnsAutoResolveEnabled: true,
+      members: [1, 2].map(hostId => ({ memberType: "host", hostId, isEnabled: true })) };
+    await service.updateForwardGroupFromInput(entryId, entryInput);
+    await groups.runForwardGroupFailover(entryId, { manual: true, forceSync: true });
+    assert.equal(requests.length, 0, "unconfirmed entries cannot be first published as fallback");
+    const initial = [];
+    for (const hostId of [1, 2]) {
+      const response = await heartbeat(hostId);
+      const action = splitter(response);
+      assert.ok(action, "each entry must own its final splitter");
+      assert.equal(action.fxp.listenPort, 18443);
+      assert.equal(action.fxp.sniRoutes.length, 3, "resources legally share the same listener");
+      const byDomain = new Map(action.fxp.sniRoutes.map(route => [route.sni, route]));
+      assert.equal(byDomain.get("parallel-0.example.test").targetIp, "203.0.113.10");
+      assert.equal(byDomain.get("parallel-0.example.test").targetPort, 19443);
+      assert.equal(byDomain.get("parallel-1.example.test").targetIp, "203.0.113.20");
+      assert.equal(byDomain.get("parallel-1.example.test").targetPort, 20443);
+      assert.equal(byDomain.get("parallel-1.example.test").limitIn, 1250000);
+      assert.equal(byDomain.get("parallel-1.example.test").maxConnections, 100);
+      initial.push(action.fxp);
+    }
+    await heartbeat(1, localRules(initial[0]));
+    await heartbeat(2, localRules(initial[1]).filter(rule => rule.sni !== "third.example.test"));
+    await groups.runForwardGroupFailover(entryId, { manual: true, forceSync: true });
+    mock.timers.tick(11_000);
+    await heartbeat(1, localRules(initial[0]));
+    await heartbeat(2, localRules(initial[1]).filter(rule => rule.sni !== "third.example.test"));
+    await groups.runForwardGroupFailover(entryId, { manual: true, forceSync: true });
+    let entry = await groups.getForwardGroupById(entryId);
+    assert.equal(entry.lastDdnsValue, "192.0.2.1", "A is ready while B lacks another resource");
+    assert.deepEqual(requests.at(-1).values, ["192.0.2.1"]);
+    let row = (await admin.list()).find(rule => Number(rule.id) === ids[0]);
+    assert.equal(row.sniRuntime.entries.find(e => e.hostId === 1).applied, true);
+    assert.equal(row.sniRuntime.entries.find(e => e.hostId === 2).applied, false);
+    await heartbeat(2, localRules(initial[1]));
+    await groups.runForwardGroupFailover(entryId, { manual: true, forceSync: true });
+    assert.equal((await groups.getForwardGroupById(entryId)).lastDdnsValue, "192.0.2.1", "B must complete its recovery observation");
+    mock.timers.tick(11_000);
+    await heartbeat(1, localRules(initial[0]));
+    await heartbeat(2, localRules(initial[1]));
+    await groups.runForwardGroupFailover(entryId, { manual: true, forceSync: true });
+    entry = await groups.getForwardGroupById(entryId);
+    assert.deepEqual(entry.lastDdnsValue.split(",").sort(), ["192.0.2.1", "192.0.2.2"]);
+    await admin.update({ id: ids[0], targetIp: "203.0.113.99" });
+    const firstUpdatedA = await heartbeat(1, localRules(initial[0]));
+    row = (await admin.list()).find(rule => Number(rule.id) === ids[0]);
+    assert.equal(row.sniRuntime.entries.find(e => e.hostId === 1).applied, false, "old target cannot confirm new save");
+    const current = [];
+    for (const id of [1, 2]) {
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const response = id === 1 && attempt === 0 ? firstUpdatedA : await heartbeat(id, localRules(initial[id - 1]));
+        const action = response.desiredState?.actions?.find(a => a.op === "apply" && a.fxp?.role === "sni-splitter" && a.sourcePort === 18443);
+        if (action) { current.push(action.fxp); break; }
+        // The panel deliberately limits resending an unchanged desired state.
+        mock.timers.tick(15_000);
+      }
+      assert.equal(current.length, id, "the next normal heartbeat receives the current table");
+      if (process.env.FORWARDX_PORT_SNI_EXPORT) {
+        const fs = await import("node:fs");
+        fs.mkdirSync(process.env.FORWARDX_PORT_SNI_EXPORT, { recursive: true });
+        fs.writeFileSync(process.env.FORWARDX_PORT_SNI_EXPORT + "/initial-" + id + ".json", JSON.stringify(initial[id - 1]));
+        fs.writeFileSync(process.env.FORWARDX_PORT_SNI_EXPORT + "/updated-" + id + ".json", JSON.stringify(current[id - 1]));
+      }
+    }
+    for (const id of [1, 2]) await heartbeat(id, localRules(current[id - 1]));
+    await groups.runForwardGroupFailover(entryId, { manual: true, forceSync: true });
+    mock.timers.tick(11_000);
+    for (const id of [1, 2]) await heartbeat(id, localRules(current[id - 1]));
+    await groups.runForwardGroupFailover(entryId, { manual: true, forceSync: true });
+    await service.updateForwardGroupFromInput(entryId, { ...entryInput, members: [{ memberType: "host", hostId: 2, isEnabled: true }] });
+    await groups.runForwardGroupFailover(entryId, { manual: true, forceSync: true });
+    assert.deepEqual(requests.at(-1).values, ["192.0.2.2"], "removed A must leave managed DNS");
+    await service.updateForwardGroupFromInput(entryId, { ...entryInput, members: [{ memberType: "host", hostId: 2, isEnabled: false }] });
+    await groups.runForwardGroupFailover(entryId, { manual: true, forceSync: true });
+    assert.deepEqual(requests.at(-1).values, [], "disabled B cannot be resurrected as fallback");
+  `);
 });

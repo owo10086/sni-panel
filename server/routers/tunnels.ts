@@ -1,5 +1,6 @@
 import { adminProcedure, protectedProcedure, router } from "../_core/trpc";
 import { z } from "zod";
+import { TRPCError } from "@trpc/server";
 import crypto from "crypto";
 import * as db from "../db";
 import { appendPanelLog } from "../_core/panelLogger";
@@ -24,6 +25,7 @@ import {
 import { withKeyedTaskLock } from "../keyedTaskLock";
 import { normalizeForwardXVersion } from "../../shared/forwardTypes";
 import { AGENT_FORWARDX_WIREGUARD_VERSION, isForwardXWireGuardV2 } from "../forwardXWireGuard";
+import { normalizeForwardXV3Transport } from "../forwardXTransport";
 import { isAgentVersionAtLeast } from "../agentRouteUtils";
 import {
   AGENT_FORWARDX_RELAY_FAILOVER_VERSION,
@@ -52,7 +54,23 @@ import { SNI_SPLITTER_MIN_AGENT_VERSION } from "@shared/sni";
 
 const tunnelNetworkTypeSchema = z.enum(["public", "private"]);
 const tunnelModeSchema = z.enum(["forwardx", "tls", "wss", "tcp", "mtls", "mwss", "mtcp", "nginx_stream"]);
-const forwardXVersionSchema = z.enum(["v1", "v2"]);
+const FORWARDX_V3_UNAVAILABLE_MESSAGE = "ForwardX V3 暂未开放创建或切换，请使用 V1 或 V2";
+// Keep V3 readable by the runtime while its product entry points stay closed.
+// Validate here so direct API calls cannot bypass the form's version picker.
+const forwardXVersionSchema = z.enum(["v1", "v2", "v3"]).refine(
+  (version) => version !== "v3",
+  { message: FORWARDX_V3_UNAVAILABLE_MESSAGE },
+);
+const forwardXV3TransportSchema = z.enum(["http", "ws", "tls"]);
+const FORWARDX_V3_OPTION_KEYS = ["v3Transport", "v3Host", "v3Path", "v3UserAgent", "v3ServerName", "v3Multiplex"] as const;
+const forwardXV3InputFields = {
+  v3Transport: forwardXV3TransportSchema.nullable().optional(),
+  v3Host: z.string().max(4096).nullable().optional(),
+  v3Path: z.string().max(4096).nullable().optional(),
+  v3UserAgent: z.string().max(512).nullable().optional(),
+  v3ServerName: z.string().max(253).nullable().optional(),
+  v3Multiplex: z.boolean().nullable().optional(),
+};
 const proxyProtocolVersionSchema = z.union([z.literal(1), z.literal(2)]);
 const tunnelLoadBalanceStrategySchema = z.enum(["none", "round_robin", "random", "least_conn", "ip_hash", "fallback"]);
 const tunnelRelayModeSchema = z.enum(["chain", "failover"]);
@@ -148,6 +166,77 @@ function normalizeTunnelRuntimeOptions(input: any, mode: unknown) {
     proxyProtocolVersion: proxyAny && Number(input.proxyProtocolVersion) === 2 ? 2 : 1,
     tcpFastOpen: forwardxMode && dbBool(input.tcpFastOpen),
     udpOverTcp: forwardxMode && dbBool(input.udpOverTcp),
+  };
+}
+
+function forwardXV3OptionsProvided(input: any) {
+  return FORWARDX_V3_OPTION_KEYS.some((key) => {
+    const value = input?.[key];
+    return value !== undefined && value !== null && value !== "";
+  });
+}
+
+function normalizeForwardXV3HttpText(value: unknown, maxLength: number, label: string) {
+  const text = String(value ?? "").trim();
+  if (!text) return null;
+  if (text.length > maxLength) throw new Error(`${label} 过长`);
+  // The FXP runtime rejects whitespace and control characters in the HTTP-style
+  // Host and path of a V3 tunnel, so reject them before persisting.
+  if (/[\s\0]/.test(text)) throw new Error(`${label} 不能包含空白字符`);
+  return text;
+}
+
+function normalizeForwardXV3UserAgent(value: unknown) {
+  const text = String(value ?? "").trim();
+  if (!text) return null;
+  if (text.length > 512) throw new Error("User-Agent 过长");
+  if (/[\r\n\0]/.test(text)) throw new Error("User-Agent 不能包含控制字符");
+  return text;
+}
+
+function normalizeForwardXV3ServerName(value: unknown) {
+  const text = String(value ?? "").trim();
+  if (!text) return null;
+  if (text.length > 253) throw new Error("TLS SNI 服务器名称过长");
+  if (/[\0\r\n\t /\\]/.test(text)) throw new Error("TLS SNI 服务器名称包含非法字符");
+  return text;
+}
+
+// V3 transports carry extra outer-transport options. Every entry rule of one
+// tunnel reads the same tunnel row, so all entries of one entry-group emit an
+// identical V3 options signature as required by the FXP runtime. V3 options
+// are only accepted for a v3 ForwardX tunnel; any other mode or version clears
+// the columns instead of silently keeping stale values.
+function normalizeForwardXV3Options(
+  input: any,
+  mode: unknown,
+  version: unknown,
+  provided = forwardXV3OptionsProvided(input),
+) {
+  const cleared = {
+    v3Transport: null,
+    v3Host: null,
+    v3Path: null,
+    v3UserAgent: null,
+    v3ServerName: null,
+    v3Multiplex: null,
+  };
+  const v3Tunnel = isTunnelForwardXMode(mode) && normalizeForwardXVersion(version) === "v3";
+  if (!v3Tunnel) {
+    if (provided) throw new Error("V3 传输选项需要 ForwardX 隧道并选择 V3 版本");
+    return cleared;
+  }
+  const v3Transport = normalizeForwardXV3Transport(input?.v3Transport);
+  if (!v3Transport) throw new Error("V3 隧道必须选择 http、ws 或 tls 传输方式");
+  const v3ServerName = normalizeForwardXV3ServerName(input?.v3ServerName);
+  if (v3ServerName && v3Transport !== "tls") throw new Error("仅 TLS 传输支持 SNI 服务器名称");
+  return {
+    v3Transport,
+    v3Host: normalizeForwardXV3HttpText(input?.v3Host, 4096, "Host"),
+    v3Path: normalizeForwardXV3HttpText(input?.v3Path, 4096, "路径"),
+    v3UserAgent: normalizeForwardXV3UserAgent(input?.v3UserAgent),
+    v3ServerName,
+    v3Multiplex: typeof input?.v3Multiplex === "boolean" ? input.v3Multiplex : null,
   };
 }
 
@@ -709,8 +798,16 @@ export const tunnelsRouter = router({
         const pageData = await db.getTunnelsPage({ ...input, ...scope });
         const hydratedItems = await attachTunnelEndpointHosts(pageData.items as any[]);
         const availabilityIndex = availabilityIndexForHydratedTunnels(hydratedItems);
-        const items = attachTunnelAvailability(hydratedItems, availabilityIndex)
+        const visibleItems = attachTunnelAvailability(hydratedItems, availabilityIndex)
           .map((tunnel) => tunnelForUser(tunnel, accessScope));
+        const trafficByTunnelId = await db.getTunnelTrafficSummaries(
+          visibleItems.map((tunnel: any) => Number(tunnel.id)),
+          ctx.user.role === "admin" ? undefined : ctx.user.id,
+        );
+        const items = visibleItems.map((tunnel: any) => ({
+          ...tunnel,
+          trafficSummary: trafficByTunnelId.get(Number(tunnel.id)),
+        }));
         const relatedGroupIds = Array.from(new Set(items.flatMap((tunnel: any) => [
           Number(tunnel.entryGroupId || 0),
           Number(tunnel.exitGroupId || 0),
@@ -826,6 +923,7 @@ export const tunnelsRouter = router({
         mode: tunnelModeSchema.default("forwardx"),
         relayMode: tunnelRelayModeSchema.optional().default("chain"),
         forwardxVersion: forwardXVersionSchema.optional().default("v1"),
+        ...forwardXV3InputFields,
         listenPort: z.number().min(0).max(65535).optional().default(0),
         mimicPort: z.number().int().min(0).max(65535).optional().default(0),
         rateLimitMbps: z.number().int().min(0).max(1_000_000).optional().default(0),
@@ -858,6 +956,7 @@ export const tunnelsRouter = router({
         try {
         const normalizedMode = normalizeTunnelMode(input.mode);
         const forwardxVersion = normalizedMode === "forwardx" ? normalizeForwardXVersion(input.forwardxVersion) : "v1";
+        const forwardXV3Options = normalizeForwardXV3Options(input, normalizedMode, forwardxVersion);
         const certDomain = normalizedMode === "nginx_stream" ? normalizeCertDomain((input as any).certDomain) : null;
         const nginxCert = normalizeNginxCertInput(input as any, normalizedMode === "nginx_stream");
         const hopHostIds = (input.hopHostIds && input.hopHostIds.length >= 3) ? input.hopHostIds : null;
@@ -1006,6 +1105,7 @@ export const tunnelsRouter = router({
           blockSocks: false,
           blockTls: false,
           ...runtimeOptions,
+          ...forwardXV3Options,
           loadBalanceEnabled: loadBalanceEnabled && extraExitNodes.length > 0,
           loadBalanceStrategy: loadBalanceEnabled && extraExitNodes.length > 0 ? loadBalanceStrategy : "round_robin",
           listenPort,
@@ -1071,6 +1171,7 @@ export const tunnelsRouter = router({
         mode: tunnelModeSchema.optional(),
         relayMode: tunnelRelayModeSchema.optional(),
         forwardxVersion: forwardXVersionSchema.optional(),
+        ...forwardXV3InputFields,
         listenPort: z.number().min(0).max(65535).optional(),
         // Non-persistent client hint: false means the value is merely the
         // form's persisted value and may be repaired after a route change.
@@ -1117,6 +1218,12 @@ export const tunnelsRouter = router({
         const nextForwardXVersion = nextModeForRuntime === "forwardx"
           ? normalizeForwardXVersion((input as any).forwardxVersion ?? (tunnel as any).forwardxVersion)
           : "v1";
+        if (nextForwardXVersion === "v3" && (
+          normalizeTunnelMode((tunnel as any).mode) !== "forwardx"
+          || normalizeForwardXVersion((tunnel as any).forwardxVersion) !== "v3"
+        )) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: FORWARDX_V3_UNAVAILABLE_MESSAGE });
+        }
         const referencedRules = await db.getForwardRulesByTunnel(input.id);
         const activeReferencedRuleCount = (referencedRules as any[]).filter((rule) => !dbBool(rule?.pendingDelete)).length;
         const restorableSniRules = (referencedRules as any[]).filter((rule: any) => (
@@ -1190,6 +1297,27 @@ export const tunnelsRouter = router({
           (data as any).forwardxVersion = nextForwardXVersion;
         }
         (data as any).relayMode = nextRelayMode;
+        // V3 options are stored on the tunnel row and read by every entry rule
+        // of that tunnel. Merge the persisted values for partial updates, and
+        // clear them when the tunnel stops being a v3 ForwardX tunnel. An
+        // explicit null from the form only clears the columns; supplying a real
+        // V3 option for a non-v3 tunnel stays an error.
+        const forwardXV3OptionsTouched = FORWARDX_V3_OPTION_KEYS.some((key) => (data as any)[key] !== undefined);
+        if (forwardXV3OptionsTouched || (data as any).mode !== undefined || (data as any).forwardxVersion !== undefined) {
+          const nextForwardXV3Tunnel = nextModeForRuntime === "forwardx" && nextForwardXVersion === "v3";
+          const forwardXV3Source = nextForwardXV3Tunnel
+            ? Object.fromEntries(FORWARDX_V3_OPTION_KEYS.map((key) => [
+              key,
+              (data as any)[key] !== undefined ? (data as any)[key] : (tunnel as any)[key],
+            ]))
+            : null;
+          Object.assign(data as any, normalizeForwardXV3Options(
+            forwardXV3Source,
+            nextModeForRuntime,
+            nextForwardXVersion,
+            forwardXV3OptionsProvided(data),
+          ));
+        }
         if ((data as any).trafficMultiplier !== undefined) {
           (data as any).trafficMultiplier = normalizeTrafficMultiplier((data as any).trafficMultiplier);
         }
@@ -1471,7 +1599,7 @@ export const tunnelsRouter = router({
           .some((key) => (data as any)[key] !== undefined && (data as any)[key] !== (tunnel as any)[key])
           || hopChanged
           || loadBalanceChanged;
-        let keyChanged = ["entryGroupId", "exitGroupId", "entryHostId", "exitHostId", "mode", "relayMode", "forwardxVersion", "certDomain", "certPem", "certKeyPem", "listenPort", "mimicPort", "rateLimitMbps", "isEnabled", "portRangeStart", "portRangeEnd", "networkType", "connectHost", ...tunnelRuntimeKeys].some((key) => (data as any)[key] !== undefined && (data as any)[key] !== (tunnel as any)[key]) || hopChanged || loadBalanceChanged;
+        let keyChanged = ["entryGroupId", "exitGroupId", "entryHostId", "exitHostId", "mode", "relayMode", "forwardxVersion", "certDomain", "certPem", "certKeyPem", "listenPort", "mimicPort", "rateLimitMbps", "isEnabled", "portRangeStart", "portRangeEnd", "networkType", "connectHost", ...tunnelRuntimeKeys, ...FORWARDX_V3_OPTION_KEYS].some((key) => (data as any)[key] !== undefined && (data as any)[key] !== (tunnel as any)[key]) || hopChanged || loadBalanceChanged;
         const enabledChanged = (data as any).isEnabled !== undefined
           && dbBool((data as any).isEnabled) !== dbBool((tunnel as any).isEnabled);
         if (keyChanged) (data as any).isRunning = false;

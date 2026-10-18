@@ -9,10 +9,13 @@ import { withGroupMemberMutation } from "./groupMemberMutation";
 
 type Viewer = { id: number; role: string };
 type DeletionOptions = { viewer?: Viewer; assertCanDelete?: () => Promise<void> };
-type Reference = { id: number; name: string; userId: number };
+type Reference = { id: number; name: string; userId: number; groupMode?: string | null };
 function referenceList(rows: Reference[], viewer?: Viewer) {
   const visible = viewer && viewer.role !== "admin" ? rows.filter(row => Number(row.userId) === viewer.id) : rows;
-  return { count: rows.length, hiddenCount: rows.length - visible.length, items: visible.slice(0, 50).map((row) => ({ id: Number(row.id), name: String(row.name || `#${row.id}`) })) };
+  return { count: rows.length, hiddenCount: rows.length - visible.length, items: visible.slice(0, 50).map((row) => ({
+    id: Number(row.id), name: String(row.name || `#${row.id}`),
+    ...(row.groupMode !== undefined ? { groupMode: ["port", "chain", "entry", "exit"].includes(String(row.groupMode)) ? String(row.groupMode) : "failover" } : {}),
+  })) };
 }
 
 /** Read-only preview of saved references, including roots retained after repair. */
@@ -29,7 +32,7 @@ export async function getHostDeletionImpact(hostId: number, viewer?: Viewer) {
           SELECT 1 FROM ${q("forward_rule_tunnel_exits")} e
           WHERE e.${q("ruleId")} = r.${q("id")} AND e.${q("exitHostId")} = ?))
       ORDER BY r.${q("id")}`, [hostId, hostId]),
-    queryRaw<Reference>(`SELECT DISTINCT g.${q("id")} AS ${q("id")}, g.${q("name")} AS ${q("name")}, g.${q("userId")} AS ${q("userId")}
+    queryRaw<Reference>(`SELECT DISTINCT g.${q("id")} AS ${q("id")}, g.${q("name")} AS ${q("name")}, g.${q("userId")} AS ${q("userId")}, g.${q("groupMode")} AS ${q("groupMode")}
       FROM ${q("forward_groups")} g
       INNER JOIN ${q("forward_group_members")} m ON m.${q("groupId")} = g.${q("id")}
       WHERE m.${q("memberType")} = 'host' AND m.${q("hostId")} = ? ORDER BY g.${q("id")}`, [hostId]),

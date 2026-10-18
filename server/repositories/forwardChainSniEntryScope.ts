@@ -128,7 +128,7 @@ export async function getForwardChainSniEntryRuleIds(
     ));
   const entryHostIdsByChain = new Map<number, Set<number>>();
   for (const group of chainGroups) {
-    if (String(group.groupMode || "") !== "chain") continue;
+    if (!["chain", "port"].includes(String(group.groupMode || ""))) continue;
     const groupId = Number(group.id);
     const entryGroupId = Number(group.entryGroupId || 0);
     const entryGroup = groupById.get(entryGroupId);
@@ -139,7 +139,7 @@ export async function getForwardChainSniEntryRuleIds(
       : [];
     const entryMembers = externalEntryMembers.length > 0
       ? externalEntryMembers
-      : enabledHostMembers(groupId).slice(0, 1);
+      : String(group.groupMode) === "port" ? enabledHostMembers(groupId) : enabledHostMembers(groupId).slice(0, 1);
     entryHostIdsByChain.set(groupId, new Set(entryMembers.map((member) => Number(member.hostId))));
   }
 

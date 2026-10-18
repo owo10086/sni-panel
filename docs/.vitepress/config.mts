@@ -91,10 +91,12 @@ export default defineConfig({
           { text: "Agent SOCKS / HTTP 代理", link: "/guide/agent-proxy-manager" },
           { text: "主机管理", link: "/guide/hosts" },
           { text: "转发规则与单规则限额", link: "/guide/rules" },
+          { text: "多入口端口转发", link: "/guide/port-entry-groups" },
+          { text: "ny 实验导入", link: "/guide/nyanpass-import" },
           { text: "SNI 分流", link: "/guide/sni-routing" },
           { text: "流量和延迟", link: "/guide/traffic-latency" },
           { text: "隧道链路", link: "/guide/tunnels" },
-          { text: "端口转发链", link: "/guide/port-chains" },
+          { text: "转发链", link: "/guide/port-chains" },
           { text: "转发组、入口组与出口组", link: "/guide/groups" },
           { text: "DDNS 和故障转移", link: "/guide/ddns" },
           { text: "PROXY Protocol", link: "/guide/proxy-protocol" },
@@ -104,6 +106,8 @@ export default defineConfig({
         text: "账户与系统功能",
         items: [
           { text: "用户、套餐和权限", link: "/guide/users-billing" },
+          { text: "账单与兑换", link: "/guide/billing" },
+          { text: "支付对接", link: "/guide/payments" },
           { text: "工单支持", link: "/guide/support-tickets" },
           { text: "推广返佣（AFF）", link: "/guide/affiliates" },
           { text: "Telegram / Discord 和通知", link: "/guide/notifications" },
@@ -114,6 +118,7 @@ export default defineConfig({
       {
         text: "运维与排障",
         items: [
+          { text: "运维看板", link: "/guide/operations" },
           { text: "SSH 管理菜单（fwxm）", link: "/guide/ssh-management" },
           { text: "目录、数据与日志", link: "/guide/paths-logs" },
           { text: "管理员账号恢复", link: "/guide/account-recovery" },
@@ -130,7 +135,6 @@ export default defineConfig({
           { text: "本地开发", link: "/guide/development" },
           { text: "插件与扩展开发", link: "/guide/plugins" },
           { text: "架构参考", link: "/ARCHITECTURE_CN" },
-          { text: "支付接入参考", link: "/PAYMENT_CN" },
         ],
       },
     ],

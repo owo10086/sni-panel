@@ -146,7 +146,7 @@ export function assertSniEntryPortCanUseSni(state: SniEntryPortState, sourcePort
 /** Check the complete prospective entrance set before any member is replaced. */
 export async function validateForwardGroupSniMembers(groupId: number, members: Array<{ memberType?: unknown; hostId?: unknown; isEnabled?: unknown }>) {
   const group = await db.getForwardGroupById(groupId);
-  if (String(group?.groupMode) !== "failover") return;
+  if (!["failover", "port"].includes(String(group?.groupMode))) return;
   const templates = (await db.getForwardGroupTemplateRules(groupId) as any[])
     .filter(rule => normalizeSniValue(rule.sni) && !dbBool(rule.pendingDelete) && (dbBool(rule.isEnabled) || dbBool(rule.disabledByGroup)));
   if (templates.length === 0) return;
@@ -167,7 +167,7 @@ export async function validateForwardGroupSniMembers(groupId: number, members: A
       const ownIds = normalizePositiveIds([template.id, ...children.map(child => child.id)]);
       const state = await db.getForwardGroupSniEntryPortState({ groupId, sourcePort: port, entryHostIds: [hostId], sni, excludeRuleIds: ownIds });
       assertSniEntryPortCanUseSni(state, port, sni);
-      if (state.otherGroupSniRule) throw new Error(`入口 ${host.name} 的端口 ${port} 已被其他资源的 SNI 规则占用`);
+      if (state.otherGroupSniRule && !state.shareableRuleIds.includes(Number(state.otherGroupSniRule.id))) throw new Error(`入口 ${host.name} 的端口 ${port} 已被其他资源的 SNI 规则占用`);
       const policy = portPolicyFrom(host);
       if (!isPortAllowedByPolicy(port, policy)) throw new Error(`入口 ${host.name}：${portPolicyErrorMessage(policy, "入口端口")}`);
       if (await db.isHostPortUnavailableForExplicitUse(hostId, port, [...ownIds, ...state.shareableRuleIds], "tcp")) {

@@ -61,7 +61,7 @@ export async function assertSniEntryAgentVersions(entryHostIds: number[], forwar
   const group = await db.getForwardGroupById(forwardGroupId);
   const statuses = await getSniEntryHostVersionStatuses(entryHostIds);
   const unsupported = statuses.find((status) => (
-    ["chain", "failover"].includes(String(group?.groupMode || ""))
+    (["chain", "failover"].includes(String(group?.groupMode || "")) || (String(group?.groupMode) === "port" && Number(group?.entryGroupId) > 0))
       ? !status.versionSupported
       : !isAgentVersionAtLeast(status.agentVersion, SNI_SPLITTER_MIN_AGENT_VERSION)
   ));
@@ -82,7 +82,7 @@ export async function getSniEntryPortOverview(): Promise<SniEntryPortOverview> {
   const groupIds = Array.from(new Set(rules.map((rule) => Number(rule.forwardGroupId))));
   const groups = await db.getForwardGroups(undefined, { includeRuntime: false, ids: groupIds }) as any[];
   const groupById = new Map(groups
-    .filter((group) => ["chain", "failover"].includes(String(group?.groupMode || "")))
+    .filter((group) => ["chain", "failover", "port"].includes(String(group?.groupMode || "")))
     .map((group) => [Number(group.id), group]));
   const entryHostIdsByGroup = new Map(await Promise.all(Array.from(groupById.keys()).map(async (groupId) => (
     [groupId, await db.getForwardGroupRuleEntryHostIds(groupId)] as const

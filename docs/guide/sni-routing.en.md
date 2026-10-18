@@ -7,7 +7,7 @@ A host failover group selects the current entrance. Each SNI rule selects a fina
 ## Set up the service
 
 1. Add at least two Linux hosts and check that every enabled member reports a recognizable Agent version of **2.2.195 or newer**. Business connections still need a working path from their entrance to the destination.
-2. Save a **host** failover group under link management. Choose member priorities, the failure and recovery observation windows, automatic failback, and an entrance domain if using DDNS. Tunnel failover groups, entrance groups and exit groups are outside this SNI support.
+2. Save a **host** failover group under link management. Choose member priorities, the failure and recovery observation windows, automatic failback, and an entrance domain if using DDNS. This section describes host failover groups. For an entry group referenced by a direct port resource, see the multi-entry section below; selecting an entry group itself is not a standalone SNI resource.
 3. As an administrator, add a rule on the saved group and enable SNI routing. The default entrance port is **443**, and you can change it to an allowed port. Editing preserves a saved non-443 port. SNI uses TCP; the group's ordinary forwarding tool is not used for these splitters.
 4. Enter a full business hostname, destination address and port. Add more hostnames on the same business port as needed. For example, `api.example.com` and `files.example.com` can share port `18443` and reach different services.
 5. Wait for applied confirmation on every member. A saved rule or an open listening port does not confirm readiness. Old destinations or old limits remain pending even if the hostname and a successful configuration version are still reported.
@@ -56,3 +56,15 @@ SNI management requires administrator access. Administrators acting for a user s
 ## Other supported resources
 
 SNI continues to work on forwarding chains, single-host port forwarding and direct tunnels with one exit. Chains route at the entrance to their own next hop, then route again at the final exit. Their rate limits and accounting remain centralized at that exit. The host failover group's per-member final splitters are specific to that resource type.
+
+## Direct SNI forwarding through a port resource and entry group
+
+Save an entry group containing hosts A and B, then select it on a port-forwarding resource. As an administrator, add SNI rules on that resource using one TCP port, for example `18443`. With `api.example.com → X:443` and `files.example.com → Y:8443`, each host routes directly to the matching destination: A → X/Y or B → X/Y. The entries do not relay through one another, there is no common exit, and X/Y need no Agent or FXP installation for this arrangement. TLS and application bytes remain unchanged.
+
+This is simultaneous service, separate from the host failover group's current-member selection. Each entry must confirm its complete current table, including destinations, ports and limits. A hostname in an old table, a command reply, an open port or an online heartbeat cannot establish readiness. With A complete and B missing a rule, A can qualify while B stays pending. If the group references several SNI resources, qualification covers all required contents on that entry.
+
+DNS qualification also requires online state, fresh full confirmation, enabled China checks and the required recovery window. Missing or failed SNI destination probes do not independently block it. A/AAAA records include all eligible entries; CNAME keeps a single target. Disabled automatic DNS leaves record management to the administrator. A never-confirmed entry cannot be published as a first-use fallback. An ordinary all-unhealthy fallback can retain only a previously used member that is still enabled, not removed and not traffic-excluded; retained records are still shown as unhealthy, not ready.
+
+Limits apply separately on each entry. A 10 Mbps rule allows 10 Mbps on A and 10 Mbps on B, not a shared aggregate cap. Actual usage of 30 GB on A and 20 GB on B becomes 50 GB on the logical rule and its owner; replayed reports must not charge twice. Member removal keeps pending stop confirmation and settlement records until safely completed. Existing per-host hostname uniqueness, port sharing boundaries, atomic saves and failed-revocation protection continue to apply. Live host port occupancy is not reintroduced as a pre-save requirement; a host execution failure is shown for that entry while healthy entries keep serving.
+
+SNI and its member copies remain outside ordinary source-IP analytics; a shared port is not evidence of hostname attribution. This integration does not open multi-exit direct SNI tunnels. [中文配置步骤](./sni-routing.md#端口资源通过入口组直接分流).

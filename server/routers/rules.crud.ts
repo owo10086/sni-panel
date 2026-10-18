@@ -1,7 +1,7 @@
 import { afterDatabaseCommit, isDatabaseTransactionActive, withDatabaseSavepoint, DatabaseSavepointRollbackError, withDeferredDatabaseCommitCallbacks } from "../dbRuntime";
 import { protectedProcedure, router } from "../_core/trpc";
 import { z } from "zod";
-import { isIP } from "node:net";
+import { assertNoDirectSelfForwardLoop } from "../directForwardLoop";
 import { ruleLimitInputShape, ruleLimitPatch, hasRuleLimitInput, validateRuleLimitInput, validateRuleRateLimitTargets } from "./ruleLimitInput";
 import { assertRuleWritable, isAdminManagedRule } from "../../shared/ruleLimits";
 import { reconcileRuleLimits } from "../ruleLimits";
@@ -89,6 +89,7 @@ type ForwardGroupRuntimeMember = {
 type ForwardGroupRuntimeConfig = {
   id?: unknown;
   groupMode?: unknown;
+  entryGroupId?: unknown;
   groupType?: unknown;
   forwardType?: unknown;
   members?: ForwardGroupRuntimeMember[] | null;
@@ -169,10 +170,10 @@ async function validateForwardGroupSniHosts(group: ForwardGroupRuntimeConfig) {
   if (enabledMembers.some((member: any) => String(member?.memberType || "") !== "host")) {
     throw new Error("SNI 分流仅支持主机型链路资源");
   }
-  if (groupMode === "port" && enabledHostMembers.length !== 1) {
+  if (groupMode === "port" && !Number(group.entryGroupId) && enabledHostMembers.length !== 1) {
     throw new Error("SNI 分流端口转发必须且只能包含一台主机");
   }
-  if (groupMode === "failover") {
+  if (groupMode === "failover" || (groupMode === "port" && Number(group.entryGroupId) > 0)) {
     if (enabledHostMembers.length === 0) throw new Error("该转发组没有启用的主机成员");
     await assertSniEntryAgentVersions(enabledHostMembers.map(member => Number(member.hostId)), Number(group.id));
     return;
@@ -629,67 +630,6 @@ async function preferredSharedTunnelListenPort(tunnel: any, ruleId = 0, enabled 
 async function reconcileSharedTunnelRulePorts(tunnel: any) {
   if (!tunnel || !usesSharedTunnelPrimaryListener(tunnel)) return;
   await reconcileTunnelRulePrimaryExitPorts(tunnel);
-}
-
-function normalizeAddressToken(value: unknown) {
-  return String(value || "")
-    .trim()
-    .replace(/^\[(.*)\]$/, "$1")
-    .replace(/\.$/, "")
-    .toLowerCase();
-}
-
-function isLoopbackAddress(value: unknown) {
-  const target = normalizeAddressToken(value);
-  if (!target) return false;
-  if (target === "localhost" || target === "ip6-localhost") return true;
-  if (target === "0.0.0.0" || target === "::" || target === "0:0:0:0:0:0:0:0") return true;
-  if (target === "::1" || target === "0:0:0:0:0:0:0:1") return true;
-  // Browsers and DNS libraries also accept non-dotted IPv4 forms. Normalize
-  // 32-bit decimal/hex forms before applying the loopback check so 127.0.0.1
-  // cannot be disguised as 2130706433 or 0x7f000001.
-  if (/^(?:0x[0-9a-f]+|\d+)$/.test(target)) {
-    const value32 = target.startsWith("0x") ? Number.parseInt(target.slice(2), 16) : Number(target);
-    if (Number.isSafeInteger(value32) && value32 >= 0 && value32 <= 0xffffffff) {
-      const firstOctet = Math.floor(value32 / 0x1000000);
-      if (firstOctet === 127) return true;
-    }
-  }
-  if (isIP(target) === 4) return target.startsWith("127.");
-  return false;
-}
-
-function hostAddressTokens(host: any) {
-  return new Set(
-    [
-      host?.ip,
-      host?.ipv4,
-      host?.ipv6,
-      host?.entryIp,
-      host?.tunnelEntryIp,
-      host?.ddnsDomain,
-    ]
-      .map(normalizeAddressToken)
-      .filter(Boolean),
-  );
-}
-
-function assertNoDirectSelfForwardLoop(options: {
-  host?: any;
-  sourcePort: number;
-  targetIp: unknown;
-  targetPort: number;
-  tunnelId?: number | null;
-}) {
-  const sourcePort = Number(options.sourcePort || 0);
-  const targetPort = Number(options.targetPort || 0);
-  if (sourcePort <= 0 || sourcePort !== targetPort) return;
-  if (Number(options.tunnelId || 0) > 0) return;
-  const target = normalizeAddressToken(options.targetIp);
-  if (!target) return;
-  if (isLoopbackAddress(target) || hostAddressTokens(options.host).has(target)) {
-    throw new Error(`禁止将本机 ${sourcePort} 端口转发回自身同端口，这会造成转发死循环`);
-  }
 }
 
 function normalizeLockedForwardType(value: unknown) {
@@ -1793,14 +1733,10 @@ async function createForwardRuleForContext(
       requireForwardTypeAllowedForActor(ownerContext.user, forwardType);
       const groupIsTunnel = !isForwardChain && group.groupType === "tunnel";
       if (!isForwardChain && !groupIsTunnel) {
-        const host = await db.getHostById(hostId);
-        assertNoDirectSelfForwardLoop({
-          host,
-          sourcePort,
-          targetIp: input.targetIp,
-          targetPort: input.targetPort,
-          tunnelId: null,
-        });
+        for (const entryHostId of entryHostIds) {
+          const host = await db.getHostById(entryHostId);
+          assertNoDirectSelfForwardLoop({ host, sourcePort, targetIp: input.targetIp, targetPort: input.targetPort, tunnelId: null });
+        }
       }
       const groupTunnelSupportsFailover = groupIsTunnel ? await forwardGroupTunnelMembersSupportMainBackup(group) : true;
       const groupSupportsFailover = !isForwardChain && ruleProtocol === "tcp" && forwardType === "gost" && (!groupIsTunnel || groupTunnelSupportsFailover);
@@ -1876,7 +1812,7 @@ async function createForwardRuleForContext(
       let id = 0;
       if (options.batch) {
         id = await createTemplateRule();
-      } else if (isForwardChain || normalizedSni) {
+      } else if (isForwardChain || isPortGroup || normalizedSni) {
         // Adding a template must not re-dispatch unchanged, healthy listeners
         // belonging to the existing chain. Runtime-field changes still apply.
         id = await db.withForwardGroupSyncTransaction(forwardGroupId, createTemplateRule, { preserveRuntime: true });
@@ -1888,7 +1824,7 @@ async function createForwardRuleForContext(
       quotaReservation = null;
       if (!options.batch) await afterSniRuleWrite(() => db.runForwardGroupFailover(
         forwardGroupId,
-        isForwardChain || normalizedSni ? { skipRuleSync: true } : undefined,
+        isForwardChain || isPortGroup || normalizedSni ? { skipRuleSync: true } : undefined,
       ));
       if (!options.batch) for (const entryHostId of entryHostIds) await refreshRulePortWarningsForHost(entryHostId);
       // Templates do not yet have member listeners. Hold ordinary entry ports
@@ -2690,14 +2626,16 @@ export const crudRulesRouter = router({
         await requireRuleProtocolEnabled({ ...rule, forwardType: nextForwardType, tunnelId: null });
         const activeHostId = await db.getForwardGroupDefaultHostId(activeGroupId);
         if (!isForwardChain && !groupIsTunnel) {
-          const host = await db.getHostById(activeHostId);
-          assertNoDirectSelfForwardLoop({
-            host,
-            sourcePort: Number(input.sourcePort ?? (rule as any).sourcePort),
-            targetIp: input.targetIp ?? (rule as any).targetIp,
-            targetPort: Number(input.targetPort ?? (rule as any).targetPort),
-            tunnelId: null,
-          });
+          for (const entryHostId of await db.getForwardGroupRuleEntryHostIds(activeGroupId)) {
+            const host = await db.getHostById(entryHostId);
+            assertNoDirectSelfForwardLoop({
+              host,
+              sourcePort: Number(input.sourcePort ?? (rule as any).sourcePort),
+              targetIp: input.targetIp ?? (rule as any).targetIp,
+              targetPort: Number(input.targetPort ?? (rule as any).targetPort),
+              tunnelId: null,
+            });
+          }
         }
         const data: any = {
           ...input,
@@ -2765,11 +2703,11 @@ export const crudRulesRouter = router({
           data.protocolBlockReason = null;
         }
         if (keyFieldChanged || groupChanged || data.isEnabled !== undefined) data.isRunning = false;
-        if (!groupChanged && (isForwardChain || nextSni || normalizeSniValue((rule as any).sni))) {
+        if (!groupChanged && (isForwardChain || isPortGroup || nextSni || normalizeSniValue((rule as any).sni))) {
           await db.withForwardGroupSyncTransaction(
             activeGroupId,
             () => db.updateForwardRule(input.id, data),
-            { prioritizeTemplateRuleId: input.id },
+            { prioritizeTemplateRuleId: input.id, preserveRuntime: true },
           );
         } else if (groupChanged && (nextSni || normalizeSniValue((rule as any).sni))) {
           await db.withForwardGroupsSyncTransaction([groupId, activeGroupId], async () => {
@@ -2852,15 +2790,17 @@ export const crudRulesRouter = router({
         });
         await requireRuleProtocolEnabled({ ...rule, forwardType: nextForwardType, tunnelId: null });
         const hostId = await db.getForwardGroupDefaultHostId(groupId);
-        if (!isForwardChain && group.groupType !== "tunnel") {
-          const host = await db.getHostById(hostId);
-          assertNoDirectSelfForwardLoop({
-            host,
-            sourcePort,
-            targetIp: input.targetIp ?? (rule as any).targetIp,
-            targetPort: Number(input.targetPort ?? (rule as any).targetPort),
-            tunnelId: null,
-          });
+        if (!isForwardChain && (group as any).groupType !== "tunnel") {
+          for (const entryHostId of await db.getForwardGroupRuleEntryHostIds(groupId)) {
+            const host = await db.getHostById(entryHostId);
+            assertNoDirectSelfForwardLoop({
+              host,
+              sourcePort,
+              targetIp: input.targetIp ?? (rule as any).targetIp,
+              targetPort: Number(input.targetPort ?? (rule as any).targetPort),
+              tunnelId: null,
+            });
+          }
         }
         const data: any = {
           name: input.name ?? (rule as any).name,

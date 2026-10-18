@@ -2488,6 +2488,7 @@ type desiredActionRecord struct {
 	Success     bool   `json:"success"`
 	UpdatedAt   int64  `json:"updatedAt"`
 	ApplySchema int    `json:"applySchema,omitempty"`
+	Failures    int    `json:"failures,omitempty"`
 }
 
 type runningRule struct {
@@ -2717,6 +2718,12 @@ type fxpSpec struct {
 	ControlSocket            string            `json:"controlSocket,omitempty"`
 	Role                     string            `json:"role"`
 	TransportVersion         string            `json:"transportVersion,omitempty"`
+	V3Transport              string            `json:"v3Transport,omitempty"`
+	V3Host                   string            `json:"v3Host,omitempty"`
+	V3Path                   string            `json:"v3Path,omitempty"`
+	V3UserAgent              string            `json:"v3UserAgent,omitempty"`
+	V3ServerName             string            `json:"v3ServerName,omitempty"`
+	V3Multiplex              *bool             `json:"v3Multiplex,omitempty"`
 	Entries                  []fxpSpec         `json:"entries,omitempty"`
 	TunnelID                 int               `json:"tunnelId"`
 	RuleID                   int               `json:"ruleId"`
@@ -3929,6 +3936,9 @@ func heartbeat(cfg Config, forceReconcile ...bool) (heartbeatResult, error) {
 		payload["forceReconcile"] = true
 	}
 	pluginVersions, pluginSyncSignatures := installedPluginInventory()
+	forwardTools, forwardToolsCheckedAt := forwardToolInventory()
+	payload["forwardTools"] = forwardTools
+	payload["forwardToolsCheckedAt"] = forwardToolsCheckedAt
 	payload["pluginVersions"] = pluginVersions
 	payload["pluginSyncSignatures"] = pluginSyncSignatures
 	payload["mimicEnvironment"] = mimicEnvironment(false)
@@ -9022,23 +9032,26 @@ func recordFXPSNILastConfigError(spec fxpSpec, message string) {
 const fxpEntryGroupRole = "entry-group"
 
 func normalizeFXPTransportVersion(version string) string {
-	if strings.EqualFold(strings.TrimSpace(version), forwardXWireGuardVersion) {
-		return forwardXWireGuardVersion
+	version = strings.ToLower(strings.TrimSpace(version))
+	if version == "" {
+		return "v1"
 	}
-	return "v1"
+	// Preserve unsupported versions for validation; never silently run V3/V4
+	// plans as V1. Runtime identities must also remain distinct.
+	return version
 }
 
 func isSharedFXPEntry(spec fxpSpec) bool {
 	version := normalizeFXPTransportVersion(spec.TransportVersion)
 	return strings.EqualFold(strings.TrimSpace(spec.Role), "entry") &&
-		(version == "v1" || version == forwardXWireGuardVersion) &&
+		(version == "v1" || version == forwardXWireGuardVersion || version == "v3") &&
 		spec.TunnelID > 0 && spec.RuleID > 0 && spec.ListenPort > 0
 }
 
 func isFXPEntryGroup(spec fxpSpec) bool {
 	version := normalizeFXPTransportVersion(spec.TransportVersion)
 	return strings.EqualFold(strings.TrimSpace(spec.Role), fxpEntryGroupRole) &&
-		(version == "v1" || version == forwardXWireGuardVersion) &&
+		(version == "v1" || version == forwardXWireGuardVersion || version == "v3") &&
 		spec.TunnelID > 0
 }
 
@@ -9117,6 +9130,9 @@ func buildSharedFXPEntryGroup(entries []fxpSpec, tunnelID int, transportVersion 
 		TransportVersion: transportVersion,
 		TunnelID:         tunnelID,
 		Entries:          compatible,
+	}
+	if transportVersion == "v3" && len(compatible) > 0 {
+		copyFXPV3Options(&group, compatible[0])
 	}
 	group = normalizeFXPSpec(group)
 	return group, tunnelID > 0 && len(group.Entries) > 0
@@ -9489,10 +9505,8 @@ func fxpServerID(spec fxpSpec) string {
 
 func normalizeFXPSpec(spec fxpSpec) fxpSpec {
 	spec.Role = strings.ToLower(strings.TrimSpace(spec.Role))
-	spec.TransportVersion = strings.ToLower(strings.TrimSpace(spec.TransportVersion))
-	if spec.TransportVersion != forwardXWireGuardVersion {
-		spec.TransportVersion = "v1"
-	}
+	spec.TransportVersion = normalizeFXPTransportVersion(spec.TransportVersion)
+	spec.V3Transport = strings.ToLower(strings.TrimSpace(spec.V3Transport))
 	if spec.Role == fxpEntryGroupRole {
 		entries := make([]fxpSpec, 0, len(spec.Entries))
 		byIdentity := map[string]int{}
@@ -9656,6 +9670,9 @@ func fxpServerSignature(spec fxpSpec) string {
 	spec = normalizeFXPSpec(spec)
 	if isFXPEntryGroup(spec) {
 		parts := []string{spec.Role, spec.TransportVersion, strconv.Itoa(spec.TunnelID)}
+		if spec.TransportVersion == "v3" {
+			parts = append(parts, fxpV3OptionsSignature(spec))
+		}
 		for _, entry := range spec.Entries {
 			parts = append(parts, fxpServerSignature(entry))
 		}
@@ -9719,6 +9736,11 @@ func fxpServerSignature(spec fxpSpec) string {
 				strings.TrimSpace(route.AccessScope),
 			)
 		}
+	}
+	// Preserve byte-identical V1/V2 signatures to avoid restarting legacy
+	// runtimes just because support for a new transport was installed.
+	if spec.TransportVersion == "v3" {
+		parts = append(parts, fxpV3OptionsSignature(spec))
 	}
 	return strings.Join(parts, "|")
 }
@@ -10687,6 +10709,10 @@ func fxpSpecHasStartIdentity(spec fxpSpec) bool {
 
 func startFXPProcessLockedWithPersistence(cfg Config, spec fxpSpec, actionMessage *actionMessage, persistenceEnabled bool) bool {
 	spec = normalizeFXPSpec(spec)
+	if err := validateFXPTransport(spec); err != nil {
+		actionMessage.set("fxp transport config rejected version=%s: %v", spec.TransportVersion, err)
+		return false
+	}
 	configPath := fxpConfigPath(spec)
 	spec = fxpSpecWithSNIControlSocket(spec, configPath)
 	if !fxpSpecHasStartIdentity(spec) {

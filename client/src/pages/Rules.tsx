@@ -4,10 +4,13 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import AnimatedStatValue from "@/components/AnimatedStatValue";
 import { RuleLimitsForm, newRuleLimitsForm, ruleLimitsPayload, type RuleLimitsFormValue } from "@/components/rules/RuleLimitsForm";
 import { RuleUsageSummary } from "@/components/rules/RuleUsageSummary";
+import { NyanpassImportPreview } from "@/components/rules/NyanpassImportPreview";
 import { isAdminManagedRule } from "../../../shared/ruleLimits";
 import { forwardGroupRouteMembers, forwardGroupSelfTestSource } from "../../../shared/forwardGroup";
 import AutoAnimateContainer from "@/components/AutoAnimateContainer";
 import DashboardLayout from "@/components/DashboardLayout";
+import UserSelect from "@/components/UserSelect";
+import { ruleOwnerOptionIds } from "@/lib/userSelection";
 import { LatencyRating } from "@/components/LatencyRating";
 import { LinkTestProbeView, parseLinkTestMessage, type LinkTestPlannedSegment } from "@/components/LinkTestLatencySummary";
 import { PersistentPagination, usePersistentPageRequest, useServerPagination } from "@/components/PersistentPagination";
@@ -90,6 +93,7 @@ import {
   type RuleTransferFile,
   type RuleTransferFileRule,
 } from "@/lib/ruleTransfer";
+import { parseCompatibleRuleTransferText, validateNyanpassImportTarget, type CompatibleRuleFile } from "@/lib/nyanpassImport";
 import {
   filterRuleEntryAddressesForDisplay,
   getEntryAddressFamily as addressFamily,
@@ -353,7 +357,7 @@ type RuleTransferScopeType = Exclude<RuleCategory, "all">;
 type RuleResourceFilter = "all" | `${RuleTransferScopeType}` | `${RuleTransferScopeType}:${number}`;
 type RuleBatchManageMode = "copy" | "edit" | "export" | "import";
 type BatchEditFormData = Pick<RuleFormData, "routeMode" | "forwardType" | "tunnelId" | "forwardGroupId" | "targetIp" | "targetPort">;
-type RuleImportSourceMode = "file" | "manual" | "sni";
+type RuleImportSourceMode = "file" | "manual" | "sni" | "nyanpass";
 type SniRuleDisplayGroup = { key: string; rules: any[] };
 type RuleDisplayItem =
   | { kind: "rule"; key: string; rule: any }
@@ -831,7 +835,7 @@ function addRuleSearchForwardGroupParts(parts: string[], group: any | null | und
   addRuleSearchPart(parts, desktopRuleTypeLabels[getRuleForwardGroupKind({ forwardGroupId: group.id }, filters.forwardGroupById) || "group"]);
   if (group.domain && port !== undefined) addRuleSearchPart(parts, formatAddressWithPort(group.domain, port));
 
-  const entryGroup = isForwardChainGroup(group) && Number(group.entryGroupId || 0) > 0
+  const entryGroup = (isForwardChainGroup(group) || normalizeForwardGroupModeForRule(group) === "port") && Number(group.entryGroupId || 0) > 0
     ? filters.forwardGroupById.get(Number(group.entryGroupId))
     : null;
   if (entryGroup) addRuleSearchForwardGroupParts(parts, entryGroup, filters, port);
@@ -1013,14 +1017,6 @@ function getHostEntryAddresses(host: any | null | undefined): EntryAddress[] {
 }
 function getHostEntryAddress(host: any | null | undefined): string {
   return getHostEntryAddresses(host)[0]?.value || "";
-}
-
-function getHostEntryAddressText(host: any | null | undefined, port?: number | string): string {
-  const entries = getHostEntryAddresses(host);
-  if (entries.length === 0) return "";
-  return entries
-    .map((entry) => port === undefined ? entry.value : formatAddressWithPort(entry.value, port))
-    .join(" / ");
 }
 
 function formatAddressWithPort(address: string, port: number | string): string {
@@ -1472,7 +1468,6 @@ function createRuleGlobeSegmentCoords(
   const dLat = end.lat - start.lat;
   const dLng = longitudeDeltaDegrees(start.lng, end.lng);
   const midLat = (start.lat + end.lat) / 2;
-  const midLng = normalizeLongitude(start.lng + dLng / 2);
   const lngScale = Math.max(0.35, Math.cos((midLat * Math.PI) / 180));
   const projectedLng = dLng * lngScale;
   const distance = Math.sqrt(dLat * dLat + projectedLng * projectedLng);
@@ -1661,10 +1656,6 @@ function buildRuleGlobeData(
 
   (rules || []).forEach((rule: any) => {
     const chainGroup = rule.forwardGroupId ? forwardGroupById.get(Number(rule.forwardGroupId)) : null;
-    const chainEntryGroup = chainGroup && isForwardChainGroup(chainGroup) && Number(chainGroup.entryGroupId || 0) > 0
-      ? forwardGroupById.get(Number(chainGroup.entryGroupId))
-      : null;
-    const chainEntryMembers = chainEntryGroup && normalizeForwardGroupModeForRule(chainEntryGroup) === "entry" ? enabledHostMembers(chainEntryGroup) : [];
     const routeHostIds = ruleGlobeRouteHostIds(rule, tunnelById, forwardGroupById);
     const routePoints = routeHostIds.map((hostId: number) => pointForHostId(hostId)).filter(Boolean) as RuleGlobePoint[];
     if (routePoints.length === 0) {
@@ -2195,11 +2186,6 @@ function RulesContent() {
     staleTime: 10000,
     refetchOnWindowFocus: false,
   });
-  const { data: users } = trpc.users.options.useQuery(undefined, {
-    enabled: user?.role === "admin" && secondaryQueriesReady,
-    staleTime: 60000,
-    refetchOnWindowFocus: false,
-  });
   const { data: forwardGroups, isFetched: forwardGroupsFetched, isError: forwardGroupsError } = trpc.forwardGroups.options.useQuery(undefined, {
     refetchInterval: pollingInterval("normal"),
     staleTime: 10000,
@@ -2284,7 +2270,6 @@ function RulesContent() {
   const createOwnerUserId = user?.role === "admin" && filterUser !== "self" && filterUser !== "all"
     ? Number(filterUser)
     : undefined;
-  const selectedScopeQueryEnabled = false as boolean;
   const [portStatus, setPortStatus] = useState<"idle" | "checking" | "available" | "used">("idle");
   const [portRangeError, setPortRangeError] = useState<string | null>(null);
   const latestPortCheckRef = useRef(0);
@@ -2336,7 +2321,9 @@ function RulesContent() {
   const [importResourceId, setImportResourceId] = useState("");
   const [importResourceSearch, setImportResourceSearch] = useState("");
   const [importSourceMode, setImportSourceMode] = useState<RuleImportSourceMode>("file");
-  const [importFile, setImportFile] = useState<RuleTransferFile | null>(null);
+  const [importFile, setImportFile] = useState<CompatibleRuleFile | null>(null);
+  const [importNyanpassProtocol, setImportNyanpassProtocol] = useState<RuleProtocol>("both");
+  const [importNyanpassAcknowledged, setImportNyanpassAcknowledged] = useState(false);
   const [importFileName, setImportFileName] = useState("");
   const [importFileError, setImportFileError] = useState("");
   const [importFailures, setImportFailures] = useState<string[]>([]);
@@ -2449,7 +2436,13 @@ function RulesContent() {
   const ruleListDataReady = isRuleGlobeView
     ? ruleMapQuery.data !== undefined && !ruleMapQuery.isPlaceholderData
     : rulePageQuery.data !== undefined && !rulePageQuery.isPlaceholderData;
-  const selectedScopeRules = undefined;
+
+  const ownerOptionIds = useMemo(() => ruleOwnerOptionIds(rules || [], createOwnerUserId), [rules, createOwnerUserId]);
+  const { data: users } = trpc.users.optionsByIds.useQuery({ ids: ownerOptionIds }, {
+    enabled: user?.role === "admin" && ownerOptionIds.length > 0,
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+  });
 
   const walletBalanceKnown = wallet?.balanceCents !== undefined && wallet?.balanceCents !== null;
   const manuallyPaused = (user as any)?.forwardAccessPauseReason === "manual";
@@ -3982,28 +3975,23 @@ function RulesContent() {
     getRuleEntryHostId: getRuleEntryHostIdForSort,
   }), [filterResource, forwardGroupById, getRuleEntryHostIdForSort, hostById, ruleCategory, ruleSearchQuery, filterUser, tunnelById, user?.id, user?.role, userById]);
   const baseScopedRules = useMemo(() => rules || [], [rules]);
-  const selectedScopedRules = selectedScopeQueryEnabled ? selectedScopeRules : undefined;
-  const scopedRulesReady = selectedScopeQueryEnabled ? selectedScopedRules !== undefined : ruleListDataReady;
   const [stableFilteredRules, setStableFilteredRules] = useState<any[]>([]);
   const [filteredRulesPrimed, setFilteredRulesPrimed] = useState(false);
   useEffect(() => {
-    if (!scopedRulesReady) return;
-    const sourceRules = selectedScopeQueryEnabled ? selectedScopedRules || [] : baseScopedRules;
+    if (!ruleListDataReady) return;
     // Page/map endpoints already apply ownership, route, category and search.
     // Local option lists are incomplete (especially shared tunnel hosts), so
     // re-filtering here can hide valid matches while server counts remain > 0.
     // Keep local filtering only for the separate full-list batch tools below.
-    setStableFilteredRules(sourceRules);
+    setStableFilteredRules(baseScopedRules);
     setFilteredRulesPrimed(true);
-  }, [baseScopedRules, scopedRulesReady, selectedScopedRules, selectedScopeQueryEnabled]);
+  }, [baseScopedRules, ruleListDataReady]);
   const filteredRules = stableFilteredRules;
   // Batch tools need all matching source rules, while the page itself stays
   // on its current server page.  Keep these two data sources separate.
-  const transferSourceRuleCandidates = selectedScopeQueryEnabled
-    ? selectedScopedRules || []
-    : needsFullRuleList
-      ? (fullRulesQuery.data as any[] | undefined) || []
-      : baseScopedRules;
+  const transferSourceRuleCandidates = needsFullRuleList
+    ? (fullRulesQuery.data as any[] | undefined) || []
+    : baseScopedRules;
   const transferSourceRules = useMemo(() => transferSourceRuleCandidates.filter((rule: any) => user?.role === "admin" || !isAdminManagedRule(rule)), [transferSourceRuleCandidates, user?.role]);
   const copyableSourceRules = useMemo(() => {
     const batchFilters: RuleFilterState = {
@@ -4270,9 +4258,9 @@ function RulesContent() {
   ), [filteredRules]);
   const selfTestRuleDetail = useMemo(() => {
     if (!selfTestRule) return null;
-    return [...(rules || []), ...(selectedScopedRules || [])]
+    return (rules || [])
       .find((rule: any) => Number(rule.id) === Number(selfTestRule.id)) || null;
-  }, [rules, selectedScopedRules, selfTestRule?.id]);
+  }, [rules, selfTestRule?.id]);
   const selfTestTargetAddress = useMemo(() => {
     const target = String(selfTestRuleDetail?.targetIp || "").trim();
     return target ? normalizeAddressKey(target) : "";
@@ -4541,7 +4529,7 @@ function RulesContent() {
     : `user-${user?.id || "self"}`;
   const hasActiveUserFilter = user?.role === "admin" && filterUser !== "self";
   const hasActiveRuleFilter = hasActiveUserFilter || filterResource !== "all" || ruleCategory !== "all" || ruleSearchQuery.trim().length > 0;
-  const rulesHeaderLoading = isLoading || !rules || !scopedRulesReady || !filteredRulesPrimed;
+  const rulesHeaderLoading = isLoading || !rules || !ruleListDataReady || !filteredRulesPrimed;
   const totalTrafficTotalsLoading = rulesHeaderLoading || !secondaryQueriesReady || ruleListSummaryLoading;
   const dailyTrafficTotalsLoading = rulesHeaderLoading || !secondaryQueriesReady || ruleListSummaryLoading;
   const [stableRulePageMeta, setStableRulePageMeta] = useState({
@@ -5557,6 +5545,14 @@ function RulesContent() {
     return parseSniBulkImportText(importManualText, importSniSourcePort);
   }, [importManualText, importScopeType, importSniSourcePort, user?.role]);
 
+  const nyanpassPaste = useMemo(() => importSourceMode === "nyanpass" && importManualText.trim()
+    ? parseCompatibleRuleTransferText(importManualText) : null, [importSourceMode,importManualText]);
+  const nyanpassFile = importSourceMode === "nyanpass"
+    ? nyanpassPaste?.ok && nyanpassPaste.file.importSource === "nyanpass" ? nyanpassPaste.file : null
+    : importSourceMode === "file" && importFile?.importSource === "nyanpass" ? importFile : null;
+  const isNyanpassImport = importSourceMode === "nyanpass" || !!nyanpassFile;
+  useEffect(() => { setImportNyanpassAcknowledged(false); }, [importResourceId,importScopeType,importNyanpassProtocol,importManualText]);
+
   const importValidation = useMemo<{ ok: boolean; message: string; rules: RuleBulkImportRule[] }>(() => {
     if (!importResourceId) return { ok: false, message: translateText("请选择{0}", [ruleTransferScopeLabels[importScopeType]]), rules: [] };
     if (importSourceMode === "sni") {
@@ -5565,6 +5561,15 @@ function RulesContent() {
       }
       return sniImportValidation;
     }
+    if (isNyanpassImport) {
+      if (nyanpassPaste && !nyanpassPaste.ok) return {ok:false,message:nyanpassPaste.error,rules:[]};
+      if (!nyanpassFile) return {ok:false,message:translateText("请选择或粘贴 ny 导出的逐行 JSON 规则"),rules:[]};
+      const rules=nyanpassFile.rules.map(rule=>({...rule,protocol:importNyanpassProtocol}));
+      const error=validateNyanpassImportTarget(rules,{protocol:importNyanpassProtocol,scope:importScopeType,resource:selectedImportResource,admin:user?.role === "admin"});
+      if (error) return {ok:false,message:error,rules};
+      if (!importNyanpassAcknowledged) return {ok:false,message:translateText("请确认实验性导入说明后继续"),rules};
+      return {ok:true,message:translateText("ny（实验性）：已识别 {0} 条规则，导入后停用，端口冲突保留为失败项",[rules.length]),rules};
+    }
     if (importSourceMode === "manual") {
       if (!manualImportValidation.ok) return manualImportValidation;
       return manualImportValidation;
@@ -5572,7 +5577,22 @@ function RulesContent() {
     if (importFileError) return { ok: false, message: importFileError, rules: [] };
     if (!importFile) return { ok: false, message: translateText("请选择导入文件"), rules: [] };
     return { ok: true, message: translateText("已识别 {0} 条{1}规则", [importFile.rules.length, ruleTransferScopeLabels[importScopeType]]), rules: importFile.rules };
-  }, [importFile, importFileError, importResourceId, importScopeType, importSourceMode, manualImportValidation, selectedImportResource, sniImportValidation]);
+  }, [importFile, importFileError, importResourceId, importScopeType, importSourceMode, manualImportValidation,isNyanpassImport,nyanpassPaste,nyanpassFile,importNyanpassProtocol,importNyanpassAcknowledged,selectedImportResource,sniImportValidation,user?.role]);
+
+  const renderNyanpassImportOptions = () => isNyanpassImport ? (
+    <div className="space-y-2 rounded-md border border-amber-500/30 bg-amber-500/5 p-3 text-xs">
+      <p className="font-medium text-amber-700 dark:text-amber-300">{translateText("ny / Nyanpass 导入（实验性）")}</p>
+      <p className="text-muted-foreground">{translateText("导出未包含完整协议、启停状态及拓扑。请选择协议；规则导入后停用，不迁移历史流量，不覆盖已有规则或自动更换冲突端口。")}</p>
+      <Select value={importNyanpassProtocol} onValueChange={value=>setImportNyanpassProtocol(value as RuleProtocol)} disabled={importingRules}>
+        <SelectTrigger aria-label={translateText("ny 导入协议")}><SelectValue /></SelectTrigger>
+        <SelectContent>{(["tcp","udp","both"] as const).map(value=><SelectItem key={value} value={value}>{formatForwardRuleProtocol(value)}</SelectItem>)}</SelectContent>
+      </Select>
+      <label className="flex cursor-pointer items-start gap-2 leading-5">
+        <input type="checkbox" className="mt-1 h-4 w-4 shrink-0 accent-primary" checked={importNyanpassAcknowledged} onChange={event=>setImportNyanpassAcknowledged(event.target.checked)} disabled={importingRules} />
+        <span>{translateText("我已核对目标资源、协议和预览，接受实验性兼容限制")}</span>
+      </label>
+    </div>
+  ) : null;
 
   const resetImportDialog = () => {
     setImportFile(null);
@@ -5582,6 +5602,7 @@ function RulesContent() {
     setImportFileInputKey((key) => key + 1);
     setImportManualText("");
     setImportSniSourcePort(SNI_DEFAULT_ENTRY_PORT);
+    setImportNyanpassAcknowledged(false);
   };
 
   const openExportDialog = () => {
@@ -5630,6 +5651,7 @@ function RulesContent() {
     setImportFile(null);
     setImportFileError("");
     setImportFileName(file?.name || "");
+    setImportNyanpassAcknowledged(false);
     if (!file) return;
     if (Number(file.size || 0) > RULE_TRANSFER_MAX_FILE_SIZE) {
       setImportFileError(translateText("规则文件不能超过 5 MiB"));
@@ -5637,13 +5659,12 @@ function RulesContent() {
     }
     try {
       const rawText = await file.text();
-      const parsed = JSON.parse(rawText);
-      const result = parseRuleTransferFile(parsed);
+      const result = parseCompatibleRuleTransferText(rawText);
       if (!result.ok) {
         setImportFileError(result.error);
         return;
       }
-      setImportFile({ ...result.file, rules: result.file.rules.map((rule, index) => ({ ...rule, sourceLineNumber: index + 1 })) });
+      setImportFile({ ...result.file, rules: result.file.rules.map((rule, index) => ({ ...rule, sourceLineNumber: rule.sourceLineNumber || index + 1 })) });
     } catch {
       setImportFileError(translateText("文件无法解析，请选择 JSON 格式的规则文件"));
     }
@@ -5677,7 +5698,7 @@ function RulesContent() {
       maxConnections: sni ? Number(rule.maxConnections || 0) : 0,
       targetIp: rule.targetIp,
       targetPort: rule.targetPort,
-      isEnabled: rule.isEnabled,
+      isEnabled: isNyanpassImport ? false : rule.isEnabled,
       telegramErrorNotifyEnabled: telegramBotReady && !!rule.telegramErrorNotifyEnabled,
       proxyProtocolReceive: rule.proxyProtocolReceive,
       proxyProtocolSend: rule.proxyProtocolSend,
@@ -5715,7 +5736,7 @@ function RulesContent() {
           ...options,
           rules: rules.map(buildImportRulePayload),
         }),
-      }, { fixedPortFirst: importSourceMode === "manual", retryPortConflicts: importSourceMode === "file" });
+      }, { fixedPortFirst: importSourceMode === "manual" || isNyanpassImport, retryPortConflicts: importSourceMode === "file" && !isNyanpassImport });
       saveResultsAt = performance.now();
       const importedCount = results.filter((result) => result.status === "fulfilled").length;
       const failures = results.filter((result) => result.status === "rejected");
@@ -5735,7 +5756,12 @@ function RulesContent() {
       ]);
       if (failures.length > 0) {
         const failedRules = failures.map((result) => result.item);
-        if (importSourceMode === "file") {
+        if (isNyanpassImport && nyanpassFile) {
+          setImportFile({...nyanpassFile,rules:failedRules});
+          setImportSourceMode("file");
+          setImportFileName(translateText("ny 剩余失败规则（实验性）"));
+          setImportFileError("");
+        } else if (importSourceMode === "file") {
           setImportFile((current) => current ? { ...current, rules: failedRules } : current);
         } else if (importSourceMode === "sni") {
           setImportManualText(failedRules
@@ -5845,14 +5871,9 @@ function RulesContent() {
     return tunnel ? `${tunnel.name} / ${getTunnelRouteText(tunnel, hosts)}` : member.tunnelId ? translateText("隧道 #{0}", [member.tunnelId]) : translateText("隧道成员");
   };
 
-  const getHostEntry = (hostId: number): string => {
-    const h: any = hosts?.find((x: any) => x.id === hostId);
-    return getHostEntryAddress(h);
-  };
-
   const entryDomainForForwardGroup = (group: any | null | undefined) => {
     if (!group) return "";
-    if (isForwardChainGroup(group) && group.entryGroupId) {
+    if ((isForwardChainGroup(group) || normalizeForwardGroupModeForRule(group) === "port") && group.entryGroupId) {
       const entryGroup = forwardGroupById.get(Number(group.entryGroupId)) || group.entryGroup;
       return String(entryGroup?.domain || "").trim();
     }
@@ -5956,10 +5977,11 @@ function RulesContent() {
   const getForwardGroupEntryAddresses = (group: any | null | undefined): EntryAddress[] => {
     if (!group) return [];
     const rows: EntryAddress[] = [];
-    const domain = String(group?.domain || "").trim();
+    const parallel = normalizeForwardGroupModeForRule(group) === "port" && Number(group.entryGroupId || 0) > 0;
+    const domain = String(group?.domain || (parallel ? entryDomainForForwardGroup(group) : "")).trim();
     if (domain) {
       pushUniqueEntryAddress(rows, getForwardGroupRouteLabel(group), domain);
-      return rows;
+      if (!parallel) return rows;
     }
     const activeMemberId = Number(group?.activeMemberId || 0);
     const members = [...(group?.members || [])]
@@ -5973,7 +5995,7 @@ function RulesContent() {
       });
     for (const member of members) {
       pushMemberEntryAddresses(rows, member);
-      if (rows.length > 0) return rows;
+      if (rows.length > 0 && !parallel) return rows;
     }
     return rows;
   };
@@ -6409,26 +6431,9 @@ function RulesContent() {
     );
   };
 
-  const renderRuleTrafficValue = (rule: any, direction: "in" | "out") => (
-    renderTrafficBytesValue(trafficByRule.get(rule.id), direction)
-  );
-
   const renderRuleDailyTrafficValue = (rule: any, direction: "in" | "out") => (
     renderTrafficBytesValue(dailyTrafficByRule.get(rule.id), direction)
   );
-
-  const renderRuleTraffic = (rule: any) => {
-    const t = dailyTrafficByRule.get(rule.id);
-    if (!t || (t.bytesIn === 0 && t.bytesOut === 0)) {
-      return <span className="text-xs text-muted-foreground">—</span>;
-    }
-    return (
-      <div className="flex flex-col gap-0.5 text-xs leading-5">
-        {renderRuleDailyTrafficValue(rule, "in")}
-        {renderRuleDailyTrafficValue(rule, "out")}
-      </div>
-    );
-  };
 
   const renderMobileRuleTotalTraffic = (rule: any) => {
     const t = totalTrafficByRule.get(rule.id);
@@ -6462,17 +6467,6 @@ function RulesContent() {
       </span>
     );
   };
-
-  const renderRuleCombinedTraffic = (rule: any) => (
-    <div className="space-y-1 whitespace-nowrap">
-      {renderRuleTotalTraffic(rule)}
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-        <span className="text-xs text-muted-foreground">24H</span>
-        {renderRuleTraffic(rule)}
-      </div>
-      {renderLatestLatency(rule)}
-    </div>
-  );
 
   const renderTableRuleTotalTraffic = (rule: any) => (
     <div className="min-w-0 whitespace-nowrap text-xs">
@@ -7387,21 +7381,9 @@ function RulesContent() {
               ) : null}
             </div>
             {user?.role === "admin" && (
-              <Select value={filterUser} onValueChange={handleFilterUserChange}>
-                <SelectTrigger className="h-8 w-full text-xs sm:w-[160px]">
-                  <SelectValue placeholder={translateText("我的规则")} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="self">{translateText("我的规则")}</SelectItem>
-                  <SelectItem value="all">{translateText("所有用户")}</SelectItem>
-                  {(users || []).map((item: any) => (
-                    <SelectItem key={item.id} value={String(item.id)}>
-                      {item.name || item.username}
-                      {item.displayRemark ? ` · ${item.displayRemark}` : ""}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <UserSelect value={filterUser} onValueChange={handleFilterUserChange} excludeUserId={user?.id}
+                className="h-8 w-full text-xs sm:w-[180px]"
+                specialOptions={[{ value: "all", label: translateText("所有用户") }, { value: "self", label: translateText("我的规则") }]} />
             )}
             <DropdownMenu open={ruleResourceMenuOpen} onOpenChange={setRuleResourceMenuOpen} modal={false}>
               <DropdownMenuTrigger asChild>
@@ -7501,7 +7483,7 @@ function RulesContent() {
 
       {/* 转发流量汇总 */}
       <div className="grid grid-cols-3 gap-1.5 sm:gap-4">
-        <Card className="group relative overflow-hidden border-border/40 bg-card/60 backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5 hover:border-border/70 hover:shadow-lg hover:shadow-primary/5">
+        <Card hoverable className="group relative overflow-hidden border-border/40 bg-card/60">
           <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-[0.035] transition-opacity group-hover:opacity-[0.07]" />
           <CardContent className="relative flex min-w-0 items-center justify-between p-2 sm:gap-3 sm:p-4">
             <div className="w-full min-w-0 sm:flex-1">
@@ -7541,7 +7523,7 @@ function RulesContent() {
             <ArrowDownToLine className="hidden h-6 w-6 shrink-0 text-chart-2 sm:block" />
           </CardContent>
         </Card>
-        <Card className="group relative overflow-hidden border-border/40 bg-card/60 backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5 hover:border-border/70 hover:shadow-lg hover:shadow-primary/5">
+        <Card hoverable className="group relative overflow-hidden border-border/40 bg-card/60">
           <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-[0.035] transition-opacity group-hover:opacity-[0.07]" />
           <CardContent className="relative flex min-w-0 items-center justify-between p-2 sm:gap-4 sm:p-4">
             <div className="w-full min-w-0 sm:flex-1">
@@ -7581,7 +7563,7 @@ function RulesContent() {
             <ArrowUpFromLine className="hidden h-6 w-6 shrink-0 text-chart-4 sm:block" />
           </CardContent>
         </Card>
-        <Card className="group relative overflow-hidden border-border/40 bg-card/60 backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5 hover:border-border/70 hover:shadow-lg hover:shadow-primary/5">
+        <Card hoverable className="group relative overflow-hidden border-border/40 bg-card/60">
           <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-[0.035] transition-opacity group-hover:opacity-[0.07]" />
           <CardContent className="relative flex min-w-0 items-center justify-between p-2 sm:gap-4 sm:p-4">
             <div className="w-full min-w-0 sm:flex-1">
@@ -8483,8 +8465,11 @@ function RulesContent() {
             </div>
             <div className="space-y-2">
               <Label>{translateText("规则文件")}</Label>
-              <Input key={importFileInputKey} type="file" accept=".json,application/json" onChange={handleImportFileChange} />
+              <Input key={importFileInputKey} type="file" accept=".json,.jsonl,.ndjson,.txt,application/json,text/plain" onChange={handleImportFileChange} />
+              <p className="text-xs text-muted-foreground">{translateText("支持 ForwardX 文件及 ny / Nyanpass 逐行 JSON（实验性）")}</p>
             </div>
+            {renderNyanpassImportOptions()}
+            {isNyanpassImport && <NyanpassImportPreview rules={importValidation.rules} />}
             <div
               className={`rounded-md border px-3 py-2 text-sm ${
                 importValidation.ok
@@ -8582,7 +8567,7 @@ function RulesContent() {
                     </div>
                   </div>
                   <div className={segmentedControlClassName}>
-                    <div className={`grid grid-cols-1 gap-1 ${user?.role === "admin" ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}>
+                    <div className={`grid grid-cols-1 gap-1 ${user?.role === "admin" ? "sm:grid-cols-4" : "sm:grid-cols-3"}`}>
                       <button
                         type="button"
                         className={routeModeOptionClass(importSourceMode === "file", importingRules)}
@@ -8635,6 +8620,10 @@ function RulesContent() {
                           <span className="truncate">{translateText("SNI 分流")}</span>
                         </button>
                       )}
+                      <button type="button" className={routeModeOptionClass(importSourceMode === "nyanpass", importingRules)} aria-pressed={importSourceMode === "nyanpass"}
+                        onClick={() => {setImportSourceMode("nyanpass");setImportManualText("");setImportFile(null);setImportFileError("");setImportNyanpassAcknowledged(false);}} disabled={importingRules}>
+                        <span className="whitespace-normal leading-4">{translateText("ny（实验性）")}</span>
+                      </button>
                     </div>
                   </div>
                   {importSourceMode === "sni" && (
@@ -8655,14 +8644,15 @@ function RulesContent() {
                     </div>
                   )}
                   <div className="space-y-2">
-                    <Label>{importSourceMode === "file" ? translateText("规则文件") : importSourceMode === "sni" ? translateText("SNI 规则列表") : translateText("规则列表")}</Label>
+                    <Label>{importSourceMode === "file" ? translateText("规则文件") : importSourceMode === "nyanpass" ? translateText("ny 导出内容（逐行 JSON）") : importSourceMode === "sni" ? translateText("SNI 规则列表") : translateText("规则列表")}</Label>
                     {importSourceMode === "file" ? (
-                      <Input key={importFileInputKey} type="file" accept=".json,application/json" onChange={handleImportFileChange} />
+                      <><Input key={importFileInputKey} type="file" accept=".json,.jsonl,.ndjson,.txt,application/json,text/plain" onChange={handleImportFileChange} />
+                        <p className="text-xs text-muted-foreground">{translateText("支持 ForwardX 文件及 ny / Nyanpass 逐行 JSON（实验性）")}</p></>
                     ) : (
                       <Textarea
                         value={importManualText}
                         onChange={(event) => setImportManualText(event.target.value)}
-                        placeholder={importSourceMode === "sni"
+                        placeholder={importSourceMode === "nyanpass" ? translateText("粘贴 ny 批量导出的内容，每行一条 JSON") : importSourceMode === "sni"
                           ? translateText("{0}\n官网#www.example.com#203.0.113.10#443\nIPv6站点#ipv6.example.com#[2408:xxxx::1]#8443", [translateText(SNI_BULK_IMPORT_LINE_FORMAT)])
                           : translateText("支持两种格式，可混合填写：\n{0}\n官网#10443#example.com#443\nIPv6服务#18443#[2001:db8::1]#8443\nexample.net:443\n[2001:db8::2]:8443", [translateText(MANUAL_BULK_IMPORT_LINE_FORMAT)])}
                         className="min-h-[11rem] resize-y font-mono text-sm"
@@ -8674,6 +8664,7 @@ function RulesContent() {
                       </p>
                     )}
                   </div>
+                  {renderNyanpassImportOptions()}
                   {(importSourceMode === "file" || importFileName || importFileError || importValidation.ok || String(importManualText || "").trim()) && (
                     <div
                       className={`rounded-md border px-3 py-2 text-sm ${
@@ -8690,7 +8681,8 @@ function RulesContent() {
                   {importFailures.length > 0 && <ul className="max-h-48 list-disc space-y-1 overflow-y-auto rounded-md bg-destructive/10 p-3 pl-7 text-xs text-destructive">
                     {importFailures.map((message, index) => <li key={index}>{message}</li>)}
                   </ul>}
-                  {importValidation.rules.length > 0 && (
+                  {isNyanpassImport && <NyanpassImportPreview rules={importValidation.rules} />}
+                  {!isNyanpassImport && importValidation.rules.length > 0 && (
                     <div className="max-h-[24rem] space-y-2 overflow-y-auto rounded-md border border-border/60 p-2">
                       {importValidation.rules.map((rule, index) => {
                         const sni = normalizeSniImportDomain(rule.sni);
@@ -9371,7 +9363,6 @@ function SelfTestDialog({
   const isTesting = startMutation.isPending || optimisticTesting || isServerTesting;
   const isSuccess = status === "success";
   const isTimeout = status === "timeout";
-  const isFailed = !!latest && !isTesting && !isSuccess && !isTimeout;
   const parsedMessage = useMemo(() => parseLinkTestMessage(latest?.message), [latest?.message]);
   const testSource = forwardGroupSelfTestSource(latest);
   const testSegments: LinkTestPlannedSegment[] | undefined = testSource ? [{

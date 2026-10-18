@@ -6,7 +6,7 @@ import { Readable } from "stream";
 import { pipeline } from "stream/promises";
 import { createGzip } from "zlib";
 import Database from "better-sqlite3";
-import { MIGRATION_TABLES, ensureDatabaseSchema, getDatabaseTableDefs } from "./dbSchema";
+import { MIGRATION_TABLES, ensureDatabaseSchema, getDatabaseTableDefs, affiliateEnabledFromLegacySidebar, supportTicketsEnabledFromLegacySidebar } from "./dbSchema";
 import { AFFILIATE_TABLES, assertAffiliateImportSafe, validateAffiliateSnapshot } from "./affiliateMigration";
 import {
   connectDatabase,
@@ -187,7 +187,7 @@ const MIGRATION_RUNTIME_TIMEOUT_MS = Math.max(
     : 15 * 60 * 1000,
 );
 const MIGRATION_RUNTIME_POLL_MS = 2_000;
-const DIRECT_SQLITE_OPTIONAL_SOURCE_TABLES = new Set(["agent_traffic_reports"]);
+const DIRECT_SQLITE_OPTIONAL_SOURCE_TABLES = new Set(["agent_traffic_reports", "operations_traffic_daily", "operations_source_daily", "operations_source_status", "operations_ip_geo"]);
 
 function normalizePanelUrl(url: string) {
   const value = url.trim().replace(/\/+$/, "");
@@ -218,6 +218,10 @@ export const ESSENTIAL_MIGRATION_OMITTED_TABLES = new Set<(typeof MIGRATION_TABL
   "forward_group_latency_stats",
   "traffic_stats",
   "traffic_stat_buckets",
+  "operations_traffic_daily",
+  "operations_source_daily",
+  "operations_source_status",
+  "operations_ip_geo",
   "tcping_stats",
   "probe_counter_snapshots",
   "probe_counter_heads",
@@ -735,6 +739,10 @@ const IMPORT_TABLE_ORDER = [
   "forward_group_latency_stats",
   "traffic_stats",
   "traffic_stat_buckets",
+  "operations_traffic_daily",
+  "operations_source_daily",
+  "operations_source_status",
+  "operations_ip_geo",
   "agent_traffic_reports",
   "tcping_stats",
   "probe_counter_snapshots",
@@ -789,6 +797,10 @@ const BEST_EFFORT_MIGRATION_TABLES = new Set<MigrationTableName>([
   "forward_rule_traffic_counters",
   "traffic_stats",
   "traffic_stat_buckets",
+  "operations_traffic_daily",
+  "operations_source_daily",
+  "operations_source_status",
+  "operations_ip_geo",
   "tunnel_latency_stats",
   "forward_group_latency_stats",
   "ip_geo_cache",
@@ -1244,6 +1256,27 @@ async function prepareImportRow(table: string, source: Record<string, any>, maps
       row.hostId = mapRequiredId(maps, "hosts", source.hostId);
       return { row };
 
+    case "operations_traffic_daily":
+    case "operations_source_daily": {
+      // Historical rows survive resource deletion. Negative IDs keep deleted
+      // identities separate from live destination IDs during merge imports.
+      const historicalId = (table: string, value: unknown) => mapId(maps, table, value) || -Math.abs(Number(value) || 0);
+      row.ruleId = historicalId("forward_rules", source.ruleId);
+      row.logicalRuleId = historicalId("forward_rules", source.logicalRuleId);
+      row.hostId = historicalId("hosts", source.hostId);
+      row.userId = historicalId("users", source.userId);
+      if (table === "operations_traffic_daily") {
+        const [kind, id] = String(source.resourceKey || "").split(":");
+        const target = kind === "group" ? "forward_groups" : kind === "tunnel" ? "tunnels" : "hosts";
+        row.resourceKey = `${kind}:${historicalId(target, id)}`;
+        return { row, existingWhere: { dayStart: row.dayStart, ruleId: row.ruleId, hostId: row.hostId, userId: row.userId, resourceKey: row.resourceKey } };
+      }
+      return { row, existingWhere: { dayStart: row.dayStart, ruleId: row.ruleId, hostId: row.hostId, ip: row.ip } };
+    }
+    case "operations_source_status":
+      row.hostId = mapRequiredId(maps, "hosts", source.hostId);
+      return { row, existingWhere: { hostId: row.hostId } };
+
     case "traffic_stat_buckets":
       row.userId = mapRequiredId(maps, "users", source.userId);
       row.ruleId = mapRequiredId(maps, "forward_rules", source.ruleId);
@@ -1482,6 +1515,7 @@ async function prepareImportRow(table: string, source: Record<string, any>, maps
       row.userId = mapRequiredId(maps, "users", source.userId);
       return { row, existingWhere: { ticketId: row.ticketId, userId: row.userId } };
 
+    case "operations_ip_geo":
     case "ip_geo_cache":
       return { row, existingWhere: row.address ? { address: row.address } : undefined };
 
@@ -1891,6 +1925,38 @@ export async function importMigrationSnapshot(
     if (rows.length === 0) continue;
     reportRowProgress(table, true);
 
+    if (table === "probe_counter_heads") {
+      // Counter heads use a compound key and intentionally have no generated
+      // ID. Preserve them without passing through the ID-remapping importer.
+      await withDatabaseTransaction(async () => {
+        for (const source of rows) {
+          const prepared = await prepareImportRow(table, source, maps);
+          if (!prepared?.existingWhere) throw new Error("探测计数头无法完整映射");
+          const entries = Object.entries(prepared.existingWhere);
+          const existing = await queryRaw(
+            `SELECT 1 FROM ${quote(table)} WHERE ${entries.map(([column]) => `${quote(column)} = ?`).join(" AND ")} LIMIT 1`,
+            entries.map(([, value]) => normalizeValue(value)),
+          );
+          if (existing.length) {
+            // An incremental import must not rewind the current high-water mark.
+            incrementCounter(reused, table);
+          } else {
+            const payload = normalizeImportPayload(table, prepared.row);
+            const columns = Object.keys(payload);
+            await executeRaw(
+              `INSERT INTO ${quote(table)} (${columns.map(quote).join(", ")}) VALUES (${columns.map(() => "?").join(", ")})`,
+              columns.map((column) => normalizeValue(payload[column])),
+            );
+            incrementCounter(inserted, table);
+          }
+          processed += 1;
+          reportRowProgress(table);
+        }
+      });
+      reportRowProgress(table, true);
+      continue;
+    }
+
     if (mode === "restore" && table !== "users" && table !== "system_settings") {
       const preparedRows: PreparedRestoreRow[] = [];
       for (const source of rows) {
@@ -2074,6 +2140,14 @@ export async function importMigrationSnapshot(
 
   onProgress?.(95, "正在恢复系统标记");
   await runPostImportStep("系统标记恢复", async () => {
+    if (mode === "restore" && !snapshot.tables.system_settings?.some((row) => row.key === "supportTicketsEnabled")) {
+      const legacySidebar = snapshot.tables.system_settings?.find((row) => row.key === "sidebarMenu");
+      await setSetting("supportTicketsEnabled", supportTicketsEnabledFromLegacySidebar(legacySidebar?.value));
+    }
+    if (mode === "restore" && !snapshot.tables.system_settings?.some((row) => row.key === "affiliateEnabled")) {
+      const legacySidebar = snapshot.tables.system_settings?.find((row) => row.key === "sidebarMenu");
+      await setSetting("affiliateEnabled", affiliateEnabledFromLegacySidebar(legacySidebar?.value));
+    }
     if (!snapshot.tables.system_settings?.some((row) => row.key === "storeEnabled")) {
       await setSetting("storeEnabled", "false");
     }

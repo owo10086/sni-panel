@@ -198,6 +198,11 @@ function tunnelListCondition(input: Omit<TunnelListQuery, keyof PageRequest>) {
         tunnels.name,
         tunnels.mode,
         tunnels.forwardxVersion,
+        tunnels.v3Transport,
+        tunnels.v3Host,
+        tunnels.v3Path,
+        tunnels.v3UserAgent,
+        tunnels.v3ServerName,
         tunnels.networkType,
         tunnels.connectHost,
         tunnels.certDomain,
@@ -1756,6 +1761,7 @@ async function getUsedSniSplitterPortsOnHost(hostId: number, excludeRuleIds: num
   }
   const rows = await db.select({
     ruleId: forwardRules.id,
+    ruleHostId: forwardRules.hostId,
     groupId: forwardRules.forwardGroupId,
     groupMode: forwardGroups.groupMode,
     port: forwardRules.sniSplitterPort,
@@ -1789,7 +1795,11 @@ async function getUsedSniSplitterPortsOnHost(hostId: number, excludeRuleIds: num
   const used = new Set<number>();
   for (const row of rows as any[]) {
     const groupMode = String(row.groupMode || "");
-    if (groupMode !== "chain" && groupMode !== "port") continue;
+    if (groupMode === "port") {
+      if (Number(row.ruleHostId) === Number(hostId)) used.add(Number(row.port));
+      continue;
+    }
+    if (groupMode !== "chain") continue;
     const groupId = Number(row.groupId || 0);
     const exitHost = exitHostByGroup.get(groupId);
     if (!exitHost || exitHost.hostId !== Number(hostId)) continue;

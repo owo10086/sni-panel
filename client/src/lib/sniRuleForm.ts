@@ -111,7 +111,7 @@ export type SniToggleSupportInput = {
   isAdmin: boolean;
   routeMode: SniRouteMode;
   tunnel?: { exitGroupId?: unknown; loadBalanceEnabled?: unknown; exitHostId?: unknown } | null;
-  group?: { groupType?: unknown; members?: SniToggleSupportMember[] | null } | null;
+  group?: { groupType?: unknown; entryGroupId?: unknown; members?: SniToggleSupportMember[] | null } | null;
   /** normalizeForwardGroupModeForRule 的结果，port / chain / failover / entry / exit */
   groupModeForRule?: SniGroupModeForRule | null;
   /** 表单上已选的资源 id，用来区分「还没选」和「选了但列表还没加载出来」 */
@@ -182,7 +182,7 @@ export function sniToggleSupport(input: SniToggleSupportInput): SniToggleSupport
   if (members.some((member) => String(member?.memberType || "host") !== "host")) {
     return blocked(translateText("SNI 分流仅支持主机型链路资源"));
   }
-  if (input.routeMode === "local" && members.length !== 1) {
+  if (input.routeMode === "local" && Number(group?.entryGroupId || 0) <= 0 && members.length !== 1) {
     return blocked(translateText("SNI 分流的端口转发资源必须且只能包含一台主机"));
   }
   if (members.length === 0) {

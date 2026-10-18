@@ -155,6 +155,23 @@ test("转发链允许多台主机成员", () => {
   );
 });
 
+test("端口资源引用入口组时允许多个已启用的主机入口，权限和主机类型仍受限制", () => {
+  const input = {
+    isAdmin: true,
+    routeMode: "local" as const,
+    groupModeForRule: "port" as const,
+    group: {
+      groupType: "host", entryGroupId: 12,
+      members: [{ memberType: "host" }, { memberType: "host" }],
+    },
+  };
+  assert.equal(sniToggleSupport(input).reason, null);
+  assert.equal(sniToggleSupport({ ...input, isAdmin: false }).visible, false);
+  assert.match(String(sniToggleSupport({ ...input, group: { ...input.group, members: [{ memberType: "tunnel" }] } }).reason), /主机型/);
+  assert.match(String(sniToggleSupport({ ...input, group: { ...input.group, members: [] } }).reason), /没有启用/);
+  assert.match(String(sniToggleSupport({ ...input, group: { ...input.group, entryGroupId: null } }).reason), /只能包含一台主机/);
+});
+
 test("域名格式错误有提示，空值和合法域名没有", () => {
   assert.equal(sniDomainFormatError(""), null);
   assert.equal(sniDomainFormatError("API.Example.COM."), null);

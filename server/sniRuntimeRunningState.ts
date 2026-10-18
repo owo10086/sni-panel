@@ -1,3 +1,4 @@
+import { getDirectSniReadyPorts } from "./sniDirectRuntime";
 import { isSniEntryAgentVersionSupported, normalizeSniValue } from "@shared/sni";
 import { inArray, or } from "drizzle-orm";
 import { forwardGroupMembers, forwardGroups, forwardRules, hosts } from "../drizzle/schema";
@@ -119,6 +120,12 @@ export async function reconcileSniChainRunningStateForHost(hostIdValue: unknown)
     const updates = new Map<number, boolean>();
     const runningIds: number[] = [];
     const stoppedIds: number[] = [];
+    const directReadyByHost = new Map<number, Promise<Set<number>>>();
+    const directReady = (hostId: number) => {
+      let ready = directReadyByHost.get(hostId);
+      if (!ready) { ready = getDirectSniReadyPorts(hostId); directReadyByHost.set(hostId, ready); }
+      return ready;
+    };
     for (const template of templates) {
       const templateId = Number(template.id || 0);
       const groupId = Number(template.forwardGroupId || 0);
@@ -126,6 +133,22 @@ export async function reconcileSniChainRunningStateForHost(hostIdValue: unknown)
       const sni = normalizeSniValue(template.sni);
       const entryPort = Number(template.sourcePort || 0);
       const exitPort = Number(template.sniSplitterPort || 0);
+      if (group && String(group.groupMode) === "port" && Number(group.entryGroupId) > 0 && sni && entryPort > 0) {
+        const children = (childrenByTemplateId.get(templateId) || []).filter(child => runtimeBool(child.isEnabled) && !runtimeBool(child.pendingDelete));
+        const ready = await Promise.all(children.map(async child => ({ child, applied: runtimeBool(group.isEnabled)
+          && (await directReady(Number(child.hostId))).has(entryPort) })));
+        for (const { child, applied } of ready) {
+          const id = Number(child.id);
+          updates.set(id, applied);
+          if (applied && !runtimeBool(child.isRunning)) runningIds.push(id);
+          else if (!applied && runtimeBool(child.isRunning)) stoppedIds.push(id);
+        }
+        const applied = runtimeBool(template.isEnabled) && !runtimeBool(template.pendingDelete) && ready.some(item => item.applied);
+        updates.set(templateId, applied);
+        if (applied && !runtimeBool(template.isRunning)) runningIds.push(templateId);
+        else if (!applied && runtimeBool(template.isRunning)) stoppedIds.push(templateId);
+        continue;
+      }
       if (!group || String(group.groupMode || "") !== "chain" || !sni || entryPort <= 0 || exitPort <= 0) continue;
 
       const enabledMembers = (membersByGroupId.get(groupId) || []).filter((member) => (

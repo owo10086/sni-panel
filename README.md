@@ -9,7 +9,7 @@
 [![Node.js](https://img.shields.io/badge/Node.js-22+-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
 
-[使用文档](https://poouo.github.io/Forwardx/) · [发布下载](https://github.com/poouo/Forwardx/releases/latest) · [中文更新日志](CHANGELOG.md) · [English changelog](CHANGELOG.en.md) · [Telegram 群组](https://t.me/ForwardX_panel)
+[使用文档](https://owo10086.github.io/sni-panel/) · [发布下载](https://github.com/owo10086/sni-panel/releases/latest) · [中文更新日志](CHANGELOG.md) · [English changelog](CHANGELOG.en.md) · [Telegram 群组](https://t.me/ForwardX_panel)
 
 - [使用文档](https://owo10086.github.io/sni-panel/)
 - [GitHub Releases](https://github.com/owo10086/sni-panel/releases/latest)
@@ -24,7 +24,7 @@
 - 主机监控、规则流量与限额、延迟历史、在线率、链路自测和诊断日志。
 - 多用户权限、套餐、账单、余额、支付、工单及可选 AFF 推广返佣。
 - 邮件、Telegram / Discord 通知，Google 登录、AI 助手、插件和中英文界面。
-- Android APK、未签名 iOS IPA，以及 Linux SSH 管理命令 `fwxm`。
+- 保留已有 Android 客户端及 Linux SSH 管理命令 `fwxm`；本轮不更新原生应用。
 
 ## 1. 选择部署方式
 
@@ -48,8 +48,6 @@
 
 入口组用于复用多台入口主机，出口组用于复用多个隧道出口。规则引用已保存的资源，因此同一资源可以供多条规则使用。
 
-## 移动客户端
-
 ## 快速部署
 
 面板默认访问端口为 `9810`。以下命令请使用 `root` 执行；非 `root` 环境可将 `bash` 替换为 `sudo bash`。
@@ -64,19 +62,15 @@
 curl -fsSL https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/install-panel-docker.sh | bash -s -- install --language zh-CN
 ```
 
-默认目录 `/opt/forwardx-docker`，容器 `forwardx-panel`；宿主机端口映射容器 `3000`。数据库配置、SQLite 和其他持久化数据在容器 `/data` 对应的命名卷中，**不在默认部署目录的 data 子目录**。
+默认目录 `/opt/forwardx-docker`，容器 `forwardx-panel`；宿主机端口映射容器 `3000`。数据库配置、SQLite 和其他持久化数据位于部署目录的 `forwardx-data/`，挂载到容器 `/data`；旧部署可能使用命名卷，请先核对实际挂载。
 
 ### Linux 本地安装
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/install-panel-docker.sh | bash -s -- upgrade
+curl -fsSL https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/install-panel-local.sh | bash -s -- install --language zh-CN
 ```
 
 默认目录 `/opt/forwardx-panel`，数据目录 `/opt/forwardx-panel/data`，服务 `forwardx-panel`；支持 systemd / OpenRC / SysV。安装器准备 Node.js 22+ 和 pnpm，并安装 Release 发布包。
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/install-panel-docker.sh | bash -s -- uninstall
-```
 
 Docker 默认使用 `ghcr.io/owo10086/sni-panel` 仓库，由脚本选择并校验发布镜像。数据库配置和 SQLite 数据在部署目录的 `forwardx-data/` 中，挂载到容器 `/data`；旧版命名卷升级时会复制到该目录。升级保留数据和脚本识别的核心配置，但会重新生成 Compose 与 `.env`；自定义环境、网络和挂载需备份并核对。卸载脚本经确认后会删除容器、部署目录及其中数据，并处理旧数据卷。
 
@@ -89,7 +83,8 @@ Docker 默认使用 `ghcr.io/owo10086/sni-panel` 仓库，由脚本选择并校�
 Agent 安装示例：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/install-panel-local.sh | bash -s -- install --language zh-CN
+curl -fsSL https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/install-agent.sh -o /tmp/forwardx-install-agent.sh
+PANEL_URL='https://panel.example.com' bash /tmp/forwardx-install-agent.sh install YOUR_AGENT_TOKEN
 ```
 
 替换实际地址和 Token。Docker 连接宿主机数据库时，不要把 `127.0.0.1` 当成宿主机。NAT 主机要配置实际映射端口段，安全组与系统防火墙均需放行对应端口。详见 [快速开始](docs/guide/quick-start.md)、[首次初始化](docs/guide/first-setup.md)、[Agent 安装](docs/guide/agent.md)。
@@ -99,13 +94,18 @@ curl -fsSL https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/ins
 新版官方安装/升级流程会注册四字母命令。SSH 中直接输入：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/install-panel-local.sh | bash -s -- upgrade
+fwxm
 ```
 
 仅安装一种组件时进入对应菜单；同机安装面板与 Agent 时先选择对象。菜单提供运行状态、日志、重启、代理设置、升级、重装修复和卸载；面板额外提供管理员密码重置。Docker 面板在**宿主机**使用，非 root 使用 `sudo fwxm`。
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/install-panel-local.sh | bash -s -- uninstall
+fwxm panel status
+fwxm panel restart
+fwxm panel logs
+fwxm panel reset-admin
+fwxm agent status
+fwxm agent restart
 ```
 
 旧版本或手工部署未必有该命令；使用对应官方安装器升级后才能注册，手工部署不要直接套用默认安装流程。[完整命令与适用范围](docs/guide/agent-proxy-manager.md)。
@@ -116,7 +116,7 @@ curl -fsSL https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/ins
 
 ```bash
 curl --proxy 'socks5h://127.0.0.1:1080' -fsSL \
-  https://raw.githubusercontent.com/poouo/Forwardx/main/scripts/install-agent.sh \
+  https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/install-agent.sh \
   -o /tmp/forwardx-install-agent.sh
 
 PANEL_URL='https://panel.example.com' bash /tmp/forwardx-install-agent.sh \
@@ -126,18 +126,12 @@ PANEL_URL='https://panel.example.com' bash /tmp/forwardx-install-agent.sh \
 代理保存到 `/etc/forwardx/agent/config.json` 的 `proxyUrl`，升级默认沿用。已有新版 Agent 可编辑该字段并重启，或使用：
 
 ```bash
-# Docker 安装
-curl -fsSL "https://mirror.example.com/https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/install-panel-docker.sh" \
-  | bash -s -- install --language zh-CN --github-accelerator "https://mirror.example.com"
-
-# 本地 systemd 安装
-curl -fsSL "https://mirror.example.com/https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/install-panel-local.sh" \
-  | bash -s -- install --language zh-CN --github-accelerator "https://mirror.example.com"
+fwxm agent proxy show
+fwxm agent proxy set
+fwxm agent proxy off
 ```
 
-安装器会把地址保存到部署 `.env`，后续升级可继续使用；加速请求失败时会自动回退直连 GitHub。也可在「系统设置 -> 系统配置 -> GitHub 下载加速」开启「面板更新使用加速站」，让版本检查、Release 信息、安装包检测、回退及升级命令使用该地址。
-
-该参数不代理 `ghcr.io` 镜像拉取。Docker 镜像源需要通过 `FORWARDX_IMAGE` 或 `FORWARDX_IMAGE_REPO` 单独配置。详细用法见[部署面板](https://owo10086.github.io/sni-panel/guide/deploy-panel)和[升级与备份](https://owo10086.github.io/sni-panel/guide/upgrade-backup)。
+`set` 通过隐藏输入保存代理并重启 Agent，`off` 保存直连设置并重启。代理只影响管理及下载，不影响业务转发或网络探测；空配置不继承系统代理，代理失效不自动改成直连。GitHub 下载加速与管理代理分别配置，均不代理 `ghcr.io` 镜像拉取，详见[代理指南](docs/guide/agent-proxy-manager.md)及[部署说明](docs/guide/deploy-panel.md)。
 
 支持 SOCKS5 / HTTP / HTTPS，SOCKS 域名由代理解析。系统依赖安装仍取决于包管理器；Alpine APK 使用 SOCKS 时需预装依赖。Docker 镜像拉取需单独配置 Docker daemon 的 HTTP/HTTPS 代理；面板维护代理不等同于 Node 运行代理。详见 [代理指南](docs/guide/agent-proxy-manager.md)。
 
@@ -154,17 +148,16 @@ fwxm agent upgrade
 
 ```bash
 # Docker 面板
-curl -fsSL https://raw.githubusercontent.com/poouo/Forwardx/main/scripts/install-panel-docker.sh | bash -s -- upgrade
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/install-mimic.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/install-panel-docker.sh | bash -s -- upgrade
+# 本地面板
+curl -fsSL https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/install-panel-local.sh | bash -s -- upgrade
 ```
 
 原地升级会重启服务或重建容器，不保证业务不断。脚本保留数据和识别的核心配置，但会重写 `.env` / Compose，自定义环境、挂载与服务配置需备份核对。数据库已升级时，换回旧程序不等于安全回退。
 
 GitHub 访问受限时使用 [可信加速站](docs/guide/deploy-docker.md#github-下载加速)；它与 SOCKS 代理不同，不代理 GHCR 镜像拉取。
 
-忘记密码使用 `fwxm panel reset-admin`，旧部署见 [账号恢复](docs/guide/account-recovery.md)。重装不会重置旧数据库管理员。**卸载 Agent 会中断受管转发；Docker 卸载确认后删除数据卷，本地卸载可选择保留数据**，详见 [卸载说明](docs/guide/uninstall.md)。
+忘记密码使用 `fwxm panel reset-admin`，旧部署见 [账号恢复](docs/guide/account-recovery.md)。重装不会重置旧数据库管理员。**卸载 Agent 会中断受管转发；Docker 卸载确认后删除部署目录及其中数据，本地卸载可选择保留数据**，详见 [卸载说明](docs/guide/uninstall.md)。
 
 ## 文档导航
 
@@ -173,6 +166,7 @@ GitHub 访问受限时使用 [可信加速站](docs/guide/deploy-docker.md#githu
 | 安装与初始化 | [部署准备](docs/guide/preparation.md) · [Docker](docs/guide/deploy-docker.md) · [本地](docs/guide/deploy-local.md) · [数据库](docs/guide/database.md) |
 | 日常维护 | [SSH 管理与代理](docs/guide/agent-proxy-manager.md) · [目录与日志](docs/guide/paths-logs.md) · [环境变量](docs/guide/env-vars.md) |
 | 转发与计量 | [规则](docs/guide/rules.md) · [隧道](docs/guide/tunnels.md) · [转发链](docs/guide/port-chains.md) · [组](docs/guide/groups.md) · [流量与延迟](docs/guide/traffic-latency.md) |
+| 本轮新增教程 | [多入口端口直连](docs/guide/port-entry-groups.md) · [SNI 分流](docs/guide/sni-routing.md) · [ny 实验导入](docs/guide/nyanpass-import.md) · [运维看板](docs/guide/operations.md) · [账单](docs/guide/billing.md) · [支付](docs/guide/payments.md) |
 | 账户与通知 | [用户套餐](docs/guide/users-billing.md) · [通知](docs/guide/notifications.md) · [工单](docs/guide/support-tickets.md) · [推广](docs/guide/affiliates.md) |
 | 扩展与恢复 | [Google 登录](docs/guide/google-login.md) · [AI](docs/guide/ai-assistant.md) · [插件](docs/guide/plugins.md) · [迁移](docs/guide/migration.md) · [排障](docs/guide/troubleshooting.md) |
 
@@ -191,8 +185,7 @@ GitHub 访问受限时使用 [可信加速站](docs/guide/deploy-docker.md#githu
 
 ## 界面语言
 
-从 [GitHub Releases](https://github.com/poouo/Forwardx/releases/latest) 下载 Android APK 或 `forwardx-ios-v版本-unsigned.ipa`。iOS / iPadOS 15+，IPA **未签名**，证书、签名与安装由用户自行处理，不提供 App Store / TestFlight 分发。
-
+支持简体中文与 English。首次部署使用安装命令的语言提示；未手动选择时继续参考浏览器语言和可信地区提示。手动选择保存在当前浏览器，切换前请保存尚未提交的修改。
 
 ## 本地开发
 
@@ -229,9 +222,9 @@ ForwardX Agent also includes the third-party userspace WireGuard implementation 
 
 [![Stargazers over time](https://starchart.cc/owo10086/sni-panel.svg)](https://starchart.cc/owo10086/sni-panel)
 
-## 284 合并：未发布
+## 285 合并：未发布
 
-面板保持 3.3.8，Agent／FXP 保持 3.3.0。新增功能需要本轮实际构建，既有同版本正式附件保持原状。原生应用排除，本轮尚未发布。
+面板保持 3.3.8，Agent／FXP 保持 3.3.0。本轮在本地 284 基础上整合上游 285，新增功能需要本轮实际构建，既有同版本正式附件保持原状。原生应用排除，本轮尚未发布。V3 仅合入底层，网页和接口均不开放新建或切换，已有 V1／V2 不转换；实际检查与人工验收分别记录，见[版本说明](docs/guide/releases.md)。
 
 [Agent proxy](docs/guide/agent-proxy-manager.en.md) · [SSH management](docs/guide/ssh-management.md) · [Affiliates](docs/guide/affiliates.md) · [Support tickets](docs/guide/support-tickets.md)
 
