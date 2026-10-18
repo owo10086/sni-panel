@@ -1,0 +1,38 @@
+{
+  "result": "merged",
+  "method": "fast-forward",
+  "mainBefore": "7adf15055096894b28dd058a2babad2616675a0e",
+  "mergedTaskHead": "66945a1a8927eb150d2ef502d4ed64a7c1c66729",
+  "originalFilesBackedUp": 38,
+  "overlappingUntrackedDocumentsBackedUp": 20,
+  "otherOriginalFilesUnchanged": 18,
+  "originalTrackedDiffUnchanged": true,
+  "taskWorktreeClean": true,
+  "pushed": false,
+  "published": false,
+  "backup": "/private/tmp/forwardx-task3-merge-20261018",
+  "mainHeadAfterCodeMerge": "66945a1a8927eb150d2ef502d4ed64a7c1c66729",
+  "validation": {
+    "taskUi": 45,
+    "taskI18n": 19,
+    "taskTypeCheck": "passed",
+    "taskBuild": "passed",
+    "mainBuild": "passed",
+    "mainDocsBuild": "passed",
+    "mainVersions": "panel=3.3.8 agent=3.3.0 fxp=3.3.0",
+    "conflicts": 0,
+    "acceptanceChecked": 148,
+    "acceptancePending": 13
+  },
+  "preservedTrackedFiles": [
+    ".gitignore",
+    ".scratch/2026-10-08_合并上游v2.3.282/spec.md",
+    ".scratch/2026-10-17_合并上游v2.3.283/284接续记录.md",
+    "AGENTS.md",
+    "docs/adr/0001-sni-splitting-runs-as-a-standalone-fxp-role-at-the-exit.md"
+  ],
+  "mainBuildSha256": {
+    "dist/index.js": "d49125110bdb9b8968898d603d100cf9770392a9d154b3e6206d73a5c4379545",
+    "dist/reset-admin-password.js": "462145a5cb01a426b2e103d467194e92c66d4c47cdfae93ad02f89ae4e068326"
+  }
+}
