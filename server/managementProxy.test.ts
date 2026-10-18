@@ -68,7 +68,7 @@ configure_proxy --help
 
 test("generated installer persists proxy before starting and bundles offline management", () => {
   const script = generateInstallScript("https://panel.example.com");
-  assert.match(script, /proxyUrl:\$proxy/);
+  assert.match(script, /proxyUrl:env\.FWX_PROXY_WRITE_VALUE/);
   const upgrade = script.slice(script.indexOf("do_upgrade() {"), script.indexOf("# ============ 入口"));
   assert.ok(upgrade.indexOf("fwx_agent_proxy_save") < upgrade.indexOf("start_agent_service"));
   assert.match(script, /install -m 755 .*\/usr\/local\/bin\/fwxm/);
@@ -91,7 +91,13 @@ test("bare fwxm opens the appropriate interactive menu for Agent, panel and co-l
     const script = source("forwardx-manage.sh")
       .replace(/> \/dev\/tty/g, "> /dev/null")
       .replace(/< \/dev\/tty/g, `< ${quote(terminal)}`);
-    const setup = `id() { echo 0; }\nexport FORWARDX_MANAGE_DIR=${quote(directory)} FORWARDX_AGENT_CONFIG=${quote(config)}\n`;
+    const setup = `jq() {
+  for arg in "$@"; do
+    case "$arg" in *user:secret*|*never-display-token*) echo 'credential passed in process arguments' >&2; return 1 ;; esac
+  done
+  command jq "$@"
+}
+id() { echo 0; }\nexport FORWARDX_MANAGE_DIR=${quote(directory)} FORWARDX_AGENT_CONFIG=${quote(config)}\n`;
     const agent = run(setup + script);
     assert.equal(agent.status, 0, agent.stderr);
     assert.match(agent.stdout, /ForwardX agent 管理/);
@@ -153,7 +159,13 @@ test("interactive status and restart target the selected Agent, local panel or D
     const script = source("forwardx-manage.sh")
       .replace(/> \/dev\/tty/g, "> /dev/null")
       .replace(/< \/dev\/tty/g, `< ${quote(terminal)}`);
-    const setup = `id() { echo 0; }
+    const setup = `jq() {
+  for arg in "$@"; do
+    case "$arg" in *user:secret*|*never-display-token*) echo 'credential passed in process arguments' >&2; return 1 ;; esac
+  done
+  command jq "$@"
+}
+id() { echo 0; }
 systemctl() { printf 'SERVICE %s\\n' "$*"; }
 rc-service() { printf 'SERVICE %s\\n' "$*"; }
 docker() { printf 'DOCKER %s\\n' "$*"; }
@@ -185,7 +197,13 @@ test("fwxm saves Agent proxy, redacts credentials and routes Docker commands by 
   try {
     writeFileSync(join(directory, "agent-proxy.sh"), managementAsset("agent-proxy.sh"));
     writeFileSync(config, JSON.stringify({ token: "never-display-token", panelUrl: "https://panel.example.com", custom: true }));
-    const setup = `id() { echo 0; }
+    const setup = `jq() {
+  for arg in "$@"; do
+    case "$arg" in *user:secret*|*never-display-token*) echo 'credential passed in process arguments' >&2; return 1 ;; esac
+  done
+  command jq "$@"
+}
+id() { echo 0; }
 rc-service() { printf 'SERVICE %s %s\\n' "$1" "$2"; }
 systemctl() { printf 'SERVICE %s %s\\n' "$1" "$2"; }
 docker() { printf 'DOCKER %s\\n' "$*"; }

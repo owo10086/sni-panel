@@ -34,6 +34,7 @@ import {
   getForwardGroupChildRulesForTemplate,
   getForwardGroupTemplateRules,
   getForwardRuleById,
+  setForwardRuleDeleteSettlementPending,
   getForwardRulesByIds,
   getForwardRulesByTunnel,
   markForwardRulePendingDelete,
@@ -3481,6 +3482,7 @@ async function removeManagedRule(
   // concurrent deletion or traffic reports may hold that lock and need the DB.
   if (options.deferRefresh || isDatabaseTransactionActive()) {
     await markForwardRulePendingDelete(Number(rule.id));
+    await setForwardRuleDeleteSettlementPending(Number(rule.id), true);
     await afterDatabaseCommit(async () => {
       const errors: unknown[] = [];
       try {
@@ -3488,6 +3490,7 @@ async function removeManagedRule(
           settleTrafficBillingRuleOnDelete({ userId: Number(rule.userId || 0),
             ruleId: Number(rule.id), resourceType: resource.resourceType,
             resourceId: Number(resource.resourceId || 0) })) : null;
+        await setForwardRuleDeleteSettlementPending(Number(rule.id), false);
         if (billed && Number(billed.balanceAfterCents) < 0) {
           await setUserForwardAccess(Number(rule.userId), false, "traffic_billing_balance");
         }

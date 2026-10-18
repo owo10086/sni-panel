@@ -1,6 +1,6 @@
 ﻿import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { forwardGroupMembers, forwardGroups, forwardRuleTunnelExits, forwardRules, InsertForwardRule, tunnels } from "../../drizzle/schema";
-import { executeRaw, getDb, insertAndGetId, nowDate } from "../dbRuntime";
+import { afterDatabaseCommit, isDatabaseTransactionActive, executeRaw, getDb, insertAndGetId, nowDate } from "../dbRuntime";
 import { queryRaw } from "../dbRuntime";
 import { boolLiteral, boolValue, inList, quoteIdentifier } from "../dbCompat";
 import { describePortPolicy, isPortAllowedByPolicy, portPolicyFrom, portPolicyHasRestriction, type PortPolicySource } from "../portPolicy";
@@ -9,7 +9,7 @@ import { pageResult, pageWindowForTotal, type PageRequest } from "../../shared/p
 import { getSniRuleGroupKey } from "../../shared/sni";
 import { assertRuleWritable } from "../../shared/ruleLimits";
 import { recordConfigAuditEvent, shouldAuditConfigPatch } from "../configAudit";
-import { withKeyedTaskLock } from "../keyedTaskLock";
+import { withKeyedTaskLock, withTrafficBillingUserLock } from "../keyedTaskLock";
 import { getForwardChainSniEntryRuleIds } from "./forwardChainSniEntryScope";
 
 // ==================== Forward Rule Queries ====================
@@ -1313,9 +1313,41 @@ export async function settlePendingForwardGroupTemplates(hostId?: number) {
   ));
 }
 
-export async function finalizeForwardRuleDelete(id: number) {
+export async function setForwardRuleDeleteSettlementPending(id: number, pending: boolean) {
   const db = await getDb();
   if (!db) return;
+  await db.update(forwardRules).set({ deleteSettlementPending: pending })
+    .where(and(eq(forwardRules.id, id), eq(forwardRules.pendingDelete, true)));
+}
+
+export async function finalizeForwardRuleDelete(id: number) {
+  const db = await getDb();
+  if (!db) return false;
+  const rule = await getForwardRuleById(id);
+  if (!rule || !rule.pendingDelete) return false;
+  // A real stop acknowledgement must survive a failed financial closeout.
+  await db.update(forwardRules).set({ isRunning: false }).where(eq(forwardRules.id, id));
+  if (rule.deleteSettlementPending) {
+    if (isDatabaseTransactionActive()) {
+      await afterDatabaseCommit(async () => { await finalizeForwardRuleDelete(id); });
+      return false;
+    }
+    try {
+      const billing = await import("./trafficBillingRepository");
+      const resource = await billing.findTrafficBillingResourceForRule(rule)
+        || billing.trafficBillingResourceCandidatesForRule(rule)[0];
+      const billed = resource ? await withTrafficBillingUserLock(Number(rule.userId), () => billing.settleTrafficBillingRuleOnDelete({
+        userId: Number(rule.userId), ruleId: id, resourceType: resource.resourceType, resourceId: Number(resource.resourceId),
+      })) : null;
+      if (billed && Number(billed.balanceAfterCents) < 0) {
+        await (await import("./userRepository")).setUserForwardAccess(Number(rule.userId), false, "traffic_billing_balance");
+      }
+      await setForwardRuleDeleteSettlementPending(id, false);
+    } catch {
+      console.warn(`[RuleCleanup] Financial closeout pending rule=${id}; retaining stopped rule for retry`);
+      return false;
+    }
+  }
   await db.delete(forwardRuleTunnelExits).where(eq(forwardRuleTunnelExits.ruleId, id));
   await db.update(forwardGroupMembers).set({
     ruleId: null,
@@ -1325,6 +1357,7 @@ export async function finalizeForwardRuleDelete(id: number) {
     eq(forwardRules.id, id),
     eq(forwardRules.pendingDelete, true),
   ));
+  return true;
 }
 
 export async function purgeSettledPendingForwardRuleDeletes() {
@@ -1342,8 +1375,7 @@ export async function purgeSettledPendingForwardRuleDeletes() {
   for (const row of rows as any[]) {
     const id = Number(row?.id || 0);
     if (id <= 0) continue;
-    await finalizeForwardRuleDelete(id);
-    count += 1;
+    if (await finalizeForwardRuleDelete(id)) count += 1;
   }
   return count;
 }

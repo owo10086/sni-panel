@@ -66,7 +66,7 @@ fwx_agent_proxy_args() {
 fwx_agent_proxy_save() {
   local file="$CONFIG_DIR/config.json" tmp
   tmp="$(mktemp "$CONFIG_DIR/.proxy-config.XXXXXX")" || return 1
-  if jq --arg proxy "$FORWARDX_AGENT_PROXY" 'if type == "object" then .proxyUrl = $proxy else error("invalid config") end' "$file" > "$tmp" && chmod 600 "$tmp" && mv -f "$tmp" "$file"; then return 0; fi
+  if FWX_PROXY_WRITE_VALUE="$FORWARDX_AGENT_PROXY" jq 'if type == "object" then .proxyUrl = env.FWX_PROXY_WRITE_VALUE else error("invalid config") end' "$file" > "$tmp" && chmod 600 "$tmp" && mv -f "$tmp" "$file"; then return 0; fi
   rm -f "$tmp"
   echo '[ERROR] Cannot save Agent proxy configuration.' >&2
   return 1

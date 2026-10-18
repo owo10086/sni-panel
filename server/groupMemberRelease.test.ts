@@ -1188,3 +1188,32 @@ test('entry toggle follows existing SNI group then tunnel save order', () => {
       [{name:'sni-coordinated-save',isEnabled:0,entryHostId:6}]);
   `,{timeout:8_000});
 });
+
+
+test("stopped member cleanup preserves failed settlement for later retry", () => {
+  runGroupMemberReleaseCase(`
+    await seedFailover();
+    const settings = await import('./server/repositories/settingsRepository.ts');
+    const rules = await import('./server/repositories/forwardRuleRepository.ts');
+    await settings.setSetting('trafficBillingEnabled', 'true');
+    await runtime.executeRaw('UPDATE users SET balanceCents=100000 WHERE id=1');
+    const [child] = await runtime.queryRaw('SELECT id FROM forward_rules WHERE forwardGroupRuleId=1000 AND hostId=1');
+    await insert('traffic_billing_configs', {id:90,resourceType:'forward_group',resourceId:10,enabled:1,pricePerGbCents:100,multiplier:100});
+    await insert('traffic_billing_rule_usage', {id:91,userId:1,ruleId:child.id,resourceType:'forward_group',resourceId:10,totalBytes:100000000,billedGb:0,pendingMilliCents:0,settled:0});
+    await runtime.executeRaw("CREATE TRIGGER reject_settlement BEFORE UPDATE OF settled ON traffic_billing_rule_usage WHEN OLD.id=91 BEGIN SELECT RAISE(ABORT,'injected-settlement-failure'); END");
+    await assert.rejects(() => saveMembers(10,[2]));
+    await rules.updateRuleRunningStatus(child.id,false);
+    const pending = await rules.getForwardRuleById(child.id);
+    assert.ok(pending, 'retain settlement retry identity after stop acknowledgement');
+    assert.equal(Number(pending.isRunning),0);
+    await runtime.executeRaw('DROP TRIGGER reject_settlement');
+    await rules.purgeSettledPendingForwardRuleDeletes();
+    assert.equal(await rules.getForwardRuleById(child.id), undefined);
+    const [usage] = await runtime.queryRaw('SELECT settled FROM traffic_billing_rule_usage WHERE id=91');
+    assert.equal(Number(usage.settled),1);
+    const records = await runtime.queryRaw('SELECT amountCents FROM traffic_billing_records WHERE ruleId=?',[child.id]);
+    assert.equal(records.length,1);
+    await rules.purgeSettledPendingForwardRuleDeletes();
+    assert.equal((await runtime.queryRaw('SELECT id FROM traffic_billing_records WHERE ruleId=?',[child.id])).length,1);
+  `);
+});

@@ -357,6 +357,7 @@ async function runTcpingCleanup() {
       db.cleanOldTcpingStats(LATENCY_HISTORY_HOURS),
       db.cleanOldTunnelLatencyStats(LATENCY_HISTORY_HOURS),
       db.cleanOldForwardTests(72),
+      db.purgeSettledPendingForwardRuleDeletes(),
       db.cleanOldForwardGroupEvents(72),
       db.cleanOldHostProbeServiceStats(LATENCY_HISTORY_HOURS),
       cleanOldHostAvailability(),

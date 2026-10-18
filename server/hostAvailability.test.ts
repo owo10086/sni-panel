@@ -129,6 +129,15 @@ test("availability history uses configured DB, scopes host access, pages full hi
     assert.equal(live.days[0].onlineSeconds, 40, "live tail must extend to now, not the next sweep");
     const stalled = await repository.getHostAvailability(1, { since: new Date((now - 40) * 1000), until: new Date((now + 200) * 1000) }, (now + 100) * 1000);
     assert.equal(stalled.days[0].onlineSeconds, 30, "stalled monitoring must not project uptime");
+    const observation = repository.hostAvailabilityRecorder.snapshot(1);
+    assert.ok(observation);
+    await runtime.insertAndGetId("traffic_billing_configs", { resourceType: "host", resourceId: 1, enabled: false });
+    await runtime.executeRaw("CREATE TRIGGER reject_host_delete BEFORE DELETE ON traffic_billing_configs WHEN OLD.resourceId=1 BEGIN SELECT RAISE(ABORT, 'injected-host-delete-failure'); END");
+    await assert.rejects(() => hostsRouter.createCaller(context(1, "admin")).delete({ id: 1, confirmOfflineCleanup: true }), /injected-host-delete-failure/);
+    assert.deepEqual(repository.hostAvailabilityRecorder.snapshot(1), observation, "a failed deletion must retain live observation");
+    await runtime.executeRaw("DROP TRIGGER reject_host_delete");
+    await hostsRouter.createCaller(context(1, "admin")).delete({ id: 1, confirmOfflineCleanup: true });
+    assert.equal(repository.hostAvailabilityRecorder.snapshot(1), undefined, "forget observation only after successful deletion");
   } finally {
     repository.hostAvailabilityRecorder.forget(1);
     await runtime.closeDatabase();

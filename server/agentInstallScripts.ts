@@ -1426,7 +1426,7 @@ export function generateInstallScript(defaultPanelUrl: string, options: AgentIns
     '  # 创建配置',
     '  echo "[步骤 5/6] 配置 Agent..."',
     '  mkdir -p "$CONFIG_DIR"',
-    '  (umask 077; jq -n --arg panelUrl "$PANEL_URL" --arg token "$AGENT_TOKEN" --arg proxy "$FORWARDX_AGENT_PROXY" \'{panelUrl:$panelUrl, token:$token, interval:30, proxyUrl:$proxy}\' > "$CONFIG_DIR/config.json")',
+    '  (umask 077; FWX_PANEL_URL="$PANEL_URL" FWX_AGENT_TOKEN="$AGENT_TOKEN" FWX_PROXY_WRITE_VALUE="$FORWARDX_AGENT_PROXY" jq -n \'{panelUrl:env.FWX_PANEL_URL, token:env.FWX_AGENT_TOKEN, interval:30, proxyUrl:env.FWX_PROXY_WRITE_VALUE}\' > "$CONFIG_DIR/config.json")',
     '  apply_panel_migration_config',
     '  chmod 600 "$CONFIG_DIR/config.json" 2>/dev/null || true',
     '  echo "[信息] 配置文件已写入: $CONFIG_DIR/config.json"',

@@ -629,6 +629,12 @@ test("affiliate migration preserves remapped ledger references and rejects unsaf
     password: "unused",
     role: "admin",
   });
+  await runtime.executeRaw("CREATE TRIGGER reject_affiliate_ledger BEFORE INSERT ON affiliate_ledger BEGIN SELECT RAISE(ABORT, 'injected-ledger-failure'); END");
+  await assert.rejects(() => importMigrationSnapshot(snapshot), /injected-ledger-failure/);
+  for (const name of AFFILIATE_TABLES) {
+    assert.equal((await runtime.queryRaw(`SELECT id FROM ${name}`)).length, 0, `failed import must roll back ${name}`);
+  }
+  await runtime.executeRaw("DROP TRIGGER reject_affiliate_ledger");
   const result = await importMigrationSnapshot(snapshot);
   assert.equal(result.partial, false, JSON.stringify(result.warnings));
   const [owner] = await runtime.queryRaw<{ id: number }>(

@@ -614,6 +614,10 @@ async function deleteHostRowsUnlocked(id: number): Promise<void> {
   if (!db) throw new Error("Database not available");
   const before = await getHostById(id);
   await assertHostHasNoForwardingReferences(id);
+  const unsettled = await db.select({ id: forwardRules.id }).from(forwardRules).where(and(
+    eq(forwardRules.hostId, id), eq(forwardRules.pendingDelete, true), eq(forwardRules.deleteSettlementPending, true),
+  )).limit(1);
+  if (unsettled.length) throw new Error("旧规则费用结算尚未完成，请稍后重试");
   await releaseHostPendingRuleCleanup(id);
   const q = quoteIdentifier;
   const result = await executeRaw(
@@ -664,8 +668,6 @@ async function deleteHostRowsUnlocked(id: number): Promise<void> {
   await db.delete(hostProbeServiceStats).where(eq(hostProbeServiceStats.hostId, id));
   await executeRaw(`DELETE FROM ${quoteIdentifier("host_availability_intervals")} WHERE ${quoteIdentifier("hostId")} = ?`, [id]);
   await afterDatabaseCommit(() => { hostAvailabilityRecorder.forget(id); });
-  hostAvailabilityRecorder.forget(id);
-  await executeRaw(`DELETE FROM ${quoteIdentifier("host_availability_intervals")} WHERE ${quoteIdentifier("hostId")} = ?`, [id]);
   await db.delete(hostTrafficCounters).where(eq(hostTrafficCounters.hostId, id));
   await db.delete(trafficStats).where(eq(trafficStats.hostId, id));
   await db.delete(trafficStatBuckets).where(eq(trafficStatBuckets.hostId, id));
@@ -1182,7 +1184,7 @@ export async function readHostRuleDeleteBlockers(hostId: number) {
     db.select({ count: sqlCountAll() }).from(forwardRules).where(sql`
       ${forwardRules.hostId} = ${hostId}
       AND ${forwardRules.pendingDelete} = ${sqlBool(true)}
-      AND ${forwardRules.isRunning} = ${sqlBool(true)}
+      AND (${forwardRules.isRunning} = ${sqlBool(true)} OR ${forwardRules.deleteSettlementPending} = ${sqlBool(true)})
       AND ${forwardRules.isForwardGroupTemplate} = ${sqlBool(false)}
     `),
   ]);

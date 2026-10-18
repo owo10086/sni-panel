@@ -77,7 +77,7 @@ agent_proxy() {
     *) die 'Use proxy show|set|off.' ;;
   esac
   tmp="$(mktemp "$(dirname "$AGENT_CONFIG")/.proxy-config.XXXXXX")"
-  if jq --arg proxy "$value" 'if type == "object" then .proxyUrl = $proxy else error("invalid config") end' "$AGENT_CONFIG" > "$tmp" && chmod 600 "$tmp" && mv -f "$tmp" "$AGENT_CONFIG"; then
+  if FWX_PROXY_WRITE_VALUE="$value" jq 'if type == "object" then .proxyUrl = env.FWX_PROXY_WRITE_VALUE else error("invalid config") end' "$AGENT_CONFIG" > "$tmp" && chmod 600 "$tmp" && mv -f "$tmp" "$AGENT_CONFIG"; then
     echo '[DONE] Saved / 已保存。Restarting Agent only; managed forwarding runtimes are not intentionally restarted.'
     service_action agent restart forwardx-agent
   else rm -f "$tmp"; die 'Cannot update config; no service was restarted.'; fi

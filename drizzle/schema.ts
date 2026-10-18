@@ -410,6 +410,7 @@ export const forwardRules = table("forward_rules", {
   disabledByUser: boolean("disabledByUser").notNull().default(false),
   isRunning: boolean("isRunning").notNull().default(false),
   pendingDelete: boolean("pendingDelete").notNull().default(false),
+  deleteSettlementPending: boolean("deleteSettlementPending").notNull().default(false),
   sortOrder: int("sortOrder").notNull().default(0),
   userId: int("userId").notNull(),
   createdAt: epoch("createdAt").notNull().default(nowDefault()),

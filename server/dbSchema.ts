@@ -360,7 +360,7 @@ const tables: TableDef[] = [
       c("autoFailback", "bool", { notNull: true, default: true }),
       c("disabledByTunnel", "bool", { notNull: true, default: false }), c("disabledByGroup", "bool", { notNull: true, default: false }),
       c("disabledByUser", "bool", { notNull: true, default: false }),
-      c("isRunning", "bool", { notNull: true, default: false }), c("pendingDelete", "bool", { notNull: true, default: false }),
+      c("isRunning", "bool", { notNull: true, default: false }), c("pendingDelete", "bool", { notNull: true, default: false }), c("deleteSettlementPending", "bool", { notNull: true, default: false }),
       c("sortOrder", "int", { notNull: true, default: 0 }),
       c("userId", "int", { notNull: true }), c("createdAt", "epoch", { notNull: true, default: "now" }),
       c("updatedAt", "epoch", { notNull: true, default: "now" }),

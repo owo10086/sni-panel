@@ -7,9 +7,10 @@ import { pipeline } from "stream/promises";
 import { createGzip } from "zlib";
 import Database from "better-sqlite3";
 import { MIGRATION_TABLES, ensureDatabaseSchema, getDatabaseTableDefs } from "./dbSchema";
-import { AFFILIATE_TABLES, assertAffiliateImportSafe } from "./affiliateMigration";
+import { AFFILIATE_TABLES, assertAffiliateImportSafe, validateAffiliateSnapshot } from "./affiliateMigration";
 import {
   connectDatabase,
+  insertAndGetId,
   defaultSqlitePath,
   executeRaw,
   getDatabaseKind,
@@ -1855,8 +1856,37 @@ export async function importMigrationSnapshot(
     mysqlStep = Math.max(1, Number(row?.step || 1));
   }
 
+  const affiliateTables = new Set<string>(AFFILIATE_TABLES);
+  let affiliateImported = false;
   onProgress?.(40, mode === "incremental" ? "正在增量合并旧面板数据" : "正在导入旧面板数据");
   for (const table of IMPORT_TABLE_ORDER) {
+    if (affiliateTables.has(table)) {
+      if (affiliateImported) continue;
+      affiliateImported = true;
+      // Financial records form one snapshot. Never use the generic best-effort
+      // row importer: a partial wallet cannot safely be retried or spent.
+      await withDatabaseTransaction(async () => {
+        await assertAffiliateImportSafe(snapshot.tables);
+        for (const financialTable of AFFILIATE_TABLES) {
+          for (const source of sortedSnapshotRows(snapshot, financialTable)) {
+            const oldId = toNumberId(source.id);
+            if (!oldId) throw new Error("推广账务源数据缺少有效 ID");
+            const prepared = await prepareImportRow(financialTable, source, maps);
+            if (!prepared) throw new Error("推广账务记录无法完整映射");
+            const payload = normalizeImportPayload(financialTable, mode === "restore" ? { id: oldId, ...prepared.row } : prepared.row);
+            const newId = await insertAndGetId(financialTable, payload);
+            maps[financialTable].set(oldId, newId);
+            incrementCounter(inserted, financialTable);
+            processed += 1;
+          }
+        }
+        const imported: Record<string, Record<string, any>[]> = {};
+        for (const financialTable of AFFILIATE_TABLES) imported[financialTable] = await queryRaw(`SELECT * FROM ${quote(financialTable)}`);
+        validateAffiliateSnapshot(imported);
+      });
+      reportRowProgress(table, true);
+      continue;
+    }
     const rows = sortedSnapshotRows(snapshot, table);
     if (rows.length === 0) continue;
     reportRowProgress(table, true);
