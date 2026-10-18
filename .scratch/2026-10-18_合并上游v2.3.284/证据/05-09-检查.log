@@ -1,0 +1,757 @@
+(node:51284) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+TAP version 13
+# (node:51345) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:51345) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: support conversations escape content and filenames and expose real download controls
+ok 1 - support conversations escape content and filenames and expose real download controls
+  ---
+  duration_ms: 21.760209
+  type: 'test'
+  ...
+# Subtest: support statuses, event timelines and staff-only labels translate into English
+ok 2 - support statuses, event timelines and staff-only labels translate into English
+  ---
+  duration_ms: 10.246625
+  type: 'test'
+  ...
+# Subtest: attachment reading bounds uploads before encoding and preserves UTF-8 bytes
+ok 3 - attachment reading bounds uploads before encoding and preserves UTF-8 bytes
+  ---
+  duration_ms: 1.079417
+  type: 'test'
+  ...
+# Subtest: all batch dialog count pills stay horizontal and headers wrap by panel width
+not ok 4 - all batch dialog count pills stay horizontal and headers wrap by panel width
+  ---
+  duration_ms: 1.81725
+  type: 'test'
+  location: '/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/client/src/components/SupportTicketMessage.test.tsx:1:3005'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input did not match the regular expression /shrink-0/. Input:
+    
+    'className="inline-flex items-center gap-2 self-start rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary"'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: 'className="inline-flex items-center gap-2 self-start rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary"'
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/client/src/components/SupportTicketMessage.test.tsx:123:12)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# (node:51346) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:51346) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: affiliate overview uses responsive non-shrinking cards and translates its labels
+ok 5 - affiliate overview uses responsive non-shrinking cards and translates its labels
+  ---
+  duration_ms: 15.683542
+  type: 'test'
+  ...
+# Subtest: affiliate UI and errors have English translations and preserve narrow-screen controls
+ok 6 - affiliate UI and errors have English translations and preserve narrow-screen controls
+  ---
+  duration_ms: 2.478625
+  type: 'test'
+  ...
+# (node:51347) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:51347) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# [Security] JWT_SECRET is not set; generated persistent cookie secret at /tmp/codeg-acp-501/42052-65301063/forwardx-affiliate-test-CHA65K/jwt.secret
+# [Database] SQLite opened at /tmp/codeg-acp-501/42052-65301063/forwardx-affiliate-test-CHA65K/db.sqlite
+# Subtest: affiliate feature is disabled by default and APIs enforce new-code opt-in
+not ok 7 - affiliate feature is disabled by default and APIs enforce new-code opt-in
+  ---
+  duration_ms: 654.135459
+  type: 'test'
+  location: '/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/affiliates.test.ts:1:3193'
+  failureType: 'hookFailed'
+  error: "The requested module '../../shared/avatar' does not provide an export named 'builtinAvatarForSeed'"
+  code: 'ERR_TEST_FAILURE'
+  name: 'SyntaxError'
+  stack: |-
+    ModuleJob._instantiate (node:internal/modules/esm/module_job:226:21)
+    async ModuleJob.run (node:internal/modules/esm/module_job:335:5)
+    async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+    async TestContext.<anonymous> (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/affiliates.test.ts:33:10)
+    async TestHook.run (node:internal/test_runner/test:1054:7)
+  ...
+# Subtest: commission calculation uses cents, floors fractions and rejects unsafe values
+not ok 8 - commission calculation uses cents, floors fractions and rejects unsafe values
+  ---
+  duration_ms: 0.315917
+  type: 'test'
+  location: '/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/affiliates.test.ts:1:3541'
+  failureType: 'hookFailed'
+  error: "The requested module '../../shared/avatar' does not provide an export named 'builtinAvatarForSeed'"
+  code: 'ERR_TEST_FAILURE'
+  name: 'SyntaxError'
+  stack: |-
+    ModuleJob._instantiate (node:internal/modules/esm/module_job:226:21)
+    async ModuleJob.run (node:internal/modules/esm/module_job:335:5)
+    async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+    async TestContext.<anonymous> (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/affiliates.test.ts:33:10)
+    async TestHook.run (node:internal/test_runner/test:1054:7)
+  ...
+# Subtest: registration binds once, rejects self/disabled/unknown codes and keeps old referrals when code is disabled
+not ok 9 - registration binds once, rejects self/disabled/unknown codes and keeps old referrals when code is disabled
+  ---
+  duration_ms: 0.04025
+  type: 'test'
+  location: '/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/affiliates.test.ts:1:3872'
+  failureType: 'hookFailed'
+  error: "The requested module '../../shared/avatar' does not provide an export named 'builtinAvatarForSeed'"
+  code: 'ERR_TEST_FAILURE'
+  name: 'SyntaxError'
+  stack: |-
+    ModuleJob._instantiate (node:internal/modules/esm/module_job:226:21)
+    async ModuleJob.run (node:internal/modules/esm/module_job:335:5)
+    async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+    async TestContext.<anonymous> (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/affiliates.test.ts:33:10)
+    async TestHook.run (node:internal/test_runner/test:1054:7)
+  ...
+# Subtest: duplicate callbacks accrue only once and first-order mode excludes renewals
+not ok 10 - duplicate callbacks accrue only once and first-order mode excludes renewals
+  ---
+  duration_ms: 0.0215
+  type: 'test'
+  location: '/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/affiliates.test.ts:1:4440'
+  failureType: 'hookFailed'
+  error: "The requested module '../../shared/avatar' does not provide an export named 'builtinAvatarForSeed'"
+  code: 'ERR_TEST_FAILURE'
+  name: 'SyntaxError'
+  stack: |-
+    ModuleJob._instantiate (node:internal/modules/esm/module_job:226:21)
+    async ModuleJob.run (node:internal/modules/esm/module_job:335:5)
+    async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+    async TestContext.<anonymous> (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/affiliates.test.ts:33:10)
+    async TestHook.run (node:internal/test_runner/test:1054:7)
+  ...
+# Subtest: continuous commissions use independent user rate, only fulfilled CNY plan payments count
+not ok 11 - continuous commissions use independent user rate, only fulfilled CNY plan payments count
+  ---
+  duration_ms: 0.025375
+  type: 'test'
+  location: '/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/affiliates.test.ts:1:4801'
+  failureType: 'hookFailed'
+  error: "The requested module '../../shared/avatar' does not provide an export named 'builtinAvatarForSeed'"
+  code: 'ERR_TEST_FAILURE'
+  name: 'SyntaxError'
+  stack: |-
+    ModuleJob._instantiate (node:internal/modules/esm/module_job:226:21)
+    async ModuleJob.run (node:internal/modules/esm/module_job:335:5)
+    async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+    async TestContext.<anonymous> (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/affiliates.test.ts:33:10)
+    async TestHook.run (node:internal/test_runner/test:1054:7)
+  ...
+# Subtest: confirmation delay persists, early spending is forbidden, due settlement is idempotent
+not ok 12 - confirmation delay persists, early spending is forbidden, due settlement is idempotent
+  ---
+  duration_ms: 0.017458
+  type: 'test'
+  location: '/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/affiliates.test.ts:1:5374'
+  failureType: 'hookFailed'
+  error: "The requested module '../../shared/avatar' does not provide an export named 'builtinAvatarForSeed'"
+  code: 'ERR_TEST_FAILURE'
+  name: 'SyntaxError'
+  stack: |-
+    ModuleJob._instantiate (node:internal/modules/esm/module_job:226:21)
+    async ModuleJob.run (node:internal/modules/esm/module_job:335:5)
+    async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+    async TestContext.<anonymous> (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/affiliates.test.ts:33:10)
+    async TestHook.run (node:internal/test_runner/test:1054:7)
+  ...
+# Subtest: withdrawal reserves money once; concurrent attempts cannot overspend; reject refunds once
+not ok 13 - withdrawal reserves money once; concurrent attempts cannot overspend; reject refunds once
+  ---
+  duration_ms: 0.016125
+  type: 'test'
+  location: '/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/affiliates.test.ts:1:5983'
+  failureType: 'hookFailed'
+  error: "The requested module '../../shared/avatar' does not provide an export named 'builtinAvatarForSeed'"
+  code: 'ERR_TEST_FAILURE'
+  name: 'SyntaxError'
+  stack: |-
+    ModuleJob._instantiate (node:internal/modules/esm/module_job:226:21)
+    async ModuleJob.run (node:internal/modules/esm/module_job:335:5)
+    async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+    async TestContext.<anonymous> (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/affiliates.test.ts:33:10)
+    async TestHook.run (node:internal/test_runner/test:1054:7)
+  ...
+# Subtest: transfer is atomic, idempotent and creates exactly one regular balance credit
+not ok 14 - transfer is atomic, idempotent and creates exactly one regular balance credit
+  ---
+  duration_ms: 0.064667
+  type: 'test'
+  location: '/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/affiliates.test.ts:1:6695'
+  failureType: 'hookFailed'
+  error: "The requested module '../../shared/avatar' does not provide an export named 'builtinAvatarForSeed'"
+  code: 'ERR_TEST_FAILURE'
+  name: 'SyntaxError'
+  stack: |-
+    ModuleJob._instantiate (node:internal/modules/esm/module_job:226:21)
+    async ModuleJob.run (node:internal/modules/esm/module_job:335:5)
+    async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+    async TestContext.<anonymous> (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/affiliates.test.ts:33:10)
+    async TestHook.run (node:internal/test_runner/test:1054:7)
+  ...
+# Subtest: disabled feature stops accrual but preserves history, settlement, withdrawals and transfer obligations
+not ok 15 - disabled feature stops accrual but preserves history, settlement, withdrawals and transfer obligations
+  ---
+  duration_ms: 0.183
+  type: 'test'
+  location: '/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/affiliates.test.ts:1:7308'
+  failureType: 'hookFailed'
+  error: "The requested module '../../shared/avatar' does not provide an export named 'builtinAvatarForSeed'"
+  code: 'ERR_TEST_FAILURE'
+  name: 'SyntaxError'
+  stack: |-
+    ModuleJob._instantiate (node:internal/modules/esm/module_job:226:21)
+    async ModuleJob.run (node:internal/modules/esm/module_job:335:5)
+    async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+    async TestContext.<anonymous> (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/affiliates.test.ts:33:10)
+    async TestHook.run (node:internal/test_runner/test:1054:7)
+  ...
+# Subtest: reversal is auditable and idempotent; spent commission becomes debt and pending payout is blocked
+not ok 16 - reversal is auditable and idempotent; spent commission becomes debt and pending payout is blocked
+  ---
+  duration_ms: 0.136958
+  type: 'test'
+  location: '/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/affiliates.test.ts:1:7948'
+  failureType: 'hookFailed'
+  error: "The requested module '../../shared/avatar' does not provide an export named 'builtinAvatarForSeed'"
+  code: 'ERR_TEST_FAILURE'
+  name: 'SyntaxError'
+  stack: |-
+    ModuleJob._instantiate (node:internal/modules/esm/module_job:226:21)
+    async ModuleJob.run (node:internal/modules/esm/module_job:335:5)
+    async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+    async TestContext.<anonymous> (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/affiliates.test.ts:33:10)
+    async TestHook.run (node:internal/test_runner/test:1054:7)
+  ...
+# Subtest: user APIs ignore forged user filters and prohibit administrator actions
+not ok 17 - user APIs ignore forged user filters and prohibit administrator actions
+  ---
+  duration_ms: 0.020791
+  type: 'test'
+  location: '/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/affiliates.test.ts:1:8689'
+  failureType: 'hookFailed'
+  error: "The requested module '../../shared/avatar' does not provide an export named 'builtinAvatarForSeed'"
+  code: 'ERR_TEST_FAILURE'
+  name: 'SyntaxError'
+  stack: |-
+    ModuleJob._instantiate (node:internal/modules/esm/module_job:226:21)
+    async ModuleJob.run (node:internal/modules/esm/module_job:335:5)
+    async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+    async TestContext.<anonymous> (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/affiliates.test.ts:33:10)
+    async TestHook.run (node:internal/test_runner/test:1054:7)
+  ...
+# Subtest: blocked affiliates cannot bind, accrue, withdraw or transfer; historical commission remains
+not ok 18 - blocked affiliates cannot bind, accrue, withdraw or transfer; historical commission remains
+  ---
+  duration_ms: 0.018083
+  type: 'test'
+  location: '/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/affiliates.test.ts:1:9268'
+  failureType: 'hookFailed'
+  error: "The requested module '../../shared/avatar' does not provide an export named 'builtinAvatarForSeed'"
+  code: 'ERR_TEST_FAILURE'
+  name: 'SyntaxError'
+  stack: |-
+    ModuleJob._instantiate (node:internal/modules/esm/module_job:226:21)
+    async ModuleJob.run (node:internal/modules/esm/module_job:335:5)
+    async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+    async TestContext.<anonymous> (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/affiliates.test.ts:33:10)
+    async TestHook.run (node:internal/test_runner/test:1054:7)
+  ...
+# Subtest: pending cancellation never credits money and ledger always reconciles with wallet
+not ok 19 - pending cancellation never credits money and ledger always reconciles with wallet
+  ---
+  duration_ms: 0.014708
+  type: 'test'
+  location: '/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/affiliates.test.ts:1:9814'
+  failureType: 'hookFailed'
+  error: "The requested module '../../shared/avatar' does not provide an export named 'builtinAvatarForSeed'"
+  code: 'ERR_TEST_FAILURE'
+  name: 'SyntaxError'
+  stack: |-
+    ModuleJob._instantiate (node:internal/modules/esm/module_job:226:21)
+    async ModuleJob.run (node:internal/modules/esm/module_job:335:5)
+    async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+    async TestContext.<anonymous> (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/affiliates.test.ts:33:10)
+    async TestHook.run (node:internal/test_runner/test:1054:7)
+  ...
+# Subtest: referral browser storage validates codes, expiration and unavailable storage
+not ok 20 - referral browser storage validates codes, expiration and unavailable storage
+  ---
+  duration_ms: 0.01425
+  type: 'test'
+  location: '/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/affiliates.test.ts:1:10561'
+  failureType: 'hookFailed'
+  error: "The requested module '../../shared/avatar' does not provide an export named 'builtinAvatarForSeed'"
+  code: 'ERR_TEST_FAILURE'
+  name: 'SyntaxError'
+  stack: |-
+    ModuleJob._instantiate (node:internal/modules/esm/module_job:226:21)
+    async ModuleJob.run (node:internal/modules/esm/module_job:335:5)
+    async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+    async TestContext.<anonymous> (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/affiliates.test.ts:33:10)
+    async TestHook.run (node:internal/test_runner/test:1054:7)
+  ...
+# Subtest: request identifiers work without secure-context randomUUID and are unique
+not ok 21 - request identifiers work without secure-context randomUUID and are unique
+  ---
+  duration_ms: 0.014917
+  type: 'test'
+  location: '/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/affiliates.test.ts:1:11339'
+  failureType: 'hookFailed'
+  error: "The requested module '../../shared/avatar' does not provide an export named 'builtinAvatarForSeed'"
+  code: 'ERR_TEST_FAILURE'
+  name: 'SyntaxError'
+  stack: |-
+    ModuleJob._instantiate (node:internal/modules/esm/module_job:226:21)
+    async ModuleJob.run (node:internal/modules/esm/module_job:335:5)
+    async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+    async TestContext.<anonymous> (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/affiliates.test.ts:33:10)
+    async TestHook.run (node:internal/test_runner/test:1054:7)
+  ...
+# Subtest: wallet and regular balance both roll back when a transfer transaction fails
+not ok 22 - wallet and regular balance both roll back when a transfer transaction fails
+  ---
+  duration_ms: 0.049041
+  type: 'test'
+  location: '/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/affiliates.test.ts:1:11636'
+  failureType: 'hookFailed'
+  error: "The requested module '../../shared/avatar' does not provide an export named 'builtinAvatarForSeed'"
+  code: 'ERR_TEST_FAILURE'
+  name: 'SyntaxError'
+  stack: |-
+    ModuleJob._instantiate (node:internal/modules/esm/module_job:226:21)
+    async ModuleJob.run (node:internal/modules/esm/module_job:335:5)
+    async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+    async TestContext.<anonymous> (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/affiliates.test.ts:33:10)
+    async TestHook.run (node:internal/test_runner/test:1054:7)
+  ...
+# Subtest: code quotas, zero custom rates and first orders during zero-rate periods remain enforced
+not ok 23 - code quotas, zero custom rates and first orders during zero-rate periods remain enforced
+  ---
+  duration_ms: 0.018791
+  type: 'test'
+  location: '/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/affiliates.test.ts:1:12259'
+  failureType: 'hookFailed'
+  error: "The requested module '../../shared/avatar' does not provide an export named 'builtinAvatarForSeed'"
+  code: 'ERR_TEST_FAILURE'
+  name: 'SyntaxError'
+  stack: |-
+    ModuleJob._instantiate (node:internal/modules/esm/module_job:226:21)
+    async ModuleJob.run (node:internal/modules/esm/module_job:335:5)
+    async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+    async TestContext.<anonymous> (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/affiliates.test.ts:33:10)
+    async TestHook.run (node:internal/test_runner/test:1054:7)
+  ...
+# Subtest: actual email and Google first registrations bind referrals, existing Google logins never rebind
+not ok 24 - actual email and Google first registrations bind referrals, existing Google logins never rebind
+  ---
+  duration_ms: 0.0165
+  type: 'test'
+  location: '/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/affiliates.test.ts:1:13015'
+  failureType: 'hookFailed'
+  error: "The requested module '../../shared/avatar' does not provide an export named 'builtinAvatarForSeed'"
+  code: 'ERR_TEST_FAILURE'
+  name: 'SyntaxError'
+  stack: |-
+    ModuleJob._instantiate (node:internal/modules/esm/module_job:226:21)
+    async ModuleJob.run (node:internal/modules/esm/module_job:335:5)
+    async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+    async TestContext.<anonymous> (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/affiliates.test.ts:33:10)
+    async TestHook.run (node:internal/test_runner/test:1054:7)
+  ...
+# Subtest: actual signed payment webhook fulfills the plan and accrues once; invalid signatures do neither
+not ok 25 - actual signed payment webhook fulfills the plan and accrues once; invalid signatures do neither
+  ---
+  duration_ms: 0.0145
+  type: 'test'
+  location: '/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/affiliates.test.ts:1:14384'
+  failureType: 'hookFailed'
+  error: "The requested module '../../shared/avatar' does not provide an export named 'builtinAvatarForSeed'"
+  code: 'ERR_TEST_FAILURE'
+  name: 'SyntaxError'
+  stack: |-
+    ModuleJob._instantiate (node:internal/modules/esm/module_job:226:21)
+    async ModuleJob.run (node:internal/modules/esm/module_job:335:5)
+    async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+    async TestContext.<anonymous> (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/affiliates.test.ts:33:10)
+    async TestHook.run (node:internal/test_runner/test:1054:7)
+  ...
+# Subtest: concurrent distinct withdrawal and transfer requests cannot overspend the wallet
+not ok 26 - concurrent distinct withdrawal and transfer requests cannot overspend the wallet
+  ---
+  duration_ms: 0.014333
+  type: 'test'
+  location: '/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/affiliates.test.ts:1:17047'
+  failureType: 'hookFailed'
+  error: "The requested module '../../shared/avatar' does not provide an export named 'builtinAvatarForSeed'"
+  code: 'ERR_TEST_FAILURE'
+  name: 'SyntaxError'
+  stack: |-
+    ModuleJob._instantiate (node:internal/modules/esm/module_job:226:21)
+    async ModuleJob.run (node:internal/modules/esm/module_job:335:5)
+    async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+    async TestContext.<anonymous> (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/affiliates.test.ts:33:10)
+    async TestHook.run (node:internal/test_runner/test:1054:7)
+  ...
+# Subtest: live backup exports keep affiliate wallet and ledger consistent while transfers occur
+not ok 27 - live backup exports keep affiliate wallet and ledger consistent while transfers occur
+  ---
+  duration_ms: 0.013875
+  type: 'test'
+  location: '/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/affiliates.test.ts:1:17827'
+  failureType: 'hookFailed'
+  error: "The requested module '../../shared/avatar' does not provide an export named 'builtinAvatarForSeed'"
+  code: 'ERR_TEST_FAILURE'
+  name: 'SyntaxError'
+  stack: |-
+    ModuleJob._instantiate (node:internal/modules/esm/module_job:226:21)
+    async ModuleJob.run (node:internal/modules/esm/module_job:335:5)
+    async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+    async TestContext.<anonymous> (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/affiliates.test.ts:33:10)
+    async TestHook.run (node:internal/test_runner/test:1054:7)
+  ...
+# Subtest: affiliate migration preserves remapped ledger references and rejects unsafe incremental financial merges before writes
+not ok 28 - affiliate migration preserves remapped ledger references and rejects unsafe incremental financial merges before writes
+  ---
+  duration_ms: 0.01475
+  type: 'test'
+  location: '/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/affiliates.test.ts:1:18465'
+  failureType: 'hookFailed'
+  error: "The requested module '../../shared/avatar' does not provide an export named 'builtinAvatarForSeed'"
+  code: 'ERR_TEST_FAILURE'
+  name: 'SyntaxError'
+  stack: |-
+    ModuleJob._instantiate (node:internal/modules/esm/module_job:226:21)
+    async ModuleJob.run (node:internal/modules/esm/module_job:335:5)
+    async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+    async TestContext.<anonymous> (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/affiliates.test.ts:33:10)
+    async TestHook.run (node:internal/test_runner/test:1054:7)
+  ...
+# Subtest: MySQL and PostgreSQL generate all affiliate tables with monetary types and unique constraints
+not ok 29 - MySQL and PostgreSQL generate all affiliate tables with monetary types and unique constraints
+  ---
+  duration_ms: 0.012792
+  type: 'test'
+  location: '/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/affiliates.test.ts:1:21118'
+  failureType: 'hookFailed'
+  error: "The requested module '../../shared/avatar' does not provide an export named 'builtinAvatarForSeed'"
+  code: 'ERR_TEST_FAILURE'
+  name: 'SyntaxError'
+  stack: |-
+    ModuleJob._instantiate (node:internal/modules/esm/module_job:226:21)
+    async ModuleJob.run (node:internal/modules/esm/module_job:335:5)
+    async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+    async TestContext.<anonymous> (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/affiliates.test.ts:33:10)
+    async TestHook.run (node:internal/test_runner/test:1054:7)
+  ...
+# (node:51348) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:51348) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# [Security] JWT_SECRET is not set; generated persistent cookie secret at /tmp/codeg-acp-501/42052-65301063/forwardx-ticket-notifications-XAOeR4/jwt.secret
+# [Database] SQLite opened at /tmp/codeg-acp-501/42052-65301063/forwardx-ticket-notifications-XAOeR4/notifications.db
+# Subtest: upgrade defaults are enabled; only admins can change the master switch and users edit only themselves
+not ok 30 - upgrade defaults are enabled; only admins can change the master switch and users edit only themselves
+  ---
+  duration_ms: 460.539125
+  type: 'test'
+  location: '/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/supportTicketNotifications.test.ts:1:3378'
+  failureType: 'hookFailed'
+  error: "The requested module '../../shared/avatar' does not provide an export named 'builtinAvatarForSeed'"
+  code: 'ERR_TEST_FAILURE'
+  name: 'SyntaxError'
+  stack: |-
+    ModuleJob._instantiate (node:internal/modules/esm/module_job:226:21)
+    async ModuleJob.run (node:internal/modules/esm/module_job:335:5)
+    async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+    async TestContext.<anonymous> (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/supportTicketNotifications.test.ts:32:11)
+    async TestHook.run (node:internal/test_runner/test:1054:7)
+  ...
+# Subtest: both channels enforce master and recipient preferences while preserving ticket operations
+not ok 31 - both channels enforce master and recipient preferences while preserving ticket operations
+  ---
+  duration_ms: 0.333917
+  type: 'test'
+  location: '/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/supportTicketNotifications.test.ts:1:5222'
+  failureType: 'hookFailed'
+  error: "The requested module '../../shared/avatar' does not provide an export named 'builtinAvatarForSeed'"
+  code: 'ERR_TEST_FAILURE'
+  name: 'SyntaxError'
+  stack: |-
+    ModuleJob._instantiate (node:internal/modules/esm/module_job:226:21)
+    async ModuleJob.run (node:internal/modules/esm/module_job:335:5)
+    async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+    async TestContext.<anonymous> (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/supportTicketNotifications.test.ts:32:11)
+    async TestHook.run (node:internal/test_runner/test:1054:7)
+  ...
+# (node:51349) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:51349) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# [Security] JWT_SECRET is not set; generated persistent cookie secret at /tmp/codeg-acp-501/42052-65301063/forwardx-support-tests-zm9Z9G/jwt.secret
+# [Database] SQLite opened at /tmp/codeg-acp-501/42052-65301063/forwardx-support-tests-zm9Z9G/support.sqlite
+# Subtest: tickets are opt-in and disabling blocks every data endpoint without destroying history
+not ok 32 - tickets are opt-in and disabling blocks every data endpoint without destroying history
+  ---
+  duration_ms: 623.59225
+  type: 'test'
+  location: '/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/supportTickets.test.ts:1:2715'
+  failureType: 'hookFailed'
+  error: "The requested module '../../shared/avatar' does not provide an export named 'builtinAvatarForSeed'"
+  code: 'ERR_TEST_FAILURE'
+  name: 'SyntaxError'
+  stack: |-
+    ModuleJob._instantiate (node:internal/modules/esm/module_job:226:21)
+    async ModuleJob.run (node:internal/modules/esm/module_job:335:5)
+    async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+    async TestContext.<anonymous> (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/supportTickets.test.ts:58:10)
+    async TestHook.run (node:internal/test_runner/test:1054:7)
+  ...
+# Subtest: optional service, plain text, attachments and strict owner isolation
+not ok 33 - optional service, plain text, attachments and strict owner isolation
+  ---
+  duration_ms: 0.290125
+  type: 'test'
+  location: '/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/supportTickets.test.ts:1:3782'
+  failureType: 'hookFailed'
+  error: "The requested module '../../shared/avatar' does not provide an export named 'builtinAvatarForSeed'"
+  code: 'ERR_TEST_FAILURE'
+  name: 'SyntaxError'
+  stack: |-
+    ModuleJob._instantiate (node:internal/modules/esm/module_job:226:21)
+    async ModuleJob.run (node:internal/modules/esm/module_job:335:5)
+    async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+    async TestContext.<anonymous> (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/supportTickets.test.ts:58:10)
+    async TestHook.run (node:internal/test_runner/test:1054:7)
+  ...
+# Subtest: private notes, assignments and their attachments never leak or create user unread alerts
+not ok 34 - private notes, assignments and their attachments never leak or create user unread alerts
+  ---
+  duration_ms: 0.029875
+  type: 'test'
+  location: '/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/supportTickets.test.ts:1:5165'
+  failureType: 'hookFailed'
+  error: "The requested module '../../shared/avatar' does not provide an export named 'builtinAvatarForSeed'"
+  code: 'ERR_TEST_FAILURE'
+  name: 'SyntaxError'
+  stack: |-
+    ModuleJob._instantiate (node:internal/modules/esm/module_job:226:21)
+    async ModuleJob.run (node:internal/modules/esm/module_job:335:5)
+    async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+    async TestContext.<anonymous> (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/supportTickets.test.ts:58:10)
+    async TestHook.run (node:internal/test_runner/test:1054:7)
+  ...
+# Subtest: status lifecycle, optimistic conflicts, reply atomicity and rating constraints
+not ok 35 - status lifecycle, optimistic conflicts, reply atomicity and rating constraints
+  ---
+  duration_ms: 0.020584
+  type: 'test'
+  location: '/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/supportTickets.test.ts:1:7221'
+  failureType: 'hookFailed'
+  error: "The requested module '../../shared/avatar' does not provide an export named 'builtinAvatarForSeed'"
+  code: 'ERR_TEST_FAILURE'
+  name: 'SyntaxError'
+  stack: |-
+    ModuleJob._instantiate (node:internal/modules/esm/module_job:226:21)
+    async ModuleJob.run (node:internal/modules/esm/module_job:335:5)
+    async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+    async TestContext.<anonymous> (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/supportTickets.test.ts:58:10)
+    async TestHook.run (node:internal/test_runner/test:1054:7)
+  ...
+# Subtest: bulk operations roll back entirely on stale/invalid tickets and admin filters work
+not ok 36 - bulk operations roll back entirely on stale/invalid tickets and admin filters work
+  ---
+  duration_ms: 0.024416
+  type: 'test'
+  location: '/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/supportTickets.test.ts:1:8782'
+  failureType: 'hookFailed'
+  error: "The requested module '../../shared/avatar' does not provide an export named 'builtinAvatarForSeed'"
+  code: 'ERR_TEST_FAILURE'
+  name: 'SyntaxError'
+  stack: |-
+    ModuleJob._instantiate (node:internal/modules/esm/module_job:226:21)
+    async ModuleJob.run (node:internal/modules/esm/module_job:335:5)
+    async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+    async TestContext.<anonymous> (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/supportTickets.test.ts:58:10)
+    async TestHook.run (node:internal/test_runner/test:1054:7)
+  ...
+# Subtest: message pagination is bounded and private records are excluded before paging
+not ok 37 - message pagination is bounded and private records are excluded before paging
+  ---
+  duration_ms: 0.017458
+  type: 'test'
+  location: '/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/supportTickets.test.ts:1:9680'
+  failureType: 'hookFailed'
+  error: "The requested module '../../shared/avatar' does not provide an export named 'builtinAvatarForSeed'"
+  code: 'ERR_TEST_FAILURE'
+  name: 'SyntaxError'
+  stack: |-
+    ModuleJob._instantiate (node:internal/modules/esm/module_job:226:21)
+    async ModuleJob.run (node:internal/modules/esm/module_job:335:5)
+    async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+    async TestContext.<anonymous> (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/supportTickets.test.ts:58:10)
+    async TestHook.run (node:internal/test_runner/test:1054:7)
+  ...
+# Subtest: service choices use direct permissions and billing grants, not hidden topology
+not ok 38 - service choices use direct permissions and billing grants, not hidden topology
+  ---
+  duration_ms: 0.014417
+  type: 'test'
+  location: '/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/supportTickets.test.ts:1:10542'
+  failureType: 'hookFailed'
+  error: "The requested module '../../shared/avatar' does not provide an export named 'builtinAvatarForSeed'"
+  code: 'ERR_TEST_FAILURE'
+  name: 'SyntaxError'
+  stack: |-
+    ModuleJob._instantiate (node:internal/modules/esm/module_job:226:21)
+    async ModuleJob.run (node:internal/modules/esm/module_job:335:5)
+    async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+    async TestContext.<anonymous> (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/supportTickets.test.ts:58:10)
+    async TestHook.run (node:internal/test_runner/test:1054:7)
+  ...
+# Subtest: creation limits and per-user reply throttling are enforced in the database
+not ok 39 - creation limits and per-user reply throttling are enforced in the database
+  ---
+  duration_ms: 0.060792
+  type: 'test'
+  location: '/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/supportTickets.test.ts:1:13121'
+  failureType: 'hookFailed'
+  error: "The requested module '../../shared/avatar' does not provide an export named 'builtinAvatarForSeed'"
+  code: 'ERR_TEST_FAILURE'
+  name: 'SyntaxError'
+  stack: |-
+    ModuleJob._instantiate (node:internal/modules/esm/module_job:226:21)
+    async ModuleJob.run (node:internal/modules/esm/module_job:335:5)
+    async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+    async TestContext.<anonymous> (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/supportTickets.test.ts:58:10)
+    async TestHook.run (node:internal/test_runner/test:1054:7)
+  ...
+# Subtest: attachments validate actual content, names, sizes and encodings
+not ok 40 - attachments validate actual content, names, sizes and encodings
+  ---
+  duration_ms: 0.156625
+  type: 'test'
+  location: '/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/supportTickets.test.ts:1:14461'
+  failureType: 'hookFailed'
+  error: "The requested module '../../shared/avatar' does not provide an export named 'builtinAvatarForSeed'"
+  code: 'ERR_TEST_FAILURE'
+  name: 'SyntaxError'
+  stack: |-
+    ModuleJob._instantiate (node:internal/modules/esm/module_job:226:21)
+    async ModuleJob.run (node:internal/modules/esm/module_job:335:5)
+    async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+    async TestContext.<anonymous> (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/supportTickets.test.ts:58:10)
+    async TestHook.run (node:internal/test_runner/test:1054:7)
+  ...
+# Subtest: shared canned replies stay staff-only, and schema upgrades are idempotent
+not ok 41 - shared canned replies stay staff-only, and schema upgrades are idempotent
+  ---
+  duration_ms: 0.122667
+  type: 'test'
+  location: '/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/supportTickets.test.ts:1:15086'
+  failureType: 'hookFailed'
+  error: "The requested module '../../shared/avatar' does not provide an export named 'builtinAvatarForSeed'"
+  code: 'ERR_TEST_FAILURE'
+  name: 'SyntaxError'
+  stack: |-
+    ModuleJob._instantiate (node:internal/modules/esm/module_job:226:21)
+    async ModuleJob.run (node:internal/modules/esm/module_job:335:5)
+    async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+    async TestContext.<anonymous> (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/supportTickets.test.ts:58:10)
+    async TestHook.run (node:internal/test_runner/test:1054:7)
+  ...
+# Subtest: attachment quotas reject writes atomically without storing a partial reply
+not ok 42 - attachment quotas reject writes atomically without storing a partial reply
+  ---
+  duration_ms: 0.018958
+  type: 'test'
+  location: '/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/supportTickets.test.ts:1:16441'
+  failureType: 'hookFailed'
+  error: "The requested module '../../shared/avatar' does not provide an export named 'builtinAvatarForSeed'"
+  code: 'ERR_TEST_FAILURE'
+  name: 'SyntaxError'
+  stack: |-
+    ModuleJob._instantiate (node:internal/modules/esm/module_job:226:21)
+    async ModuleJob.run (node:internal/modules/esm/module_job:335:5)
+    async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+    async TestContext.<anonymous> (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/supportTickets.test.ts:58:10)
+    async TestHook.run (node:internal/test_runner/test:1054:7)
+  ...
+# Subtest: service pagination and exact selection work beyond the first fifty resources
+not ok 43 - service pagination and exact selection work beyond the first fifty resources
+  ---
+  duration_ms: 0.016208
+  type: 'test'
+  location: '/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/supportTickets.test.ts:1:17769'
+  failureType: 'hookFailed'
+  error: "The requested module '../../shared/avatar' does not provide an export named 'builtinAvatarForSeed'"
+  code: 'ERR_TEST_FAILURE'
+  name: 'SyntaxError'
+  stack: |-
+    ModuleJob._instantiate (node:internal/modules/esm/module_job:226:21)
+    async ModuleJob.run (node:internal/modules/esm/module_job:335:5)
+    async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+    async TestContext.<anonymous> (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/supportTickets.test.ts:58:10)
+    async TestHook.run (node:internal/test_runner/test:1054:7)
+  ...
+# Subtest: MySQL and PostgreSQL schema generation includes attachment capacity and unique read cursors
+not ok 44 - MySQL and PostgreSQL schema generation includes attachment capacity and unique read cursors
+  ---
+  duration_ms: 0.014625
+  type: 'test'
+  location: '/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/supportTickets.test.ts:1:18708'
+  failureType: 'hookFailed'
+  error: "The requested module '../../shared/avatar' does not provide an export named 'builtinAvatarForSeed'"
+  code: 'ERR_TEST_FAILURE'
+  name: 'SyntaxError'
+  stack: |-
+    ModuleJob._instantiate (node:internal/modules/esm/module_job:226:21)
+    async ModuleJob.run (node:internal/modules/esm/module_job:335:5)
+    async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+    async TestContext.<anonymous> (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/supportTickets.test.ts:58:10)
+    async TestHook.run (node:internal/test_runner/test:1054:7)
+  ...
+# Subtest: backup import remaps ticket, author, message and read IDs while preserving removed-service history
+not ok 45 - backup import remaps ticket, author, message and read IDs while preserving removed-service history
+  ---
+  duration_ms: 0.01525
+  type: 'test'
+  location: '/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/supportTickets.test.ts:1:19706'
+  failureType: 'hookFailed'
+  error: "The requested module '../../shared/avatar' does not provide an export named 'builtinAvatarForSeed'"
+  code: 'ERR_TEST_FAILURE'
+  name: 'SyntaxError'
+  stack: |-
+    ModuleJob._instantiate (node:internal/modules/esm/module_job:226:21)
+    async ModuleJob.run (node:internal/modules/esm/module_job:335:5)
+    async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+    async TestContext.<anonymous> (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/supportTickets.test.ts:58:10)
+    async TestHook.run (node:internal/test_runner/test:1054:7)
+  ...
+1..45
+# tests 45
+# suites 0
+# pass 5
+# fail 40
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 905.93175

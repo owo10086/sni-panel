@@ -1,0 +1,247 @@
+(node:76588) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+TAP version 13
+# (node:76589) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:76589) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# [Security] JWT_SECRET is not set; generated persistent cookie secret at /tmp/codeg-acp-501/42052-65301063/forwardx-affiliate-test-bjrTUc/jwt.secret
+# [Database] SQLite opened at /tmp/codeg-acp-501/42052-65301063/forwardx-affiliate-test-bjrTUc/db.sqlite
+# Subtest: affiliate feature is disabled by default and APIs enforce new-code opt-in
+ok 1 - affiliate feature is disabled by default and APIs enforce new-code opt-in
+  ---
+  duration_ms: 656.748458
+  type: 'test'
+  ...
+# Subtest: commission calculation uses cents, floors fractions and rejects unsafe values
+ok 2 - commission calculation uses cents, floors fractions and rejects unsafe values
+  ---
+  duration_ms: 0.138417
+  type: 'test'
+  ...
+# Subtest: registration binds once, rejects self/disabled/unknown codes and keeps old referrals when code is disabled
+ok 3 - registration binds once, rejects self/disabled/unknown codes and keeps old referrals when code is disabled
+  ---
+  duration_ms: 4.553041
+  type: 'test'
+  ...
+# Subtest: duplicate callbacks accrue only once and first-order mode excludes renewals
+ok 4 - duplicate callbacks accrue only once and first-order mode excludes renewals
+  ---
+  duration_ms: 2.851458
+  type: 'test'
+  ...
+# Subtest: continuous commissions use independent user rate, only fulfilled CNY plan payments count
+ok 5 - continuous commissions use independent user rate, only fulfilled CNY plan payments count
+  ---
+  duration_ms: 3.674083
+  type: 'test'
+  ...
+# Subtest: confirmation delay persists, early spending is forbidden, due settlement is idempotent
+ok 6 - confirmation delay persists, early spending is forbidden, due settlement is idempotent
+  ---
+  duration_ms: 5.505166
+  type: 'test'
+  ...
+# Subtest: withdrawal reserves money once; concurrent attempts cannot overspend; reject refunds once
+ok 7 - withdrawal reserves money once; concurrent attempts cannot overspend; reject refunds once
+  ---
+  duration_ms: 3.127166
+  type: 'test'
+  ...
+# Subtest: transfer is atomic, idempotent and creates exactly one regular balance credit
+ok 8 - transfer is atomic, idempotent and creates exactly one regular balance credit
+  ---
+  duration_ms: 3.997167
+  type: 'test'
+  ...
+# Subtest: disabled feature stops accrual but preserves history, settlement, withdrawals and transfer obligations
+ok 9 - disabled feature stops accrual but preserves history, settlement, withdrawals and transfer obligations
+  ---
+  duration_ms: 5.810917
+  type: 'test'
+  ...
+# Subtest: reversal is auditable and idempotent; spent commission becomes debt and pending payout is blocked
+ok 10 - reversal is auditable and idempotent; spent commission becomes debt and pending payout is blocked
+  ---
+  duration_ms: 1.968333
+  type: 'test'
+  ...
+# Subtest: user APIs ignore forged user filters and prohibit administrator actions
+ok 11 - user APIs ignore forged user filters and prohibit administrator actions
+  ---
+  duration_ms: 0.625875
+  type: 'test'
+  ...
+# Subtest: blocked affiliates cannot bind, accrue, withdraw or transfer; historical commission remains
+ok 12 - blocked affiliates cannot bind, accrue, withdraw or transfer; historical commission remains
+  ---
+  duration_ms: 1.174
+  type: 'test'
+  ...
+# Subtest: pending cancellation never credits money and ledger always reconciles with wallet
+ok 13 - pending cancellation never credits money and ledger always reconciles with wallet
+  ---
+  duration_ms: 1.623875
+  type: 'test'
+  ...
+# Subtest: referral browser storage validates codes, expiration and unavailable storage
+ok 14 - referral browser storage validates codes, expiration and unavailable storage
+  ---
+  duration_ms: 0.247959
+  type: 'test'
+  ...
+# Subtest: request identifiers work without secure-context randomUUID and are unique
+ok 15 - request identifiers work without secure-context randomUUID and are unique
+  ---
+  duration_ms: 0.794
+  type: 'test'
+  ...
+# Subtest: wallet and regular balance both roll back when a transfer transaction fails
+ok 16 - wallet and regular balance both roll back when a transfer transaction fails
+  ---
+  duration_ms: 3.42375
+  type: 'test'
+  ...
+# Subtest: code quotas, zero custom rates and first orders during zero-rate periods remain enforced
+ok 17 - code quotas, zero custom rates and first orders during zero-rate periods remain enforced
+  ---
+  duration_ms: 3.815458
+  type: 'test'
+  ...
+# [Auth] Register success userId=41 username=re***@test.local emailVerified=false ip=127.0.0.1
+# Subtest: actual email and Google first registrations bind referrals, existing Google logins never rebind
+ok 18 - actual email and Google first registrations bind referrals, existing Google logins never rebind
+  ---
+  duration_ms: 85.04425
+  type: 'test'
+  ...
+# Subtest: actual signed payment webhook fulfills the plan and accrues once; invalid signatures do neither
+ok 19 - actual signed payment webhook fulfills the plan and accrues once; invalid signatures do neither
+  ---
+  duration_ms: 35.221459
+  type: 'test'
+  ...
+# Subtest: concurrent distinct withdrawal and transfer requests cannot overspend the wallet
+ok 20 - concurrent distinct withdrawal and transfer requests cannot overspend the wallet
+  ---
+  duration_ms: 4.657458
+  type: 'test'
+  ...
+# Subtest: live backup exports keep affiliate wallet and ledger consistent while transfers occur
+ok 21 - live backup exports keep affiliate wallet and ledger consistent while transfers occur
+  ---
+  duration_ms: 42.499583
+  type: 'test'
+  ...
+# [Database] SQLite opened at /tmp/codeg-acp-501/42052-65301063/forwardx-affiliate-test-bjrTUc/target.sqlite
+# [TrafficSummary] Bucket backfill complete marker=v3 rows=0 elapsedMs=0
+# [TrafficCounter] User/rule counter backfill complete ruleRows=0 userRows=0 repairedRules=0 repairedBuckets=0 elapsedMs=1
+# Subtest: affiliate migration preserves remapped ledger references and rejects unsafe incremental financial merges before writes
+ok 22 - affiliate migration preserves remapped ledger references and rejects unsafe incremental financial merges before writes
+  ---
+  duration_ms: 91.598625
+  type: 'test'
+  ...
+# Subtest: MySQL and PostgreSQL generate all affiliate tables with monetary types and unique constraints
+ok 23 - MySQL and PostgreSQL generate all affiliate tables with monetary types and unique constraints
+  ---
+  duration_ms: 7.04525
+  type: 'test'
+  ...
+# (node:76590) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:76590) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: availability counts one incident per transition, not per sweep; ignores stale observations
+ok 24 - availability counts one incident per transition, not per sweep; ignores stale observations
+  ---
+  duration_ms: 0.620708
+  type: 'test'
+  ...
+# Subtest: initial offline, panel downtime and recorder restart do not invent transitions or uptime
+ok 25 - initial offline, panel downtime and recorder restart do not invent transitions or uptime
+  ---
+  duration_ms: 0.282333
+  type: 'test'
+  ...
+# Subtest: cross-midnight outage splits duration but not incident count; day rate is duration weighted
+ok 26 - cross-midnight outage splits duration but not incident count; day rate is duration weighted
+  ---
+  duration_ms: 0.115542
+  type: 'test'
+  ...
+# Subtest: per-host concurrent observations serialize and store failures remain retryable
+ok 27 - per-host concurrent observations serialize and store failures remain retryable
+  ---
+  duration_ms: 0.19925
+  type: 'test'
+  ...
+# [Database] SQLite opened at /tmp/codeg-acp-501/42052-65301063/forwardx-availability-fNM1Cw/history.db
+# Subtest: availability history uses configured DB, scopes host access, pages full histories and retains 30 days
+ok 28 - availability history uses configured DB, scopes host access, pages full histories and retains 30 days
+  ---
+  duration_ms: 740.118833
+  type: 'test'
+  ...
+# (node:76591) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:76591) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: all management scripts and the self-contained installer have valid Bash syntax
+ok 29 - all management scripts and the self-contained installer have valid Bash syntax
+  ---
+  duration_ms: 65.517208
+  type: 'test'
+  ...
+# Subtest: proxy normalization, explicit direct and offline operations
+ok 30 - proxy normalization, explicit direct and offline operations
+  ---
+  duration_ms: 10.373834
+  type: 'test'
+  ...
+# Subtest: bootstrap proxy reaches child without appearing in curl argv; help needs no config
+ok 31 - bootstrap proxy reaches child without appearing in curl argv; help needs no config
+  ---
+  duration_ms: 4.924583
+  type: 'test'
+  ...
+# Subtest: generated installer persists proxy before starting and bundles offline management
+ok 32 - generated installer persists proxy before starting and bundles offline management
+  ---
+  duration_ms: 0.825291
+  type: 'test'
+  ...
+# Subtest: bare fwxm opens the appropriate interactive menu for Agent, panel and co-located roles
+ok 33 - bare fwxm opens the appropriate interactive menu for Agent, panel and co-located roles
+  ---
+  duration_ms: 22.2195
+  type: 'test'
+  ...
+# Subtest: real jq config persistence preserves registration and rejects invalid proxy types
+ok 34 - real jq config persistence preserves registration and rejects invalid proxy types
+  ---
+  duration_ms: 59.622417
+  type: 'test'
+  ...
+# Subtest: interactive status and restart target the selected Agent, local panel or Docker panel
+ok 35 - interactive status and restart target the selected Agent, local panel or Docker panel
+  ---
+  duration_ms: 67.541292
+  type: 'test'
+  ...
+# Subtest: fwxm saves Agent proxy, redacts credentials and routes Docker commands by metadata
+ok 36 - fwxm saves Agent proxy, redacts credentials and routes Docker commands by metadata
+  ---
+  duration_ms: 52.873625
+  type: 'test'
+  ...
+1..36
+# tests 36
+# suites 0
+# pass 36
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1087.888875

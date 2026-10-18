@@ -1,0 +1,62 @@
+(node:71768) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+TAP version 13
+# (node:71770) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:71770) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: stopped member cleanup preserves failed settlement for later retry
+not ok 1 - stopped member cleanup preserves failed settlement for later retry
+  ---
+  duration_ms: 659.690416
+  type: 'test'
+  location: '/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/groupMemberRelease.test.ts:978:22'
+  failureType: 'testCodeFailure'
+  error: |-
+    (node:71772) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+    (Use `node --trace-warnings ...` to show where the warning was created)
+    (node:71772) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+    (Use `node --trace-warnings ...` to show where the warning was created)
+    node:internal/modules/run_main:123
+        triggerUncaughtException(
+        ^
+    
+    AssertionError [ERR_ASSERTION]: retain settlement retry identity after stop acknowledgement
+        at [90mfile:///Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/[39m[eval1]:185:12 {
+      generatedMessage: [33mfalse[39m,
+      code: [32m'ERR_ASSERTION'[39m,
+      actual: [90mundefined[39m,
+      expected: [33mtrue[39m,
+      operator: [32m'=='[39m,
+      diff: [32m'simple'[39m
+    }
+    
+    Node.js v22.22.3
+    [Database] SQLite opened at /tmp/codeg-acp-501/42052-65301063/forwardx-member-release-iRqAgq/test.db
+    
+    
+    1 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 1
+  operator: 'strictEqual'
+  stack: |-
+    [90mfile:///Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/[39m[eval1]:185:12 {
+    runGroupMemberReleaseCase (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/test-support/groupMemberReleaseHarness.ts:198:12)
+    TestContext.<anonymous> (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/groupMemberRelease.test.ts:1194:3)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.start (node:internal/test_runner/test:944:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:296:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 777.513208

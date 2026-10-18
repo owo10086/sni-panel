@@ -1,0 +1,1150 @@
+{
+  "sourceSha256": "e569c31cac54b1f82beeb3f679c1747078f7692d7505d991df14eac663d700af",
+  "topLevelCounts": {
+    "pass": 127,
+    "skip": 1
+  },
+  "results": [
+    {
+      "Time": "2026-10-18T11:11:12.324663298Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestControlledFXPAddsRulesWithoutDisconnectingTCPOrUDPSessions",
+      "Elapsed": 0.39
+    },
+    {
+      "Time": "2026-10-18T11:11:12.325542464Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPControlRefusesToOverwriteRegularFiles",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:12.326951464Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestAdditiveControllerRecoversOnlyStoppedListener",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:12.327345089Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPByteBufferPoolUsesSmallestTier",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:12.327820673Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPByteBufferPoolDoesNotRetainOversizedFrames",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:12.328146214Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPByteBufferPoolHasBoundedRetainedSlots",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:12.328486173Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestReadConfigEntryGroup",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:12.329026173Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestValidateEntryGroupConfig/empty",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:12.329369214Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestValidateEntryGroupConfig/child_role",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:12.329676631Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestValidateEntryGroupConfig/tunnel_mismatch",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:12.329946964Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestValidateEntryGroupConfig/invalid_child",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:12.330215048Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestValidateEntryGroupConfig/tcp_conflict",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:12.330466006Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestValidateEntryGroupConfig/udp_conflict",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:12.330783631Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestValidateEntryGroupConfig/wildcard_conflict",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:12.331109506Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestValidateEntryGroupConfig/tcp_and_udp_same_port_are_separate_lanes",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:12.331233714Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestValidateEntryGroupConfig",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:12.331474839Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestNormalizeConfigNormalizesGroupedEntries",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:12.331714881Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestRunEntryClosesTCPListenerWhenUDPBindFails",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:12.394259506Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestRunEntryGroupListensOnManyEntriesInOneRuntime",
+      "Elapsed": 0.06
+    },
+    {
+      "Time": "2026-10-18T11:11:12.394389714Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestRunEntryGroupStopsOtherEntriesOnRuntimeError",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:12.394492381Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestBoundedLogWriterDropsFloodAndReportsSuppression",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:12.394572214Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestCompactRuntimeLogLineLimitsSingleWrite",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:12.394648006Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestBoundedLogWriterCapsHighVolumeWithinWindow",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:12.394721423Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestDetectHTTPProtocolRequiresRequestLine",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:12.394808798Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFallbackDialTimeoutIsShorterThanNormalDial",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:12.394920631Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestSecureDialTimeoutIgnoresInvalidOrDuplicateExitEntries",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:12.395012089Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFallbackSelectorUsesPriorityAndRetriesPrimaryAfterCooldown",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:12.395157214Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestExitSelectorStrategies",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:12.501317256Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestForwardXFallbackUsesBackupForTCPAndUDP",
+      "Elapsed": 0.11
+    },
+    {
+      "Time": "2026-10-18T11:11:12.610438964Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestForwardXTCPRoundTrip",
+      "Elapsed": 0.11
+    },
+    {
+      "Time": "2026-10-18T11:11:12.634679298Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestForwardXUDPDirectRoundTrip",
+      "Elapsed": 0.02
+    },
+    {
+      "Time": "2026-10-18T11:11:12.742971631Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestForwardXBothSplitUDPWirePorts",
+      "Elapsed": 0.11
+    },
+    {
+      "Time": "2026-10-18T11:11:12.76966134Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestForwardXRelayUDPDirectRoundTrip",
+      "Elapsed": 0.03
+    },
+    {
+      "Time": "2026-10-18T11:11:12.770297631Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPv3EncryptsAuthenticatesAndRejectsReplay",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:12.772373965Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPFragmentsStayWithinSafeWireSizeAndReassembleOutOfOrder",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:12.772975631Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPSmallDatagramKeepsLegacyHeader",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:12.773458673Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPReassemblesAdjacentLargeDatagramsOutOfOrder",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:12.773960131Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPExitTargetIsConfigurationBound",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:12.883652173Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestForwardXProxyProtocolRoundTrip",
+      "Elapsed": 0.11
+    },
+    {
+      "Time": "2026-10-18T11:11:12.995261131Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestForwardXProxyProtocolSurvivesBackupExitSelection",
+      "Elapsed": 0.11
+    },
+    {
+      "Time": "2026-10-18T11:11:13.157586423Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestForwardXRelayTCPRoundTrip",
+      "Elapsed": 0.16
+    },
+    {
+      "Time": "2026-10-18T11:11:13.370743631Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestForwardXRelayChainTCPRoundTrip",
+      "Elapsed": 0.21
+    },
+    {
+      "Time": "2026-10-18T11:11:13.371542798Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFxpRejectsReplaySalt",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:13.372104423Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFxpServerAcceptsCompatibilityWireContext",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:13.372722423Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFxpClientRetriesCompatibilityWireContext",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:13.434636423Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestWaitBidirectionalKeepsCleanHalfClosedStreamsOpen",
+      "Elapsed": 0.06
+    },
+    {
+      "Time": "2026-10-18T11:11:13.435633923Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFxpWireContextRemainsStable",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:13.436682173Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFormatProxyProtocolV2",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:13.43750784Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPAgentChallengeProofMatchesPanelVector",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:13.438318965Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPPanelRequestUsesChallengeForSkewedEnvelope",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:13.439272923Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPPanelRequestRefreshesChallengeAfterExplicitRejection",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:13.439859257Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPConcurrentStaleChallengeRejectionsEachRetryOnce",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:13.440448798Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPPanelRequestDoesNotRetryAuthenticatedBusinessError",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:13.440919673Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPPanelRequestFallsBackToRawTokenForOlderPanel",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:13.441567132Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestUnauthenticatedHandshakeDoesNotPopulateReplayCache",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:13.442084923Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestReplayCacheRejectsDuplicatesAndExpiresEntries",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:13.442618215Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestReplayCacheEvictsOldestAtCapacity",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:13.443560257Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestReplayCacheWithZeroCapacityDoesNotRetainEntries",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:13.444070465Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestConnGateEnforcesTotalAndPerIPLimits",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:13.444564798Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestConnGateConcurrentAcquireNeverExceedsHardLimit",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:13.444982007Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestListenerConnGatesHaveDefaultsAndReleasePendingAfterHello",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:13.445481757Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestListenerConnGatesDoNotTreatAnEntryAgentAsOneUser",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:13.445823757Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestListenerConnGatesAllowMoreThanLegacyPerIPLimitFromOneEntry",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:13.446201382Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestLimiterWaitReturnsWhenSessionIsCanceled",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:13.471500423Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestServerHandshakeTimesOutWhenPeerStalls/no_handshake",
+      "Elapsed": 0.03
+    },
+    {
+      "Time": "2026-10-18T11:11:13.498000215Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestServerHandshakeTimesOutWhenPeerStalls/partial_handshake",
+      "Elapsed": 0.03
+    },
+    {
+      "Time": "2026-10-18T11:11:13.49824859Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestServerHandshakeTimesOutWhenPeerStalls",
+      "Elapsed": 0.05
+    },
+    {
+      "Time": "2026-10-18T11:11:13.523500298Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestClientHandshakeTimesOutWhenPeerDoesNotRead",
+      "Elapsed": 0.03
+    },
+    {
+      "Time": "2026-10-18T11:11:13.551301382Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestServerHelloTimesOutAfterSuccessfulHandshake",
+      "Elapsed": 0.03
+    },
+    {
+      "Time": "2026-10-18T11:11:13.646471173Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestHandshakeAndHelloDeadlinesAreClearedForEstablishedTraffic",
+      "Elapsed": 0.1
+    },
+    {
+      "Time": "2026-10-18T11:11:13.658540465Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestWaitForWaitGroupTracksSessionDrain",
+      "Elapsed": 0.01
+    },
+    {
+      "Time": "2026-10-18T11:11:13.669752757Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestWaitForWaitGroupHonorsTimeout",
+      "Elapsed": 0.01
+    },
+    {
+      "Time": "2026-10-18T11:11:13.683444382Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestSniSplitterForwardsMatchingClientHelloUnchanged",
+      "Elapsed": 0.01
+    },
+    {
+      "Time": "2026-10-18T11:11:13.694868215Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestSniSplitterForwardsClientHelloWithECHUsingReadableSNIUnchanged/first_extension",
+      "Elapsed": 0.01
+    },
+    {
+      "Time": "2026-10-18T11:11:13.707453673Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestSniSplitterForwardsClientHelloWithECHUsingReadableSNIUnchanged/middle_extension",
+      "Elapsed": 0.01
+    },
+    {
+      "Time": "2026-10-18T11:11:13.719351215Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestSniSplitterForwardsClientHelloWithECHUsingReadableSNIUnchanged/last_extension",
+      "Elapsed": 0.01
+    },
+    {
+      "Time": "2026-10-18T11:11:13.719653673Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestSniSplitterForwardsClientHelloWithECHUsingReadableSNIUnchanged",
+      "Elapsed": 0.04
+    },
+    {
+      "Time": "2026-10-18T11:11:13.720278465Z",
+      "Action": "skip",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestPublishedSniSplitterForwardsClientHelloWithECH",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:13.731857798Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestSniSplitterRejectsUnmatchedTraffic/unknown_sni",
+      "Elapsed": 0.01
+    },
+    {
+      "Time": "2026-10-18T11:11:13.744279465Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestSniSplitterRejectsUnmatchedTraffic/without_sni",
+      "Elapsed": 0.01
+    },
+    {
+      "Time": "2026-10-18T11:11:13.755777548Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestSniSplitterRejectsUnmatchedTraffic/plain_http",
+      "Elapsed": 0.01
+    },
+    {
+      "Time": "2026-10-18T11:11:13.767975132Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestSniSplitterRejectsUnmatchedTraffic/malformed_extension_length",
+      "Elapsed": 0.01
+    },
+    {
+      "Time": "2026-10-18T11:11:13.781287548Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestSniSplitterRejectsUnmatchedTraffic/oversized_record_length",
+      "Elapsed": 0.01
+    },
+    {
+      "Time": "2026-10-18T11:11:13.781560548Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestSniSplitterRejectsUnmatchedTraffic",
+      "Elapsed": 0.06
+    },
+    {
+      "Time": "2026-10-18T11:11:13.877553298Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestSniSplitterRejectsIncompleteHandshakeWithinReadWindow",
+      "Elapsed": 0.1
+    },
+    {
+      "Time": "2026-10-18T11:11:13.922655882Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestSniSplitterReassemblesFragmentedClientHello",
+      "Elapsed": 0.05
+    },
+    {
+      "Time": "2026-10-18T11:11:13.934708715Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestSniSplitterRoutesMultipleDomainsAndReportsTrafficByRule",
+      "Elapsed": 0.01
+    },
+    {
+      "Time": "2026-10-18T11:11:13.94997959Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestSniSplitterHotSwapsRouteTableWithoutRestartingUnchangedRules",
+      "Elapsed": 0.02
+    },
+    {
+      "Time": "2026-10-18T11:11:14.969984091Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestSniSplitterRateLimitAppliesToOnlyTheLimitedRule",
+      "Elapsed": 1.02
+    },
+    {
+      "Time": "2026-10-18T11:11:15.041880341Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestSniSplitterConnectionLimitAppliesToOnlyTheLimitedRule",
+      "Elapsed": 0.07
+    },
+    {
+      "Time": "2026-10-18T11:11:15.056726007Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestSniSplitterHotUpdatesLimitsWithoutDisturbingOtherRules",
+      "Elapsed": 0.02
+    },
+    {
+      "Time": "2026-10-18T11:11:15.057305174Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestSniSplitterConfigValidation/no_routes",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:15.057622632Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestSniSplitterConfigValidation/missing_version",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:15.057984424Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestSniSplitterConfigValidation/udp_protocol",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:15.058391799Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestSniSplitterConfigValidation/bad_route",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:15.058576007Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestSniSplitterConfigValidation",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:15.059491882Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestTrafficBatchRetainsFailedReportsAndAcknowledgesSuccess",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:15.060347466Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestTrafficConfigurationDiagnosticsAreRateLimitedAndDoNotLeakToken",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:15.060921924Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestTrafficDiagnosticBookkeepingIsBounded",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:15.061628924Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestTrafficReportFailureDiagnosticsAreRateLimitedAndRedacted",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:15.062176216Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestTrafficRequestFailureRetainsBatchAndIsRateLimited",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:15.062695924Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestEqualTrafficBatchesUseDifferentReportIDs",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:15.063174216Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestTrafficBatchKeepsConnectionOnlyDelta",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:15.063693424Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestTrafficReporterCountsSessionOnceWithoutChangingBytes",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:15.064285924Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPTrafficProducerIDIsStablePerRuntime",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:15.065126549Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestStopTrafficReporterDoesNotWaitForPanel",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:15.065362216Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPCodecIsWireCompatibleAndRejectsTampering",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:15.065513174Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPCodecPreservesMultiFragmentReassembly",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:15.066795049Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPCodecReducesPerPacketAllocations",
+      "Elapsed": 0.01
+    },
+    {
+      "Time": "2026-10-18T11:11:15.066942299Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestUDPFragmentReassemblerReleasesBudgetOnCompletion",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:15.067063799Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestUDPFragmentReassemblerReleasesExpiredBudget",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:15.067162216Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestUDPFragmentReassemblerReleasesBudgetOnMetadataConflict",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:15.067258049Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestUDPFragmentReassemblerReleasesOldestBudgetOnEviction",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:15.067394507Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestUDPFragmentReassemblerClearAndRebindReleaseBudget",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:15.067484091Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestUDPFragmentReassemblerBudgetRejectionDropsAssembly",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:15.067576216Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestUDPFragmentReassemblerWithoutBudgetKeepsUnlimitedBehavior",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:15.067672674Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestUDPFragmentReassemblerCloseRejectsLateFragmentsWithoutBudgetLeak",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:15.067789632Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestUDPFragmentReassemblerActiveExpireReleasesBudget",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:15.067992341Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPQueueBudgetDefaults",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:15.068222841Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPQueueBudgetEnforcesRuleLimitWithoutPartialReservation",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:15.068536174Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPQueueBudgetEnforcesSharedProcessLimit",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:15.068817591Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPQueueBudgetReleaseRestoresBothLimits",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:15.069167507Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPQueueBudgetReplaceIsAtomic",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:15.069479299Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPQueueBudgetRejectsInvalidReservation",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:15.070166216Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPQueueBudgetConcurrentReservationsStayWithinLimit",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:15.070338632Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestCheckFXPUDPSessionCapacityUsesPrecomputedHardLimits/below_limits",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:15.070453799Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestCheckFXPUDPSessionCapacityUsesPrecomputedHardLimits/soft_limits_remain_admissible",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:15.070533132Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestCheckFXPUDPSessionCapacityUsesPrecomputedHardLimits/global_hard_boundary",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:15.070612049Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestCheckFXPUDPSessionCapacityUsesPrecomputedHardLimits/per_IP_hard_boundary",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:15.070698882Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestCheckFXPUDPSessionCapacityUsesPrecomputedHardLimits/scoped_hard_limit_has_priority",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:15.070859299Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestCheckFXPUDPSessionCapacityUsesPrecomputedHardLimits/empty_source_ignores_per_IP_count",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:15.070896424Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestCheckFXPUDPSessionCapacityUsesPrecomputedHardLimits",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:15.070977674Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestPlanFXPUDPPressureReclamationOnlyReclaimsQuiescentIdleSessions",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:15.071068924Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestPlanFXPUDPPressureReclamationScopesPerIPPressure",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:15.072925966Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestPlanFXPUDPPressureReclamationBoundsRepeatedChurn",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:15.094375841Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPSessionWorkerDrainPreservesFinalTrafficDelta",
+      "Elapsed": 0.02
+    },
+    {
+      "Time": "2026-10-18T11:11:15.094524507Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPDirectSnapshotsIncludeInFlightWork/entry",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:15.094611257Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPDirectSnapshotsIncludeInFlightWork/exit",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:15.094721716Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPDirectSnapshotsIncludeInFlightWork/relay",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:15.094792507Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPDirectSnapshotsIncludeInFlightWork",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:15.095012549Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPDirectSnapshotsProtectPartialFragmentAssemblies/entry_return",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:15.095101799Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPDirectSnapshotsProtectPartialFragmentAssemblies/exit_data",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:15.095194799Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPDirectSnapshotsProtectPartialFragmentAssemblies/relay_data",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:15.095287632Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPDirectSnapshotsProtectPartialFragmentAssemblies/relay_return",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:15.095331466Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPDirectSnapshotsProtectPartialFragmentAssemblies",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:15.095440466Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestExitUDPDirectSameSessionIDDifferentRulesPreservesOldSession",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:15.095565966Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPSequenceSeedAllocatorIsMonotonicWithinTickAndRollback",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:15.095714716Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPSequenceSeedAllocatorConcurrentAllocationsAreUniqueAndConsecutive",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:15.095828424Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPSequenceSeedAllocatorObserveAdvancesNextSeed",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:15.095975049Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPSequenceSeedAllocatorSurvivesClockRollback",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:15.096080841Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPRecreatedSenderDoesNotReuseNonce",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:15.096188216Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPSessionIdleAtBoundary",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:15.096291799Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPSessionExpirationWaitsForDrainButBoundsStalls",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:15.106476924Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPSessionSweeperStopsIdempotently",
+      "Elapsed": 0.01
+    },
+    {
+      "Time": "2026-10-18T11:11:15.106797966Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPQueueEnforcesPacketAndByteLimits",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:15.107081216Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPQueueRejectsOversizedPacketWithoutDiscardingQueue",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:15.107187091Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPQueueSharedBudgetTracksReplacementDrainAndClear",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:15.107344841Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPQueueRejectedReplacementPreservesExistingPacket",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:15.107492216Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPQueueLeaseProtectsInFlightPacketUntilDone",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:15.107707924Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPQueueCloseRejectsConcurrentEnqueueWithoutBudgetLeak",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:15.107817674Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPQueuedPacketSupersededDelayBoundary",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:15.107913966Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestDefaultFXPUDPSessionPolicyIsIndependentOfTCPPlanLimits",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:11:15.108009466Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPBufferBudgetsKeepPerSessionReservationBounded",
+      "Elapsed": 0
+    }
+  ]
+}

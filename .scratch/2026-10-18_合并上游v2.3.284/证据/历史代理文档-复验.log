@@ -1,0 +1,103 @@
+(node:56557) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+TAP version 13
+# (node:56558) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:56558) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: deployment documentation and READMEs have resolvable local file links
+ok 1 - deployment documentation and READMEs have resolvable local file links
+  ---
+  duration_ms: 5.079083
+  type: 'test'
+  ...
+# Subtest: both READMEs document current deployment, proxy and recovery entry points
+ok 2 - both READMEs document current deployment, proxy and recovery entry points
+  ---
+  duration_ms: 0.337542
+  type: 'test'
+  ...
+# Subtest: deployment pages link to SSH management and the proxy guide remains discoverable
+ok 3 - deployment pages link to SSH management and the proxy guide remains discoverable
+  ---
+  duration_ms: 0.5135
+  type: 'test'
+  ...
+# (node:56559) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:56559) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: history windows support 30 days and bounded, explicit calendar-day ranges
+ok 4 - history windows support 30 days and bounded, explicit calendar-day ranges
+  ---
+  duration_ms: 2.039708
+  type: 'test'
+  ...
+# [Database] SQLite opened at /tmp/codeg-acp-501/42052-65301063/forwardx-latency-month-wmd8l0/history.db
+# Subtest: raw latency history retains a month, seeks daily windows and bounds chart responses without truncation
+ok 5 - raw latency history retains a month, seeks daily windows and bounds chart responses without truncation
+  ---
+  duration_ms: 879.364917
+  type: 'test'
+  ...
+# (node:56560) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:56560) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: all management scripts and the self-contained installer have valid Bash syntax
+ok 6 - all management scripts and the self-contained installer have valid Bash syntax
+  ---
+  duration_ms: 72.798875
+  type: 'test'
+  ...
+# Subtest: proxy normalization, explicit direct and offline operations
+ok 7 - proxy normalization, explicit direct and offline operations
+  ---
+  duration_ms: 10.429334
+  type: 'test'
+  ...
+# Subtest: bootstrap proxy reaches child without appearing in curl argv; help needs no config
+ok 8 - bootstrap proxy reaches child without appearing in curl argv; help needs no config
+  ---
+  duration_ms: 5.386208
+  type: 'test'
+  ...
+# Subtest: generated installer persists proxy before starting and bundles offline management
+ok 9 - generated installer persists proxy before starting and bundles offline management
+  ---
+  duration_ms: 0.74625
+  type: 'test'
+  ...
+# Subtest: bare fwxm opens the appropriate interactive menu for Agent, panel and co-located roles
+ok 10 - bare fwxm opens the appropriate interactive menu for Agent, panel and co-located roles
+  ---
+  duration_ms: 19.99525
+  type: 'test'
+  ...
+# Subtest: real jq config persistence preserves registration and rejects invalid proxy types
+ok 11 - real jq config persistence preserves registration and rejects invalid proxy types
+  ---
+  duration_ms: 60.818958
+  type: 'test'
+  ...
+# Subtest: interactive status and restart target the selected Agent, local panel or Docker panel
+ok 12 - interactive status and restart target the selected Agent, local panel or Docker panel
+  ---
+  duration_ms: 65.037166
+  type: 'test'
+  ...
+# Subtest: fwxm saves Agent proxy, redacts credentials and routes Docker commands by metadata
+ok 13 - fwxm saves Agent proxy, redacts credentials and routes Docker commands by metadata
+  ---
+  duration_ms: 46.803875
+  type: 'test'
+  ...
+1..13
+# tests 13
+# suites 0
+# pass 13
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1177.167

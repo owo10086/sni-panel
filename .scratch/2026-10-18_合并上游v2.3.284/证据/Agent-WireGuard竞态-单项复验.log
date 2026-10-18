@@ -1,0 +1,13 @@
+2026-10-18T11:30:29Z wireguard runtime started tunnel=901 address=100.100.0.2 listen=:51681 peers=1 mtu=1380
+2026-10-18T11:30:29Z wireguard inbound proxy started tunnel=901 address=100.100.0.2 tcp=37127 udp=37127 backend=127.0.0.1
+2026-10-18T11:30:30Z wireguard runtime started tunnel=901 address=100.100.0.1 listen=:0 peers=1 mtu=1380
+2026-10-18T11:30:30Z wireguard outbound proxy started tunnel=901 peer=2 local=127.0.0.1:35165 remote=2:37127/37127
+2026-10-18T11:30:46Z wireguard outbound proxy stopped tunnel=901 target=2:37127:37127
+2026-10-18T11:30:46Z wireguard runtime stopped tunnel=901
+2026-10-18T11:30:46Z wireguard inbound proxy stopped tunnel=901 target=37127:37127
+2026-10-18T11:30:46Z wireguard runtime stopped tunnel=901
+--- FAIL: TestWireGuardRuntimeTCPAndUDPProxy (16.17s)
+    wireguard_runtime_test.go:1513: read UDP burst packet 31: read udp 127.0.0.1:44715->127.0.0.1:35165: i/o timeout
+FAIL
+FAIL	github.com/poouo/Forwardx/agent	16.187s
+FAIL

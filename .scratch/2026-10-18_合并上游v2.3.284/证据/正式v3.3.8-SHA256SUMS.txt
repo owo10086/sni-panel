@@ -1,0 +1,3 @@
+5a07c024cdfc8af0b6e5c9c0d0200356f908e1827e3873f1a78d8a3a7987b5fe  /home/runner/work/sni-panel/sni-panel/dist/agent/forwardx-agent-linux-amd64
+dbb594caca038dda9e20065f44c8e03af9da689faccbf2c7fc6dd79047df2a47  /home/runner/work/sni-panel/sni-panel/dist/agent/forwardx-fxp-linux-amd64
+a2aea24efb4597b5f57b35b8e1bbcc59f439b80723854d4371f6828b46682ffb  /home/runner/work/sni-panel/sni-panel/dist/agent/forwardx-runtime-linux-amd64

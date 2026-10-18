@@ -1,0 +1,497 @@
+(node:54700) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+TAP version 13
+# (node:54706) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:54706) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: support conversations escape content and filenames and expose real download controls
+ok 1 - support conversations escape content and filenames and expose real download controls
+  ---
+  duration_ms: 19.857791
+  type: 'test'
+  ...
+# Subtest: support statuses, event timelines and staff-only labels translate into English
+ok 2 - support statuses, event timelines and staff-only labels translate into English
+  ---
+  duration_ms: 10.069958
+  type: 'test'
+  ...
+# Subtest: attachment reading bounds uploads before encoding and preserves UTF-8 bytes
+ok 3 - attachment reading bounds uploads before encoding and preserves UTF-8 bytes
+  ---
+  duration_ms: 0.749167
+  type: 'test'
+  ...
+# Subtest: all batch dialog count pills stay horizontal and headers wrap by panel width
+ok 4 - all batch dialog count pills stay horizontal and headers wrap by panel width
+  ---
+  duration_ms: 1.136125
+  type: 'test'
+  ...
+# (node:54707) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:54707) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# [Security] JWT_SECRET is not set; generated persistent cookie secret at /tmp/codeg-acp-501/42052-65301063/forwardx-affiliate-test-REuJ9F/jwt.secret
+# [Database] SQLite opened at /tmp/codeg-acp-501/42052-65301063/forwardx-affiliate-test-REuJ9F/db.sqlite
+# Subtest: affiliate feature is disabled by default and APIs enforce new-code opt-in
+ok 5 - affiliate feature is disabled by default and APIs enforce new-code opt-in
+  ---
+  duration_ms: 746.987333
+  type: 'test'
+  ...
+# Subtest: commission calculation uses cents, floors fractions and rejects unsafe values
+ok 6 - commission calculation uses cents, floors fractions and rejects unsafe values
+  ---
+  duration_ms: 0.167042
+  type: 'test'
+  ...
+# Subtest: registration binds once, rejects self/disabled/unknown codes and keeps old referrals when code is disabled
+ok 7 - registration binds once, rejects self/disabled/unknown codes and keeps old referrals when code is disabled
+  ---
+  duration_ms: 7.323375
+  type: 'test'
+  ...
+# Subtest: duplicate callbacks accrue only once and first-order mode excludes renewals
+ok 8 - duplicate callbacks accrue only once and first-order mode excludes renewals
+  ---
+  duration_ms: 4.655291
+  type: 'test'
+  ...
+# Subtest: continuous commissions use independent user rate, only fulfilled CNY plan payments count
+ok 9 - continuous commissions use independent user rate, only fulfilled CNY plan payments count
+  ---
+  duration_ms: 9.622416
+  type: 'test'
+  ...
+# Subtest: confirmation delay persists, early spending is forbidden, due settlement is idempotent
+ok 10 - confirmation delay persists, early spending is forbidden, due settlement is idempotent
+  ---
+  duration_ms: 5.731417
+  type: 'test'
+  ...
+# Subtest: withdrawal reserves money once; concurrent attempts cannot overspend; reject refunds once
+ok 11 - withdrawal reserves money once; concurrent attempts cannot overspend; reject refunds once
+  ---
+  duration_ms: 3.913292
+  type: 'test'
+  ...
+# Subtest: transfer is atomic, idempotent and creates exactly one regular balance credit
+ok 12 - transfer is atomic, idempotent and creates exactly one regular balance credit
+  ---
+  duration_ms: 11.175375
+  type: 'test'
+  ...
+# Subtest: disabled feature stops accrual but preserves history, settlement, withdrawals and transfer obligations
+ok 13 - disabled feature stops accrual but preserves history, settlement, withdrawals and transfer obligations
+  ---
+  duration_ms: 2.481375
+  type: 'test'
+  ...
+# Subtest: reversal is auditable and idempotent; spent commission becomes debt and pending payout is blocked
+ok 14 - reversal is auditable and idempotent; spent commission becomes debt and pending payout is blocked
+  ---
+  duration_ms: 2.685875
+  type: 'test'
+  ...
+# Subtest: user APIs ignore forged user filters and prohibit administrator actions
+ok 15 - user APIs ignore forged user filters and prohibit administrator actions
+  ---
+  duration_ms: 0.782958
+  type: 'test'
+  ...
+# Subtest: blocked affiliates cannot bind, accrue, withdraw or transfer; historical commission remains
+ok 16 - blocked affiliates cannot bind, accrue, withdraw or transfer; historical commission remains
+  ---
+  duration_ms: 1.622792
+  type: 'test'
+  ...
+# Subtest: pending cancellation never credits money and ledger always reconciles with wallet
+ok 17 - pending cancellation never credits money and ledger always reconciles with wallet
+  ---
+  duration_ms: 2.288208
+  type: 'test'
+  ...
+# Subtest: referral browser storage validates codes, expiration and unavailable storage
+ok 18 - referral browser storage validates codes, expiration and unavailable storage
+  ---
+  duration_ms: 0.3705
+  type: 'test'
+  ...
+# Subtest: request identifiers work without secure-context randomUUID and are unique
+ok 19 - request identifiers work without secure-context randomUUID and are unique
+  ---
+  duration_ms: 0.907416
+  type: 'test'
+  ...
+# Subtest: wallet and regular balance both roll back when a transfer transaction fails
+ok 20 - wallet and regular balance both roll back when a transfer transaction fails
+  ---
+  duration_ms: 3.039083
+  type: 'test'
+  ...
+# Subtest: code quotas, zero custom rates and first orders during zero-rate periods remain enforced
+ok 21 - code quotas, zero custom rates and first orders during zero-rate periods remain enforced
+  ---
+  duration_ms: 4.245167
+  type: 'test'
+  ...
+# [Auth] Register success userId=41 username=re***@test.local emailVerified=false ip=127.0.0.1
+# Subtest: actual email and Google first registrations bind referrals, existing Google logins never rebind
+ok 22 - actual email and Google first registrations bind referrals, existing Google logins never rebind
+  ---
+  duration_ms: 82.427041
+  type: 'test'
+  ...
+# Subtest: actual signed payment webhook fulfills the plan and accrues once; invalid signatures do neither
+ok 23 - actual signed payment webhook fulfills the plan and accrues once; invalid signatures do neither
+  ---
+  duration_ms: 36.428708
+  type: 'test'
+  ...
+# Subtest: concurrent distinct withdrawal and transfer requests cannot overspend the wallet
+ok 24 - concurrent distinct withdrawal and transfer requests cannot overspend the wallet
+  ---
+  duration_ms: 5.008708
+  type: 'test'
+  ...
+# Subtest: live backup exports keep affiliate wallet and ledger consistent while transfers occur
+ok 25 - live backup exports keep affiliate wallet and ledger consistent while transfers occur
+  ---
+  duration_ms: 41.097792
+  type: 'test'
+  ...
+# [Database] SQLite opened at /tmp/codeg-acp-501/42052-65301063/forwardx-affiliate-test-REuJ9F/target.sqlite
+# [TrafficSummary] Bucket backfill complete marker=v3 rows=0 elapsedMs=0
+# [TrafficCounter] User/rule counter backfill complete ruleRows=0 userRows=0 repairedRules=0 repairedBuckets=0 elapsedMs=0
+# Subtest: affiliate migration preserves remapped ledger references and rejects unsafe incremental financial merges before writes
+ok 26 - affiliate migration preserves remapped ledger references and rejects unsafe incremental financial merges before writes
+  ---
+  duration_ms: 73.974625
+  type: 'test'
+  ...
+# Subtest: MySQL and PostgreSQL generate all affiliate tables with monetary types and unique constraints
+ok 27 - MySQL and PostgreSQL generate all affiliate tables with monetary types and unique constraints
+  ---
+  duration_ms: 6.751959
+  type: 'test'
+  ...
+# (node:54708) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:54708) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: deployment documentation and READMEs have resolvable local file links
+not ok 28 - deployment documentation and READMEs have resolvable local file links
+  ---
+  duration_ms: 1.964083
+  type: 'test'
+  location: '/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/deploymentDocs.test.ts:1:826'
+  failureType: 'testCodeFailure'
+  error: 'README.md: missing docs/guide/mobile-app.md'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/deploymentDocs.test.ts:24:14)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.start (node:internal/test_runner/test:944:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:296:17)
+  ...
+# Subtest: both READMEs document current deployment, proxy and recovery entry points
+not ok 29 - both READMEs document current deployment, proxy and recovery entry points
+  ---
+  duration_ms: 0.83125
+  type: 'test'
+  location: '/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/deploymentDocs.test.ts:1:1304'
+  failureType: 'testCodeFailure'
+  error: 'README.md: missing fwxm panel status'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/deploymentDocs.test.ts:36:14)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+# Subtest: deployment pages link to SSH management and the proxy guide remains discoverable
+not ok 30 - deployment pages link to SSH management and the proxy guide remains discoverable
+  ---
+  duration_ms: 0.602
+  type: 'test'
+  location: '/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/deploymentDocs.test.ts:1:2006'
+  failureType: 'testCodeFailure'
+  error: 'docs/guide/agent.md'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/deploymentDocs.test.ts:44:12)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# (node:54709) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:54709) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: availability counts one incident per transition, not per sweep; ignores stale observations
+ok 31 - availability counts one incident per transition, not per sweep; ignores stale observations
+  ---
+  duration_ms: 0.716458
+  type: 'test'
+  ...
+# Subtest: initial offline, panel downtime and recorder restart do not invent transitions or uptime
+ok 32 - initial offline, panel downtime and recorder restart do not invent transitions or uptime
+  ---
+  duration_ms: 0.31625
+  type: 'test'
+  ...
+# Subtest: cross-midnight outage splits duration but not incident count; day rate is duration weighted
+ok 33 - cross-midnight outage splits duration but not incident count; day rate is duration weighted
+  ---
+  duration_ms: 0.137875
+  type: 'test'
+  ...
+# Subtest: per-host concurrent observations serialize and store failures remain retryable
+ok 34 - per-host concurrent observations serialize and store failures remain retryable
+  ---
+  duration_ms: 0.221791
+  type: 'test'
+  ...
+# [Database] SQLite opened at /tmp/codeg-acp-501/42052-65301063/forwardx-availability-AqcEvW/history.db
+# Subtest: availability history uses configured DB, scopes host access, pages full histories and retains 30 days
+ok 35 - availability history uses configured DB, scopes host access, pages full histories and retains 30 days
+  ---
+  duration_ms: 862.620541
+  type: 'test'
+  ...
+# (node:54710) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:54710) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: history windows support 30 days and bounded, explicit calendar-day ranges
+ok 36 - history windows support 30 days and bounded, explicit calendar-day ranges
+  ---
+  duration_ms: 2.491917
+  type: 'test'
+  ...
+# [Database] SQLite opened at /tmp/codeg-acp-501/42052-65301063/forwardx-latency-month-Sbyuhm/history.db
+# Subtest: raw latency history retains a month, seeks daily windows and bounds chart responses without truncation
+ok 37 - raw latency history retains a month, seeks daily windows and bounds chart responses without truncation
+  ---
+  duration_ms: 860.388
+  type: 'test'
+  ...
+# (node:54711) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:54711) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: all management scripts and the self-contained installer have valid Bash syntax
+ok 38 - all management scripts and the self-contained installer have valid Bash syntax
+  ---
+  duration_ms: 77.009625
+  type: 'test'
+  ...
+# Subtest: proxy normalization, explicit direct and offline operations
+ok 39 - proxy normalization, explicit direct and offline operations
+  ---
+  duration_ms: 10.686583
+  type: 'test'
+  ...
+# Subtest: bootstrap proxy reaches child without appearing in curl argv; help needs no config
+ok 40 - bootstrap proxy reaches child without appearing in curl argv; help needs no config
+  ---
+  duration_ms: 4.938708
+  type: 'test'
+  ...
+# Subtest: generated installer persists proxy before starting and bundles offline management
+ok 41 - generated installer persists proxy before starting and bundles offline management
+  ---
+  duration_ms: 0.715041
+  type: 'test'
+  ...
+# Subtest: bare fwxm opens the appropriate interactive menu for Agent, panel and co-located roles
+ok 42 - bare fwxm opens the appropriate interactive menu for Agent, panel and co-located roles
+  ---
+  duration_ms: 24.466334
+  type: 'test'
+  ...
+# Subtest: real jq config persistence preserves registration and rejects invalid proxy types
+ok 43 - real jq config persistence preserves registration and rejects invalid proxy types
+  ---
+  duration_ms: 61.373291
+  type: 'test'
+  ...
+# Subtest: interactive status and restart target the selected Agent, local panel or Docker panel
+ok 44 - interactive status and restart target the selected Agent, local panel or Docker panel
+  ---
+  duration_ms: 67.482875
+  type: 'test'
+  ...
+# Subtest: fwxm saves Agent proxy, redacts credentials and routes Docker commands by metadata
+ok 45 - fwxm saves Agent proxy, redacts credentials and routes Docker commands by metadata
+  ---
+  duration_ms: 50.477625
+  type: 'test'
+  ...
+# (node:54712) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:54712) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: counter persistence retains every received advancement and skips only retries
+ok 46 - counter persistence retains every received advancement and skips only retries
+  ---
+  duration_ms: 1.126375
+  type: 'test'
+  ...
+# Subtest: cumulative telemetry is optional, bounded and cannot reinterpret current health counters
+ok 47 - cumulative telemetry is optional, bounded and cannot reinterpret current health counters
+  ---
+  duration_ms: 0.421417
+  type: 'test'
+  ...
+# Subtest: SQLite cumulative probe statistics deduplicate retries, include suppressed probes, and respect windows/epochs/permissions
+ok 48 - SQLite cumulative probe statistics deduplicate retries, include suppressed probes, and respect windows/epochs/permissions
+  ---
+  duration_ms: 875.106875
+  type: 'test'
+  ...
+# (node:54713) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:54713) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# [Security] JWT_SECRET is not set; generated persistent cookie secret at /tmp/codeg-acp-501/42052-65301063/forwardx-ticket-notifications-Cd6NaU/jwt.secret
+# [Database] SQLite opened at /tmp/codeg-acp-501/42052-65301063/forwardx-ticket-notifications-Cd6NaU/notifications.db
+# [Settings] support ticket notifications enabled=false
+# [Auth] Profile updated userId=2
+# [Auth] Profile updated userId=2
+# [Settings] support ticket notifications enabled=true
+# [Auth] Profile updated userId=2
+# Subtest: upgrade defaults are enabled; only admins can change the master switch and users edit only themselves
+ok 49 - upgrade defaults are enabled; only admins can change the master switch and users edit only themselves
+  ---
+  duration_ms: 783.702167
+  type: 'test'
+  ...
+# Subtest: both channels enforce master and recipient preferences while preserving ticket operations
+ok 50 - both channels enforce master and recipient preferences while preserving ticket operations
+  ---
+  duration_ms: 1786.264417
+  type: 'test'
+  ...
+# (node:54714) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:54714) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# [Security] JWT_SECRET is not set; generated persistent cookie secret at /tmp/codeg-acp-501/42052-65301063/forwardx-support-tests-Z4vyv6/jwt.secret
+# [Database] SQLite opened at /tmp/codeg-acp-501/42052-65301063/forwardx-support-tests-Z4vyv6/support.sqlite
+# Subtest: tickets are opt-in and disabling blocks every data endpoint without destroying history
+ok 51 - tickets are opt-in and disabling blocks every data endpoint without destroying history
+  ---
+  duration_ms: 731.119167
+  type: 'test'
+  ...
+# Subtest: optional service, plain text, attachments and strict owner isolation
+ok 52 - optional service, plain text, attachments and strict owner isolation
+  ---
+  duration_ms: 6.600167
+  type: 'test'
+  ...
+# Subtest: private notes, assignments and their attachments never leak or create user unread alerts
+ok 53 - private notes, assignments and their attachments never leak or create user unread alerts
+  ---
+  duration_ms: 10.418166
+  type: 'test'
+  ...
+# Subtest: status lifecycle, optimistic conflicts, reply atomicity and rating constraints
+ok 54 - status lifecycle, optimistic conflicts, reply atomicity and rating constraints
+  ---
+  duration_ms: 5.95675
+  type: 'test'
+  ...
+# Subtest: bulk operations roll back entirely on stale/invalid tickets and admin filters work
+ok 55 - bulk operations roll back entirely on stale/invalid tickets and admin filters work
+  ---
+  duration_ms: 3.396334
+  type: 'test'
+  ...
+# Subtest: message pagination is bounded and private records are excluded before paging
+ok 56 - message pagination is bounded and private records are excluded before paging
+  ---
+  duration_ms: 6.852917
+  type: 'test'
+  ...
+# Subtest: service choices use direct permissions and billing grants, not hidden topology
+ok 57 - service choices use direct permissions and billing grants, not hidden topology
+  ---
+  duration_ms: 19.851
+  type: 'test'
+  ...
+# Subtest: creation limits and per-user reply throttling are enforced in the database
+ok 58 - creation limits and per-user reply throttling are enforced in the database
+  ---
+  duration_ms: 11.400916
+  type: 'test'
+  ...
+# Subtest: attachments validate actual content, names, sizes and encodings
+ok 59 - attachments validate actual content, names, sizes and encodings
+  ---
+  duration_ms: 3.276083
+  type: 'test'
+  ...
+# Subtest: shared canned replies stay staff-only, and schema upgrades are idempotent
+ok 60 - shared canned replies stay staff-only, and schema upgrades are idempotent
+  ---
+  duration_ms: 10.591792
+  type: 'test'
+  ...
+# Subtest: attachment quotas reject writes atomically without storing a partial reply
+ok 61 - attachment quotas reject writes atomically without storing a partial reply
+  ---
+  duration_ms: 2.386
+  type: 'test'
+  ...
+# Subtest: service pagination and exact selection work beyond the first fifty resources
+ok 62 - service pagination and exact selection work beyond the first fifty resources
+  ---
+  duration_ms: 17.961833
+  type: 'test'
+  ...
+# Subtest: MySQL and PostgreSQL schema generation includes attachment capacity and unique read cursors
+ok 63 - MySQL and PostgreSQL schema generation includes attachment capacity and unique read cursors
+  ---
+  duration_ms: 6.694459
+  type: 'test'
+  ...
+# [TrafficSummary] Bucket backfill complete marker=v3 rows=0 elapsedMs=1
+# [TrafficCounter] User/rule counter backfill complete ruleRows=0 userRows=0 repairedRules=0 repairedBuckets=0 elapsedMs=1
+# Subtest: backup import remaps ticket, author, message and read IDs while preserving removed-service history
+ok 64 - backup import remaps ticket, author, message and read IDs while preserving removed-service history
+  ---
+  duration_ms: 35.548875
+  type: 'test'
+  ...
+1..64
+# tests 64
+# suites 0
+# pass 61
+# fail 3
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2718.930416

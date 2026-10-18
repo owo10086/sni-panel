@@ -1,0 +1,215 @@
+(node:50228) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+TAP version 13
+# (node:50229) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:50229) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: day strip spans the latest 30 calendar days across month/year boundaries
+ok 1 - day strip spans the latest 30 calendar days across month/year boundaries
+  ---
+  duration_ms: 1.126875
+  type: 'test'
+  ...
+# Subtest: daily health uses weighted counters and preserves raw delay extrema
+ok 2 - daily health uses weighted counters and preserves raw delay extrema
+  ---
+  duration_ms: 0.54225
+  type: 'test'
+  ...
+# Subtest: day strip has bilingual, accessible dates and health colors, plus a Today action
+ok 3 - day strip has bilingual, accessible dates and health colors, plus a Today action
+  ---
+  duration_ms: 45.834459
+  type: 'test'
+  ...
+# (node:50230) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:50230) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: host availability colors use uptime, not probe loss, and support no/partial coverage
+ok 4 - host availability colors use uptime, not probe loss, and support no/partial coverage
+  ---
+  duration_ms: 89.424292
+  type: 'test'
+  ...
+# (node:50231) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:50231) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: history cleanup predicates use time-leading SQLite indexes
+ok 5 - history cleanup predicates use time-leading SQLite indexes
+  ---
+  duration_ms: 24.117625
+  type: 'test'
+  ...
+# Subtest: service history and latest-status reads use dedicated composite indexes
+ok 6 - service history and latest-status reads use dedicated composite indexes
+  ---
+  duration_ms: 13.362625
+  type: 'test'
+  ...
+# Subtest: host status sweeps use the online-heartbeat SQLite index
+ok 7 - host status sweeps use the online-heartbeat SQLite index
+  ---
+  duration_ms: 14.409958
+  type: 'test'
+  ...
+# Subtest: host availability interval reads seek one host without sorting or scanning the entire table
+ok 8 - host availability interval reads seek one host without sorting or scanning the entire table
+  ---
+  duration_ms: 13.184416
+  type: 'test'
+  ...
+# (node:50232) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:50232) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: availability counts one incident per transition, not per sweep; ignores stale observations
+ok 9 - availability counts one incident per transition, not per sweep; ignores stale observations
+  ---
+  duration_ms: 0.712584
+  type: 'test'
+  ...
+# Subtest: initial offline, panel downtime and recorder restart do not invent transitions or uptime
+ok 10 - initial offline, panel downtime and recorder restart do not invent transitions or uptime
+  ---
+  duration_ms: 0.326291
+  type: 'test'
+  ...
+# Subtest: cross-midnight outage splits duration but not incident count; day rate is duration weighted
+ok 11 - cross-midnight outage splits duration but not incident count; day rate is duration weighted
+  ---
+  duration_ms: 0.134458
+  type: 'test'
+  ...
+# Subtest: per-host concurrent observations serialize and store failures remain retryable
+ok 12 - per-host concurrent observations serialize and store failures remain retryable
+  ---
+  duration_ms: 0.227167
+  type: 'test'
+  ...
+# Subtest: availability history uses configured DB, scopes host access, pages full histories and retains 30 days
+not ok 13 - availability history uses configured DB, scopes host access, pages full histories and retains 30 days
+  ---
+  duration_ms: 763.379166
+  type: 'test'
+  location: '/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/hostAvailability.test.ts:1:3596'
+  failureType: 'testCodeFailure'
+  error: 'Migration import order is incomplete: host_availability_intervals, support_tickets, support_ticket_messages, support_ticket_attachments, support_ticket_reads, support_canned_replies, affiliate_accounts, affiliate_codes, affiliate_referrals, affiliate_commissions, affiliate_withdrawals, affiliate_ledger'
+  code: 'ERR_TEST_FAILURE'
+  stack: |-
+    <anonymous> (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/migration.ts:782:9)
+    ModuleJob.run (node:internal/modules/esm/module_job:343:25)
+    async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+    async TestContext.<anonymous> (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/hostAvailability.test.ts:84:27)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# (node:50233) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:50233) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: history windows support 30 days and bounded, explicit calendar-day ranges
+ok 14 - history windows support 30 days and bounded, explicit calendar-day ranges
+  ---
+  duration_ms: 2.50625
+  type: 'test'
+  ...
+# Subtest: raw latency history retains a month, seeks daily windows and bounds chart responses without truncation
+not ok 15 - raw latency history retains a month, seeks daily windows and bounds chart responses without truncation
+  ---
+  duration_ms: 746.481
+  type: 'test'
+  location: '/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/latencyHistory.test.ts:1:1768'
+  failureType: 'testCodeFailure'
+  error: 'Migration import order is incomplete: host_availability_intervals, support_tickets, support_ticket_messages, support_ticket_attachments, support_ticket_reads, support_canned_replies, affiliate_accounts, affiliate_codes, affiliate_referrals, affiliate_commissions, affiliate_withdrawals, affiliate_ledger'
+  code: 'ERR_TEST_FAILURE'
+  stack: |-
+    <anonymous> (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/migration.ts:782:9)
+    ModuleJob.run (node:internal/modules/esm/module_job:343:25)
+    async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+    async TestContext.<anonymous> (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/latencyHistory.test.ts:38:48)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# (node:50234) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:50234) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# [Database] SQLite opened at /tmp/codeg-acp-501/42052-65301063/forwardx-metrics-pRsQAT/metrics.db
+# Subtest: SQLite host metric summaries seek only the latest two rows per host
+ok 16 - SQLite host metric summaries seek only the latest two rows per host
+  ---
+  duration_ms: 473.605417
+  type: 'test'
+  ...
+# (node:50235) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:50235) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: counter persistence retains every received advancement and skips only retries
+ok 17 - counter persistence retains every received advancement and skips only retries
+  ---
+  duration_ms: 1.083959
+  type: 'test'
+  ...
+# Subtest: cumulative telemetry is optional, bounded and cannot reinterpret current health counters
+ok 18 - cumulative telemetry is optional, bounded and cannot reinterpret current health counters
+  ---
+  duration_ms: 0.429875
+  type: 'test'
+  ...
+# Subtest: SQLite cumulative probe statistics deduplicate retries, include suppressed probes, and respect windows/epochs/permissions
+not ok 19 - SQLite cumulative probe statistics deduplicate retries, include suppressed probes, and respect windows/epochs/permissions
+  ---
+  duration_ms: 741.548875
+  type: 'test'
+  location: '/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/probeCounter.test.ts:1:3461'
+  failureType: 'testCodeFailure'
+  error: |-
+    
+    (node:50250) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+    (Use `node --trace-warnings ...` to show where the warning was created)
+    (node:50250) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+    (Use `node --trace-warnings ...` to show where the warning was created)
+    /Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/migration.ts:782
+      throw new Error(`Migration import order is incomplete: ${missingImportTables.join(", ")}`);
+            ^
+    
+    Error: Migration import order is incomplete: host_availability_intervals, support_tickets, support_ticket_messages, support_ticket_attachments, support_ticket_reads, support_canned_replies, affiliate_accounts, affiliate_codes, affiliate_referrals, affiliate_commissions, affiliate_withdrawals, affiliate_ledger
+        at <anonymous> [90m(/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/[39mserver/migration.ts:782:9[90m)[39m
+    [90m    at ModuleJob.run (node:internal/modules/esm/module_job:343:25)[39m
+    [90m    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)[39m
+        at async [90mfile:///Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/[39m[eval1]:12:5
+    
+    Node.js v22.22.3
+    
+    
+    1 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 1
+  operator: 'strictEqual'
+  stack: |-
+    <anonymous> [90m(/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/[39mserver/migration.ts:782:9[90m)[39m
+    async [90mfile:///Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/[39m[eval1]:12:5
+    TestContext.<anonymous> (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/probeCounter.test.ts:232:12)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+1..19
+# tests 19
+# suites 0
+# pass 16
+# fail 3
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1288.034042

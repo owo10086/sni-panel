@@ -1,0 +1,194 @@
+(node:73305) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+TAP version 13
+# (node:73307) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:73307) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# [Security] JWT_SECRET is not set; generated persistent cookie secret at /tmp/codeg-acp-501/42052-65301063/forwardx-affiliate-test-PvFim3/jwt.secret
+# [Database] SQLite opened at /tmp/codeg-acp-501/42052-65301063/forwardx-affiliate-test-PvFim3/db.sqlite
+# Subtest: affiliate feature is disabled by default and APIs enforce new-code opt-in
+ok 1 - affiliate feature is disabled by default and APIs enforce new-code opt-in
+  ---
+  duration_ms: 544.273667
+  type: 'test'
+  ...
+# Subtest: commission calculation uses cents, floors fractions and rejects unsafe values
+ok 2 - commission calculation uses cents, floors fractions and rejects unsafe values
+  ---
+  duration_ms: 0.1435
+  type: 'test'
+  ...
+# Subtest: registration binds once, rejects self/disabled/unknown codes and keeps old referrals when code is disabled
+ok 3 - registration binds once, rejects self/disabled/unknown codes and keeps old referrals when code is disabled
+  ---
+  duration_ms: 3.713208
+  type: 'test'
+  ...
+# Subtest: duplicate callbacks accrue only once and first-order mode excludes renewals
+ok 4 - duplicate callbacks accrue only once and first-order mode excludes renewals
+  ---
+  duration_ms: 2.279583
+  type: 'test'
+  ...
+# Subtest: continuous commissions use independent user rate, only fulfilled CNY plan payments count
+ok 5 - continuous commissions use independent user rate, only fulfilled CNY plan payments count
+  ---
+  duration_ms: 2.7965
+  type: 'test'
+  ...
+# Subtest: confirmation delay persists, early spending is forbidden, due settlement is idempotent
+ok 6 - confirmation delay persists, early spending is forbidden, due settlement is idempotent
+  ---
+  duration_ms: 4.83175
+  type: 'test'
+  ...
+# Subtest: withdrawal reserves money once; concurrent attempts cannot overspend; reject refunds once
+ok 7 - withdrawal reserves money once; concurrent attempts cannot overspend; reject refunds once
+  ---
+  duration_ms: 2.449541
+  type: 'test'
+  ...
+# Subtest: transfer is atomic, idempotent and creates exactly one regular balance credit
+ok 8 - transfer is atomic, idempotent and creates exactly one regular balance credit
+  ---
+  duration_ms: 3.798209
+  type: 'test'
+  ...
+# Subtest: disabled feature stops accrual but preserves history, settlement, withdrawals and transfer obligations
+ok 9 - disabled feature stops accrual but preserves history, settlement, withdrawals and transfer obligations
+  ---
+  duration_ms: 2.240916
+  type: 'test'
+  ...
+# Subtest: reversal is auditable and idempotent; spent commission becomes debt and pending payout is blocked
+ok 10 - reversal is auditable and idempotent; spent commission becomes debt and pending payout is blocked
+  ---
+  duration_ms: 4.20725
+  type: 'test'
+  ...
+# Subtest: user APIs ignore forged user filters and prohibit administrator actions
+ok 11 - user APIs ignore forged user filters and prohibit administrator actions
+  ---
+  duration_ms: 0.609041
+  type: 'test'
+  ...
+# Subtest: blocked affiliates cannot bind, accrue, withdraw or transfer; historical commission remains
+ok 12 - blocked affiliates cannot bind, accrue, withdraw or transfer; historical commission remains
+  ---
+  duration_ms: 1.013083
+  type: 'test'
+  ...
+# Subtest: pending cancellation never credits money and ledger always reconciles with wallet
+ok 13 - pending cancellation never credits money and ledger always reconciles with wallet
+  ---
+  duration_ms: 1.178083
+  type: 'test'
+  ...
+# Subtest: referral browser storage validates codes, expiration and unavailable storage
+ok 14 - referral browser storage validates codes, expiration and unavailable storage
+  ---
+  duration_ms: 0.230584
+  type: 'test'
+  ...
+# Subtest: request identifiers work without secure-context randomUUID and are unique
+ok 15 - request identifiers work without secure-context randomUUID and are unique
+  ---
+  duration_ms: 0.738083
+  type: 'test'
+  ...
+# Subtest: wallet and regular balance both roll back when a transfer transaction fails
+ok 16 - wallet and regular balance both roll back when a transfer transaction fails
+  ---
+  duration_ms: 2.466584
+  type: 'test'
+  ...
+# Subtest: code quotas, zero custom rates and first orders during zero-rate periods remain enforced
+ok 17 - code quotas, zero custom rates and first orders during zero-rate periods remain enforced
+  ---
+  duration_ms: 2.758291
+  type: 'test'
+  ...
+# [Auth] Register success userId=41 username=re***@test.local emailVerified=false ip=127.0.0.1
+# Subtest: actual email and Google first registrations bind referrals, existing Google logins never rebind
+ok 18 - actual email and Google first registrations bind referrals, existing Google logins never rebind
+  ---
+  duration_ms: 72.262084
+  type: 'test'
+  ...
+# Subtest: actual signed payment webhook fulfills the plan and accrues once; invalid signatures do neither
+ok 19 - actual signed payment webhook fulfills the plan and accrues once; invalid signatures do neither
+  ---
+  duration_ms: 30.915834
+  type: 'test'
+  ...
+# Subtest: concurrent distinct withdrawal and transfer requests cannot overspend the wallet
+ok 20 - concurrent distinct withdrawal and transfer requests cannot overspend the wallet
+  ---
+  duration_ms: 4.272
+  type: 'test'
+  ...
+# Subtest: live backup exports keep affiliate wallet and ledger consistent while transfers occur
+ok 21 - live backup exports keep affiliate wallet and ledger consistent while transfers occur
+  ---
+  duration_ms: 37.826958
+  type: 'test'
+  ...
+# [Database] SQLite opened at /tmp/codeg-acp-501/42052-65301063/forwardx-affiliate-test-PvFim3/target.sqlite
+# [Migration] skipped affiliate_ledger\#1: injected-ledger-failure
+# [Migration] skipped affiliate_ledger\#2: injected-ledger-failure
+# [Migration] skipped affiliate_ledger\#3: injected-ledger-failure
+# [Migration] skipped affiliate_ledger\#4: injected-ledger-failure
+# [Migration] skipped affiliate_ledger\#5: injected-ledger-failure
+# [Migration] skipped affiliate_ledger\#6: injected-ledger-failure
+# [Migration] skipped affiliate_ledger\#7: injected-ledger-failure
+# [Migration] skipped affiliate_ledger\#8: injected-ledger-failure
+# [Migration] skipped affiliate_ledger\#9: injected-ledger-failure
+# [Migration] skipped affiliate_ledger\#10: injected-ledger-failure
+# [Migration] skipped affiliate_ledger\#11: injected-ledger-failure
+# [Migration] skipped affiliate_ledger\#12: injected-ledger-failure
+# [Migration] skipped affiliate_ledger\#13: injected-ledger-failure
+# [Migration] skipped affiliate_ledger\#14: injected-ledger-failure
+# [Migration] skipped affiliate_ledger\#15: injected-ledger-failure
+# [Migration] skipped affiliate_ledger\#16: injected-ledger-failure
+# [Migration] skipped affiliate_ledger\#17: injected-ledger-failure
+# [Migration] skipped affiliate_ledger\#18: injected-ledger-failure
+# [Migration] skipped affiliate_ledger\#19: injected-ledger-failure
+# [Migration] skipped affiliate_ledger\#20: injected-ledger-failure
+# [Migration] skipped affiliate_ledger\#21: injected-ledger-failure
+# [Migration] skipped affiliate_ledger\#22: injected-ledger-failure
+# [Migration] skipped affiliate_ledger\#23: injected-ledger-failure
+# [TrafficSummary] Bucket backfill complete marker=v3 rows=0 elapsedMs=0
+# [TrafficCounter] User/rule counter backfill complete ruleRows=0 userRows=0 repairedRules=0 repairedBuckets=0 elapsedMs=1
+# Subtest: affiliate migration preserves remapped ledger references and rejects unsafe incremental financial merges before writes
+not ok 22 - affiliate migration preserves remapped ledger references and rejects unsafe incremental financial merges before writes
+  ---
+  duration_ms: 62.517833
+  type: 'test'
+  location: '/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/affiliates.test.ts:1:18465'
+  failureType: 'testCodeFailure'
+  error: 'Missing expected rejection.'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  operator: 'rejects'
+  stack: |-
+    async TestContext.<anonymous> (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/affiliates.test.ts:633:3)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: MySQL and PostgreSQL generate all affiliate tables with monetary types and unique constraints
+ok 23 - MySQL and PostgreSQL generate all affiliate tables with monetary types and unique constraints
+  ---
+  duration_ms: 6.431458
+  type: 'test'
+  ...
+1..23
+# tests 23
+# suites 0
+# pass 22
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 924.769083

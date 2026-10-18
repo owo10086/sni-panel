@@ -1,0 +1,31 @@
+(node:56555) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+> forwardx@3.3.8 docs:build /Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3
+> vitepress build docs
+
+(node:57172) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  vitepress v1.6.4
+
+- building client + server bundles...
+
+
+(!) Found dead link ./../../.scratch/2026-10-17_%E5%90%88%E5%B9%B6%E4%B8%8A%E6%B8%B8v2.3.283/SNI%E5%86%B2%E7%AA%81%E5%A4%8D%E6%A0%B8 in file adr/0006-sni-group-ddns-uses-confirmed-entry-health.md
+
+If this is expected, you can disable this check via config. Refer: https://vitepress.dev/reference/site-config#ignoredeadlinks
+
+x Build failed in 3.49s
+[31m✖[0m building client + server bundles...
+build error:
+[vitepress] 1 dead link(s) found.
+[vitepress] 1 dead link(s) found.
+    at Object.renderStart (file:///Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx/node_modules/.pnpm/vitepress@1.6.4_@algolia+client-search@5.55.1_@types+node@22.19.17_@types+react@19.2.14_c4aca79dd16a2b1c921fba8734293db5/node_modules/vitepress/dist/node/chunk-D3CUZ4fa.js:45027:15)
+    at file:///Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx/node_modules/.pnpm/rollup@4.60.2/node_modules/rollup/dist/es/shared/node-entry.js:22981:40
+    at async Promise.all (index 0)
+    at async PluginDriver.hookParallel (file:///Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx/node_modules/.pnpm/rollup@4.60.2/node_modules/rollup/dist/es/shared/node-entry.js:22891:9)
+    at async Bundle.generate (file:///Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx/node_modules/.pnpm/rollup@4.60.2/node_modules/rollup/dist/es/shared/node-entry.js:21005:13)
+    at async file:///Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx/node_modules/.pnpm/rollup@4.60.2/node_modules/rollup/dist/es/shared/node-entry.js:23968:27
+    at async catchUnfinishedHookActions (file:///Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx/node_modules/.pnpm/rollup@4.60.2/node_modules/rollup/dist/es/shared/node-entry.js:23335:16)
+[41m[30m ELIFECYCLE [39m[49m [31mCommand failed with exit code 1.[39m

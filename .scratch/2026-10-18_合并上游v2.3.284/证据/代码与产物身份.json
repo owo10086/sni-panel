@@ -1,0 +1,1366 @@
+{
+  "implementationCommit": "178c5926e7dd883384949f51cea1519a293298de",
+  "baseCommit": "7adf15055096894b28dd058a2babad2616675a0e",
+  "versions": {
+    "panel": "3.3.8",
+    "agent": "3.3.0",
+    "fxp": "3.3.0"
+  },
+  "sourceTrees": {
+    "agent": "809bf4e7ddbef3e4d7de544494ee5fa262d1af2e",
+    "forwardx-fxp": "dd70c5b77739fce3fd243f4a5d35741ed911c5fa"
+  },
+  "builtWith": "go1.23.12; local verification Agent and FXP are linux/arm64; no release artifacts uploaded",
+  "oldLocalSource": "7adf150 (same 283 Agent/FXP source, reused build from /private/tmp/forwardx-283-implementation/bin)",
+  "publishedSource": "https://github.com/owo10086/sni-panel/releases/tag/v3.3.8",
+  "combinations": [
+    {
+      "combination": "new-programs",
+      "sha256": {
+        "agent": "22534f3222a9caf19cd0ba8a1a68bafb72d7be26a0565cd8f43d3555338d963b",
+        "fxp": "39498336e604eee80e6fb784075357206c7bb96817d56e6b3a88532883a016f9",
+        "gost": "343c3e003996ca0437b9cc47dd1500cd0475ba09f5a5f17e50851854e06a1ca7"
+      },
+      "result": "new-programs-result.json"
+    },
+    {
+      "combination": "old-programs",
+      "sha256": {
+        "agent": "fdc3d6da932af3d92bd26a5bdebac1c91cd60871c7825c990b0a617646e5167e",
+        "fxp": "d6e758ec31cd517fc648ab9a5182087525e8f3eef9d6e351b25e0d7b577a3355",
+        "gost": "343c3e003996ca0437b9cc47dd1500cd0475ba09f5a5f17e50851854e06a1ca7"
+      },
+      "result": "old-programs-result.json"
+    },
+    {
+      "combination": "new-agent-old-fxp",
+      "sha256": {
+        "agent": "22534f3222a9caf19cd0ba8a1a68bafb72d7be26a0565cd8f43d3555338d963b",
+        "fxp": "d6e758ec31cd517fc648ab9a5182087525e8f3eef9d6e351b25e0d7b577a3355",
+        "gost": "343c3e003996ca0437b9cc47dd1500cd0475ba09f5a5f17e50851854e06a1ca7"
+      },
+      "result": "new-agent-old-fxp-result.json"
+    },
+    {
+      "combination": "released-programs",
+      "sha256": {
+        "agent": "5a07c024cdfc8af0b6e5c9c0d0200356f908e1827e3873f1a78d8a3a7987b5fe",
+        "fxp": "dbb594caca038dda9e20065f44c8e03af9da689faccbf2c7fc6dd79047df2a47",
+        "gost": "343c3e003996ca0437b9cc47dd1500cd0475ba09f5a5f17e50851854e06a1ca7"
+      },
+      "result": "released-programs-result.json"
+    }
+  ],
+  "buildFiles": [
+    {
+      "path": "dist/index.js",
+      "size": 4721172,
+      "sha256": "6161dbccdd74bb23ced4170c0d5e2d1310c686e781732d945c8f0da62371309c"
+    },
+    {
+      "path": "dist/index.js.map",
+      "size": 8040373,
+      "sha256": "eb2804c25d32c1074945f3e894ec61231f69be6e51ba37934cad0ac0f6467d40"
+    },
+    {
+      "path": "dist/management/agent-proxy.sh",
+      "size": 3929,
+      "sha256": "10e7941f94568ec714c54374aa557b51f22b04c5aea883f80afad85cf67b163c"
+    },
+    {
+      "path": "dist/management/forwardx-manage.sh",
+      "size": 11449,
+      "sha256": "b220717ccb0a2731219f33621deda4e4917b3764a030c581110e4b9c6f136e2a"
+    },
+    {
+      "path": "dist/management/install-agent.sh",
+      "size": 13251,
+      "sha256": "f4bfacd894e39bf83269fad4e136e97ef5c7039d38e9a1448035c57663f6cef8"
+    },
+    {
+      "path": "dist/management/install-management.sh",
+      "size": 1241,
+      "sha256": "3ba38c635ee11005f536920f129b78c9721e43c1a907cebef9779e18853d1cf4"
+    },
+    {
+      "path": "dist/management/install-panel-docker.sh",
+      "size": 34394,
+      "sha256": "0fe1190b96fe37e23d2f9b46a51221e5c11288a60e5bd4ac4d3022e51dc3f791"
+    },
+    {
+      "path": "dist/management/install-panel-local.sh",
+      "size": 26179,
+      "sha256": "2fa80bc35cd6598c517f307880f90d634c3af60ec1d6202823db7d42655309b3"
+    },
+    {
+      "path": "dist/migrate-legacy.js",
+      "size": 20864,
+      "sha256": "ef587efb52c3d94deda52fa012ef6067fffa265c2059974334e80b6f4ab4b2e3"
+    },
+    {
+      "path": "dist/migrate-legacy.js.map",
+      "size": 39531,
+      "sha256": "4551ae0fa17c41cace598757d090011643912474d562440277d2deb98a16ac20"
+    },
+    {
+      "path": "dist/reset-admin-password.js",
+      "size": 3899357,
+      "sha256": "28be3407e50366004011d7f11eb0d43daaed8c16340bbd341192529c2c656d4d"
+    },
+    {
+      "path": "dist/reset-admin-password.js.map",
+      "size": 6785207,
+      "sha256": "1b2e360cffef3aa460139b0cb32a9c29dfbe11a7b5925f2fc8ab1216edceb1d5"
+    },
+    {
+      "path": "client/dist/assets/App-CqRm5TP6.js",
+      "size": 2678662,
+      "sha256": "aa8996bc302964649173d049d7e4adac9370172807533ddf303b0f2515abb543"
+    },
+    {
+      "path": "client/dist/assets/HostFlatMap-6kcPphhY.js",
+      "size": 757324,
+      "sha256": "9c8ea16e1bf61804b1c1f3bbf6f0371a1fedd749bd2b957d100bb2ea13c95a13"
+    },
+    {
+      "path": "client/dist/assets/HostFlatMap-B-YMMjus.css",
+      "size": 69940,
+      "sha256": "34e74347ae175a1818dc58d30f564ee6c9acd610bc20620601d5f8a388990cd9"
+    },
+    {
+      "path": "client/dist/assets/index-CxsH-VpY.css",
+      "size": 210751,
+      "sha256": "f8dd72d71a66c28d3aea74b13e962c3f412701efcad29f1667d3c9efa80245cd"
+    },
+    {
+      "path": "client/dist/assets/index-DPL7stAU.js",
+      "size": 638161,
+      "sha256": "794a812b729bb0d3756f09c90611e3280a63182a9772c394ee665445a98be818"
+    },
+    {
+      "path": "client/dist/assets/maplibre-gl-C79x5hAl.js",
+      "size": 1055599,
+      "sha256": "fd1f80f7c17e1173283267f1667c6268cb24f16fb6107056279b169888001096"
+    },
+    {
+      "path": "client/dist/assets/react-globe.gl-B82VIjXm.js",
+      "size": 1820403,
+      "sha256": "ee2ee7eac57f91485372a6274cf1576a65c09a50c0957a5b3d28cc79f90a1057"
+    },
+    {
+      "path": "client/dist/assets/web-B70e9K6s.js",
+      "size": 1245,
+      "sha256": "735150c89b5de131f77acab6492f9287ace29836b0ca16bd92136c81307c1a89"
+    },
+    {
+      "path": "client/dist/assets/web-BBtOSFXr.js",
+      "size": 842,
+      "sha256": "eb96369addeaf61d35b366e3d668172e76a9cc7ec964e66b48705aad72daa7f7"
+    },
+    {
+      "path": "client/dist/assets/web-BYyRBO8y.js",
+      "size": 3456,
+      "sha256": "a9b6cfb0be7a1b53b87f67ff9c3f2ef61728adb2b050dd7328c1a4e4b5b92f8e"
+    },
+    {
+      "path": "client/dist/assets/web-CkAsMZyX.js",
+      "size": 379,
+      "sha256": "01d21971198fff2c5f0b3a4b3f66904764ca10b2ecefec34030f13a0c38d1615"
+    },
+    {
+      "path": "client/dist/avatars/blue-dragon.webp",
+      "size": 25682,
+      "sha256": "57d1e6c7591c031c093915f94c294e2dd58720dca4ce3ae136b84693f2ff03dc"
+    },
+    {
+      "path": "client/dist/avatars/celadon-tea.webp",
+      "size": 14718,
+      "sha256": "9c97366bc45c09f80999ff1190b245e7c4b37b76f7d3f58260ad55304bd31712"
+    },
+    {
+      "path": "client/dist/avatars/cloud-sunrise.webp",
+      "size": 22092,
+      "sha256": "32edd890a34b67b13066f2ffbe9d013116640b7de257919f5b46abc411350793"
+    },
+    {
+      "path": "client/dist/avatars/crane-moon.webp",
+      "size": 23734,
+      "sha256": "32713365700052316023bb001eb95699cc39e91c96cb5ec61257679373a1fbcb"
+    },
+    {
+      "path": "client/dist/avatars/dunhuang-lotus.webp",
+      "size": 27494,
+      "sha256": "713b2894f64c6857f4154472bc3446895a3a72bac52859cc166c71fb0f092068"
+    },
+    {
+      "path": "client/dist/avatars/ginger-cat.webp",
+      "size": 22342,
+      "sha256": "2024c179609fe98596c9d8cf0b803b1999ff84e90f48015446ca964a0d20763b"
+    },
+    {
+      "path": "client/dist/avatars/ginkgo-temple.webp",
+      "size": 30998,
+      "sha256": "79c3a5926e39364369d7bb58a2aa37d5d66764028b75f58aaaf096c12dcb3587"
+    },
+    {
+      "path": "client/dist/avatars/hanfu-man.webp",
+      "size": 20722,
+      "sha256": "c501fab0ae4ca418414e14819b5a7da18fb4582139f38787505cdd6597d5dff8"
+    },
+    {
+      "path": "client/dist/avatars/hanfu-woman.webp",
+      "size": 20344,
+      "sha256": "7c2c2d2e0b5c3822f8015df86e6437f51dd2ac4ca93caf3b9851405437c44419"
+    },
+    {
+      "path": "client/dist/avatars/ink-mountains.webp",
+      "size": 21162,
+      "sha256": "bf465d6a4d7e0dd5ec86605ea2b66cdd474208109ae284def55839155998f72f"
+    },
+    {
+      "path": "client/dist/avatars/jiangnan-bridge.webp",
+      "size": 27584,
+      "sha256": "5c1ed1fe815ac9ac70279b1cbda5aeb907a8cc7a7b791a2ebb6257ea7d889f87"
+    },
+    {
+      "path": "client/dist/avatars/koi.webp",
+      "size": 27962,
+      "sha256": "b09776d9b61b4ed32e0f64d2650cfef1115d122695db2457a447a4dc9e94c35f"
+    },
+    {
+      "path": "client/dist/avatars/moon-rabbit.webp",
+      "size": 24494,
+      "sha256": "2c4e27188829e22e24f9c185ab58cb87300d5efea8db4a525002d1d4aa79a486"
+    },
+    {
+      "path": "client/dist/avatars/neon-pavilion.webp",
+      "size": 31410,
+      "sha256": "eb9c3acb002deba4ba3ec5490ba7c01704073bed273316b1949396f4823bb3fd"
+    },
+    {
+      "path": "client/dist/avatars/panda.webp",
+      "size": 25474,
+      "sha256": "5aec3de5e209ee9df83c5048286e9c30a85c900c68938ff4122de0f765aa891b"
+    },
+    {
+      "path": "client/dist/avatars/paper-swallow.webp",
+      "size": 28020,
+      "sha256": "2aa948fae42a76c3e7d7b7f5b9c3a57e67c0cb25c24f8fadec19e29edcb5f6b8"
+    },
+    {
+      "path": "client/dist/avatars/pink-lotus.webp",
+      "size": 21520,
+      "sha256": "97e505171c377a56a47661757dae049285bbdfd70f52b866b9aab0792ba1cab8"
+    },
+    {
+      "path": "client/dist/avatars/porcelain-lotus.webp",
+      "size": 25872,
+      "sha256": "fca9b92ff99c4cb9b553c1bb5d2cab4621f23c547d92e9f6336c255aeb30386c"
+    },
+    {
+      "path": "client/dist/avatars/snow-plum.webp",
+      "size": 21824,
+      "sha256": "46543628cb1e039b79812bab1fc783a9fa28e6dd8ce1725e1107e5e4669da805"
+    },
+    {
+      "path": "client/dist/avatars/starry-peaks.webp",
+      "size": 23726,
+      "sha256": "7dc12184d42c7e25324154d93432bc5939307ba1a3d83ded28bc8984596151d6"
+    },
+    {
+      "path": "client/dist/favicon.png",
+      "size": 5630,
+      "sha256": "fd7b917d36dc502e9c333fb4169087954eec43a013e980216bf3f6796002c553"
+    },
+    {
+      "path": "client/dist/globe/earth-blue-marble.jpg",
+      "size": 1461877,
+      "sha256": "228deba2e4b600146bdcb6cfa359b8ead6aacc2b1c13550a29cd82824cfa1c01"
+    },
+    {
+      "path": "client/dist/globe/earth-dark.jpg",
+      "size": 94795,
+      "sha256": "8b8f3a4e258428b6e669a0799fb8b6f2db15c6240825d6a7c75963829b576994"
+    },
+    {
+      "path": "client/dist/globe/earth-topology.png",
+      "size": 378243,
+      "sha256": "839b12da2e4dd346b256cebae72e10c479a102c8980a22084c41275e4b9a0e12"
+    },
+    {
+      "path": "client/dist/globe/ne_110m_admin_0_countries.geojson",
+      "size": 488013,
+      "sha256": "a4d67eac9c75d5b6f20170d2b07bb53ea791536b0c8e5ebae3ba94df093f76e0"
+    },
+    {
+      "path": "client/dist/globe/night-sky.png",
+      "size": 904154,
+      "sha256": "7e1d5e780301e3a33bd79fd3ac414f7a742465f33ae4605abca743d43a3ab983"
+    },
+    {
+      "path": "client/dist/index.html",
+      "size": 1146,
+      "sha256": "85593c63df9666e8f24154a466cba60ea5e226281a6b397e27d096a5d719e64a"
+    },
+    {
+      "path": "client/dist/logo-dark.png",
+      "size": 5630,
+      "sha256": "fd7b917d36dc502e9c333fb4169087954eec43a013e980216bf3f6796002c553"
+    },
+    {
+      "path": "client/dist/logo-light.png",
+      "size": 5630,
+      "sha256": "fd7b917d36dc502e9c333fb4169087954eec43a013e980216bf3f6796002c553"
+    },
+    {
+      "path": "client/dist/pearl-ui-license.txt",
+      "size": 1187,
+      "sha256": "fe2e69c03fc3b9978f6885a368fb204b13e0c3658f66a160fb1848a2f2a9ac90"
+    },
+    {
+      "path": "client/dist/plugins/live2d-widget/waifu-tips.json",
+      "size": 1410,
+      "sha256": "05f59bbde481eebfbaae3e38b80bd3b82fc0107c003a1edf111c0dc5275423a2"
+    },
+    {
+      "path": "client/dist/wallpapers/anime-1.jpg",
+      "size": 601693,
+      "sha256": "5049fae491e61918b39d547aa88a8e62f099a9706f8bf950a8f6ae25daf92d5f"
+    },
+    {
+      "path": "client/dist/wallpapers/anime-2.jpg",
+      "size": 2750104,
+      "sha256": "d6d6ec109d5409aa9ce9373812828783dbdf08818d0c22829fbc532e8abad168"
+    },
+    {
+      "path": "client/dist/wallpapers/anime-3.jpg",
+      "size": 2704851,
+      "sha256": "14d7755c42bd24da20a9d6394ce69719548e5d5da8ab9d3f9f990b78c6ca498e"
+    },
+    {
+      "path": "client/dist/wallpapers/anime-4.jpg",
+      "size": 1229363,
+      "sha256": "4132719f05d65aa63be4d3f9e1189d955f160676439475c682969c782e4c6a45"
+    },
+    {
+      "path": "client/dist/wallpapers/illustration-1.jpg",
+      "size": 2040673,
+      "sha256": "ae326a69d90bd3795d06049a24c80f5d5ad4fa1821c47240dc6c502befc86d41"
+    },
+    {
+      "path": "docs/.vitepress/dist/404.html",
+      "size": 8340,
+      "sha256": "5c3223647e705e70a170e4281b9c7c93033a8bbfc672c6f9d19f76e1f3df1167"
+    },
+    {
+      "path": "docs/.vitepress/dist/ARCHITECTURE_CN.html",
+      "size": 42907,
+      "sha256": "8426d73a1a48715f932e4ca1c736de518b5c150bee0e6712c5fc5de9ca085e41"
+    },
+    {
+      "path": "docs/.vitepress/dist/PAYMENT_CN.html",
+      "size": 44637,
+      "sha256": "ce04ff924039662a353c487bcc6a59f005f54d43fd7d3500fd34be3825434744"
+    },
+    {
+      "path": "docs/.vitepress/dist/adr/0001-sni-splitting-runs-as-a-standalone-fxp-role-at-the-exit.html",
+      "size": 37546,
+      "sha256": "d7780dcfe18fc99fa0da1cbbdc11879c3d98b12d7f34d5adab502ab5b31ca4bf"
+    },
+    {
+      "path": "docs/.vitepress/dist/adr/0002-sni-rules-share-one-entry-port.html",
+      "size": 38219,
+      "sha256": "4ac9ffa14f11a88c53382492d7a95eeab7ba65d6575dd26d01bcfb91be549ec8"
+    },
+    {
+      "path": "docs/.vitepress/dist/adr/0003-bounded-derived-data-declares-exact-coverage.html",
+      "size": 33661,
+      "sha256": "a285c51f401569cbf34c8730fa03686c066572a1f41520fe62bdadc20c263752"
+    },
+    {
+      "path": "docs/.vitepress/dist/adr/0004-no-host-occupancy-check-during-rule-creation.html",
+      "size": 33571,
+      "sha256": "8cb405defc5729b6707261a4ac0517cf36db4da8f12d57ba988661f297f301f4"
+    },
+    {
+      "path": "docs/.vitepress/dist/adr/0005-batch-sni-imports-preserve-per-rule-results.html",
+      "size": 34258,
+      "sha256": "6cf5e5395df654d270f4d9501a56b47236f73b89e14c4ead7642dafbf06d9413"
+    },
+    {
+      "path": "docs/.vitepress/dist/adr/0006-sni-group-ddns-uses-confirmed-entry-health.html",
+      "size": 36377,
+      "sha256": "32dba68c30a6c64512bf1f2e918d60f5068a687790067358df38f1cd9b856157"
+    },
+    {
+      "path": "docs/.vitepress/dist/agents/domain.html",
+      "size": 36062,
+      "sha256": "03fd42a5e9b2cc4f0cc3f0f9b46b6c433fabaf0c65366571a6c6e5648626f83b"
+    },
+    {
+      "path": "docs/.vitepress/dist/agents/issue-tracker.html",
+      "size": 35631,
+      "sha256": "96807b1290c1c2757e7f98d4adc778c1c9d8e93dd97398271cb070a001552e3d"
+    },
+    {
+      "path": "docs/.vitepress/dist/agents/triage-labels.html",
+      "size": 33130,
+      "sha256": "5f7704fe2fae986daacfc65fc61842cef6a44c4327f19284ed612aff5aad5781"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/ARCHITECTURE_CN.md.BdXCkxYu.js",
+      "size": 11286,
+      "sha256": "9e9dfbd9675666645489291a847d9e1a43af3867aef4398c6c83d70e535c0191"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/ARCHITECTURE_CN.md.BdXCkxYu.lean.js",
+      "size": 446,
+      "sha256": "a46743eba73e1fee4d35663f89729f25af095dc592de291b7699687a3dd80378"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/PAYMENT_CN.md.VxQayuEf.js",
+      "size": 13222,
+      "sha256": "198c7dd4f27a625ae15ea80f99b0b4f5f27c1087b7e326c03dfa3e3e8c57489a"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/PAYMENT_CN.md.VxQayuEf.lean.js",
+      "size": 437,
+      "sha256": "d965087c4c774ca73138b99d2d02bd3e7b6d60c0f588ceb305446b16fc59e450"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/adr_0001-sni-splitting-runs-as-a-standalone-fxp-role-at-the-exit.md.C-z-kkXd.js",
+      "size": 6151,
+      "sha256": "ec44e214e8aef6c1a9765e891605447e95e5169b71cc6ae669d2ed081d06d37c"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/adr_0001-sni-splitting-runs-as-a-standalone-fxp-role-at-the-exit.md.C-z-kkXd.lean.js",
+      "size": 611,
+      "sha256": "68bafec1263482e49f1dec78fa95146d73526a1014a8a5a494ed115f3f708af8"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/adr_0002-sni-rules-share-one-entry-port.md.CWchYTIa.js",
+      "size": 6824,
+      "sha256": "e81ef5b57ffd8399dfc082674f87dc98feec3da944b67af14424bbc171734ba6"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/adr_0002-sni-rules-share-one-entry-port.md.CWchYTIa.lean.js",
+      "size": 540,
+      "sha256": "3a032fd3dd5f382b683ab656a2af225ef09b57f0bc4bf8c5e24186ae5f0c68f4"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/adr_0003-bounded-derived-data-declares-exact-coverage.md.BC9nXbI_.js",
+      "size": 2265,
+      "sha256": "28387b39a3fb389dbb4e115a4fd1ac8c10eb22f16c49445d2c1a9c42b5cef45e"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/adr_0003-bounded-derived-data-declares-exact-coverage.md.BC9nXbI_.lean.js",
+      "size": 598,
+      "sha256": "3c301038611c9022d93c174433a6b98a4956ad876b4849b51acd9f56dc972c43"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/adr_0004-no-host-occupancy-check-during-rule-creation.md.SsjJYeaW.js",
+      "size": 2170,
+      "sha256": "01b356dbd9e4f7d11275043397aad7d65a51714103bdf6e13667bf5b7f6631e5"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/adr_0004-no-host-occupancy-check-during-rule-creation.md.SsjJYeaW.lean.js",
+      "size": 578,
+      "sha256": "f737b73c892dc9afbda7e3fcbdc532723867bd72aff680eec095ac529394f025"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/adr_0005-batch-sni-imports-preserve-per-rule-results.md.DHPZZEbl.js",
+      "size": 2881,
+      "sha256": "2804ba7e4c201a03e50b0560f5c2dd549d4df7c3359a3243afbf81f60299bde6"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/adr_0005-batch-sni-imports-preserve-per-rule-results.md.DHPZZEbl.lean.js",
+      "size": 597,
+      "sha256": "bdda3a34135f161a85bdd9579635cfeae4d6203f9e52f6da3468c91d161c3edf"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/adr_0006-sni-group-ddns-uses-confirmed-entry-health.md.umkOp5MS.js",
+      "size": 4982,
+      "sha256": "db3acdb542dc71b7eb1f92c4c95f31af476a04d9fcc3ce90a187df0146ebf5f2"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/adr_0006-sni-group-ddns-uses-confirmed-entry-health.md.umkOp5MS.lean.js",
+      "size": 593,
+      "sha256": "9176b4e876c6fe78cf65a72e7933c2d2c6cd348712395062b51bcdebf32e7f49"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/agent-token-management.BxwAdErc.png",
+      "size": 99712,
+      "sha256": "c2515f37c3473e8a0bf4b3b7362fb444fe36b95ab0d41011b88c7063cc6d8cd3"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/agents_domain.md.BFx1UKiz.js",
+      "size": 4667,
+      "sha256": "c9d66e0c366f8ed9659ec54022ef505db243cc6fe9c6d1c6e6129fa11632e6e4"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/agents_domain.md.BFx1UKiz.lean.js",
+      "size": 430,
+      "sha256": "a145cce55dd033f14930e5da89edd0436d2f7f935c0f0ef9771e116b085a1054"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/agents_issue-tracker.md.BXz8lHod.js",
+      "size": 4231,
+      "sha256": "682f03b1746f7f0993cd8bc9453a66af359661a3327d6258ef7f4efaaf42ae27"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/agents_issue-tracker.md.BXz8lHod.lean.js",
+      "size": 464,
+      "sha256": "656aaa7939c03544e77a6c7c2920eeeab66fe77ca46c4eea27b57242cb47605a"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/agents_triage-labels.md.BDwfxuuP.js",
+      "size": 1734,
+      "sha256": "242d1f628889bf21108225edc28f177ffdd06c3baaf5fa052ee2fd255591b406"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/agents_triage-labels.md.BDwfxuuP.lean.js",
+      "size": 452,
+      "sha256": "5cd5f4d670416ba0a03e05a42fc55264f1708f6a2607d6ff53b43ada26c5577e"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/app.d-DOpiNb.js",
+      "size": 1352,
+      "sha256": "d07208ceb9e742384795f545e3a1e1b93c88739d9a82a3cad0f5a78edffc0754"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/chunks/@localSearchIndexroot.GyBe_GtJ.js",
+      "size": 649907,
+      "sha256": "75d1b11df953c3bd5fbd910bc9e42d6a68929600ea59d5c34ab54887ade45612"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/chunks/VPLocalSearchBox.CGoExru0.js",
+      "size": 64029,
+      "sha256": "57447390295b434ed5284226b2962653d173635cffad2351d22dac3482d321be"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/chunks/framework.DGzMGr_a.js",
+      "size": 111645,
+      "sha256": "200fd34f626d83830b5c18bb1aaaa1705eb71e9acb27d67ada5f1fedd138abf0"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/chunks/theme.DAfdG_Yu.js",
+      "size": 53736,
+      "sha256": "024e055188f143771ac5db3c804cdfa67e22d99d29943db2c047701f8ed21fcc"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_account-recovery.md.Cc6hUAsG.js",
+      "size": 5714,
+      "sha256": "f2b6abcffe8e106032def4669a4f9b3d45e6563ea1294148f1c7fdb47f749e5f"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_account-recovery.md.Cc6hUAsG.lean.js",
+      "size": 467,
+      "sha256": "d3e1464648d6a0c681c656c89877a84d8fb284973ac485a867c1cb6904279447"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_affiliates.md.Dl7d5a1L.js",
+      "size": 5882,
+      "sha256": "057c37d1cb378ad4bcbc00e07c94e9924a48bb16370e6fd180e960bc713536c5"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_affiliates.md.Dl7d5a1L.lean.js",
+      "size": 440,
+      "sha256": "6eaf60c0d69250989fd7ab42fa5c67f5d6a301ef5e5be039cd39ba6382838ef3"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_agent-proxy-manager.en.md.fMVjebwa.js",
+      "size": 12416,
+      "sha256": "957033f6a177788b1c4340b584a8b05e3e4e4cca9f4135fdc539789603200c41"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_agent-proxy-manager.en.md.fMVjebwa.lean.js",
+      "size": 487,
+      "sha256": "482671009e8b409cdf1a98ca94483ccc29bc2357a4680914f2231e5030847e13"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_agent-proxy-manager.md.C44S4g6x.js",
+      "size": 12621,
+      "sha256": "7024ea4a2ae36397c5b87f9706986b2275ab848adb8b0659bb438d422254eef8"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_agent-proxy-manager.md.C44S4g6x.lean.js",
+      "size": 472,
+      "sha256": "356fec2e8d6e5265ce7788ef9b0e7d94330b5e0d52c10b20b97c9711eaf739b7"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_agent.md.mOlmiHz1.js",
+      "size": 17000,
+      "sha256": "4794a334aabf26f12afd8e9a605bf59eabcfc3612915ef038d84566d11a37503"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_agent.md.mOlmiHz1.lean.js",
+      "size": 482,
+      "sha256": "367607a404c4758a89123699278ad7cbdd8ea024c4c36dde522d151d39664f00"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_ai-assistant.md.Bmmn3k0a.js",
+      "size": 12570,
+      "sha256": "1caa6316fa561e7ad22c1605522898c51c69c852c3150202870441465de4d54a"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_ai-assistant.md.Bmmn3k0a.lean.js",
+      "size": 443,
+      "sha256": "97dd800e56cc4270a6c0d00afd4a68a14522b84db0954cc93045efdefbc2e41f"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_cloudflare-cdn.md.ja9Pp6mE.js",
+      "size": 18525,
+      "sha256": "ad062c1d24e71cd8667f22a3dab0e34d467a99222ede8d8d037ed3484ad87f3f"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_cloudflare-cdn.md.ja9Pp6mE.lean.js",
+      "size": 463,
+      "sha256": "5bbe9dcaa44874594027f0f0a2252b6ede08e4f0a9b6e6eb456360021b459812"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_database.md.Br1-CvI_.js",
+      "size": 7690,
+      "sha256": "a8943162ed06f07b1077acf12e2bad72c966331591f313ca4a619319c396f660"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_database.md.Br1-CvI_.lean.js",
+      "size": 437,
+      "sha256": "44103cce9d8b691af6f280a8c5b571558bc11a5cb80dba8a5ffe7a6545390683"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_ddns.md.CTYrmZLL.js",
+      "size": 19249,
+      "sha256": "c884f96f5b6c37cc6ad28233cc125d26a8e62f154a60f2e53307efc7d462debf"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_ddns.md.CTYrmZLL.lean.js",
+      "size": 1126,
+      "sha256": "0c650d9e9139e22454860a660501d73269ddbfcc37d24c0bc1d261942cc10f4d"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_deploy-docker.md.RRtBnClj.js",
+      "size": 20240,
+      "sha256": "54bf2ae13a81d6ba7837292b0dd2736782fa614d960aebdb45288e43b88b83a4"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_deploy-docker.md.RRtBnClj.lean.js",
+      "size": 450,
+      "sha256": "a0c92f9821117f8662085d88055f8daa2b864b91c60ead4e34bc312b0d836c32"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_deploy-local.md.FQVOxKo-.js",
+      "size": 10510,
+      "sha256": "e843290e8697b77059b9e6461dc67fd2eba932971a0b5a90048d544096dbe206"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_deploy-local.md.FQVOxKo-.lean.js",
+      "size": 446,
+      "sha256": "2e307aec352f678311ee7eb6ea39db4ac7c455b47be970e49d13c1448c500135"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_deploy-panel.md.dqlMXGOx.js",
+      "size": 6669,
+      "sha256": "012ced91afd7fde41feba750d2bed267ad94a91a40a5303ab502e421ca8d41f5"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_deploy-panel.md.dqlMXGOx.lean.js",
+      "size": 446,
+      "sha256": "d87f11808f2c4dc81d761a7f25c834684d349b965702872cd58509691a993042"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_development.md.ChISilKC.js",
+      "size": 5132,
+      "sha256": "a136506e364dde96532ab85e4ffcb83297ccedec590ec612e6a7800e82e53695"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_development.md.ChISilKC.lean.js",
+      "size": 443,
+      "sha256": "446d51dfb13b042764b5a4058fd63bf7b1c174d6a8393d8a8e0db12cc1ae3405"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_env-vars.md.C4kP-O-x.js",
+      "size": 22589,
+      "sha256": "9ccd7ac33d7945cf0fc938bec2888fcdfb17150a61b33e375fceda6dd7c11d9f"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_env-vars.md.C4kP-O-x.lean.js",
+      "size": 434,
+      "sha256": "ecc15330a9c20d32421cab9f0fd39c9c99e041269baeb7011602899e750d1e82"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_first-setup.md.CrryY9pl.js",
+      "size": 9211,
+      "sha256": "00e107cf583fc4da4eccc4b31b553144874ab3b409d63468df350e5e9360ae95"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_first-setup.md.CrryY9pl.lean.js",
+      "size": 492,
+      "sha256": "245dab3b3895f9adec7fa83cf3e017bfc6b4b1526b5423cc9c3a190113d1d46f"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_google-login.md.DANnPbaC.js",
+      "size": 4260,
+      "sha256": "6ad0fb658e54cd69938928024b228354610a1083bfe73b5f3bf347672ac1449d"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_google-login.md.DANnPbaC.lean.js",
+      "size": 453,
+      "sha256": "89ff10c356346c99ac6bff9102566afce49ccbb7e9ece5fd0e1deddb9c397430"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_groups.md.DSagCyQr.js",
+      "size": 7400,
+      "sha256": "eb72bb7431e9ce4c93917bfe6be48c34d92aa5a0de48d7f0aa017c69d53d145c"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_groups.md.DSagCyQr.lean.js",
+      "size": 449,
+      "sha256": "238793928e72e8541d2ce6ae48878bd486ea93d3af5dfffd48652233f6757872"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_hosts.md.B2ckaBIL.js",
+      "size": 12863,
+      "sha256": "1ccdf6dd546f9bcf9c6a30a2d260340264c4dfb34f541da49d152dde706af616"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_hosts.md.B2ckaBIL.lean.js",
+      "size": 465,
+      "sha256": "fc4c718c0c546e19b6cb3fa7ec632f4a96f20f4931324bb83fe7f4e3f053bd4e"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_index.md.q-X770rs.js",
+      "size": 8565,
+      "sha256": "73b3c57eec00647760ad78c03e4db1fa437060f29b871945cf1996b941e6cf4a"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_index.md.q-X770rs.lean.js",
+      "size": 425,
+      "sha256": "81eca0971726182e813dbce7dde54d50a3fe916ddd2f49a4e8bb74c0358f460a"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_interface.md.XYp0aqWW.js",
+      "size": 4423,
+      "sha256": "513e576061390a9f2fe4137c2c983ad22e3d5c416e6be8f76defe1acf060a117"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_interface.md.XYp0aqWW.lean.js",
+      "size": 446,
+      "sha256": "7089b4acd0e98efccf2ee0d5dad7734acdd6be28ef19a5817be7f3484045a24b"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_migration.md.BrJMQMeB.js",
+      "size": 6112,
+      "sha256": "8053f0a53f43b84755c1b5ae8a72180fb227f92e9efa2328dffda7a03616b5cb"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_migration.md.BrJMQMeB.lean.js",
+      "size": 443,
+      "sha256": "615bd1f83b986364438ca1caca506f42112d35f52287b938c247994033f1c6fa"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_notifications.md.CtraMk92.js",
+      "size": 9020,
+      "sha256": "57ec39df36775a45b12a2dc2a50000f2066750e839ecc350dd6bc1a3ea0914da"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_notifications.md.CtraMk92.lean.js",
+      "size": 455,
+      "sha256": "5ac74a434524ff520dc05278dd301ec57e90933b7f1ae7c941370dd46e2a2df0"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_paths-logs.md.C4TLELV9.js",
+      "size": 10264,
+      "sha256": "7b61e408dc9baf2bca6ca493640ed71a88588fe75bf8688bab83f40816e28245"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_paths-logs.md.C4TLELV9.lean.js",
+      "size": 458,
+      "sha256": "bc30c7154b51e4ffd21144f24208b75e55298347de4929200d9842a169dfbbe1"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_plugins.md.DBCIkqaZ.js",
+      "size": 126884,
+      "sha256": "3cef18ef83ea1d6da5490195144e4fbea468b1de51d25029c52736e44523e106"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_plugins.md.DBCIkqaZ.lean.js",
+      "size": 432,
+      "sha256": "4fc98d7bfb8ed9219e3eec756179d3802ebbc8eb2edb8b5fd9b2577275e0c2fb"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_port-chains.md.wTLNyfyQ.js",
+      "size": 5031,
+      "sha256": "9d18c0f0527bd98a9e717e04da757f714d646f881ca5502bad652e97a2c8b7c4"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_port-chains.md.wTLNyfyQ.lean.js",
+      "size": 440,
+      "sha256": "aaab810c029ed610ddde77eb73ad1c90dca41952bfb17f060181e9a39bdddcb5"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_preparation.md.DfktbYy5.js",
+      "size": 5421,
+      "sha256": "c71705232048dc73806b676932896e9adda6a7d6082b2cfff850c561acc3b4aa"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_preparation.md.DfktbYy5.lean.js",
+      "size": 446,
+      "sha256": "20074953bf2df2e2a417a60ccd4150b14f7d889f0d3c6186e13648fc83d289d2"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_proxy-protocol.md.BNO4fVnV.js",
+      "size": 5979,
+      "sha256": "09a6abbfab049c9f701e2e444021a2a397a1e9cf19cad8aa262e4f6d9458d674"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_proxy-protocol.md.BNO4fVnV.lean.js",
+      "size": 454,
+      "sha256": "9035319e3fa64153a74e851ce66534ab1e22513e4d7d7e288720bc7d431868b4"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_quick-start.md.BBLpDDxj.js",
+      "size": 7646,
+      "sha256": "3c13aa2defc9d76d948208184e4c1dd5c63b85b7def63f8be770a607a8568fe4"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_quick-start.md.BBLpDDxj.lean.js",
+      "size": 443,
+      "sha256": "4b046cf7a6ed5c3e93f333d0d8b2ac91d38b90dd2e21fb3464adf84c6f22150d"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_releases.md.7P7CTfBW.js",
+      "size": 5810,
+      "sha256": "de59e910aea06da66addb09acecd0473bdb863611852d94636a52feda774cb31"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_releases.md.7P7CTfBW.lean.js",
+      "size": 443,
+      "sha256": "faba5417b635b22b2a8099563780c7ae1de3be6627a68a28b0c05137f5d25f2c"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_reverse-proxy.md.Cr6lSU1i.js",
+      "size": 10996,
+      "sha256": "1c4dd0d3b59c2613c49fc08cb1f215f57bf5ccb0697304bb48e402955825bf56"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_reverse-proxy.md.Cr6lSU1i.lean.js",
+      "size": 458,
+      "sha256": "88302fbdf3597d48c90cbe28679151560db58c5ef81866d8d756920c39dbba96"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_rules.md.CR2r97xi.js",
+      "size": 17046,
+      "sha256": "1ac91fcffea96fcb6e431b08f017a3e8e1367c051909af28ea3ffa752baf630e"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_rules.md.CR2r97xi.lean.js",
+      "size": 463,
+      "sha256": "1587d1dff0dd2cb88141a4cc24efa09192699c05fd4dd860f5663f4f727ae74d"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_sni-routing.en.md.DBoe-PcX.js",
+      "size": 10601,
+      "sha256": "619b3964b0f1131f7db16e010699b454cc79372017ca4d6a7d62af5c6064a5c0"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_sni-routing.en.md.DBoe-PcX.lean.js",
+      "size": 478,
+      "sha256": "91a6ede4e03bb05cf84cfd2aa3911f0dbc8aa84ae8c78069affbdd32eb4af7ea"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_sni-routing.md.Dvo02gKk.js",
+      "size": 31118,
+      "sha256": "a3b69e0e3ea09651292431629a245988963061f7e05d32b2dd8c0ece81328268"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_sni-routing.md.Dvo02gKk.lean.js",
+      "size": 441,
+      "sha256": "8bd83f209d140b63abad438bdd1b6e408d011dc1fe12f61014f59f2bd86c3da5"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_ssh-management.md.Cfog1gZx.js",
+      "size": 7477,
+      "sha256": "c2bda7de05254ef9e5fe75deda60ee2f7a149794a60bc04ca55d2c15c7258a40"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_ssh-management.md.Cfog1gZx.lean.js",
+      "size": 457,
+      "sha256": "2d26366f0a21c737ee86dadc994a557cd70683a5965745d2df84bc9ed45d1e20"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_support-tickets.md.DZLCFxQT.js",
+      "size": 4638,
+      "sha256": "eabba35752a0717499b92f9a63bfee7cfa07d9b9ac0361e6658a421bf4a503af"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_support-tickets.md.DZLCFxQT.lean.js",
+      "size": 446,
+      "sha256": "1a8904e24a8f4860a32f4e68154bfa3ac0c3d2dbb8d9e5ed219b17d853e31fbd"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_traffic-latency.md.D_8AD0RH.js",
+      "size": 8637,
+      "sha256": "4947991cc96bcc8cdeef21b2c06bfc7c172ce34deb58ad7ffb4e2aee30bdaa69"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_traffic-latency.md.D_8AD0RH.lean.js",
+      "size": 458,
+      "sha256": "136f5539a004988cd44c5648fc3dda43950532740328cababc5bb87c5b091f24"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_troubleshooting.md.DLAbbRPb.js",
+      "size": 80127,
+      "sha256": "81752c16ec318f6d198f03ea82ecc8d9e59b1ff314bab7033f4b0f4643768a55"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_troubleshooting.md.DLAbbRPb.lean.js",
+      "size": 508,
+      "sha256": "cd830f8dd4adf3799a16580ee9dd94538e25ceca1d175ccbaf6600a634225ab1"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_tunnels.md.BzuAZ9VU.js",
+      "size": 8148,
+      "sha256": "aecbd85ccb378d5dfad4745f0e4e921c813ab5a9599cf9a18993d983fd17e56f"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_tunnels.md.BzuAZ9VU.lean.js",
+      "size": 473,
+      "sha256": "f189efd880c486d988424978dd20d8d5f2822c652ac7ae14d2e7fa3e097bd56b"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_ui-review.md.BsHHSz08.js",
+      "size": 8084,
+      "sha256": "e640fbca106d1a7f7782b511fc311d1e24887e1850857b080460ce9b7800f3ac"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_ui-review.md.BsHHSz08.lean.js",
+      "size": 458,
+      "sha256": "685f82aa17f944dfeae8792904b21847d111a1e6f7c1b53b11a6413cb1dbe025"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_uninstall.md.Dt-NIaae.js",
+      "size": 17616,
+      "sha256": "3c652584b9d0c4805cb2a9ef7f05cc422420b1ff60c01c03abac87898a7ad918"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_uninstall.md.Dt-NIaae.lean.js",
+      "size": 440,
+      "sha256": "20e96a3148dd4bccbcf16983057a28eefdd74c2065429d2e2a6ab16695004cab"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_upgrade-backup.md.CYTmBC74.js",
+      "size": 46155,
+      "sha256": "13ec07f125db00ff9d22520789fe494c2ed3fca71a11832c9fd4018168fdd78f"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_upgrade-backup.md.CYTmBC74.lean.js",
+      "size": 455,
+      "sha256": "5f3ef647d6f2c294f77ca8288072ace463eb0e643c63b2ec1665cf87dec36963"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_users-billing.md.CtqrCfnV.js",
+      "size": 5057,
+      "sha256": "d10e3ec03671deab623f1bf2c1856054a2e2e3af0c2d47ec54ab4224e6b85d12"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/guide_users-billing.md.CtqrCfnV.lean.js",
+      "size": 500,
+      "sha256": "6340e45631ba9ac985932f9c082a8727d09a70d965581dde88c2f6b18db951f0"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/hosts-overview.Bq5UPipa.png",
+      "size": 55935,
+      "sha256": "e9f2797c72589aecbcfbec86c736347b1a5a3382f9e26673327340358a71f334"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/index.md.BNYhlp4t.js",
+      "size": 1535,
+      "sha256": "1982f89223d5576b3ecc300005f0e396dd2c1599137df437a6548f8077368605"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/index.md.BNYhlp4t.lean.js",
+      "size": 1535,
+      "sha256": "1982f89223d5576b3ecc300005f0e396dd2c1599137df437a6548f8077368605"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/inter-italic-cyrillic-ext.r48I6akx.woff2",
+      "size": 43112,
+      "sha256": "3f2ea09e148441f83171eae388d00da780b24b9bd155c141d0b5fbb0d803871d"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/inter-italic-cyrillic.By2_1cv3.woff2",
+      "size": 31300,
+      "sha256": "2a1c3126375078cd85d262aad635ac9d9ff9ac2c18b8143b2d21d540f9cd3dfb"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/inter-italic-greek-ext.1u6EdAuj.woff2",
+      "size": 17404,
+      "sha256": "bae39b1cc79168c9ac47f120c3eaa82cb634dc17e457cdd484725d8c7a60ab3e"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/inter-italic-greek.DJ8dCoTZ.woff2",
+      "size": 32564,
+      "sha256": "138cf731e5a284e262c576f765a6cb8f58045cb798d16693091e2251a0f63559"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/inter-italic-latin-ext.CN1xVJS-.woff2",
+      "size": 120840,
+      "sha256": "3e166de9aeff2d6a3d13c9228e03f7ff76369f5fa95fe0ab1d1d44235d5516aa"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/inter-italic-latin.C2AdPX0b.woff2",
+      "size": 74784,
+      "sha256": "3570e65005ccd9ecd87c6ccc7c713fc474a80ff7c3abbb1063f0e8ab4f8dc891"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/inter-italic-vietnamese.BSbpV94h.woff2",
+      "size": 14884,
+      "sha256": "a0aae13c473b99b63f3c0b8b692b3b2a4023145171aa86964f268235573e4ce5"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/inter-roman-cyrillic-ext.BBPuwvHQ.woff2",
+      "size": 40488,
+      "sha256": "a49e47fb34f94acf8ceb57603cb2fc4c01861527a9a304de3a0236b7b67da2c6"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/inter-roman-cyrillic.C5lxZ8CY.woff2",
+      "size": 29164,
+      "sha256": "d888610b6342164a592e59a4ce91a3755126a6ca2ee4e0d75c8e915eebaeed68"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/inter-roman-greek-ext.CqjqNYQ-.woff2",
+      "size": 16272,
+      "sha256": "7b7519f21aff6b3a011099999cec8a9d4c99173a8c9adeecffb0bd032fc49f69"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/inter-roman-greek.BBVDIX6e.woff2",
+      "size": 29920,
+      "sha256": "1a1997dfdcd7a9e0d2b26944b4b7fd1f1b2fde91bb405cb7a5870f93b45d2e05"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/inter-roman-latin-ext.4ZJIpNVo.woff2",
+      "size": 110160,
+      "sha256": "539d139f99942e93bead7bbcd18bc00f5a73932eb3a8997367f2b79f4f75bc60"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/inter-roman-latin.Di8DUHzh.woff2",
+      "size": 67792,
+      "sha256": "f7ab715caa2c78facb4334b211c81ee66f037cf9c99ca3f24acd543e84a93278"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/inter-roman-vietnamese.BjW4sHH5.woff2",
+      "size": 14072,
+      "sha256": "b315417b28ce251a54000a824d73c5af36798a88b3c05594f28dada0cbffab5a"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/logo-options_README.md.ZYkBX95w.js",
+      "size": 996,
+      "sha256": "9de504aa70862b12913f30b7d8c80c92498d5eb854ed5d01ea454c3d59c0bba7"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/logo-options_README.md.ZYkBX95w.lean.js",
+      "size": 449,
+      "sha256": "ff7debcb04937bddc905baf5593387b42b6c30b3d56edba59d8060651c4e951d"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/rules-create.BJxBk4TL.png",
+      "size": 37374,
+      "sha256": "d3864792cc2eb4727ae25dce1fb60cf8bfdbc1e05d0b0288fffbbdef57b0e0b7"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/setup-public-address.1qDqdB5a.png",
+      "size": 19553,
+      "sha256": "4b8ba753481bb0d1f4023d6ffe10a71ade03d7d463bdcce2e49368636f0e6bea"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/style.Byj4vWPp.css",
+      "size": 123236,
+      "sha256": "6e7e476ecdea72b1c67d813ea980de0a8cd058f2d3f154821decc9c20377f779"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/superpowers_plans_2026-10-15-manual-rule-import-source-port.md.CIM0-t-C.js",
+      "size": 31219,
+      "sha256": "b9bf75c90c5eafacd0e30bd7d36b238f6400da1797954f2ddc9be69031baf8cc"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/superpowers_plans_2026-10-15-manual-rule-import-source-port.md.CIM0-t-C.lean.js",
+      "size": 623,
+      "sha256": "62ee3d1ba1558a9cd40a598d94855824edfc04c3e4d46c7eccf17777ea6af627"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/superpowers_plans_2026-10-16-release-removed-group-hosts.md.Dg6Jxgam.js",
+      "size": 670183,
+      "sha256": "3459c1b1397a923420dab86ea902fac900fbcdaf09c3a59aba04247d88d4dadb"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/superpowers_plans_2026-10-16-release-removed-group-hosts.md.Dg6Jxgam.lean.js",
+      "size": 617,
+      "sha256": "0d33416433c86e2249f51dd189aa346fc7a39cd3596ec42e176ab09b793adeab"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/troubleshooting-logs.D7-6KJql.png",
+      "size": 26698,
+      "sha256": "6a9606f854ad52b05a7451623dd53abef26efdce460c2f40066448e5198e2504"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/tunnels-overview.C6nQ3wB0.png",
+      "size": 31072,
+      "sha256": "3fd56888345f0fab5385845d08ba67510c6c61a98e99374784a7bbb2505621fe"
+    },
+    {
+      "path": "docs/.vitepress/dist/assets/users-traffic.B_JaAKnh.png",
+      "size": 27470,
+      "sha256": "54c534a2de3a35b3307f1dcdc5ed5d9030dba754fa1c7a2136c5a790580842d0"
+    },
+    {
+      "path": "docs/.vitepress/dist/build-info.json",
+      "size": 210,
+      "sha256": "55056b50ded1bc18b3e5651ab72229e4bedaf67b9cc8f3189114d0822b5ba8b4"
+    },
+    {
+      "path": "docs/.vitepress/dist/guide/account-recovery.html",
+      "size": 37348,
+      "sha256": "23dcf05eedac68723d77788c62ecea6cd426764b0831876c9768f21615440ca9"
+    },
+    {
+      "path": "docs/.vitepress/dist/guide/affiliates.html",
+      "size": 37349,
+      "sha256": "2968f1705def2d339135cecb471c5308eef65811d74cc68a2b8836b4b6de839a"
+    },
+    {
+      "path": "docs/.vitepress/dist/guide/agent-proxy-manager.en.html",
+      "size": 43636,
+      "sha256": "c76b9ffd3dc64c8301556af66f2b306110846b48a3c9fe6d78b2fd69d1ceba44"
+    },
+    {
+      "path": "docs/.vitepress/dist/guide/agent-proxy-manager.html",
+      "size": 44051,
+      "sha256": "50f0b7c759cdf7884d8586cbd658c79db63b3173332f8a9de16d2813ff0d5891"
+    },
+    {
+      "path": "docs/.vitepress/dist/guide/agent.html",
+      "size": 48622,
+      "sha256": "1d982b5d99cf29c0b41f947dad4dc21e742f7867fc77562580ddffd64f2a2cc0"
+    },
+    {
+      "path": "docs/.vitepress/dist/guide/ai-assistant.html",
+      "size": 44213,
+      "sha256": "e4efd53b7b83a5610faa53f079c570e695e56033a11c35f5d4d8ef901b68c9ad"
+    },
+    {
+      "path": "docs/.vitepress/dist/guide/cloudflare-cdn.html",
+      "size": 50146,
+      "sha256": "1b67923eed4f17dfde6a211ceb38dc796f5394f8f20fa6e191dd7f6e588b2302"
+    },
+    {
+      "path": "docs/.vitepress/dist/guide/database.html",
+      "size": 39319,
+      "sha256": "d1374c6349e6fb8162af48e2c3c60b2953cddac5026d52d43789d99f51f5defb"
+    },
+    {
+      "path": "docs/.vitepress/dist/guide/ddns.html",
+      "size": 50573,
+      "sha256": "befc7ca4fbaef95c8435f32900b1f64693579548aeec8ca07c7eadf4fab48d47"
+    },
+    {
+      "path": "docs/.vitepress/dist/guide/deploy-docker.html",
+      "size": 51858,
+      "sha256": "e7e63897f16a8a5afdca8078fd1de10373e7368803d319a63f81e45b68868d7b"
+    },
+    {
+      "path": "docs/.vitepress/dist/guide/deploy-local.html",
+      "size": 42130,
+      "sha256": "23d6bc645e01cc7147af122c08fc3ee7e7841a1eb80568681b3c9f6184ae6336"
+    },
+    {
+      "path": "docs/.vitepress/dist/guide/deploy-panel.html",
+      "size": 38303,
+      "sha256": "24f410bd4d03facce0260b445fb6357e4f3af1e4b543509d68041c9d19dd79db"
+    },
+    {
+      "path": "docs/.vitepress/dist/guide/development.html",
+      "size": 36761,
+      "sha256": "ea22aa8cf8a95e1892545c6709fd8ada430b133b51c466ccc1e740398d4066c2"
+    },
+    {
+      "path": "docs/.vitepress/dist/guide/env-vars.html",
+      "size": 54214,
+      "sha256": "9a4d57b0f1b871159a95a951af72b5c2c2c42bd17a8aafd844a8054d590c671e"
+    },
+    {
+      "path": "docs/.vitepress/dist/guide/first-setup.html",
+      "size": 40828,
+      "sha256": "92a3455fc9aa3915237febb3a9755e197028d7d52b3f4ce664b0e7149124b6bf"
+    },
+    {
+      "path": "docs/.vitepress/dist/guide/google-login.html",
+      "size": 35892,
+      "sha256": "4b0cd07b63999bb97861329c10f745f62b71afa258bca25b811b36cf369f70b9"
+    },
+    {
+      "path": "docs/.vitepress/dist/guide/groups.html",
+      "size": 39021,
+      "sha256": "5851a4d32a875a467e32ec0a858b1f58b0c82a0de549a10344be7330359759fe"
+    },
+    {
+      "path": "docs/.vitepress/dist/guide/hosts.html",
+      "size": 44503,
+      "sha256": "e6a4f03d7285a605366f9ccc321dad1d39b55b31f6596aeeebd84026b6669826"
+    },
+    {
+      "path": "docs/.vitepress/dist/guide/index.html",
+      "size": 39984,
+      "sha256": "9b9f4b5037f07e0e3a61b4066aaf5b31c15745676a93b2161ff8cb516ebdfb38"
+    },
+    {
+      "path": "docs/.vitepress/dist/guide/interface.html",
+      "size": 36044,
+      "sha256": "db8fb1614778ea9823397b2411f34865f0b366443517712703b44f7e8d5b88a5"
+    },
+    {
+      "path": "docs/.vitepress/dist/guide/migration.html",
+      "size": 37745,
+      "sha256": "49af2c9498d22e387ca465c4184fc969a2feee270e9b8d26852eee83e2c17f6b"
+    },
+    {
+      "path": "docs/.vitepress/dist/guide/notifications.html",
+      "size": 40643,
+      "sha256": "c51bec607d384cbf97b47fae4195d9018169257d2f0428563106ecb1b9ef5d98"
+    },
+    {
+      "path": "docs/.vitepress/dist/guide/paths-logs.html",
+      "size": 41912,
+      "sha256": "31a41c80b04a5c70b2a03fab8f7a80c854973c150c6eb8d61066d76f882d1680"
+    },
+    {
+      "path": "docs/.vitepress/dist/guide/plugins.html",
+      "size": 158489,
+      "sha256": "c4a95ce416554eb3141e1cc53437f3a732260b2ba520d154d32405d201642009"
+    },
+    {
+      "path": "docs/.vitepress/dist/guide/port-chains.html",
+      "size": 36660,
+      "sha256": "6194266d07aa8fe472d884c0957ca712712b31a8044064b08fe9ac4ad958a6b7"
+    },
+    {
+      "path": "docs/.vitepress/dist/guide/preparation.html",
+      "size": 37041,
+      "sha256": "7fc3453e4e4230a5145d21db4d7e1a9ffdd484fdfeb6d162c141145c26e886e3"
+    },
+    {
+      "path": "docs/.vitepress/dist/guide/proxy-protocol.html",
+      "size": 37611,
+      "sha256": "4b05fa9e47db16185b449553650fd484f9da62b333476b41d0f1d014b786e990"
+    },
+    {
+      "path": "docs/.vitepress/dist/guide/quick-start.html",
+      "size": 39262,
+      "sha256": "9e78360ea1c0aed53934913c1f3a90545c72dfa74fdb2407d21a11794cd20f6f"
+    },
+    {
+      "path": "docs/.vitepress/dist/guide/releases.html",
+      "size": 37437,
+      "sha256": "b720123bf3f540a01b83b354b64dd207c5170d307e15cb894debeffb0251e8de"
+    },
+    {
+      "path": "docs/.vitepress/dist/guide/reverse-proxy.html",
+      "size": 42627,
+      "sha256": "9ec4b341f03c4bc0ee88f96c1ad17b60ca23803732fbfe28ebecf01980bcfaa4"
+    },
+    {
+      "path": "docs/.vitepress/dist/guide/rules.html",
+      "size": 48645,
+      "sha256": "ff6257b0ddae4091b7d330da1dadc8698d179accca0c36bbf6fddc2721ec2ebb"
+    },
+    {
+      "path": "docs/.vitepress/dist/guide/sni-routing.en.html",
+      "size": 41996,
+      "sha256": "47766d9c7062499f9c7a8c8f44f6f63495cb1cfd821a63d7e0f9a27efff16641"
+    },
+    {
+      "path": "docs/.vitepress/dist/guide/sni-routing.html",
+      "size": 62754,
+      "sha256": "d699773b03fdf5a9b853a91154d97cdf695b888730e515cb116d3dc8704ad8aa"
+    },
+    {
+      "path": "docs/.vitepress/dist/guide/ssh-management.html",
+      "size": 38941,
+      "sha256": "9b36e0496a0328b957e2fcead071523c586870313b951d685c0feca70f5628fd"
+    },
+    {
+      "path": "docs/.vitepress/dist/guide/support-tickets.html",
+      "size": 36105,
+      "sha256": "dc39dca3a0a3c6a7b7f98681db60901b18871220d7f6c2b7abf602ec17083a30"
+    },
+    {
+      "path": "docs/.vitepress/dist/guide/traffic-latency.html",
+      "size": 40248,
+      "sha256": "cc4ad25ec8c38a62fa789a5fbb38ca6331964ee491beda7f70d032b722e3158a"
+    },
+    {
+      "path": "docs/.vitepress/dist/guide/troubleshooting.html",
+      "size": 111738,
+      "sha256": "988826c1627a5c755e1bf5ca468987730d049163c4af68fe90d03ceea29d55f8"
+    },
+    {
+      "path": "docs/.vitepress/dist/guide/tunnels.html",
+      "size": 39765,
+      "sha256": "1ab078d035eb245ee5dd4bb1954c25e334987a9b38b510a28e25eddd256be329"
+    },
+    {
+      "path": "docs/.vitepress/dist/guide/ui-review.html",
+      "size": 39479,
+      "sha256": "b31c7b1790108ea266aeb81ab9490e1a9c6a8cb2f5048878d24edadc98448515"
+    },
+    {
+      "path": "docs/.vitepress/dist/guide/uninstall.html",
+      "size": 49243,
+      "sha256": "2b40f5bafd179b168ff19de7fe161f6de642cbf53b3c55ad0b5e96f708938f5a"
+    },
+    {
+      "path": "docs/.vitepress/dist/guide/upgrade-backup.html",
+      "size": 77790,
+      "sha256": "290f1be39a3c4a4df4e5868a3a78945d648930041252104e51c70f7b3940c88f"
+    },
+    {
+      "path": "docs/.vitepress/dist/guide/users-billing.html",
+      "size": 36673,
+      "sha256": "ff3a841de4d1b606835bafd4ed771d979e19c33c304a5518b366fad80e90165c"
+    },
+    {
+      "path": "docs/.vitepress/dist/hashmap.json",
+      "size": 2214,
+      "sha256": "0ee1048558b1fd7acdd504cc3dd6eb8ef28f96b922bdb8a7a21798b1d91e99b4"
+    },
+    {
+      "path": "docs/.vitepress/dist/img/.gitkeep",
+      "size": 1,
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    },
+    {
+      "path": "docs/.vitepress/dist/index.html",
+      "size": 17655,
+      "sha256": "9fe6b28efbcf36f28170a516f59ea3180275990618051d1dd3d39c63223f43f8"
+    },
+    {
+      "path": "docs/.vitepress/dist/logo-options/README.html",
+      "size": 32392,
+      "sha256": "11704786733e636c42a09ac96db4cd656da0eb2496765fd25a69a126cdf3c34d"
+    },
+    {
+      "path": "docs/.vitepress/dist/superpowers/plans/2026-10-15-manual-rule-import-source-port.html",
+      "size": 62614,
+      "sha256": "3f9459c871826d64e46400ff922a0a5950612bc3979a0ac4a87a4e1d3c8eb926"
+    },
+    {
+      "path": "docs/.vitepress/dist/superpowers/plans/2026-10-16-release-removed-group-hosts.html",
+      "size": 701451,
+      "sha256": "fc5f420f827f8ea258e9d6bcc4a37bb8b3a2cdd703738acbc7d529956e1a38bc"
+    },
+    {
+      "path": "docs/.vitepress/dist/vp-icons.css",
+      "size": 900,
+      "sha256": "c3179481ddd882c06c7a5c5888509946f5be5b9ba7e504e3b0ceef1004831786"
+    }
+  ]
+}

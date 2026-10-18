@@ -1,0 +1,64 @@
+(node:47133) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+TAP version 13
+# (node:47138) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:47138) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: group rule tests follow active host/tunnel members and persist their selected runtime
+ok 1 - group rule tests follow active host/tunnel members and persist their selected runtime
+  ---
+  duration_ms: 1013.409375
+  type: 'test'
+  ...
+# (node:47139) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:47139) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: forward self-test leases recover lost deliveries and give claimed work a fresh timeout
+ok 2 - forward self-test leases recover lost deliveries and give claimed work a fresh timeout
+  ---
+  duration_ms: 559.354959
+  type: 'test'
+  ...
+# (node:47140) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:47140) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: chain results preserve the newest generation and show durable partial progress
+ok 3 - chain results preserve the newest generation and show durable partial progress
+  ---
+  duration_ms: 951.8285
+  type: 'test'
+  ...
+# (node:47141) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:47141) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: failover route follows the active member even when a higher-priority server recovers
+ok 4 - failover route follows the active member even when a higher-priority server recovers
+  ---
+  duration_ms: 0.611584
+  type: 'test'
+  ...
+# Subtest: tunnel route follows its active member; serial chains never skip or reorder nodes
+ok 5 - tunnel route follows its active member; serial chains never skip or reorder nodes
+  ---
+  duration_ms: 0.065625
+  type: 'test'
+  ...
+# Subtest: test source labels come from the persisted route rather than the current group
+ok 6 - test source labels come from the persisted route rather than the current group
+  ---
+  duration_ms: 0.099083
+  type: 'test'
+  ...
+1..6
+# tests 6
+# suites 0
+# pass 6
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1138.9415

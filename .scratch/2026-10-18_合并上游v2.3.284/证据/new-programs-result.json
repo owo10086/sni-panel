@@ -1,0 +1,380 @@
+{
+  "beforeRuntime": {
+    "entry": {
+      "processes": [
+        {
+          "pid": 59,
+          "name": "forwardx-agent",
+          "start": "6441280"
+        },
+        {
+          "pid": 186,
+          "name": "forwardx-runtim",
+          "start": "6441419"
+        }
+      ],
+      "configs": {
+        "/etc/forwardx/runtime/gost.json": "80fad5453a6a65329c446724883d2326fc510cc6c09cb09607dcd00fd8395aa8",
+        "/etc/forwardx/runtime/tunnel-gost.json": "e24510e732cda48827c83070b2a8fe3d069e7cb44fa0a5cb4eef9376e31a05da"
+      }
+    },
+    "exit": {
+      "processes": [
+        {
+          "pid": 78,
+          "name": "forwardx-agent",
+          "start": "6441289"
+        },
+        {
+          "pid": 239,
+          "name": "forwardx-fxp",
+          "start": "6441325"
+        },
+        {
+          "pid": 248,
+          "name": "forwardx-runtim",
+          "start": "6441425"
+        },
+        {
+          "pid": 288,
+          "name": "forwardx-runtim",
+          "start": "6441527"
+        }
+      ],
+      "configs": {
+        "/run/forwardx-agent/fxp-sni-splitter-0-24000.json": "b694c8763ab372ff1fdc0fba08c97b74198810cd7d465a27eb1a3cd7a4acea35",
+        "/etc/forwardx/runtime/gost.json": "6b1e302eb420e0f31a8e8300da1d62879de15bcfa09ba309b9eb99decba37bc3",
+        "/etc/forwardx/runtime/tunnel-gost.json": "1fa826c15e8f3d6aa53ee7a43a456c31ca2d9b391791ac269c40b1f0fb693e3f"
+      }
+    }
+  },
+  "beforeListeners": {
+    "entry": "Netid State  Recv-Q Send-Q Local Address:Port  Peer Address:PortProcess\nudp   UNCONN 0      0         127.0.0.11:55259      0.0.0.0:*          \ntcp   LISTEN 0      4096      127.0.0.11:35589      0.0.0.0:*          \ntcp   LISTEN 0      4096               *:18443            *:*    users:((\"forwardx-runtim\",pid=186,fd=3))",
+    "exit": "Netid State  Recv-Q Send-Q Local Address:Port  Peer Address:PortProcess                                  \nudp   UNCONN 0      0         127.0.0.11:47645      0.0.0.0:*                                            \ntcp   LISTEN 0      511          0.0.0.0:30001      0.0.0.0:*    users:((\"node\",pid=60,fd=22))           \ntcp   LISTEN 0      511          0.0.0.0:30443      0.0.0.0:*    users:((\"node\",pid=60,fd=18))           \ntcp   LISTEN 0      511          0.0.0.0:30843      0.0.0.0:*    users:((\"node\",pid=60,fd=19))           \ntcp   LISTEN 0      4096      127.0.0.11:33605      0.0.0.0:*                                            \ntcp   LISTEN 0      511          0.0.0.0:31443      0.0.0.0:*    users:((\"node\",pid=60,fd=20))           \ntcp   LISTEN 0      511          0.0.0.0:31843      0.0.0.0:*    users:((\"node\",pid=60,fd=21))           \ntcp   LISTEN 0      4096               *:21001            *:*    users:((\"forwardx-runtim\",pid=248,fd=3))\ntcp   LISTEN 0      4096               *:23000            *:*    users:((\"forwardx-runtim\",pid=288,fd=3))\ntcp   LISTEN 0      4096               *:24001            *:*    users:((\"forwardx-runtim\",pid=288,fd=6))\ntcp   LISTEN 0      4096               *:24000            *:*    users:((\"forwardx-fxp\",pid=239,fd=3))"
+  },
+  "before": {
+    "rules": [
+      {
+        "id": 101,
+        "quotaUsedIn": 132706,
+        "quotaUsedOut": 135197,
+        "ruleLimitReason": null
+      },
+      {
+        "id": 102,
+        "quotaUsedIn": null,
+        "quotaUsedOut": null,
+        "ruleLimitReason": null
+      },
+      {
+        "id": 103,
+        "quotaUsedIn": 2,
+        "quotaUsedOut": 3,
+        "ruleLimitReason": "traffic_limit"
+      },
+      {
+        "id": 104,
+        "quotaUsedIn": 0,
+        "quotaUsedOut": 0,
+        "ruleLimitReason": "expired"
+      },
+      {
+        "id": 200,
+        "quotaUsedIn": null,
+        "quotaUsedOut": null,
+        "ruleLimitReason": null
+      }
+    ],
+    "users": [
+      {
+        "id": 3,
+        "trafficUsed": 269833,
+        "balanceCents": 100000
+      }
+    ],
+    "reports": [
+      {
+        "hostId": 7,
+        "producerId": "agent-2044de6979b35523f15724025eb04277692072cf4c5c6227fe218e1cea1a24ad",
+        "reportId": "agent-7381aa2686b13ee06bc528291dd74ec4"
+      },
+      {
+        "hostId": 8,
+        "producerId": "agent-c4628fb978103ceec16cb862eaa9f8bc8ac3bebe8bb9c2359d5340c733de35a7",
+        "reportId": "agent-d103d2a9e646ce2e68a06eff11537e4c"
+      },
+      {
+        "hostId": 8,
+        "producerId": "fxp-3de246ec369ad21f45c50f1f39482e4ee34985a09ea972e5429b2668fed19a8b",
+        "reportId": "fxp-b1832abc49a8d7254e20d199ce8637f1"
+      }
+    ],
+    "payments": [
+      {
+        "outTradeNo": "MIGRATION-PAYMENT",
+        "status": "pending"
+      }
+    ],
+    "balance": []
+  },
+  "preMigrationReplayDuplicate": true,
+  "uncertainActivationRetained": true,
+  "verifyingRuntime": {
+    "entry": {
+      "processes": [
+        {
+          "pid": 59,
+          "name": "forwardx-agent",
+          "start": "6441280"
+        },
+        {
+          "pid": 186,
+          "name": "forwardx-runtim",
+          "start": "6441419"
+        }
+      ],
+      "configs": {
+        "/etc/forwardx/runtime/gost.json": "80fad5453a6a65329c446724883d2326fc510cc6c09cb09607dcd00fd8395aa8",
+        "/etc/forwardx/runtime/tunnel-gost.json": "e24510e732cda48827c83070b2a8fe3d069e7cb44fa0a5cb4eef9376e31a05da"
+      }
+    },
+    "exit": {
+      "processes": [
+        {
+          "pid": 78,
+          "name": "forwardx-agent",
+          "start": "6441289"
+        },
+        {
+          "pid": 239,
+          "name": "forwardx-fxp",
+          "start": "6441325"
+        },
+        {
+          "pid": 248,
+          "name": "forwardx-runtim",
+          "start": "6441425"
+        },
+        {
+          "pid": 288,
+          "name": "forwardx-runtim",
+          "start": "6441527"
+        }
+      ],
+      "configs": {
+        "/run/forwardx-agent/fxp-sni-splitter-0-24000.json": "b694c8763ab372ff1fdc0fba08c97b74198810cd7d465a27eb1a3cd7a4acea35",
+        "/etc/forwardx/runtime/gost.json": "6b1e302eb420e0f31a8e8300da1d62879de15bcfa09ba309b9eb99decba37bc3",
+        "/etc/forwardx/runtime/tunnel-gost.json": "1fa826c15e8f3d6aa53ee7a43a456c31ca2d9b391791ac269c40b1f0fb693e3f"
+      }
+    }
+  },
+  "verifyingListeners": {
+    "entry": "Netid State  Recv-Q Send-Q Local Address:Port  Peer Address:PortProcess\nudp   UNCONN 0      0         127.0.0.11:55259      0.0.0.0:*          \ntcp   LISTEN 0      4096      127.0.0.11:35589      0.0.0.0:*          \ntcp   LISTEN 0      4096               *:18443            *:*    users:((\"forwardx-runtim\",pid=186,fd=3))",
+    "exit": "Netid State  Recv-Q Send-Q Local Address:Port  Peer Address:PortProcess                                  \nudp   UNCONN 0      0         127.0.0.11:47645      0.0.0.0:*                                            \ntcp   LISTEN 0      511          0.0.0.0:30001      0.0.0.0:*    users:((\"node\",pid=60,fd=22))           \ntcp   LISTEN 0      511          0.0.0.0:30443      0.0.0.0:*    users:((\"node\",pid=60,fd=18))           \ntcp   LISTEN 0      511          0.0.0.0:30843      0.0.0.0:*    users:((\"node\",pid=60,fd=19))           \ntcp   LISTEN 0      4096      127.0.0.11:33605      0.0.0.0:*                                            \ntcp   LISTEN 0      511          0.0.0.0:31443      0.0.0.0:*    users:((\"node\",pid=60,fd=20))           \ntcp   LISTEN 0      511          0.0.0.0:31843      0.0.0.0:*    users:((\"node\",pid=60,fd=21))           \ntcp   LISTEN 0      4096               *:21001            *:*    users:((\"forwardx-runtim\",pid=248,fd=3))\ntcp   LISTEN 0      4096               *:23000            *:*    users:((\"forwardx-runtim\",pid=288,fd=3))\ntcp   LISTEN 0      4096               *:24001            *:*    users:((\"forwardx-runtim\",pid=288,fd=6))\ntcp   LISTEN 0      4096               *:24000            *:*    users:((\"forwardx-fxp\",pid=239,fd=3))"
+  },
+  "verifyingAccounting": {
+    "rules": [
+      {
+        "id": 101,
+        "quotaUsedIn": 132706,
+        "quotaUsedOut": 135197,
+        "ruleLimitReason": null
+      },
+      {
+        "id": 102,
+        "quotaUsedIn": null,
+        "quotaUsedOut": null,
+        "ruleLimitReason": null
+      },
+      {
+        "id": 103,
+        "quotaUsedIn": 2,
+        "quotaUsedOut": 3,
+        "ruleLimitReason": "traffic_limit"
+      },
+      {
+        "id": 104,
+        "quotaUsedIn": 0,
+        "quotaUsedOut": 0,
+        "ruleLimitReason": "expired"
+      },
+      {
+        "id": 200,
+        "quotaUsedIn": null,
+        "quotaUsedOut": null,
+        "ruleLimitReason": null
+      }
+    ],
+    "users": [
+      {
+        "id": 3,
+        "trafficUsed": 269833,
+        "balanceCents": 100200
+      }
+    ],
+    "reports": [
+      {
+        "hostId": 7,
+        "producerId": "agent-2044de6979b35523f15724025eb04277692072cf4c5c6227fe218e1cea1a24ad",
+        "reportId": "agent-7381aa2686b13ee06bc528291dd74ec4"
+      },
+      {
+        "hostId": 7,
+        "producerId": "migration-entry-fixture",
+        "reportId": "migration-entry-not-billed"
+      },
+      {
+        "hostId": 8,
+        "producerId": "agent-c4628fb978103ceec16cb862eaa9f8bc8ac3bebe8bb9c2359d5340c733de35a7",
+        "reportId": "agent-d103d2a9e646ce2e68a06eff11537e4c"
+      },
+      {
+        "hostId": 8,
+        "producerId": "fxp-3de246ec369ad21f45c50f1f39482e4ee34985a09ea972e5429b2668fed19a8b",
+        "reportId": "fxp-b1832abc49a8d7254e20d199ce8637f1"
+      }
+    ],
+    "payments": [
+      {
+        "outTradeNo": "MIGRATION-PAYMENT",
+        "status": "completed"
+      }
+    ],
+    "balance": [
+      {
+        "paymentOrderNo": "MIGRATION-PAYMENT",
+        "amountCents": 200
+      }
+    ]
+  },
+  "restartAndResume": true,
+  "activeRuntime": {
+    "entry": {
+      "processes": [
+        {
+          "pid": 59,
+          "name": "forwardx-agent",
+          "start": "6441280"
+        },
+        {
+          "pid": 186,
+          "name": "forwardx-runtim",
+          "start": "6441419"
+        }
+      ],
+      "configs": {
+        "/etc/forwardx/runtime/gost.json": "80fad5453a6a65329c446724883d2326fc510cc6c09cb09607dcd00fd8395aa8",
+        "/etc/forwardx/runtime/tunnel-gost.json": "e24510e732cda48827c83070b2a8fe3d069e7cb44fa0a5cb4eef9376e31a05da"
+      }
+    },
+    "exit": {
+      "processes": [
+        {
+          "pid": 78,
+          "name": "forwardx-agent",
+          "start": "6441289"
+        },
+        {
+          "pid": 239,
+          "name": "forwardx-fxp",
+          "start": "6441325"
+        },
+        {
+          "pid": 248,
+          "name": "forwardx-runtim",
+          "start": "6441425"
+        },
+        {
+          "pid": 288,
+          "name": "forwardx-runtim",
+          "start": "6441527"
+        }
+      ],
+      "configs": {
+        "/run/forwardx-agent/fxp-sni-splitter-0-24000.json": "b694c8763ab372ff1fdc0fba08c97b74198810cd7d465a27eb1a3cd7a4acea35",
+        "/etc/forwardx/runtime/gost.json": "6b1e302eb420e0f31a8e8300da1d62879de15bcfa09ba309b9eb99decba37bc3",
+        "/etc/forwardx/runtime/tunnel-gost.json": "1fa826c15e8f3d6aa53ee7a43a456c31ca2d9b391791ac269c40b1f0fb693e3f"
+      }
+    }
+  },
+  "activeListeners": {
+    "entry": "Netid State  Recv-Q Send-Q Local Address:Port  Peer Address:PortProcess\nudp   UNCONN 0      0         127.0.0.11:55259      0.0.0.0:*          \ntcp   LISTEN 0      4096      127.0.0.11:35589      0.0.0.0:*          \ntcp   LISTEN 0      4096               *:18443            *:*    users:((\"forwardx-runtim\",pid=186,fd=3))",
+    "exit": "Netid State  Recv-Q Send-Q Local Address:Port  Peer Address:PortProcess                                  \nudp   UNCONN 0      0         127.0.0.11:47645      0.0.0.0:*                                            \ntcp   LISTEN 0      511          0.0.0.0:30001      0.0.0.0:*    users:((\"node\",pid=60,fd=22))           \ntcp   LISTEN 0      511          0.0.0.0:30443      0.0.0.0:*    users:((\"node\",pid=60,fd=18))           \ntcp   LISTEN 0      511          0.0.0.0:30843      0.0.0.0:*    users:((\"node\",pid=60,fd=19))           \ntcp   LISTEN 0      4096      127.0.0.11:33605      0.0.0.0:*                                            \ntcp   LISTEN 0      511          0.0.0.0:31443      0.0.0.0:*    users:((\"node\",pid=60,fd=20))           \ntcp   LISTEN 0      511          0.0.0.0:31843      0.0.0.0:*    users:((\"node\",pid=60,fd=21))           \ntcp   LISTEN 0      4096               *:21001            *:*    users:((\"forwardx-runtim\",pid=248,fd=3))\ntcp   LISTEN 0      4096               *:23000            *:*    users:((\"forwardx-runtim\",pid=288,fd=3))\ntcp   LISTEN 0      4096               *:24001            *:*    users:((\"forwardx-runtim\",pid=288,fd=6))\ntcp   LISTEN 0      4096               *:24000            *:*    users:((\"forwardx-fxp\",pid=239,fd=3))"
+  },
+  "after": {
+    "rules": [
+      {
+        "id": 101,
+        "quotaUsedIn": 264870,
+        "quotaUsedOut": 270343,
+        "ruleLimitReason": null
+      },
+      {
+        "id": 102,
+        "quotaUsedIn": null,
+        "quotaUsedOut": null,
+        "ruleLimitReason": null
+      },
+      {
+        "id": 103,
+        "quotaUsedIn": 2,
+        "quotaUsedOut": 3,
+        "ruleLimitReason": "traffic_limit"
+      },
+      {
+        "id": 104,
+        "quotaUsedIn": 0,
+        "quotaUsedOut": 0,
+        "ruleLimitReason": "expired"
+      },
+      {
+        "id": 200,
+        "quotaUsedIn": null,
+        "quotaUsedOut": null,
+        "ruleLimitReason": null
+      }
+    ],
+    "users": [
+      {
+        "id": 3,
+        "trafficUsed": 537321,
+        "balanceCents": 100200
+      }
+    ],
+    "reports": [
+      {
+        "hostId": 7,
+        "producerId": "agent-2044de6979b35523f15724025eb04277692072cf4c5c6227fe218e1cea1a24ad",
+        "reportId": "agent-5edce6b89f8b17e86668ac4b1d3b758c"
+      },
+      {
+        "hostId": 7,
+        "producerId": "migration-entry-fixture",
+        "reportId": "migration-entry-not-billed"
+      },
+      {
+        "hostId": 8,
+        "producerId": "agent-c4628fb978103ceec16cb862eaa9f8bc8ac3bebe8bb9c2359d5340c733de35a7",
+        "reportId": "agent-b2e1c10eeef9dc7ad1facd611b077835"
+      },
+      {
+        "hostId": 8,
+        "producerId": "fxp-3de246ec369ad21f45c50f1f39482e4ee34985a09ea972e5429b2668fed19a8b",
+        "reportId": "fxp-98f1567c06c23142ecc5ef9d923ab63e"
+      }
+    ],
+    "payments": [
+      {
+        "outTradeNo": "MIGRATION-PAYMENT",
+        "status": "completed"
+      }
+    ],
+    "balance": [
+      {
+        "paymentOrderNo": "MIGRATION-PAYMENT",
+        "amountCents": 200
+      }
+    ]
+  },
+  "managedLongConnections": true
+}

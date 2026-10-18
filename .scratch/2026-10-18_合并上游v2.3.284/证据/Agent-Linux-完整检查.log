@@ -1,0 +1,8 @@
+go: downloading golang.org/x/time v0.7.0
+go: downloading golang.org/x/sys v0.32.0
+go: downloading golang.zx2c4.com/wireguard v0.0.0-20250521234502-f333402bd9cb
+go: downloading golang.org/x/net v0.39.0
+go: downloading golang.org/x/crypto v0.37.0
+go: downloading gvisor.dev/gvisor v0.0.0-20250503011706-39ed1f5ac29c
+go: downloading github.com/google/btree v1.1.2
+ok  	github.com/poouo/Forwardx/agent	1.951s

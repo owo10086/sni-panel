@@ -1,0 +1,1185 @@
+(node:52294) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+client/src/pages/Rules.tsx(4077,1): error TS1185: Merge conflict marker encountered.
+client/src/pages/Rules.tsx(4085,1): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4085,2): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4085,3): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4085,4): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4085,5): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4085,6): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4085,7): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4185,70): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4186,14): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4192,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4193,47): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4194,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(4195,35): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4196,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4197,53): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4198,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(4200,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4202,9): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4206,9): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4218,63): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4226,50): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4230,80): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4231,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(4232,22): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4232,114): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4233,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4235,17): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4236,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(4239,43): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4239,135): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4240,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4241,66): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4242,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(4243,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(4244,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4248,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4250,17): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4251,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(4252,45): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4255,21): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4255,95): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4258,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4263,15): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4263,58): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4266,65): error TS1003: Identifier expected.
+client/src/pages/Rules.tsx(4266,67): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4266,73): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4267,12): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4267,130): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4268,12): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4268,146): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4269,12): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4269,142): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4270,12): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4270,141): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4271,12): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4271,139): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4273,48): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4274,55): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4274,95): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4274,124): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4275,21): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4277,42): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4278,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(4280,26): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4281,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4282,45): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4283,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(4285,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4286,48): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4289,27): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4291,33): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4294,46): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4300,15): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4300,97): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4301,14): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4301,39): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4303,14): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4303,46): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4306,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4309,42): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4310,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(4310,31): error TS1003: Identifier expected.
+client/src/pages/Rules.tsx(4310,46): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4311,51): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4312,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(4314,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4316,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4320,15): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4320,37): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4321,12): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4321,68): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4323,14): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4323,73): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4327,40): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4328,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4330,15): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4330,76): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4331,12): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4331,66): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4333,14): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4333,48): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4337,40): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4338,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4340,89): error TS1003: Identifier expected.
+client/src/pages/Rules.tsx(4340,91): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4341,89): error TS1003: Identifier expected.
+client/src/pages/Rules.tsx(4341,91): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4343,14): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4343,42): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4348,8): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4362,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4363,21): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4364,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4365,17): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4366,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(4367,43): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4369,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4371,60): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4372,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4373,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4374,17): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4375,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(4376,43): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4378,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4380,60): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4381,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4382,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4385,37): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4386,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(4386,29): error TS1003: Identifier expected.
+client/src/pages/Rules.tsx(4387,14): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4393,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4393,6): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4394,47): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4395,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(4398,47): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4403,20): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4404,130): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4407,9): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4408,7): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4416,11): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4417,7): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4418,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4420,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4421,17): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4422,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(4426,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(4429,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4430,57): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4431,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4432,41): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4442,9): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4442,43): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4442,78): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4449,42): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4450,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(4450,29): error TS1003: Identifier expected.
+client/src/pages/Rules.tsx(4450,40): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4450,67): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4450,68): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4451,47): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4452,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(4455,47): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4457,7): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4461,11): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4462,7): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4463,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4465,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4466,42): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4467,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(4467,29): error TS1003: Identifier expected.
+client/src/pages/Rules.tsx(4467,40): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4467,88): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4467,89): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4468,47): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4469,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(4472,47): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4475,7): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4480,11): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4481,7): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4482,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4484,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4485,46): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4486,9): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4489,47): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4490,40): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4493,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4495,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4496,46): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4497,9): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4500,47): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4501,40): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4504,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4506,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4510,66): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4511,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(4514,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(4516,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4523,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4524,43): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4525,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(4526,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4528,9): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4532,10): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4533,37): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4534,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4537,9): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4549,138): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4554,16): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4559,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4560,17): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4561,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(4563,18): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4568,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4569,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4577,13): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4579,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4582,9): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4582,42): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4585,53): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4585,88): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4586,36): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4590,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4591,53): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4592,46): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4592,100): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4593,39): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4594,19): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4594,113): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4595,19): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4595,99): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4596,25): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4597,23): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4597,59): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4600,9): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4601,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4609,41): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4610,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(4611,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4613,9): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4613,49): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4617,10): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4618,37): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4619,85): error TS1003: Identifier expected.
+client/src/pages/Rules.tsx(4620,29): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4621,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(4623,53): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4626,47): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4629,17): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4632,7): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4633,16): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4633,22): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4634,24): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4634,58): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4640,7): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4641,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4642,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4643,41): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4644,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(4645,13): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4645,120): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4646,13): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4646,122): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4647,13): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4647,120): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4648,13): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4648,120): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4650,53): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4651,37): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4652,84): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4653,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4654,29): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4655,57): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4656,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4657,35): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4657,56): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4658,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4661,41): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4662,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(4662,34): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4663,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4664,42): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4665,63): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4668,42): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4669,46): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4670,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(4686,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4687,41): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4688,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(4690,18): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4690,29): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4691,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4692,58): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4693,58): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4698,46): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4699,51): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4700,46): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4707,48): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4712,46): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4713,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(4719,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4720,54): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4721,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(4726,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4727,50): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4738,51): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4739,54): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4740,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(4743,40): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4744,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(4748,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4749,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4750,51): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4751,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(4754,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(4755,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4757,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4758,132): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4761,111): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4762,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(4762,45): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4762,155): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4766,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(4771,28): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4772,28): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4773,72): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4774,9): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(4776,7): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4778,63): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4778,102): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4779,72): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4779,116): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4781,9): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(4781,58): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4782,60): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4784,65): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4784,105): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4785,90): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4785,136): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4787,11): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(4787,25): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4787,53): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4789,49): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4790,9): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4791,23): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4791,80): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4792,7): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4794,9): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(4797,16): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4798,105): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4798,138): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4799,9): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4800,7): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4801,43): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4801,129): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4802,57): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4802,108): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4804,9): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(4805,30): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4806,38): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4806,48): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4809,32): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4810,23): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4813,16): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4815,72): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4816,63): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4817,9): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4818,7): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4819,65): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4822,9): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(4823,23): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4823,157): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4824,7): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4825,42): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4825,109): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4826,44): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4827,9): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(4827,63): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4830,16): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4834,9): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4835,7): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4836,21): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4836,76): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4837,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4839,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(4841,55): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4850,20): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4861,7): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4862,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4864,18): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4872,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4873,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4874,42): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4875,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(4875,36): error TS1003: Identifier expected.
+client/src/pages/Rules.tsx(4876,14): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4880,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4880,6): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4882,25): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4883,33): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4883,70): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4886,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(4887,48): error TS1003: Identifier expected.
+client/src/pages/Rules.tsx(4895,16): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4896,7): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4897,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4899,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4901,9): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4901,64): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4904,17): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4905,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(4906,37): error TS1003: Identifier expected.
+client/src/pages/Rules.tsx(4906,46): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4906,122): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4906,123): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4907,79): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4911,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(4917,36): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(4917,74): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4918,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4919,24): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4920,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4921,51): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4922,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(4928,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4929,59): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4930,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(4933,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(4934,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4936,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(4937,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4940,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4941,55): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4942,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(4957,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4958,61): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4959,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(4960,56): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4994,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(4996,41): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(4997,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(4997,46): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5001,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5002,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5004,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5006,45): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5007,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5009,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5011,48): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5012,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5012,30): error TS1003: Identifier expected.
+client/src/pages/Rules.tsx(5012,35): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5015,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5015,24): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(5015,193): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5016,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5018,36): error TS1003: Identifier expected.
+client/src/pages/Rules.tsx(5018,41): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5018,74): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5023,42): error TS1003: Identifier expected.
+client/src/pages/Rules.tsx(5023,47): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5033,9): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(5034,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5035,46): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5037,115): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5041,82): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5045,53): error TS1003: Identifier expected.
+client/src/pages/Rules.tsx(5045,58): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5046,47): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5047,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5048,18): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5049,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5050,51): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5051,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5057,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5059,59): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5060,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5069,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5074,51): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5075,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5082,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5083,52): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5084,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5094,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5102,40): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(5105,14): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(5106,7): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5116,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5117,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5128,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5131,30): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5137,35): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5139,34): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5140,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5142,53): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5143,9): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5146,15): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(5154,9): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5155,7): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5156,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5163,49): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5164,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5166,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5172,32): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5173,11): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(5190,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5194,50): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5195,34): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5195,70): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5197,71): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5199,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5200,70): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5202,22): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5207,11): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(5208,7): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5209,59): error TS1003: Identifier expected.
+client/src/pages/Rules.tsx(5215,11): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(5216,7): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5217,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5218,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5218,55): error TS1003: Identifier expected.
+client/src/pages/Rules.tsx(5219,9): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5224,45): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5226,7): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5227,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5230,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5232,13): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(5240,7): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5241,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5244,15): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(5245,45): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5247,31): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5250,37): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5251,46): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5255,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5256,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5258,82): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5259,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5263,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5265,99): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5266,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5276,8): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(5277,56): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5278,93): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(5279,7): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5280,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5289,8): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(5290,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5298,8): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(5299,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5300,35): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5301,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5303,112): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5304,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5306,46): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5307,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5310,9): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5315,9): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5320,9): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5320,49): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5325,9): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5325,49): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5329,87): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5330,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5331,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5333,9): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5334,16): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(5337,9): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5338,7): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5340,9): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5341,16): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(5344,9): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5345,7): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5347,14): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(5350,7): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5351,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5355,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5356,14): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(5359,7): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5360,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5362,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5363,14): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(5366,7): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5367,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5369,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5370,14): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(5373,7): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5374,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5376,12): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(5379,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5380,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5382,108): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5382,122): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5383,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5392,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5392,71): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5404,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5406,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5415,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5422,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5436,3): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5437,9): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(5443,32): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5444,32): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5448,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5448,7): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5449,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5450,69): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5532,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5533,99): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5534,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5535,37): error TS1003: Identifier expected.
+client/src/pages/Rules.tsx(5536,52): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5537,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5543,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5544,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5547,9): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5552,9): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5552,68): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(5552,126): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5556,39): error TS1003: Identifier expected.
+client/src/pages/Rules.tsx(5556,41): error TS1005: '...' expected.
+client/src/pages/Rules.tsx(5556,43): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(5556,99): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5556,100): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5556,106): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5557,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5558,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5558,18): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(5558,78): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5559,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5561,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5561,18): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(5561,82): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5562,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5564,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5566,36): error TS1003: Identifier expected.
+client/src/pages/Rules.tsx(5566,38): error TS1005: '...' expected.
+client/src/pages/Rules.tsx(5566,40): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(5566,96): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5566,97): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5566,103): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5567,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5567,39): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(5567,136): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5569,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5570,9): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5570,20): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(5570,117): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5571,7): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5573,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5575,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5577,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5578,37): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(5578,82): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5579,33): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(5579,87): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5580,16): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(5580,159): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5581,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5583,33): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5584,24): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(5588,34): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5591,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5593,32): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5594,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5597,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5599,32): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5600,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5601,47): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(5603,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5625,65): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(5627,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5632,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5634,54): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5635,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5640,32): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5641,58): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(5643,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5645,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5649,41): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(5651,7): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5652,44): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(5652,83): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5652,113): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(5652,125): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5652,129): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5653,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5654,67): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(5655,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5656,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5658,62): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5659,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5667,13): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(5680,22): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(5681,38): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(5681,177): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5682,7): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5703,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5704,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5706,39): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5707,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5709,44): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(5711,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5718,28): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(5720,20): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(5720,40): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5722,16): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(5723,9): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5724,7): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5724,26): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(5724,107): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5726,54): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5727,49): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5728,46): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5729,9): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5732,7): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5742,27): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5743,9): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5743,52): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5745,93): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(5746,9): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5749,25): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(5750,9): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5753,25): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(5754,9): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5761,7): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5762,69): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(5766,7): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5768,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5769,95): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(5770,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5775,10): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(5778,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5779,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5781,95): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5782,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5783,86): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(5785,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5786,98): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(5788,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5789,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5790,81): error TS1003: Identifier expected.
+client/src/pages/Rules.tsx(5790,90): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5790,116): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5791,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5796,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5798,33): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5799,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5799,56): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5801,87): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(5803,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5805,49): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(5807,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5813,13): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(5816,7): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5820,29): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5824,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5825,41): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5826,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5828,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5831,50): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5832,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5834,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5835,44): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5836,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5837,24): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5840,18): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5841,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5841,66): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(5841,77): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5842,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5845,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5846,53): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5847,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5848,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5849,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5852,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5854,50): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5855,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5855,42): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5857,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5859,71): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5860,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5862,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5864,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5866,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5868,45): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5869,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5870,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5872,55): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5873,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5875,30): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5877,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5879,90): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5880,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5881,44): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5882,79): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5886,57): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5888,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5890,85): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5891,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5893,58): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5898,75): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(5900,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5904,29): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5905,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5905,65): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5906,9): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5908,7): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5909,56): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5910,40): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5912,77): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(5914,7): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5917,63): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(5918,7): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5920,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5923,61): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(5924,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5926,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5928,64): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5929,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5930,16): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5935,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5936,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5938,18): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5939,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5942,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5944,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5946,92): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5947,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5948,18): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5949,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5951,63): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(5952,7): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5953,29): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5954,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5957,61): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(5958,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5960,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5962,90): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5963,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5967,77): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(5969,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5972,30): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5973,31): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5974,9): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5974,28): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5975,11): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5977,9): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5979,7): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5981,45): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(5982,23): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5983,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5985,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(5987,90): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(5988,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(5995,65): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(5997,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6001,29): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6002,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(6003,29): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6003,95): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6006,77): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(6008,7): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6012,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6016,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6019,68): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6020,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(6021,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(6023,9): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(6025,54): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(6027,9): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6030,52): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(6032,9): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6033,51): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(6034,9): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6036,7): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6039,88): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(6041,7): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6044,50): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(6046,7): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6047,49): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(6048,7): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6050,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6053,47): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(6055,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6058,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(6059,50): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(6060,7): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6062,9): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(6070,7): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6072,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6073,47): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(6074,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6075,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6077,96): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6078,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(6079,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(6080,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6082,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(6083,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6085,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(6086,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6088,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6090,40): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6091,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(6092,26): error TS1003: Identifier expected.
+client/src/pages/Rules.tsx(6092,28): error TS1005: '...' expected.
+client/src/pages/Rules.tsx(6092,34): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(6092,119): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6092,120): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6097,22): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6098,9): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(6101,7): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6121,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6123,47): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6124,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(6132,63): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6132,95): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(6132,137): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6132,167): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6132,199): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(6132,236): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6133,38): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6135,19): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(6135,52): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6137,24): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6138,21): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6140,13): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(6142,7): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6143,58): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6145,17): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(6145,100): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6146,62): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6151,91): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6151,130): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6158,22): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(6160,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6161,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6163,56): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6164,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(6171,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(6222,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6224,49): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6225,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(6244,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6246,48): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6247,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(6260,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6262,57): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6263,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(6268,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6270,67): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6271,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(6293,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6295,52): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6297,9): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(6302,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6304,69): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6305,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(6314,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6315,61): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6316,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(6358,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(6365,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6367,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(6373,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6375,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(6384,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6393,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6395,90): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6404,49): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(6404,64): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(6404,91): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6404,132): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6405,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(6406,22): error TS1003: Identifier expected.
+client/src/pages/Rules.tsx(6407,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(6408,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6416,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6418,72): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6422,77): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6426,42): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6427,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(6429,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(6430,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6437,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6439,53): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6440,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(6442,22): error TS1003: Identifier expected.
+client/src/pages/Rules.tsx(6443,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(6444,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6454,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6456,47): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6457,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(6459,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(6460,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6470,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6472,50): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6483,52): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6489,52): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6496,47): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6502,44): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6503,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(6506,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(6507,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6509,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(6510,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6512,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6514,42): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6515,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(6516,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(6520,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6523,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(6546,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6601,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6603,62): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6604,30): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(6606,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6608,64): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6609,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(6610,36): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(6612,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6614,36): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(6616,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6621,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6625,53): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6626,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(6630,31): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(6632,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6633,30): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(6636,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6637,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6639,51): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6640,23): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(6646,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6648,55): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6649,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(6654,43): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(6656,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6657,29): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(6658,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6660,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6662,32): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6663,27): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(6667,28): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(6669,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6670,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6672,53): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6673,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(6677,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6679,59): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6684,7): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(6685,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6687,60): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6688,35): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6691,60): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6697,7): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(6698,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6716,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(6720,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6722,47): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(6722,92): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6722,113): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6723,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(6746,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6748,61): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6749,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(6751,57): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6752,58): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6753,48): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6754,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(6754,40): error TS1003: Identifier expected.
+client/src/pages/Rules.tsx(6754,45): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6755,37): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6756,9): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(6758,21): error TS1003: Identifier expected.
+client/src/pages/Rules.tsx(6758,34): error TS1003: Identifier expected.
+client/src/pages/Rules.tsx(6762,61): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(6764,9): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6767,19): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(6773,9): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6774,7): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6775,66): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6778,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6779,45): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6780,77): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6784,25): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6787,41): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6787,63): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(6787,79): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6788,40): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6788,62): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(6788,78): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6790,59): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6791,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(6793,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6794,73): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6795,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(6797,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6798,63): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6799,58): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6800,65): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6801,118): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6804,76): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6804,116): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6804,151): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6810,22): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(6812,48): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6813,65): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6814,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6817,22): error TS1005: '}' expected.
+client/src/pages/Rules.tsx(6828,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6829,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6835,6): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6836,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(6839,63): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6840,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(6845,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6846,76): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6847,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(6849,22): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6852,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6853,68): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6854,86): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6855,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(6858,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6859,71): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6860,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(6863,73): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6880,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6932,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(6934,106): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(6935,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(7015,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(7017,75): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(7018,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(7021,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(7108,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(7205,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(7207,100): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(7223,73): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(7224,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(7225,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(7226,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(7234,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(7237,101): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(7238,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(7256,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(7258,74): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(7259,5): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(7260,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(7263,5): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(7271,3): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(8572,111): error TS1005: '</' expected.
+client/src/pages/Rules.tsx(8573,1): error TS1185: Merge conflict marker encountered.
+client/src/pages/Rules.tsx(8591,1): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(8591,2): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(8591,3): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(8591,4): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(8591,5): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(8591,6): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(8591,7): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(8738,23): error TS1005: '</' expected.
+client/src/pages/Rules.tsx(8740,1): error TS1185: Merge conflict marker encountered.
+client/src/pages/Rules.tsx(8741,17): error TS2657: JSX expressions must have one parent element.
+client/src/pages/Rules.tsx(8748,1): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(8748,2): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(8748,3): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(8748,4): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(8748,5): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(8748,6): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(8748,7): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+client/src/pages/Rules.tsx(8840,17): error TS1003: Identifier expected.
+client/src/pages/Rules.tsx(9198,14): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+client/src/pages/Rules.tsx(9240,9): error TS1128: Declaration or statement expected.
+client/src/pages/Rules.tsx(9241,7): error TS1109: Expression expected.
+client/src/pages/Rules.tsx(9243,7): error TS2657: JSX expressions must have one parent element.
+client/src/pages/Rules.tsx(9301,5): error TS1128: Declaration or statement expected.
+client/src/pages/Rules.tsx(9302,3): error TS1109: Expression expected.

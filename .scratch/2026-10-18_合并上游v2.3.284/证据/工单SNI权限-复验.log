@@ -1,0 +1,104 @@
+(node:59781) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+TAP version 13
+# (node:59782) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:59782) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# [Security] JWT_SECRET is not set; generated persistent cookie secret at /tmp/codeg-acp-501/42052-65301063/forwardx-support-tests-6UfuIM/jwt.secret
+# [Database] SQLite opened at /tmp/codeg-acp-501/42052-65301063/forwardx-support-tests-6UfuIM/support.sqlite
+# Subtest: tickets are opt-in and disabling blocks every data endpoint without destroying history
+ok 1 - tickets are opt-in and disabling blocks every data endpoint without destroying history
+  ---
+  duration_ms: 2046.135
+  type: 'test'
+  ...
+# Subtest: optional service, plain text, attachments and strict owner isolation
+ok 2 - optional service, plain text, attachments and strict owner isolation
+  ---
+  duration_ms: 5.485
+  type: 'test'
+  ...
+# Subtest: private notes, assignments and their attachments never leak or create user unread alerts
+ok 3 - private notes, assignments and their attachments never leak or create user unread alerts
+  ---
+  duration_ms: 73.28625
+  type: 'test'
+  ...
+# Subtest: status lifecycle, optimistic conflicts, reply atomicity and rating constraints
+ok 4 - status lifecycle, optimistic conflicts, reply atomicity and rating constraints
+  ---
+  duration_ms: 12.320208
+  type: 'test'
+  ...
+# Subtest: bulk operations roll back entirely on stale/invalid tickets and admin filters work
+ok 5 - bulk operations roll back entirely on stale/invalid tickets and admin filters work
+  ---
+  duration_ms: 4.11875
+  type: 'test'
+  ...
+# Subtest: message pagination is bounded and private records are excluded before paging
+ok 6 - message pagination is bounded and private records are excluded before paging
+  ---
+  duration_ms: 9.593292
+  type: 'test'
+  ...
+# Subtest: service choices use direct permissions and billing grants, not hidden topology
+ok 7 - service choices use direct permissions and billing grants, not hidden topology
+  ---
+  duration_ms: 28.405584
+  type: 'test'
+  ...
+# Subtest: creation limits and per-user reply throttling are enforced in the database
+ok 8 - creation limits and per-user reply throttling are enforced in the database
+  ---
+  duration_ms: 17.892708
+  type: 'test'
+  ...
+# Subtest: attachments validate actual content, names, sizes and encodings
+ok 9 - attachments validate actual content, names, sizes and encodings
+  ---
+  duration_ms: 3.3635
+  type: 'test'
+  ...
+# Subtest: shared canned replies stay staff-only, and schema upgrades are idempotent
+ok 10 - shared canned replies stay staff-only, and schema upgrades are idempotent
+  ---
+  duration_ms: 59.152792
+  type: 'test'
+  ...
+# Subtest: attachment quotas reject writes atomically without storing a partial reply
+ok 11 - attachment quotas reject writes atomically without storing a partial reply
+  ---
+  duration_ms: 5.598833
+  type: 'test'
+  ...
+# Subtest: service pagination and exact selection work beyond the first fifty resources
+ok 12 - service pagination and exact selection work beyond the first fifty resources
+  ---
+  duration_ms: 39.298875
+  type: 'test'
+  ...
+# Subtest: MySQL and PostgreSQL schema generation includes attachment capacity and unique read cursors
+ok 13 - MySQL and PostgreSQL schema generation includes attachment capacity and unique read cursors
+  ---
+  duration_ms: 35.852125
+  type: 'test'
+  ...
+# [TrafficSummary] Bucket backfill complete marker=v3 rows=0 elapsedMs=0
+# [TrafficCounter] User/rule counter backfill complete ruleRows=0 userRows=0 repairedRules=0 repairedBuckets=0 elapsedMs=1
+# Subtest: backup import remaps ticket, author, message and read IDs while preserving removed-service history
+ok 14 - backup import remaps ticket, author, message and read IDs while preserving removed-service history
+  ---
+  duration_ms: 73.47975
+  type: 'test'
+  ...
+1..14
+# tests 14
+# suites 0
+# pass 14
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2806.2535

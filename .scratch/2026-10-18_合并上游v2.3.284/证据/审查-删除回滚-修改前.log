@@ -1,0 +1,47 @@
+(node:70255) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+TAP version 13
+# (node:70269) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:70269) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: availability counts one incident per transition, not per sweep; ignores stale observations
+ok 1 - availability counts one incident per transition, not per sweep; ignores stale observations
+  ---
+  duration_ms: 0.626625
+  type: 'test'
+  ...
+# Subtest: initial offline, panel downtime and recorder restart do not invent transitions or uptime
+ok 2 - initial offline, panel downtime and recorder restart do not invent transitions or uptime
+  ---
+  duration_ms: 0.2825
+  type: 'test'
+  ...
+# Subtest: cross-midnight outage splits duration but not incident count; day rate is duration weighted
+ok 3 - cross-midnight outage splits duration but not incident count; day rate is duration weighted
+  ---
+  duration_ms: 0.146958
+  type: 'test'
+  ...
+# Subtest: per-host concurrent observations serialize and store failures remain retryable
+ok 4 - per-host concurrent observations serialize and store failures remain retryable
+  ---
+  duration_ms: 0.236125
+  type: 'test'
+  ...
+# [Database] SQLite opened at /tmp/codeg-acp-501/42052-65301063/forwardx-availability-5gYigM/history.db
+# Subtest: availability history uses configured DB, scopes host access, pages full histories and retains 30 days
+ok 5 - availability history uses configured DB, scopes host access, pages full histories and retains 30 days
+  ---
+  duration_ms: 637.696917
+  type: 'test'
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 5
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 764.272958

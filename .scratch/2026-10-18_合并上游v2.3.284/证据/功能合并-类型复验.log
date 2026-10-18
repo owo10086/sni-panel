@@ -1,0 +1,5 @@
+(node:53406) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+server/latencyHistory.test.ts(109,49): error TS2739: Type '{ kind: "rule"; refId: number; hostId: number; probeKey: string; epoch: string; totalCount: number; totalSuccesses: number; batchCount: number; batchSuccesses: number; }' is missing the following properties from type 'ProbeCounterSnapshot': epochStartedAt, latencyMs
+server/latencyHistory.test.ts(110,49): error TS2739: Type '{ kind: "rule"; refId: number; hostId: number; probeKey: string; epoch: string; totalCount: number; totalSuccesses: number; batchCount: number; batchSuccesses: number; }' is missing the following properties from type 'ProbeCounterSnapshot': epochStartedAt, latencyMs
+server/latencyHistory.test.ts(111,49): error TS2739: Type '{ kind: "rule"; refId: number; hostId: number; probeKey: string; epoch: string; totalCount: number; totalSuccesses: number; batchCount: number; batchSuccesses: number; }' is missing the following properties from type 'ProbeCounterSnapshot': epochStartedAt, latencyMs

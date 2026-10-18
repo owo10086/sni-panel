@@ -1,0 +1,34 @@
+(node:45660) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+TAP version 13
+# (node:45663) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:45663) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: member removal synchronizes templates, preserves healthy siblings and safely deletes only unused hosts
+ok 1 - member removal synchronizes templates, preserves healthy siblings and safely deletes only unused hosts
+  ---
+  duration_ms: 970.429584
+  type: 'test'
+  ...
+# Subtest: disabled topology changes and historical tombstones release only obsolete host bindings
+ok 2 - disabled topology changes and historical tombstones release only obsolete host bindings
+  ---
+  duration_ms: 1158.740209
+  type: 'test'
+  ...
+# Subtest: deletion preview and mutation enforce host ownership and UI cannot force-delete actual dependencies
+ok 3 - deletion preview and mutation enforce host ownership and UI cannot force-delete actual dependencies
+  ---
+  duration_ms: 0.484125
+  type: 'test'
+  ...
+1..3
+# tests 3
+# suites 0
+# pass 3
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2242.889459

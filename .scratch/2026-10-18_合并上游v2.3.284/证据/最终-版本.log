@@ -1,0 +1,7 @@
+(node:82534) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+> forwardx@3.3.8 check:versions /Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3
+> node scripts/check-versions.mjs
+
+versions ok: panel=3.3.8 android=2.3.98 apkRelease=3.2.5 agent=3.3.0 fxp=3.3.0

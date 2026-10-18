@@ -1,0 +1,4 @@
+=== RUN   TestPublishedSniSplitterForwardsClientHelloWithECH
+--- PASS: TestPublishedSniSplitterForwardsClientHelloWithECH (0.05s)
+PASS
+ok  	github.com/poouo/Forwardx/forwardx-fxp	0.057s

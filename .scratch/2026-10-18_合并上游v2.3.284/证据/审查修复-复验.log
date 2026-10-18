@@ -1,0 +1,2776 @@
+(node:74564) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+TAP version 13
+# (node:74582) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:74582) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# [Security] JWT_SECRET is not set; generated persistent cookie secret at /tmp/codeg-acp-501/42052-65301063/forwardx-affiliate-test-5G11Fc/jwt.secret
+# [Database] SQLite opened at /tmp/codeg-acp-501/42052-65301063/forwardx-affiliate-test-5G11Fc/db.sqlite
+# Subtest: affiliate feature is disabled by default and APIs enforce new-code opt-in
+ok 1 - affiliate feature is disabled by default and APIs enforce new-code opt-in
+  ---
+  duration_ms: 615.389625
+  type: 'test'
+  ...
+# Subtest: commission calculation uses cents, floors fractions and rejects unsafe values
+ok 2 - commission calculation uses cents, floors fractions and rejects unsafe values
+  ---
+  duration_ms: 0.144625
+  type: 'test'
+  ...
+# Subtest: registration binds once, rejects self/disabled/unknown codes and keeps old referrals when code is disabled
+ok 3 - registration binds once, rejects self/disabled/unknown codes and keeps old referrals when code is disabled
+  ---
+  duration_ms: 4.546291
+  type: 'test'
+  ...
+# Subtest: duplicate callbacks accrue only once and first-order mode excludes renewals
+ok 4 - duplicate callbacks accrue only once and first-order mode excludes renewals
+  ---
+  duration_ms: 2.540333
+  type: 'test'
+  ...
+# Subtest: continuous commissions use independent user rate, only fulfilled CNY plan payments count
+ok 5 - continuous commissions use independent user rate, only fulfilled CNY plan payments count
+  ---
+  duration_ms: 3.161167
+  type: 'test'
+  ...
+# Subtest: confirmation delay persists, early spending is forbidden, due settlement is idempotent
+ok 6 - confirmation delay persists, early spending is forbidden, due settlement is idempotent
+  ---
+  duration_ms: 4.511417
+  type: 'test'
+  ...
+# Subtest: withdrawal reserves money once; concurrent attempts cannot overspend; reject refunds once
+ok 7 - withdrawal reserves money once; concurrent attempts cannot overspend; reject refunds once
+  ---
+  duration_ms: 2.90025
+  type: 'test'
+  ...
+# Subtest: transfer is atomic, idempotent and creates exactly one regular balance credit
+ok 8 - transfer is atomic, idempotent and creates exactly one regular balance credit
+  ---
+  duration_ms: 4.346083
+  type: 'test'
+  ...
+# Subtest: disabled feature stops accrual but preserves history, settlement, withdrawals and transfer obligations
+ok 9 - disabled feature stops accrual but preserves history, settlement, withdrawals and transfer obligations
+  ---
+  duration_ms: 2.602833
+  type: 'test'
+  ...
+# Subtest: reversal is auditable and idempotent; spent commission becomes debt and pending payout is blocked
+ok 10 - reversal is auditable and idempotent; spent commission becomes debt and pending payout is blocked
+  ---
+  duration_ms: 5.82875
+  type: 'test'
+  ...
+# Subtest: user APIs ignore forged user filters and prohibit administrator actions
+ok 11 - user APIs ignore forged user filters and prohibit administrator actions
+  ---
+  duration_ms: 0.876583
+  type: 'test'
+  ...
+# Subtest: blocked affiliates cannot bind, accrue, withdraw or transfer; historical commission remains
+ok 12 - blocked affiliates cannot bind, accrue, withdraw or transfer; historical commission remains
+  ---
+  duration_ms: 1.382958
+  type: 'test'
+  ...
+# Subtest: pending cancellation never credits money and ledger always reconciles with wallet
+ok 13 - pending cancellation never credits money and ledger always reconciles with wallet
+  ---
+  duration_ms: 1.626667
+  type: 'test'
+  ...
+# Subtest: referral browser storage validates codes, expiration and unavailable storage
+ok 14 - referral browser storage validates codes, expiration and unavailable storage
+  ---
+  duration_ms: 0.335625
+  type: 'test'
+  ...
+# Subtest: request identifiers work without secure-context randomUUID and are unique
+ok 15 - request identifiers work without secure-context randomUUID and are unique
+  ---
+  duration_ms: 0.954833
+  type: 'test'
+  ...
+# Subtest: wallet and regular balance both roll back when a transfer transaction fails
+ok 16 - wallet and regular balance both roll back when a transfer transaction fails
+  ---
+  duration_ms: 3.043666
+  type: 'test'
+  ...
+# Subtest: code quotas, zero custom rates and first orders during zero-rate periods remain enforced
+ok 17 - code quotas, zero custom rates and first orders during zero-rate periods remain enforced
+  ---
+  duration_ms: 3.152042
+  type: 'test'
+  ...
+# [Auth] Register success userId=41 username=re***@test.local emailVerified=false ip=127.0.0.1
+# Subtest: actual email and Google first registrations bind referrals, existing Google logins never rebind
+ok 18 - actual email and Google first registrations bind referrals, existing Google logins never rebind
+  ---
+  duration_ms: 80.01875
+  type: 'test'
+  ...
+# Subtest: actual signed payment webhook fulfills the plan and accrues once; invalid signatures do neither
+ok 19 - actual signed payment webhook fulfills the plan and accrues once; invalid signatures do neither
+  ---
+  duration_ms: 33.99275
+  type: 'test'
+  ...
+# Subtest: concurrent distinct withdrawal and transfer requests cannot overspend the wallet
+ok 20 - concurrent distinct withdrawal and transfer requests cannot overspend the wallet
+  ---
+  duration_ms: 3.924375
+  type: 'test'
+  ...
+# Subtest: live backup exports keep affiliate wallet and ledger consistent while transfers occur
+ok 21 - live backup exports keep affiliate wallet and ledger consistent while transfers occur
+  ---
+  duration_ms: 41.473167
+  type: 'test'
+  ...
+# [Database] SQLite opened at /tmp/codeg-acp-501/42052-65301063/forwardx-affiliate-test-5G11Fc/target.sqlite
+# Subtest: affiliate migration preserves remapped ledger references and rejects unsafe incremental financial merges before writes
+not ok 22 - affiliate migration preserves remapped ledger references and rejects unsafe incremental financial merges before writes
+  ---
+  duration_ms: 59.187375
+  type: 'test'
+  location: '/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/affiliates.test.ts:1:18465'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input did not match the regular expression /injected-ledger-failure/. Input:
+    
+    'ReferenceError: insertAndGetId is not defined'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual:
+  error: 'insertAndGetId is not defined'
+  name: 'ReferenceError'
+  stack: |-
+    <anonymous> (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/migration.ts:1876:27)
+    async <anonymous> (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/dbRuntime.ts:894:31)
+    async withSqliteConnectionLock (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/dbRuntime.ts:166:12)
+    async runDatabaseTransaction (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/dbRuntime.ts:890:16)
+    async reportDatabaseErrors (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/dbRuntime.ts:602:16)
+    async seamlessDatabaseOperation (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/seamlessMigrationState.ts:116:16)
+    async importMigrationSnapshot (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/migration.ts:1867:7)
+    async waitForActual (node:assert:644:5)
+    async Function.rejects (node:assert:767:25)
+    async TestContext.<anonymous> (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/affiliates.test.ts:633:3)
+  operator: 'rejects'
+  stack: |-
+    async TestContext.<anonymous> (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/affiliates.test.ts:633:3)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: MySQL and PostgreSQL generate all affiliate tables with monetary types and unique constraints
+ok 23 - MySQL and PostgreSQL generate all affiliate tables with monetary types and unique constraints
+  ---
+  duration_ms: 11.209667
+  type: 'test'
+  ...
+# (node:74583) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:74583) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: availability counts one incident per transition, not per sweep; ignores stale observations
+ok 24 - availability counts one incident per transition, not per sweep; ignores stale observations
+  ---
+  duration_ms: 0.741958
+  type: 'test'
+  ...
+# Subtest: initial offline, panel downtime and recorder restart do not invent transitions or uptime
+ok 25 - initial offline, panel downtime and recorder restart do not invent transitions or uptime
+  ---
+  duration_ms: 0.3055
+  type: 'test'
+  ...
+# Subtest: cross-midnight outage splits duration but not incident count; day rate is duration weighted
+ok 26 - cross-midnight outage splits duration but not incident count; day rate is duration weighted
+  ---
+  duration_ms: 0.125209
+  type: 'test'
+  ...
+# Subtest: per-host concurrent observations serialize and store failures remain retryable
+ok 27 - per-host concurrent observations serialize and store failures remain retryable
+  ---
+  duration_ms: 0.214583
+  type: 'test'
+  ...
+# [Database] SQLite opened at /tmp/codeg-acp-501/42052-65301063/forwardx-availability-I0Mvnq/history.db
+# Subtest: availability history uses configured DB, scopes host access, pages full histories and retains 30 days
+ok 28 - availability history uses configured DB, scopes host access, pages full histories and retains 30 days
+  ---
+  duration_ms: 708.372166
+  type: 'test'
+  ...
+# (node:74584) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:74584) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: all management scripts and the self-contained installer have valid Bash syntax
+ok 29 - all management scripts and the self-contained installer have valid Bash syntax
+  ---
+  duration_ms: 68.063292
+  type: 'test'
+  ...
+# Subtest: proxy normalization, explicit direct and offline operations
+ok 30 - proxy normalization, explicit direct and offline operations
+  ---
+  duration_ms: 9.946375
+  type: 'test'
+  ...
+# Subtest: bootstrap proxy reaches child without appearing in curl argv; help needs no config
+ok 31 - bootstrap proxy reaches child without appearing in curl argv; help needs no config
+  ---
+  duration_ms: 4.6805
+  type: 'test'
+  ...
+# Subtest: generated installer persists proxy before starting and bundles offline management
+not ok 32 - generated installer persists proxy before starting and bundles offline management
+  ---
+  duration_ms: 2.188541
+  type: 'test'
+  location: '/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/managementProxy.test.ts:25:98'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input did not match the regular expression /proxyUrl:\$proxy/. Input:
+    
+    '#!/bin/bash\n' +
+      '# ForwardX Agent (Go) 一键安装/管理脚本\n' +
+      '# 安装: curl -sL PANEL_URL/api/agent/install.sh | bash -s -- install YOUR_TOKEN\n' +
+      '# 升级: curl -sL PANEL_URL/api/agent/install.sh | bash -s -- upgrade\n' +
+      '# 卸载: curl -sL PANEL_URL/api/agent/install.sh | bash -s -- uninstall\n' +
+      '\n' +
+      'set -e\n' +
+      '\n' +
+      'ACTION="${1:-}"\n' +
+      'TOKEN="${2:-}"\n' +
+      "PANEL_URL_DEFAULT='https://panel.example.com'\n" +
+      'PANEL_URL="${PANEL_URL:-$PANEL_URL_DEFAULT}"\n' +
+      'RELEASE_VERSION="${FORWARDX_AGENT_RELEASE_VERSION:-3.3.8}"\n' +
+      'FALLBACK_RELEASE_VERSION="${FALLBACK_RELEASE_VERSION:-3.3.7}"\n' +
+      'GITHUB_ACCELERATOR_DEFAULT_ENABLED="false"\n' +
+      "GITHUB_ACCELERATOR_DEFAULT_URL=''\n" +
+      'FORWARDX_AGENT_PANEL_FIRST_DEFAULT="false"\n' +
+      'GITHUB_ACCELERATOR_ENABLED="${GITHUB_ACCELERATOR_ENABLED:-$GITHUB_ACCELERATOR_DEFAULT_ENABLED}"\n' +
+      'GITHUB_ACCELERATOR_URL="${GITHUB_ACCELERATOR_URL:-$GITHUB_ACCELERATOR_DEFAULT_URL}"\n' +
+      'FORWARDX_AGENT_PANEL_FIRST="${FORWARDX_AGENT_PANEL_FIRST:-$FORWARDX_AGENT_PANEL_FIRST_DEFAULT}"\n' +
+      'FORWARDX_INSTALL_NGINX_DEFAULT="false"\n' +
+      'FORWARDX_INSTALL_NGINX="${FORWARDX_INSTALL_NGINX:-$FORWARDX_INSTALL_NGINX_DEFAULT}"\n' +
+      "MIGRATION_FALLBACK_PANEL_URL=''\n" +
+      "PANEL_MIGRATION_ID=''\n" +
+      'PANEL_MIGRATION_STARTED_AT="0"\n' +
+      'FORWARDX_INSTALL_MIMIC="${FORWARDX_INSTALL_MIMIC:-ask}"\n' +
+      'FORWARDX_MIMIC_INSTALLER_URL="${FORWARDX_MIMIC_INSTALLER_URL:-https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/install-mimic.sh}"\n' +
+      'FORWARDX_MIMIC_VERSION="${FORWARDX_MIMIC_VERSION:-0.7.1}"\n' +
+      'FORWARDX_REALM_VERSION_EXPLICIT="${FORWARDX_REALM_VERSION_EXPLICIT:-}"\n' +
+      'if [ -z "$FORWARDX_REALM_VERSION_EXPLICIT" ]; then\n' +
+      '  if [ "${FORWARDX_REALM_VERSION+x}" = "x" ] && [ -n "${FORWARDX_REALM_VERSION:-}" ]; then\n' +
+      '    FORWARDX_REALM_VERSION_EXPLICIT="true"\n' +
+      '  else\n' +
+      '    FORWARDX_REALM_VERSION_EXPLICIT="false"\n' +
+      '  fi\n' +
+      'fi\n' +
+      'FORWARDX_REALM_VERSION="${FORWARDX_REALM_VERSION:-2.9.4}"\n' +
+      'FORWARDX_CURL_CONNECT_TIMEOUT="${FORWARDX_CURL_CONNECT_TIMEOUT:-15}"\n' +
+      'FORWARDX_CURL_LOW_SPEED_LIMIT="${FORWARDX_CURL_LOW_SPEED_LIMIT:-1024}"\n' +
+      'FORWARDX_CURL_ASSET_LOW_SPEED_TIME="${FORWARDX_CURL_ASSET_LOW_SPEED_TIME:-180}"\n' +
+      'while [ "${PANEL_URL%/}" != "$PANEL_URL" ]; do\n' +
+      '  PANEL_URL="${PANEL_URL%/}"\n' +
+      'done\n' +
+      'while [ "${GITHUB_ACCELERATOR_URL%/}" != "$GITHUB_ACCELERATOR_URL" ]; do\n' +
+      '  GITHUB_ACCELERATOR_URL="${GITHUB_ACCELERATOR_URL%/}"\n' +
+      'done\n' +
+      '\n' +
+      'GO_AGENT_BIN="/usr/local/bin/forwardx-agent"\n' +
+      'FXP_BIN="/usr/local/bin/forwardx-fxp"\n' +
+      'RUNTIME_BIN="/usr/local/bin/forwardx-runtime"\n' +
+      'NGINX_BIN="/usr/local/bin/forwardx-nginx"\n' +
+      'NGINX_SERVICE_NAME="forwardx-nginx"\n' +
+      'CONFIG_DIR="/etc/forwardx/agent"\n' +
+      'LEGACY_CONFIG_DIR="/etc/forwardx-agent"\n' +
+      'SERVICE_NAME="forwardx-agent"\n' +
+      '\n' +
+      'shell_quote() {\n' +
+      '  printf "\\047%s\\047" "$(printf "%s" "$1" | sed "s/\\047/\\047\\\\\\\\\\047\\047/g")"\n' +
+      '}\n' +
+      '\n' +
+      'is_systemd_host() {\n' +
+      '  command -v systemctl >/dev/null 2>&1 && [ -d /run/systemd/system ]\n' +
+      '}\n' +
+      '\n' +
+      'read_config_value() {\n' +
+      '  local KEY="$1" CFG=""\n' +
+      '  if [ -f "$CONFIG_DIR/config.json" ]; then\n' +
+      '    CFG="$CONFIG_DIR/config.json"\n' +
+      '  elif [ -f "$LEGACY_CONFIG_DIR/config.json" ]; then\n' +
+      '    CFG="$LEGACY_CONFIG_DIR/config.json"\n' +
+      '  fi\n' +
+      '  if [ -n "$CFG" ] && command -v jq >/dev/null 2>&1; then\n' +
+      '    jq -r ".${KEY} // empty" "$CFG" 2>/dev/null || true\n' +
+      '  fi\n' +
+      '}\n' +
+      '\n' +
+      'apply_panel_migration_config() {\n' +
+      '  [ -f "$CONFIG_DIR/config.json" ] || return 0\n' +
+      '  command -v jq >/dev/null 2>&1 || return 0\n' +
+      `  jq --arg fallback "$MIGRATION_FALLBACK_PANEL_URL" --arg migrationId "$PANEL_MIGRATION_ID" --arg startedAt "$PANEL_MIGRATION_STARTED_AT" 'if $fallback != "" and $migrationId != "" then .migrationFallbackPanelUrl = $fallback | .panelMigrationId = $migrationId | .panelMigrationStartedAt = ($startedAt | tonumber) else del(.migrationFallbackPanelUrl, .panelMigrationId, .panelMigrationStartedAt) end' "$CONFIG_DIR/config.json" > "$CONFIG_DIR/config.json.tmp" && mv "$CONFIG_DIR/config.json.tmp" "$CONFIG_DIR/config.json"\n` +
+      '  chmod 600 "$CONFIG_DIR/config.json" 2>/dev/null || true\n' +
+      '}\n' +
+      '\n' +
+      'normalize_upgrade_agent_config() {\n' +
+      '  local SOURCE="" TMP="" CONFIG_FILTER\n' +
+      `  CONFIG_FILTER='if type == "object" then . else error("Agent config root must be a JSON object") end | .panelUrl = $panelUrl | .token = $token | .interval = 30 | if $fallback != "" and $migrationId != "" then .migrationFallbackPanelUrl = $fallback | .panelMigrationId = $migrationId | .panelMigrationStartedAt = ($startedAt | tonumber) else del(.migrationFallbackPanelUrl, .panelMigrationId, .panelMigrationStartedAt) end'\n` +
+      '  if [ -z "$PANEL_URL" ] || [ -z "$AGENT_TOKEN" ]; then\n' +
+      '    echo "[错误] Agent 配置缺少面板地址或 Token"\n' +
+      '    return 1\n' +
+      '  fi\n' +
+      '  if ! command -v jq >/dev/null 2>&1; then\n' +
+      '    echo "[错误] jq 不可用，无法安全更新 Agent 配置"\n' +
+      '    return 1\n' +
+      '  fi\n' +
+      '  if ! mkdir -p "$CONFIG_DIR"; then\n' +
+      '    echo "[错误] 无法创建 Agent 配置目录: $CONFIG_DIR"\n' +
+      '    return 1\n' +
+      '  fi\n' +
+      '  if [ -f "$CONFIG_DIR/config.json" ]; then\n' +
+      '    SOURCE="$CONFIG_DIR/config.json"\n' +
+      '  elif [ -f "$LEGACY_CONFIG_DIR/config.json" ]; then\n' +
+      '    SOURCE="$LEGACY_CONFIG_DIR/config.json"\n' +
+      '  fi\n' +
+      '  if ! TMP=$(mktemp "$CONFIG_DIR/config.json.tmp.XXXXXX"); then\n' +
+      '    echo "[错误] 无法创建 Agent 配置临时文件"\n' +
+      '    return 1\n' +
+      '  fi\n' +
+      '  if [ -n "$SOURCE" ]; then\n' +
+      '    if ! jq -e --arg panelUrl "$PANEL_URL" --arg token "$AGENT_TOKEN" --arg fallback "$MIGRATION_FALLBACK_PANEL_URL" --arg migrationId "$PANEL_MIGRATION_ID" --arg startedAt "$PANEL_MIGRATION_STARTED_AT" "$CONFIG_FILTER" "$SOURCE" > "$TMP"; then\n' +
+      '      rm -f "$TMP" 2>/dev/null || true\n' +
+      '      echo "[错误] Agent 配置不是有效的 JSON 对象，升级已中止"\n' +
+      '      return 1\n' +
+      '    fi\n' +
+      '  else\n' +
+      '    if ! jq -n -e --arg panelUrl "$PANEL_URL" --arg token "$AGENT_TOKEN" --arg fallback "$MIGRATION_FALLBACK_PANEL_URL" --arg migrationId "$PANEL_MIGRATION_ID" --arg startedAt "$PANEL_MIGRATION_STARTED_AT" "{} | $CONFIG_FILTER" > "$TMP"; then\n' +
+      '      rm -f "$TMP" 2>/dev/null || true\n' +
+      '      echo "[错误] 无法生成 Agent 配置，升级已中止"\n' +
+      '      return 1\n' +
+      '    fi\n' +
+      '  fi\n' +
+      '  if ! chmod 600 "$TMP"; then\n' +
+      '    rm -f "$TMP" 2>/dev/null || true\n' +
+      '    echo "[错误] 无法设置 Agent 配置权限，升级已中止"\n' +
+      '    return 1\n' +
+      '  fi\n' +
+      '  if ! mv -f "$TMP" "$CONFIG_DIR/config.json"; then\n' +
+      '    rm -f "$TMP" 2>/dev/null || true\n' +
+      '    echo "[错误] 无法原子替换 Agent 配置，升级已中止"\n' +
+      '    return 1\n' +
+      '  fi\n' +
+      '  echo "[信息] Agent 配置已规范化: $CONFIG_DIR/config.json"\n' +
+      '}\n' +
+      '\n' +
+      'migrate_legacy_config() {\n' +
+      '  mkdir -p "$CONFIG_DIR"\n' +
+      '  if [ ! -f "$CONFIG_DIR/config.json" ] && [ -f "$LEGACY_CONFIG_DIR/config.json" ]; then\n' +
+      '    cp "$LEGACY_CONFIG_DIR/config.json" "$CONFIG_DIR/config.json" 2>/dev/null || true\n' +
+      '    chmod 600 "$CONFIG_DIR/config.json" 2>/dev/null || true\n' +
+      '    echo "[信息] 已迁移 Agent 配置到: $CONFIG_DIR/config.json"\n' +
+      '  fi\n' +
+      '}\n' +
+      '\n' +
+      'current_service_manager() {\n' +
+      '  if is_systemd_host; then\n' +
+      '    echo "systemd"\n' +
+      '  elif [ -x "/etc/init.d/$SERVICE_NAME" ] && head -n 1 "/etc/init.d/$SERVICE_NAME" 2>/dev/null | grep -q "openrc-run"; then\n' +
+      '    echo "openrc"\n' +
+      '  elif [ -x "/etc/init.d/$SERVICE_NAME" ]; then\n' +
+      '    echo "sysv"\n' +
+      '  elif command -v rc-service >/dev/null 2>&1 && command -v rc-update >/dev/null 2>&1; then\n' +
+      '    echo "openrc"\n' +
+      '  else\n' +
+      '    echo "unknown"\n' +
+      '  fi\n' +
+      '}\n' +
+      '\n' +
+      'print_agent_service_hints() {\n' +
+      '  case "$(current_service_manager)" in\n' +
+      '    systemd)\n' +
+      '      echo "  查看状态:  systemctl status $SERVICE_NAME"\n' +
+      '      echo "  查看日志:  tail -f /var/log/forwardx-agent/agent-go.log"\n' +
+      '      ;;\n' +
+      '    openrc)\n' +
+      '      echo "  查看状态:  rc-service $SERVICE_NAME status"\n' +
+      '      echo "  查看日志:  tail -f /var/log/forwardx-agent/agent-go.log"\n' +
+      '      ;;\n' +
+      '    sysv)\n' +
+      '      echo "  查看状态:  /etc/init.d/$SERVICE_NAME status"\n' +
+      '      echo "  查看日志:  tail -f /var/log/forwardx-agent/agent-go.log"\n' +
+      '      ;;\n' +
+      '    *)\n' +
+      '      echo "  查看状态:  请使用当前系统的服务管理器查看 $SERVICE_NAME"\n' +
+      '      echo "  查看日志:  tail -f /var/log/forwardx-agent/agent-go.log"\n' +
+      '      ;;\n' +
+      '  esac\n' +
+      '}\n' +
+      '\n' +
+      'write_agent_openrc_service() {\n' +
+      '  cat > "/etc/init.d/$SERVICE_NAME" << EOF\n' +
+      '#!/sbin/openrc-run\n' +
+      'name="$SERVICE_NAME"\n' +
+      'description="ForwardX Agent"\n' +
+      'command="/bin/sh"\n' +
+      'command_args="-lc $(shell_quote "ulimit -c 0 2>/dev/null || true; exec $GO_AGENT_BIN -config $CONFIG_DIR/config.json")"\n' +
+      'command_background=true\n' +
+      'pidfile="/run/$SERVICE_NAME.pid"\n' +
+      'output_log="/dev/null"\n' +
+      'error_log="/var/log/forwardx-agent/$SERVICE_NAME-stderr.log"\n' +
+      'depend() {\n' +
+      '  need net\n' +
+      '  after forwardx-runtime forwardx-tunnel-runtime forwardx-nginx\n' +
+      '}\n' +
+      'EOF\n' +
+      '  chmod 755 "/etc/init.d/$SERVICE_NAME"\n' +
+      '}\n' +
+      '\n' +
+      'write_agent_sysv_service() {\n' +
+      '  cat > "/etc/init.d/$SERVICE_NAME" << EOF\n' +
+      '#!/bin/sh\n' +
+      '### BEGIN INIT INFO\n' +
+      '# Provides:          $SERVICE_NAME\n' +
+      '# Required-Start:    $network\n' +
+      '# Required-Stop:     $network\n' +
+      '# Default-Start:     2 3 4 5\n' +
+      '# Default-Stop:      0 1 6\n' +
+      '# Short-Description: ForwardX Agent\n' +
+      '### END INIT INFO\n' +
+      'PIDFILE=/run/$SERVICE_NAME.pid\n' +
+      'LOGFILE=/var/log/forwardx-agent/$SERVICE_NAME-stderr.log\n' +
+      'CMD=$(shell_quote "ulimit -c 0 2>/dev/null || true; exec $GO_AGENT_BIN -config $CONFIG_DIR/config.json")\n' +
+      'start() {\n' +
+      '  mkdir -p /run /var/log/forwardx-agent\n' +
+      '  if [ -s "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null; then return 0; fi\n' +
+      '  nohup sh -lc "$CMD" >/dev/null 2>> "$LOGFILE" &\n' +
+      '  echo $! > "$PIDFILE"\n' +
+      '}\n' +
+      'stop() {\n' +
+      '  if [ -s "$PIDFILE" ]; then kill "$(cat "$PIDFILE")" 2>/dev/null || true; rm -f "$PIDFILE"; fi\n' +
+      '}\n' +
+      'case "$1" in\n' +
+      '  start) start ;;\n' +
+      '  stop) stop ;;\n' +
+      '  restart) stop; sleep 1; start ;;\n' +
+      '  status) [ -s "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null ;;\n' +
+      '  *) echo "Usage: $0 {start|stop|restart|status}"; exit 1 ;;\n' +
+      'esac\n' +
+      'EOF\n' +
+      '  chmod 755 "/etc/init.d/$SERVICE_NAME"\n' +
+      '}\n' +
+      '\n' +
+      'write_agent_service() {\n' +
+      '  mkdir -p /var/log/forwardx-agent\n' +
+      '  if is_systemd_host; then\n' +
+      '    cat > "/etc/systemd/system/$SERVICE_NAME.service" << EOF\n' +
+      '[Unit]\n' +
+      'Description=ForwardX Agent\n' +
+      'Wants=network-online.target\n' +
+      'After=network-online.target forwardx-runtime.service forwardx-tunnel-runtime.service forwardx-nginx.service\n' +
+      '\n' +
+      '[Service]\n' +
+      'Type=simple\n' +
+      'ExecStart=$GO_AGENT_BIN -config $CONFIG_DIR/config.json\n' +
+      'Restart=always\n' +
+      'RestartSec=10\n' +
+      'LimitCORE=0\n' +
+      'StandardOutput=null\n' +
+      'StandardError=journal\n' +
+      'LogRateLimitIntervalSec=30s\n' +
+      'LogRateLimitBurst=200\n' +
+      '\n' +
+      '[Install]\n' +
+      'WantedBy=multi-user.target\n' +
+      'EOF\n' +
+      '    systemctl daemon-reload\n' +
+      '    systemctl enable "$SERVICE_NAME"\n' +
+      '    echo "[信息] systemd 服务已创建"\n' +
+      '  elif command -v rc-service >/dev/null 2>&1 && command -v rc-update >/dev/null 2>&1; then\n' +
+      '    write_agent_openrc_service\n' +
+      '    rc-update add "$SERVICE_NAME" default >/dev/null 2>&1 || true\n' +
+      '    echo "[信息] OpenRC 服务已创建"\n' +
+      '  elif [ -d /etc/init.d ]; then\n' +
+      '    write_agent_sysv_service\n' +
+      '    command -v update-rc.d >/dev/null 2>&1 && update-rc.d "$SERVICE_NAME" defaults >/dev/null 2>&1 || tr'... 75622 more characters
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: |-
+    #!/bin/bash
+    # ForwardX Agent (Go) 一键安装/管理脚本
+    # 安装: curl -sL PANEL_URL/api/agent/install.sh | bash -s -- install YOUR_TOKEN
+    # 升级: curl -sL PANEL_URL/api/agent/install.sh | bash -s -- upgrade
+    # 卸载: curl -sL PANEL_URL/api/agent/install.sh | bash -s -- uninstall
+    
+    set -e
+    
+    ACTION="${1:-}"
+    TOKEN="${2:-}"
+    PANEL_URL_DEFAULT='https://panel.example.com'
+    PANEL_URL="${PANEL_URL:-$PANEL_URL_DEFAULT}"
+    RELEASE_VERSION="${FORWARDX_AGENT_RELEASE_VERSION:-3.3.8}"
+    FALLBACK_RELEASE_VERSION="${FALLBACK_RELEASE_VERSION:-3.3.7}"
+    GITHUB_ACCELERATOR_DEFAULT_ENABLED="false"
+    GITHUB_ACCELERATOR_DEFAULT_URL=''
+    FORWARDX_AGENT_PANEL_FIRST_DEFAULT="false"
+    GITHUB_ACCELERATOR_ENABLED="${GITHUB_ACCELERATOR_ENABLED:-$GITHUB_ACCELERATOR_DEFAULT_ENABLED}"
+    GITHUB_ACCELERATOR_URL="${GITHUB_ACCELERATOR_URL:-$GITHUB_ACCELERATOR_DEFAULT_URL}"
+    FORWARDX_AGENT_PANEL_FIRST="${FORWARDX_AGENT_PANEL_FIRST:-$FORWARDX_AGENT_PANEL_FIRST_DEFAULT}"
+    FORWARDX_INSTALL_NGINX_DEFAULT="false"
+    FORWARDX_INSTALL_NGINX="${FORWARDX_INSTALL_NGINX:-$FORWARDX_INSTALL_NGINX_DEFAULT}"
+    MIGRATION_FALLBACK_PANEL_URL=''
+    PANEL_MIGRATION_ID=''
+    PANEL_MIGRATION_STARTED_AT="0"
+    FORWARDX_INSTALL_MIMIC="${FORWARDX_INSTALL_MIMIC:-ask}"
+    FORWARDX_MIMIC_INSTALLER_URL="${FORWARDX_MIMIC_INSTALLER_URL:-https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/install-mimic.sh}"
+    FORWARDX_MIMIC_VERSION="${FORWARDX_MIMIC_VERSION:-0.7.1}"
+    FORWARDX_REALM_VERSION_EXPLICIT="${FORWARDX_REALM_VERSION_EXPLICIT:-}"
+    if [ -z "$FORWARDX_REALM_VERSION_EXPLICIT" ]; then
+      if [ "${FORWARDX_REALM_VERSION+x}" = "x" ] && [ -n "${FORWARDX_REALM_VERSION:-}" ]; then
+        FORWARDX_REALM_VERSION_EXPLICIT="true"
+      else
+        FORWARDX_REALM_VERSION_EXPLICIT="false"
+      fi
+    fi
+    FORWARDX_REALM_VERSION="${FORWARDX_REALM_VERSION:-2.9.4}"
+    FORWARDX_CURL_CONNECT_TIMEOUT="${FORWARDX_CURL_CONNECT_TIMEOUT:-15}"
+    FORWARDX_CURL_LOW_SPEED_LIMIT="${FORWARDX_CURL_LOW_SPEED_LIMIT:-1024}"
+    FORWARDX_CURL_ASSET_LOW_SPEED_TIME="${FORWARDX_CURL_ASSET_LOW_SPEED_TIME:-180}"
+    while [ "${PANEL_URL%/}" != "$PANEL_URL" ]; do
+      PANEL_URL="${PANEL_URL%/}"
+    done
+    while [ "${GITHUB_ACCELERATOR_URL%/}" != "$GITHUB_ACCELERATOR_URL" ]; do
+      GITHUB_ACCELERATOR_URL="${GITHUB_ACCELERATOR_URL%/}"
+    done
+    
+    GO_AGENT_BIN="/usr/local/bin/forwardx-agent"
+    FXP_BIN="/usr/local/bin/forwardx-fxp"
+    RUNTIME_BIN="/usr/local/bin/forwardx-runtime"
+    NGINX_BIN="/usr/local/bin/forwardx-nginx"
+    NGINX_SERVICE_NAME="forwardx-nginx"
+    CONFIG_DIR="/etc/forwardx/agent"
+    LEGACY_CONFIG_DIR="/etc/forwardx-agent"
+    SERVICE_NAME="forwardx-agent"
+    
+    shell_quote() {
+      printf "\047%s\047" "$(printf "%s" "$1" | sed "s/\047/\047\\\\\047\047/g")"
+    }
+    
+    is_systemd_host() {
+      command -v systemctl >/dev/null 2>&1 && [ -d /run/systemd/system ]
+    }
+    
+    read_config_value() {
+      local KEY="$1" CFG=""
+      if [ -f "$CONFIG_DIR/config.json" ]; then
+        CFG="$CONFIG_DIR/config.json"
+      elif [ -f "$LEGACY_CONFIG_DIR/config.json" ]; then
+        CFG="$LEGACY_CONFIG_DIR/config.json"
+      fi
+      if [ -n "$CFG" ] && command -v jq >/dev/null 2>&1; then
+        jq -r ".${KEY} // empty" "$CFG" 2>/dev/null || true
+      fi
+    }
+    
+    apply_panel_migration_config() {
+      [ -f "$CONFIG_DIR/config.json" ] || return 0
+      command -v jq >/dev/null 2>&1 || return 0
+      jq --arg fallback "$MIGRATION_FALLBACK_PANEL_URL" --arg migrationId "$PANEL_MIGRATION_ID" --arg startedAt "$PANEL_MIGRATION_STARTED_AT" 'if $fallback != "" and $migrationId != "" then .migrationFallbackPanelUrl = $fallback | .panelMigrationId = $migrationId | .panelMigrationStartedAt = ($startedAt | tonumber) else del(.migrationFallbackPanelUrl, .panelMigrationId, .panelMigrationStartedAt) end' "$CONFIG_DIR/config.json" > "$CONFIG_DIR/config.json.tmp" && mv "$CONFIG_DIR/config.json.tmp" "$CONFIG_DIR/config.json"
+      chmod 600 "$CONFIG_DIR/config.json" 2>/dev/null || true
+    }
+    
+    normalize_upgrade_agent_config() {
+      local SOURCE="" TMP="" CONFIG_FILTER
+      CONFIG_FILTER='if type == "object" then . else error("Agent config root must be a JSON object") end | .panelUrl = $panelUrl | .token = $token | .interval = 30 | if $fallback != "" and $migrationId != "" then .migrationFallbackPanelUrl = $fallback | .panelMigrationId = $migrationId | .panelMigrationStartedAt = ($startedAt | tonumber) else del(.migrationFallbackPanelUrl, .panelMigrationId, .panelMigrationStartedAt) end'
+      if [ -z "$PANEL_URL" ] || [ -z "$AGENT_TOKEN" ]; then
+        echo "[错误] Agent 配置缺少面板地址或 Token"
+        return 1
+      fi
+      if ! command -v jq >/dev/null 2>&1; then
+        echo "[错误] jq 不可用，无法安全更新 Agent 配置"
+        return 1
+      fi
+      if ! mkdir -p "$CONFIG_DIR"; then
+        echo "[错误] 无法创建 Agent 配置目录: $CONFIG_DIR"
+        return 1
+      fi
+      if [ -f "$CONFIG_DIR/config.json" ]; then
+        SOURCE="$CONFIG_DIR/config.json"
+      elif [ -f "$LEGACY_CONFIG_DIR/config.json" ]; then
+        SOURCE="$LEGACY_CONFIG_DIR/config.json"
+      fi
+      if ! TMP=$(mktemp "$CONFIG_DIR/config.json.tmp.XXXXXX"); then
+        echo "[错误] 无法创建 Agent 配置临时文件"
+        return 1
+      fi
+      if [ -n "$SOURCE" ]; then
+        if ! jq -e --arg panelUrl "$PANEL_URL" --arg token "$AGENT_TOKEN" --arg fallback "$MIGRATION_FALLBACK_PANEL_URL" --arg migrationId "$PANEL_MIGRATION_ID" --arg startedAt "$PANEL_MIGRATION_STARTED_AT" "$CONFIG_FILTER" "$SOURCE" > "$TMP"; then
+          rm -f "$TMP" 2>/dev/null || true
+          echo "[错误] Agent 配置不是有效的 JSON 对象，升级已中止"
+          return 1
+        fi
+      else
+        if ! jq -n -e --arg panelUrl "$PANEL_URL" --arg token "$AGENT_TOKEN" --arg fallback "$MIGRATION_FALLBACK_PANEL_URL" --arg migrationId "$PANEL_MIGRATION_ID" --arg startedAt "$PANEL_MIGRATION_STARTED_AT" "{} | $CONFIG_FILTER" > "$TMP"; then
+          rm -f "$TMP" 2>/dev/null || true
+          echo "[错误] 无法生成 Agent 配置，升级已中止"
+          return 1
+        fi
+      fi
+      if ! chmod 600 "$TMP"; then
+        rm -f "$TMP" 2>/dev/null || true
+        echo "[错误] 无法设置 Agent 配置权限，升级已中止"
+        return 1
+      fi
+      if ! mv -f "$TMP" "$CONFIG_DIR/config.json"; then
+        rm -f "$TMP" 2>/dev/null || true
+        echo "[错误] 无法原子替换 Agent 配置，升级已中止"
+        return 1
+      fi
+      echo "[信息] Agent 配置已规范化: $CONFIG_DIR/config.json"
+    }
+    
+    migrate_legacy_config() {
+      mkdir -p "$CONFIG_DIR"
+      if [ ! -f "$CONFIG_DIR/config.json" ] && [ -f "$LEGACY_CONFIG_DIR/config.json" ]; then
+        cp "$LEGACY_CONFIG_DIR/config.json" "$CONFIG_DIR/config.json" 2>/dev/null || true
+        chmod 600 "$CONFIG_DIR/config.json" 2>/dev/null || true
+        echo "[信息] 已迁移 Agent 配置到: $CONFIG_DIR/config.json"
+      fi
+    }
+    
+    current_service_manager() {
+      if is_systemd_host; then
+        echo "systemd"
+      elif [ -x "/etc/init.d/$SERVICE_NAME" ] && head -n 1 "/etc/init.d/$SERVICE_NAME" 2>/dev/null | grep -q "openrc-run"; then
+        echo "openrc"
+      elif [ -x "/etc/init.d/$SERVICE_NAME" ]; then
+        echo "sysv"
+      elif command -v rc-service >/dev/null 2>&1 && command -v rc-update >/dev/null 2>&1; then
+        echo "openrc"
+      else
+        echo "unknown"
+      fi
+    }
+    
+    print_agent_service_hints() {
+      case "$(current_service_manager)" in
+        systemd)
+          echo "  查看状态:  systemctl status $SERVICE_NAME"
+          echo "  查看日志:  tail -f /var/log/forwardx-agent/agent-go.log"
+          ;;
+        openrc)
+          echo "  查看状态:  rc-service $SERVICE_NAME status"
+          echo "  查看日志:  tail -f /var/log/forwardx-agent/agent-go.log"
+          ;;
+        sysv)
+          echo "  查看状态:  /etc/init.d/$SERVICE_NAME status"
+          echo "  查看日志:  tail -f /var/log/forwardx-agent/agent-go.log"
+          ;;
+        *)
+          echo "  查看状态:  请使用当前系统的服务管理器查看 $SERVICE_NAME"
+          echo "  查看日志:  tail -f /var/log/forwardx-agent/agent-go.log"
+          ;;
+      esac
+    }
+    
+    write_agent_openrc_service() {
+      cat > "/etc/init.d/$SERVICE_NAME" << EOF
+    #!/sbin/openrc-run
+    name="$SERVICE_NAME"
+    description="ForwardX Agent"
+    command="/bin/sh"
+    command_args="-lc $(shell_quote "ulimit -c 0 2>/dev/null || true; exec $GO_AGENT_BIN -config $CONFIG_DIR/config.json")"
+    command_background=true
+    pidfile="/run/$SERVICE_NAME.pid"
+    output_log="/dev/null"
+    error_log="/var/log/forwardx-agent/$SERVICE_NAME-stderr.log"
+    depend() {
+      need net
+      after forwardx-runtime forwardx-tunnel-runtime forwardx-nginx
+    }
+    EOF
+      chmod 755 "/etc/init.d/$SERVICE_NAME"
+    }
+    
+    write_agent_sysv_service() {
+      cat > "/etc/init.d/$SERVICE_NAME" << EOF
+    #!/bin/sh
+    ### BEGIN INIT INFO
+    # Provides:          $SERVICE_NAME
+    # Required-Start:    $network
+    # Required-Stop:     $network
+    # Default-Start:     2 3 4 5
+    # Default-Stop:      0 1 6
+    # Short-Description: ForwardX Agent
+    ### END INIT INFO
+    PIDFILE=/run/$SERVICE_NAME.pid
+    LOGFILE=/var/log/forwardx-agent/$SERVICE_NAME-stderr.log
+    CMD=$(shell_quote "ulimit -c 0 2>/dev/null || true; exec $GO_AGENT_BIN -config $CONFIG_DIR/config.json")
+    start() {
+      mkdir -p /run /var/log/forwardx-agent
+      if [ -s "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null; then return 0; fi
+      nohup sh -lc "$CMD" >/dev/null 2>> "$LOGFILE" &
+      echo $! > "$PIDFILE"
+    }
+    stop() {
+      if [ -s "$PIDFILE" ]; then kill "$(cat "$PIDFILE")" 2>/dev/null || true; rm -f "$PIDFILE"; fi
+    }
+    case "$1" in
+      start) start ;;
+      stop) stop ;;
+      restart) stop; sleep 1; start ;;
+      status) [ -s "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null ;;
+      *) echo "Usage: $0 {start|stop|restart|status}"; exit 1 ;;
+    esac
+    EOF
+      chmod 755 "/etc/init.d/$SERVICE_NAME"
+    }
+    
+    write_agent_service() {
+      mkdir -p /var/log/forwardx-agent
+      if is_systemd_host; then
+        cat > "/etc/systemd/system/$SERVICE_NAME.service" << EOF
+    [Unit]
+    Description=ForwardX Agent
+    Wants=network-online.target
+    After=network-online.target forwardx-runtime.service forwardx-tunnel-runtime.service forwardx-nginx.service
+    
+    [Service]
+    Type=simple
+    ExecStart=$GO_AGENT_BIN -config $CONFIG_DIR/config.json
+    Restart=always
+    RestartSec=10
+    LimitCORE=0
+    StandardOutput=null
+    StandardError=journal
+    LogRateLimitIntervalSec=30s
+    LogRateLimitBurst=200
+    
+    [Install]
+    WantedBy=multi-user.target
+    EOF
+        systemctl daemon-reload
+        systemctl enable "$SERVICE_NAME"
+        echo "[信息] systemd 服务已创建"
+      elif command -v rc-service >/dev/null 2>&1 && command -v rc-update >/dev/null 2>&1; then
+        write_agent_openrc_service
+        rc-update add "$SERVICE_NAME" default >/dev/null 2>&1 || true
+        echo "[信息] OpenRC 服务已创建"
+      elif [ -d /etc/init.d ]; then
+        write_agent_sysv_service
+        command -v update-rc.d >/dev/null 2>&1 && update-rc.d "$SERVICE_NAME" defaults >/dev/null 2>&1 || true
+        command -v chkconfig >/dev/null 2>&1 && chkconfig "$SERVICE_NAME" on >/dev/null 2>&1 || true
+        echo "[信息] SysV 服务已创建"
+      else
+        echo "[错误] 不支持的 init 系统，请安装 systemd、OpenRC 或 SysV init"
+        return 1
+      fi
+    }
+    
+    start_agent_service() {
+      if is_systemd_host; then
+        if ! systemctl restart "$SERVICE_NAME"; then
+          echo "[错误] systemd 服务启动失败"
+          systemctl status "$SERVICE_NAME" --no-pager -l 2>/dev/null || true
+          return 1
+        fi
+        sleep 1
+        if ! systemctl is-active --quiet "$SERVICE_NAME"; then
+          echo "[错误] systemd 服务未保持运行"
+          systemctl status "$SERVICE_NAME" --no-pager -l 2>/dev/null || true
+          journalctl -u "$SERVICE_NAME" -n 50 --no-pager 2>/dev/null || true
+          return 1
+        fi
+      elif command -v rc-service >/dev/null 2>&1; then
+        rc-service "$SERVICE_NAME" restart || return 1
+      elif [ -x "/etc/init.d/$SERVICE_NAME" ]; then
+        "/etc/init.d/$SERVICE_NAME" restart || return 1
+      else
+        echo "[错误] 未找到可用的服务管理器"
+        return 1
+      fi
+      echo "[信息] Agent 服务已启动"
+    }
+    
+    remove_service_by_name() {
+      local NAME="$1"
+      if is_systemd_host; then
+        systemctl stop "$NAME" 2>/dev/null || true
+        systemctl disable "$NAME" 2>/dev/null || true
+        rm -f "/etc/systemd/system/$NAME.service"
+        systemctl daemon-reload 2>/dev/null || true
+      fi
+      if command -v rc-service >/dev/null 2>&1; then rc-service "$NAME" stop 2>/dev/null || true; fi
+      if command -v rc-update >/dev/null 2>&1; then rc-update del "$NAME" default 2>/dev/null || true; fi
+      if [ -x "/etc/init.d/$NAME" ]; then "/etc/init.d/$NAME" stop 2>/dev/null || true; fi
+      command -v update-rc.d >/dev/null 2>&1 && update-rc.d -f "$NAME" remove >/dev/null 2>&1 || true
+      command -v chkconfig >/dev/null 2>&1 && chkconfig "$NAME" off >/dev/null 2>&1 || true
+      rm -f "/etc/init.d/$NAME"
+    }
+    
+    show_help() {
+      echo "======================================"
+      echo "  ForwardX Agent 管理工具"
+      echo "======================================"
+      echo ""
+      echo "用法:"
+      echo "  安装 Agent:"
+      echo "    curl -sL PANEL_URL/api/agent/install.sh | bash -s -- install YOUR_TOKEN"
+      echo ""
+      echo "  卸载 Agent:"
+      echo "    curl -sL PANEL_URL/api/agent/install.sh | bash -s -- uninstall"
+      echo ""
+      echo "  升级 Agent:"
+      echo "    curl -sL PANEL_URL/api/agent/install.sh | bash -s -- upgrade"
+      echo ""
+      echo "参数:"
+      echo "  install   <TOKEN>  安装 Agent 并注册到面板"
+      echo "  upgrade   [TOKEN]  升级 Agent，默认复用现有配置"
+      echo "  uninstall          完全卸载 Agent 及相关组件"
+      echo ""
+    }
+    
+    # ============ 工具函数 ============
+    
+    resolve_token() {
+      if [ -n "$TOKEN" ]; then
+        AGENT_TOKEN="$TOKEN"
+      else
+        echo "[错误] 缺少 Agent Token"
+        echo "用法: curl -sL PANEL_URL/api/agent/install.sh | bash -s -- install YOUR_TOKEN"
+        exit 1
+      fi
+    }
+    
+    detect_arch() {
+      case "$(uname -m)" in
+        x86_64|amd64) echo "amd64" ;;
+        aarch64|arm64) echo "arm64" ;;
+        *) echo "" ;;
+      esac
+    }
+    
+    is_enabled_value() {
+      case "${1:-}" in
+        1|true|TRUE|yes|YES|y|Y|on|ON) return 0 ;;
+        *) return 1 ;;
+      esac
+    }
+    
+    system_nginx_active() {
+      if is_systemd_host; then
+        systemctl is-active --quiet nginx 2>/dev/null
+        return $?
+      fi
+      if command -v rc-service >/dev/null 2>&1; then
+        rc-service nginx status >/dev/null 2>&1
+        return $?
+      fi
+      return 1
+    }
+    
+    preserve_system_nginx_if_present() {
+      # ForwardX 使用 /usr/local/bin/forwardx-nginx 和 forwardx-nginx.service 独立运行。
+      # 不停止、不禁用系统 nginx，避免影响用户机器上已有的网站或反代服务。
+      if system_nginx_active; then
+        echo "[信息] 检测到系统 nginx 正在运行，保持不变；ForwardX 使用 forwardx-nginx 独立运行"
+      fi
+      return 0
+    }
+    
+    is_musl_system() {
+      [ -f /etc/alpine-release ] && return 0
+      if command -v ldd >/dev/null 2>&1; then
+        ldd --version 2>&1 | grep -qi musl && return 0
+      fi
+      return 1
+    }
+    
+    resolve_realm_version() {
+      local VERSION="${FORWARDX_REALM_VERSION:-2.9.4}" LATEST_VERSION
+      case "$(printf "%s" "$VERSION" | tr "[:upper:]" "[:lower:]")" in
+        latest|auto|"")
+          LATEST_VERSION="$(curl -fsSL --connect-timeout "$FORWARDX_CURL_CONNECT_TIMEOUT" --max-time 30 "https://github.com/zhboner/realm/releases" 2>/dev/null | sed -n "s|.*releases/tag/v\([0-9.]*\).*|v\1|p" | head -1)"
+          if [ -n "$LATEST_VERSION" ]; then
+            printf "%s\n" "$LATEST_VERSION"
+          else
+            printf "%s\n" "v2.9.4"
+          fi
+          ;;
+        *)
+          printf "%s\n" "v${VERSION#v}"
+          ;;
+      esac
+    }
+    
+    realm_binary_healthy() {
+      local BIN="$1" OUTPUT=""
+      [ -x "$BIN" ] || return 1
+      if OUTPUT="$("$BIN" --help 2>&1)"; then
+        return 0
+      fi
+      if OUTPUT="$("$BIN" -h 2>&1)"; then
+        return 0
+      fi
+      if [ -n "$OUTPUT" ]; then
+        printf "%s\n" "$OUTPUT" | sed "s/^/[Warn] realm health check: /" >&2
+      fi
+      return 1
+    }
+    
+    realm_current_version() {
+      local BIN="$1" OUT VERSION
+      [ -x "$BIN" ] || return 1
+      OUT="$("$BIN" --version 2>&1 || "$BIN" -v 2>&1 || true)"
+      VERSION="$(printf "%s\n" "$OUT" | grep -oE "v?[0-9]+\.[0-9]+\.[0-9]+" | head -1 || true)"
+      [ -n "$VERSION" ] || return 1
+      case "$VERSION" in
+        v*) printf "%s\n" "$VERSION" ;;
+        *) printf "%s\n" "v$VERSION" ;;
+      esac
+    }
+    
+    commit_realm_candidate() {
+      local CANDIDATE="$1"
+      [ -n "$CANDIDATE" ] || return 1
+      [ -f "$CANDIDATE" ] || return 1
+      if ! chmod 0755 "$CANDIDATE"; then
+        echo "[Warn] unable to set realm candidate permissions; preserving existing realm"
+        return 1
+      fi
+      if ! realm_binary_healthy "$CANDIDATE"; then
+        echo "[Warn] realm candidate failed health check; preserving existing realm"
+        return 1
+      fi
+      if ! mv -f "$CANDIDATE" "$REALM_PATH"; then
+        echo "[Warn] unable to atomically replace realm; preserving existing realm"
+        return 1
+      fi
+      chmod 0755 "$REALM_PATH" 2>/dev/null || true
+      return 0
+    }
+    
+    install_realm_from_url() {
+      local URL="$1" TMP REALM_BIN STAGED_REALM=""
+      if ! TMP=$(mktemp -d); then
+        echo "[Warn] unable to create temporary directory for realm"
+        return 1
+      fi
+      if ! curl -fsSL --connect-timeout "$FORWARDX_CURL_CONNECT_TIMEOUT" --speed-limit "$FORWARDX_CURL_LOW_SPEED_LIMIT" --speed-time "$FORWARDX_CURL_ASSET_LOW_SPEED_TIME" "$URL" -o "$TMP/realm.tgz"; then
+        rm -rf "$TMP"
+        return 1
+      fi
+      if ! tar -xzf "$TMP/realm.tgz" -C "$TMP" 2>/dev/null; then
+        echo "[Warn] realm archive extraction failed"
+        rm -rf "$TMP"
+        return 1
+      fi
+      REALM_BIN=$(find "$TMP" -type f -name realm | head -n1)
+      if [ -z "$REALM_BIN" ]; then
+        echo "[Warn] realm archive does not contain a binary"
+        rm -rf "$TMP"
+        return 1
+      fi
+      if ! STAGED_REALM=$(mktemp "${REALM_PATH}.candidate.XXXXXX"); then
+        echo "[Warn] unable to create realm candidate; preserving existing realm"
+        rm -rf "$TMP"
+        return 1
+      fi
+      rm -f "$STAGED_REALM"
+      if ! install -m 0755 "$REALM_BIN" "$STAGED_REALM"; then
+        echo "[Warn] unable to stage realm binary; preserving existing realm"
+        rm -f "$STAGED_REALM"
+        rm -rf "$TMP"
+        return 1
+      fi
+      if ! commit_realm_candidate "$STAGED_REALM"; then
+        rm -f "$STAGED_REALM"
+        rm -rf "$TMP"
+        return 1
+      fi
+      rm -rf "$TMP"
+      echo "[Info] realm installed: $REALM_PATH"
+      return 0
+    }
+    
+    is_github_accelerator_enabled() {
+      is_enabled_value "${GITHUB_ACCELERATOR_ENABLED:-}" && [ -n "${GITHUB_ACCELERATOR_URL:-}" ]
+    }
+    
+    github_url() {
+      local URL="$1"
+      if is_github_accelerator_enabled; then
+        case "$URL" in
+          http://github.com/*|https://github.com/*|http://raw.githubusercontent.com/*|https://raw.githubusercontent.com/*)
+            printf "%s/%s\n" "$GITHUB_ACCELERATOR_URL" "$URL"
+            return 0
+            ;;
+        esac
+      fi
+      printf "%s\n" "$URL"
+    }
+    
+    mimic_ready() {
+      command -v mimic >/dev/null 2>&1 && modprobe mimic >/dev/null 2>&1
+    }
+    
+    mimic_loaded() {
+      command -v mimic >/dev/null 2>&1 && grep -qw "^mimic" /proc/modules 2>/dev/null
+    }
+    
+    mimic_installed_version() {
+      command -v mimic >/dev/null 2>&1 || return 1
+      mimic --version 2>/dev/null | sed -nE "s/.*v?([0-9]+\.[0-9]+\.[0-9]+).*/\1/p" | head -n 1
+    }
+    
+    mimic_target_ready() {
+      local TARGET="${FORWARDX_MIMIC_VERSION#v}"
+      mimic_ready && [ "$(mimic_installed_version || true)" = "$TARGET" ]
+    }
+    
+    
+    install_mimic_optional() {
+      local RAW_URL URL TMP RC
+      if mimic_target_ready; then
+        echo "[信息] mimic ${FORWARDX_MIMIC_VERSION#v} UDP 混淆环境已就绪"
+        return 0
+      fi
+      RAW_URL="${FORWARDX_MIMIC_INSTALLER_URL:-https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/install-mimic.sh}"
+      URL="$(github_url "$RAW_URL")"
+      TMP="$(mktemp /tmp/forwardx-mimic-install.XXXXXX)"
+      echo "[信息] 正在下载 mimic 安装脚本: $URL"
+      if ! curl -fsSL --connect-timeout "$FORWARDX_CURL_CONNECT_TIMEOUT" --speed-limit "$FORWARDX_CURL_LOW_SPEED_LIMIT" --speed-time "$FORWARDX_CURL_ASSET_LOW_SPEED_TIME" "$URL" -o "$TMP"; then
+        if [ "$URL" != "$RAW_URL" ]; then
+          echo "[信息] mimic 安装脚本加速源下载失败，尝试 GitHub 原始地址..."
+          curl -fsSL --connect-timeout "$FORWARDX_CURL_CONNECT_TIMEOUT" --speed-limit "$FORWARDX_CURL_LOW_SPEED_LIMIT" --speed-time "$FORWARDX_CURL_ASSET_LOW_SPEED_TIME" "$RAW_URL" -o "$TMP" || { rm -f "$TMP"; return 1; }
+        else
+          rm -f "$TMP"; return 1
+        fi
+      fi
+      chmod +x "$TMP"
+      if GITHUB_ACCELERATOR_ENABLED="$GITHUB_ACCELERATOR_ENABLED" GITHUB_ACCELERATOR_URL="$GITHUB_ACCELERATOR_URL" FORWARDX_MIMIC_VERSION="$FORWARDX_MIMIC_VERSION" bash "$TMP"; then
+        RC=0
+      else
+        RC=$?
+      fi
+      rm -f "$TMP"
+      return "$RC"
+    }
+    
+    prompt_install_mimic() {
+      local ANSWER=""
+      if mimic_target_ready; then
+        echo "[信息] mimic ${FORWARDX_MIMIC_VERSION#v} UDP 混淆环境已就绪"
+        return 0
+      fi
+      if mimic_loaded; then
+        echo "[信息] 检测到 mimic $(mimic_installed_version || echo unknown)，目标版本为 ${FORWARDX_MIMIC_VERSION#v}"
+      fi
+      case "${FORWARDX_INSTALL_MIMIC:-ask}" in
+        1|true|TRUE|yes|YES|y|Y|on|ON) install_mimic_optional || echo "[警告] mimic 安装失败；需要使用 mimic UDP 混淆时，请稍后手动安装 mimic/mimic-dkms"; return 0 ;;
+        0|false|FALSE|no|NO|n|N|off|OFF) echo "[信息] 已跳过 mimic UDP 混淆环境安装"; return 0 ;;
+      esac
+      echo "[可选] mimic UDP 混淆需要在参与链路的 Agent 主机安装 mimic/mimic-dkms ${FORWARDX_MIMIC_VERSION#v}。"
+      echo "[可选] 默认不安装；需要使用该功能时请输入 Y。"
+      if [ -r /dev/tty ] && exec 3<>/dev/tty; then
+        printf "是否安装 mimic UDP 混淆环境？[y/N]: " >&3
+        IFS= read -r ANSWER <&3 || ANSWER=""
+        exec 3>&-
+      else
+        echo "[信息] 当前没有交互终端，按默认 n 跳过 mimic 安装"
+        return 0
+      fi
+      case "$ANSWER" in
+        Y|y|YES|yes) install_mimic_optional || echo "[警告] mimic 安装失败；需要使用 mimic UDP 混淆时，请稍后手动安装 mimic/mimic-dkms" ;;
+        *) echo "[信息] 已跳过 mimic UDP 混淆环境安装" ;;
+      esac
+    }
+    
+    panel_asset_url() {
+      local VERSION="$1" ASSET="$2"
+      printf "%s/api/agent/assets/v%s/%s\n" "${PANEL_URL%/}" "$VERSION" "$ASSET"
+    }
+    
+    elf_binary_healthy() {
+      local BIN="$1" MAGIC MACHINE EXPECTED_MACHINE=""
+      [ -s "$BIN" ] || return 1
+      if command -v file >/dev/null 2>&1; then
+        file -b "$BIN" 2>/dev/null | grep -q "^ELF " || return 1
+      else
+        command -v od >/dev/null 2>&1 || return 1
+        MAGIC="$(od -An -tx1 -N4 "$BIN" 2>/dev/null | tr -d "[:space:]")"
+        [ "$MAGIC" = "7f454c46" ] || return 1
+      fi
+      case "$(uname -m 2>/dev/null || true)" in
+        x86_64|amd64) EXPECTED_MACHINE="3e00" ;;
+        aarch64|arm64) EXPECTED_MACHINE="b700" ;;
+        *) return 0 ;;
+      esac
+      command -v od >/dev/null 2>&1 || return 1
+      MACHINE="$(od -An -tx1 -j18 -N2 "$BIN" 2>/dev/null | tr -d "[:space:]")"
+      [ "$MACHINE" = "$EXPECTED_MACHINE" ]
+    }
+    
+    download_url_binary() {
+      local URL="$1" DST="$2" LABEL="$3" LOW_SPEED_TIME="${4:-$FORWARDX_CURL_ASSET_LOW_SPEED_TIME}" RC=0 TMP_FILE="" STATUS_FILE=""
+      DOWNLOAD_HTTP_STATUS="000"
+      if ! TMP_FILE=$(mktemp "${DST}.tmp.XXXXXX"); then
+        echo "[警告] 无法创建 $LABEL 下载临时文件: $DST"
+        return 1
+      fi
+      if ! STATUS_FILE=$(mktemp "${DST}.status.XXXXXX"); then
+        rm -f "$TMP_FILE"
+        echo "[警告] 无法创建 $LABEL 状态临时文件: $DST"
+        return 1
+      fi
+      echo "[信息] 正在下载 $LABEL: $URL"
+      curl -fsSL --connect-timeout "$FORWARDX_CURL_CONNECT_TIMEOUT" --speed-limit "$FORWARDX_CURL_LOW_SPEED_LIMIT" --speed-time "$LOW_SPEED_TIME" -w "%{http_code}" "$URL" -o "$TMP_FILE" > "$STATUS_FILE" 2>/dev/null || RC=$?
+      if [ -s "$STATUS_FILE" ]; then
+        DOWNLOAD_HTTP_STATUS="$(cat "$STATUS_FILE" 2>/dev/null || printf "000")"
+      fi
+      if [ "$RC" = "0" ] && [ -s "$TMP_FILE" ]; then
+        if ! elf_binary_healthy "$TMP_FILE"; then
+          rm -f "$TMP_FILE" "$STATUS_FILE"
+          echo "[警告] $LABEL 下载内容不是当前主机可执行的 ELF 二进制，保留现有文件"
+          return 1
+        fi
+        # Keep the staged file in the destination directory so mv is atomic.
+        if ! chmod 0755 "$TMP_FILE" || ! mv -f "$TMP_FILE" "$DST"; then
+          rm -f "$TMP_FILE" "$STATUS_FILE"
+          echo "[警告] $LABEL 安装失败: $DST"
+          return 1
+        fi
+        rm -f "$STATUS_FILE"
+        echo "[信息] $LABEL 安装完成"
+        return 0
+      fi
+      rm -f "$TMP_FILE" "$STATUS_FILE"
+      if [ "$DOWNLOAD_HTTP_STATUS" = "404" ]; then
+        echo "[信息] 未找到 $LABEL 资产，继续尝试其他来源: $URL"
+        return 2
+      fi
+      echo "[警告] $LABEL 下载失败（HTTP=${DOWNLOAD_HTTP_STATUS}, 退出码=${RC}）"
+      return 1
+    }
+    
+    download_github_binary() {
+      local URL="$1" DST="$2" LABEL="$3"
+      local RAW_URL="$URL" RC=0 DIRECT_RC=0
+      URL="$(github_url "$URL")"
+      if download_url_binary "$URL" "$DST" "$LABEL"; then
+        return 0
+      else
+        RC=$?
+      fi
+      if [ "$RC" = "2" ] && [ "$URL" != "$RAW_URL" ]; then
+        echo "[信息] 加速源未找到 $LABEL，正在验证 GitHub 原始地址..."
+        if download_url_binary "$RAW_URL" "$DST" "$LABEL"; then
+          return 0
+        else
+          DIRECT_RC=$?
+        fi
+        if [ "$DIRECT_RC" = "2" ]; then
+          return 2
+        fi
+        return 1
+      fi
+      return "$RC"
+    }
+    
+    download_panel_binary() {
+      local URL="$1" DST="$2" LABEL="$3"
+      download_url_binary "$URL" "$DST" "$LABEL" "$FORWARDX_CURL_ASSET_LOW_SPEED_TIME"
+    }
+    
+    download_current_release_binary() {
+      local ASSET="$1" DST="$2" LABEL="$3"
+      local URL PANEL_TRIED=0 GITHUB_RC=1 PANEL_RC=1
+      if is_enabled_value "${FORWARDX_AGENT_PANEL_FIRST:-}"; then
+        PANEL_TRIED=1
+        URL="$(panel_asset_url "$RELEASE_VERSION" "$ASSET")"
+        if download_panel_binary "$URL" "$DST" "$LABEL"; then
+          DOWNLOADED_RELEASE_VERSION="$RELEASE_VERSION"
+          return 0
+        else
+          PANEL_RC=$?
+        fi
+        echo "[信息] 面板端暂未提供 $LABEL，尝试从 GitHub 下载..."
+      fi
+      URL="https://github.com/owo10086/sni-panel/releases/download/v${RELEASE_VERSION}/${ASSET}"
+      if download_github_binary "$URL" "$DST" "$LABEL"; then
+        DOWNLOADED_RELEASE_VERSION="$RELEASE_VERSION"
+        return 0
+      else
+        GITHUB_RC=$?
+      fi
+      if [ "$PANEL_TRIED" != "1" ]; then
+        URL="$(panel_asset_url "$RELEASE_VERSION" "$ASSET")"
+        if download_panel_binary "$URL" "$DST" "$LABEL"; then
+          DOWNLOADED_RELEASE_VERSION="$RELEASE_VERSION"
+          return 0
+        else
+          PANEL_RC=$?
+        fi
+      fi
+      if [ "$GITHUB_RC" = "2" ]; then
+        return 2
+      fi
+      return 1
+    }
+    
+    download_release_binary() {
+      local ASSET="$1" DST="$2" LABEL="$3" ALLOW_FALLBACK="${4:-0}"
+      local CURRENT_RC=1 URL
+      DOWNLOADED_RELEASE_VERSION=""
+      if download_current_release_binary "$ASSET" "$DST" "$LABEL"; then
+        return 0
+      else
+        CURRENT_RC=$?
+      fi
+      if [ "$CURRENT_RC" = "2" ] && [ "$ALLOW_FALLBACK" = "1" ] && [ -n "$FALLBACK_RELEASE_VERSION" ] && [ "$FALLBACK_RELEASE_VERSION" != "$RELEASE_VERSION" ]; then
+        echo "[信息] v${RELEASE_VERSION} 的 $LABEL 资产暂未就绪，尝试回退到上一版本 v${FALLBACK_RELEASE_VERSION}..."
+        if is_enabled_value "${FORWARDX_AGENT_PANEL_FIRST:-}"; then
+          URL="$(panel_asset_url "$FALLBACK_RELEASE_VERSION" "$ASSET")"
+          if download_panel_binary "$URL" "$DST" "$LABEL"; then
+            DOWNLOADED_RELEASE_VERSION="$FALLBACK_RELEASE_VERSION"
+            echo "[信息] 临时使用上一版本 v${FALLBACK_RELEASE_VERSION} 的 $LABEL"
+            return 0
+          fi
+          echo "[信息] 面板端上一版本 $LABEL 不可用，尝试从 GitHub 下载..."
+        fi
+        URL="https://github.com/owo10086/sni-panel/releases/download/v${FALLBACK_RELEASE_VERSION}/${ASSET}"
+        if download_github_binary "$URL" "$DST" "$LABEL"; then
+          DOWNLOADED_RELEASE_VERSION="$FALLBACK_RELEASE_VERSION"
+          echo "[信息] 临时使用上一版本 v${FALLBACK_RELEASE_VERSION} 的 $LABEL"
+          return 0
+        fi
+        if ! is_enabled_value "${FORWARDX_AGENT_PANEL_FIRST:-}"; then
+          URL="$(panel_asset_url "$FALLBACK_RELEASE_VERSION" "$ASSET")"
+          if download_panel_binary "$URL" "$DST" "$LABEL"; then
+            DOWNLOADED_RELEASE_VERSION="$FALLBACK_RELEASE_VERSION"
+            echo "[信息] 临时使用上一版本 v${FALLBACK_RELEASE_VERSION} 的 $LABEL"
+            return 0
+          fi
+        fi
+      elif [ "$CURRENT_RC" != "2" ]; then
+        echo "[信息] 当前 $LABEL 因网络或服务异常下载失败，跳过上一版本回退"
+      fi
+      return 1
+    }
+    
+    # ============ 卸载 ============
+    
+    do_uninstall() {
+      echo "======================================"
+      echo "  ForwardX Agent 卸载程序"
+      echo "======================================"
+      echo ""
+    
+      if [ "$(id -u)" != "0" ]; then
+        echo "[错误] 请使用 root 权限运行此脚本"
+        exit 1
+      fi
+    
+      echo "[步骤 1/5] 停止 Agent 服务..."
+      if remove_service_by_name "$SERVICE_NAME"; then
+        :
+        echo "[信息] 服务已停止"
+      else
+        echo "[信息] 服务未在运行"
+      fi
+    
+      echo "[步骤 2/5] 禁用并删除 systemd 服务..."
+      if false && [ -f "/etc/systemd/system/$SERVICE_NAME.service" ]; then
+        systemctl disable "$SERVICE_NAME" 2>/dev/null || true
+        rm -f "/etc/systemd/system/$SERVICE_NAME.service"
+        systemctl daemon-reload
+        echo "[信息] 服务文件已删除"
+      fi
+    
+      echo "[步骤 3/5] 清理 Go Agent 二进制和配置..."
+      rm -f "$GO_AGENT_BIN" "$FXP_BIN" "$RUNTIME_BIN" "$NGINX_BIN" /usr/local/bin/forwardx-udp2raw
+      rm -rf "$CONFIG_DIR" "$LEGACY_CONFIG_DIR" /etc/forwardx/runtime /etc/forwardx/realm /etc/forwardx-runtime /etc/forwardx-tunnel-runtime /etc/forwardx-gost /etc/forwardx-tunnels /etc/forwardx/nginx
+      echo "[信息] Go Agent 文件已删除"
+    
+      echo "[步骤 4/5] 清理转发进程和 iptables 规则..."
+      for pid in $(pgrep -f "[/]usr/local/bin/forwardx-fxp" 2>/dev/null || true); do if [ "$pid" = "$$" ] || [ "$pid" = "$PPID" ]; then continue; fi; kill "$pid" 2>/dev/null || true; done
+      for pid in $(pgrep -f "[/]usr/local/bin/forwardx-runtime" 2>/dev/null || true); do if [ "$pid" = "$$" ] || [ "$pid" = "$PPID" ]; then continue; fi; kill "$pid" 2>/dev/null || true; done
+      for pid in $(pgrep -f "[/]usr/local/bin/forwardx-udp2raw" 2>/dev/null || true); do if [ "$pid" = "$$" ] || [ "$pid" = "$PPID" ]; then continue; fi; kill "$pid" 2>/dev/null || true; done
+      for pid in $(pgrep -f "[/]usr/local/bin/forwardx-nginx" 2>/dev/null || true); do if [ "$pid" = "$$" ] || [ "$pid" = "$PPID" ]; then continue; fi; kill "$pid" 2>/dev/null || true; done
+      for SVC in /etc/systemd/system/forwardx-socat-*.service /etc/systemd/system/forwardx-realm-*.service /etc/systemd/system/forwardx-gost-*.service /etc/systemd/system/forwardx-nginx.service /etc/systemd/system/forwardx-udp2raw-*.service /etc/systemd/system/forwardx-runtime.service /etc/systemd/system/forwardx-tunnel-runtime.service /etc/systemd/system/forwardx-gost.service /etc/systemd/system/forwardx-tunnels.service; do
+        if [ -f "$SVC" ]; then
+          SVCNAME=$(basename "$SVC" .service)
+          remove_service_by_name "$SVCNAME"
+          echo "[信息] 已删除服务: $SVCNAME"
+        fi
+      done
+      for SVC in /etc/init.d/forwardx-socat-* /etc/init.d/forwardx-realm-* /etc/init.d/forwardx-gost-* /etc/init.d/forwardx-nginx /etc/init.d/forwardx-udp2raw-* /etc/init.d/forwardx-runtime /etc/init.d/forwardx-tunnel-runtime /etc/init.d/forwardx-gost /etc/init.d/forwardx-tunnels; do
+        if [ -f "$SVC" ]; then
+          SVCNAME=$(basename "$SVC")
+          remove_service_by_name "$SVCNAME"
+          echo "[信息] 已删除服务: $SVCNAME"
+        fi
+      done
+    
+      # Clean ForwardX iptables/ip6tables rules
+      for BIN in iptables ip6tables; do
+        command -v "$BIN" >/dev/null 2>&1 || continue
+        # Remove only our generated pre-DNAT access-limit hooks, with their full selectors.
+        for BASE in PREROUTING OUTPUT; do
+          $BIN -t mangle -S "$BASE" 2>/dev/null | grep -E -- "-j FWX_PD_[0-9a-f]{20}$" | sed "s/^-A/-D/" | while read -r RULE; do
+            $BIN -w 5 -t mangle $RULE 2>/dev/null || true
+          done
+        done
+        LIMIT_CHAINS=$($BIN -t mangle -S 2>/dev/null | sed -nE "s/^-N (FWX_P[DC]_[0-9a-f]{20})$/\1/p")
+        for CH in $LIMIT_CHAINS; do $BIN -w 5 -t mangle -F "$CH" 2>/dev/null || true; done
+        for CH in $LIMIT_CHAINS; do $BIN -w 5 -t mangle -X "$CH" 2>/dev/null || true; done
+        for CH in $($BIN -t mangle -L 2>/dev/null | awk '/^Chain FWX_/ {print $2}'); do
+          for P in tcp udp; do
+            $BIN -t mangle -D PREROUTING -p $P -j "$CH" 2>/dev/null || true
+            $BIN -t mangle -D POSTROUTING -p $P -j "$CH" 2>/dev/null || true
+            $BIN -t mangle -D INPUT -p $P -j "$CH" 2>/dev/null || true
+            $BIN -t mangle -D OUTPUT -p $P -j "$CH" 2>/dev/null || true
+            $BIN -t mangle -D FORWARD -p $P -j "$CH" 2>/dev/null || true
+          done
+          $BIN -t mangle -F "$CH" 2>/dev/null || true
+          $BIN -t mangle -X "$CH" 2>/dev/null || true
+        done
+    
+        for CH in $($BIN -L 2>/dev/null | awk '/^Chain FWX_LIMIT_/ {print $2}'); do
+          $BIN -D INPUT -p tcp -j "$CH" 2>/dev/null || true
+          $BIN -D FORWARD -p tcp -j "$CH" 2>/dev/null || true
+          $BIN -F "$CH" 2>/dev/null || true
+          $BIN -X "$CH" 2>/dev/null || true
+        done
+    
+        while $BIN -t nat -S PREROUTING 2>/dev/null | grep -q "DNAT"; do
+          RULE=$($BIN -t nat -S PREROUTING 2>/dev/null | grep "DNAT" | head -1 | sed "s/^-A/-D/")
+          [ -z "$RULE" ] && break
+          $BIN -t nat $RULE 2>/dev/null || break
+        done
+        while $BIN -t nat -S POSTROUTING 2>/dev/null | grep -q "MASQUERADE"; do
+          RULE=$($BIN -t nat -S POSTROUTING 2>/dev/null | grep "MASQUERADE" | head -1 | sed "s/^-A/-D/")
+          [ -z "$RULE" ] && break
+          $BIN -t nat $RULE 2>/dev/null || break
+        done
+      done
+      echo "[INFO] iptables/ip6tables rules cleaned"
+    
+      echo "[步骤 5/5] 清理日志和状态文件..."
+      rm -rf /var/log/forwardx-agent 2>/dev/null || true
+      rm -rf /var/lib/forwardx-agent 2>/dev/null || true
+      echo "[信息] 日志和状态文件已删除"
+    
+      echo ""
+      echo "======================================"
+      echo "  ForwardX Agent 卸载完成!"
+      echo "======================================"
+      echo ""
+      echo "  如需重新安装，请使用 install 命令"
+      echo "======================================"
+    }
+    
+    # ============ 安装依赖 ============
+    
+    install_deps() {
+      echo "[步骤 1/6] 安装系统依赖..."
+      FORWARDX_SYSTEM_NGINX_WAS_ACTIVE=0
+      system_nginx_active && FORWARDX_SYSTEM_NGINX_WAS_ACTIVE=1 || true
+      if command -v apt-get >/dev/null 2>&1; then
+        export DEBIAN_FRONTEND=noninteractive
+        apt-get update -qq && apt-get install -y -qq ca-certificates curl jq socat iptables nftables iproute2 coreutils systemd openssl >/dev/null 2>&1 || true
+      elif command -v dnf >/dev/null 2>&1; then
+        dnf install -y -q ca-certificates curl jq socat iptables nftables iproute coreutils systemd openssl >/dev/null 2>&1 || true
+      elif command -v yum >/dev/null 2>&1; then
+        yum install -y -q ca-certificates curl jq socat iptables nftables iproute coreutils systemd openssl >/dev/null 2>&1 || true
+      elif command -v zypper >/dev/null 2>&1; then
+        zypper -n install ca-certificates curl jq socat iptables nftables iproute2 coreutils systemd openssl >/dev/null 2>&1 || true
+      elif command -v apk >/dev/null 2>&1; then
+        case "${FORWARDX_AGENT_PROXY:-}" in
+          socks5h://*|socks5://*) echo "[WARN] APK SOCKS downloads are unsupported; using preinstalled dependencies only (no direct fallback)." ;;
+          *) apk add --no-cache ca-certificates curl jq socat iptables nftables iproute2 coreutils openrc openssl >/dev/null 2>&1 || true ;;
+        esac
+      elif command -v pacman >/dev/null 2>&1; then
+        pacman -Sy --noconfirm ca-certificates curl jq socat iptables-nft nftables iproute2 coreutils openssl >/dev/null 2>&1 || pacman -Sy --noconfirm ca-certificates curl jq socat iptables nftables iproute2 coreutils openssl >/dev/null 2>&1 || true
+      fi
+      # iperf3 仅用于 Looking Glass 测试，单独安装，失败不得阻断 Agent 主流程
+      if ! command -v iperf3 >/dev/null 2>&1; then
+        if command -v apt-get >/dev/null 2>&1; then
+          apt-get install -y -qq iperf3 >/dev/null 2>&1 || true
+        elif command -v dnf >/dev/null 2>&1; then
+          dnf install -y -q iperf3 >/dev/null 2>&1 || true
+        elif command -v yum >/dev/null 2>&1; then
+          yum install -y -q iperf3 >/dev/null 2>&1 || true
+        elif command -v zypper >/dev/null 2>&1; then
+          zypper -n install iperf3 >/dev/null 2>&1 || true
+        elif command -v apk >/dev/null 2>&1; then
+          case "${FORWARDX_AGENT_PROXY:-}" in socks5h://*|socks5://*) : ;; *) apk add --no-cache iperf3 >/dev/null 2>&1 || true ;; esac
+        elif command -v pacman >/dev/null 2>&1; then
+          pacman -Sy --noconfirm iperf3 >/dev/null 2>&1 || true
+        fi
+      fi
+      preserve_system_nginx_if_present
+      # 验证核心依赖；iperf3 是可选的 Looking Glass 测试组件，不阻断 Agent 安装
+      for B in curl jq iptables od; do
+        if ! command -v $B >/dev/null 2>&1; then
+          echo "[错误] 未能安装依赖: $B"
+          exit 1
+        fi
+      done
+      if ! command -v iperf3 >/dev/null 2>&1; then
+        echo "[警告] 未能安装可选依赖: iperf3；Agent 将继续安装，但 iperf3 网络测试暂不可用"
+      fi
+      for B in nft ip6tables; do
+        if ! command -v $B >/dev/null 2>&1; then
+          echo "[WARN] Optional dependency not found: $B (nftables or IPv6 iptables forwarding may be unavailable)"
+        fi
+      done
+      echo "[信息] 系统依赖就绪"
+    }
+    
+    install_realm() {
+      REALM_VERSION="$(resolve_realm_version)"
+      if is_musl_system; then
+        REALM_LIBC="musl"
+      else
+        REALM_LIBC="gnu"
+      fi
+      ARCH=$(uname -m)
+      case "$ARCH" in
+        x86_64|amd64) REALM_ARCH="x86_64-unknown-linux-$REALM_LIBC" ;;
+        aarch64|arm64) REALM_ARCH="aarch64-unknown-linux-$REALM_LIBC" ;;
+        *) echo "[Warn] Unsupported CPU architecture for realm: $ARCH"; return 1 ;;
+      esac
+      REALM_PATH="/usr/local/bin/realm"
+      NEED_INSTALL=0
+      EXISTING_REALM="$REALM_PATH"
+      if [ ! -x "$EXISTING_REALM" ]; then
+        EXISTING_REALM="$(command -v realm 2>/dev/null || true)"
+      fi
+      if [ -n "$EXISTING_REALM" ] && [ -x "$EXISTING_REALM" ]; then
+        echo "[Info] Detected realm: $EXISTING_REALM"
+        "$EXISTING_REALM" --version 2>&1 | sed "s/^/[Info] realm version: /" || "$EXISTING_REALM" -v 2>&1 | sed "s/^/[Info] realm version: /" || true
+        if ! realm_binary_healthy "$EXISTING_REALM"; then
+          echo "[Warn] realm exists but failed health check, reinstalling from release..."
+          NEED_INSTALL=1
+        else
+          CURRENT_REALM_VERSION="$(realm_current_version "$EXISTING_REALM" 2>/dev/null || true)"
+          if [ "$EXISTING_REALM" != "$REALM_PATH" ]; then
+            STAGED_REALM=""
+            if ! STAGED_REALM=$(mktemp "${REALM_PATH}.candidate.XXXXXX"); then
+              echo "[Warn] unable to create realm candidate; preserving existing realm"
+              NEED_INSTALL=1
+            else
+              rm -f "$STAGED_REALM"
+              if install -m 0755 "$EXISTING_REALM" "$STAGED_REALM" 2>/dev/null && commit_realm_candidate "$STAGED_REALM"; then
+              echo "[Info] realm copied to $REALM_PATH"
+              else
+                echo "[Warn] Copied realm failed health check, reinstalling from release..."
+                rm -f "$STAGED_REALM"
+                NEED_INSTALL=1
+              fi
+            fi
+          fi
+          if [ "$NEED_INSTALL" != "1" ]; then
+            if is_enabled_value "${FORWARDX_REALM_FORCE_INSTALL:-}"; then
+              echo "[Info] FORWARDX_REALM_FORCE_INSTALL enabled, reinstalling realm..."
+            elif is_enabled_value "${FORWARDX_REALM_KEEP_EXISTING:-}"; then
+              echo "[Info] realm already installed and healthy"
+              return 0
+            elif [ "$FORWARDX_REALM_VERSION_EXPLICIT" != "true" ]; then
+              echo "[Info] realm already installed and healthy; keeping existing version (default target applies to new installs)"
+              return 0
+            elif [ -n "$CURRENT_REALM_VERSION" ] && [ "$CURRENT_REALM_VERSION" = "$REALM_VERSION" ]; then
+              echo "[Info] realm already installed and matches target version"
+              return 0
+            else
+              echo "[Info] realm version ${CURRENT_REALM_VERSION:-unknown} differs from target $REALM_VERSION, refreshing..."
+            fi
+          fi
+        fi
+      fi
+      echo "[Info] Installing realm $REALM_VERSION ($REALM_ARCH)..."
+      try_realm_asset() {
+        local RAW_URL="$1" LABEL="$2" URL
+        URL="$(github_url "$RAW_URL")"
+        echo "[Info] Trying realm asset ($LABEL): $URL"
+        if install_realm_from_url "$URL"; then
+          return 0
+        fi
+        if [ "$URL" != "$RAW_URL" ]; then
+          echo "[Info] accelerator realm asset failed, retrying with direct GitHub..."
+          if install_realm_from_url "$RAW_URL"; then
+            return 0
+          fi
+        fi
+        return 1
+      }
+      REALM_RAW_URL="https://github.com/zhboner/realm/releases/download/$REALM_VERSION/realm-$REALM_ARCH.tar.gz"
+      if try_realm_asset "$REALM_RAW_URL" "default"; then
+        return 0
+      fi
+      # Recent Realm releases also publish a GNU/glibc2.28 build. It avoids
+      # the GLIBC_2.38 requirement of the default build on older distributions.
+      if [ "$REALM_LIBC" = "gnu" ]; then
+        REALM_COMPAT_RAW_URL="https://github.com/zhboner/realm/releases/download/$REALM_VERSION/realm-${REALM_ARCH}-glibc2.28.tar.gz"
+        if try_realm_asset "$REALM_COMPAT_RAW_URL" "glibc2.28 compatibility"; then
+          return 0
+        fi
+      fi
+      echo "[Warn] realm install failed; realm forwarding will be unavailable"
+      return 1
+    }
+    
+    runtime_self_check() {
+      local BIN="$1"
+      [ -x "$BIN" ] || return 1
+      local TARGET_VERSION OUT HELP
+      TARGET_VERSION="${GOST_VERSION:-3.2.6}"
+      TARGET_VERSION="${TARGET_VERSION#v}"
+      OUT="$("$BIN" -V 2>&1 || "$BIN" --version 2>&1 || true)"
+      HELP="$("$BIN" -h 2>&1 || true)"
+      # gost v2 documents -L/-F while gost v3 uses -l/-f. Both forms provide the required runtime capabilities.
+      echo "$HELP" | grep -qi -- "-l" || return 1
+      echo "$HELP" | grep -qi -- "-f" || return 1
+      printf "%s\n%s\n" "$OUT" "$HELP" | grep -q "$TARGET_VERSION" || return 1
+    }
+    
+    commit_runtime_candidate() {
+      local CANDIDATE="$1"
+      [ -n "$CANDIDATE" ] || return 1
+      [ -f "$CANDIDATE" ] || return 1
+      if ! chmod 0755 "$CANDIDATE"; then
+        echo "[警告] 无法设置 gost runtime 权限，保留现有 runtime"
+        return 1
+      fi
+      if ! runtime_self_check "$CANDIDATE"; then
+        echo "[警告] gost runtime 候选文件自检失败，保留现有 runtime"
+        return 1
+      fi
+      if ! mv -f "$CANDIDATE" "$RUNTIME_BIN"; then
+        echo "[警告] 无法原子替换 gost runtime，保留现有 runtime"
+        return 1
+      fi
+      chmod 0755 "$RUNTIME_BIN" 2>/dev/null || true
+      return 0
+    }
+    
+    nginx_self_check() {
+      local BIN="$1" TMP CONF
+      [ -x "$BIN" ] || return 1
+      TMP=$(mktemp -d)
+      CONF="$TMP/nginx.conf"
+      : > "$TMP/stream-module.conf"
+      for M in /usr/lib/nginx/modules/ngx_stream_module.so /usr/lib64/nginx/modules/ngx_stream_module.so /usr/share/nginx/modules/ngx_stream_module.so; do
+        if [ -s "$M" ]; then printf "load_module %s;\n" "$M" > "$TMP/stream-module.conf"; break; fi
+      done
+      cat > "$CONF" << EOF
+    include $TMP/stream-module.conf;
+    worker_processes 1;
+    error_log /dev/stderr emerg;
+    pid $TMP/nginx.pid;
+    events { worker_connections 16; }
+    stream { server { listen 127.0.0.1:18080; proxy_pass 127.0.0.1:9; } }
+    EOF
+      "$BIN" -p "$TMP" -c "$CONF" -t >/dev/null 2>&1
+      local RC=$?
+      rm -rf "$TMP"
+      return "$RC"
+    }
+    
+    commit_nginx_candidate() {
+      local CANDIDATE="$1"
+      [ -n "$CANDIDATE" ] || return 1
+      [ -f "$CANDIDATE" ] || return 1
+      if ! chmod 0755 "$CANDIDATE"; then
+        echo "[警告] 无法设置 Nginx 候选文件权限，保留现有 runtime"
+        return 1
+      fi
+      if ! nginx_self_check "$CANDIDATE"; then
+        echo "[警告] Nginx 候选文件自检失败，保留现有 runtime"
+        return 1
+      fi
+      if ! mv -f "$CANDIDATE" "$NGINX_BIN"; then
+        echo "[警告] 无法原子替换 Nginx runtime，保留现有 runtime"
+        return 1
+      fi
+      chmod 0755 "$NGINX_BIN" 2>/dev/null || true
+      return 0
+    }
+    
+    install_nginx_runtime() {
+      local STAGED_NGINX=""
+      for BIN in "$NGINX_BIN" /usr/sbin/nginx /usr/local/nginx/sbin/nginx "$(command -v nginx 2>/dev/null || true)"; do
+        [ -n "$BIN" ] || continue
+        [ -x "$BIN" ] || continue
+        STAGED_NGINX=""
+        if ! STAGED_NGINX=$(mktemp "${NGINX_BIN}.candidate.XXXXXX"); then
+          echo "[警告] 无法创建 Nginx 候选文件，保留现有 runtime"
+          continue
+        fi
+        rm -f "$STAGED_NGINX"
+        if install -m 0755 "$BIN" "$STAGED_NGINX" && commit_nginx_candidate "$STAGED_NGINX"; then
+          echo "[信息] Nginx stream runtime 已就绪: $NGINX_BIN"
+          return 0
+        fi
+        rm -f "$STAGED_NGINX"
+      done
+      echo "[警告] Nginx stream runtime 不可用，Nginx 转发/隧道将不可用；请安装 nginx stream 模块后重试"
+      return 1
+    }
+    
+    install_runtime_from_panel() {
+      local GO_ARCH VERSION URL SEEN="" STAGED_RUNTIME RC=1
+      GO_ARCH=$(detect_arch)
+      if [ -z "$GO_ARCH" ]; then
+        echo "[警告] 不支持的 CPU 架构: $(uname -m)，跳过面板 gost runtime"
+        return 1
+      fi
+      for VERSION in "${RELEASE_VERSION:-}" "${DOWNLOADED_RELEASE_VERSION:-}" "${FALLBACK_RELEASE_VERSION:-}"; do
+        VERSION="${VERSION#v}"
+        [ -n "$VERSION" ] || continue
+        case " $SEEN " in *" $VERSION "*) continue ;; esac
+        SEEN="$SEEN $VERSION"
+        URL="$(panel_asset_url "$VERSION" "forwardx-runtime-linux-${GO_ARCH}")"
+        STAGED_RUNTIME=""
+        if ! STAGED_RUNTIME=$(mktemp "${RUNTIME_BIN}.candidate.XXXXXX"); then
+          echo "[警告] 无法创建 gost runtime 候选文件，保留现有 runtime"
+          continue
+        fi
+        rm -f "$STAGED_RUNTIME"
+        if download_panel_binary "$URL" "$STAGED_RUNTIME" "gost runtime"; then
+          if commit_runtime_candidate "$STAGED_RUNTIME"; then
+            echo "[信息] gost runtime 已从面板安装: v${VERSION} -> $RUNTIME_BIN"
+            return 0
+          fi
+          rm -f "$STAGED_RUNTIME"
+        else
+          RC=$?
+          rm -f "$STAGED_RUNTIME"
+        fi
+      done
+      return "$RC"
+    }
+    
+    install_runtime_from_github() {
+      GOST_VERSION="${GOST_VERSION:-3.2.6}"
+      GOST_VERSION="${GOST_VERSION#v}"
+      echo "[信息] 正在从 GitHub 安装 gost..."
+      ARCH=$(uname -m)
+      case "$ARCH" in
+        x86_64|amd64) GOST_ARCHS="amd64v1 amd64 amd64v2 amd64v3" ;;
+        aarch64|arm64) GOST_ARCHS="arm64" ;;
+        *) echo "[警告] 不支持的 CPU 架构: $ARCH，跳过 gost 安装"; return 1 ;;
+      esac
+      TMP=$(mktemp -d)
+      for GOST_ARCH in $GOST_ARCHS; do
+        URL="https://github.com/go-gost/gost/releases/download/v${GOST_VERSION}/gost_${GOST_VERSION}_linux_${GOST_ARCH}.tar.gz"
+        URL="$(github_url "$URL")"
+        HTTP_STATUS="000"
+        CURL_RC=0
+        rm -f "$TMP/gost.tgz" "$TMP/gost.status"
+        echo "[信息] 尝试安装 gost 架构包: $GOST_ARCH"
+        curl -fsSL --connect-timeout "$FORWARDX_CURL_CONNECT_TIMEOUT" --speed-limit "$FORWARDX_CURL_LOW_SPEED_LIMIT" --speed-time "$FORWARDX_CURL_ASSET_LOW_SPEED_TIME" -w "%{http_code}" "$URL" -o "$TMP/gost.tgz" > "$TMP/gost.status" 2>/dev/null || CURL_RC=$?
+        if [ -s "$TMP/gost.status" ]; then
+          HTTP_STATUS="$(cat "$TMP/gost.status" 2>/dev/null || printf "000")"
+        fi
+        if [ "$CURL_RC" = "0" ] && [ -s "$TMP/gost.tgz" ]; then
+          STAGED_RUNTIME=""
+          if ! STAGED_RUNTIME=$(mktemp "${RUNTIME_BIN}.candidate.XXXXXX"); then
+            echo "[警告] 无法创建 gost runtime 候选文件，保留现有 runtime"
+            continue
+          fi
+          rm -f "$STAGED_RUNTIME"
+          if tar -xzf "$TMP/gost.tgz" -C "$TMP" && \
+            GOST_BIN=$(find "$TMP" -type f -name gost | head -n1) && \
+            [ -n "$GOST_BIN" ] && install -m 0755 "$GOST_BIN" "$STAGED_RUNTIME" && \
+            commit_runtime_candidate "$STAGED_RUNTIME"; then
+            rm -rf "$TMP" && echo "[信息] gost 安装完成: $GOST_ARCH -> $RUNTIME_BIN" && return 0
+          fi
+          rm -f "$STAGED_RUNTIME"
+          echo "[警告] gost 架构包 $GOST_ARCH 无法使用，尝试下一个候选"
+        elif [ "$HTTP_STATUS" = "404" ]; then
+          echo "[信息] gost 架构包 $GOST_ARCH 不存在，尝试下一个候选"
+        else
+          echo "[警告] gost 架构包 $GOST_ARCH 下载失败（HTTP=${HTTP_STATUS}, 退出码=${CURL_RC}），尝试下一个候选"
+        fi
+      done
+      rm -rf "$TMP"
+      return 1
+    }
+    
+    install_runtime() {
+      GOST_VERSION="${GOST_VERSION:-3.2.6}"
+      GOST_VERSION="${GOST_VERSION#v}"
+      if [ -e "$RUNTIME_BIN" ]; then
+        chmod 0755 "$RUNTIME_BIN" 2>/dev/null || true
+        if runtime_self_check "$RUNTIME_BIN"; then
+          echo "[信息] gost runtime 已安装且版本匹配: $RUNTIME_BIN"
+          return 0
+        fi
+        echo "[警告] 已有 gost runtime 版本不匹配或不可用，正在重新安装: $RUNTIME_BIN（失败时保留旧文件）"
+      fi
+      for BIN in /usr/local/bin/gost "$(command -v gost 2>/dev/null || true)"; do
+        [ -n "$BIN" ] || continue
+        if runtime_self_check "$BIN"; then
+          STAGED_RUNTIME=""
+          if ! STAGED_RUNTIME=$(mktemp "${RUNTIME_BIN}.candidate.XXXXXX"); then
+            echo "[警告] 无法创建 gost runtime 候选文件，保留现有 runtime"
+            continue
+          fi
+          rm -f "$STAGED_RUNTIME"
+          if install -m 0755 "$BIN" "$STAGED_RUNTIME" && commit_runtime_candidate "$STAGED_RUNTIME"; then
+            echo "[信息] gost runtime 已从现有 gost 复制: $RUNTIME_BIN"
+            return 0
+          fi
+          rm -f "$STAGED_RUNTIME"
+        fi
+      done
+      if command -v gost >/dev/null 2>&1; then
+        echo "[警告] 已安装的 gost 与当前 CPU 不兼容或版本不匹配，正在重新安装"
+      fi
+      if is_enabled_value "${FORWARDX_AGENT_PANEL_FIRST:-}"; then
+        if install_runtime_from_panel; then
+          return 0
+        fi
+        echo "[信息] 面板 gost runtime 不可用，尝试从 GitHub 安装..."
+        if install_runtime_from_github; then
+          return 0
+        fi
+      else
+        if install_runtime_from_github; then
+          return 0
+        fi
+        echo "[信息] GitHub gost runtime 下载失败，回退到面板安装..."
+        if install_runtime_from_panel; then
+          return 0
+        fi
+      fi
+      echo "[警告] gost 安装失败，gost 转发方式将不可用"
+      return 1
+    }
+    
+    install_go_agent() {
+      GO_ARCH=$(detect_arch)
+      if [ -z "$GO_ARCH" ]; then
+        echo "[错误] 不支持的 CPU 架构: $(uname -m)"
+        return 1
+      fi
+    
+      echo "[步骤 3/6] 安装 Go Agent（Release v${RELEASE_VERSION}）..."
+      DOWNLOADED_RELEASE_VERSION=""
+      if ! download_release_binary "forwardx-agent-linux-${GO_ARCH}" "$GO_AGENT_BIN" "Go Agent" "1"; then
+        echo "[错误] Go Agent 二进制下载失败，请检查网络或 Release 资产是否已构建完成"
+        return 1
+      fi
+    
+      echo "[步骤 4/6] 安装 ForwardX Tunnel Runtime..."
+      FXP_RELEASE_VERSION="${DOWNLOADED_RELEASE_VERSION:-$RELEASE_VERSION}"
+      RELEASE_VERSION="$FXP_RELEASE_VERSION" download_release_binary "forwardx-fxp-linux-${GO_ARCH}" "$FXP_BIN" "ForwardX FXP" "0" || \
+        echo "[警告] FXP 安装失败，加密隧道功能将不可用（iptables/realm/socat/gost 转发不受影响）"
+    
+    
+      return 0
+    }
+    
+    register_agent_once() {
+      echo "[步骤 6/6] 注册到面板..."
+      local OUT RC
+      if OUT=$("$GO_AGENT_BIN" -config "$CONFIG_DIR/config.json" -register 2>&1); then
+        [ -n "$OUT" ] && printf "%s\n" "$OUT"
+        echo "[信息] Agent 已通过加密通道注册到面板"
+        return 0
+      else
+        RC=$?
+        echo "[错误] Agent 注册失败（退出码: $RC）"
+        [ -n "$OUT" ] && printf "%s\n" "$OUT"
+        echo "[提示] 请检查 Token 是否来自当前面板、面板地址/反代是否指向当前实例，以及服务器时间是否正常"
+        return "$RC"
+      fi
+    }
+    
+    start_agent_service_systemd_unused() {
+      if ! systemctl restart "$SERVICE_NAME"; then
+        echo "[错误] systemd 服务启动失败"
+        systemctl status "$SERVICE_NAME" --no-pager -l 2>/dev/null || true
+        return 1
+      fi
+      sleep 1
+      if ! systemctl is-active --quiet "$SERVICE_NAME"; then
+        echo "[错误] systemd 服务未保持运行"
+        systemctl status "$SERVICE_NAME" --no-pager -l 2>/dev/null || true
+        journalctl -u "$SERVICE_NAME" -n 50 --no-pager 2>/dev/null || true
+        return 1
+      fi
+      echo "[信息] systemd 服务已启动"
+    }
+    
+    # ============ 安装 ============
+    
+    do_install() {
+      if [ "$(id -u)" != "0" ]; then
+        echo "[错误] 请使用 root 权限运行此脚本"
+        exit 1
+      fi
+    
+      resolve_token
+      migrate_legacy_config
+    
+      echo "======================================"
+      echo "  ForwardX Agent 安装程序"
+      echo "======================================"
+      echo "面板地址: $PANEL_URL"
+      echo "Token: ${AGENT_TOKEN:0:8}***"
+      echo ""
+    
+      # 安装系统依赖
+      install_deps
+    
+      # 启用内核转发和 conntrack 计数器
+      echo "[步骤 2/6] 配置内核参数..."
+      sysctl -w net.ipv4.ip_forward=1 >/dev/null 2>&1 || true
+      sysctl -w net.ipv6.conf.all.forwarding=1 >/dev/null 2>&1 || true
+      sysctl -w net.netfilter.nf_conntrack_acct=1 >/dev/null 2>&1 || true
+      if ! grep -qE "^\s*net\.ipv4\.ip_forward\s*=\s*1" /etc/sysctl.conf 2>/dev/null; then
+        echo "net.ipv4.ip_forward=1" >> /etc/sysctl.conf
+      fi
+      if ! grep -qE "^\s*net\.ipv6\.conf\.all\.forwarding\s*=\s*1" /etc/sysctl.conf 2>/dev/null; then
+        echo "net.ipv6.conf.all.forwarding=1" >> /etc/sysctl.conf
+      fi
+      if ! grep -qE "^\s*net\.netfilter\.nf_conntrack_acct\s*=\s*1" /etc/sysctl.conf 2>/dev/null; then
+        echo "net.netfilter.nf_conntrack_acct=1" >> /etc/sysctl.conf
+      fi
+      sysctl -p >/dev/null 2>&1 || true
+      echo "[信息] 内核参数就绪"
+    
+      # 安装 Go Agent 二进制
+      if ! install_go_agent; then
+        echo "[错误] Go Agent 安装失败，安装中止"
+        exit 1
+      fi
+    
+      # 安装可选转发工具
+      install_realm || true
+      if is_enabled_value "${FORWARDX_INSTALL_NGINX:-}"; then
+        install_nginx_runtime || true
+      else
+        remove_service_by_name "$NGINX_SERVICE_NAME"
+        for pid in $(pgrep -f "[/]usr/local/bin/forwardx-nginx" 2>/dev/null || true); do kill "$pid" 2>/dev/null || true; done
+        rm -f "$NGINX_BIN" 2>/dev/null || true
+        rm -rf /etc/forwardx/nginx 2>/dev/null || true
+        rm -f /run/forwardx-nginx.pid 2>/dev/null || true
+      fi
+      if ! install_runtime; then
+        echo "[错误] gost runtime 安装失败，安装中止"
+        exit 1
+      fi
+      prompt_install_mimic
+    
+      # 创建配置
+      echo "[步骤 5/6] 配置 Agent..."
+      mkdir -p "$CONFIG_DIR"
+      (umask 077; FWX_PANEL_URL="$PANEL_URL" FWX_AGENT_TOKEN="$AGENT_TOKEN" FWX_PROXY_WRITE_VALUE="$FORWARDX_AGENT_PROXY" jq -n '{panelUrl:env.FWX_PANEL_URL, token:env.FWX_AGENT_TOKEN, interval:30, proxyUrl:env.FWX_PROXY_WRITE_VALUE}' > "$CONFIG_DIR/config.json")
+      apply_panel_migration_config
+      chmod 600 "$CONFIG_DIR/config.json" 2>/dev/null || true
+      echo "[信息] 配置文件已写入: $CONFIG_DIR/config.json"
+    
+      # 安装系统服务
+      install_management_command
+      write_agent_service
+    
+      register_agent_once
+      start_agent_service
+    
+      echo ""
+      echo "======================================"
+      echo "  ForwardX Agent 安装完成!"
+      echo "======================================"
+      echo "  Go Agent:  $GO_AGENT_BIN"
+      echo "  配置文件:  $CONFIG_DIR/config.json"
+      echo "  服务名称:  $SERVICE_NAME"
+      print_agent_service_hints
+      echo "  卸载命令:  curl -sL $PANEL_URL/api/agent/install.sh | bash -s -- uninstall"
+      echo "======================================"
+    }
+    
+    # ============ 升级 ============
+    
+    do_upgrade() {
+      if [ "$(id -u)" != "0" ]; then
+        echo "[错误] 请使用 root 权限运行此脚本"
+        exit 1
+      fi
+    
+      # 尝试从现有配置文件读取
+      EXISTING_PANEL_URL=$(read_config_value panelUrl)
+      EXISTING_TOKEN=$(read_config_value token)
+    
+      PANEL_URL="${PANEL_URL:-${EXISTING_PANEL_URL:-}}"
+      if [ -n "$TOKEN" ]; then
+        AGENT_TOKEN="$TOKEN"
+      else
+        AGENT_TOKEN="${EXISTING_TOKEN:-}"
+      fi
+    
+      if [ -z "$PANEL_URL" ]; then
+        echo "[错误] 未找到面板地址"
+        exit 1
+      fi
+      if [ -z "$AGENT_TOKEN" ]; then
+        echo "[错误] 未找到 Agent Token"
+        exit 1
+      fi
+    
+      echo "======================================"
+      echo "  ForwardX Agent 升级程序"
+      echo "======================================"
+      echo "面板地址: $PANEL_URL"
+      echo ""
+    
+      # 下载并替换 Go Agent 二进制
+      GO_ARCH=$(detect_arch)
+      if [ -z "$GO_ARCH" ]; then
+        echo "[错误] 不支持的 CPU 架构"
+        exit 1
+      fi
+    
+      echo "[信息] 升级 Go Agent（Release v${RELEASE_VERSION}）..."
+      DOWNLOADED_RELEASE_VERSION=""
+      if download_release_binary "forwardx-agent-linux-${GO_ARCH}" "$GO_AGENT_BIN" "Go Agent" "0"; then
+        FXP_RELEASE_VERSION="${DOWNLOADED_RELEASE_VERSION:-$RELEASE_VERSION}"
+        if ! RELEASE_VERSION="$FXP_RELEASE_VERSION" download_release_binary "forwardx-fxp-linux-${GO_ARCH}" "$FXP_BIN" "ForwardX FXP" "0"; then
+          echo "[警告] FXP 资产下载失败，保留现有 runtime；本次升级不会删除可用的旧 FXP"
+        fi
+        install_deps
+        if is_enabled_value "${FORWARDX_INSTALL_NGINX:-}"; then
+          install_nginx_runtime || true
+        else
+          remove_service_by_name "$NGINX_SERVICE_NAME"
+          for pid in $(pgrep -f "[/]usr/local/bin/forwardx-nginx" 2>/dev/null || true); do kill "$pid" 2>/dev/null || true; done
+          rm -f "$NGINX_BIN" 2>/dev/null || true
+          rm -rf /etc/forwardx/nginx 2>/dev/null || true
+          rm -f /run/forwardx-nginx.pid 2>/dev/null || true
+        fi
+        if ! install_runtime; then
+          echo "[错误] gost runtime 安装失败，升级中止"
+          return 1
+        fi
+    
+        # 原子规范化配置，保留未知字段并应用当前面板迁移状态
+        if ! normalize_upgrade_agent_config; then
+          echo "[错误] Agent 配置更新失败，升级中止"
+          return 1
+        fi
+    
+        # 重写服务定义后重启，确保旧部署切换到当前二进制和配置路径
+        fwx_agent_proxy_save || return 1
+        install_management_command
+        write_agent_service
+        start_agent_service
+        if ! register_agent_once; then
+          echo "[警告] Agent 已升级并启动，但暂时无法向面板注册；服务会继续自动重试"
+        fi
+        echo ""
+        echo "======================================"
+        echo "  ForwardX Agent 升级完成!"
+        echo "======================================"
+      else
+        echo "[错误] 升级失败"
+        exit 1
+      fi
+    }
+    
+    # ============ 入口 ============
+    
+    # Shared by the self-contained Agent installer and management command.
+    # No proxy credentials are printed, sourced as shell code, or put in curl argv.
+    fwx_proxy_normalize() {
+      local value="$1" endpoint authority port
+      [ -z "$value" ] && return 0
+      case "$value" in http://*|https://*|socks5://*|socks5h://*) ;; *) echo '[ERROR] Proxy scheme must be http, https, socks5 or socks5h.' >&2; return 1 ;; esac
+      case "$value" in *$'\n'*|*$'\r'*|*$'\t'*|*' '*|*'?'*|*'#'*) echo '[ERROR] Invalid proxy URL; URL-encode credentials.' >&2; return 1 ;; esac
+      authority="${value#*://}"
+      case "$authority" in */*|'') echo '[ERROR] Proxy URL must contain host:port without a path.' >&2; return 1 ;; esac
+      endpoint="${authority##*@}"
+      port="${endpoint##*:}"
+      case "$port" in ''|*[!0-9]*) echo '[ERROR] Proxy requires a numeric port.' >&2; return 1 ;; esac
+      if [ "${#port}" -gt 5 ] || [ "$port" -lt 1 ] || [ "$port" -gt 65535 ] || [ "$endpoint" = "$port" ] || [ "${endpoint%:*}" = '' ]; then
+        echo '[ERROR] Proxy requires a host and port between 1 and 65535.' >&2; return 1
+      fi
+      case "$value" in socks5://*) value="socks5h://${value#socks5://}" ;; esac
+      printf '%s' "$value"
+    }
+    
+    fwx_proxy_environment() {
+      local value
+      value="$(fwx_proxy_normalize "$1")" || return 1
+      # Explicit direct means direct, regardless of inherited shell variables.
+      unset http_proxy https_proxy all_proxy HTTP_PROXY HTTPS_PROXY ALL_PROXY no_proxy NO_PROXY
+      export http_proxy="$value" https_proxy="$value" all_proxy="$value"
+      export HTTP_PROXY="$value" HTTPS_PROXY="$value" ALL_PROXY="$value" no_proxy='' NO_PROXY=''
+    }
+    
+    fwx_agent_proxy_args() {
+      ACTION='' TOKEN=''
+      FWX_PROXY_EXPLICIT=false
+      if [ "${FORWARDX_AGENT_PROXY+x}" = x ]; then FWX_PROXY_EXPLICIT=true; fi
+      while [ "$#" -gt 0 ]; do
+        case "$1" in
+          install|upgrade|update|uninstall|remove|delete)
+            [ -z "$ACTION" ] || { echo '[ERROR] Multiple actions.' >&2; return 1; }
+            ACTION="$1"; shift ;;
+          --proxy)
+            [ "$#" -ge 2 ] && [ -n "$2" ] || { echo '[ERROR] --proxy requires a URL.' >&2; return 1; }
+            FORWARDX_AGENT_PROXY="$2"; FWX_PROXY_EXPLICIT=true; shift 2 ;;
+          --proxy=*) FORWARDX_AGENT_PROXY="${1#*=}"; FWX_PROXY_EXPLICIT=true; shift ;;
+          --no-proxy) FORWARDX_AGENT_PROXY=''; FWX_PROXY_EXPLICIT=true; shift ;;
+          -h|--help) ACTION=help; shift ;;
+          --*) echo "[ERROR] Unknown option: ${1%%=*}" >&2; return 1 ;;
+          *) [ -z "$TOKEN" ] || { echo '[ERROR] Unexpected argument.' >&2; return 1; }; TOKEN="$1"; shift ;;
+        esac
+      done
+      # Offline removal/help must also work with a broken config or missing jq.
+      case "$ACTION" in uninstall|remove|delete|help|'') return 0 ;; esac
+      if [ "$FWX_PROXY_EXPLICIT" != true ]; then
+        FORWARDX_AGENT_PROXY=''
+        local file
+        for file in "$CONFIG_DIR/config.json" "$LEGACY_CONFIG_DIR/config.json"; do
+          if [ -f "$file" ]; then
+            command -v jq >/dev/null 2>&1 || { echo '[ERROR] jq is required to safely read existing proxy settings.' >&2; return 1; }
+            FORWARDX_AGENT_PROXY="$(jq -er 'if type == "object" and (.proxyUrl == null or (.proxyUrl | type == "string")) then (.proxyUrl // "") else error("invalid proxy config") end' "$file" 2>/dev/null)" || { echo '[ERROR] Invalid Agent proxy configuration.' >&2; return 1; }
+            break
+          fi
+        done
+      fi
+      FORWARDX_AGENT_PROXY="$(fwx_proxy_normalize "$FORWARDX_AGENT_PROXY")" || return 1
+      export FORWARDX_AGENT_PROXY
+      fwx_proxy_environment "$FORWARDX_AGENT_PROXY"
+    }
+    
+    fwx_agent_proxy_save() {
+      local file="$CONFIG_DIR/config.json" tmp
+      tmp="$(mktemp "$CONFIG_DIR/.proxy-config.XXXXXX")" || return 1
+      if FWX_PROXY_WRITE_VALUE="$FORWARDX_AGENT_PROXY" jq 'if type == "object" then .proxyUrl = env.FWX_PROXY_WRITE_VALUE else error("invalid config") end' "$file" > "$tmp" && chmod 600 "$tmp" && mv -f "$tmp" "$file"; then return 0; fi
+      rm -f "$tmp"
+      echo '[ERROR] Cannot save Agent proxy configuration.' >&2
+      return 1
+    }
+    
+    install_management_command() {
+      local dir=/etc/forwardx/manage
+      mkdir -p "$dir" /usr/local/bin
+      chmod 700 "$dir"
+      cat > "$dir/agent-proxy.sh.new" <<'FWX_PROXY_ASSET'
+    # Shared by the self-contained Agent installer and management command.
+    # No proxy credentials are printed, sourced as shell code, or put in curl argv.
+    fwx_proxy_normalize() {
+      local value="$1" endpoint authority port
+      [ -z "$value" ] && return 0
+      case "$value" in http://*|https://*|socks5://*|socks5h://*) ;; *) echo '[ERROR] Proxy scheme must be http, https, socks5 or socks5h.' >&2; return 1 ;; esac
+      case "$value" in *$'\n'*|*$'\r'*|*$'\t'*|*' '*|*'?'*|*'#'*) echo '[ERROR] Invalid proxy URL; URL-encode credentials.' >&2; return 1 ;; esac
+      authority="${value#*://}"
+      case "$authority" in */*|'') echo '[ERROR] Proxy URL must contain host:port without a path.' >&2; return 1 ;; esac
+      endpoint="${authority##*@}"
+      port="${endpoint##*:}"
+      case "$port" in ''|*[!0-9]*) echo '[ERROR] Proxy requires a numeric port.' >&2; return 1 ;; esac
+      if [ "${#port}" -gt 5 ] || [ "$port" -lt 1 ] || [ "$port" -gt 65535 ] || [ "$endpoint" = "$port" ] || [ "${endpoint%:*}" = '' ]; then
+        echo '[ERROR] Proxy requires a host and port between 1 and 65535.' >&2; return 1
+      fi
+      case "$value" in socks5://*) value="socks5h://${value#socks5://}" ;; esac
+      printf '%s' "$value"
+    }
+    
+    fwx_proxy_environment() {
+      local value
+      value="$(fwx_proxy_normalize "$1")" || return 1
+      # Explicit direct means direct, regardless of inherited shell variables.
+      unset http_proxy https_proxy all_proxy HTTP_PROXY HTTPS_PROXY ALL_PROXY no_proxy NO_PROXY
+      export http_proxy="$value" https_proxy="$value" all_proxy="$value"
+      export HTTP_PROXY="$value" HTTPS_PROXY="$value" ALL_PROXY="$value" no_proxy='' NO_PROXY=''
+    }
+    
+    fwx_agent_proxy_args() {
+      ACTION='' TOKEN=''
+      FWX_PROXY_EXPLICIT=false
+      if [ "${FORWARDX_AGENT_PROXY+x}" = x ]; then FWX_PROXY_EXPLICIT=true; fi
+      while [ "$#" -gt 0 ]; do
+        case "$1" in
+          install|upgrade|update|uninstall|remove|delete)
+            [ -z "$ACTION" ] || { echo '[ERROR] Multiple actions.' >&2; return 1; }
+            ACTION="$1"; shift ;;
+          --proxy)
+            [ "$#" -ge 2 ] && [ -n "$2" ] || { echo '[ERROR] --proxy requires a URL.' >&2; return 1; }
+            FORWARDX_AGENT_PROXY="$2"; FWX_PROXY_EXPLICIT=true; shift 2 ;;
+          --proxy=*) FORWARDX_AGENT_PROXY="${1#*=}"; FWX_PROXY_EXPLICIT=true; shift ;;
+          --no-proxy) FORWARDX_AGENT_PROXY=''; FWX_PROXY_EXPLICIT=true; shift ;;
+          -h|--help) ACTION=help; shift ;;
+          --*) echo "[ERROR] Unknown option: ${1%%=*}" >&2; return 1 ;;
+          *) [ -z "$TOKEN" ] || { echo '[ERROR] Unexpected argument.' >&2; return 1; }; TOKEN="$1"; shift ;;
+        esac
+      done
+      # Offline removal/help must also work with a broken config or missing jq.
+      case "$ACTION" in uninstall|remove|delete|help|'') return 0 ;; esac
+      if [ "$FWX_PROXY_EXPLICIT" != true ]; then
+        FORWARDX_AGENT_PROXY=''
+        local file
+        for file in "$CONFIG_DIR/config.json" "$LEGACY_CONFIG_DIR/config.json"; do
+          if [ -f "$file" ]; then
+            command -v jq >/dev/null 2>&1 || { echo '[ERROR] jq is required to safely read existing proxy settings.' >&2; return 1; }
+            FORWARDX_AGENT_PROXY="$(jq -er 'if type == "object" and (.proxyUrl == null or (.proxyUrl | type == "string")) then (.proxyUrl // "") else error("invalid proxy config") end' "$file" 2>/dev/null)" || { echo '[ERROR] Invalid Agent proxy configuration.' >&2; return 1; }
+            break
+          fi
+        done
+      fi
+      FORWARDX_AGENT_PROXY="$(fwx_proxy_normalize "$FORWARDX_AGENT_PROXY")" || return 1
+      export FORWARDX_AGENT_PROXY
+      fwx_proxy_environment "$FORWARDX_AGENT_PROXY"
+    }
+    
+    fwx_agent_proxy_save() {
+      local file="$CONFIG_DIR/config.json" tmp
+      tmp="$(mktemp "$CONFIG_DIR/.proxy-config.XXXXXX")" || return 1
+      if FWX_PROXY_WRITE_VALUE="$FORWARDX_AGENT_PROXY" jq 'if type == "object" then .proxyUrl = env.FWX_PROXY_WRITE_VALUE else error("invalid config") end' "$file" > "$tmp" && chmod 600 "$tmp" && mv -f "$tmp" "$file"; then return 0; fi
+      rm -f "$tmp"
+      echo '[ERROR] Cannot save Agent proxy configuration.' >&2
+      return 1
+    }
+    
+    FWX_PROXY_ASSET
+      cat > "$dir/install-agent.sh.new" <<'FWX_INSTALL_ASSET'
+    #!/bin/bash
+    set -euo pipefail
+    
+    # ForwardX Agent GitHub 入口脚本
+    # install/upgrade: 从面板获取安装脚本并自动执行
+    # uninstall: 本地清理，不依赖面板
+    
+    ACTION="${1:-}"
+    TOKEN="${2:-}"
+    
+    # Leave these empty unless the caller explicitly overrides them. The panel-side
+    # installer embeds the saved defaults and applies them when these values are empty.
+    GITHUB_ACCELERATOR_URL="${GITHUB_ACCELERATOR_URL:-}"
+    GITHUB_ACCELERATOR_ENABLED="${GITHUB_ACCELERATOR_ENABLED:-}"
+    case "$GITHUB_ACCELERATOR_ENABLED" in
+      1|true|TRUE|yes|YES|on|ON)
+        GITHUB_ACCELERATOR_URL="${GITHUB_ACCELERATOR_URL:-https://git.poouo.com}"
+        ;;
+    esac
+    FORWARDX_AGENT_PANEL_FIRST="${FORWARDX_AGENT_PANEL_FIRST:-false}"
+    FORWARDX_CURL_CONNECT_TIMEOUT="${FORWARDX_CURL_CONNECT_TIMEOUT:-15}"
+    FORWARDX_CURL_LOW_SPEED_LIMIT="${FORWARDX_CURL_LOW_SPEED_LIMIT:-1024}"
+    FORWARDX_CURL_LOW_SPEED_TIME="${FORWARDX_CURL_LOW_SPEED_TIME:-60}"
+    
+    FORWARDX_INSTALL_MIMIC="${FORWARDX_INSTALL_MIMIC:-ask}"
+    FORWARDX_MIMIC_INSTALLER_URL="${FORWARDX_MIMIC_INSTALLER_URL:-https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/install-mimic.sh}"
+    FORWARDX_MIMIC_VERSION="${FORWARDX_MIMIC_VERSION:-0.7.1}"
+    # Keep Realm on the glibc-compatible release by default. Set this explicitly
+    # to opt into another Realm release, for example 2.9.6.
+    FORWARDX_REALM_VERSION_EXPLICIT="false"
+    if [ -n "${FORWARDX_REALM_VERSION:-}" ]; then
+      FORWARDX_REALM_VERSION_EXPLICIT="true"
+    fi
+    FORWARDX_REALM_VERSION="${FORWARDX_REALM_VERSION:-2.9.4}"
+    SERVICE_NAME="forwardx-agent"
+    GO_AGENT_BIN="/usr/local/bin/forwardx-agent"
+    FXP_BIN="/usr/local/bin/forwardx-fxp"
+    RUNTIME_BIN="/usr/local/bin/forwardx-runtime"
+    NGINX_BIN="/usr/local/bin/forwardx-nginx"
+    CONFIG_DIR="/etc/forwardx/agent"
+    LEGACY_CONFIG_DIR="/etc/forwardx-agent"
+    LOG_DIR="/var/log/forwardx-agent"
+    STATE_DIR="/var/lib/forwardx-agent"
+    
+    # Keep this bootstrap self-contained: curl|bash cannot source adjacent files.
+    configure_proxy() {
+      local explicit=false value="${FORWARDX_AGENT_PROXY:-}" file authority endpoint port
+      [ "${FORWARDX_AGENT_PROXY+x}" != x ] || explicit=true
+      ACTION='' TOKEN=''
+      while [ "$#" -gt 0 ]; do
+        case "$1" in
+          install|upgrade|update|uninstall|remove|delete) [ -z "$ACTION" ] || return 1; ACTION="$1"; shift ;;
+          --proxy) [ "$#" -ge 2 ] && [ -n "$2" ] || return 1; value="$2"; explicit=true; shift 2 ;;
+          --proxy=*) value="${1#*=}"; explicit=true; shift ;;
+          --no-proxy) value=''; explicit=true; shift ;;
+          -h|--help) ACTION=help; shift ;;
+          --*) echo '[ERROR] Unknown option.' >&2; return 1 ;;
+          *) [ -z "$TOKEN" ] || return 1; TOKEN="$1"; shift ;;
+        esac
+      done
+      case "$ACTION" in uninstall|remove|delete|help|'') return 0 ;; esac
+      if [ "$explicit" = false ]; then
+        for file in "$CONFIG_DIR/config.json" "$LEGACY_CONFIG_DIR/config.json"; do
+          if [ -f "$file" ]; then
+            command -v jq >/dev/null 2>&1 || { echo '[ERROR] jq required to read Agent proxy.' >&2; return 1; }
+            value="$(jq -er 'if type == "object" and (.proxyUrl == null or (.proxyUrl | type == "string")) then (.proxyUrl // "") else error("invalid config") end' "$file" 2>/dev/null)" || { echo '[ERROR] Invalid Agent proxy configuration.' >&2; return 1; }
+            break
+          fi
+        done
+      fi
+      if [ -n "$value" ]; then
+        case "$value" in http://*|https://*|socks5://*|socks5h://*) ;; *) echo '[ERROR] Unsupported proxy scheme.' >&2; return 1 ;; esac
+        case "$value" in *$'\n'*|*$'\r'*|*$'\t'*|*' '*|*'?'*|*'#'*) echo '[ERROR] Invalid proxy URL.' >&2; return 1 ;; esac
+        authority="${value#*://}"; endpoint="${authority##*@}"; port="${endpoint##*:}"
+        case "$authority" in */*|'') return 1 ;; esac
+        case "$port" in ''|*[!0-9]*) return 1 ;; esac
+        [ "${#port}" -le 5 ] && [ "$port" -ge 1 ] && [ "$port" -le 65535 ] && [ "$endpoint" != "$port" ] && [ -n "${endpoint%:*}" ] || return 1
+        case "$value" in socks5://*) value="socks5h://${value#socks5://}" ;; esac
+      fi
+      unset http_proxy https_proxy all_proxy HTTP_PROXY HTTPS_PROXY ALL_PROXY no_proxy NO_PROXY
+      export FORWARDX_AGENT_PROXY="$value" http_proxy="$value" https_proxy="$value" all_proxy="$value" HTTP_PROXY="$value" HTTPS_PROXY="$value" ALL_PROXY="$value" no_proxy='' NO_PROXY=''
+    }
+    
+    show_help() {
+      cat <<'EOF'
+    ======================================
+      ForwardX Agent 管理工具
+    ======================================
+    
+    用法:
+      安装 Agent:
+        curl -fsSL https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/install-agent.sh | \
+          PANEL_URL="http://your-panel:9810" bash -s -- install YOUR_TOKEN
+    
+      卸载 Agent:
+        curl -fsSL https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/install-agent.sh | \
+          bash -s -- uninstall
+    
+      升级 Agent:
+        curl -fsSL https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/install-agent.sh | \
+          PANEL_URL="http://your-panel:9810" bash -s -- upgrade [YOUR_TOKEN]
+    
+    参数:
+      install   <TOKEN>  安装 Agent 并注册到面板
+      upgrade   [TOKEN]  升级 Agent，默认复用现有配置
+      uninstall          完全卸载 Agent 及相关服务
+      --proxy URL        安装/运行/升级使用代理，例如 socks5h://127.0.0.1:1080
+      --no-proxy         保存为直连；升级默认保留配置中的 proxyUrl
+    
+    说明:
+      安装过程中会询问是否安装 mimic UDP 混淆环境，默认 n，只有输入 Y 才会安装。
+    EOF
+    }
+    
+    require_root() {
+      if [ "$(id -u)" != "0" ]; then
+        echo "[错误] 请使用 root 权限运行"
+        exit 1
+      fi
+    }
+    
+    is_systemd_host() {
+      command -v systemctl >/dev/null 2>&1 && [ -d /run/systemd/system ]
+    }
+    
+    remove_service_by_name() {
+      local name="$1"
+      if is_systemd_host; then
+        systemctl stop "$name" 2>/dev/null || true
+        systemctl disable "$name" 2>/dev/null || true
+        rm -f "/etc/systemd/system/$name.service"
+        systemctl daemon-reload 2>/dev/null || true
+      fi
+      if command -v rc-service >/dev/null 2>&1; then
+        rc-service "$name" stop 2>/dev/null || true
+      fi
+      if command -v rc-update >/dev/null 2>&1; then
+        rc-update del "$name" default 2>/dev/null || true
+      fi
+      if [ -x "/etc/init.d/$name" ]; then
+        "/etc/init.d/$name" stop 2>/dev/null || true
+      fi
+      command -v update-rc.d >/dev/null 2>&1 && update-rc.d -f "$name" remove >/dev/null 2>&1 || true
+      command -v chkconfig >/dev/null 2>&1 && chkconfig "$name" off >/dev/null 2>&1 || true
+      rm -f "/etc/init.d/$name"
+    }
+    
+    read_existing_config() {
+      EXISTING_PANEL_URL=""
+      EXISTING_TOKEN=""
+      local cfg=""
+      if [ -f "$CONFIG_DIR/config.json" ]; then
+        cfg="$CONFIG_DIR/config.json"
+      elif [ -f "$LEGACY_CONFIG_DIR/config.json" ]; then
+        cfg="$LEGACY_CONFIG_DIR/config.json"
+      fi
+      if [ -n "$cfg" ] && command -v jq >/dev/null 2>&1; then
+        EXISTING_PANEL_URL="$(jq -r '.panelUrl // empty' "$cfg" 2>/dev/null || true)"
+        EXISTING_TOKEN="$(jq -r '.token // empty' "$cfg" 2>/dev/null || true)"
+      fi
+    }
+    
+    run_panel_installer() {
+      local mode="$1"
+      local token="$2"
+      local low_speed_time="${3:-$FORWARDX_CURL_LOW_SPEED_TIME}"
+      local tmp_script
+    
+      if [ -z "${PANEL_URL:-}" ]; then
+        echo "[错误] 缺少 PANEL_URL"
+        return 1
+      fi
+    
+      PANEL_URL="${PANEL_URL%/}"
+      tmp_script="$(mktemp /tmp/forwardx-install.XXXXXX)"
+    
+      local url="${PANEL_URL}/api/agent/install.sh"
+    
+      echo "[信息] 正在从面板获取安装脚本: ${PANEL_URL}"
+      if ! curl -fsSL \
+        --connect-timeout "$FORWARDX_CURL_CONNECT_TIMEOUT" \
+        --speed-limit "$FORWARDX_CURL_LOW_SPEED_LIMIT" \
+        --speed-time "$low_speed_time" \
+        "$url" -o "$tmp_script"; then
+        rm -f "$tmp_script"
+        return 1
+      fi
+    
+      if [ ! -s "$tmp_script" ]; then
+        rm -f "$tmp_script"
+        return 1
+      fi
+    
+      chmod 700 "$tmp_script"
+      local rc=0
+    
+      if PANEL_URL="$PANEL_URL" \
+        GITHUB_ACCELERATOR_ENABLED="$GITHUB_ACCELERATOR_ENABLED" \
+        GITHUB_ACCELERATOR_URL="$GITHUB_ACCELERATOR_URL" \
+        FORWARDX_AGENT_PANEL_FIRST="$FORWARDX_AGENT_PANEL_FIRST" \
+        FORWARDX_INSTALL_MIMIC="$FORWARDX_INSTALL_MIMIC" \
+        FORWARDX_MIMIC_INSTALLER_URL="$FORWARDX_MIMIC_INSTALLER_URL" \
+        FORWARDX_MIMIC_VERSION="$FORWARDX_MIMIC_VERSION" \
+        FORWARDX_REALM_VERSION_EXPLICIT="$FORWARDX_REALM_VERSION_EXPLICIT" \
+        FORWARDX_REALM_VERSION="$FORWARDX_REALM_VERSION" \
+        bash "$tmp_script" "$mode" "$token" </dev/null; then
+        rm -f "$tmp_script"
+        return 0
+      else
+        rc=$?
+      fi
+    
+      rm -f "$tmp_script"
+      return "$rc"
+    }
+    
+    do_install() {
+      require_root
+      local agent_token="$1"
+    
+      if [ -z "$agent_token" ]; then
+        echo "[错误] install 需要 Agent Token"
+        echo "用法: PANEL_URL=\"http://your-panel:9810\" bash install-agent.sh install YOUR_TOKEN"
+        exit 1
+      fi
+    
+      if [ -z "${PANEL_URL:-}" ]; then
+        echo "[错误] 缺少 PANEL_URL"
+        echo "用法: PANEL_URL=\"http://your-panel:9810\" bash install-agent.sh install YOUR_TOKEN"
+        exit 1
+      fi
+    
+      echo "======================================"
+      echo "  ForwardX Agent 安装程序（GitHub 入口）"
+      echo "======================================"
+      echo "Panel URL: ${PANEL_URL}"
+      echo "Token: ${agent_token:0:8}***"
+      echo ""
+    
+      echo "[信息] 正在从面板获取安装脚本..."
+      if ! run_panel_installer "install" "$agent_token" 60; then
+        echo ""
+        echo "[错误] 无法从面板获取安装脚本"
+        echo "       请检查面板地址和网络连接"
+        exit 1
+      fi
+    }
+    
+    do_upgrade() {
+      require_root
+      local override_token="$1"
+    
+      read_existing_config
+      PANEL_URL="${PANEL_URL:-${EXISTING_PANEL_URL:-}}"
+      local agent_token="${override_token:-${EXISTING_TOKEN:-}}"
+    
+      if [ -z "${PANEL_URL:-}" ]; then
+        echo "[错误] 未找到 PANEL_URL"
+        echo "用法: PANEL_URL=\"http://your-panel:9810\" bash install-agent.sh upgrade [YOUR_TOKEN]"
+        exit 1
+      fi
+    
+      echo "======================================"
+      echo "  ForwardX Agent 升级程序"
+      echo "======================================"
+      echo "Panel URL: ${PANEL_URL}"
+      if [ -n "$agent_token" ]; then
+        echo "Token: ${agent_token:0:8}***"
+      else
+        echo "Token: (使用面板脚本或现有配置)"
+      fi
+      echo ""
+    
+      echo "[信息] 正在从面板获取最新安装脚本..."
+      if ! run_panel_installer "upgrade" "$agent_token" 60; then
+        echo ""
+        echo "[错误] 升级失败：无法从面板获取安装脚本"
+        exit 1
+      fi
+    }
+    
+    do_uninstall() {
+      require_root
+      echo "======================================"
+      echo "  ForwardX Agent 卸载程序（本地）"
+      echo "======================================"
+    
+      remove_service_by_name "$SERVICE_NAME"
+    
+      for pid in $(pgrep -f "[/]usr/local/bin/forwardx-fxp" 2>/dev/null || true); do
+        if [ "$pid" = "$$" ] || [ "$pid" = "$PPID" ]; then continue; fi
+        kill "$pid" 2>/dev/null || true
+      done
+      for pid in $(pgrep -f "[/]usr/local/bin/forwardx-runtime" 2>/dev/null || true); do
+        if [ "$pid" = "$$" ] || [ "$pid" = "$PPID" ]; then continue; fi
+        kill "$pid" 2>/dev/null || true
+      done
+      for pid in $(pgrep -f "[/]usr/local/bin/forwardx-nginx" 2>/dev/null || true); do
+        if [ "$pid" = "$$" ] || [ "$pid" = "$PPID" ]; then continue; fi
+        kill "$pid" 2>/dev/null || true
+      done
+      for pid in $(pgrep -f "[/]usr/local/bin/forwardx-udp2raw" 2>/dev/null || true); do
+        if [ "$pid" = "$$" ] || [ "$pid" = "$PPID" ]; then continue; fi
+        kill "$pid" 2>/dev/null || true
+      done
+      for pid in $(pgrep -f "[r]ealm -l" 2>/dev/null || true); do
+        if [ "$pid" = "$$" ] || [ "$pid" = "$PPID" ]; then continue; fi
+        kill "$pid" 2>/dev/null || true
+      done
+      for pid in $(pgrep -f "[s]ocat.*LISTEN" 2>/dev/null || true); do
+        if [ "$pid" = "$$" ] || [ "$pid" = "$PPID" ]; then continue; fi
+        kill "$pid" 2>/dev/null || true
+      done
+    
+      for SVC in /etc/systemd/system/forwardx-socat-*.service /etc/systemd/system/forwardx-realm-*.service /etc/systemd/system/forwardx-gost-*.service /etc/systemd/system/forwardx-nginx.service /etc/systemd/system/forwardx-udp2raw-*.service /etc/systemd/system/forwardx-runtime.service /etc/systemd/system/forwardx-tunnel-runtime.service /etc/systemd/system/forwardx-gost.service /etc/systemd/system/forwardx-tunnels.service; do
+        if [ -f "$SVC" ]; then
+          SVCNAME="$(basename "$SVC" .service)"
+          remove_service_by_name "$SVCNAME"
+        fi
+      done
+      for SVC in /etc/init.d/forwardx-socat-* /etc/init.d/forwardx-realm-* /etc/init.d/forwardx-gost-* /etc/init.d/forwardx-nginx /etc/init.d/forwardx-udp2raw-* /etc/init.d/forwardx-runtime /etc/init.d/forwardx-tunnel-runtime /etc/init.d/forwardx-gost /etc/init.d/forwardx-tunnels; do
+        if [ -f "$SVC" ]; then
+          SVCNAME="$(basename "$SVC")"
+          remove_service_by_name "$SVCNAME"
+        fi
+      done
+    
+      rm -f "$GO_AGENT_BIN" "$FXP_BIN" "$RUNTIME_BIN" "$NGINX_BIN" /usr/local/bin/forwardx-udp2raw
+      rm -rf "$CONFIG_DIR" "$LEGACY_CONFIG_DIR" "$LOG_DIR" "$STATE_DIR" /etc/forwardx/runtime /etc/forwardx/realm /etc/forwardx-runtime /etc/forwardx-tunnel-runtime /etc/forwardx-gost /etc/forwardx-tunnels /etc/forwardx/nginx
+    
+      echo "[完成] Agent 已卸载"
+    }
+    
+    configure_proxy "$@" || { echo '[ERROR] Cannot configure proxy; cancelled (no direct fallback).' >&2; exit 1; }
+    case "$ACTION" in
+      help) show_help; exit 0 ;;
+      install)
+        do_install "$TOKEN"
+        ;;
+      upgrade|update)
+        do_upgrade "$TOKEN"
+        ;;
+      uninstall|remove|delete)
+        do_uninstall
+        ;;
+      *)
+        show_help
+        if [ -n "$ACTION" ]; then
+          echo ""
+          echo "[信息] 未知操作: $ACTION"
+        fi
+        exit 1
+        ;;
+    esac
+    
+    exit 0
+    
+    FWX_INSTALL_ASSET
+      cat > "$dir/forwardx-manage.sh.new" <<'FWX_MANAGE_ASSET'
+    #!/bin/bash
+    # ForwardX Manager: host-side management for Agent/local/Docker panel.
+    set -euo pipefail
+    MANAGE_DIR="${FORWARDX_MANAGE_DIR:-/etc/forwardx/manage}"
+    AGENT_CONFIG="${FORWARDX_AGENT_CONFIG:-/etc/forwardx/agent/config.json}"
+    if [ ! -f "$AGENT_CONFIG" ] && [ -f /etc/forwardx-agent/config.json ]; then AGENT_CONFIG=/etc/forwardx-agent/config.json; fi
+    
+    die() { echo "[ERROR] $*" >&2; exit 1; }
+    help() {
+      cat <<'HELP'
+    ForwardX Manager / 管理工具 — fwxm
+      fwxm                         Interactive menu / 交互菜单
+      fwxm agent|panel info         Paths, address, service / 关键参数
+      fwxm agent|panel status       Service status / 服务状态
+      fwxm agent|panel logs         Follow logs / 查看日志 (Ctrl+C exits)
+      fwxm agent|panel start|stop|restart
+      fwxm agent|panel proxy show   Redacted proxy / 查看代理（隐藏密码）
+      fwxm agent|panel proxy set [URL]  Save proxy / 设置代理（省略 URL 则安全输入）
+      fwxm agent|panel proxy off    Direct / 关闭代理
+      fwxm agent|panel install|upgrade|repair|uninstall
+      fwxm panel reset-admin       Reset admin password / 重置管理员密码
+      fwxm panel address           Panel address / 后台地址
+      fwxm agent install --panel-url URL --token TOKEN [--proxy URL]
+    Agent proxy covers management/downloads, not forwarding or probes.
+    Panel proxy covers maintenance downloads only, not Node runtime/Docker pulls.
+    HELP
+    }
+    
+    case "${1:-}" in -h|--help|help) help; exit 0 ;; esac
+    [ "$(id -u)" = 0 ] || die 'Run with sudo/root / 请使用 root 权限。'
+    [ -r "$MANAGE_DIR/agent-proxy.sh" ] || die 'Management helpers missing; reinstall/upgrade ForwardX first.'
+    # This is an installer-owned root-only script, never user configuration.
+    source "$MANAGE_DIR/agent-proxy.sh"
+    
+    metadata() { local value=''; [ ! -f "$MANAGE_DIR/$1" ] || IFS= read -r value < "$MANAGE_DIR/$1" || true; printf '%s' "$value"; }
+    json_value() {
+      command -v jq >/dev/null 2>&1 || die 'jq is required for Agent configuration.'
+      jq -er --arg key "$1" 'if type == "object" then (.[$key] // "") else error("invalid config") end' "$AGENT_CONFIG" 2>/dev/null || die 'Cannot read Agent configuration.'
+    }
+    redacted_proxy() {
+      local value="$1" scheme authority
+      [ -n "$value" ] || { echo 'Direct / 直连'; return; }
+      scheme="${value%%://*}"; authority="${value#*://}"
+      case "$authority" in *@*) printf '%s://***@%s\n' "$scheme" "${authority##*@}" ;; *) printf '%s\n' "$value" ;; esac
+    }
+    confirm() {
+      local answer
+      [ -r /dev/tty ] && [ -w /dev/tty ] || die 'This action requires an interactive SSH terminal.'
+      printf '%s [y/N] ' "$1" > /dev/tty
+      IFS= read -r answer < /dev/tty || return 1
+      case "$answer" in y|Y|yes|YES) return 0 ;; *) return 1 ;; esac
+    }
+    service_action() {
+      local role="$1" action="$2" service="$3"
+      if [ "$role" = panel ] && [ "$PANEL_KIND" = docker ]; then
+        case "$action" in status) docker inspect --format '{{.Name}} {{.State.Status}}' "$PANEL_CONTAINER" ;; *) docker "$action" "$PANEL_CONTAINER" ;; esac
+      elif command -v systemctl >/dev/null 2>&1 && [ -d /run/systemd/system ]; then
+        if [ "$action" = status ]; then systemctl status "$service" --no-pager -l; else systemctl "$action" "$service"; fi
+      elif command -v rc-service >/dev/null 2>&1; then rc-service "$service" "$action"
+      elif [ -x "/etc/init.d/$service" ]; then "/etc/init.d/$service" "$action"
+      else die 'No supported service manager found.'; fi
+    }
+    agent_proxy() {
+      local action="${1:-show}" value='' tmp
+      [ -f "$AGENT_CONFIG" ] || die 'Agent config not found.'
+      case "$action" in
+        show) redacted_proxy "$(json_value proxyUrl)"; return ;;
+        off|remove|delete) value='' ;;
+        set|add)
+          value="${2:-}"
+          if [ -z "$value" ]; then
+            printf 'Proxy URL (hidden input): ' > /dev/tty
+            IFS= read -rs value < /dev/tty; printf '\n' > /dev/tty
+          fi
+          [ -n "$value" ] || die 'Empty proxy; use proxy off for direct.'
+          value="$(fwx_proxy_normalize "$value")" || exit 1 ;;
+        *) die 'Use proxy show|set|off.' ;;
+      esac
+      tmp="$(mktemp "$(dirname "$AGENT_CONFIG")/.proxy-config.XXXXXX")"
+      if FWX_PROXY_WRITE_VALUE="$value" jq 'if type == "object" then .proxyUrl = env.FWX_PROXY_WRITE_VALUE else error("invalid config") end' "$AGENT_CONFIG" > "$tmp" && chmod 600 "$tmp" && mv -f "$tmp" "$AGENT_CONFIG"; then
+        echo '[DONE] Saved / 已保存。Restarting Agent only; managed forwarding runtimes are not intentionally restarted.'
+        service_action agent restart forwardx-agent
+      else rm -f "$tmp"; die 'Cannot update config; no service was restarted.'; fi
+    }
+    panel_proxy() {
+      local action="${1:-show}" value='' tmp
+      echo '[INFO] Panel maintenance downloads only; not Node runtime or Docker daemon image pulls.'
+      case "$action" in
+        show) redacted_proxy "$(metadata panel-proxy)"; return ;;
+        off|remove|delete) value='' ;;
+        set|add)
+          value="${2:-}"
+          if [ -z "$value" ]; then printf 'Proxy URL (hidden input): ' > /dev/tty; IFS= read -rs value < /dev/tty; printf '\n' > /dev/tty; fi
+          [ -n "$value" ] || die 'Empty proxy; use proxy off.'
+          value="$(fwx_proxy_normalize "$value")" || exit 1 ;;
+        *) die 'Use proxy show|set|off.' ;;
+      esac
+      tmp="$(mktemp "$MANAGE_DIR/.panel-proxy.XXXXXX")"
+      printf '%s\n' "$value" > "$tmp"; chmod 600 "$tmp"; mv -f "$tmp" "$MANAGE_DIR/panel-proxy"
+      echo '[DONE] Maintenance proxy saved; panel service was not restarted.'
+    }
+    panel_env_value() {
+      local key="$1" value
+      [ -f "$PANEL_DIR/.env" ] || return 0
+      value="$(sed -n "s/^${key}=//p" "$PANEL_DIR/.env" | tail -n 1)"
+      value="${value%$'\r'}"; value="${value#\"}"; value="${value%\"}"
+      printf '%s' "$value"
+    }
+    
+    ROLE="${1:-}"; [ "$#" = 0 ] || shift
+    if [ -z "$ROLE" ]; then
+      if [ -f "$AGENT_CONFIG" ] && [ -f "$MANAGE_DIR/panel-kind" ]; then
+        printf '\nForwardX Manager\n  1) Agent\n  2) 面板 / Panel\n  0) 退出 / Exit\n选择 / Select: ' > /dev/tty; IFS= read -r choice < /dev/tty
+        case "$choice" in 1) ROLE=agent ;; 2) ROLE=panel ;; *) exit 0 ;; esac
+      elif [ -f "$AGENT_CONFIG" ]; then ROLE=agent
+      elif [ -f "$MANAGE_DIR/panel-kind" ]; then ROLE=panel
+      else help; exit 0; fi
+    fi
+    case "$ROLE" in agent|panel) ;; *) help; exit 1 ;; esac
+    ACTION="${1:-}"; [ "$#" = 0 ] || shift
+    if [ -z "$ACTION" ]; then
+      printf '\nForwardX %s 管理 / Management\n' "$ROLE"
+      printf '%s\n' '  1) 关键信息 / Info' '  2) 运行状态 / Status' '  3) 查看日志 / Logs' '  4) 重启面板或 Agent / Restart' '  5) 代理设置 / Proxy' '  6) 升级 / Upgrade' '  7) 重装修复 / Repair' '  8) 卸载 / Uninstall'
+      if [ "$ROLE" = panel ]; then echo '  9) 重置管理员密码 / Reset admin password'; fi
+      echo '  0) 退出 / Exit'
+      printf 'Select / 选择: ' > /dev/tty; IFS= read -r choice < /dev/tty
+      case "$choice" in 1) ACTION=info ;; 2) ACTION=status ;; 3) ACTION=logs ;; 4) ACTION=restart ;; 5)
+        printf 'Proxy: 1) show  2) set  3) off: ' > /dev/tty; IFS= read -r choice < /dev/tty; ACTION=proxy
+        case "$choice" in 1) set -- show ;; 2) set -- set ;; 3) set -- off ;; *) exit 0 ;; esac ;;
+        6) ACTION=upgrade ;; 7) ACTION=repair ;; 8) ACTION=uninstall ;; 9) ACTION=reset-admin ;; *) exit 0 ;; esac
+    fi
+    PANEL_KIND="$(metadata panel-kind)"; PANEL_DIR="$(metadata panel-dir)"
+    PANEL_SERVICE="$(metadata panel-service)"; PANEL_SERVICE="${PANEL_SERVICE:-forwardx-panel}"
+    PANEL_CONTAINER="$(metadata panel-container)"; PANEL_CONTAINER="${PANEL_CONTAINER:-forwardx-panel}"
+    if [ "$ROLE" = agent ]; then
+      case "$ACTION" in
+        proxy) agent_proxy "$@" ;;
+        info|address|config)
+          echo "Agent config: $AGENT_CONFIG"; echo 'Service: forwardx-agent'
+          echo "Panel: $(json_value panelUrl)"; printf 'Proxy: '; redacted_proxy "$(json_value proxyUrl)"
+          echo 'Logs: /var/log/forwardx-agent/agent-go.log'; echo 'Restart after manual config edits / 手工修改配置后需重启。' ;;
+        status|start|stop|restart) service_action agent "$ACTION" forwardx-agent ;;
+        logs) tail -n 100 -F /var/log/forwardx-agent/agent-go.log ;;
+        install|upgrade|repair|uninstall)
+          [ -f "$MANAGE_DIR/install-agent.sh" ] || die 'Cached Agent installer missing; upgrade management tools first.'
+          if [ "$ACTION" = uninstall ]; then confirm 'Uninstall Agent and managed forwarding? / 卸载会中断转发，继续？' || exit 0; fi
+          if [ "$ACTION" = repair ]; then confirm 'Reinstall/upgrade binaries, preserve config, restart Agent? / 保留配置重装修复？' || exit 0; ACTION=upgrade; fi
+          if [ "$ACTION" = install ] && [ ! -f "$AGENT_CONFIG" ]; then
+            panel='' token='' args=()
+            while [ "$#" -gt 0 ]; do
+              case "$1" in --panel-url) [ "$#" -ge 2 ] || die 'Missing panel URL.'; panel="$2"; shift 2 ;; --token) [ "$#" -ge 2 ] || die 'Missing token.'; token="$2"; shift 2 ;; --proxy) [ "$#" -ge 2 ] || die 'Missing proxy URL.'; args+=(--proxy "$2"); shift 2 ;; --no-proxy) args+=(--no-proxy); shift ;; *) die "Unknown option: ${1%%=*}" ;; esac
+            done
+            [ -n "$panel" ] && [ -n "$token" ] || die 'Use agent install --panel-url URL --token TOKEN [--proxy URL].'
+            PANEL_URL="$panel" bash "$MANAGE_DIR/install-agent.sh" install "$token" "${args[@]}"
+          else
+            [ "$ACTION" != install ] || ACTION=upgrade # preserve existing registration
+            bash "$MANAGE_DIR/install-agent.sh" "$ACTION" "$@"
+          fi ;;
+        *) help; exit 1 ;;
+      esac
+    else
+      case "$PANEL_KIND" in local|docker) ;; *) die 'Panel management metadata missing; run the panel installer/upgrade first.' ;; esac
+      case "$ACTION" in
+        proxy) panel_proxy "$@" ;;
+        info|address|config)
+          echo "Deployment: $PANEL_KIND"; echo "Directory: $PANEL_DIR"
+          if [ "$PANEL_KIND" = docker ]; then echo "Container: $PANEL_CONTAINER"; docker port "$PANEL_CONTAINER" 3000/tcp 2>/dev/null || true
+          else echo "Service: $PANEL_SERVICE"; fi
+          port="$(panel_env_value PORT)"; echo "Panel: http://SERVER_IP:${port:-9810} (HTTPS/domain: see your reverse proxy)"
+          echo "Local: http://127.0.0.1:${port:-9810}"
+          printf 'Host IPs (may include private addresses): '; hostname -I 2>/dev/null || true
+          echo "Database configuration: $PANEL_DIR/data/database.json (local), /data/database.json (Docker)"
+          printf 'Maintenance proxy: '; redacted_proxy "$(metadata panel-proxy)" ;;
+        status|start|stop|restart) service_action panel "$ACTION" "$PANEL_SERVICE" ;;
+        logs)
+          if [ "$PANEL_KIND" = docker ]; then docker logs --tail 100 -f "$PANEL_CONTAINER"
+          elif command -v journalctl >/dev/null 2>&1 && [ -d /run/systemd/system ]; then journalctl -u "$PANEL_SERVICE" -n 100 -f
+          else tail -n 100 -F "$PANEL_DIR/data/panel.log"; fi ;;
+        install|upgrade|repair|uninstall|reset-admin|reset-password)
+          script="$MANAGE_DIR/install-panel-$PANEL_KIND.sh"
+          [ -f "$script" ] || die 'Cached panel installer missing; upgrade management tools first.'
+          if [ "$ACTION" = repair ]; then confirm 'Reinstall/upgrade panel, preserve database, restart? / 保留数据重装修复？' || exit 0; ACTION=upgrade; fi
+          if [ "$ACTION" = install ] && [ -f "$PANEL_DIR/.env" ]; then ACTION=upgrade; fi
+          fwx_proxy_environment "$(metadata panel-proxy)" || exit 1
+          export FORWARDX_PANEL_DIR="$PANEL_DIR" FORWARDX_DOCKER_DIR="$PANEL_DIR" FORWARDX_SERVICE_NAME="$PANEL_SERVICE" FORWARDX_CONTAINER_NAME="$PANEL_CONTAINER"
+          export COMPOSE_PROJECT_NAME="$(metadata panel-project)"; COMPOSE_PROJECT_NAME="${COMPOSE_PROJECT_NAME:-forwardx}"
+          bash "$script" "$ACTION" "$@" ;;
+        *) help; exit 1 ;;
+      esac
+    fi
+    
+    FWX_MANAGE_ASSET
+      chmod 600 "$dir/agent-proxy.sh.new"
+      chmod 700 "$dir/install-agent.sh.new" "$dir/forwardx-manage.sh.new"
+      mv -f "$dir/agent-proxy.sh.new" "$dir/agent-proxy.sh"
+      mv -f "$dir/install-agent.sh.new" "$dir/install-agent.sh"
+      mv -f "$dir/forwardx-manage.sh.new" "$dir/forwardx-manage.sh"
+      install -m 755 "$dir/forwardx-manage.sh" /usr/local/bin/fwxm.new && mv -f /usr/local/bin/fwxm.new /usr/local/bin/fwxm
+      echo "[INFO] SSH management: fwxm agent"
+    }
+    fwx_agent_proxy_args "$@" || exit 1
+    case "$ACTION" in
+      help) show_help; exit 0 ;;
+      install)
+        do_install
+        ;;
+      upgrade|update)
+        do_upgrade
+        ;;
+      uninstall|remove|delete)
+        do_uninstall
+        ;;
+      *)
+        show_help
+        [ -n "$ACTION" ] && echo "[提示] 未知操作: $ACTION"
+        exit 1
+        ;;
+    esac
+    exit 0
+    
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/managementProxy.test.ts:71:10)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: bare fwxm opens the appropriate interactive menu for Agent, panel and co-located roles
+ok 33 - bare fwxm opens the appropriate interactive menu for Agent, panel and co-located roles
+  ---
+  duration_ms: 20.950792
+  type: 'test'
+  ...
+# Subtest: real jq config persistence preserves registration and rejects invalid proxy types
+ok 34 - real jq config persistence preserves registration and rejects invalid proxy types
+  ---
+  duration_ms: 57.428958
+  type: 'test'
+  ...
+# Subtest: interactive status and restart target the selected Agent, local panel or Docker panel
+ok 35 - interactive status and restart target the selected Agent, local panel or Docker panel
+  ---
+  duration_ms: 62.763208
+  type: 'test'
+  ...
+# Subtest: fwxm saves Agent proxy, redacts credentials and routes Docker commands by metadata
+ok 36 - fwxm saves Agent proxy, redacts credentials and routes Docker commands by metadata
+  ---
+  duration_ms: 46.443458
+  type: 'test'
+  ...
+1..36
+# tests 36
+# suites 0
+# pass 34
+# fail 2
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1008.283208

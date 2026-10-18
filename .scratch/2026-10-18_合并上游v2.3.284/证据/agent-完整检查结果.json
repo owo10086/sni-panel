@@ -1,0 +1,4202 @@
+{
+  "sourceSha256": "d4d4cbe79e550985d1690995e7b7008d7dcccd112acdf9b9ac7e2ee32916fa9c",
+  "topLevelCounts": {
+    "pass": 483,
+    "skip": 4
+  },
+  "results": [
+    {
+      "Time": "2026-10-18T11:26:27.979075222Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestActionSerialKeysScopeConflicts",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.040185388Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestActionSerialLocksOnlyBlockSharedResources",
+      "Elapsed": 0.06
+    },
+    {
+      "Time": "2026-10-18T11:26:28.073554263Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestAcquireCurrentActionSerialLocksRejectsActionMadeStaleWhileWaiting",
+      "Elapsed": 0.03
+    },
+    {
+      "Time": "2026-10-18T11:26:28.073707638Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestRuleActionNeedsPreRuntimeHandoff",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.073862722Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestMarkerlessRunningFXPEntryCreatesGostRuntimeHandoff",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.073977722Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestMarkerlessRunningFXPTunnelCreatesGostWSSHandoff",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.074119555Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestRunningFXPSnapshotFallbackRejectsWrongRoleAndProtocol",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.074248305Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestRunningFXPSnapshotDiscoveryRejectsInactiveTrackedRuntime",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.074864222Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestCompleteSharedRuntimeMarkerYieldsToTrackedFXPOwner",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.086411263Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestActionIngressAcceptsIndependentActionsConcurrently",
+      "Elapsed": 0.01
+    },
+    {
+      "Time": "2026-10-18T11:26:28.086516722Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestTunnelActionNeedsPreRuntimeHandoff",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.086622722Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestHandoffActionUsesIndependentQueueIdentity",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.086748972Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestQueuedOwnerSnapshotSurvivesSpeculativeTargetMarkers",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.08682318Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestFailedHandoffResultBlocksSharedRuntimePrerequisite",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.086895263Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestSuccessfulHandoffResultReleasesSharedRuntimePrerequisite",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.086969972Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestFailedSharedRuntimeResultBlocksDependentPerPortAction",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.087087138Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestSuccessfulSharedRuntimeResultReleasesDependentPerPortAction",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.087212722Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestWireGuardRuntimeResultOnlyGatesMatchingV2Actions",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.087294055Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestUnqueuedActionPublishesFailedResult",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.087366263Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestHandoffResultCommitsOnlyAfterEverySharedRuntimeSucceeds",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.087434097Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestHandoffResultRollsBackAfterAnySharedRuntimeFailure",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.088374305Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestStaleNonBatchHandoffFinalizationDoesNotRestoreOldRuntime",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.09048818Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestStaleBatchParticipantCancelsFinalizationUnderUnionLocks",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.090567055Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestSuccessfulFXPTargetDoesNotRewriteItsNewPersistentGeneration",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.11244018Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestAbandonedFXPTargetRollsBackAfterRuntimePrerequisite",
+      "Elapsed": 0.02
+    },
+    {
+      "Time": "2026-10-18T11:26:28.112520138Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPrepareDesiredActionsSharesFourMemberFXPEntryHandoffBatch",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.11268618Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestSharedRuntimeSuccessWaitsForConcreteTargetHandoffResult/success",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.112773972Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestSharedRuntimeSuccessWaitsForConcreteTargetHandoffResult/failure",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.11283168Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestSharedRuntimeSuccessWaitsForConcreteTargetHandoffResult",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.11299343Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestAgentAuthProofMatchesPanelVector",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.113134388Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestNewAgentAuthProofUsesVersionedBearerShape",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.113249013Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestAgentChallengeAuthProofMatchesPanelVector",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.11334543Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestNewAgentChallengeAuthProofUsesVersionedBearerShape",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.113435722Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPostNegotiatesChallengeAuthAndRetriesWithoutClockSync",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.113601888Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPostRefreshesCachedChallengesAfterPanelRestart",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.113796555Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestChallengeCapabilityDoesNotRetryOrdinaryServerErrors",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.114004472Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestAuthenticatedBusinessErrorsAreNeverRetried/401",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.114206263Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestAuthenticatedBusinessErrorsAreNeverRetried/403",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.114271972Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestAuthenticatedBusinessErrorsAreNeverRetried",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.114517638Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestAcceptedEnvelopeReplayIsNeverRetried",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.114723847Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestChallengeFetchFailureFallsBackToV1",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.114876597Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestChallengeFetchFailureDoesNotModifySystemTimeOrRetryV1",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.115019347Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestChallengeEndpointRollbackClearsCapability/200",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.11519868Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestChallengeEndpointRollbackClearsCapability/404",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.115322597Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestChallengeEndpointRollbackClearsCapability/405",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.115359722Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestChallengeEndpointRollbackClearsCapability",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.115582472Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestLateChallengeRejectionCannotClearFreshGeneration",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.115930138Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestChallengeBatchIsSharedAcrossConcurrentRequests",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.116108472Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPostOnceSendsBodyBoundAgentAuthProof",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.116343388Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPostToPanelURLUsesTheTrafficIdentitySnapshot",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.116534472Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestAgentEventStreamSendsRequestAuthProof",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.116784888Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestAgentEventStreamUsesChallengeAuthAfterNegotiation",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.116862513Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestAgentByteBufferPoolUsesBoundedTiers",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.117440388Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestLoadConfigWithFallbackKeepsValidCanonicalConfig",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.11864068Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestLoadConfigWithFallbackMigratesLegacyWhenCanonicalMissing",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.118780388Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestCountingRuleModesSeparateSelfReportedNativeAndAgentCounters",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.118911222Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestSelfReportedAndNativeRulesDoNotInstallFWXStatCounters/forwardx",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.11898918Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestSelfReportedAndNativeRulesDoNotInstallFWXStatCounters/nftables",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.11902643Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestSelfReportedAndNativeRulesDoNotInstallFWXStatCounters",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.119133222Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestIptablesDNATCountersUseOnlyConntrackScopedForwardHooks",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.119215597Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestIptablesDNATCountersKeepListenersSeparateForSharedTarget",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.11928593Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestIptablesDNATIPv6CountersUseOnlyIp6tables",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.11942418Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestProcessCountersInstallOnlyInputAndOutputHooks/gost",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.119498305Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestProcessCountersInstallOnlyInputAndOutputHooks/realm",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.119584138Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestProcessCountersInstallOnlyInputAndOutputHooks/socat",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.119652472Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestProcessCountersInstallOnlyInputAndOutputHooks/nginx",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.11969043Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestProcessCountersInstallOnlyInputAndOutputHooks",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.119759222Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestProcessCounterRepairChecksEveryProtocolSeparately",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.119850638Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestAccessLimitMaintenanceExtractsOnlyAuxiliaryCommandsAndThrottles",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.170599305Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestAccessLimitMaintenanceWaitsForActionsSharingTheSameChain",
+      "Elapsed": 0.05
+    },
+    {
+      "Time": "2026-10-18T11:26:28.17071593Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestAccessLimitMaintenanceRunsCleanupForCurrentDesiredAction",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.17092643Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestAccessLimitMaintenanceSkipsSupersededDesiredActions/newer_removal",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.171044763Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestAccessLimitMaintenanceSkipsSupersededDesiredActions/changed_desired_signature",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.171088513Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestAccessLimitMaintenanceSkipsSupersededDesiredActions",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.171216013Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestProcessIptablesFallbackUsesOnlyListenerHooks",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.17129193Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestIptablesCountingCleanupUsesBusyBoxCompatibleSingleScan",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.171375347Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestCountingChainSignatureIncludesLayoutAndForwardType",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.171442763Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestCountingRepairCacheDoesNotQueueAnUnchangedRule",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.174126347Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestCountingChainStateRestoresOnlyWithinTheSameSystemBoot",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.178598638Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestCountingChainStateInvalidationDoesNotDisruptPendingRepair",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.178702555Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestLegacyDesiredActionRecordForcesSchemaApply",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.178799888Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestDifferentDesiredActionSchemaForcesApply",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.178923638Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestCurrentDesiredActionSchemaKeepsMatchingSuccessReusable",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.179055638Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestMissingDesiredActionRecordStillAllowsNormalAdoptionPath",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.179125513Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestExistingDesiredActionStatusReportRequiresExplicitRequest",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.179247763Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestDNSWatchConfirmsStableChangeBeforeReporting",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.179393972Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPendingDNSChangeForcesFullHeartbeat",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.179494555Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestDNSWatchIgnoresOldAndNewAddressOscillation",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.17960143Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestDNSWatchHoldsDownRecentlyRetiredAddress",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.179682055Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestDNSWatchResolutionFailureResetsCandidate",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.179771305Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestDNSWatchSchedulerKeepsNormalAndConfirmationCadenceSeparate",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.179858013Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestDNSWatchWakeDoesNotBypassScheduledPollForUnchangedItems",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.179971555Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestSuccessfulCoalescedHeartbeatPreservesDNSChanges",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.181713055Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestAgentEventStreamScannerAcceptsLargeDesiredState",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.181801263Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestAgentEventStreamChallengeNegotiationSkipsClockSync",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.181869097Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestFXPPortReleaseTimeoutAllowsNginxHandoff",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.213223055Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestDesiredStatePushSchedulerCoalescesToLatestPendingSnapshot",
+      "Elapsed": 0.03
+    },
+    {
+      "Time": "2026-10-18T11:26:28.24829943Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestSupportBundleSchedulerSerializesAndDeduplicatesTasks",
+      "Elapsed": 0.04
+    },
+    {
+      "Time": "2026-10-18T11:26:28.248392097Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestSupportBundleSchedulerAllowsRetryAfterReportFailure",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.248535597Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestSupportBundleSchedulerBoundsPendingQueue",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.252397805Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestFailoverProxyReplacementKeepsWorkingListenerUntilNewBindSucceeds",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.252473805Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestForwardGroupHealthDecisionUsesAgentWindows",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.252650138Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestApplyForwardGroupHealthDecisionCoversEntryAndManagedRules",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:28.923918764Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestFXPRealAdditionsKeepTCPUDPAndProcessIdentity/v1",
+      "Elapsed": 0.66
+    },
+    {
+      "Time": "2026-10-18T11:26:29.595025708Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestFXPRealAdditionsKeepTCPUDPAndProcessIdentity/v2",
+      "Elapsed": 0.68
+    },
+    {
+      "Time": "2026-10-18T11:26:29.59507825Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestFXPRealAdditionsKeepTCPUDPAndProcessIdentity",
+      "Elapsed": 1.34
+    },
+    {
+      "Time": "2026-10-18T11:26:29.930284833Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestFXPRealOldRuntimeRefusesAdditionAndKeepsBusiness/v1",
+      "Elapsed": 0.34
+    },
+    {
+      "Time": "2026-10-18T11:26:30.266673333Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestFXPRealOldRuntimeRefusesAdditionAndKeepsBusiness/v2",
+      "Elapsed": 0.34
+    },
+    {
+      "Time": "2026-10-18T11:26:30.266740958Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestFXPRealOldRuntimeRefusesAdditionAndKeepsBusiness",
+      "Elapsed": 0.67
+    },
+    {
+      "Time": "2026-10-18T11:26:30.2668305Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestFXPAdditionPlanPreservesExistingV1AndV2Members",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.269336583Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestFXPV2AdditiveSyncKeepsExistingProxiesAndBoundsReferences",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.269471708Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestFXPAdditionPlanUDPAndOutOfOrderBatchSnapshots",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.270175333Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestFXPIncrementalAPIFailureNeverChangesCommittedPlan",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.272108917Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPersistedFXPRestorePlanGroupsManyEntriesByTunnelAndTransport",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.273888667Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestDesiredStateStagesV2EntriesInOneTransportSpecificGroup",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.274118708Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestDesiredV2EntryGroupAttachmentRemainsLocalToItsBatch",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.275138583Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestDesiredEntryGroupDropsMemberReplacedByNonFXPAction",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.277756667Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestDesiredV2EntryGroupLifecycleAddUpdateAndRemove",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.278624792Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestRemovingLastV2EntryStopsOnlyV2GroupRuntime",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.281166708Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestVersionlessOrphanRemovalInfersPersistedV2Group",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.281346625Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestLocalRuntimeStateReportsV2TransportFromActiveOrPersistedGroup",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.284240125Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestDesiredStateStagesOneV1EntryGroupForManyRuleActions",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.3090445Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestDesiredStateStagesLargeEntryBatchWithOneFinalSnapshot",
+      "Elapsed": 0.02
+    },
+    {
+      "Time": "2026-10-18T11:26:30.311442667Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestDesiredEntryGroupSequentialApplyReplacesRuleAndListenerConflicts",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.313268208Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestDesiredEntryGroupRemoveSupportsWildcardFieldsWithinTransport",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.317746458Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPersistingV1EntryGroupReplacesOnlyThatTunnelSnapshots",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.319740125Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPersistedEntryGroupsKeepBothTransportsForSameTunnelInEitherSaveOrder/v1-then-v2",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.321368583Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPersistedEntryGroupsKeepBothTransportsForSameTunnelInEitherSaveOrder/v2-then-v1",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.321411125Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPersistedEntryGroupsKeepBothTransportsForSameTunnelInEitherSaveOrder",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.323020458Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPersistedRestorePlanKeepsBothTransportsForSameTunnel",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.32632525Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestRemovingV1EntryDoesNotAlterSameTunnelV2Group",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.32648Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestTransitionFXPSelectorKeepsSiblingsRunningWithoutAnotherAction/v1",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.326760958Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestTransitionFXPSelectorKeepsSiblingsRunningWithoutAnotherAction/v2",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.326852125Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestTransitionFXPSelectorKeepsSiblingsRunningWithoutAnotherAction",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.326993917Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestTransitionFXPSelectorPropagatesLastMemberStopFailure",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.32711975Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestTransitionFXPSelectorRestoresOriginalGroupWhenSiblingRebuildFails",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.327225667Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestTransitionFXPSelectorKeepsUDPEntryOnSameNumericPort",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.3273815Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestStopStaleForwardXRuleRuntimeRejectsUnrelatedOwners",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.333296583Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestStopFXPByListenPortMatchesSecondaryUDPListener",
+      "Elapsed": 0.01
+    },
+    {
+      "Time": "2026-10-18T11:26:30.340037Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestStopStaleForwardXRuleRuntimeKeepsDisjointProtocolOwner",
+      "Elapsed": 0.01
+    },
+    {
+      "Time": "2026-10-18T11:26:30.347483125Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestForwardXTunnelHandoffCommitRemovesOnlyMatchingPersistentRuntime",
+      "Elapsed": 0.01
+    },
+    {
+      "Time": "2026-10-18T11:26:30.354197375Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestForwardXTunnelHandoffFailureRestoresPreviousRuntime",
+      "Elapsed": 0.01
+    },
+    {
+      "Time": "2026-10-18T11:26:30.354359625Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestFXPSpecsUsingListenPortPrefersCurrentRuntimeOverStaleSnapshot",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.354643625Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestFXPSpecsUsingListenPortUsesNewestAvailableGroupGeneration",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.35475325Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestFXPSpecsUsingListenPortMatchesSecondaryUDPPortWithoutOtherGroups",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.354826583Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestFXPSpecsWithRunningProcessRejectsStaleSnapshots",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.356141292Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestCommitFXPHandoffPersistenceRemovesOnlySelectedGroupMember",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.357847333Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestFXPEntryGroupHandoffBatchCommitsFourMemberSwitch",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.359526042Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestFXPEntryGroupHandoffBatchFailureRestoresCompleteFourMemberSnapshot",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.360885292Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestFXPEntryGroupHandoffBatchOutOfOrderCompletionIsIdempotent",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.364000792Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestFXPHandoffBatchCommitRemovesSelectorWithoutLiveOriginal",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.365464833Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestManagedFXPHandoffDefersGenericPersistenceCleanup",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.3657225Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestFXPTransitionRollbackKeepsTransactionalRestoreOutOfPersistence",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.365863083Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestFXPConfigUsesRemovedTrafficPadding/clean",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.3659665Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestFXPConfigUsesRemovedTrafficPadding/enabled",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.366187958Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestFXPConfigUsesRemovedTrafficPadding/enabled_string",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.366356667Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestFXPConfigUsesRemovedTrafficPadding/ratio",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.366438Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestFXPConfigUsesRemovedTrafficPadding/max",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.366523083Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestFXPConfigUsesRemovedTrafficPadding/disabled_zero",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.36664925Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestFXPConfigUsesRemovedTrafficPadding/disabled_zero_strings",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.366873083Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestFXPConfigUsesRemovedTrafficPadding/malformed_json",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.366960625Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestFXPConfigUsesRemovedTrafficPadding",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.367085917Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestFXPProcessMatchesCurrentRuntimeRejectsRemovedPaddingConfig",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.367191542Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestFXPRuntimeUsesCurrentExecutableRejectsStaleProcess",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.367266792Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestFXPRuntimeUsesCurrentExecutableAcceptsMatchingProcesses",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.367372333Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestFXPRuntimeUsesCurrentExecutableRequiresRuntimeAndProcess",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.367540875Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestAdoptExistingFXPRejectsStaleExecutable",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.367630417Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestFXPProcessUsesCurrentExecutableDetectsBinaryReplacement",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.367720458Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestFXPRuntimePanelCredentialsMustMatchCurrentAgent",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.367901Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestFXPMatchesRunningRejectsStalePanelCredentialsForV1AndV2/v1",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.368051375Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestFXPMatchesRunningRejectsStalePanelCredentialsForV1AndV2/v2",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.368097708Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestFXPMatchesRunningRejectsStalePanelCredentialsForV1AndV2",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.368178333Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestAdoptExistingFXPRejectsStalePanelCredentials",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.368266042Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestFXPRuntimeReadinessRejectsTrackedOldExecutable",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.368350708Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestNormalizeFXPSpecExitStrategies",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.368431417Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestNormalizeFXPSpecSNISplitterRoutes",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.368564875Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestNormalizeFXPSpecSNISplitterSourceAllowIPs",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.368672917Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestFXPServerSignatureIgnoresSNIRouteTable",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.368806375Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestValidateFXPSNIRouteTableRequiresVersion",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.368911208Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestFXPSNISplitterReadyForRouteTableUpdateAllowsRepresentativeChange",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.370343125Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestStartFXPClearsSNISplitterSourceAllowIPsWithoutRestart",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.370424708Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestSNISplitterApplyRequiresCommandsBeforeAdoption",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.370571292Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestFXPMatchesRunningRequiresCurrentSNIRouteTable",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.372677167Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestLocalRuntimeStateReportsSNISplitterRoutes",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.372779625Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestFXPRuleReadinessCandidateMatchesSNISplitter",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.372883458Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestGostAdditionPlanPreservesExistingChainsAndListeners",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.372984333Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestGostAdditionPlanDoesNotIgnoreEditsRemovalsOrUnhealthyListeners",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.373081958Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestGostAdditionPlanNormalizesTypedDurationsButNotMetadata",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.373187125Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestGostAddFailureRollsBackOnlyAttemptedAdditions",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.373314333Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestGostDuplicateCreationDoesNotDeleteOtherOperatorsListener",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.373620583Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestGostIncrementalRollbackRestoresDiskWithoutSharedRestart",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.373951708Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestGostSyncMarkerRejectsUnexpectedTargetsBeforeShell",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.374442208Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestGostAPISocketRequiresUnixScheme",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.846138917Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestGostRealRuntimeAddAndPortConflictPreserveEstablishedConnections",
+      "Elapsed": 0.47
+    },
+    {
+      "Time": "2026-10-18T11:26:30.846493375Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestGostLostCreationReplyReconcilesLiveStateBeforeRollback",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.846732417Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestGostUnknownCreationOutcomeDoesNotRemovePossiblyActiveObjects",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.846838375Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestGostOnlySyntheticSameTunnelProbeMayBeReplaced",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.847130125Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestGostFailedProbeReplacementRestoresOnlyProbeAndNewObjects",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:30.847325084Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestGostUncertainProbeReplacementDoesNotRecreateProbeOverLiveBusiness",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.057336875Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestFullHeartbeatPreservesRuntimeIdentityInBothReportFormats/ordinary",
+      "Elapsed": 0.21
+    },
+    {
+      "Time": "2026-10-18T11:26:31.0633305Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestFullHeartbeatPreservesRuntimeIdentityInBothReportFormats/compact",
+      "Elapsed": 0.01
+    },
+    {
+      "Time": "2026-10-18T11:26:31.063406792Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestFullHeartbeatPreservesRuntimeIdentityInBothReportFormats",
+      "Elapsed": 0.22
+    },
+    {
+      "Time": "2026-10-18T11:26:31.063510709Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestApplyHeartbeatStatePreservesOmittedSections",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.063669125Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestApplyHeartbeatStateInvalidatesUnsignedReplacementSections",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.063804209Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestRunningRuleStateWriteWaitsForActivePortAction",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.064119792Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestAgentEventHTTPTransportSupportsHTTP2",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.064374125Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestStableIntervalJitterIsBoundedAndDeterministic",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.064544875Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestStableIntervalJitterHandlesDisabledAndClampedInputs",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.064754125Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestStableIntervalJitterBelowSpreadsWithoutDeadlineConcentration",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.064851709Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPruneLogDirectoryCapsEachFileAndDirectoryTotal",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.065002167Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPruneAgentLocalLogFileUnderstandsRuntimeTimestamp",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.065172125Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestManagedConfigRejectsInvalidJSONWithoutReplacingLiveFile",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.06531575Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestManagedConfigRollbackRestoresPreviousContent",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.065568875Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestManagedConfigBatchFailureRestoresEarlierFiles",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.065725959Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestManagedConfigUsesRequestedFileMode",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.065908792Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestManagedConfigRejectsUnsafeFileMode",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.066144417Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestManagedConfigUnconfirmedApplicationRetainsDesiredFilesForReconciliation",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.066284959Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestManagementProxyValidation",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.0669905Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestManagementHTTPProxyAndExplicitDirect",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.067148667Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestManagementSOCKSProxyRemoteDNSAndAuthentication",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.067313459Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestUpgradeProxyReadsProtectedConfig",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.067436584Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestICMPEchoRequestChecksum",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.067559625Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestStripIPv4Header",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.067663959Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestCPUUsageFromTimes",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.070014584Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestTrafficBaselinesCommitOnlyAfterSuccessfulReport",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.072617709Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPendingTrafficReportPersistsPayloadAndCommitsSnapshot",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.073665542Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestTrafficConnectionBaselineFormatsRemainCompatible",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.079296209Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPendingTrafficReportStaysPendingUntilBaselinePersists",
+      "Elapsed": 0.01
+    },
+    {
+      "Time": "2026-10-18T11:26:31.081912125Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPendingTrafficReportStaysPendingOnRuleStateReadFailure",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.087319709Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPendingTrafficReportRejectsAnotherPanelIdentity",
+      "Elapsed": 0.01
+    },
+    {
+      "Time": "2026-10-18T11:26:31.093677459Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestTrafficReportIdentityChangeClearsPendingState",
+      "Elapsed": 0.01
+    },
+    {
+      "Time": "2026-10-18T11:26:31.098404209Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestTrafficReportIdentityDoesNotAdvanceWhenStateCleanupFails",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.099952917Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPendingTrafficReportDoesNotRestoreAnOldRuleBaseline",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.100164542Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPendingTrafficReportKeepsMalformedStateForDiagnosis/truncated",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.100275001Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPendingTrafficReportKeepsMalformedStateForDiagnosis/trailing_value",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.100374667Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPendingTrafficReportKeepsMalformedStateForDiagnosis",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.100575792Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPendingTrafficReportRequiresStableIdentifiers/missing_report_id",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.100668292Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPendingTrafficReportRequiresStableIdentifiers/null_report_id",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.100821001Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPendingTrafficReportRequiresStableIdentifiers/empty_report_id",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.101038834Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPendingTrafficReportRequiresStableIdentifiers/missing_producer_id",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.101119876Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPendingTrafficReportRequiresStableIdentifiers/null_producer_id",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.101213292Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPendingTrafficReportRequiresStableIdentifiers/empty_producer_id",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.101304292Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPendingTrafficReportRequiresStableIdentifiers/wrong_producer_id",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.101461626Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPendingTrafficReportRequiresStableIdentifiers",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.101693834Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPendingTrafficReportRejectsInconsistentSnapshot/stat_count",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.101797792Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPendingTrafficReportRejectsInconsistentSnapshot/missing_baseline",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.101896917Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPendingTrafficReportRejectsInconsistentSnapshot/payload_rule",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.102010626Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPendingTrafficReportRejectsInconsistentSnapshot/mixed_payload_formats",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.102090209Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPendingTrafficReportRejectsInconsistentSnapshot/rule_traffic_flag",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.102130209Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPendingTrafficReportRejectsInconsistentSnapshot",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.102235459Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPendingTrafficReportLoadPreservesLargeIntegers",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.102338959Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestTrafficStateRenameAndRemoveSyncDirectory",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.102416209Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPendingTrafficReportWaitsForDirectorySyncRecovery",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.107594292Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestFirstTrafficReportIdentityClearsLegacyState",
+      "Elapsed": 0.01
+    },
+    {
+      "Time": "2026-10-18T11:26:31.107793876Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestTrafficReportIdentityUsesExactTokenBytes",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.107885834Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestTrafficReportIDsAreUniqueAcrossEqualBatches",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.107975001Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestTrafficReportProducerIDIsStableForOnePanelIdentity",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.108066584Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestIdleTrafficCollectionYieldsUntilHostSnapshotIsDue",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.108224334Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestNewRuleMakesIdleTrafficCollectionImmediatelyDue",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.108354751Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestParseNftProcessCounterSnapshot",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.108449001Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestParseNftProcessCounterSnapshotRequiresCompleteListenerLayout",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.108678792Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestNftProcessCountingCmdsUseOnlyListenerHooks",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.108774126Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestRuleTrafficCountersUseExactlyOneBackend",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.108925709Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestShouldCollectRuleTrafficSkipsForwardXAndInvalidRules/iptables",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.109020792Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestShouldCollectRuleTrafficSkipsForwardXAndInvalidRules/realm",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.109103501Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestShouldCollectRuleTrafficSkipsForwardXAndInvalidRules/forwardx",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.109191251Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestShouldCollectRuleTrafficSkipsForwardXAndInvalidRules/forwardx_case_insensitive",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.109380459Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestShouldCollectRuleTrafficSkipsForwardXAndInvalidRules/forwardx_v1",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.109502792Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestShouldCollectRuleTrafficSkipsForwardXAndInvalidRules/forwardx_wireguard",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.109617792Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestShouldCollectRuleTrafficSkipsForwardXAndInvalidRules/missing_rule",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.109717917Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestShouldCollectRuleTrafficSkipsForwardXAndInvalidRules/missing_port",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.109786001Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestShouldCollectRuleTrafficSkipsForwardXAndInvalidRules",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.109926626Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestCollectableRuleTrafficStatesDriveIntervalsAndConntrackPorts",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.110040167Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestConntrackFlowSnapshotUsesOriginalTupleOnly",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.110127584Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestConntrackConnectionDeltaTracksFlowIdentityInsteadOfActiveGauge",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.110259001Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestProcessConnectionCounterKeepsShortConnectionsBetweenSnapshots/same_rule_rebuild",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.110449876Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestProcessConnectionCounterKeepsShortConnectionsBetweenSnapshots/reused_port_with_new_rule",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.110564334Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestProcessConnectionCounterKeepsShortConnectionsBetweenSnapshots/persistent_backend_switch",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.110610209Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestProcessConnectionCounterKeepsShortConnectionsBetweenSnapshots",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.110700376Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestClearingRemovedProcessConnectionCounterDoesNotRetainStalePorts",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.110794167Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestConntrackFlowSnapshotFiltersRuleProtocol",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.110936917Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestTrafficSnapshotRequirementsFollowForwardTypes/self_reported_only",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.111018251Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestTrafficSnapshotRequirementsFollowForwardTypes/iptables",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.111116459Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestTrafficSnapshotRequirementsFollowForwardTypes/native_nft",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.111236167Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestTrafficSnapshotRequirementsFollowForwardTypes/process_nft_first",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.111342584Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestTrafficSnapshotRequirementsFollowForwardTypes/mixed",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.111390501Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestTrafficSnapshotRequirementsFollowForwardTypes",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.111469334Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestConntrackSnapshotSkipsProcessRulesWithPersistentCounters",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.111567792Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestProcessTrafficRequestsIptablesOnlyWhenNftLayoutIsMissing",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.111723459Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestCountingLayoutPresenceUsesTheExpectedSingleBackend/IPv4_kernel_marker",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.111817251Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestCountingLayoutPresenceUsesTheExpectedSingleBackend/IPv6_kernel_marker",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.111956126Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestCountingLayoutPresenceUsesTheExpectedSingleBackend/process_nft_marker",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.112092876Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestCountingLayoutPresenceUsesTheExpectedSingleBackend/partial_process_protocol_layout",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.112183334Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestCountingLayoutPresenceUsesTheExpectedSingleBackend/process_iptables_fallback",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.112265626Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestCountingLayoutPresenceUsesTheExpectedSingleBackend/missing_process_layout",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.112339084Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestCountingLayoutPresenceUsesTheExpectedSingleBackend/missing_IPv4_kernel_layout",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.112408626Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestCountingLayoutPresenceUsesTheExpectedSingleBackend/unresolved_kernel_target_waits_for_DNS",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.112574667Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestCountingLayoutPresenceUsesTheExpectedSingleBackend/native_nft_owns_its_counters",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.112804667Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestCountingLayoutPresenceUsesTheExpectedSingleBackend/ForwardX_self_reports",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.112943792Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestCountingLayoutPresenceUsesTheExpectedSingleBackend",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.113078792Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPartialNftLayoutQueuesNonDestructiveRepairWithoutAdvancingBaseline",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.113377334Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestMissingProcessConnectionMarkerRepairsWithoutPausingBytes",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.113488876Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestIptablesAgentCountingForwardTargetRuleScopesConntrackPort",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.113845667Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestScheduleTCPingCollectionDoesNotBlockWhenBusy",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.113985584Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestFinishTCPingCollectionImmediatelyWakesDeferredForceRun",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.114069126Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestRetainForcedTCPingRequestWakesAfterCollectorAlreadyFinished",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.114142501Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestRetainForcedTCPingRequestDoesNotSpinWhileActionsArePending",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.114231626Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestScheduleTCPingCollectionDefersTopologyProbeWhileActionsPending",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.114322251Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestRuntimeProbeResultsAreDiscardedAfterCompletedAction",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.114419917Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestForcedRuntimeProbeDiscardIsRetainedForRetry",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.114513792Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestNonForcedRuntimeProbeDiscardDoesNotRetainForce",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.114600751Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestExecuteTCPingTaskSkipsWireGuardRuntimeNotReady",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.114710042Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestExecuteTCPingTaskReportsStableWireGuardDialTimeout",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.114799209Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestExecuteTCPingTaskPreservesPartialPingLoss",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.114890792Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestTCPLatencyWithProbesPreservesPartialTCPFailures",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.114984417Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestTCPLatencyWithProbesBoundsAttemptCount",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.115053959Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestExecuteTCPingTaskReportsPartialTCPFailures",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.115185459Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestParsePingProbeCounts/iputils",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.115252417Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestParsePingProbeCounts/busybox",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.115329917Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestParsePingProbeCounts/windows",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.115407209Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestParsePingProbeCounts/windows-cn",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.115480334Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestParsePingProbeCounts/reply-lines-without-summary",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.115530001Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestParsePingProbeCounts",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.115660501Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestParseLocalizedPingLatency",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.115729292Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestParseSubMillisecondPingRepliesAsSuccessfulSamples",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.115797667Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestTCPingDynamicBatchLimitScalesWithoutUnboundedRuns",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.115867459Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestTCPingDueIntervalScalesWithWorkAndServiceRequirements",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.161152251Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestTCPLatencyUsesOneDeadlineAcrossResolvedAddresses",
+      "Elapsed": 0.05
+    },
+    {
+      "Time": "2026-10-18T11:26:31.161347251Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestRuleLatencyProbeUsesPingOnlyForUDP",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.161431209Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestRuleLatencyProbePrefersLatestDesiredProtocol",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.161513876Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestTunnelRuleLatencySkipsLocalEntryAndUsesExplicitExitProbe",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.161720792Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestMultiEntryWireGuardProbesKeepTheirOwnPeers",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.161917501Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestInvalidateMimicEnvironmentCache",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.162245126Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestInspectMimicEnvironmentUnsupportedOS",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.162357917Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestInspectMimicEnvironmentMissingCommand",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.162438501Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestInspectMimicEnvironmentMissingModule",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.162607834Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestInspectMimicEnvironmentReady",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.162799459Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestSanitizeServiceNameAllowsSystemdTemplateInstance",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.162995542Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestDefaultIPv4NetworkInterface",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.163178292Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestDefaultIPv6NetworkInterface",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.163303501Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestManagedMimicServicesFromConfigDir",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.163389376Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestEnabledMimicOffloads",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.163473334Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestValidMimicInterfaceNameRejectsStatePathTraversal",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.163591126Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestMimicOffloadRestoreArgsOnlyEnableKnownFeatures",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.163764417Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestMimicOffloadDisableArgsProtectActiveInterface",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.183641042Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestMimicOffloadOperationLockSerializesOneInterface",
+      "Elapsed": 0.02
+    },
+    {
+      "Time": "2026-10-18T11:26:31.183745376Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPruneMimicNetworkTuneCacheKeepsCurrentAndRecentEntries",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.183838626Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestMimicNetworkFailuresRetryBeforeHealthySnapshots",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.183957001Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestMimicOffloadTunePlanDisablesOnlyReceiveAggregation",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.184057792Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestMimicOffloadTunePlanMigratesLegacySnapshotOnce",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.184140917Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestMimicOffloadTunePlanRejectsUnknownLegacyFeature",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.184213626Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestCaptureMimicOffloadStatePreservesFirstSnapshot",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.184317417Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPanelMigrationPreparePersistsAndSwitchesToNewPanel",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.184449709Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPanelMigrationCommittedRedirectSwitchesPreviouslyOfflineAgent",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.184555084Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPanelMigrationPrepareDoesNotSwitchWhenConfigCannotBePersisted",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.184739292Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPanelMigrationRestartKeepsFallbackRecovery",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.184926167Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPanelMigrationAbortRestoresOldPanel",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.185120542Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPanelMigrationCommitKeepsNewPanelAndClearsFallback",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.185355584Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPanelMigrationCommunicationFailureFallsBack",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.226713042Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestManagedServiceBatcherCoalescesConcurrentStarts",
+      "Elapsed": 0.04
+    },
+    {
+      "Time": "2026-10-18T11:26:31.253778626Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestNetworkTargetDNSCoalescesConcurrentLookups",
+      "Elapsed": 0.03
+    },
+    {
+      "Time": "2026-10-18T11:26:31.254014542Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestNetworkTargetDNSCacheIsBoundedAndExpiresEntries",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.254151042Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestProbeWorkYieldsToPendingActions",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.254271542Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestIdleHostTrafficReportsAreCoalesced",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.254415251Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestActiveRuleTrafficReportsAreBatched",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.254600959Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestSteadyTrafficReportsAndCollectionUsePanelBatchWindow",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.254831542Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestSuccessfulHeartbeatDelayLetsAgentOwnBackgroundProbes",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.254950709Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestSuccessfulHeartbeatJitterPreservesInteractiveAndAuditBounds",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.255159292Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPresenceIntervalHonorsPanelWithinAvailabilityBounds/missing_uses_default",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.255351917Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPresenceIntervalHonorsPanelWithinAvailabilityBounds/negative_uses_default",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.255490751Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPresenceIntervalHonorsPanelWithinAvailabilityBounds/too_frequent_is_clamped",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.255658292Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPresenceIntervalHonorsPanelWithinAvailabilityBounds/panel_value_is_honored",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.255827917Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPresenceIntervalHonorsPanelWithinAvailabilityBounds/availability_ceiling_is_honored",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.255977209Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPresenceIntervalHonorsPanelWithinAvailabilityBounds/slow_value_cannot_break_failover",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.256044459Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPresenceIntervalHonorsPanelWithinAvailabilityBounds",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.256171667Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPresenceFailurePathRetainsFastTimeoutAndBoundedRetries",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.256350167Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestHeartbeatRequestCoordinatorSeparatesRequestLanes",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.256550584Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestHeartbeatRequestCoordinatorSharesSuccessAcrossLanes",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.256719126Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestHeartbeatRequestCoordinatorPresenceRetryUsesPresenceLane",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.256920626Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPresenceSchedulingSpreadsLoadWithoutExtendingTheDeadline",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.257031501Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPluginAgentTaskResultIsPersistedAtomically",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.257124626Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestFinalizePluginAgentTaskResultPreservesJSONErrorOnNonzeroExit",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.257213084Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestFinalizePluginAgentTaskResultKeepsProcessErrorForInvalidJSON",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.257350876Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestParsePluginAgentManifestVersion/current_manifest",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.257464751Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestParsePluginAgentManifestVersion/legacy_field_is_ignored",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.257654584Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestParsePluginAgentManifestVersion/current_field_wins",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.257747917Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestParsePluginAgentManifestVersion",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.257853042Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestParsePluginAgentManifestVersionRejectsInvalidJSON",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.257979626Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestValidatePluginAgentTaskVersionRequiresVersion",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.258099917Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestValidatePluginAgentTaskEnvironmentReportsMissingInterpreter",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.258194501Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestInstalledPluginVersionsAt",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:31.286942084Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPluginAgentTaskLockAllowsConcurrentReadsAndBlocksWrites",
+      "Elapsed": 0.03
+    },
+    {
+      "Time": "2026-10-18T11:26:34.260982794Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPortAccessLimitsNetworkNamespace",
+      "Elapsed": 2.97
+    },
+    {
+      "Time": "2026-10-18T11:26:34.261110002Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPortAccessLimitsShareCountersAndPreserveThemWhenAddingPorts",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.261256002Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPortAccessLimitIPv4IPv6AndChunks",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.261441002Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPortAccessLimitCleanupAndThresholdChangesOnlyTouchOwnedChains",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.261547127Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPortAccessLimitFailureDoesNotReplacePreviousHooks",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.261734669Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPortAccessLimitMissingDependenciesAndValidation",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.261924544Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPortAccessLimitDesiredSignaturesIncludeLimitsAndPorts",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.262218877Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPortOccupancySnapshotPreservesListenerDetails",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.262441544Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPortOccupancyTracksFXPInstance",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.262605169Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPortOccupancySnapshotDropsEntirePortWhenListenerLimitReached",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.26326946Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPortOccupancySnapshotListenerLimitAppliesPerPort",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.264400877Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPortOccupancySnapshotDropsEntirePortWhenByteLimitReached",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.264755752Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPortOccupancySnapshotIgnoresUnrelatedListeners",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.264941752Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPortOccupancySnapshotDecodesProcNetAddresses",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.265115252Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestFallbackCollectionDoesNotClaimCoverageWhenOneAddressFamilyFails",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.265291085Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPortRuleManifestRevisionAndRecovery",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.265437252Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPortOccupancySignatureTracksEmptyRulePorts",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.27584896Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPortOccupancyFitsEncryptedHeartbeatEnvelope",
+      "Elapsed": 0.01
+    },
+    {
+      "Time": "2026-10-18T11:26:34.276036335Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPortBindFailureMessageNamesKnownOwner",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.276261502Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestManagedRuntimeRequiresServiceIdentity",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.276431502Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestProtocolGuardRateLimitNormalizationAndBurst",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.276559127Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestProtocolBlockReporterDeduplicatesAndBoundsQueue",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.27666321Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestProtocolBlockReporterCooldownAfterCompletion",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.28787546Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestProtocolGuardRateLimiterSharedByScopeAndDirection",
+      "Elapsed": 0.01
+    },
+    {
+      "Time": "2026-10-18T11:26:34.288088419Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestProtocolGuardRateOnlyUpdateKeepsRoutingSignature",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.288327044Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestGuardActionSignatureIncludesBackendRuntime",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.288478919Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestSyncProtocolGuardsAfterActionsDefersRouteReplacement",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.289542835Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestSyncProtocolGuardsAfterActionsCancelsObsoleteWaiter",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.289678002Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestProtocolGuardRuleReadinessRequiresLiveListeners",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.289809585Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestProtocolGuardRejectsLocalSelfTarget",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.289958752Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestSyncProtocolGuardsAppliesRateOnlyUpdateInPlace",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.291653585Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestProtocolGuardRateLimiterHotUpdateAndCloseCancellation",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.29366921Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestProtocolGuardRateWaitRetriesAfterHotUpdate",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.295758544Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestProtocolGuardTCPPeerExitCancelsOtherDirectionWait",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.296064502Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestProtocolGuardCloseReapsIdleTCPConnection",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.296350627Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestDetectHTTPProtocolRequiresRequestLine",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.296528794Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestDetectTLSProtocolRequiresHandshakeShape",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.296709877Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestDetectSocksProtocolRequiresFullGreeting",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.296882585Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestProtocolGuardRequiresSocksServerConfirmation",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.297136835Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestProtocolGuardDoesNotBlockSS2022CollisionPrefix",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.297333669Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestConsumeProxyProtocolV1",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.297485585Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestConsumeProxyProtocolV1WithoutHeader",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.297687127Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestBuildProxyProtocolV1UsesParsedSource",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.297826877Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestBuildProxyProtocolV1FallsBackToClientAddr",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.297948544Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestBuildAndConsumeProxyProtocolV2",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.298174169Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestProtocolGuardProxyProtocolEndToEnd/plain_input_generates_v1",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.298336835Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestProtocolGuardProxyProtocolEndToEnd/v1_source_is_preserved",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.29849021Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestProtocolGuardProxyProtocolEndToEnd/v2_source_is_preserved",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.298687419Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestProtocolGuardProxyProtocolEndToEnd/receive_without_send_strips_header",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.29876046Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestProtocolGuardProxyProtocolEndToEnd",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.298860627Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestNormalizeNetworkTargetHost",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.298975752Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestMimicConnectionStateParsing",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.299068585Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestCompactShellFailureOutputKeepsFailureTail",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.299206627Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestCompactShellFailureOutputFallsBackToExecutionError",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.299366752Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestFXPEndpointEventTracksFailureAndRecovery",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.29946896Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestSupportOutputRedactsCredentials",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.299594085Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestSupportOutputTruncationKeepsUTF8AndLimit",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.299682544Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestSupportOutputTotalLimit",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.299796419Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestSupportCommandsIncludeNginxDisconnectDiagnostics",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.299958585Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestDecryptForPanelUsesAuthenticatedServerClock",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.300146794Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestDecryptForPanelRejectsReplayAndBadClockHeader",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.300447085Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestDecryptForPanelBadMACDoesNotPolluteClock",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.300643919Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestEventStreamClockHintKeepsItsOffsetAsTheStreamAges",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.42661771Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestEncryptedResponseReplayCacheBounded",
+      "Elapsed": 0.13
+    },
+    {
+      "Time": "2026-10-18T11:26:34.426823002Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestRuntimePortProtocolConfiguredRequiresRequestedProtocols",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.426999794Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestRuntimeListenSnapshotChecksProtocolAndOwner",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.427165085Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestProcNetLocalPort",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.427310835Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestSharedManagedRuntimeOwnedPortIsPreserved",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.427473419Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestSharedManagedRuntimeOwnershipIsProtocolAware",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.429678252Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPersistFXPSpecScrubsPanelCredentialsAndSupportsPartialRemoval",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.433074294Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPersistedFXPRemovalRespectsProtocolLanes",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.434764377Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPersistWireGuardAndFailoverSpecs",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.440596502Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestRuntimeStopPreservesSnapshotsUntilExplicitRemoval",
+      "Elapsed": 0.01
+    },
+    {
+      "Time": "2026-10-18T11:26:34.440692835Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPreparedWireGuardFXPConfigIsNotMigratedAsOriginalPlan",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.444414169Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPersistedRestoreRechecksSnapshotsBeforeStarting",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.465644419Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPrepareDesiredActionJobsAddsSharedRuntimePhase",
+      "Elapsed": 0.02
+    },
+    {
+      "Time": "2026-10-18T11:26:34.465912085Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestSharedRuntimeActionRequiredByCurrentAndPreviousOwners/nginx_to_forwardx_v1",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.46606271Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestSharedRuntimeActionRequiredByCurrentAndPreviousOwners/nginx_transition_ignores_gost",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.466204502Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestSharedRuntimeActionRequiredByCurrentAndPreviousOwners/gost_to_realm",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.466353919Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestSharedRuntimeActionRequiredByCurrentAndPreviousOwners/gost_transition_ignores_nginx",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.466499419Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestSharedRuntimeActionRequiredByCurrentAndPreviousOwners/nginx_target_keeps_existing_direction",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.466674002Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestSharedRuntimeActionRequiredByCurrentAndPreviousOwners/gost_target_keeps_existing_direction",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.46686871Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestSharedRuntimeActionRequiredByCurrentAndPreviousOwners/nginx-backed_guard_follows_nginx",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.467027002Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestSharedRuntimeActionRequiredByCurrentAndPreviousOwners/nginx-backed_guard_ignores_gost",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.467186169Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestSharedRuntimeActionRequiredByCurrentAndPreviousOwners/gost-backed_guard_follows_gost",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.467284794Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestSharedRuntimeActionRequiredByCurrentAndPreviousOwners/kernel_guard_has_no_shared_runtime",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.467331002Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestSharedRuntimeActionRequiredByCurrentAndPreviousOwners",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.46742071Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPrepareDesiredActionJobsLinksOnlyRelevantPreviousOwnerRuntime",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.485950794Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPrepareDesiredActionJobsOrdersOneWaySharedRuntimeTransition",
+      "Elapsed": 0.02
+    },
+    {
+      "Time": "2026-10-18T11:26:34.486157835Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestPrepareDesiredActionJobsAvoidsCycleForBidirectionalSharedRuntimeTransition",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.48786796Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestSharedRuntimeHandoffStopsOnlyProcessAndRestartsOnRollback",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.48798471Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestQueuedOwnerSnapshotSurvivesDesiredMarkerReplacement",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.489921794Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestForcedRuntimeSyncCannotBeAdoptedFromOldSuccessRecord",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.490108169Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestWireGuardIdentityReplacementForcesV2Dependents",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.49023646Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestWireGuardNonIdentityUpdateKeepsV2Runtime",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.490315294Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestGostTunnelReadinessIgnoresUnhealthyDuplicateMainRuntime",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.490542877Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestGostTunnelReadinessFallsBackToLegacyMainRuntimeLayout",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.49082721Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestGostTLSListenerIsClassifiedAsTCP",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.490976419Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestGostRuntimeReadinessCacheSeparatesMainAndTunnelScopes",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.491134002Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestLocalRuleManagedServiceGroupsUseProtocolQualifiedNames/realm_tcp_with_legacy_fallback",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.491224877Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestLocalRuleManagedServiceGroupsUseProtocolQualifiedNames/socat_udp_protocol_service",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.491341419Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestLocalRuleManagedServiceGroupsUseProtocolQualifiedNames/socat_both_requires_both_services",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.49138596Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestLocalRuleManagedServiceGroupsUseProtocolQualifiedNames",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.491508669Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestManagedPortCleanupCoversAllRealmServiceVariants",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.491660419Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestUnknownListenerCleanupKeepsProtocolLanesSeparate",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.49180921Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestDesiredRuleSnapshotKeepsDisjointProtocolsOnSamePort",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.491961085Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestMergeDesiredRuleStatesOnlyFillsDisjointProtocolLane",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.492060794Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestRuntimeProtocolOverlap",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.492151752Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestIptablesTargetCleanupUsesStoredProtocol",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.492238919Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestFXPListenerConflictsAreProtocolAware",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.492326335Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestFXPTransportVersionForLocalTunnelDistinguishesV1AndV2",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.492523252Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestLocalGostRuleReadinessDistinguishesTunnelTransportFromEntryProtocols",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.49265621Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestManagedRuleReadinessRequiresRealProtocolSockets",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.49279996Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestFXPRuntimeReadinessRequiresEveryProtocolListener",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.492948127Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestFXPMatchesRunningRequiresTheExpectedListener",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.493085752Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestSocatBothReadinessRequiresBothManagedServicesAndSockets",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.493211669Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestManagedRuleApplyVerificationIncludesRealmAndSocat",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.493335544Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestSelfTestPollingOnlyFallsBackWithoutEventStream",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.493468377Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestSelfTestInFlightDeduplicatesRetries",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.493668002Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestTunnelSelfTestsRetryTransientListenerReadiness",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.493871377Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestTunnelAndMultiEntrySelfTestsWaitForRuntime",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.494050585Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestWaitForActionBatchReportsCompletion",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.497930169Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestActionWaitTimeoutKeepsFullRuntimeReadinessWindow",
+      "Elapsed": 0.01
+    },
+    {
+      "Time": "2026-10-18T11:26:34.498117794Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestSelfTestRetryDelayIsBounded",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.498296835Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestHardenManagedSystemdUnitAddsRuntimeLimitsOnce",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.498493919Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestOpenRCAndSysVScriptsDisableCoreDumps",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.498789044Z",
+      "Action": "skip",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestSniForwardGroupDestinationProbes",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.498978502Z",
+      "Action": "skip",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestSniForwardGroupFailedRevocation",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.49917621Z",
+      "Action": "skip",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestSniForwardGroupMemberActions",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.499310752Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestActionStatusBatchUnsupportedByOlderPanelTunnel",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.499486377Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestActionStatusReportsCoalesceLatestRuleState",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.499693752Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestActionStatusReportsRejectOlderCompletion",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.499805835Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestActionStatusRestoreRejectsOlderInFlightReport",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.499980419Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestActionStatusReportsSplitAtBatchSize",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.50014821Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestActionStatusRequeueKeepsNewerState",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.802037752Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestSendActionStatusBatchUsesSingleDelayedRequest",
+      "Elapsed": 0.3
+    },
+    {
+      "Time": "2026-10-18T11:26:34.802271002Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestAgentCommTransientErrorClassification",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.802542002Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestSkipStaleRemoveWhenDesiredRuleStillRuns",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.802854836Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestSkipStaleRemoveProtectsReplacementProtocolLanes/same_rule_narrows_both_to_tcp",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.802979169Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestSkipStaleRemoveProtectsReplacementProtocolLanes/same_rule_narrows_both_to_udp",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.803111919Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestSkipStaleRemoveProtectsReplacementProtocolLanes/tcp_and_udp_replacements_use_different_rule_ids",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.803363211Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestSkipStaleRemoveProtectsReplacementProtocolLanes/forward_group_template_is_replaced_by_managed_child",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.803663252Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestSkipStaleRemoveProtectsReplacementProtocolLanes/managed_forward_group_child_is_replaced",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.803814002Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestSkipStaleRemoveProtectsReplacementProtocolLanes/disjoint_protocol_remains_removable",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.803891169Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestSkipStaleRemoveProtectsReplacementProtocolLanes",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.804023252Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestTunnelPortChangeSupersedesOlderAction",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.804186377Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestRulePortChangeSupersedesOlderAction",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.804306627Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestRulePortChangeDoesNotDiscardOldPortCleanup",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.804448127Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestActionStalenessKeepsTCPAndUDPPortLanesIndependent",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.804677044Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestRuntimeIngressCoalescesByRuntimeFamily",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.804818461Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestTunnelActionStatusKeepsPortIdentity",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.804980877Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestUrgentRefreshBypassesBusyHeartbeat",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.805093836Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestMetricsWatcherUsesKeepaliveUntilFullAudit",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.805289419Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestExplicitWakeForcesReconcileWithoutChangingSSEBacklogSemantics",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.805462461Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestCoalescedHeartbeatDoesNotCommitStaticSnapshot",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.805756377Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestEmptyDesiredStateRecordsAggregateAppliedHash",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.817741544Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestActionIngressCoalescesPendingUpdatesWithoutBlocking",
+      "Elapsed": 0.02
+    },
+    {
+      "Time": "2026-10-18T11:26:34.893868502Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestRuntimeSyncGatesAreIndependentByRuntimeFamily",
+      "Elapsed": 0.08
+    },
+    {
+      "Time": "2026-10-18T11:26:34.970763919Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestGuardRuntimeSyncGateFollowsBackendFamily",
+      "Elapsed": 0.08
+    },
+    {
+      "Time": "2026-10-18T11:26:34.970952711Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestManagedRuntimeReadinessSignalBroadcastsToAllWaiters",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.971151669Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestDesiredActionRecordFlushRetainsNewerRevisionAndRetries",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.971390294Z",
+      "Action": "skip",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestAgentStress3000RuleHeartbeat",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.973127752Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestRestoreActionStatusReportsPerf",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:34.975376086Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestTCPingCounterPreservesSuppressedSuccessesAndHealth",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:35.057398044Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestTCPingCountersSeparateEpochsAndBoundMemory",
+      "Elapsed": 0.08
+    },
+    {
+      "Time": "2026-10-18T11:26:35.057972252Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestTCPingCountersConcurrentCollections",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:35.058149544Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestTCPingCountersDoNotCountSyntheticSelfHops",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:35.058317752Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestTCPingReportGateSuppressesStableAutoProbesButKeepsServices",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:35.058417169Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestTCPingReportGateSendsWholeTopologyOnFailureAndRecovery",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:35.058605752Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestTCPingReportGateSendsAgentHealthDecisionWithUnchangedRawTimeout",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:35.058780461Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestTCPingReportGateRetriesFailedPostsAndSendsFiveMinuteSnapshots",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:35.058955044Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestTCPingReportGateSendsPacketLossRecoveryWithoutWaiting",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:35.059100002Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestTCPingReportGateForceAndTunnelRulesBypassSuppression",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:35.067976544Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestAgentStateLockExcludesAnotherProcess",
+      "Elapsed": 0.01
+    },
+    {
+      "Time": "2026-10-18T11:26:35.068078461Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestWireGuardDeviceUpdateConfigPreservesExistingPeers",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:35.068289627Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestWireGuardDeviceUpdateConfigRebindsChangedListenPort",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:35.068427836Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestWireGuardDNSRefreshDoesNotRemovePeers",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:35.068692336Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestV2EntryGroupWireGuardPreparationAndHandoffReferences",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:35.068843919Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestWireGuardFXPProxiesReadyDetectsDependencyDrift",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:35.069176002Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestV2EntryGroupWireGuardReplacementReclaimsRemovedEndpoint",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:35.069463211Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestV2EntryGroupWireGuardPreparationFailureReclaimsCreatedProxies",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:35.069582502Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestWireGuardClosedRuntimeRejectsNewReference",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:35.069756127Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestWireGuardInstanceReleaseDoesNotAffectReplacementRuntime",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:35.078126961Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestWireGuardIdentityReplacementFailureRestoresPreviousRuntime",
+      "Elapsed": 0.01
+    },
+    {
+      "Time": "2026-10-18T11:26:35.078335169Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestWireGuardStaleIdleReleaseDoesNotCloseReplacementRuntime",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:35.078593002Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestWireGuardReacquireInvalidatesRunningIdleRelease",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:35.086808586Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestWireGuardAcquireAndIdleReleaseAreAtomic",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:35.087183502Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestV2WireGuardPreparationFailureReclaimsInboundProxy",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:35.087335002Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestWireGuardInboundProxyReplacementReclaimsOldPort",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:35.087442502Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestWireGuardInboundProxyHandoffRetainsSharedPort",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:35.096889169Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestWireGuardInboundProxyRepeatedReplacementReclaimsResources",
+      "Elapsed": 0.01
+    },
+    {
+      "Time": "2026-10-18T11:26:35.138186169Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestWireGuardProbeTreatsMissingRuntimeOrPeerAsNotReady",
+      "Elapsed": 0.04
+    },
+    {
+      "Time": "2026-10-18T11:26:35.159944711Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestWireGuardProbeReportsTimeoutAfterPeerIsReady",
+      "Elapsed": 0.02
+    },
+    {
+      "Time": "2026-10-18T11:26:35.160099752Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestWireGuardUDPProxySessionOutgoingActivityPreventsExpiry",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:35.160191211Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestWireGuardUDPProxyQueueDropsExpiredPackets",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:35.160341502Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestWireGuardUDPProxyQueueKeepsLastExpiredPacket",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:35.160588502Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestWireGuardUDPProxyQueueKeepsNewestPacketWhenFull",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:35.160806794Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestWireGuardUDPProxyQueueEnforcesByteBudget",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:35.161016627Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestWireGuardUDPProxySessionCloseReleasesQueuedPayloads",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:35.161102169Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestWireGuardUDPProxySessionLimitEvictsLeastRecentlyActive",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:35.161178169Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestWireGuardUDPProxySessionPressureOnlyReclaimsIdleSessions",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:35.161253044Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestWireGuardUDPProxyHardLimitStillReclaimsActiveOldest",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:35.161327336Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestWireGuardUDPProxySessionsWriteIndependently",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-18T11:26:35.260821419Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestWaitForWireGuardProbePeerWaitsForExactPeer",
+      "Elapsed": 0.1
+    },
+    {
+      "Time": "2026-10-18T11:26:35.341762294Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestWaitForWireGuardProbePeerHonorsTimeout",
+      "Elapsed": 0.08
+    },
+    {
+      "Time": "2026-10-18T11:26:35.347275878Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestWireGuardRuntimeSupportsTwoIndependentEntries",
+      "Elapsed": 0.01
+    },
+    {
+      "Time": "2026-10-18T11:26:35.353518836Z",
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/agent",
+      "Test": "TestWireGuardRuntimeTCPAndUDPProxy",
+      "Elapsed": 0.01
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+(node:48754) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+client/src/components/hosts/HostProbeServiceLatencyDialog.tsx(7,41): error TS2307: Cannot find module './HostAvailabilityHistory' or its corresponding type declarations.
+client/src/components/hosts/HostProbeServiceLatencyDialog.tsx(415,41): error TS2339: Property 'days' does not exist on type '{}'.
+client/src/pages/Tunnels.tsx(3987,83): error TS2322: Type '{ items: readonly [{ readonly value: "tunnels"; readonly label: string; readonly icon: ForwardRefExoticComponent<Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>>; }, ... 4 more ..., { ...; }]; activeValue: TunnelSection; onValueChange: (nextValue: string) => void; ariaLabel: string; minItemWidthRem: number; }' is not assignable to type 'IntrinsicAttributes & SlidingTabsListProps<TunnelSection>'.
+  Property 'onValueChange' does not exist on type 'IntrinsicAttributes & SlidingTabsListProps<TunnelSection>'.
+server/latencyHistory.test.ts(109,49): error TS2739: Type '{ kind: "rule"; refId: number; hostId: number; probeKey: string; epoch: string; totalCount: number; totalSuccesses: number; batchCount: number; batchSuccesses: number; }' is missing the following properties from type 'ProbeCounterSnapshot': epochStartedAt, latencyMs
+server/latencyHistory.test.ts(110,49): error TS2739: Type '{ kind: "rule"; refId: number; hostId: number; probeKey: string; epoch: string; totalCount: number; totalSuccesses: number; batchCount: number; batchSuccesses: number; }' is missing the following properties from type 'ProbeCounterSnapshot': epochStartedAt, latencyMs
+server/latencyHistory.test.ts(111,49): error TS2739: Type '{ kind: "rule"; refId: number; hostId: number; probeKey: string; epoch: string; totalCount: number; totalSuccesses: number; batchCount: number; batchSuccesses: number; }' is missing the following properties from type 'ProbeCounterSnapshot': epochStartedAt, latencyMs
+server/routers/hosts.ts(21,37): error TS2307: Cannot find module '../repositories/hostAvailabilityRepository' or its corresponding type declarations.

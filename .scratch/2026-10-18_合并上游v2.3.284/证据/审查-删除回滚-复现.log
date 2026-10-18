@@ -1,0 +1,77 @@
+(node:71746) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+TAP version 13
+# (node:71748) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:71748) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: availability counts one incident per transition, not per sweep; ignores stale observations
+ok 1 - availability counts one incident per transition, not per sweep; ignores stale observations
+  ---
+  duration_ms: 0.708542
+  type: 'test'
+  ...
+# Subtest: initial offline, panel downtime and recorder restart do not invent transitions or uptime
+ok 2 - initial offline, panel downtime and recorder restart do not invent transitions or uptime
+  ---
+  duration_ms: 0.366709
+  type: 'test'
+  ...
+# Subtest: cross-midnight outage splits duration but not incident count; day rate is duration weighted
+ok 3 - cross-midnight outage splits duration but not incident count; day rate is duration weighted
+  ---
+  duration_ms: 0.14525
+  type: 'test'
+  ...
+# Subtest: per-host concurrent observations serialize and store failures remain retryable
+ok 4 - per-host concurrent observations serialize and store failures remain retryable
+  ---
+  duration_ms: 0.232458
+  type: 'test'
+  ...
+# [Database] SQLite opened at /tmp/codeg-acp-501/42052-65301063/forwardx-availability-eptgyh/history.db
+# Subtest: availability history uses configured DB, scopes host access, pages full histories and retains 30 days
+not ok 5 - availability history uses configured DB, scopes host access, pages full histories and retains 30 days
+  ---
+  duration_ms: 645.499167
+  type: 'test'
+  location: '/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/hostAvailability.test.ts:1:3596'
+  failureType: 'testCodeFailure'
+  error: |-
+    a failed deletion must retain live observation
+    [32m+ actual[39m [31m- expected[39m
+    
+    [32m+[39m undefined
+    [31m-[39m {
+    [31m-[39m   endAt: 1792322303,
+    [31m-[39m   hostId: 1,
+    [31m-[39m   observationKey: '0559d46e-d13c-46ac-921b-10322f16abb2',
+    [31m-[39m   offlineIncident: false,
+    [31m-[39m   online: true,
+    [31m-[39m   startAt: 1792322273
+    [31m-[39m }
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    observationKey: '0559d46e-d13c-46ac-921b-10322f16abb2'
+    hostId: 1
+    online: true
+    startAt: 1792322273
+    endAt: 1792322303
+    offlineIncident: false
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/hostAvailability.test.ts:137:12)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 4
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 772.543875
