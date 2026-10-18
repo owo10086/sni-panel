@@ -5,6 +5,7 @@ import AnimatedStatValue from "@/components/AnimatedStatValue";
 import { RuleLimitsForm, newRuleLimitsForm, ruleLimitsPayload, type RuleLimitsFormValue } from "@/components/rules/RuleLimitsForm";
 import { RuleUsageSummary } from "@/components/rules/RuleUsageSummary";
 import { isAdminManagedRule } from "../../../shared/ruleLimits";
+import { forwardGroupRouteMembers, forwardGroupSelfTestSource } from "../../../shared/forwardGroup";
 import AutoAnimateContainer from "@/components/AutoAnimateContainer";
 import DashboardLayout from "@/components/DashboardLayout";
 import { LatencyRating } from "@/components/LatencyRating";
@@ -1579,19 +1580,15 @@ function ruleGlobeRouteHostIds(rule: any, tunnelById: Map<number, any>, forwardG
     return getTunnelHopIds(tunnelById.get(Number(rule.tunnelId)));
   }
   if (group && group.groupType === "tunnel") {
-    const member = [...(group.members || [])]
-      .filter((item: any) => item.isEnabled !== false)
-      .sort((a: any, b: any) => Number(a.priority) - Number(b.priority))
+    const member = forwardGroupRouteMembers(group)
       .find((item: any) => Number(item.tunnelId || 0) > 0);
     const tunnel = member ? tunnelById.get(Number(member.tunnelId)) : null;
     const hopIds = getTunnelHopIds(tunnel);
     if (hopIds.length > 0) return hopIds;
   }
   if (group && group.groupType !== "tunnel") {
-    const member = [...(group.members || [])]
-      .filter((item: any) => item.memberType !== "tunnel" && item.isEnabled !== false)
-      .sort((a: any, b: any) => Number(a.priority) - Number(b.priority))
-      .find((item: any) => Number(item.hostId || 0) > 0);
+    const member = forwardGroupRouteMembers(group)
+      .find((item: any) => item.memberType !== "tunnel" && Number(item.hostId || 0) > 0);
     if (member) return [Number(member.hostId)];
   }
   return [Number(rule.hostId || 0)].filter((id) => id > 0);
@@ -4078,12 +4075,12 @@ function RulesContent() {
       : translateText("复制到右侧目标");
   const batchRuleSelectionPanel = (
     <div className="min-w-0 space-y-3 rounded-md border border-border/60 bg-background/55 p-3">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div className="space-y-1">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div className="min-w-0 flex-1 basis-40 space-y-1">
           <Label>{translateText("规则筛选")}</Label>
           <div className="text-xs text-muted-foreground">{translateText("先选择规则，再根据上方模式填写对应内容。")}</div>
         </div>
-        <div className="inline-flex items-center gap-2 self-start rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+        <div className="inline-flex shrink-0 items-center gap-2 self-start whitespace-nowrap rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
           <span>{translateText("已选规则")}</span>
           <span className="rounded-full bg-background/90 px-2 py-0.5 tabular-nums">{selectedBatchRuleCount}</span>
           <span className="text-primary/70">/ {copyableSourceRules.length}</span>
@@ -5013,7 +5010,10 @@ function RulesContent() {
     }
 
     const hostById = new Map<number, any>((hosts || []).map((host: any) => [Number(host.id), host]));
-    const tunnel = rule.tunnelId ? tunnelById.get(Number(rule.tunnelId)) : null;
+    const routeGroup = rule.forwardGroupId ? forwardGroupById.get(Number(rule.forwardGroupId)) : null;
+    const routeMember = routeGroup && !isForwardChainGroup(routeGroup) ? forwardGroupRouteMembers(routeGroup)[0] : null;
+    const tunnelId = Number(rule.tunnelId || routeMember?.tunnelId || 0);
+    const tunnel = tunnelId ? tunnelById.get(tunnelId) : null;
     const tunnelHostById = new Map<number, any>();
     if (tunnel) {
       [
@@ -7494,7 +7494,7 @@ function RulesContent() {
           </div>
 
           <Tabs value={ruleCategory} onValueChange={handleRuleCategoryChange}>
-            <SlidingTabsList items={ruleCategoryItems} activeValue={ruleCategory} ariaLabel={translateText("转发规则分类")} minItemWidthRem={8.5} />
+            <SlidingTabsList items={ruleCategoryItems} activeValue={ruleCategory} onValueChange={handleRuleCategoryChange} ariaLabel={translateText("转发规则分类")} minItemWidthRem={8.5} />
           </Tabs>
         </div>
       )}
@@ -7865,6 +7865,7 @@ function RulesContent() {
               <SlidingTabsList
                 items={routeModeTabItems}
                 activeValue={form.routeMode}
+                onValueChange={setRouteMode}
                 ariaLabel={translateText("转发规则类型")}
                 minItemWidthRem={5.75}
               />
@@ -8564,8 +8565,8 @@ function RulesContent() {
               <>
               <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_3.5rem_minmax(0,0.82fr)] lg:items-start">
                 <div className="min-w-0 space-y-3 rounded-md border border-border/60 bg-background/55 p-3">
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="space-y-1">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1 basis-40 space-y-1">
                       <Label>{translateText("导入内容")}</Label>
                       <div className="text-xs text-muted-foreground">
                         {importSourceMode === "sni"
@@ -8723,8 +8724,8 @@ function RulesContent() {
                 </div>
 
                 <div className="min-w-0 space-y-3 rounded-md border border-border/60 bg-background/55 p-3">
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="space-y-1">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1 basis-40 space-y-1">
                       <Label>{translateText("导入目标")}</Label>
                       <div className="text-xs text-muted-foreground">
                         {importSourceMode === "sni" ? translateText("选择承载这批 SNI 分流规则的转发链。") : translateText("选择要导入到哪个端口转发、隧道、转发链或转发组。")}
@@ -8836,8 +8837,8 @@ function RulesContent() {
               <div className="min-w-0 space-y-3">
                 {isBatchExportMode ? (
                 <div className="space-y-3 rounded-md border border-border/60 bg-background/55 p-3">
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="space-y-1">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1 basis-40 space-y-1">
                       <Label>{translateText("导出内容")}</Label>
                       <div className="text-xs text-muted-foreground">{translateText("将左侧选中的规则导出为 JSON 文件，便于备份或迁移。")}</div>
                     </div>
@@ -8871,8 +8872,8 @@ function RulesContent() {
                 </div>
                 ) : isBatchEditMode ? (
                 <div className="space-y-3 rounded-md border border-border/60 bg-background/55 p-3">
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="space-y-1">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1 basis-40 space-y-1">
                       <Label>{translateText("批量编辑内容")}</Label>
                       <div className="text-xs text-muted-foreground">{translateText("入口资源和目标地址可独立替换；未填写的项会保留每条规则原来的值。")}</div>
                     </div>
@@ -9029,12 +9030,12 @@ function RulesContent() {
                 </div>
                 ) : (
                 <div className="space-y-3 rounded-md border border-border/60 bg-background/55 p-3">
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="space-y-1">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1 basis-40 space-y-1">
                       <Label>{translateText("复制目标")}</Label>
                       <div className="text-xs text-muted-foreground">{translateText("可同时选择多个")}{copyTargetScopeLabel}{translateText("；搜索仅筛选显示，不会取消已选目标。")}</div>
                     </div>
-                    <div className="inline-flex items-center gap-2 self-start rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-700 dark:text-emerald-300">
+                    <div className="inline-flex shrink-0 items-center gap-2 self-start whitespace-nowrap rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-700 dark:text-emerald-300">
                       <span>{translateText("已选目标")}</span>
                       <span className="rounded-full bg-background/90 px-2 py-0.5 tabular-nums">{selectedBatchTargetCount}</span>
                     </div>
@@ -9372,7 +9373,16 @@ function SelfTestDialog({
   const isTimeout = status === "timeout";
   const isFailed = !!latest && !isTesting && !isSuccess && !isTimeout;
   const parsedMessage = useMemo(() => parseLinkTestMessage(latest?.message), [latest?.message]);
-  const plannedSegmentCount = plannedSegments?.length || 0;
+  const testSource = forwardGroupSelfTestSource(latest);
+  const testSegments: LinkTestPlannedSegment[] | undefined = testSource ? [{
+    from: testSource.label,
+    to: testSource.targetLabel || targetLabel || ruleName,
+    fromHostId: testSource.hostId,
+    toHostId: null,
+    fromMeta: nodeMeta?.[String(testSource.hostId)],
+    toMeta: nodeMeta?.[testSource.targetLabel || targetLabel || ruleName],
+  }] : plannedSegments;
+  const plannedSegmentCount = testSegments?.length || 0;
   const probeDialogSizeClass = plannedSegmentCount >= 3 ? "sm:max-w-4xl" : plannedSegmentCount >= 2 ? "sm:max-w-3xl" : "sm:max-w-xl";
   const lastFailureToastKey = useRef("");
   useEffect(() => {
@@ -9404,10 +9414,10 @@ function SelfTestDialog({
           fallbackLatencyMs={typeof latest?.latencyMs === "number" && latest.latencyMs > 0 ? latest.latencyMs : null}
           isSuccess={isSuccess}
           isTesting={isTesting}
-          sourceLabel={sourceLabel}
+          sourceLabel={testSource?.label || sourceLabel}
           targetLabel={targetLabel}
           nodeMeta={nodeMeta}
-          plannedSegments={plannedSegments}
+          plannedSegments={testSegments}
           ignorePlannedResultsWhenDetailsPresent
           compactFrom={3}
           roomyNodes

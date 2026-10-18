@@ -1,4 +1,6 @@
+import { settleAffiliateCommissions } from "./repositories/affiliateRepository";
 import * as db from "./db";
+import { LATENCY_HISTORY_HOURS } from "../shared/latencyHistory";
 import { pushAgentRefresh } from "./agentEvents";
 import { reconcileRuleLimits } from "./ruleLimits";
 import { appendPanelLog } from "./_core/panelLogger";
@@ -11,6 +13,7 @@ import { recoverManualTunnelProbeBatches, settleManualTunnelProbeBatch } from ".
 import { recoverManualForwardChainBatches, settleManualForwardChainBatch } from "./forwardChainManualProbe";
 import { recordHopTestResult } from "./hopTestState";
 import { primeHostStatusNotifier, sweepOfflineHostsAndNotify } from "./hostStatusNotifier";
+import { checkpointHostAvailability, cleanOldHostAvailability } from "./repositories/hostAvailabilityRepository";
 import { normalizeLinkProbeMethod } from "@shared/latencyProbe";
 import { clearRuleLatencyQueryCaches } from "./ruleLatencyQueryCache";
 import { structuredLinkTestMessage, tunnelHopLatencyMode, tunnelHopModeText } from "./linkTestMessages";
@@ -351,11 +354,12 @@ async function runTcpingCleanup() {
       db.cleanOldHostMetrics(72),
       db.cleanOldTrafficStats(72),
       db.cleanOldTrafficStatBuckets(72),
-      db.cleanOldTcpingStats(72),
-      db.cleanOldTunnelLatencyStats(72),
+      db.cleanOldTcpingStats(LATENCY_HISTORY_HOURS),
+      db.cleanOldTunnelLatencyStats(LATENCY_HISTORY_HOURS),
       db.cleanOldForwardTests(72),
       db.cleanOldForwardGroupEvents(72),
-      db.cleanOldHostProbeServiceStats(72),
+      db.cleanOldHostProbeServiceStats(LATENCY_HISTORY_HOURS),
+      cleanOldHostAvailability(),
       cleanOldAddressGeoCache(),
     ]);
   } catch (error) {
@@ -561,6 +565,7 @@ async function runHostStatusSweep() {
   try {
     if (hostStatusPrimePromise) await hostStatusPrimePromise;
     await sweepOfflineHostsAndNotify();
+    await checkpointHostAvailability();
   } catch (error) {
     console.error("[Scheduler] Host status sweep error:", error);
   }
@@ -641,7 +646,9 @@ export function startScheduler() {
     ...options,
     shouldRun: () => databaseHealth.snapshot().state !== "unavailable",
   });
-  hostStatusPrimePromise = primeHostStatusNotifier().finally(() => {
+  hostStatusPrimePromise = primeHostStatusNotifier().then(() => checkpointHostAvailability()).catch((error) => {
+    console.warn(`[HostAvailability] Initial observation failed: ${error instanceof Error ? error.message : String(error)}`);
+  }).finally(() => {
     hostStatusPrimePromise = null;
   });
   void primeForwardGroupLivenessWithRetry();
@@ -685,6 +692,7 @@ export function startScheduler() {
   const paymentMaintenance = createNonOverlappingScheduledTask("payment order maintenance", async () => {
     await expireStalePendingOrders();
     await recoverStaleProcessingPaymentOrders();
+    await settleAffiliateCommissions();
   });
 
   const repeatAfter = (task: () => Promise<boolean>, intervalMs: number, delayMs: number) => {

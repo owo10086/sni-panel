@@ -182,6 +182,7 @@ export const users = table("users", {
   // cannot suppress the scheduled reset for the same month.
   lastAutoTrafficReset: epoch("lastAutoTrafficReset"),
   telegramId: text("telegramId").unique(),
+  supportTicketNotificationSubscribed: boolean("supportTicketNotificationSubscribed").notNull().default(true),
   discordId: varchar("discordId", { length: 32 }).unique(),
   discordUsername: text("discordUsername"),
   discordLinkedAt: epoch("discordLinkedAt"),
@@ -765,6 +766,16 @@ export const hostProbeServices = table("host_probe_services", {
 export type HostProbeService = typeof hostProbeServices.$inferSelect;
 export type InsertHostProbeService = typeof hostProbeServices.$inferInsert;
 
+export const hostAvailabilityIntervals = table("host_availability_intervals", {
+  id: serial("id"),
+  observationKey: varchar("observationKey", { length: 36 }).notNull().unique(),
+  hostId: int("hostId").notNull(),
+  online: int("online").notNull(),
+  offlineIncident: int("offlineIncident").notNull().default(0),
+  startAt: epoch("startAt").notNull(),
+  endAt: epoch("endAt").notNull(),
+});
+
 export const hostProbeServiceStats = table("host_probe_service_stats", {
   id: serial("id"),
   serviceId: int("serviceId").notNull(),
@@ -1270,3 +1281,62 @@ export const userForwardGroupPermissions = table("user_forward_group_permissions
 });
 export type UserForwardGroupPermission = typeof userForwardGroupPermissions.$inferSelect;
 export type InsertUserForwardGroupPermission = typeof userForwardGroupPermissions.$inferInsert;
+
+// Support records deliberately use service snapshots, not resource foreign keys:
+// removing/revoking a service must not delete its support history or block removal.
+export const supportTickets = table("support_tickets", {
+  id: serial("id"), userId: int("userId").notNull(), title: varchar("title", { length: 160 }).notNull(),
+  status: varchar("status", { length: 24 }).notNull().default("open"), priority: varchar("priority", { length: 16 }).notNull().default("normal"),
+  category: varchar("category", { length: 24 }).notNull().default("technical"), serviceType: varchar("serviceType", { length: 24 }),
+  serviceId: int("serviceId"), serviceName: text("serviceName"), assignedTo: int("assignedTo"),
+  version: int("version").notNull().default(1), publicVersion: int("publicVersion").notNull().default(1),
+  rating: int("rating"), ratingComment: text("ratingComment"), firstResponseAt: epoch("firstResponseAt"),
+  resolvedAt: epoch("resolvedAt"), closedAt: epoch("closedAt"),
+  createdAt: epoch("createdAt").notNull().default(nowDefault()), updatedAt: epoch("updatedAt").notNull().default(nowDefault()),
+});
+export const supportTicketMessages = table("support_ticket_messages", {
+  id: serial("id"), ticketId: int("ticketId").notNull(), authorId: int("authorId").notNull(),
+  authorName: varchar("authorName", { length: 160 }).notNull(), authorRole: varchar("authorRole", { length: 16 }).notNull(),
+  kind: varchar("kind", { length: 16 }).notNull().default("reply"), visibility: varchar("visibility", { length: 16 }).notNull().default("public"),
+  content: longtext("content").notNull(), createdAt: epoch("createdAt").notNull().default(nowDefault()),
+});
+export const supportTicketAttachments = table("support_ticket_attachments", {
+  id: serial("id"), ticketId: int("ticketId").notNull(), messageId: int("messageId").notNull(),
+  name: varchar("name", { length: 160 }).notNull(), mime: varchar("mime", { length: 64 }).notNull(),
+  size: int("size").notNull(), base64: longtext("base64").notNull(),
+});
+export const supportTicketReads = table("support_ticket_reads", {
+  id: serial("id"), ticketId: int("ticketId").notNull(), userId: int("userId").notNull(), version: int("version").notNull().default(0),
+});
+export const supportCannedReplies = table("support_canned_replies", {
+  id: serial("id"), title: varchar("title", { length: 120 }).notNull(), content: longtext("content").notNull(),
+  updatedAt: epoch("updatedAt").notNull().default(nowDefault()),
+});
+
+export const affiliateAccounts = table("affiliate_accounts", {
+  id: serial("id"), userId: int("userId").notNull(), availableCents: bigint("availableCents", { mode: "number" }).notNull().default(0),
+  blocked: boolean("blocked").notNull().default(false), rateBps: int("rateBps"), createdAt: epoch("createdAt").notNull().default(nowDefault()),
+});
+export const affiliateCodes = table("affiliate_codes", {
+  id: serial("id"), userId: int("userId").notNull(), code: varchar("code", { length: 32 }).notNull(),
+  active: boolean("active").notNull().default(true), createdAt: epoch("createdAt").notNull().default(nowDefault()),
+});
+export const affiliateReferrals = table("affiliate_referrals", {
+  id: serial("id"), userId: int("userId").notNull(), affiliateUserId: int("affiliateUserId").notNull(), codeId: int("codeId").notNull(), createdAt: epoch("createdAt").notNull().default(nowDefault()),
+});
+export const affiliateCommissions = table("affiliate_commissions", {
+  id: serial("id"), userId: int("userId").notNull(), referredUserId: int("referredUserId").notNull(), orderNo: varchar("orderNo", { length: 128 }).notNull(),
+  orderAmountCents: bigint("orderAmountCents", { mode: "number" }).notNull(), amountCents: bigint("amountCents", { mode: "number" }).notNull(), rateBps: int("rateBps").notNull(),
+  status: varchar("status", { length: 24 }).notNull().default("pending"), confirmAt: epoch("confirmAt").notNull(), reason: text("reason"),
+  createdAt: epoch("createdAt").notNull().default(nowDefault()), settledAt: epoch("settledAt"),
+});
+export const affiliateWithdrawals = table("affiliate_withdrawals", {
+  id: serial("id"), userId: int("userId").notNull(), amountCents: bigint("amountCents", { mode: "number" }).notNull(), method: varchar("method", { length: 24 }).notNull(),
+  account: text("account").notNull(), payee: varchar("payee", { length: 120 }).notNull(), status: varchar("status", { length: 24 }).notNull().default("pending"),
+  note: text("note"), operatorUserId: int("operatorUserId"), requestKey: varchar("requestKey", { length: 64 }).notNull(),
+  createdAt: epoch("createdAt").notNull().default(nowDefault()), reviewedAt: epoch("reviewedAt"),
+});
+export const affiliateLedger = table("affiliate_ledger", {
+  id: serial("id"), userId: int("userId").notNull(), type: varchar("type", { length: 32 }).notNull(), amountCents: bigint("amountCents", { mode: "number" }).notNull(),
+  balanceAfterCents: bigint("balanceAfterCents", { mode: "number" }).notNull(), reference: varchar("reference", { length: 128 }).notNull(), operatorUserId: int("operatorUserId"), note: text("note"), createdAt: epoch("createdAt").notNull().default(nowDefault()),
+});

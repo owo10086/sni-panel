@@ -84,13 +84,13 @@ export async function insertProbeCounterSnapshots(rows: ProbeCounterSnapshot[], 
   }
 }
 
-export async function getProbeCounterStatistics(kind: ProbeCounterKind, refIds: number | number[], since: Date): Promise<ProbeStatistics> {
+export async function getProbeCounterStatistics(kind: ProbeCounterKind, refIds: number | number[], since: Date, until = new Date(Date.now() + 1000)): Promise<ProbeStatistics> {
   const ids = [...new Set((Array.isArray(refIds) ? refIds : [refIds]).filter((id) => Number.isInteger(id) && id > 0))];
   const empty: ProbeStatistics = { total: 0, successes: 0, available: false, observedSince: null, latestAt: null };
   if (!ids.length) return empty;
   const start = Math.floor(since.getTime() / 1000);
-  const predicate = `${q("kind")} = ? AND ${q("refId")} IN (${ids.map(() => "?").join(", ")}) AND ${q("recordedAt")} >= ? AND ${q("countDelta")} IS NOT NULL`;
-  const params = [kind, ...ids, start];
+  const predicate = `${q("kind")} = ? AND ${q("refId")} IN (${ids.map(() => "?").join(", ")}) AND ${q("recordedAt")} >= ? AND ${q("recordedAt")} < ? AND ${q("countDelta")} IS NOT NULL`;
+  const params = [kind, ...ids, start, Math.min(Math.floor(until.getTime() / 1000), Math.floor(Date.now() / 1000) + 1)];
   const [row] = await queryRaw<any>(`SELECT SUM(${q("countDelta")}) AS ${q("total")}, SUM(${q("successDelta")}) AS ${q("successes")},
     MIN(${q("recordedAt")}) AS ${q("firstAt")}, MAX(${q("recordedAt")}) AS ${q("lastAt")}
     FROM ${q("probe_counter_snapshots")} WHERE ${predicate}`, params);

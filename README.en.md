@@ -2,14 +2,14 @@
 
 [简体中文](README.md) | [English](README.en.md)
 
-ForwardX manages port forwarding, encrypted tunnels, forwarding chains, failover, user permissions, plans and traffic statistics across Linux servers through lightweight agents. The panel does not store host SSH keys.
+Manage port forwarding, encrypted tunnels, failover, users and plans across Linux servers through lightweight agents. The panel manages configuration; forwarding runtimes on managed hosts carry business traffic. The panel does not store host SSH keys.
 
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](LICENSE)
 [![Latest Release](https://img.shields.io/github/v/release/owo10086/sni-panel?display_name=tag&sort=semver)](https://github.com/owo10086/sni-panel/releases/latest)
 [![Node.js](https://img.shields.io/badge/Node.js-22+-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
 
-## Links
+[Documentation (Chinese)](https://poouo.github.io/Forwardx/) · [Downloads](https://github.com/poouo/Forwardx/releases/latest) · [English changelog](CHANGELOG.en.md) · [中文更新日志](CHANGELOG.md) · [Telegram Group](https://t.me/ForwardX_panel)
 
 - [Documentation (Chinese)](https://owo10086.github.io/sni-panel/)
 - [GitHub Releases](https://github.com/owo10086/sni-panel/releases/latest)
@@ -42,11 +42,11 @@ Detailed guides are currently in Chinese; this README provides English installat
 - Human verification for sign-in/sign-up is enabled by default. Administrators can disable it under **Settings → System configuration** for HTTP browser compatibility without restarting. Passwords, sign-in rate limits, email verification and 2FA remain active. Use trusted HTTPS and keep verification enabled on public panels.
 - Plugin stores, third-party stores and dynamic agent resource management APIs.
 
-## Resource Model
+## 1. Choose a deployment method
 
-Create resources in **Links**, then configure application ports and destination addresses in **Forwarding Rules**.
+Production requires a **single panel instance**. SQLite, MySQL and PostgreSQL are supported; an external database does not imply multi-replica support. Managed hosts require Linux, root access and connectivity to the panel.
 
-| Resource | Path | Typical Use |
+| Method | Use case | Guide |
 | --- | --- | --- |
 | Port forwarding | Client → single host → target | A host that can reach the target directly |
 | Tunnel | Client → entry → tunnel → exit → target | Separate entry/exit hosts or encrypted transport |
@@ -69,13 +69,15 @@ Install:
 curl -fsSL https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/install-panel-docker.sh | bash -s -- install --language en
 ```
 
-Upgrade:
+Default host directory: `/opt/forwardx-docker`; container: `forwardx-panel`; container port: `3000`. Database configuration, SQLite and persistent data live in a named volume mounted at `/data`, **not in a data subdirectory of the default host deployment directory**.
+
+### Linux local installation
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/install-panel-docker.sh | bash -s -- upgrade
 ```
 
-Uninstall:
+Default directory: `/opt/forwardx-panel`; data: `/opt/forwardx-panel/data`; service: `forwardx-panel`. Supports systemd / OpenRC / SysV. The installer prepares Node.js 22+ and pnpm, then installs a Release bundle.
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/install-panel-docker.sh | bash -s -- uninstall
@@ -83,47 +85,50 @@ curl -fsSL https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/ins
 
 The installer selects and verifies a release image from `ghcr.io/owo10086/sni-panel` by default. Database configuration and SQLite data live in the deployment directory's `forwardx-data/`, mounted at `/data` in the container. Upgrades copy legacy named-volume contents into this directory. Upgrades preserve data and recognized core settings, but regenerate Compose and `.env`; back up and recheck custom environment variables, mounts and networking. Confirmed uninstall removes the container, deployment directory and its data, and handles legacy data volumes.
 
-### Local Deployment
+1. Open `http://SERVER_IP:9810`, check database settings and create the first administrator. Reused databases retain existing accounts.
+2. Configure [HTTPS/reverse proxy](docs/guide/reverse-proxy.md) and set the public panel URL reachable by Agents.
+3. In **Hosts → Token Management**, create a **separate Token for each host** and copy its installation command.
+4. Run it as root on the managed Linux host and verify the Agent is online.
+5. Create a link resource (port forward/tunnel), add a forwarding rule, then test real application traffic.
 
-Install:
+Example Agent installation:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/install-panel-local.sh | bash -s -- install --language en
 ```
 
-Upgrade:
+Replace the URL and Token. Inside Docker, `127.0.0.1` is not the host database address. NAT hosts need their actual mapped port ranges configured; allow ports through both security groups and host firewalls. See [Quick Start](docs/guide/quick-start.md), [Setup](docs/guide/first-setup.md) and [Agent installation](docs/guide/agent.md).
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/install-panel-local.sh | bash -s -- upgrade
 ```
 
-Uninstall:
+New official installation/upgrade workflows register the four-letter command. In SSH, run:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/install-panel-local.sh | bash -s -- uninstall
 ```
 
-Default directory: `/opt/forwardx-panel`; systemd service: `forwardx-panel.service`; data: `/opt/forwardx-panel/data`. The installer also supports OpenRC/SysV. Upgrades preserve data but regenerate `.env`, keeping recognized core settings; back up and recheck custom configuration.
-
-### Administrator Password Recovery
-
-Reset a forgotten administrator password from the Docker container or an SSH terminal. Password input is hidden in the interactive terminal and is not passed as a command-line argument:
+With one installed role, its menu opens directly. With both roles on the same host, choose panel or Agent first. Menus provide status, logs, restart, proxies, upgrades, repair and removal; the panel menu also offers administrator password reset. Manage Docker panels from the **host**, not the container. Non-root users run `sudo fwxm`.
 
 ```bash
-# Docker (default container name)
-docker exec -it forwardx-panel node dist/reset-admin-password.js
+fwxm panel status
+fwxm panel restart
+fwxm panel logs
+fwxm panel address
+fwxm panel reset-admin
 
-# Local systemd deployment
-sudo bash /opt/forwardx-panel/scripts/install-panel-local.sh reset-admin
+fwxm agent status
+fwxm agent restart
+fwxm agent logs
+fwxm agent upgrade
 ```
 
-If multiple administrators exist, enter the username or email when prompted. Resetting revokes that administrator's existing sessions but preserves 2FA settings. Disabled accounts remain disabled unless you explicitly confirm and add `--enable-account`. The Docker container must be running. Back up the database first.
+Older/manual deployments may not have this command. Official script-managed installations register it on upgrade; do not blindly apply default installers to manually managed deployments. [Full command and proxy guide](docs/guide/agent-proxy-manager.en.md).
 
-Replace `forwardx-panel` if using a custom container name. Alternatively, run `docker exec -it forwardx-panel sh`, then `node dist/reset-admin-password.js` inside the container.
+## 4. Agent installation, runtime and upgrades through SOCKS
 
-### GitHub Download Acceleration
-
-If GitHub is unreliable, specify a download accelerator for either installer. The URL format is `accelerator-base/original-GitHub-URL`. For the initial run, prefix the installer's Raw URL as well:
+Downloading the bootstrap and running it are separate steps: **configure both proxies**.
 
 ```bash
 # Docker
@@ -135,72 +140,40 @@ curl -fsSL "https://mirror.example.com/https://raw.githubusercontent.com/owo1008
   | bash -s -- install --language en --github-accelerator "https://mirror.example.com"
 ```
 
-The installer saves the address in the deployment `.env` for future upgrades. Failed accelerated downloads fall back to direct GitHub access. In **Settings → System Information → GitHub Download Accelerator**, enable panel update acceleration to use this address for update checks, release metadata, package checks, rollback and upgrade commands.
+The installer saves `proxyUrl` in `/etc/forwardx/agent/config.json`; upgrades reuse it. Existing newer Agents can edit the field and restart, or use:
 
 This does not proxy `ghcr.io` image pulls. Configure `FORWARDX_IMAGE` or `FORWARDX_IMAGE_REPO` separately. See [Deployment](https://owo10086.github.io/sni-panel/guide/deploy-panel) and [Upgrades & Backups](https://owo10086.github.io/sni-panel/guide/upgrade-backup) (Chinese).
 
-## Getting Started
+`set` uses hidden input, saves and restarts Agent; `off` saves direct mode and restarts. Removing/clearing `proxyUrl` and restarting also means explicit direct mode, ignoring host proxy variables. Only management/download traffic is proxied, **not forwarding or network probes**.
 
-The installation commands above pass `--language en`, so the initial setup wizard defaults to English even in a Chinese-language browser. The Chinese README passes `--language zh-CN`. Switch between **简体中文 / English** at the top right of the wizard without losing form input; manual selections are saved in your browser and take priority. Both installers accept `--language auto` to follow browser/IP detection instead, or `FORWARDX_SETUP_LANGUAGE=en` / `zh-CN` as an environment variable. Upgrades preserve the installation language; after setup completes, automatic mode returns to normal browser/IP detection.
+Supports SOCKS5 / HTTP / HTTPS; SOCKS uses remote DNS. Dependency installation depends on package-manager support; preinstall Alpine APK dependencies when using SOCKS. Docker pulls need a separate Docker daemon HTTP/HTTPS proxy. Panel maintenance proxy settings do not proxy Node runtime traffic. See the [proxy guide](docs/guide/agent-proxy-manager.en.md).
 
-1. Open `http://SERVER_IP:9810`.
-2. Review any database settings prefilled by the installer, select SQLite, MySQL or PostgreSQL, and complete initialization.
-3. Create the first administrator or log in using an administrator from the existing database.
-4. Create a token in **Hosts → Token Management**.
-5. Install Agent on managed hosts and verify their online status in **Hosts**.
-6. Create a port forward, tunnel, forwarding chain or forwarding group in **Links**.
-7. Select a resource in **Forwarding Rules** and configure the entry port, protocol and target address.
+## 5. Upgrades, backups and recovery
 
-The panel generates the Agent command using its current URL and token:
+[Back up databases and configuration](docs/guide/upgrade-backup.md) first. With the manager:
 
 ```bash
-curl -fsSL http://YOUR_PANEL_ADDRESS:9810/api/agent/install.sh | bash -s -- install YOUR_AGENT_TOKEN
+fwxm panel upgrade
+fwxm agent upgrade
 ```
 
-Upgrade or uninstall Agent:
+For older script-managed deployments:
 
 ```bash
-curl -fsSL http://YOUR_PANEL_ADDRESS:9810/api/agent/install.sh | bash -s -- upgrade YOUR_AGENT_TOKEN
-curl -fsSL http://YOUR_PANEL_ADDRESS:9810/api/agent/install.sh | bash -s -- uninstall
-```
-
-## Tunnel Types
-
-| Type | Description |
-| --- | --- |
-| GOST | TLS, WSS, TCP, MTLS, MWSS, MTCP and other GOST modes |
-| ForwardX V1 | Original FXP encrypted transport, compatible with existing tunnels |
-| ForwardX V2 | Agent's built-in userspace WireGuard outer UDP transport with FXP inside |
-| Nginx Stream | Dedicated `forwardx-nginx` runtime for layer-4 TCP/UDP forwarding; optional TLS for TCP |
-
-ForwardX V2 does not require the system `wg` command, create a system WireGuard interface or modify host routing. Allow the configured WireGuard UDP port in firewalls and security groups.
-
-The Nginx runtime listens on ports specified by rules or tunnels, not a fixed port 80. If another Nginx service reports a port-80 conflict, inspect that service's own site configuration and listening processes.
-
-## mimic UDP Obfuscation
-
-mimic is used only when explicitly enabled for a ForwardX tunnel. V1 applies it to FXP UDP; V2 applies it to the outer userspace WireGuard UDP transport. TCP retains its original channel. Hosts along the path need `mimic`/`mimic-dkms`, compatible Linux kernels and XDP/TC support.
-
-The Agent installer asks whether to install mimic; the default is `n`. You can also install it manually:
+# Docker panel
+curl -fsSL https://raw.githubusercontent.com/poouo/Forwardx/main/scripts/install-panel-docker.sh | bash -s -- upgrade
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/owo10086/sni-panel/main/scripts/install-mimic.sh | sudo bash
 ```
 
-By default, the installer uses `wg-mimic-fabric v1.4.9` to install/upgrade to `mimic v0.7.1`, skipping reinstallation when the target version is already present. Override `FORWARDX_MIMIC_VERSION` and `WMF_REF` to select specific runtime and installer versions.
+In-place upgrades restart services/recreate containers; uninterrupted traffic is not guaranteed. Installers retain data and recognized settings, but regenerate `.env`/Compose. Back up and recheck custom variables, mounts and services. Downgrading binaries alone is not a safe rollback after database migrations.
 
-Agent reports command/module availability. Before enabling UDP obfuscation, the panel checks every host in the path. Missing dependencies, offline agents or missing environment reports prevent enabling it and show manual installation instructions. Agent does not install mimic automatically.
+Use a [trusted GitHub accelerator](docs/guide/deploy-docker.md#github-下载加速) if necessary. It is different from a SOCKS proxy and does not proxy GHCR image pulls.
 
-mimic changes the appearance of UDP packets on physical interfaces. It does not perform port forwarding or improve underlying Internet packet loss or jitter.
+For forgotten passwords use `fwxm panel reset-admin`, or the [older deployment recovery methods](docs/guide/account-recovery.md). Reinstallation does not reset accounts in an existing database. **Agent removal interrupts managed forwarding; confirmed Docker removal deletes its volume, while local removal can retain data.** See [removal guidance](docs/guide/uninstall.md).
 
-## Databases
-
-ForwardX supports SQLite, MySQL and PostgreSQL:
-
-- SQLite suits single-instance deployments: `/data/forwardx.db` inside Docker or `/opt/forwardx-panel/data/forwardx.db` with the local installer.
-- MySQL and PostgreSQL suit environments with existing database operations.
-- In-place upgrades preserve database configuration and business data.
-- Create consistent backups using the [backup guide](docs/guide/upgrade-backup.md); do not copy only the main SQLite file while it is being written.
+## Documentation map
 
 See [Environment Variables (Chinese)](https://owo10086.github.io/sni-panel/guide/env-vars) for database URLs, reverse proxies and upgrades. The panel automatically manages MySQL/PostgreSQL connection pools based on host count. Common variables (paths below are container/application defaults, overridden by the local installer; additional Docker `.env` variables must also be mapped into the container by Compose):
 
@@ -215,43 +188,29 @@ See [Environment Variables (Chinese)](https://owo10086.github.io/sni-panel/guide
 | `DISCORD_BOT_TOKEN` | Empty | Discord bot token; select and enable Discord in notification settings |
 | `FORWARDX_IMAGE` | `ghcr.io/owo10086/sni-panel:latest` | Docker image |
 
-## Interface Language
+See the [full index](docs/guide/index.md). Without a manual preference, language follows the installation hint during setup, then browser languages/trusted country hints; no extra third-party visitor IP lookup is made. Manual selection is saved in the current browser. Normal language switching reloads the page, so save changes first. The selector offers only Simplified Chinese / English.
 
-Choose Simplified Chinese or English from the account menu at the bottom left. Language selection is also available on login and initial setup pages.
+## Mobile clients
 
-Automatic mode first matches browser languages. If none matches, it uses an existing IP country cache entry or a country hint from a configured trusted proxy. Without reliable hints, it defaults to Chinese. No additional third-party visitor-IP lookup is performed.
+Download Android APK or `forwardx-ios-v<version>-unsigned.ipa` from [GitHub Releases](https://github.com/poouo/Forwardx/releases/latest). iOS/iPadOS 15+ is supported. The IPA is **unsigned**: users provide certificates, signing and installation; App Store/TestFlight distribution is not provided.
 
-A manual choice takes priority and is saved in the current browser's localStorage, with sessionStorage as a fallback when local storage is unavailable. Select Automatic to restore detection. Switching reloads the page; save forms first. Custom host names, announcements, plugin content and raw diagnostic output are not automatically translated.
 
-## Local Development
+## Local development
 
 ```bash
 pnpm install
 pnpm dev:panel
 ```
 
-`dev:panel` serves real pages at `http://127.0.0.1:5173` using isolated SQLite data in the repository's `.dev` directory and automatic developer-admin sign-in. **Never expose this mode publicly.** `pnpm dev` starts the backend directly and is not the isolated launcher. See [Local development](docs/guide/development.md).
+Requires Node.js 22+ and pnpm 10.28.1. `dev:panel` serves real pages at `http://127.0.0.1:5173` with isolated SQLite data under the repository's `.dev` and automatic developer-admin sign-in. **Never expose it publicly.** `pnpm dev` starts only the backend and is not the isolated launcher.
 
-Checks and builds:
+Checks: `pnpm exec tsc --noEmit`, `pnpm test:agent-proxy`, `pnpm test:server`, `pnpm build`, `pnpm docs:build`, `pnpm check:versions`. See [development](docs/guide/development.md).
 
-```bash
-pnpm exec tsc --noEmit
-pnpm test:server
-pnpm build
-pnpm docs:build
-pnpm check:versions
-```
+## Security
 
-## Security Recommendations
+Keep a fixed random `JWT_SECRET`, use HTTPS/strong passwords/least privilege, and disable public registration when unnecessary. Human verification defaults to enabled and can be disabled in system configuration; keep it enabled on public panels. Protect Agent/DDNS Tokens, proxy credentials and backups; verify restores. Never publish `.env`, database configuration or migration credentials.
 
-- Use strong passwords and configure a stable, random `JWT_SECRET`.
-- Disable registration in Settings when not needed.
-- Use dedicated, least-privilege MySQL/PostgreSQL accounts.
-- Restrict panel access with an HTTPS reverse proxy or firewall.
-- Protect Agent/DDNS tokens and revoke them immediately if exposed.
-- Regularly back up the database and panel data directory.
-
-## Support the Author
+## Support the author
 
 USDT (TRON): `TGCVssNj5v58JPHxPZLLVQXsphQzLqQ3fK`
 
@@ -267,6 +226,26 @@ GNU Affero General Public License v3.0 only. See [LICENSE](LICENSE).
 
 ForwardX Agent includes the third-party userspace WireGuard implementation under the MIT License. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
-## Star History
+## Star history
 
 [![Stargazers over time](https://starchart.cc/owo10086/sni-panel.svg)](https://starchart.cc/owo10086/sni-panel)
+
+## 284 integration — unreleased
+
+Panel stays at 3.3.8; Agent and FXP stay at 3.3.0. These features require the new local build; existing same-version release assets remain unchanged. Native apps are excluded.
+
+[Agent proxy](docs/guide/agent-proxy-manager.en.md) · [SSH management](docs/guide/ssh-management.md) · [Affiliates](docs/guide/affiliates.md) · [Support tickets](docs/guide/support-tickets.md)
+
+```bash
+fwxm panel status
+fwxm panel restart
+fwxm panel reset-admin
+fwxm agent status
+fwxm agent restart
+fwxm agent proxy off
+pnpm dev:panel
+```
+
+Explicit management proxy example: `{"proxyUrl":"socks5h://127.0.0.1:1080"}`; `--proxy socks5h://127.0.0.1:1080`.
+
+Only management and download traffic uses this proxy. Empty configuration means direct access without inheriting system proxy variables; proxy failure does not fall back to direct.

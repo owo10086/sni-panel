@@ -806,6 +806,7 @@ type Config struct {
 	PanelURL                  string `json:"panelUrl"`
 	Token                     string `json:"token"`
 	Interval                  int    `json:"interval"`
+	ProxyURL                  string `json:"proxyUrl,omitempty"`
 	MigrationFallbackPanelURL string `json:"migrationFallbackPanelUrl,omitempty"`
 	PanelMigrationID          string `json:"panelMigrationId,omitempty"`
 	PanelMigrationStartedAt   int64  `json:"panelMigrationStartedAt,omitempty"`
@@ -2830,6 +2831,9 @@ func main() {
 	}
 	cfg.PanelURL = strings.TrimRight(cfg.PanelURL, "/")
 	activeConfigPath = resolvedConfigPath
+	if err := configureAgentManagementProxy(cfg.ProxyURL); err != nil {
+		fatal("proxy configuration: %v", err)
+	}
 	setRuntimePanelURL(cfg.PanelURL)
 	runtimeAgentToken.Store(cfg.Token)
 	initializePanelMigration(cfg)

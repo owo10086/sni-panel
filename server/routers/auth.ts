@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { bindAffiliateReferral } from "../repositories/affiliateRepository";
 import { nanoid } from "nanoid";
 import jwt from "jsonwebtoken";
 import { ACCOUNT_DISABLED_ERR_MSG, COOKIE_NAME, SESSION_REPLACED_ERR_MSG } from "../../shared/const";
@@ -25,6 +26,7 @@ import {
   twoFactorChallengeIssueState,
 } from "../authRateLimit";
 import { pruneMapEntries, setBoundedMapValue } from "../boundedCache";
+import { getNotificationSettings } from "../notificationSettings";
 
 const emailCodeStore = new Map<string, { code: string; expiresAt: number; lastSentAt: number; attempts: number }>();
 const emailSendIpStore = new Map<string, LoginFailEntry>();
@@ -406,6 +408,7 @@ export const authRouter = router({
       name: z.string().trim().max(DISPLAY_NAME_MAX_LENGTH).optional(),
       email: z.string().email("邮箱格式不正确").optional(),
       emailCode: z.string().optional(),
+      referralCode: z.string().trim().regex(/^[a-zA-Z0-9]{6,32}$/).optional(),
       captchaId: z.string().optional(),
       captchaAnswer: z.string().trim().min(1).max(12).optional(),
       capToken: z.string().trim().min(1).max(256).optional(),
@@ -454,14 +457,19 @@ export const authRouter = router({
         captchaAnswer: _captchaAnswer,
         capToken: _capToken,
         emailCode: _emailCode,
+        referralCode,
         ...userData
       } = input;
-      const id = await db.registerUser({
-        ...userData,
-        username: usernameEmail,
-        email: usernameEmail,
-        emailVerified: verifiedEmail,
-        emailVerifiedAt: verifiedEmail ? new Date() : null,
+      const id = await db.withDatabaseTransaction(async () => {
+        const userId = await db.registerUser({
+          ...userData,
+          username: usernameEmail,
+          email: usernameEmail,
+          emailVerified: verifiedEmail,
+          emailVerifiedAt: verifiedEmail ? new Date() : null,
+        });
+        await bindAffiliateReferral(userId, referralCode);
+        return userId;
       });
       console.info(`[Auth] Register success userId=${id} username=${maskIdentifier(usernameEmail)} emailVerified=${verifiedEmail} ip=${getRequestIp(ctx)}`);
       return { id, message: "注册成功，请联系管理员开通权限" };
@@ -593,12 +601,26 @@ export const authRouter = router({
       return { success: true };
     }),
 
+  notificationPreferences: protectedProcedure.query(async ({ ctx }) => {
+    const [user, settings] = await Promise.all([db.getUserById(ctx.user.id), getNotificationSettings()]);
+    return {
+      channel: settings.channel,
+      active: settings.active,
+      bound: !!(settings.channel === "discord" ? user?.discordId : user?.telegramId),
+      announcementSubscribed: !!(settings.channel === "discord" ? user?.discordAnnouncementSubscribed : user?.telegramAnnouncementSubscribed),
+      supportTicketNotificationsEnabled: settings.supportTicketNotificationsEnabled,
+      supportTicketNotificationSubscribed: user?.supportTicketNotificationSubscribed !== false,
+    };
+  }),
+
   updateProfile: protectedProcedure
     .input(z.object({
       name: z.string().trim().min(1).max(DISPLAY_NAME_MAX_LENGTH).optional(),
       email: z.string().email().max(320).optional(),
       displayRemark: z.string().trim().max(24).nullable().optional(),
       telegramAnnouncementSubscribed: z.boolean().optional(),
+      discordAnnouncementSubscribed: z.boolean().optional(),
+      supportTicketNotificationSubscribed: z.boolean().optional(),
     }))
     .mutation(async ({ input, ctx }) => {
       await db.updateUserProfile(ctx.user.id, {

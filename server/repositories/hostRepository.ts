@@ -26,6 +26,7 @@ import { pageResult, pageWindowForTotal, type PageRequest } from "../../shared/p
 import { recordConfigAuditEvent, shouldAuditConfigPatch } from "../configAudit";
 import { HOST_ONLINE_TTL_MS } from "../hostHeartbeatPolicy";
 import { invalidateAgentAuthTokenCandidates } from "./tokenRepository";
+import { hostAvailabilityRecorder } from "./hostAvailabilityRepository";
 import { getSetting, setSetting } from "./settingsRepository";
 import {
   isPresenceCapableHostConfirmedOffline,
@@ -661,6 +662,10 @@ async function deleteHostRowsUnlocked(id: number): Promise<void> {
   await db.delete(hostGroupMembers).where(eq(hostGroupMembers.hostId, id));
   await db.delete(hostMetrics).where(eq(hostMetrics.hostId, id));
   await db.delete(hostProbeServiceStats).where(eq(hostProbeServiceStats.hostId, id));
+  await executeRaw(`DELETE FROM ${quoteIdentifier("host_availability_intervals")} WHERE ${quoteIdentifier("hostId")} = ?`, [id]);
+  await afterDatabaseCommit(() => { hostAvailabilityRecorder.forget(id); });
+  hostAvailabilityRecorder.forget(id);
+  await executeRaw(`DELETE FROM ${quoteIdentifier("host_availability_intervals")} WHERE ${quoteIdentifier("hostId")} = ?`, [id]);
   await db.delete(hostTrafficCounters).where(eq(hostTrafficCounters.hostId, id));
   await db.delete(trafficStats).where(eq(trafficStats.hostId, id));
   await db.delete(trafficStatBuckets).where(eq(trafficStatBuckets.hostId, id));
@@ -1178,6 +1183,7 @@ export async function readHostRuleDeleteBlockers(hostId: number) {
       ${forwardRules.hostId} = ${hostId}
       AND ${forwardRules.pendingDelete} = ${sqlBool(true)}
       AND ${forwardRules.isRunning} = ${sqlBool(true)}
+      AND ${forwardRules.isForwardGroupTemplate} = ${sqlBool(false)}
     `),
   ]);
   const normalizeOwners = (rows: any[]) => rows

@@ -8,22 +8,26 @@ import { requireRuleProtocolEnabled } from "../forwardProtocolSettings";
 import { randomUUID } from "node:crypto";
 import { linkProbeMethodForRule } from "@shared/latencyProbe";
 import { ruleLatencySeriesQueryCache as selfTestQueryCache } from "../ruleLatencyQueryCache";
+import { latencyHistoryQueryCache } from "../ruleLatencyQueryCache";
+import { latencyChartBucketSeconds } from "../../shared/latencyHistory";
+import { latencyHistoryWindowInput, resolveLatencyHistoryWindow } from "../latencyHistoryWindow";
 
 export const selfTestRulesRouter = router({
   probeStatistics: protectedProcedure
-    .input(z.object({ ruleId: z.number().int().positive(), hours: z.number().min(0.5).max(72).default(24) }))
+    .input(z.object({ ruleId: z.number().int().positive(), ...latencyHistoryWindowInput }))
     .query(async ({ input, ctx }) => {
       const rule = await db.getForwardRuleById(input.ruleId);
       if (!rule) throw new Error("规则不存在");
       if (ctx.user.role !== "admin" && rule.userId !== ctx.user.id) throw new Error("无权查看此规则");
-      return selfTestQueryCache.get(`probeStatistics:${ctx.user.id}:${input.ruleId}:${input.hours}`,
-        { ttlMs: 5_000, staleMs: 0 },
-        () => db.getTcpingProbeStatisticsByRule(input.ruleId, new Date(Date.now() - input.hours * 3600_000)));
+      const window = resolveLatencyHistoryWindow(input);
+      return (window.longHistory ? latencyHistoryQueryCache : selfTestQueryCache).get(`ruleProbeStatistics:${ctx.user.id}:${input.ruleId}:${window.cacheKey}`,
+        window.cacheOptions,
+        () => db.getTcpingProbeStatisticsByRule(input.ruleId, window.since, window.until));
     }),
   tcpingSeries: protectedProcedure
       .input(z.object({
         ruleId: z.number(),
-        hours: z.number().min(0.5).max(24 * 3).default(24),
+        ...latencyHistoryWindowInput,
       }))
     .query(async ({ input, ctx }) => {
       const rule = await db.getForwardRuleById(input.ruleId);
@@ -31,11 +35,11 @@ export const selfTestRulesRouter = router({
       if (ctx.user.role !== "admin" && rule.userId !== ctx.user.id) {
         throw new Error("无权查看此规则");
       }
-      const since = new Date(Date.now() - input.hours * 3600 * 1000);
-      return selfTestQueryCache.get(
-        `tcpingSeries:${ctx.user.id}:${input.ruleId}:${input.hours}`,
-        { ttlMs: 5_000, staleMs: 0 },
-        () => db.getTcpingSeriesByRule(input.ruleId, { since }),
+      const window = resolveLatencyHistoryWindow(input);
+      return (window.longHistory ? latencyHistoryQueryCache : selfTestQueryCache).get(
+        `tcpingSeries:${ctx.user.id}:${input.ruleId}:${window.cacheKey}`,
+        window.cacheOptions,
+        () => db.getTcpingSeriesByRule(input.ruleId, { ...window, bucketSeconds: latencyChartBucketSeconds(window.hours) }),
       );
     }),
 
@@ -49,6 +53,7 @@ export const selfTestRulesRouter = router({
       }
       await requireRuleProtocolEnabled(rule);
       let hostId = rule.hostId;
+      let runtimeRule: any = rule;
       let message: string | null = JSON.stringify({ kind: "direct", ruleId: rule.id,
         forwardType: rule.forwardType, sourcePort: rule.sourcePort,
         targetIp: rule.targetIp, targetPort: rule.targetPort, method: linkProbeMethodForRule(rule) });
@@ -107,12 +112,32 @@ export const selfTestRulesRouter = router({
           }
           return { id: firstTestId, queued };
         }
+        const selected = await db.getForwardGroupRuleForSelfTest(rule, group);
+        runtimeRule = selected.rule;
+        await requireRuleProtocolEnabled(runtimeRule);
+        hostId = runtimeRule.hostId;
+        const sourceHost = await db.getHostById(hostId);
+        // Persist the selected listener/target at click time. Both Agent pull
+        // paths must execute the same test even if failover occurs afterward.
+        message = JSON.stringify({
+          kind: "forward-group",
+          groupId: selected.groupId,
+          memberId: selected.memberId,
+          runtimeRuleId: runtimeRule.id,
+          forwardType: runtimeRule.forwardType,
+          sourcePort: runtimeRule.sourcePort,
+          targetIp: runtimeRule.targetIp,
+          targetPort: runtimeRule.targetPort,
+          method: linkProbeMethodForRule(runtimeRule),
+          sourceLabel: sourceHost?.name || `主机 #${hostId}`,
+          targetLabel: rule.name,
+        });
       }
-      if ((rule as any).tunnelId) {
-        const tunnel = await db.getTunnelById((rule as any).tunnelId);
+      if (runtimeRule.tunnelId) {
+        const tunnel = await db.getTunnelById(runtimeRule.tunnelId);
         if (!tunnel) throw new Error("隧道不存在");
         hostId = tunnel.exitHostId;
-        const targetIp = rule.targetIp;
+        const targetIp = runtimeRule.targetIp;
         if (!targetIp) throw new Error("目标地址不可用，请检查规则目标地址");
         const tunnelLatencyBaseline = await db.getLatestTunnelLatency(Number(tunnel.id));
         const pushed = await pushTunnelEndpointRefresh(tunnel, "forward-selftest-via-tunnel", {
@@ -126,8 +151,8 @@ export const selfTestRulesRouter = router({
           entryHostId: tunnel.entryHostId,
           exitHostId: tunnel.exitHostId,
           targetIp,
-          targetPort: rule.targetPort,
-          method: linkProbeMethodForRule(rule),
+          targetPort: runtimeRule.targetPort,
+          method: linkProbeMethodForRule(runtimeRule),
           tunnelLatencyBaselineId: Number((tunnelLatencyBaseline as any)?.id || 0),
           refreshPushed: pushed,
         });
@@ -144,7 +169,7 @@ export const selfTestRulesRouter = router({
         message,
       });
       pushAgentRefresh(hostId, "forward-selftest", { urgent: true });
-      if (!(rule as any).tunnelId) {
+      if (!runtimeRule.tunnelId) {
         appendPanelLog("info", `[SelfTest] rule=${rule.id} queued direct test=${id} from host=${hostId} to target=${rule.targetIp}:${rule.targetPort}`);
       }
       return { id };

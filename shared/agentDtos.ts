@@ -140,6 +140,19 @@ export function normalizeAgentProbeCounts(value: {
 
 export type SelfTestMeta =
   | {
+      kind: "forward-group";
+      groupId: number;
+      memberId: number;
+      runtimeRuleId: number;
+      forwardType: string;
+      sourcePort: number;
+      targetIp: string;
+      targetPort: number;
+      method: "tcp" | "ping";
+      sourceLabel?: string;
+      targetLabel?: string;
+    }
+  | {
       kind: "direct";
       ruleId: number;
       forwardType: string;
@@ -286,6 +299,6 @@ export function isSelfTestMeta(value: unknown): value is SelfTestMeta {
   const meta = value as Partial<SelfTestMeta>;
   if (!meta || typeof meta.kind !== "string") return false;
   if (meta.kind === "direct") return Number.isFinite(Number(meta.ruleId));
-  if (meta.kind === "forward-chain") return Number.isFinite(Number((meta as any).groupId));
+  if (meta.kind === "forward-chain" || meta.kind === "forward-group") return Number.isFinite(Number((meta as any).groupId));
   return Number.isFinite(Number((meta as any).tunnelId));
 }

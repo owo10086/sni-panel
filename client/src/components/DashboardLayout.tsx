@@ -50,6 +50,8 @@ import {
   Package,
   ShoppingBag,
   Megaphone,
+  LifeBuoy,
+  Handshake,
   Send,
   Copy,
   Link2Off,
@@ -117,6 +119,7 @@ const adminMenuItems: SidebarNavItem[] = [
   { icon: Network, label: translateText("SNI 入口"), path: "/sni-entry-ports" },
   { icon: CreditCard, label: translateText("支付对接"), path: "/payments", menuKey: "payments" },
   { icon: WalletCards, label: translateText("账单与兑换"), path: "/billing", menuKey: "billing" },
+  { icon: Handshake, label: translateText("推广管理"), path: "/affiliate-management" },
   { icon: Package, label: translateText("套餐管理"), path: "/plans", menuKey: "plans" },
   { icon: Users, label: translateText("用户管理"), path: "/users", menuKey: "users" },
   lookingGlassMenuItem,
@@ -457,6 +460,16 @@ function DashboardLayoutContent({
     () => normalizeSidebarMenuSettings(publicInfo?.sidebarMenu),
     [publicInfo?.sidebarMenu]
   );
+  const { data: ticketSummary } = trpc.supportTickets.summary.useQuery(undefined, {
+    enabled: !!user && sidebarMenuSettings.tickets,
+    refetchInterval: 60000,
+    refetchOnWindowFocus: true,
+    retry: false,
+    staleTime: 15000,
+  });
+  const { data: affiliateStatus } = trpc.affiliates.status.useQuery(undefined, {
+    enabled: !!user, refetchInterval: 60_000, refetchOnWindowFocus: true,
+  });
   const siteTitle = (publicInfo?.siteTitle || "ForwardX").trim() || "ForwardX";
   const [cachedSiteLogo, setCachedSiteLogo] = useState(() => readCachedSiteLogo());
   const defaultLogoSrc = resolvedTheme === "dark" ? "/logo-dark.png" : "/logo-light.png";
@@ -1094,9 +1107,13 @@ function DashboardLayoutContent({
         path: `/plugins/sidebar/${page.pluginId}`,
       }))
     : [];
+  const ticketMenuItems: SidebarNavItem[] = sidebarMenuSettings.tickets
+    ? [{ icon: LifeBuoy, label: `${translateText("工单支持")}${ticketSummary?.unread ? ` (${ticketSummary.unread > 99 ? "99+" : ticketSummary.unread})` : ""}`, path: "/tickets", menuKey: "tickets" }]
+    : [];
   const primaryMenuItems = [
     ...visibleMainMenuItems,
     ...userStoreMenuItems,
+    ...(!isAdmin && (sidebarMenuSettings.affiliates || affiliateStatus?.hasHistory) ? [{ icon: Handshake, label: translateText("推广返佣"), path: "/affiliates", menuKey: "affiliates" as const }] : []),
     ...visibleAnnouncementsMenuItems,
   ];
   const otherMenuItems: SidebarNavItem[] = [
@@ -1105,9 +1122,10 @@ function DashboardLayoutContent({
     ...customPageMenuItems,
   ];
 
-  const allMenuItems = isAdmin
-    ? [...primaryMenuItems, ...visibleProfileMenuItems, ...visibleAdminMenuItems, ...otherMenuItems]
-    : [...primaryMenuItems, ...(canShowNetworkTest ? [lookingGlassMenuItem] : []), ...visibleProfileMenuItems, ...otherMenuItems];
+  const managementMenuItems: SidebarNavItem[] = isAdmin
+    ? [...visibleProfileMenuItems, ...ticketMenuItems, ...visibleAdminMenuItems]
+    : [...(canShowNetworkTest ? [lookingGlassMenuItem] : []), ...visibleProfileMenuItems, ...ticketMenuItems];
+  const allMenuItems = [...primaryMenuItems, ...managementMenuItems, ...otherMenuItems];
 
   const currentPath = location.split("?")[0] || "/";
   const activeMenuItem = allMenuItems.find((item) => item.path === currentPath);
@@ -1182,9 +1200,6 @@ function DashboardLayoutContent({
     setShowUpgradeDialog(false);
     toast.success(translateText("v{0} 不再在左下角提醒", [normalizedUpgradeTargetVersion]));
   };
-  const managementMenuItems: SidebarNavItem[] = isAdmin
-    ? [...visibleProfileMenuItems, ...visibleAdminMenuItems]
-    : [...(canShowNetworkTest ? [lookingGlassMenuItem] : []), ...visibleProfileMenuItems];
   const closeMobileNavigation = () => {
     if (isMobile) {
       setAccountMenuOpen(false);
@@ -1243,7 +1258,7 @@ function DashboardLayoutContent({
           aria-current={isActive ? "page" : undefined}
           onClick={handleClick}
           tooltip={item.label}
-          className={cn("h-10 transition-[width,height,padding,background-color,color,box-shadow] font-normal mobile-sidebar-menu-button", isDesktopCollapsed && "justify-center", mobileAuth.isNative && "text-[13px]")}
+          className={cn("h-10 font-normal mobile-sidebar-menu-button", isDesktopCollapsed && "justify-center", mobileAuth.isNative && "text-[13px]")}
         >
           {item.iconSrc ? (
             <img
@@ -1348,7 +1363,7 @@ function DashboardLayoutContent({
     <>
       <Sidebar collapsible="icon" className="pearl-sidebar border-r border-sidebar-border/60">
         <SidebarHeader className="h-16 md:h-[var(--pearl-header-height)] justify-center mobile-sidebar-header">
-          <div className={cn("flex w-full items-center gap-3 transition-all", isDesktopCollapsed ? "justify-center px-0" : "px-2")}>
+          <div className={cn("flex w-full items-center gap-3", isDesktopCollapsed ? "justify-center px-0" : "px-2")}>
             {!isDesktopCollapsed ? (
               <div className="flex items-center justify-between flex-1 min-w-0">
                 <div className="flex items-center gap-2 min-w-0">
@@ -1619,8 +1634,8 @@ function DashboardLayoutContent({
             </button>
           </div>
         )}
-        <main data-mobile-main="true" className="flex-1 px-3 pb-3 pt-3 sm:p-6">
-          <div key={location} className="route-content-enter">
+        <main data-mobile-main="true" className="min-w-0 flex-1 px-3 pb-3 pt-3 sm:p-6">
+          <div key={location} className="route-content-enter min-w-0">
             {children}
           </div>
         </main>

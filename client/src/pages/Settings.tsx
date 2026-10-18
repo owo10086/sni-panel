@@ -760,7 +760,7 @@ function SettingsContent() {
   if (user?.role !== "admin") return null;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div className="pearl-page-header flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight">{translateText("系统设置")}</h1>
@@ -768,7 +768,7 @@ function SettingsContent() {
       </div>
 
       <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
-        <SlidingTabsList items={settingsTabItems} activeValue={activeTab} ariaLabel={translateText("系统设置")} minItemWidthRem={7.5} />
+        <SlidingTabsList items={settingsTabItems} activeValue={activeTab} onValueChange={handleTabChange} ariaLabel={translateText("系统设置")} minItemWidthRem={7.5} />
 
         {/* System Info Tab */}
         <TabsContent value="system" className="space-y-4">
@@ -4226,6 +4226,9 @@ function SystemInfoSection() {
     onSuccess: () => {
       utils.system.getSettings.invalidate();
       toast.success(translateText("面板设置已保存"));
+      void utils.system.publicInfo.invalidate();
+      void utils.supportTickets.invalidate();
+      void utils.affiliates.invalidate();
     },
     onError: (err) => toast.error(err.message || translateText("保存失败")),
     onSettled: () => setSavingSetting(null),
@@ -5528,8 +5531,8 @@ function SystemInfoSection() {
                 key={key}
                 className="flex items-center justify-between gap-3 rounded-md border border-border/40 bg-background/60 px-3 py-2"
               >
-                <span className="text-sm">{SIDEBAR_MENU_LABELS[key]}</span>
-                <Switch checked={sidebarMenu[key]} onCheckedChange={(checked) => setSidebarMenuEnabled(key, checked)} />
+                <span className="min-w-0 text-sm">{translateText(SIDEBAR_MENU_LABELS[key])}</span>
+                <Switch className="shrink-0" aria-label={translateText(SIDEBAR_MENU_LABELS[key])} checked={sidebarMenu[key]} onCheckedChange={(checked) => setSidebarMenuEnabled(key, checked)} />
               </div>
             ))}
           </div>
