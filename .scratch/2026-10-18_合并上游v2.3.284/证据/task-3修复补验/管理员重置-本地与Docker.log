@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  File "/private/tmp/forwardx-task3-fixes/password-reset/check-reset.py", line 29, in <module>
+    assert run.returncode == 0, run.stdout + run.stderr
+           ^^^^^^^^^^^^^^^^^^^
+AssertionError: [ERROR] Password must be at least 8 characters
+

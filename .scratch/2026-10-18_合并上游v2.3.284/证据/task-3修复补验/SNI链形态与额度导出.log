@@ -1,0 +1,52 @@
+(node:9966) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+TAP version 13
+# (node:9968) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:9968) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: SNI forward-chain desired state sends entry traffic to the splitter and routes on the exit host
+ok 1 - SNI forward-chain desired state sends entry traffic to the splitter and routes on the exit host
+  ---
+  duration_ms: 1037.146708
+  type: 'test'
+  ...
+# Subtest: SNI forward chains share one entry splitter and keep per-chain next hops
+ok 2 - SNI forward chains share one entry splitter and keep per-chain next hops
+  ---
+  duration_ms: 1866.225917
+  type: 'test'
+  ...
+# Subtest: SNI chain running state waits for entry and exit snapshots
+ok 3 - SNI chain running state waits for entry and exit snapshots
+  ---
+  duration_ms: 1122.888625
+  type: 'test'
+  ...
+# Subtest: SNI chain relay status does not overwrite splitter observability when ports collide
+ok 4 - SNI chain relay status does not overwrite splitter observability when ports collide
+  ---
+  duration_ms: 762.573917
+  type: 'test'
+  ...
+# Subtest: SNI updates, exit quotas, statistics resets and expiry preserve other domains on a shared port
+ok 5 - SNI updates, exit quotas, statistics resets and expiry preserve other domains on a shared port
+  ---
+  duration_ms: 989.493333
+  type: 'test'
+  ...
+# Subtest: deleting the first rule of a tunnel SNI group leaves the entry runtime untouched
+ok 6 - deleting the first rule of a tunnel SNI group leaves the entry runtime untouched
+  ---
+  duration_ms: 809.845417
+  type: 'test'
+  ...
+1..6
+# tests 6
+# suites 0
+# pass 6
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 6712.35075

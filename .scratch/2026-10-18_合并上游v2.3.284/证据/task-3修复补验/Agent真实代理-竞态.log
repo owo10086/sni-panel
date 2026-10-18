@@ -1,0 +1,9 @@
+go: downloading golang.org/x/sys v0.32.0
+go: downloading golang.org/x/time v0.7.0
+go: downloading golang.zx2c4.com/wireguard v0.0.0-20250521234502-f333402bd9cb
+traffic_state_platform_unix.go:8:2: golang.org/x/sys@v0.32.0: Get "https://proxy.golang.org/golang.org/x/sys/@v/v0.32.0.zip": dial tcp: lookup proxy.golang.org on 192.168.65.7:53: dial udp 192.168.65.7:53: connect: network is unreachable
+main.go:37:2: golang.org/x/time@v0.7.0: Get "https://proxy.golang.org/golang.org/x/time/@v/v0.7.0.zip": dial tcp: lookup proxy.golang.org on 192.168.65.7:53: dial udp 192.168.65.7:53: connect: network is unreachable
+wireguard_runtime.go:20:2: golang.zx2c4.com/wireguard@v0.0.0-20250521234502-f333402bd9cb: Get "https://proxy.golang.org/golang.zx2c4.com/wireguard/@v/v0.0.0-20250521234502-f333402bd9cb.zip": dial tcp: lookup proxy.golang.org on 192.168.65.7:53: dial udp 192.168.65.7:53: connect: network is unreachable
+wireguard_runtime.go:21:2: golang.zx2c4.com/wireguard@v0.0.0-20250521234502-f333402bd9cb: Get "https://proxy.golang.org/golang.zx2c4.com/wireguard/@v/v0.0.0-20250521234502-f333402bd9cb.zip": dial tcp: lookup proxy.golang.org on 192.168.65.7:53: dial udp 192.168.65.7:53: connect: network is unreachable
+wireguard_runtime.go:22:2: golang.zx2c4.com/wireguard@v0.0.0-20250521234502-f333402bd9cb: Get "https://proxy.golang.org/golang.zx2c4.com/wireguard/@v/v0.0.0-20250521234502-f333402bd9cb.zip": dial tcp: lookup proxy.golang.org on 192.168.65.7:53: dial udp 192.168.65.7:53: connect: network is unreachable
+wireguard_runtime.go:23:2: golang.zx2c4.com/wireguard@v0.0.0-20250521234502-f333402bd9cb: Get "https://proxy.golang.org/golang.zx2c4.com/wireguard/@v/v0.0.0-20250521234502-f333402bd9cb.zip": dial tcp: lookup proxy.golang.org on 192.168.65.7:53: dial udp 192.168.65.7:53: connect: network is unreachable

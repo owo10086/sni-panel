@@ -1,0 +1,36 @@
+TAP version 13
+# node:internal/process/esm_loader:40
+#       internalBinding('errors').triggerUncaughtException(
+#                                 ^
+# AssertionError [ERR_ASSERTION]: provide the directory exported by the heartbeat integration test
+#     at file:///scripts/verify-sni-source-cleanup.mjs:14:8
+#     at ModuleJob.run (node:internal/modules/esm/module_job:195:25)
+#     at async ModuleLoader.import (node:internal/modules/esm/loader:337:24)
+#     at async loadESM (node:internal/process/esm_loader:34:7)
+#     at async handleMainPromise (node:internal/modules/run_main:106:12) {
+#   generatedMessage: false,
+#   code: 'ERR_ASSERTION',
+#   actual: undefined,
+#   expected: true,
+#   operator: '=='
+# }
+# Node.js v18.20.4
+# Subtest: /scripts/verify-sni-source-cleanup.mjs
+not ok 1 - /scripts/verify-sni-source-cleanup.mjs
+  ---
+  duration_ms: 69.777041
+  location: '/scripts/verify-sni-source-cleanup.mjs:1:1'
+  failureType: 'testCodeFailure'
+  exitCode: 1
+  error: 'test failed'
+  code: 'ERR_TEST_FAILURE'
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 75.962291

@@ -1,0 +1,32 @@
+(node:41204) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+> forwardx@3.3.8 build /Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3
+> vite build && node esbuild.config.mjs
+
+(node:41216) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+vite v6.4.2 building for production...
+transforming...
+✓ 4247 modules transformed.
+rendering chunks...
+computing gzip size...
+client/dist/index.html                             1.15 kB │ gzip:   0.56 kB
+client/dist/assets/HostFlatMap-B-YMMjus.css       69.94 kB │ gzip:  10.06 kB
+client/dist/assets/index-C2PGcQBw.css            210.98 kB │ gzip:  31.55 kB
+client/dist/assets/web-uFKjNT_1.js                 0.38 kB │ gzip:   0.25 kB
+client/dist/assets/web-7iU5Ek-9.js                 0.84 kB │ gzip:   0.40 kB
+client/dist/assets/web-Cp6r_Gli.js                 1.25 kB │ gzip:   0.58 kB
+client/dist/assets/web-CgOboLlO.js                 3.46 kB │ gzip:   1.11 kB
+client/dist/assets/index-BPSlcuU9.js             638.16 kB │ gzip: 209.77 kB
+client/dist/assets/HostFlatMap-OVSEqIQF.js       757.32 kB │ gzip: 218.05 kB
+client/dist/assets/maplibre-gl-g3hLlmbt.js     1,055.60 kB │ gzip: 285.29 kB
+client/dist/assets/react-globe.gl-DEECGRrh.js  1,820.40 kB │ gzip: 514.27 kB
+client/dist/assets/App-CMMS80mm.js             2,678.66 kB │ gzip: 729.98 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 7.55s
+Server build complete: dist/index.js, dist/migrate-legacy.js, dist/reset-admin-password.js

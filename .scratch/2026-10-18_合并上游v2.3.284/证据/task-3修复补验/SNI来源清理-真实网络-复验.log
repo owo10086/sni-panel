@@ -1,0 +1,35 @@
+TAP version 13
+# Subtest: real nftables and nft IPv4/IPv6 cleanup preserves unrelated rules
+ok 1 - real nftables and nft IPv4/IPv6 cleanup preserves unrelated rules
+  ---
+  duration_ms: 266.633792
+  ...
+# Subtest: real nftables and legacy IPv4/IPv6 cleanup preserves unrelated rules
+ok 2 - real nftables and legacy IPv4/IPv6 cleanup preserves unrelated rules
+  ---
+  duration_ms: 201.267417
+  ...
+# Subtest: coexisting legacy and nft iptables rules are cleared after alternatives change
+ok 3 - coexisting legacy and nft iptables rules are cleared after alternatives change
+  ---
+  duration_ms: 223.729542
+  ...
+# Subtest: deletion and inspection failures remain failures until a real retry succeeds
+ok 4 - deletion and inspection failures remain failures until a real retry succeeds
+  ---
+  duration_ms: 226.260541
+  ...
+# Subtest: unchanged panel address and route accept real TLS from sources A, B and C after migration
+ok 5 - unchanged panel address and route accept real TLS from sources A, B and C after migration
+  ---
+  duration_ms: 2359.296043
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 5
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3282.901502

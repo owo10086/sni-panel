@@ -1,0 +1,304 @@
+(node:87716) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+> forwardx@3.3.8 test:ui /Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3
+> node --import tsx --test client/src/components/ui/pearl-ui.test.tsx client/src/components/ui/sliding-tabs.test.tsx client/src/components/ui/confirm-dialog.test.tsx client/src/components/ui/ui-copy.test.tsx
+
+(node:87726) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+TAP version 13
+# (node:87727) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:87727) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: Confirmation consumers require the provider and work inside it
+ok 1 - Confirmation consumers require the provider and work inside it
+  ---
+  duration_ms: 7.386667
+  type: 'test'
+  ...
+# Subtest: Re-evaluated dialog UI shares context with existing providers and consumers
+ok 2 - Re-evaluated dialog UI shares context with existing providers and consumers
+  ---
+  duration_ms: 5.591375
+  type: 'test'
+  ...
+# (node:87728) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:87728) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: animated stat values leave glyph bottoms visible at system-font and zoom boundaries
+ok 3 - animated stat values leave glyph bottoms visible at system-font and zoom boundaries
+  ---
+  duration_ms: 10.830375
+  type: 'test'
+  ...
+# Subtest: Dashboard stats match the tinted billing cards without ruler decorations
+ok 4 - Dashboard stats match the tinted billing cards without ruler decorations
+  ---
+  duration_ms: 355.016792
+  type: 'test'
+  ...
+# Subtest: Dashboard traffic shares one card with responsive internal sections
+ok 5 - Dashboard traffic shares one card with responsive internal sections
+  ---
+  duration_ms: 10.361959
+  type: 'test'
+  ...
+# Subtest: Dashboard status shares one card and preserves admin-only host visibility
+ok 6 - Dashboard status shares one card and preserves admin-only host visibility
+  ---
+  duration_ms: 3.98
+  type: 'test'
+  ...
+# Subtest: Store plan decoration stays behind custom/default content and preserves purchase controls
+ok 7 - Store plan decoration stays behind custom/default content and preserves purchase controls
+  ---
+  duration_ms: 23.000375
+  type: 'test'
+  ...
+# Subtest: Language selectors expose only Chinese and English and select the effective default
+ok 8 - Language selectors expose only Chinese and English and select the effective default
+  ---
+  duration_ms: 11.486375
+  type: 'test'
+  ...
+# Subtest: Desktop workspace has no dark perimeter or frame-related offsets
+ok 9 - Desktop workspace has no dark perimeter or frame-related offsets
+  ---
+  duration_ms: 0.200667
+  type: 'test'
+  ...
+# Subtest: Desktop brand header and topbar share a fixed border-inclusive height
+ok 10 - Desktop brand header and topbar share a fixed border-inclusive height
+  ---
+  duration_ms: 0.357625
+  type: 'test'
+  ...
+# Subtest: Mobile page headings align left and card spacing remains overridable
+ok 11 - Mobile page headings align left and card spacing remains overridable
+  ---
+  duration_ms: 0.554458
+  type: 'test'
+  ...
+# Subtest: Web sidebar reserves safe areas while native shells retain local spacing
+ok 12 - Web sidebar reserves safe areas while native shells retain local spacing
+  ---
+  duration_ms: 0.348875
+  type: 'test'
+  ...
+# Subtest: Sidebar animation keeps one geometry transition and avoids large-area blur
+ok 13 - Sidebar animation keeps one geometry transition and avoids large-area blur
+  ---
+  duration_ms: 0.36725
+  type: 'test'
+  ...
+# Subtest: Sidebar marker follows CSS width instead of measuring every menu item every frame
+ok 14 - Sidebar marker follows CSS width instead of measuring every menu item every frame
+  ---
+  duration_ms: 0.135083
+  type: 'test'
+  ...
+# Subtest: Desktop topbar does not duplicate the sidebar toggle and mobile retains its trigger
+ok 15 - Desktop topbar does not duplicate the sidebar toggle and mobile retains its trigger
+  ---
+  duration_ms: 0.228917
+  type: 'test'
+  ...
+# Subtest: Theme switching stays in the topbar and mobile header, not the sidebar
+ok 16 - Theme switching stays in the topbar and mobile header, not the sidebar
+  ---
+  duration_ms: 0.23225
+  type: 'test'
+  ...
+# Subtest: Pearl buttons preserve Slot composition, form semantics, and caller overrides
+ok 17 - Pearl buttons preserve Slot composition, form semantics, and caller overrides
+  ---
+  duration_ms: 0.551083
+  type: 'test'
+  ...
+# Subtest: Pearl fields retain validation, autocomplete, read-only and disabled contracts
+ok 18 - Pearl fields retain validation, autocomplete, read-only and disabled contracts
+  ---
+  duration_ms: 0.2595
+  type: 'test'
+  ...
+# Subtest: Cards can opt out of entrances and dense tables retain cell-level overrides
+ok 19 - Cards can opt out of entrances and dense tables retain cell-level overrides
+  ---
+  duration_ms: 0.368959
+  type: 'test'
+  ...
+# Subtest: Progress exposes its real value and switches keep Radix checked/disabled semantics
+ok 20 - Progress exposes its real value and switches keep Radix checked/disabled semantics
+  ---
+  duration_ms: 0.931792
+  type: 'test'
+  ...
+# Subtest: Glass sliding tabs retain intrinsic long-label widths, selected semantics and readable text
+ok 21 - Glass sliding tabs retain intrinsic long-label widths, selected semantics and readable text
+  ---
+  duration_ms: 3.176042
+  type: 'test'
+  ...
+# Subtest: Theme text and primary controls meet WCAG AA contrast in light and dark palettes
+ok 22 - Theme text and primary controls meet WCAG AA contrast in light and dark palettes
+  ---
+  duration_ms: 0.342917
+  type: 'test'
+  ...
+# Subtest: Network and iperf3 consoles follow theme colors and retain raw monospace output
+ok 23 - Network and iperf3 consoles follow theme colors and retain raw monospace output
+  ---
+  duration_ms: 7.772542
+  type: 'test'
+  ...
+# Subtest: Shared materials keep utility overrides, mobile safe areas and reduced-motion fallbacks
+ok 24 - Shared materials keep utility overrides, mobile safe areas and reduced-motion fallbacks
+  ---
+  duration_ms: 0.782292
+  type: 'test'
+  ...
+# Subtest: Featured and interactive cards preserve nested controls and caller attributes
+ok 25 - Featured and interactive cards preserve nested controls and caller attributes
+  ---
+  duration_ms: 0.454917
+  type: 'test'
+  ...
+# Subtest: Content switches render real content immediately without initial fade or layout scaling
+ok 26 - Content switches render real content immediately without initial fade or layout scaling
+  ---
+  duration_ms: 2.295333
+  type: 'test'
+  ...
+# Subtest: Limit disclosures remain native, collapsed by default and keep editable form values
+ok 27 - Limit disclosures remain native, collapsed by default and keep editable form values
+  ---
+  duration_ms: 10.397625
+  type: 'test'
+  ...
+# (node:87729) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:87729) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: sliding tabs reserve intrinsic translated label, icon and badge widths
+ok 28 - sliding tabs reserve intrinsic translated label, icon and badge widths
+  ---
+  duration_ms: 11.156584
+  type: 'test'
+  ...
+# Subtest: narrow section navigation folds only when its actual labels overflow
+ok 29 - narrow section navigation folds only when its actual labels overflow
+  ---
+  duration_ms: 0.087209
+  type: 'test'
+  ...
+# Subtest: all section switchers use their existing controlled change handlers
+ok 30 - all section switchers use their existing controlled change handlers
+  ---
+  duration_ms: 7.111292
+  type: 'test'
+  ...
+# Subtest: standard tabs wrap long labels and dialog actions may grow without shrinking icons
+ok 31 - standard tabs wrap long labels and dialog actions may grow without shrinking icons
+  ---
+  duration_ms: 2.029292
+  type: 'test'
+  ...
+# Subtest: tab roots can shrink inside dialog grids without changing Radix semantics
+ok 32 - tab roots can shrink inside dialog grids without changing Radix semantics
+  ---
+  duration_ms: 1.11575
+  type: 'test'
+  ...
+# Subtest: tab scrolling only reveals clipped labels and clamps to the local scroller
+ok 33 - tab scrolling only reveals clipped labels and clamps to the local scroller
+  ---
+  duration_ms: 0.081125
+  type: 'test'
+  ...
+# (node:87730) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:87730) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: sidebar menu toggles use a uniform label-only row without per-feature descriptions
+ok 34 - sidebar menu toggles use a uniform label-only row without per-feature descriptions
+  ---
+  duration_ms: 2.60575
+  type: 'test'
+  ...
+# Subtest: ticket navigation belongs to management for both roles and keeps unread badges
+ok 35 - ticket navigation belongs to management for both roles and keeps unread badges
+  ---
+  duration_ms: 0.980917
+  type: 'test'
+  ...
+# Subtest: ticket actions distinguish administrator handling from user submission in both languages
+ok 36 - ticket actions distinguish administrator handling from user submission in both languages
+  ---
+  duration_ms: 154.647709
+  type: 'test'
+  ...
+# Subtest: cancelled subscriptions stay in default billing history, not in the package view
+ok 37 - cancelled subscriptions stay in default billing history, not in the package view
+  ---
+  duration_ms: 1.234833
+  type: 'test'
+  ...
+# Subtest: secondary help is native, collapsed, touch/keyboard accessible and retains full content
+ok 38 - secondary help is native, collapsed, touch/keyboard accessible and retains full content
+  ---
+  duration_ms: 0.976041
+  type: 'test'
+  ...
+# Subtest: card and dialog typography stay readable without forced desktop enlargement or clipping
+ok 39 - card and dialog typography stay readable without forced desktop enlargement or clipping
+  ---
+  duration_ms: 1.007625
+  type: 'test'
+  ...
+# Subtest: short pagination retains visible range, total, mobile page state and navigation
+ok 40 - short pagination retains visible range, total, mobile page state and navigation
+  ---
+  duration_ms: 1.263625
+  type: 'test'
+  ...
+# Subtest: English help and link selectors update without reloading module-level labels
+ok 41 - English help and link selectors update without reloading module-level labels
+  ---
+  duration_ms: 2.996417
+  type: 'test'
+  ...
+# Subtest: quota guidance stays available without changing the editable policy
+ok 42 - quota guidance stays available without changing the editable policy
+  ---
+  duration_ms: 18.895292
+  type: 'test'
+  ...
+# Subtest: destructive and security warnings are preserved; no global CSS hides descriptions
+ok 43 - destructive and security warnings are preserved; no global CSS hides descriptions
+  ---
+  duration_ms: 2.425833
+  type: 'test'
+  ...
+# Subtest: Google login settings precede the final contact card without duplication
+ok 44 - Google login settings precede the final contact card without duplication
+  ---
+  duration_ms: 0.781209
+  type: 'test'
+  ...
+# Subtest: financial status badges and positive balances adapt to dark mode
+ok 45 - financial status badges and positive balances adapt to dark mode
+  ---
+  duration_ms: 0.400166
+  type: 'test'
+  ...
+1..45
+# tests 45
+# suites 0
+# pass 45
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 890.957958

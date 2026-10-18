@@ -1,0 +1,64 @@
+{
+  "total": 161,
+  "checked": 148,
+  "pending": 13,
+  "perTicket": {
+    "01": {
+      "checked": 12,
+      "pending": 0
+    },
+    "02": {
+      "checked": 10,
+      "pending": 1
+    },
+    "03": {
+      "checked": 10,
+      "pending": 0
+    },
+    "04": {
+      "checked": 8,
+      "pending": 1
+    },
+    "05": {
+      "checked": 11,
+      "pending": 1
+    },
+    "06": {
+      "checked": 11,
+      "pending": 1
+    },
+    "07": {
+      "checked": 12,
+      "pending": 0
+    },
+    "08": {
+      "checked": 11,
+      "pending": 0
+    },
+    "09": {
+      "checked": 9,
+      "pending": 1
+    },
+    "10": {
+      "checked": 9,
+      "pending": 2
+    },
+    "11": {
+      "checked": 11,
+      "pending": 1
+    },
+    "12": {
+      "checked": 8,
+      "pending": 3
+    },
+    "13": {
+      "checked": 12,
+      "pending": 0
+    },
+    "14": {
+      "checked": 14,
+      "pending": 2
+    }
+  },
+  "note": "新增修正文案后工单08对应标准通过；用户合并授权不自动代表人工验收或其余完整场景通过。"
+}

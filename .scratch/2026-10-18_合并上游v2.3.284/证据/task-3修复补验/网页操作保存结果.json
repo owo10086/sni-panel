@@ -1,0 +1,58 @@
+{
+  "environment": "本轮生成的隔离SQLite样例",
+  "tickets": [
+    {
+      "id": 1,
+      "title": "284补验：SNI服务与附件回复",
+      "status": "closed",
+      "assignedTo": 1,
+      "rating": null,
+      "version": 8,
+      "publicVersion": 8
+    },
+    {
+      "id": 2,
+      "title": "284补验：管理员批量状态样例",
+      "status": "closed",
+      "assignedTo": null,
+      "rating": null,
+      "version": 2,
+      "publicVersion": 2
+    }
+  ],
+  "rating5EventSaved": true,
+  "ratingClearedOnReopen": true,
+  "ticket1MessageCounts": [
+    {
+      "kind": "event",
+      "visibility": "internal",
+      "count": 1
+    },
+    {
+      "kind": "event",
+      "visibility": "public",
+      "count": 5
+    },
+    {
+      "kind": "reply",
+      "visibility": "internal",
+      "count": 1
+    },
+    {
+      "kind": "reply",
+      "visibility": "public",
+      "count": 2
+    }
+  ],
+  "actualAttachmentNames": [
+    "补验附件.txt"
+  ],
+  "browserObservations": [
+    "用户未读1→0",
+    "公开回复可见",
+    "管理员内部备注不可见",
+    "用户关闭、5分评价及重开",
+    "管理员批量关闭两张工单"
+  ],
+  "evidenceBoundary": "数据库只证明最终保存状态；网页观察来自本会话实际操作，不以最终数据库替代网页证据"
+}

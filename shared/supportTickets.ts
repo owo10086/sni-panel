@@ -29,7 +29,7 @@ export const TICKET_STATUS_LABELS: Record<TicketStatus, string> = {
   in_progress: "处理中",
   waiting_user: "待用户回复",
   resolved: "已解决",
-  closed: "已关闭",
+  closed: "工单已关闭",
 };
 export const TICKET_PRIORITY_LABELS: Record<TicketPriority, string> = {
   low: "低",

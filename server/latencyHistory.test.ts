@@ -148,3 +148,43 @@ test("raw latency history retains a month, seeks daily windows and bounds chart 
     fs.rmSync(directory, { recursive: true, force: true });
   }
 });
+
+test("chain history counts only actual reports in daily and rolling windows", async () => {
+  process.env.DATABASE_TYPE = "sqlite";
+  const runtime = await import("./dbRuntime");
+  const { ensureDatabaseSchema } = await import("./dbSchema");
+  const { rulesRouter } = await import("./routers/rules");
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "forwardx-chain-history-"));
+  try {
+    await runtime.connectDatabase({ type: "sqlite", sqlite: { path: path.join(directory, "history.db") } });
+    await ensureDatabaseSchema();
+    const now = Math.floor(Date.now() / 1000);
+    const day = Math.floor(now / 86400) * 86400;
+    const days = Array.from({ length: 31 }, (_, index) => new Date((day - 29 * 86400 + index * 86400) * 1000));
+    await runtime.executeRaw("INSERT INTO forward_groups (id,name,groupMode,groupType,targetIp,userId) VALUES (9,'chain','chain','host','example.test',1)");
+    await runtime.executeRaw("INSERT INTO forward_rules (id,hostId,name,sourcePort,targetIp,targetPort,userId,forwardGroupId,isForwardGroupTemplate) VALUES (301,1,'root',10301,'example.test',443,1,9,1)");
+    for (const id of [302, 303]) await runtime.executeRaw("INSERT INTO forward_rules (id,hostId,name,sourcePort,targetIp,targetPort,userId,forwardGroupId,forwardGroupRuleId,forwardGroupMemberId) VALUES (?,1,'child',?,'example.test',443,1,9,301,?)", [id, id + 10000, id]);
+    const caller = rulesRouter.createCaller({ req: { headers: {} }, res: {}, user: { id: 1, role: "user", accountEnabled: true } } as any);
+    const dailyInput = { ruleId: 301, hours: 720, startAt: days[0], endAt: days[30], dayBoundaries: days };
+    assert.deepEqual(await caller.tcpingSeries(dailyInput), [], "unreported periods remain empty");
+    await runtime.executeRaw("INSERT INTO tcping_stats (ruleId,hostId,latencyMs,isTimeout,probeCount,probeSuccesses,recordedAt) VALUES (302,1,10,0,3,3,?)", [now - 120]);
+    const { clearRuleLatencyQueryCaches, latencyHistoryQueryCache } = await import("./ruleLatencyQueryCache");
+    clearRuleLatencyQueryCaches();
+    latencyHistoryQueryCache.clear();
+    for (const rows of [await caller.tcpingSeries(dailyInput), await caller.tcpingSeries({ ruleId: 301, hours: 24 })]) {
+      assert.equal(rows.reduce((sum, row) => sum + row.probeCount, 0), 3);
+      assert.equal(rows.reduce((sum, row) => sum + row.probeSuccesses, 0), 3);
+    }
+    await runtime.executeRaw("INSERT INTO tcping_stats (ruleId,hostId,latencyMs,isTimeout,probeCount,probeSuccesses,recordedAt) VALUES (303,1,NULL,1,2,0,?)", [now - 120]);
+    // The exclusive end must also hold on the chain's fallback path.
+    await runtime.executeRaw("INSERT INTO tcping_stats (ruleId,hostId,latencyMs,isTimeout,probeCount,probeSuccesses,recordedAt) VALUES (302,1,999,0,8,8,?)", [Math.floor(days[30].getTime() / 1000)]);
+    clearRuleLatencyQueryCaches();
+    latencyHistoryQueryCache.clear();
+    const partial = await caller.tcpingSeries(dailyInput);
+    assert.equal(partial.reduce((sum, row) => sum + row.probeCount, 0), 5);
+    assert.equal(partial.reduce((sum, row) => sum + row.probeSuccesses, 0), 3);
+  } finally {
+    await runtime.closeDatabase();
+    fs.rmSync(directory, { recursive: true, force: true });
+  }
+});

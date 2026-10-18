@@ -1,0 +1,11 @@
+(node:17386) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:17386) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[Database] MySQL connected at 127.0.0.1:64587/task3_debt_review
+(node:17441) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:17441) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[Database] MySQL connected at 127.0.0.1:64587/task3_debt_review
+REVIEW_RESULT {"mode":"after","isolation":[{"isolationLevel":"REPEATABLE-READ"}],"waitObserved":true,"balanceCents":-8,"canAddRules":false,"deleteSettlementPending":false,"chargeAmounts":[9]}

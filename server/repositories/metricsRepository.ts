@@ -2781,7 +2781,6 @@ export async function getTcpingSeriesByRule(
       const byBucket = new Map<number, {
         latencyMs: number;
         timeoutCount: number;
-        count: number;
         probeCount: number;
         probeSuccesses: number;
         recordedAt: Date;
@@ -2794,7 +2793,6 @@ export async function getTcpingSeriesByRule(
         const prev = byBucket.get(key) || {
           latencyMs: 0,
           timeoutCount: 0,
-          count: 0,
           probeCount: 0,
           probeSuccesses: 0,
           recordedAt: at,
@@ -2825,7 +2823,6 @@ export async function getTcpingSeriesByRule(
           prev.minLatencyMs = (prev.minLatencyMs ?? 0) + Number(row.minLatencyMs ?? row.latencyMs);
           prev.maxLatencyMs = (prev.maxLatencyMs ?? 0) + Number(row.maxLatencyMs ?? row.latencyMs);
         }
-        prev.count += 1;
         if (at.getTime() > new Date(prev.recordedAt).getTime()) prev.recordedAt = at;
         byBucket.set(key, prev);
       }
@@ -2836,10 +2833,8 @@ export async function getTcpingSeriesByRule(
           // A bucket is a timeout only when every represented packet failed.
           // Partial packet loss must remain a valid latency sample so the
           // chart can calculate a non-zero loss rate from the counters.
-          // A child that did not report in this bucket is retained as one
-          // failed attempt, matching the pre-counter chain semantics.
-          const missingChildAttempts = Math.max(0, childIds.length - bucket.count);
-          const totalProbeCount = Math.max(1, bucket.probeCount + missingChildAttempts);
+          // Missing child reports are unknown observations, never failed probes.
+          const totalProbeCount = bucket.probeCount;
           const probeSuccesses = Math.max(0, Math.min(totalProbeCount, bucket.probeSuccesses));
           const isTimeout = probeSuccesses <= 0;
           return {

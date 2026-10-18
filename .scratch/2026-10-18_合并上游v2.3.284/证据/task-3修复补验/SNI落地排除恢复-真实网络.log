@@ -1,0 +1,1 @@
+PASS: heartbeat configs exclude and restore the affected SNI route; shared listener and existing healthy TLS connection remain available

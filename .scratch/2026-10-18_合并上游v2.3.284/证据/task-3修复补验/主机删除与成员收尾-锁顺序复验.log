@@ -1,0 +1,676 @@
+(node:16936) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+> forwardx@3.3.8 test:host-deletion /Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3
+> node --import tsx --test server/hostDeletion.test.ts server/groupMemberRelease.test.ts server/forwardGroupTemplateHosts.test.ts server/forwardRuleErrorNotifier.test.ts
+
+(node:16948) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+TAP version 13
+# (node:16949) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:16949) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: removed host transfers to a remaining configured member
+ok 1 - removed host transfers to a remaining configured member
+  ---
+  duration_ms: 0.6745
+  type: 'test'
+  ...
+# Subtest: a still configured owner is retained without rewriting
+ok 2 - a still configured owner is retained without rewriting
+  ---
+  duration_ms: 0.068541
+  type: 'test'
+  ...
+# Subtest: configured disabled members still provide a stable saved owner
+ok 3 - configured disabled members still provide a stable saved owner
+  ---
+  duration_ms: 0.051084
+  type: 'test'
+  ...
+# Subtest: an external-entry chain uses entry-group candidates
+ok 4 - an external-entry chain uses entry-group candidates
+  ---
+  duration_ms: 0.04325
+  type: 'test'
+  ...
+# Subtest: an ordinary chain uses its first configured enabled hop
+ok 5 - an ordinary chain uses its first configured enabled hop
+  ---
+  duration_ms: 0.092167
+  type: 'test'
+  ...
+# Subtest: input order and invalid candidate ids do not change the result
+ok 6 - input order and invalid candidate ids do not change the result
+  ---
+  duration_ms: 0.056625
+  type: 'test'
+  ...
+# Subtest: equal priorities use member ids and enabled candidates come first
+ok 7 - equal priorities use member ids and enabled candidates come first
+  ---
+  duration_ms: 0.084625
+  type: 'test'
+  ...
+# Subtest: empty candidates do not authorize deleting a rule
+ok 8 - empty candidates do not authorize deleting a rule
+  ---
+  duration_ms: 0.033042
+  type: 'test'
+  ...
+# Subtest: reversing valid candidates preserves the selected owner
+ok 9 - reversing valid candidates preserves the selected owner
+  ---
+  duration_ms: 0.174417
+  type: 'test'
+  ...
+# (node:16950) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:16950) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: forward-rule notification cooldown expires and dynamic messages remain bounded by time
+ok 10 - forward-rule notification cooldown expires and dynamic messages remain bounded by time
+  ---
+  duration_ms: 0.561958
+  type: 'test'
+  ...
+# Subtest: port occupancy notifications follow verified owner changes and recovery with cooldown
+ok 11 - port occupancy notifications follow verified owner changes and recovery with cooldown
+  ---
+  duration_ms: 0.131417
+  type: 'test'
+  ...
+# Subtest: disabled or deleted rules release notification state even after a prior recovery
+ok 12 - disabled or deleted rules release notification state even after a prior recovery
+  ---
+  duration_ms: 0.071375
+  type: 'test'
+  ...
+# Subtest: queued errors do not notify for removed, disabled, recovered or edited rules
+ok 13 - queued errors do not notify for removed, disabled, recovered or edited rules
+  ---
+  duration_ms: 0.107459
+  type: 'test'
+  ...
+# (node:16951) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:16951) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: failover member removal releases old host with 1 roots
+ok 14 - failover member removal releases old host with 1 roots
+  ---
+  duration_ms: 836.52075
+  type: 'test'
+  ...
+# Subtest: failover member removal releases old host with 44 roots
+ok 15 - failover member removal releases old host with 44 roots
+  ---
+  duration_ms: 1018.960375
+  type: 'test'
+  ...
+# Subtest: SNI roots retain ids, targets and saved usage after removing a host
+ok 16 - SNI roots retain ids, targets and saved usage after removing a host
+  ---
+  duration_ms: 734.878334
+  type: 'test'
+  ...
+# Subtest: offline and disabled groups do not retain removed template owners
+ok 17 - offline and disabled groups do not retain removed template owners
+  ---
+  duration_ms: 692.527209
+  type: 'test'
+  ...
+# Subtest: a template-owner write failure restores members and children
+ok 18 - a template-owner write failure restores members and children
+  ---
+  duration_ms: 683.130625
+  type: 'test'
+  ...
+# Subtest: ordinary member changes release the saved owner in mode=port
+ok 19 - ordinary member changes release the saved owner in mode=port
+  ---
+  duration_ms: 670.387208
+  type: 'test'
+  ...
+# Subtest: ordinary member changes release the saved owner in mode=chain
+ok 20 - ordinary member changes release the saved owner in mode=chain
+  ---
+  duration_ms: 716.379
+  type: 'test'
+  ...
+# Subtest: direct member replacement releases owners and skipSync requires the outer guard
+ok 21 - direct member replacement releases owners and skipSync requires the outer guard
+  ---
+  duration_ms: 716.090542
+  type: 'test'
+  ...
+# Subtest: committed cleanup failures preserve saved members and attempt every remaining stage
+ok 22 - committed cleanup failures preserve saved members and attempt every remaining stage
+  ---
+  duration_ms: 774.107791
+  type: 'test'
+  ...
+# Subtest: entry group removal transfers chain roots and retires old listeners, SNI=false
+ok 23 - entry group removal transfers chain roots and retires old listeners, SNI=false
+  ---
+  duration_ms: 885.146083
+  type: 'test'
+  ...
+# Subtest: entry group removal transfers chain roots and retires old listeners, SNI=true
+ok 24 - entry group removal transfers chain roots and retires old listeners, SNI=true
+  ---
+  duration_ms: 780.178875
+  type: 'test'
+  ...
+# Subtest: entry update handles two chains, injected failure=false
+ok 25 - entry update handles two chains, injected failure=false
+  ---
+  duration_ms: 791.948625
+  type: 'test'
+  ...
+# Subtest: entry update handles two chains, injected failure=true
+ok 26 - entry update handles two chains, injected failure=true
+  ---
+  duration_ms: 778.706542
+  type: 'test'
+  ...
+# Subtest: disabled entry group still releases a removed configured owner
+ok 27 - disabled entry group still releases a removed configured owner
+  ---
+  duration_ms: 748.271042
+  type: 'test'
+  ...
+# Subtest: one post-commit tunnel failure does not prevent other tunnel refreshes
+ok 28 - one post-commit tunnel failure does not prevent other tunnel refreshes
+  ---
+  duration_ms: 788.433375
+  type: 'test'
+  ...
+# Subtest: entry release uses configured disabled hosts, direct=false
+ok 29 - entry release uses configured disabled hosts, direct=false
+  ---
+  duration_ms: 749.919083
+  type: 'test'
+  ...
+# Subtest: entry release uses configured disabled hosts, direct=true
+ok 30 - entry release uses configured disabled hosts, direct=true
+  ---
+  duration_ms: 736.210709
+  type: 'test'
+  ...
+# Subtest: historic failover references are repaired before real host deletion
+ok 31 - historic failover references are repaired before real host deletion
+  ---
+  duration_ms: 866.564417
+  type: 'test'
+  ...
+# Subtest: removing an entry-group membership does not remove a standalone tunnel entry
+ok 32 - removing an entry-group membership does not remove a standalone tunnel entry
+  ---
+  duration_ms: 746.531875
+  type: 'test'
+  ...
+# Subtest: saved relationship blocks deletion: group, token=false
+ok 33 - saved relationship blocks deletion: group, token=false
+  ---
+  duration_ms: 660.415875
+  type: 'test'
+  ...
+# Subtest: saved relationship blocks deletion: group, token=true
+ok 34 - saved relationship blocks deletion: group, token=true
+  ---
+  duration_ms: 658.607083
+  type: 'test'
+  ...
+# Subtest: saved relationship blocks deletion: entry, token=false
+ok 35 - saved relationship blocks deletion: entry, token=false
+  ---
+  duration_ms: 658.115667
+  type: 'test'
+  ...
+# Subtest: saved relationship blocks deletion: entry, token=true
+ok 36 - saved relationship blocks deletion: entry, token=true
+  ---
+  duration_ms: 647.386833
+  type: 'test'
+  ...
+# Subtest: saved relationship blocks deletion: exit, token=false
+ok 37 - saved relationship blocks deletion: exit, token=false
+  ---
+  duration_ms: 666.596083
+  type: 'test'
+  ...
+# Subtest: saved relationship blocks deletion: exit, token=true
+ok 38 - saved relationship blocks deletion: exit, token=true
+  ---
+  duration_ms: 664.574042
+  type: 'test'
+  ...
+# Subtest: saved relationship blocks deletion: hop, token=false
+ok 39 - saved relationship blocks deletion: hop, token=false
+  ---
+  duration_ms: 694.07775
+  type: 'test'
+  ...
+# Subtest: saved relationship blocks deletion: hop, token=true
+ok 40 - saved relationship blocks deletion: hop, token=true
+  ---
+  duration_ms: 687.927334
+  type: 'test'
+  ...
+# Subtest: saved relationship blocks deletion: extra-exit, token=false
+ok 41 - saved relationship blocks deletion: extra-exit, token=false
+  ---
+  duration_ms: 685.332417
+  type: 'test'
+  ...
+# Subtest: saved relationship blocks deletion: extra-exit, token=true
+ok 42 - saved relationship blocks deletion: extra-exit, token=true
+  ---
+  duration_ms: 690.537958
+  type: 'test'
+  ...
+# Subtest: saved relationship blocks deletion: rule-exit, token=false
+ok 43 - saved relationship blocks deletion: rule-exit, token=false
+  ---
+  duration_ms: 689.088167
+  type: 'test'
+  ...
+# Subtest: saved relationship blocks deletion: rule-exit, token=true
+ok 44 - saved relationship blocks deletion: rule-exit, token=true
+  ---
+  duration_ms: 695.458917
+  type: 'test'
+  ...
+# Subtest: historic entry ownership repairs before deletion and removed extra entries are released
+ok 45 - historic entry ownership repairs before deletion and removed extra entries are released
+  ---
+  duration_ms: 805.346667
+  type: 'test'
+  ...
+# Subtest: concurrent member saves leave roots on the final saved member
+ok 46 - concurrent member saves leave roots on the final saved member
+  ---
+  duration_ms: 777.3605
+  type: 'test'
+  ...
+# Subtest: rejoining a removed member keeps its current child active
+ok 47 - rejoining a removed member keeps its current child active
+  ---
+  duration_ms: 779.123917
+  type: 'test'
+  ...
+# Subtest: a host with another ordinary rule remains protected
+ok 48 - a host with another ordinary rule remains protected
+  ---
+  duration_ms: 752.330292
+  type: 'test'
+  ...
+# Subtest: repeat history repair does not rewrite saved root ownership
+ok 49 - repeat history repair does not rewrite saved root ownership
+  ---
+  duration_ms: 703.4675
+  type: 'test'
+  ...
+# Subtest: deleting an obsolete token preserves moved group roots
+ok 50 - deleting an obsolete token preserves moved group roots
+  ---
+  duration_ms: 725.260708
+  type: 'test'
+  ...
+# Subtest: tunnel-member removal releases the group but preserves the standalone tunnel
+ok 51 - tunnel-member removal releases the group but preserves the standalone tunnel
+  ---
+  duration_ms: 747.611417
+  type: 'test'
+  ...
+# Subtest: save assertions detect a stale owner before historic repair runs
+ok 52 - save assertions detect a stale owner before historic repair runs
+  ---
+  duration_ms: 733.499542
+  type: 'test'
+  ...
+# Subtest: member joining and host deletion use a controlled order: join-first
+ok 53 - member joining and host deletion use a controlled order: join-first
+  ---
+  duration_ms: 760.786125
+  type: 'test'
+  ...
+# Subtest: member joining and host deletion use a controlled order: delete-first
+ok 54 - member joining and host deletion use a controlled order: delete-first
+  ---
+  duration_ms: 755.927542
+  type: 'test'
+  ...
+# Subtest: a final delete failure restores permissions, bindings and pending cleanup
+ok 55 - a final delete failure restores permissions, bindings and pending cleanup
+  ---
+  duration_ms: 751.793833
+  type: 'test'
+  ...
+# Subtest: token deletion checks every affected host: hostId
+ok 56 - token deletion checks every affected host: hostId
+  ---
+  duration_ms: 686.195333
+  type: 'test'
+  ...
+# Subtest: token deletion checks every affected host: agentToken
+ok 57 - token deletion checks every affected host: agentToken
+  ---
+  duration_ms: 665.383583
+  type: 'test'
+  ...
+# Subtest: token deletion checks every affected host: mixed
+ok 58 - token deletion checks every affected host: mixed
+  ---
+  duration_ms: 683.135083
+  type: 'test'
+  ...
+# Subtest: unauthorized deletions do not trigger historical repair
+ok 59 - unauthorized deletions do not trigger historical repair
+  ---
+  duration_ms: 719.9385
+  type: 'test'
+  ...
+# Subtest: owning a token does not allow changing another user's host
+ok 60 - owning a token does not allow changing another user's host
+  ---
+  duration_ms: 682.389875
+  type: 'test'
+  ...
+# Subtest: deleting a host preserves a token still used by another host
+ok 61 - deleting a host preserves a token still used by another host
+  ---
+  duration_ms: 710.815833
+  type: 'test'
+  ...
+# Subtest: moving root ownership retains its billing records and account balance
+ok 62 - moving root ownership retains its billing records and account balance
+  ---
+  duration_ms: 712.02625
+  type: 'test'
+  ...
+# Subtest: direct replacement and API saving read the final member configuration
+ok 63 - direct replacement and API saving read the final member configuration
+  ---
+  duration_ms: 795.281916
+  type: 'test'
+  ...
+# Subtest: a partial name edit cannot restore an obsolete member list
+ok 64 - a partial name edit cannot restore an obsolete member list
+  ---
+  duration_ms: 773.800541
+  type: 'test'
+  ...
+# Subtest: new dependent chains and entry saving agree, create first=false
+ok 65 - new dependent chains and entry saving agree, create first=false
+  ---
+  duration_ms: 805.393791
+  type: 'test'
+  ...
+# Subtest: new dependent chains and entry saving agree, create first=true
+ok 66 - new dependent chains and entry saving agree, create first=true
+  ---
+  duration_ms: 805.712083
+  type: 'test'
+  ...
+# Subtest: automatic cleanup shares real references and retains extra protections: orphan-group
+ok 67 - automatic cleanup shares real references and retains extra protections: orphan-group
+  ---
+  duration_ms: 672.188917
+  type: 'test'
+  ...
+# Subtest: automatic cleanup shares real references and retains extra protections: orphan-hop
+ok 68 - automatic cleanup shares real references and retains extra protections: orphan-hop
+  ---
+  duration_ms: 660.215667
+  type: 'test'
+  ...
+# Subtest: automatic cleanup shares real references and retains extra protections: orphan-exit
+ok 69 - automatic cleanup shares real references and retains extra protections: orphan-exit
+  ---
+  duration_ms: 664.80125
+  type: 'test'
+  ...
+# Subtest: automatic cleanup shares real references and retains extra protections: plan
+ok 70 - automatic cleanup shares real references and retains extra protections: plan
+  ---
+  duration_ms: 649.569625
+  type: 'test'
+  ...
+# Subtest: automatic cleanup shares real references and retains extra protections: other-token
+ok 71 - automatic cleanup shares real references and retains extra protections: other-token
+  ---
+  duration_ms: 649.653167
+  type: 'test'
+  ...
+# Subtest: actual guarded DELETE refuses a reference added after the final read: ordinary-rule
+ok 72 - actual guarded DELETE refuses a reference added after the final read: ordinary-rule
+  ---
+  duration_ms: 664.774375
+  type: 'test'
+  ...
+# Subtest: actual guarded DELETE refuses a reference added after the final read: rule-exit
+ok 73 - actual guarded DELETE refuses a reference added after the final read: rule-exit
+  ---
+  duration_ms: 668.826334
+  type: 'test'
+  ...
+# Subtest: multi-host token deletion rolls back earlier hosts and preserves runtime presence until commit
+ok 74 - multi-host token deletion rolls back earlier hosts and preserves runtime presence until commit
+  ---
+  duration_ms: 682.695458
+  type: 'test'
+  ...
+# Subtest: token deletion rechecks its complete saved identity and host set: value
+ok 75 - token deletion rechecks its complete saved identity and host set: value
+  ---
+  duration_ms: 673.461875
+  type: 'test'
+  ...
+# Subtest: token deletion rechecks its complete saved identity and host set: owner
+ok 76 - token deletion rechecks its complete saved identity and host set: owner
+  ---
+  duration_ms: 680.615042
+  type: 'test'
+  ...
+# Subtest: token deletion rechecks its complete saved identity and host set: hostId
+ok 77 - token deletion rechecks its complete saved identity and host set: hostId
+  ---
+  duration_ms: 672.533417
+  type: 'test'
+  ...
+# Subtest: token deletion rechecks its complete saved identity and host set: host-set
+ok 78 - token deletion rechecks its complete saved identity and host set: host-set
+  ---
+  duration_ms: 680.916084
+  type: 'test'
+  ...
+# Subtest: token deletion rechecks its complete saved identity and host set: host-owner
+ok 79 - token deletion rechecks its complete saved identity and host set: host-owner
+  ---
+  duration_ms: 677.662916
+  type: 'test'
+  ...
+# Subtest: historical repair without a surviving candidate retains the original root and deletion protection
+ok 80 - historical repair without a surviving candidate retains the original root and deletion protection
+  ---
+  duration_ms: 685.787125
+  type: 'test'
+  ...
+# Subtest: deletion preview lists the retained root when historical members have no surviving host
+ok 81 - deletion preview lists the retained root when historical members have no surviving host
+  ---
+  duration_ms: 697.275625
+  type: 'test'
+  ...
+# Subtest: final rule checks are read only and historical repair rejects an already-started save
+ok 82 - final rule checks are read only and historical repair rejects an already-started save
+  ---
+  duration_ms: 700.762125
+  type: 'test'
+  ...
+# Subtest: structure blocker counts deduplicate a tunnel and ignore orphaned links
+ok 83 - structure blocker counts deduplicate a tunnel and ignore orphaned links
+  ---
+  duration_ms: 655.511708
+  type: 'test'
+  ...
+# Subtest: token deletion rolls back a live reference introduced during pending-cleanup: ordinary-rule
+ok 84 - token deletion rolls back a live reference introduced during pending-cleanup: ordinary-rule
+  ---
+  duration_ms: 664.603042
+  type: 'test'
+  ...
+# Subtest: token deletion rolls back a live reference introduced during pending-cleanup: rule-exit
+ok 85 - token deletion rolls back a live reference introduced during pending-cleanup: rule-exit
+  ---
+  duration_ms: 669.684083
+  type: 'test'
+  ...
+# Subtest: token deletion rolls back a live reference introduced during token-unbind: ordinary-rule
+ok 86 - token deletion rolls back a live reference introduced during token-unbind: ordinary-rule
+  ---
+  duration_ms: 670.616
+  type: 'test'
+  ...
+# Subtest: token deletion rolls back a live reference introduced during token-unbind: rule-exit
+ok 87 - token deletion rolls back a live reference introduced during token-unbind: rule-exit
+  ---
+  duration_ms: 666.661292
+  type: 'test'
+  ...
+# Subtest: token deletion rolls back a live reference introduced during later-host-delete: ordinary-rule
+ok 88 - token deletion rolls back a live reference introduced during later-host-delete: ordinary-rule
+  ---
+  duration_ms: 688.609042
+  type: 'test'
+  ...
+# Subtest: token deletion rolls back a live reference introduced during later-host-delete: rule-exit
+ok 89 - token deletion rolls back a live reference introduced during later-host-delete: rule-exit
+  ---
+  duration_ms: 666.472417
+  type: 'test'
+  ...
+# Subtest: token deletion still permits legitimate automatic host retention: plan
+ok 90 - token deletion still permits legitimate automatic host retention: plan
+  ---
+  duration_ms: 660.383667
+  type: 'test'
+  ...
+# Subtest: token deletion still permits legitimate automatic host retention: other-token
+ok 91 - token deletion still permits legitimate automatic host retention: other-token
+  ---
+  duration_ms: 656.399667
+  type: 'test'
+  ...
+# Subtest: host deletion rechecks current ownership in the final save after historical repair
+ok 92 - host deletion rechecks current ownership in the final save after historical repair
+  ---
+  duration_ms: 676.206708
+  type: 'test'
+  ...
+# Subtest: entry members and toggle finish with tunnel save queued first=true, enable=false
+ok 93 - entry members and toggle finish with tunnel save queued first=true, enable=false
+  ---
+  duration_ms: 769.240791
+  type: 'test'
+  ...
+# Subtest: entry members and toggle finish with tunnel save queued first=false, enable=false
+ok 94 - entry members and toggle finish with tunnel save queued first=false, enable=false
+  ---
+  duration_ms: 758.401333
+  type: 'test'
+  ...
+# Subtest: entry members and toggle finish with tunnel save queued first=true, enable=true
+ok 95 - entry members and toggle finish with tunnel save queued first=true, enable=true
+  ---
+  duration_ms: 792.92175
+  type: 'test'
+  ...
+# Subtest: entry members and toggle finish with tunnel save queued first=false, enable=true
+ok 96 - entry members and toggle finish with tunnel save queued first=false, enable=true
+  ---
+  duration_ms: 795.209
+  type: 'test'
+  ...
+# Subtest: entry toggle rolls back both tunnel saves and runtime, enable=false
+ok 97 - entry toggle rolls back both tunnel saves and runtime, enable=false
+  ---
+  duration_ms: 770.80175
+  type: 'test'
+  ...
+# Subtest: entry toggle rolls back both tunnel saves and runtime, enable=true
+ok 98 - entry toggle rolls back both tunnel saves and runtime, enable=true
+  ---
+  duration_ms: 811.983416
+  type: 'test'
+  ...
+# Subtest: entry toggle rejects a newly attached tunnel before saving any group state
+ok 99 - entry toggle rejects a newly attached tunnel before saving any group state
+  ---
+  duration_ms: 773.30975
+  type: 'test'
+  ...
+# Subtest: entry toggle follows existing SNI group then tunnel save order
+ok 100 - entry toggle follows existing SNI group then tunnel save order
+  ---
+  duration_ms: 747.591416
+  type: 'test'
+  ...
+# Subtest: stopped member cleanup preserves failed settlement for later retry
+ok 101 - stopped member cleanup preserves failed settlement for later retry
+  ---
+  duration_ms: 716.730458
+  type: 'test'
+  ...
+# Subtest: member removal retries failed debt access pauses without charging twice: account
+ok 102 - member removal retries failed debt access pauses without charging twice: account
+  ---
+  duration_ms: 731.091708
+  type: 'test'
+  ...
+# Subtest: member removal retries failed debt access pauses without charging twice: rules
+ok 103 - member removal retries failed debt access pauses without charging twice: rules
+  ---
+  duration_ms: 721.139333
+  type: 'test'
+  ...
+# Subtest: member cleanup pauses existing debt even when its delete fee was already settled
+ok 104 - member cleanup pauses existing debt even when its delete fee was already settled
+  ---
+  duration_ms: 661.194
+  type: 'test'
+  ...
+# (node:16952) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:16952) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: member removal synchronizes templates, preserves healthy siblings and safely deletes only unused hosts
+ok 105 - member removal synchronizes templates, preserves healthy siblings and safely deletes only unused hosts
+  ---
+  duration_ms: 1034.423375
+  type: 'test'
+  ...
+# Subtest: disabled topology changes and historical tombstones release only obsolete host bindings
+ok 106 - disabled topology changes and historical tombstones release only obsolete host bindings
+  ---
+  duration_ms: 1225.008708
+  type: 'test'
+  ...
+# Subtest: deletion preview and mutation enforce host ownership and UI cannot force-delete actual dependencies
+ok 107 - deletion preview and mutation enforce host ownership and UI cannot force-delete actual dependencies
+  ---
+  duration_ms: 1.017375
+  type: 'test'
+  ...
+1..107
+# tests 107
+# suites 0
+# pass 107
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 65794.297708

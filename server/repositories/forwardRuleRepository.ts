@@ -1,6 +1,6 @@
 ﻿import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { forwardGroupMembers, forwardGroups, forwardRuleTunnelExits, forwardRules, InsertForwardRule, tunnels } from "../../drizzle/schema";
-import { afterDatabaseCommit, isDatabaseTransactionActive, executeRaw, getDb, insertAndGetId, nowDate } from "../dbRuntime";
+import { afterDatabaseCommit, isDatabaseTransactionActive, withDatabaseTransaction, executeRaw, getDb, insertAndGetId, nowDate } from "../dbRuntime";
 import { queryRaw } from "../dbRuntime";
 import { boolLiteral, boolValue, inList, quoteIdentifier } from "../dbCompat";
 import { describePortPolicy, isPortAllowedByPolicy, portPolicyFrom, portPolicyHasRestriction, type PortPolicySource } from "../portPolicy";
@@ -1320,6 +1320,43 @@ export async function setForwardRuleDeleteSettlementPending(id: number, pending:
     .where(and(eq(forwardRules.id, id), eq(forwardRules.pendingDelete, true)));
 }
 
+/** Complete accounting and debt suspension together before releasing the retry record.
+ * Both member saves and stop acknowledgements use this path, outside their save
+ * transaction, so the billing-user lock always precedes the database lock. */
+export async function settleForwardRuleDelete(id: number) {
+  if (isDatabaseTransactionActive()) throw new Error("规则费用收尾必须在配置保存后执行");
+  const rule = await getForwardRuleById(id);
+  if (!rule || !rule.pendingDelete || !rule.deleteSettlementPending) return;
+  const billing = await import("./trafficBillingRepository");
+  const users = await import("./userRepository");
+  await withTrafficBillingUserLock(Number(rule.userId), async () => {
+    // Read the feature switch before opening the transaction. On MySQL's
+    // repeatable-read isolation, no ordinary read may precede the user lock:
+    // a waiter must see usage committed by the previous lock owner.
+    const billingEnabled = await billing.getTrafficBillingEnabledForWrite();
+    await withDatabaseTransaction(async () => {
+      if (billingEnabled) await billing.lockTrafficBillingUserRows(Number(rule.userId));
+      const current = await getForwardRuleById(id);
+      if (!current || !current.pendingDelete || !current.deleteSettlementPending) return;
+      const resource = await billing.findTrafficBillingResourceForRule(current)
+        || billing.trafficBillingResourceCandidatesForRule(current)[0];
+      if (resource && billingEnabled) {
+        await billing.settleTrafficBillingRuleOnDelete({
+          userId: Number(current.userId), ruleId: id,
+          resourceType: resource.resourceType, resourceId: Number(resource.resourceId),
+        });
+        // A previous attempt may already have charged successfully. Its returned
+        // charge is then null, but the existing debt still needs suspension.
+        const user = await users.getUserById(Number(current.userId));
+        if (user && Number(user.balanceCents) < 0) {
+          await users.setUserForwardAccess(Number(current.userId), false, "traffic_billing_balance");
+        }
+      }
+      await setForwardRuleDeleteSettlementPending(id, false);
+    });
+  });
+}
+
 export async function finalizeForwardRuleDelete(id: number) {
   const db = await getDb();
   if (!db) return false;
@@ -1333,16 +1370,7 @@ export async function finalizeForwardRuleDelete(id: number) {
       return false;
     }
     try {
-      const billing = await import("./trafficBillingRepository");
-      const resource = await billing.findTrafficBillingResourceForRule(rule)
-        || billing.trafficBillingResourceCandidatesForRule(rule)[0];
-      const billed = resource ? await withTrafficBillingUserLock(Number(rule.userId), () => billing.settleTrafficBillingRuleOnDelete({
-        userId: Number(rule.userId), ruleId: id, resourceType: resource.resourceType, resourceId: Number(resource.resourceId),
-      })) : null;
-      if (billed && Number(billed.balanceAfterCents) < 0) {
-        await (await import("./userRepository")).setUserForwardAccess(Number(rule.userId), false, "traffic_billing_balance");
-      }
-      await setForwardRuleDeleteSettlementPending(id, false);
+      await settleForwardRuleDelete(id);
     } catch {
       console.warn(`[RuleCleanup] Financial closeout pending rule=${id}; retaining stopped rule for retry`);
       return false;

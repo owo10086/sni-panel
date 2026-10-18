@@ -1,0 +1,43 @@
+{
+  "baseline": "c8e5c77622e5acce920f1e8ef856d920f29cfc44",
+  "purpose": "新检查配旧业务实现；预期抓住原问题而失败。此记录不验证后来MySQL调整。",
+  "source": "/private/tmp/forwardx-spec-review-jim69b9u",
+  "sha256": {
+    "server/repositories/forwardRuleRepository.ts": "d625b3d8c64e49c31c71848cf6fb5453a6a9acd585db26f6049840009ab52642",
+    "server/repositories/forwardGroupRepository.ts": "bd5b693103cac11850e08b553629b58d8acbdf7fc7cabb0df7c5917f4023c546",
+    "server/repositories/metricsRepository.ts": "1c30dd04775ca43ec600c25652b0d82b20d8e0abd47813ef6fa3876838f84368",
+    "client/src/index.css": "83c2511f6bfc721b867b32536243f0e596676cab7f59b8ad80d653db522acab9",
+    "server/groupMemberRelease.test.ts": "833616f309995da3a7ad01b191245065505130326ae83c6ba954bae5e2c0c38e",
+    "server/latencyHistory.test.ts": "8b8b03ad129d8ecbcd7925603ccd2585d649acfc55d9399fab23d7baf596e884",
+    "client/src/components/ui/pearl-ui.test.tsx": "3f6e14e73c42b3e40987e6e922a4c4b8545dd78a793cea7e81aae6523a0e6035"
+  },
+  "results": [
+    {
+      "name": "baseline-debt",
+      "command": [
+        "node",
+        "--import",
+        "tsx",
+        "--test",
+        "--test-name-pattern=member removal retries failed debt|member cleanup pauses existing debt",
+        "server/groupMemberRelease.test.ts"
+      ],
+      "exitCode": 1,
+      "expectedExitCode": 1
+    },
+    {
+      "name": "baseline-history-css",
+      "command": [
+        "node",
+        "--import",
+        "tsx",
+        "--test",
+        "--test-name-pattern=chain history counts|Web sidebar reserves",
+        "server/latencyHistory.test.ts",
+        "client/src/components/ui/pearl-ui.test.tsx"
+      ],
+      "exitCode": 1,
+      "expectedExitCode": 1
+    }
+  ]
+}

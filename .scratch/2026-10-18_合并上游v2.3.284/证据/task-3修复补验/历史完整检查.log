@@ -1,0 +1,215 @@
+(node:68849) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+> forwardx@3.3.8 test:latency-history /Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3
+> node --import tsx --test server/latencyHistory.test.ts server/hostAvailability.test.ts client/src/components/hosts/HostAvailabilityHistory.test.tsx client/src/components/LatencyHistoryDays.test.tsx server/historyCleanupIndexes.test.ts server/latencySeries.test.ts server/probeCounter.test.ts client/src/lib/latencyChart.test.ts
+
+(node:68860) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+TAP version 13
+# (node:68861) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:68861) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: day strip spans the latest 30 calendar days across month/year boundaries
+ok 1 - day strip spans the latest 30 calendar days across month/year boundaries
+  ---
+  duration_ms: 1.326791
+  type: 'test'
+  ...
+# Subtest: daily health uses weighted counters and preserves raw delay extrema
+ok 2 - daily health uses weighted counters and preserves raw delay extrema
+  ---
+  duration_ms: 0.53675
+  type: 'test'
+  ...
+# Subtest: day strip has bilingual, accessible dates and health colors, plus a Today action
+ok 3 - day strip has bilingual, accessible dates and health colors, plus a Today action
+  ---
+  duration_ms: 68.349709
+  type: 'test'
+  ...
+# (node:68862) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:68862) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: host availability colors use uptime, not probe loss, and support no/partial coverage
+ok 4 - host availability colors use uptime, not probe loss, and support no/partial coverage
+  ---
+  duration_ms: 100.557083
+  type: 'test'
+  ...
+# (node:68863) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:68863) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: latency stability stats count partial packet loss
+ok 5 - latency stability stats count partial packet loss
+  ---
+  duration_ms: 0.897208
+  type: 'test'
+  ...
+# Subtest: latency stability stats preserve legacy binary rows
+ok 6 - latency stability stats preserve legacy binary rows
+  ---
+  duration_ms: 0.154333
+  type: 'test'
+  ...
+# Subtest: cumulative counters correct biased history without replaying cached failures
+ok 7 - cumulative counters correct biased history without replaying cached failures
+  ---
+  duration_ms: 0.321917
+  type: 'test'
+  ...
+# Subtest: old or unavailable telemetry preserves latency but does not invent an accurate loss rate
+ok 8 - old or unavailable telemetry preserves latency but does not invent an accurate loss rate
+  ---
+  duration_ms: 0.082667
+  type: 'test'
+  ...
+# Subtest: real partial failures remain visible and all failed probes still receive a low score
+ok 9 - real partial failures remain visible and all failed probes still receive a low score
+  ---
+  duration_ms: 0.241542
+  type: 'test'
+  ...
+# Subtest: compacted multi-batch rows keep counts larger than a single wire batch
+ok 10 - compacted multi-batch rows keep counts larger than a single wire batch
+  ---
+  duration_ms: 0.050541
+  type: 'test'
+  ...
+# Subtest: legacy chart latency stays visible without affecting cumulative stability scoring
+ok 11 - legacy chart latency stays visible without affecting cumulative stability scoring
+  ---
+  duration_ms: 0.091958
+  type: 'test'
+  ...
+# (node:68864) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:68864) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: history cleanup predicates use time-leading SQLite indexes
+ok 12 - history cleanup predicates use time-leading SQLite indexes
+  ---
+  duration_ms: 28.067042
+  type: 'test'
+  ...
+# Subtest: service history and latest-status reads use dedicated composite indexes
+ok 13 - service history and latest-status reads use dedicated composite indexes
+  ---
+  duration_ms: 13.911334
+  type: 'test'
+  ...
+# Subtest: host status sweeps use the online-heartbeat SQLite index
+ok 14 - host status sweeps use the online-heartbeat SQLite index
+  ---
+  duration_ms: 18.437708
+  type: 'test'
+  ...
+# Subtest: host availability interval reads seek one host without sorting or scanning the entire table
+ok 15 - host availability interval reads seek one host without sorting or scanning the entire table
+  ---
+  duration_ms: 13.996875
+  type: 'test'
+  ...
+# (node:68865) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:68865) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: availability counts one incident per transition, not per sweep; ignores stale observations
+ok 16 - availability counts one incident per transition, not per sweep; ignores stale observations
+  ---
+  duration_ms: 0.776792
+  type: 'test'
+  ...
+# Subtest: initial offline, panel downtime and recorder restart do not invent transitions or uptime
+ok 17 - initial offline, panel downtime and recorder restart do not invent transitions or uptime
+  ---
+  duration_ms: 0.347959
+  type: 'test'
+  ...
+# Subtest: cross-midnight outage splits duration but not incident count; day rate is duration weighted
+ok 18 - cross-midnight outage splits duration but not incident count; day rate is duration weighted
+  ---
+  duration_ms: 0.137292
+  type: 'test'
+  ...
+# Subtest: per-host concurrent observations serialize and store failures remain retryable
+ok 19 - per-host concurrent observations serialize and store failures remain retryable
+  ---
+  duration_ms: 0.240542
+  type: 'test'
+  ...
+# [Database] SQLite opened at /tmp/codeg-acp-501/42052-57e61ed2/forwardx-availability-jsOmwh/history.db
+# Subtest: availability history uses configured DB, scopes host access, pages full histories and retains 30 days
+ok 20 - availability history uses configured DB, scopes host access, pages full histories and retains 30 days
+  ---
+  duration_ms: 1060.789208
+  type: 'test'
+  ...
+# (node:68866) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:68866) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: history windows support 30 days and bounded, explicit calendar-day ranges
+ok 21 - history windows support 30 days and bounded, explicit calendar-day ranges
+  ---
+  duration_ms: 2.078917
+  type: 'test'
+  ...
+# [Database] SQLite opened at /tmp/codeg-acp-501/42052-57e61ed2/forwardx-latency-month-btVqlt/history.db
+# Subtest: raw latency history retains a month, seeks daily windows and bounds chart responses without truncation
+ok 22 - raw latency history retains a month, seeks daily windows and bounds chart responses without truncation
+  ---
+  duration_ms: 1111.179125
+  type: 'test'
+  ...
+# [Database] SQLite opened at /tmp/codeg-acp-501/42052-57e61ed2/forwardx-chain-history-BVLkEy/history.db
+# Subtest: chain history counts only actual reports in daily and rolling windows
+ok 23 - chain history counts only actual reports in daily and rolling windows
+  ---
+  duration_ms: 39.498417
+  type: 'test'
+  ...
+# (node:68867) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:68867) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: latency series resolve direct rules, active forward-group children, tunnels, chains, and services
+ok 24 - latency series resolve direct rules, active forward-group children, tunnels, chains, and services
+  ---
+  duration_ms: 1183.71125
+  type: 'test'
+  ...
+# (node:68868) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:68868) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: counter persistence retains every received advancement and skips only retries
+ok 25 - counter persistence retains every received advancement and skips only retries
+  ---
+  duration_ms: 1.166709
+  type: 'test'
+  ...
+# Subtest: cumulative telemetry is optional, bounded and cannot reinterpret current health counters
+ok 26 - cumulative telemetry is optional, bounded and cannot reinterpret current health counters
+  ---
+  duration_ms: 0.4325
+  type: 'test'
+  ...
+# Subtest: SQLite cumulative probe statistics deduplicate retries, include suppressed probes, and respect windows/epochs/permissions
+ok 27 - SQLite cumulative probe statistics deduplicate retries, include suppressed probes, and respect windows/epochs/permissions
+  ---
+  duration_ms: 1032.956
+  type: 'test'
+  ...
+1..27
+# tests 27
+# suites 0
+# pass 27
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1729.262875

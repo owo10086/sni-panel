@@ -1,0 +1,6 @@
+(node:93426) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:93426) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+{"language":"en","status":"Closed","badge":"Closed","event":"Status changed: Open → Closed","bulkConfirmation":"Set 2 tickets to “Closed”?","generalOffLabel":"Disabled","result":"passed"}
+{"language":"zh-CN","status":"工单已关闭","result":"passed"}

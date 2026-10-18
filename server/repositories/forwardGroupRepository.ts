@@ -35,6 +35,7 @@ import {
   getForwardGroupTemplateRules,
   getForwardRuleById,
   setForwardRuleDeleteSettlementPending,
+  settleForwardRuleDelete,
   getForwardRulesByIds,
   getForwardRulesByTunnel,
   markForwardRulePendingDelete,
@@ -3475,42 +3476,20 @@ async function removeManagedRule(
 ) {
   const rule = await getForwardRuleById(ruleId);
   if (!rule) return;
-  const billingResource = await findTrafficBillingResourceForRule(rule);
-  const fallback = trafficBillingResourceCandidatesForRule(rule)[0];
-  const resource = billingResource || fallback;
-  // Never wait for a user's billing lock while holding a database transaction:
-  // concurrent deletion or traffic reports may hold that lock and need the DB.
-  if (options.deferRefresh || isDatabaseTransactionActive()) {
+  // Save removal and its retry obligation together. Never wait for billing
+  // while holding the member-save transaction; acknowledge stopping separately.
+  await withDatabaseTransaction(async () => {
     await markForwardRulePendingDelete(Number(rule.id));
     await setForwardRuleDeleteSettlementPending(Number(rule.id), true);
     await afterDatabaseCommit(async () => {
       const errors: unknown[] = [];
-      try {
-        const billed = resource ? await withTrafficBillingUserLock(Number(rule.userId), () =>
-          settleTrafficBillingRuleOnDelete({ userId: Number(rule.userId || 0),
-            ruleId: Number(rule.id), resourceType: resource.resourceType,
-            resourceId: Number(resource.resourceId || 0) })) : null;
-        await setForwardRuleDeleteSettlementPending(Number(rule.id), false);
-        if (billed && Number(billed.balanceAfterCents) < 0) {
-          await setUserForwardAccess(Number(rule.userId), false, "traffic_billing_balance");
-        }
-      } catch (error) { errors.push(error); }
+      try { await settleForwardRuleDelete(Number(rule.id)); }
+      catch (error) { errors.push(error); }
       try { await refreshRuleEndpoints(rule, "forward-group-child-deleted"); }
       catch (error) { errors.push(error); }
       if (errors.length) throw new AggregateError(errors, "配置已保存，旧规则清理部分失败");
     });
-    return;
-  }
-  if (!resource) {
-    await settleAndMarkForwardGroupRulePendingDelete(rule);
-    await refreshRuleEndpoints(rule, "forward-group-child-deleted");
-    return;
-  }
-  const billed = await settleAndMarkForwardGroupRulePendingDelete(rule, resource);
-  if (billed && Number(billed.balanceAfterCents) < 0) {
-    await setUserForwardAccess(Number((rule as any).userId), false, "traffic_billing_balance");
-  }
-  await refreshRuleEndpoints(rule, "forward-group-child-deleted");
+  });
 }
 
 export async function repairForwardGroupTemplateHostReferences(

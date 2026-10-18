@@ -1,0 +1,152 @@
+(node:87714) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+> forwardx@3.3.8 test:i18n /Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3
+> node --import tsx --test client/src/i18n/language.test.ts client/src/i18n/runtime.test.ts client/src/i18n/ui-coverage.test.tsx client/src/components/ui/sliding-tabs.test.tsx server/localeHint.test.ts
+
+(node:87767) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+TAP version 13
+# (node:87768) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:87768) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: sliding tabs reserve intrinsic translated label, icon and badge widths
+ok 1 - sliding tabs reserve intrinsic translated label, icon and badge widths
+  ---
+  duration_ms: 10.958542
+  type: 'test'
+  ...
+# Subtest: narrow section navigation folds only when its actual labels overflow
+ok 2 - narrow section navigation folds only when its actual labels overflow
+  ---
+  duration_ms: 0.110792
+  type: 'test'
+  ...
+# Subtest: all section switchers use their existing controlled change handlers
+ok 3 - all section switchers use their existing controlled change handlers
+  ---
+  duration_ms: 2.89975
+  type: 'test'
+  ...
+# Subtest: standard tabs wrap long labels and dialog actions may grow without shrinking icons
+ok 4 - standard tabs wrap long labels and dialog actions may grow without shrinking icons
+  ---
+  duration_ms: 3.108542
+  type: 'test'
+  ...
+# Subtest: tab roots can shrink inside dialog grids without changing Radix semantics
+ok 5 - tab roots can shrink inside dialog grids without changing Radix semantics
+  ---
+  duration_ms: 1.208625
+  type: 'test'
+  ...
+# Subtest: tab scrolling only reveals clipped labels and clamps to the local scroller
+ok 6 - tab scrolling only reveals clipped labels and clamps to the local scroller
+  ---
+  duration_ms: 0.08375
+  type: 'test'
+  ...
+# (node:87769) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:87769) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: manual choice wins over browser and IP country; unsupported storage resets to auto
+ok 7 - manual choice wins over browser and IP country; unsupported storage resets to auto
+  ---
+  duration_ms: 0.379084
+  type: 'test'
+  ...
+# Subtest: automatic selection follows supported browser language order before country
+ok 8 - automatic selection follows supported browser language order before country
+  ---
+  duration_ms: 0.195833
+  type: 'test'
+  ...
+# Subtest: interpolation preserves user values without recursive substitution or HTML processing
+ok 9 - interpolation preserves user values without recursive substitution or HTML processing
+  ---
+  duration_ms: 0.097709
+  type: 'test'
+  ...
+# Subtest: English catalog preserves every interpolation and numeric limit
+ok 10 - English catalog preserves every interpolation and numeric limit
+  ---
+  duration_ms: 7.648334
+  type: 'test'
+  ...
+# Subtest: English catalog has no duplicate keys
+ok 11 - English catalog has no duplicate keys
+  ---
+  duration_ms: 18.023625
+  type: 'test'
+  ...
+# Subtest: all static client translation keys have English entries
+ok 12 - all static client translation keys have English entries
+  ---
+  duration_ms: 314.964
+  type: 'test'
+  ...
+# (node:87770) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:87770) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: language initialization, persistence and network/storage failures are safe
+ok 13 - language initialization, persistence and network/storage failures are safe
+  ---
+  duration_ms: 20.753125
+  type: 'test'
+  ...
+# (node:87771) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:87771) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: English network result states and built-in appearance options contain no Chinese
+ok 14 - English network result states and built-in appearance options contain no Chinese
+  ---
+  duration_ms: 210.092416
+  type: 'test'
+  ...
+# Subtest: Appearance settings translate built-in names without rewriting uploaded filenames
+ok 15 - Appearance settings translate built-in names without rewriting uploaded filenames
+  ---
+  duration_ms: 0.730916
+  type: 'test'
+  ...
+# (node:87772) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:87772) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: installation language is whitelisted and no longer used after setup completes
+ok 16 - installation language is whitelisted and no longer used after setup completes
+  ---
+  duration_ms: 0.394333
+  type: 'test'
+  ...
+# Subtest: country headers are advisory and ignored from untrusted clients
+ok 17 - country headers are advisory and ignored from untrusted clients
+  ---
+  duration_ms: 0.108375
+  type: 'test'
+  ...
+# Subtest: locale route needs neither database queries nor third-party lookups
+ok 18 - locale route needs neither database queries nor third-party lookups
+  ---
+  duration_ms: 0.592291
+  type: 'test'
+  ...
+# Subtest: locale route exposes installation language before initialization without a database
+ok 19 - locale route exposes installation language before initialization without a database
+  ---
+  duration_ms: 0.8135
+  type: 'test'
+  ...
+1..19
+# tests 19
+# suites 0
+# pass 19
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 839.676541

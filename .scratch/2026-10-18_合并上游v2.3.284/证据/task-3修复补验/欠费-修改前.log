@@ -1,0 +1,167 @@
+(node:63195) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+TAP version 13
+# (node:63198) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:63198) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: member removal retries failed debt access pauses without charging twice: account
+not ok 1 - member removal retries failed debt access pauses without charging twice: account
+  ---
+  duration_ms: 904.620083
+  type: 'test'
+  location: '/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/groupMemberRelease.test.ts:1002:53'
+  failureType: 'testCodeFailure'
+  error: |-
+    (node:63200) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+    (Use `node --trace-warnings ...` to show where the warning was created)
+    (node:63200) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+    (Use `node --trace-warnings ...` to show where the warning was created)
+    node:internal/modules/run_main:123
+        triggerUncaughtException(
+        ^
+    
+    AssertionError [ERR_ASSERTION]: a failed access pause must retain its closeout obligation
+    
+    false !== true
+    
+        at [90mfile:///Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/[39m[eval1]:187:14 {
+      generatedMessage: [33mfalse[39m,
+      code: [32m'ERR_ASSERTION'[39m,
+      actual: [33mfalse[39m,
+      expected: [33mtrue[39m,
+      operator: [32m'strictEqual'[39m,
+      diff: [32m'simple'[39m
+    }
+    
+    Node.js v22.22.3
+    [Database] SQLite opened at /tmp/codeg-acp-501/42052-57e61ed2/forwardx-member-release-E8aXbQ/test.db
+    
+    
+    1 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 1
+  operator: 'strictEqual'
+  stack: |-
+    [90mfile:///Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/[39m[eval1]:187:14 {
+    runGroupMemberReleaseCase (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/test-support/groupMemberReleaseHarness.ts:198:12)
+    TestContext.<anonymous> (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/groupMemberRelease.test.ts:1223:5)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.start (node:internal/test_runner/test:944:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:296:17)
+  ...
+# Subtest: member removal retries failed debt access pauses without charging twice: rules
+not ok 2 - member removal retries failed debt access pauses without charging twice: rules
+  ---
+  duration_ms: 727.061709
+  type: 'test'
+  location: '/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/groupMemberRelease.test.ts:1002:53'
+  failureType: 'testCodeFailure'
+  error: |-
+    (node:63225) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+    (Use `node --trace-warnings ...` to show where the warning was created)
+    (node:63225) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+    (Use `node --trace-warnings ...` to show where the warning was created)
+    node:internal/modules/run_main:123
+        triggerUncaughtException(
+        ^
+    
+    AssertionError [ERR_ASSERTION]: a failed access pause must retain its closeout obligation
+    
+    false !== true
+    
+        at [90mfile:///Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/[39m[eval1]:187:14 {
+      generatedMessage: [33mfalse[39m,
+      code: [32m'ERR_ASSERTION'[39m,
+      actual: [33mfalse[39m,
+      expected: [33mtrue[39m,
+      operator: [32m'strictEqual'[39m,
+      diff: [32m'simple'[39m
+    }
+    
+    Node.js v22.22.3
+    [Database] SQLite opened at /tmp/codeg-acp-501/42052-57e61ed2/forwardx-member-release-yFH3JA/test.db
+    
+    
+    1 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 1
+  operator: 'strictEqual'
+  stack: |-
+    [90mfile:///Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/[39m[eval1]:187:14 {
+    runGroupMemberReleaseCase (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/test-support/groupMemberReleaseHarness.ts:198:12)
+    TestContext.<anonymous> (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/groupMemberRelease.test.ts:1223:5)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+# Subtest: member cleanup pauses existing debt even when its delete fee was already settled
+not ok 3 - member cleanup pauses existing debt even when its delete fee was already settled
+  ---
+  duration_ms: 673.72825
+  type: 'test'
+  location: '/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/groupMemberRelease.test.ts:1035:10'
+  failureType: 'testCodeFailure'
+  error: |-
+    (node:63228) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+    (Use `node --trace-warnings ...` to show where the warning was created)
+    (node:63228) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+    (Use `node --trace-warnings ...` to show where the warning was created)
+    node:internal/modules/run_main:123
+        triggerUncaughtException(
+        ^
+    
+    AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+    
+    true !== false
+    
+        at [90mfile:///Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/[39m[eval1]:189:12 {
+      generatedMessage: [33mtrue[39m,
+      code: [32m'ERR_ASSERTION'[39m,
+      actual: [33mtrue[39m,
+      expected: [33mfalse[39m,
+      operator: [32m'strictEqual'[39m,
+      diff: [32m'simple'[39m
+    }
+    
+    Node.js v22.22.3
+    [Database] SQLite opened at /tmp/codeg-acp-501/42052-57e61ed2/forwardx-member-release-zGkuzY/test.db
+    
+    
+    1 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 1
+  operator: 'strictEqual'
+  stack: |-
+    [90mfile:///Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/[39m[eval1]:189:12 {
+    runGroupMemberReleaseCase (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/test-support/groupMemberReleaseHarness.ts:198:12)
+    TestContext.<anonymous> (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3/server/groupMemberRelease.test.ts:1261:3)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+1..3
+# tests 3
+# suites 0
+# pass 0
+# fail 3
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2463.271667

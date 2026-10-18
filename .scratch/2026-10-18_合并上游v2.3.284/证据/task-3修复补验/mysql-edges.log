@@ -1,0 +1,13 @@
+(node:19601) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:19601) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[Database] MySQL connected at 127.0.0.1:64587/task3_debt_review
+EDGE_RESULT {"scenario":"enabled-missing-user","label":"before","error":"User not found","pending":true}
+EDGE_RESULT {"scenario":"enabled-missing-user","label":"after","error":"User not found","pending":true}
+EDGE_RESULT {"scenario":"disabled-missing-user","label":"before","error":null,"pending":false}
+EDGE_RESULT {"scenario":"disabled-missing-user","label":"after","error":null,"pending":false}
+EDGE_RESULT {"scenario":"enabled-no-resource","label":"before","error":null,"pending":false}
+EDGE_RESULT {"scenario":"enabled-no-resource","label":"after","error":null,"pending":false}
+EDGE_RESULT {"scenario":"enabled-no-resource-no-user","label":"before","error":null,"pending":false}
+EDGE_RESULT {"scenario":"enabled-no-resource-no-user","label":"after","error":"User not found","pending":true}

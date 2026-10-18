@@ -1,0 +1,190 @@
+(node:68103) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+TAP version 13
+# (node:68106) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:68106) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: animated stat values leave glyph bottoms visible at system-font and zoom boundaries
+ok 1 - animated stat values leave glyph bottoms visible at system-font and zoom boundaries
+  ---
+  duration_ms: 10.309333
+  type: 'test'
+  ...
+# Subtest: Dashboard stats match the tinted billing cards without ruler decorations
+ok 2 - Dashboard stats match the tinted billing cards without ruler decorations
+  ---
+  duration_ms: 280.708125
+  type: 'test'
+  ...
+# Subtest: Dashboard traffic shares one card with responsive internal sections
+ok 3 - Dashboard traffic shares one card with responsive internal sections
+  ---
+  duration_ms: 7.360625
+  type: 'test'
+  ...
+# Subtest: Dashboard status shares one card and preserves admin-only host visibility
+ok 4 - Dashboard status shares one card and preserves admin-only host visibility
+  ---
+  duration_ms: 3.183875
+  type: 'test'
+  ...
+# Subtest: Store plan decoration stays behind custom/default content and preserves purchase controls
+ok 5 - Store plan decoration stays behind custom/default content and preserves purchase controls
+  ---
+  duration_ms: 21.045333
+  type: 'test'
+  ...
+# Subtest: Language selectors expose only Chinese and English and select the effective default
+ok 6 - Language selectors expose only Chinese and English and select the effective default
+  ---
+  duration_ms: 9.742375
+  type: 'test'
+  ...
+# Subtest: Desktop workspace has no dark perimeter or frame-related offsets
+ok 7 - Desktop workspace has no dark perimeter or frame-related offsets
+  ---
+  duration_ms: 0.160084
+  type: 'test'
+  ...
+# Subtest: Desktop brand header and topbar share a fixed border-inclusive height
+ok 8 - Desktop brand header and topbar share a fixed border-inclusive height
+  ---
+  duration_ms: 0.243167
+  type: 'test'
+  ...
+# Subtest: Mobile page headings align left and card spacing remains overridable
+ok 9 - Mobile page headings align left and card spacing remains overridable
+  ---
+  duration_ms: 0.418583
+  type: 'test'
+  ...
+# Subtest: Web sidebar reserves safe areas while native shells retain local spacing
+ok 10 - Web sidebar reserves safe areas while native shells retain local spacing
+  ---
+  duration_ms: 0.33475
+  type: 'test'
+  ...
+# Subtest: Sidebar animation keeps one geometry transition and avoids large-area blur
+ok 11 - Sidebar animation keeps one geometry transition and avoids large-area blur
+  ---
+  duration_ms: 0.396167
+  type: 'test'
+  ...
+# Subtest: Sidebar marker follows CSS width instead of measuring every menu item every frame
+ok 12 - Sidebar marker follows CSS width instead of measuring every menu item every frame
+  ---
+  duration_ms: 0.125125
+  type: 'test'
+  ...
+# Subtest: Desktop topbar does not duplicate the sidebar toggle and mobile retains its trigger
+ok 13 - Desktop topbar does not duplicate the sidebar toggle and mobile retains its trigger
+  ---
+  duration_ms: 0.240334
+  type: 'test'
+  ...
+# Subtest: Theme switching stays in the topbar and mobile header, not the sidebar
+ok 14 - Theme switching stays in the topbar and mobile header, not the sidebar
+  ---
+  duration_ms: 0.242041
+  type: 'test'
+  ...
+# Subtest: Pearl buttons preserve Slot composition, form semantics, and caller overrides
+ok 15 - Pearl buttons preserve Slot composition, form semantics, and caller overrides
+  ---
+  duration_ms: 0.502334
+  type: 'test'
+  ...
+# Subtest: Pearl fields retain validation, autocomplete, read-only and disabled contracts
+ok 16 - Pearl fields retain validation, autocomplete, read-only and disabled contracts
+  ---
+  duration_ms: 0.2515
+  type: 'test'
+  ...
+# Subtest: Cards can opt out of entrances and dense tables retain cell-level overrides
+ok 17 - Cards can opt out of entrances and dense tables retain cell-level overrides
+  ---
+  duration_ms: 0.362625
+  type: 'test'
+  ...
+# Subtest: Progress exposes its real value and switches keep Radix checked/disabled semantics
+ok 18 - Progress exposes its real value and switches keep Radix checked/disabled semantics
+  ---
+  duration_ms: 1.292834
+  type: 'test'
+  ...
+# Subtest: Glass sliding tabs retain intrinsic long-label widths, selected semantics and readable text
+ok 19 - Glass sliding tabs retain intrinsic long-label widths, selected semantics and readable text
+  ---
+  duration_ms: 3.133042
+  type: 'test'
+  ...
+# Subtest: Theme text and primary controls meet WCAG AA contrast in light and dark palettes
+ok 20 - Theme text and primary controls meet WCAG AA contrast in light and dark palettes
+  ---
+  duration_ms: 0.339375
+  type: 'test'
+  ...
+# Subtest: Network and iperf3 consoles follow theme colors and retain raw monospace output
+ok 21 - Network and iperf3 consoles follow theme colors and retain raw monospace output
+  ---
+  duration_ms: 7.380792
+  type: 'test'
+  ...
+# Subtest: Shared materials keep utility overrides, mobile safe areas and reduced-motion fallbacks
+ok 22 - Shared materials keep utility overrides, mobile safe areas and reduced-motion fallbacks
+  ---
+  duration_ms: 0.85325
+  type: 'test'
+  ...
+# Subtest: Featured and interactive cards preserve nested controls and caller attributes
+ok 23 - Featured and interactive cards preserve nested controls and caller attributes
+  ---
+  duration_ms: 0.306166
+  type: 'test'
+  ...
+# Subtest: Content switches render real content immediately without initial fade or layout scaling
+ok 24 - Content switches render real content immediately without initial fade or layout scaling
+  ---
+  duration_ms: 2.761667
+  type: 'test'
+  ...
+# Subtest: Limit disclosures remain native, collapsed by default and keep editable form values
+ok 25 - Limit disclosures remain native, collapsed by default and keep editable form values
+  ---
+  duration_ms: 8.445333
+  type: 'test'
+  ...
+# (node:68107) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:68107) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: history windows support 30 days and bounded, explicit calendar-day ranges
+ok 26 - history windows support 30 days and bounded, explicit calendar-day ranges
+  ---
+  duration_ms: 2.139792
+  type: 'test'
+  ...
+# [Database] SQLite opened at /tmp/codeg-acp-501/42052-57e61ed2/forwardx-latency-month-1sCDRL/history.db
+# Subtest: raw latency history retains a month, seeks daily windows and bounds chart responses without truncation
+ok 27 - raw latency history retains a month, seeks daily windows and bounds chart responses without truncation
+  ---
+  duration_ms: 857.566208
+  type: 'test'
+  ...
+# [Database] SQLite opened at /tmp/codeg-acp-501/42052-57e61ed2/forwardx-chain-history-gZNrM1/history.db
+# Subtest: chain history counts only actual reports in daily and rolling windows
+ok 28 - chain history counts only actual reports in daily and rolling windows
+  ---
+  duration_ms: 31.225458
+  type: 'test'
+  ...
+1..28
+# tests 28
+# suites 0
+# pass 28
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1025.924167

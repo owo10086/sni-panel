@@ -181,18 +181,18 @@ test("Mobile page headings align left and card spacing remains overridable", () 
   assert.doesNotMatch(html, /\bp-6\b|\bsm:p-6\b/);
 });
 
-test("Mobile sidebar reserves native safe areas on the drawer, not its utility-padded children", () => {
+test("Web sidebar reserves safe areas while native shells retain local spacing", () => {
   const mobileCss = readFileSync("client/src/index.css", "utf8");
-  assert.match(mobileCss, /--forwardx-safe-area-top: var\(--safe-area-inset-top, env\(safe-area-inset-top, 0px\)\)/);
-  assert.match(mobileCss, /--forwardx-safe-area-bottom: var\(--safe-area-inset-bottom, env\(safe-area-inset-bottom, 0px\)\)/);
-  const unlayered = mobileCss.slice(mobileCss.indexOf("/* The fixed drawer"), mobileCss.indexOf("/* Unified scrollbar"));
-  assert.match(unlayered, /\[data-mobile-sidebar="true"\] \{/);
+  assert.match(mobileCss, /--forwardx-safe-area-top: env\(safe-area-inset-top, 0px\)/);
+  assert.match(mobileCss, /--forwardx-safe-area-bottom: env\(safe-area-inset-bottom, 0px\)/);
+  const unlayered = mobileCss.slice(mobileCss.indexOf("/* The fixed web drawer"), mobileCss.indexOf("/* Unified scrollbar"));
+  assert.match(unlayered, /html:not\(\.capacitor-native\) \[data-mobile-sidebar="true"\] \{/);
   assert.match(unlayered, /box-sizing: border-box/);
   assert.match(unlayered, /padding-top: var\(--forwardx-safe-area-top\)/);
   assert.match(unlayered, /padding-bottom: var\(--forwardx-safe-area-bottom\)/);
   assert.doesNotMatch(unlayered, /@layer/);
-  assert.doesNotMatch(mobileCss, /html\.capacitor-native \[data-sidebar="(?:header|footer)"\] \{/);
-  assert.doesNotMatch(mobileCss, /min-height: calc\((?:3\.75|3)rem \+ env\(safe-area-inset-top\)\)/);
+  assert.match(mobileCss, /html\.capacitor-native \[data-sidebar="(?:header|footer)"\] \{/);
+  assert.match(mobileCss, /min-height: calc\((?:3\.75|3)rem \+ env\(safe-area-inset-top\)\)/);
 });
 
 test("Sidebar animation keeps one geometry transition and avoids large-area blur", () => {

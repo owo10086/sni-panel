@@ -4639,5 +4639,6 @@
   "点击日期查看当天稳定性详情。": "Select a date to view its availability details.",
   "在线稳定性加载失败，请稍后重试。": "Could not load availability. Please try again later.",
   "按已监测时长计算在线率；斜纹表示当天存在未监测时段。": "Uptime uses monitored duration only. Hatching indicates gaps in monitoring.",
-  "在线转为离线记一次，跨天持续离线不重复计数；以面板监测到的 Agent 状态为准。": "Each online-to-offline transition counts once, even across days. Based on Agent status observed by the panel."
+  "在线转为离线记一次，跨天持续离线不重复计数；以面板监测到的 Agent 状态为准。": "Each online-to-offline transition counts once, even across days. Based on Agent status observed by the panel.",
+  "工单已关闭": "Closed"
 }

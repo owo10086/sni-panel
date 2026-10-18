@@ -1,0 +1,27 @@
+{
+  "date": "2026-10-18",
+  "sessionId": "01a14ac4-3cd1-75e2-b218-0cc786e0a95e",
+  "workspace": "/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-3",
+  "branch": "task/3",
+  "head": "c8e5c77622e5acce920f1e8ef856d920f29cfc44",
+  "state": "本轮修复未提交；以文件散列和修复差异核对",
+  "sourceSha256": {
+    "server/repositories/forwardRuleRepository.ts": "0050a1cd7b08945ab6905c340c896ca8b7cae96f0044fe168bcdbea60b3068d1",
+    "server/repositories/forwardGroupRepository.ts": "7956516858889986cf59ee8e69c223536ac417c97785d5d60c89c20b7e596733",
+    "server/repositories/metricsRepository.ts": "5e27f66ce8078e5d04ab8507f543aa6bc70cd5c232fcf9fda1403dd40c721c90",
+    "server/groupMemberRelease.test.ts": "833616f309995da3a7ad01b191245065505130326ae83c6ba954bae5e2c0c38e",
+    "server/latencyHistory.test.ts": "8b8b03ad129d8ecbcd7925603ccd2585d649acfc55d9399fab23d7baf596e884",
+    "client/src/index.css": "835468cddee0bcda316f75431a781d529030539e7b4d2fba86aacaa731742c2d",
+    "client/src/components/ui/pearl-ui.test.tsx": "3f6e14e73c42b3e40987e6e922a4c4b8545dd78a793cea7e81aae6523a0e6035"
+  },
+  "artifactsSha256": {
+    "dist/index.js": "938ed11d91b3b0138700f1002cb246fd11a01b26cd484de21650213717ac779d",
+    "dist/reset-admin-password.js": "8bec4482973c75d036c80964ccbac124c798153ba3e54dce57d92bf822109e60"
+  },
+  "networkProgramsSha256": {
+    "forwardx-agent": "22534f3222a9caf19cd0ba8a1a68bafb72d7be26a0565cd8f43d3555338d963b",
+    "forwardx-fxp": "39498336e604eee80e6fb784075357206c7bb96817d56e6b3a88532883a016f9",
+    "agent-probe.test": "5b5b36dfc215024b05a369e1fbc08792ab362873f643df9f7fdebd520b87d4c5"
+  },
+  "networkProgramsProvenance": "复用既有本地284构建；本轮未修改Agent/FXP源码；对新导出的面板配置实际运行，版本不作为能力证明"
+}

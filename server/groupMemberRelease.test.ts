@@ -1217,3 +1217,69 @@ test("stopped member cleanup preserves failed settlement for later retry", () =>
     assert.equal((await runtime.queryRaw('SELECT id FROM traffic_billing_records WHERE ruleId=?',[child.id])).length,1);
   `);
 });
+
+for (const failedWrite of ["account", "rules"]) {
+  test("member removal retries failed debt access pauses without charging twice: " + failedWrite, () => {
+    runGroupMemberReleaseCase(`
+      await seedFailover(1, true);
+      const billing = await import('./server/repositories/trafficBillingRepository.ts');
+      const rules = await import('./server/repositories/forwardRuleRepository.ts');
+      const users = await import('./server/repositories/userRepository.ts');
+      await billing.setTrafficBillingEnabled(true);
+      await runtime.executeRaw('UPDATE users SET balanceCents=1 WHERE id=1');
+      const [child] = await runtime.queryRaw('SELECT id FROM forward_rules WHERE forwardGroupRuleId=1000 AND hostId=1');
+      await insert('traffic_billing_configs', {id:90,resourceType:'forward_group',resourceId:10,enabled:1,pricePerGbCents:100,multiplier:100});
+      await insert('traffic_billing_rule_usage', {id:91,userId:1,ruleId:child.id,resourceType:'forward_group',resourceId:10,totalBytes:100000000,billedGb:0,pendingMilliCents:0,settled:0});
+      const failedWrite = "` + failedWrite + `";
+      await runtime.executeRaw(failedWrite === 'account'
+        ? "CREATE TRIGGER reject_debt_pause BEFORE UPDATE OF canAddRules ON users WHEN NEW.canAddRules=0 BEGIN SELECT RAISE(ABORT,'injected-debt-pause'); END"
+        : "CREATE TRIGGER reject_debt_pause BEFORE UPDATE OF disabledByUser ON forward_rules WHEN NEW.disabledByUser=1 AND OLD.isEnabled=1 BEGIN SELECT RAISE(ABORT,'injected-debt-pause'); END");
+      await assert.rejects(() => saveMembers(10,[2]));
+      assert.equal(Boolean((await rules.getForwardRuleById(child.id)).deleteSettlementPending), true,
+        'a failed access pause must retain its closeout obligation');
+      await rules.updateRuleRunningStatus(child.id,false);
+      await rules.purgeSettledPendingForwardRuleDeletes();
+      assert.ok(await rules.getForwardRuleById(child.id), 'a stopped rule still waits for unfinished financial closeout');
+      await runtime.executeRaw('DROP TRIGGER reject_debt_pause');
+      await rules.purgeSettledPendingForwardRuleDeletes();
+      const user = await users.getUserById(1);
+      assert.equal(user.balanceCents, -8);
+      assert.equal(Boolean(user.canAddRules), false);
+      assert.equal(user.forwardAccessPauseReason, 'traffic_billing_balance');
+      assert.equal(await rules.getForwardRuleById(child.id), undefined);
+      const remaining = await rules.getForwardGroupChildRulesForTemplate(1000);
+      assert.ok(remaining.length > 0);
+      assert.ok(remaining.every(row => !row.isEnabled && row.disabledByUser));
+      await rules.purgeSettledPendingForwardRuleDeletes();
+      const records = await billing.listTrafficBillingRecords({userId:1});
+      assert.deepEqual(records.filter(row=>row.ruleId===child.id).map(row=>row.amountCents), [9]);
+    `);
+  });
+}
+
+test("member cleanup pauses existing debt even when its delete fee was already settled", () => {
+  runGroupMemberReleaseCase(`
+    await seedFailover(1, true);
+    const billing = await import('./server/repositories/trafficBillingRepository.ts');
+    const rules = await import('./server/repositories/forwardRuleRepository.ts');
+    const users = await import('./server/repositories/userRepository.ts');
+    await billing.setTrafficBillingEnabled(true);
+    const [child] = await runtime.queryRaw('SELECT id FROM forward_rules WHERE forwardGroupRuleId=1000 AND hostId=1');
+    await insert('traffic_billing_configs', {id:90,resourceType:'forward_group',resourceId:10,enabled:1,pricePerGbCents:100,multiplier:100});
+    await insert('traffic_billing_rule_usage', {id:91,userId:1,ruleId:child.id,resourceType:'forward_group',resourceId:10,totalBytes:100000000,billedGb:0,pendingMilliCents:0,settled:1});
+    await insert('traffic_billing_records', {id:92,userId:1,ruleId:child.id,resourceType:'forward_group',resourceId:10,bytes:100000000,amountCents:9,balanceAfterCents:-8});
+    await runtime.executeRaw('UPDATE users SET balanceCents=-8 WHERE id=1');
+    await rules.markForwardRulePendingDelete(child.id);
+    await rules.setForwardRuleDeleteSettlementPending(child.id,true);
+    await rules.updateRuleRunningStatus(child.id,false);
+    await rules.purgeSettledPendingForwardRuleDeletes();
+    const user = await users.getUserById(1);
+    assert.equal(user.balanceCents,-8);
+    assert.equal(Boolean(user.canAddRules),false);
+    assert.equal(user.forwardAccessPauseReason,'traffic_billing_balance');
+    assert.equal(await rules.getForwardRuleById(child.id),undefined);
+    assert.ok((await rules.getForwardGroupChildRulesForTemplate(1000)).every(row=>!row.isEnabled));
+    const records = await billing.listTrafficBillingRecords({userId:1});
+    assert.deepEqual(records.filter(row=>row.ruleId===child.id).map(row=>row.amountCents),[9]);
+  `);
+});

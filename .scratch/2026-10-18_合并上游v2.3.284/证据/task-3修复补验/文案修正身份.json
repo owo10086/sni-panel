@@ -1,0 +1,20 @@
+{
+  "authorization": "用户明确回复：修正后合并",
+  "baseline": "c8e5c77622e5acce920f1e8ef856d920f29cfc44",
+  "sourceSha256": {
+    "shared/supportTickets.ts": "dede4ae34ebeae3953978c627a9c74861ec3958630340a7f87871ff1dc5fb27c",
+    "client/src/i18n/en.json": "d19b234fe9d2045ff29465c650db99880092c2974052bcd9a8657ddf56d54ad6"
+  },
+  "buildSha256": {
+    "dist/index.js": "d49125110bdb9b8968898d603d100cf9770392a9d154b3e6206d73a5c4379545",
+    "dist/reset-admin-password.js": "462145a5cb01a426b2e103d467194e92c66d4c47cdfae93ad02f89ae4e068326"
+  },
+  "validation": [
+    "网页45/45",
+    "双语19/19",
+    "类型检查",
+    "最终构建",
+    "Closed徽章、状态记录、批量确认与中文文字核对"
+  ],
+  "boundary": "只代表本轮新增文案检查，不把未执行的SNI/安装/手机全部组合补记为通过"
+}

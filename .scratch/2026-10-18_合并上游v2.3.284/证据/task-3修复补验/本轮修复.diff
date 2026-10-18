@@ -1,0 +1,391 @@
+diff --git a/client/src/components/ui/pearl-ui.test.tsx b/client/src/components/ui/pearl-ui.test.tsx
+index b833c0a..7d2886d 100644
+--- a/client/src/components/ui/pearl-ui.test.tsx
++++ b/client/src/components/ui/pearl-ui.test.tsx
+@@ -181,18 +181,18 @@ test("Mobile page headings align left and card spacing remains overridable", ()
+   assert.doesNotMatch(html, /\bp-6\b|\bsm:p-6\b/);
+ });
+ 
+-test("Mobile sidebar reserves native safe areas on the drawer, not its utility-padded children", () => {
++test("Web sidebar reserves safe areas while native shells retain local spacing", () => {
+   const mobileCss = readFileSync("client/src/index.css", "utf8");
+-  assert.match(mobileCss, /--forwardx-safe-area-top: var\(--safe-area-inset-top, env\(safe-area-inset-top, 0px\)\)/);
+-  assert.match(mobileCss, /--forwardx-safe-area-bottom: var\(--safe-area-inset-bottom, env\(safe-area-inset-bottom, 0px\)\)/);
+-  const unlayered = mobileCss.slice(mobileCss.indexOf("/* The fixed drawer"), mobileCss.indexOf("/* Unified scrollbar"));
+-  assert.match(unlayered, /\[data-mobile-sidebar="true"\] \{/);
++  assert.match(mobileCss, /--forwardx-safe-area-top: env\(safe-area-inset-top, 0px\)/);
++  assert.match(mobileCss, /--forwardx-safe-area-bottom: env\(safe-area-inset-bottom, 0px\)/);
++  const unlayered = mobileCss.slice(mobileCss.indexOf("/* The fixed web drawer"), mobileCss.indexOf("/* Unified scrollbar"));
++  assert.match(unlayered, /html:not\(\.capacitor-native\) \[data-mobile-sidebar="true"\] \{/);
+   assert.match(unlayered, /box-sizing: border-box/);
+   assert.match(unlayered, /padding-top: var\(--forwardx-safe-area-top\)/);
+   assert.match(unlayered, /padding-bottom: var\(--forwardx-safe-area-bottom\)/);
+   assert.doesNotMatch(unlayered, /@layer/);
+-  assert.doesNotMatch(mobileCss, /html\.capacitor-native \[data-sidebar="(?:header|footer)"\] \{/);
+-  assert.doesNotMatch(mobileCss, /min-height: calc\((?:3\.75|3)rem \+ env\(safe-area-inset-top\)\)/);
++  assert.match(mobileCss, /html\.capacitor-native \[data-sidebar="(?:header|footer)"\] \{/);
++  assert.match(mobileCss, /min-height: calc\((?:3\.75|3)rem \+ env\(safe-area-inset-top\)\)/);
+ });
+ 
+ test("Sidebar animation keeps one geometry transition and avoids large-area blur", () => {
+diff --git a/client/src/index.css b/client/src/index.css
+index e49cd16..e6fd846 100644
+--- a/client/src/index.css
++++ b/client/src/index.css
+@@ -78,10 +78,8 @@
+   --sidebar-accent-foreground: oklch(0.15 0.01 260);
+   --sidebar-border: oklch(0.88 0.01 260);
+   --sidebar-ring: oklch(0.42 0.02 260);
+-  /* Capacitor's Android bridge supplies CSS variables when WebView env()
+-     insets are unavailable. iOS and browsers continue to use env(). */
+-  --forwardx-safe-area-top: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
+-  --forwardx-safe-area-bottom: var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
++  --forwardx-safe-area-top: env(safe-area-inset-top, 0px);
++  --forwardx-safe-area-bottom: env(safe-area-inset-bottom, 0px);
+   --forwardx-mobile-header-offset: calc(3.5rem + var(--forwardx-safe-area-top));
+ }
+ 
+@@ -408,13 +406,21 @@
+     }
+   }
+ 
++  html.capacitor-native [data-sidebar="header"] {
++    padding-top: max(0.5rem, env(safe-area-inset-top));
++  }
++
++  html.capacitor-native [data-sidebar="footer"] {
++    padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
++  }
++
+   html.capacitor-native [data-mobile-sidebar="true"] {
+     --forwardx-mobile-sidebar-width: min(16rem, calc(100vw - 4.5rem));
+     box-shadow: 16px 0 44px color-mix(in oklch, black 18%, transparent);
+   }
+ 
+   html.capacitor-native [data-mobile-sidebar="true"] .mobile-sidebar-header {
+-    min-height: 3.75rem;
++    min-height: calc(3.75rem + env(safe-area-inset-top));
+   }
+ 
+   html.capacitor-native [data-mobile-sidebar="true"] .mobile-sidebar-content {
+@@ -458,7 +464,7 @@
+     }
+ 
+     html.capacitor-native [data-mobile-sidebar="true"] .mobile-sidebar-header {
+-      min-height: 3rem;
++      min-height: calc(3rem + env(safe-area-inset-top));
+     }
+ 
+     html.capacitor-native [data-mobile-sidebar="true"] .mobile-sidebar-content {
+@@ -540,10 +546,9 @@
+   }
+ }
+ 
+-/* The fixed drawer paints behind system bars, but its children stay inside the
+-   safe area. Keep geometry unlayered so utility padding cannot override it;
+-   header/footer retain their normal spacing without counting the inset twice. */
+-[data-mobile-sidebar="true"] {
++/* The fixed web drawer keeps its children inside the safe area. Native shells
++   retain their existing header/footer insets; do not apply this padding twice. */
++html:not(.capacitor-native) [data-mobile-sidebar="true"] {
+   box-sizing: border-box;
+   padding-top: var(--forwardx-safe-area-top);
+   padding-bottom: var(--forwardx-safe-area-bottom);
+diff --git a/server/groupMemberRelease.test.ts b/server/groupMemberRelease.test.ts
+index e8882ec..14354aa 100644
+--- a/server/groupMemberRelease.test.ts
++++ b/server/groupMemberRelease.test.ts
+@@ -1217,3 +1217,69 @@ test("stopped member cleanup preserves failed settlement for later retry", () =>
+     assert.equal((await runtime.queryRaw('SELECT id FROM traffic_billing_records WHERE ruleId=?',[child.id])).length,1);
+   `);
+ });
++
++for (const failedWrite of ["account", "rules"]) {
++  test("member removal retries failed debt access pauses without charging twice: " + failedWrite, () => {
++    runGroupMemberReleaseCase(`
++      await seedFailover(1, true);
++      const billing = await import('./server/repositories/trafficBillingRepository.ts');
++      const rules = await import('./server/repositories/forwardRuleRepository.ts');
++      const users = await import('./server/repositories/userRepository.ts');
++      await billing.setTrafficBillingEnabled(true);
++      await runtime.executeRaw('UPDATE users SET balanceCents=1 WHERE id=1');
++      const [child] = await runtime.queryRaw('SELECT id FROM forward_rules WHERE forwardGroupRuleId=1000 AND hostId=1');
++      await insert('traffic_billing_configs', {id:90,resourceType:'forward_group',resourceId:10,enabled:1,pricePerGbCents:100,multiplier:100});
++      await insert('traffic_billing_rule_usage', {id:91,userId:1,ruleId:child.id,resourceType:'forward_group',resourceId:10,totalBytes:100000000,billedGb:0,pendingMilliCents:0,settled:0});
++      const failedWrite = "` + failedWrite + `";
++      await runtime.executeRaw(failedWrite === 'account'
++        ? "CREATE TRIGGER reject_debt_pause BEFORE UPDATE OF canAddRules ON users WHEN NEW.canAddRules=0 BEGIN SELECT RAISE(ABORT,'injected-debt-pause'); END"
++        : "CREATE TRIGGER reject_debt_pause BEFORE UPDATE OF disabledByUser ON forward_rules WHEN NEW.disabledByUser=1 AND OLD.isEnabled=1 BEGIN SELECT RAISE(ABORT,'injected-debt-pause'); END");
++      await assert.rejects(() => saveMembers(10,[2]));
++      assert.equal(Boolean((await rules.getForwardRuleById(child.id)).deleteSettlementPending), true,
++        'a failed access pause must retain its closeout obligation');
++      await rules.updateRuleRunningStatus(child.id,false);
++      await rules.purgeSettledPendingForwardRuleDeletes();
++      assert.ok(await rules.getForwardRuleById(child.id), 'a stopped rule still waits for unfinished financial closeout');
++      await runtime.executeRaw('DROP TRIGGER reject_debt_pause');
++      await rules.purgeSettledPendingForwardRuleDeletes();
++      const user = await users.getUserById(1);
++      assert.equal(user.balanceCents, -8);
++      assert.equal(Boolean(user.canAddRules), false);
++      assert.equal(user.forwardAccessPauseReason, 'traffic_billing_balance');
++      assert.equal(await rules.getForwardRuleById(child.id), undefined);
++      const remaining = await rules.getForwardGroupChildRulesForTemplate(1000);
++      assert.ok(remaining.length > 0);
++      assert.ok(remaining.every(row => !row.isEnabled && row.disabledByUser));
++      await rules.purgeSettledPendingForwardRuleDeletes();
++      const records = await billing.listTrafficBillingRecords({userId:1});
++      assert.deepEqual(records.filter(row=>row.ruleId===child.id).map(row=>row.amountCents), [9]);
++    `);
++  });
++}
++
++test("member cleanup pauses existing debt even when its delete fee was already settled", () => {
++  runGroupMemberReleaseCase(`
++    await seedFailover(1, true);
++    const billing = await import('./server/repositories/trafficBillingRepository.ts');
++    const rules = await import('./server/repositories/forwardRuleRepository.ts');
++    const users = await import('./server/repositories/userRepository.ts');
++    await billing.setTrafficBillingEnabled(true);
++    const [child] = await runtime.queryRaw('SELECT id FROM forward_rules WHERE forwardGroupRuleId=1000 AND hostId=1');
++    await insert('traffic_billing_configs', {id:90,resourceType:'forward_group',resourceId:10,enabled:1,pricePerGbCents:100,multiplier:100});
++    await insert('traffic_billing_rule_usage', {id:91,userId:1,ruleId:child.id,resourceType:'forward_group',resourceId:10,totalBytes:100000000,billedGb:0,pendingMilliCents:0,settled:1});
++    await insert('traffic_billing_records', {id:92,userId:1,ruleId:child.id,resourceType:'forward_group',resourceId:10,bytes:100000000,amountCents:9,balanceAfterCents:-8});
++    await runtime.executeRaw('UPDATE users SET balanceCents=-8 WHERE id=1');
++    await rules.markForwardRulePendingDelete(child.id);
++    await rules.setForwardRuleDeleteSettlementPending(child.id,true);
++    await rules.updateRuleRunningStatus(child.id,false);
++    await rules.purgeSettledPendingForwardRuleDeletes();
++    const user = await users.getUserById(1);
++    assert.equal(user.balanceCents,-8);
++    assert.equal(Boolean(user.canAddRules),false);
++    assert.equal(user.forwardAccessPauseReason,'traffic_billing_balance');
++    assert.equal(await rules.getForwardRuleById(child.id),undefined);
++    assert.ok((await rules.getForwardGroupChildRulesForTemplate(1000)).every(row=>!row.isEnabled));
++    const records = await billing.listTrafficBillingRecords({userId:1});
++    assert.deepEqual(records.filter(row=>row.ruleId===child.id).map(row=>row.amountCents),[9]);
++  `);
++});
+diff --git a/server/latencyHistory.test.ts b/server/latencyHistory.test.ts
+index 2ed0348..245a282 100644
+--- a/server/latencyHistory.test.ts
++++ b/server/latencyHistory.test.ts
+@@ -148,3 +148,43 @@ test("raw latency history retains a month, seeks daily windows and bounds chart
+     fs.rmSync(directory, { recursive: true, force: true });
+   }
+ });
++
++test("chain history counts only actual reports in daily and rolling windows", async () => {
++  process.env.DATABASE_TYPE = "sqlite";
++  const runtime = await import("./dbRuntime");
++  const { ensureDatabaseSchema } = await import("./dbSchema");
++  const { rulesRouter } = await import("./routers/rules");
++  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "forwardx-chain-history-"));
++  try {
++    await runtime.connectDatabase({ type: "sqlite", sqlite: { path: path.join(directory, "history.db") } });
++    await ensureDatabaseSchema();
++    const now = Math.floor(Date.now() / 1000);
++    const day = Math.floor(now / 86400) * 86400;
++    const days = Array.from({ length: 31 }, (_, index) => new Date((day - 29 * 86400 + index * 86400) * 1000));
++    await runtime.executeRaw("INSERT INTO forward_groups (id,name,groupMode,groupType,targetIp,userId) VALUES (9,'chain','chain','host','example.test',1)");
++    await runtime.executeRaw("INSERT INTO forward_rules (id,hostId,name,sourcePort,targetIp,targetPort,userId,forwardGroupId,isForwardGroupTemplate) VALUES (301,1,'root',10301,'example.test',443,1,9,1)");
++    for (const id of [302, 303]) await runtime.executeRaw("INSERT INTO forward_rules (id,hostId,name,sourcePort,targetIp,targetPort,userId,forwardGroupId,forwardGroupRuleId,forwardGroupMemberId) VALUES (?,1,'child',?,'example.test',443,1,9,301,?)", [id, id + 10000, id]);
++    const caller = rulesRouter.createCaller({ req: { headers: {} }, res: {}, user: { id: 1, role: "user", accountEnabled: true } } as any);
++    const dailyInput = { ruleId: 301, hours: 720, startAt: days[0], endAt: days[30], dayBoundaries: days };
++    assert.deepEqual(await caller.tcpingSeries(dailyInput), [], "unreported periods remain empty");
++    await runtime.executeRaw("INSERT INTO tcping_stats (ruleId,hostId,latencyMs,isTimeout,probeCount,probeSuccesses,recordedAt) VALUES (302,1,10,0,3,3,?)", [now - 120]);
++    const { clearRuleLatencyQueryCaches, latencyHistoryQueryCache } = await import("./ruleLatencyQueryCache");
++    clearRuleLatencyQueryCaches();
++    latencyHistoryQueryCache.clear();
++    for (const rows of [await caller.tcpingSeries(dailyInput), await caller.tcpingSeries({ ruleId: 301, hours: 24 })]) {
++      assert.equal(rows.reduce((sum, row) => sum + row.probeCount, 0), 3);
++      assert.equal(rows.reduce((sum, row) => sum + row.probeSuccesses, 0), 3);
++    }
++    await runtime.executeRaw("INSERT INTO tcping_stats (ruleId,hostId,latencyMs,isTimeout,probeCount,probeSuccesses,recordedAt) VALUES (303,1,NULL,1,2,0,?)", [now - 120]);
++    // The exclusive end must also hold on the chain's fallback path.
++    await runtime.executeRaw("INSERT INTO tcping_stats (ruleId,hostId,latencyMs,isTimeout,probeCount,probeSuccesses,recordedAt) VALUES (302,1,999,0,8,8,?)", [Math.floor(days[30].getTime() / 1000)]);
++    clearRuleLatencyQueryCaches();
++    latencyHistoryQueryCache.clear();
++    const partial = await caller.tcpingSeries(dailyInput);
++    assert.equal(partial.reduce((sum, row) => sum + row.probeCount, 0), 5);
++    assert.equal(partial.reduce((sum, row) => sum + row.probeSuccesses, 0), 3);
++  } finally {
++    await runtime.closeDatabase();
++    fs.rmSync(directory, { recursive: true, force: true });
++  }
++});
+diff --git a/server/repositories/forwardGroupRepository.ts b/server/repositories/forwardGroupRepository.ts
+index 8ebd1a7..9659784 100644
+--- a/server/repositories/forwardGroupRepository.ts
++++ b/server/repositories/forwardGroupRepository.ts
+@@ -35,6 +35,7 @@ import {
+   getForwardGroupTemplateRules,
+   getForwardRuleById,
+   setForwardRuleDeleteSettlementPending,
++  settleForwardRuleDelete,
+   getForwardRulesByIds,
+   getForwardRulesByTunnel,
+   markForwardRulePendingDelete,
+@@ -3475,42 +3476,20 @@ async function removeManagedRule(
+ ) {
+   const rule = await getForwardRuleById(ruleId);
+   if (!rule) return;
+-  const billingResource = await findTrafficBillingResourceForRule(rule);
+-  const fallback = trafficBillingResourceCandidatesForRule(rule)[0];
+-  const resource = billingResource || fallback;
+-  // Never wait for a user's billing lock while holding a database transaction:
+-  // concurrent deletion or traffic reports may hold that lock and need the DB.
+-  if (options.deferRefresh || isDatabaseTransactionActive()) {
++  // Save removal and its retry obligation together. Never wait for billing
++  // while holding the member-save transaction; acknowledge stopping separately.
++  await withDatabaseTransaction(async () => {
+     await markForwardRulePendingDelete(Number(rule.id));
+     await setForwardRuleDeleteSettlementPending(Number(rule.id), true);
+     await afterDatabaseCommit(async () => {
+       const errors: unknown[] = [];
+-      try {
+-        const billed = resource ? await withTrafficBillingUserLock(Number(rule.userId), () =>
+-          settleTrafficBillingRuleOnDelete({ userId: Number(rule.userId || 0),
+-            ruleId: Number(rule.id), resourceType: resource.resourceType,
+-            resourceId: Number(resource.resourceId || 0) })) : null;
+-        await setForwardRuleDeleteSettlementPending(Number(rule.id), false);
+-        if (billed && Number(billed.balanceAfterCents) < 0) {
+-          await setUserForwardAccess(Number(rule.userId), false, "traffic_billing_balance");
+-        }
+-      } catch (error) { errors.push(error); }
++      try { await settleForwardRuleDelete(Number(rule.id)); }
++      catch (error) { errors.push(error); }
+       try { await refreshRuleEndpoints(rule, "forward-group-child-deleted"); }
+       catch (error) { errors.push(error); }
+       if (errors.length) throw new AggregateError(errors, "配置已保存，旧规则清理部分失败");
+     });
+-    return;
+-  }
+-  if (!resource) {
+-    await settleAndMarkForwardGroupRulePendingDelete(rule);
+-    await refreshRuleEndpoints(rule, "forward-group-child-deleted");
+-    return;
+-  }
+-  const billed = await settleAndMarkForwardGroupRulePendingDelete(rule, resource);
+-  if (billed && Number(billed.balanceAfterCents) < 0) {
+-    await setUserForwardAccess(Number((rule as any).userId), false, "traffic_billing_balance");
+-  }
+-  await refreshRuleEndpoints(rule, "forward-group-child-deleted");
++  });
+ }
+ 
+ export async function repairForwardGroupTemplateHostReferences(
+diff --git a/server/repositories/forwardRuleRepository.ts b/server/repositories/forwardRuleRepository.ts
+index f557215..7fec18f 100644
+--- a/server/repositories/forwardRuleRepository.ts
++++ b/server/repositories/forwardRuleRepository.ts
+@@ -1,6 +1,6 @@
+ ﻿import { and, desc, eq, inArray, sql } from "drizzle-orm";
+ import { forwardGroupMembers, forwardGroups, forwardRuleTunnelExits, forwardRules, InsertForwardRule, tunnels } from "../../drizzle/schema";
+-import { afterDatabaseCommit, isDatabaseTransactionActive, executeRaw, getDb, insertAndGetId, nowDate } from "../dbRuntime";
++import { afterDatabaseCommit, isDatabaseTransactionActive, withDatabaseTransaction, executeRaw, getDb, insertAndGetId, nowDate } from "../dbRuntime";
+ import { queryRaw } from "../dbRuntime";
+ import { boolLiteral, boolValue, inList, quoteIdentifier } from "../dbCompat";
+ import { describePortPolicy, isPortAllowedByPolicy, portPolicyFrom, portPolicyHasRestriction, type PortPolicySource } from "../portPolicy";
+@@ -1320,6 +1320,43 @@ export async function setForwardRuleDeleteSettlementPending(id: number, pending:
+     .where(and(eq(forwardRules.id, id), eq(forwardRules.pendingDelete, true)));
+ }
+ 
++/** Complete accounting and debt suspension together before releasing the retry record.
++ * Both member saves and stop acknowledgements use this path, outside their save
++ * transaction, so the billing-user lock always precedes the database lock. */
++export async function settleForwardRuleDelete(id: number) {
++  if (isDatabaseTransactionActive()) throw new Error("规则费用收尾必须在配置保存后执行");
++  const rule = await getForwardRuleById(id);
++  if (!rule || !rule.pendingDelete || !rule.deleteSettlementPending) return;
++  const billing = await import("./trafficBillingRepository");
++  const users = await import("./userRepository");
++  await withTrafficBillingUserLock(Number(rule.userId), async () => {
++    // Read the feature switch before opening the transaction. On MySQL's
++    // repeatable-read isolation, no ordinary read may precede the user lock:
++    // a waiter must see usage committed by the previous lock owner.
++    const billingEnabled = await billing.getTrafficBillingEnabledForWrite();
++    await withDatabaseTransaction(async () => {
++      if (billingEnabled) await billing.lockTrafficBillingUserRows(Number(rule.userId));
++      const current = await getForwardRuleById(id);
++      if (!current || !current.pendingDelete || !current.deleteSettlementPending) return;
++      const resource = await billing.findTrafficBillingResourceForRule(current)
++        || billing.trafficBillingResourceCandidatesForRule(current)[0];
++      if (resource && billingEnabled) {
++        await billing.settleTrafficBillingRuleOnDelete({
++          userId: Number(current.userId), ruleId: id,
++          resourceType: resource.resourceType, resourceId: Number(resource.resourceId),
++        });
++        // A previous attempt may already have charged successfully. Its returned
++        // charge is then null, but the existing debt still needs suspension.
++        const user = await users.getUserById(Number(current.userId));
++        if (user && Number(user.balanceCents) < 0) {
++          await users.setUserForwardAccess(Number(current.userId), false, "traffic_billing_balance");
++        }
++      }
++      await setForwardRuleDeleteSettlementPending(id, false);
++    });
++  });
++}
++
+ export async function finalizeForwardRuleDelete(id: number) {
+   const db = await getDb();
+   if (!db) return false;
+@@ -1333,16 +1370,7 @@ export async function finalizeForwardRuleDelete(id: number) {
+       return false;
+     }
+     try {
+-      const billing = await import("./trafficBillingRepository");
+-      const resource = await billing.findTrafficBillingResourceForRule(rule)
+-        || billing.trafficBillingResourceCandidatesForRule(rule)[0];
+-      const billed = resource ? await withTrafficBillingUserLock(Number(rule.userId), () => billing.settleTrafficBillingRuleOnDelete({
+-        userId: Number(rule.userId), ruleId: id, resourceType: resource.resourceType, resourceId: Number(resource.resourceId),
+-      })) : null;
+-      if (billed && Number(billed.balanceAfterCents) < 0) {
+-        await (await import("./userRepository")).setUserForwardAccess(Number(rule.userId), false, "traffic_billing_balance");
+-      }
+-      await setForwardRuleDeleteSettlementPending(id, false);
++      await settleForwardRuleDelete(id);
+     } catch {
+       console.warn(`[RuleCleanup] Financial closeout pending rule=${id}; retaining stopped rule for retry`);
+       return false;
+diff --git a/server/repositories/metricsRepository.ts b/server/repositories/metricsRepository.ts
+index f3cf34a..751e8c8 100644
+--- a/server/repositories/metricsRepository.ts
++++ b/server/repositories/metricsRepository.ts
+@@ -2781,7 +2781,6 @@ export async function getTcpingSeriesByRule(
+       const byBucket = new Map<number, {
+         latencyMs: number;
+         timeoutCount: number;
+-        count: number;
+         probeCount: number;
+         probeSuccesses: number;
+         recordedAt: Date;
+@@ -2794,7 +2793,6 @@ export async function getTcpingSeriesByRule(
+         const prev = byBucket.get(key) || {
+           latencyMs: 0,
+           timeoutCount: 0,
+-          count: 0,
+           probeCount: 0,
+           probeSuccesses: 0,
+           recordedAt: at,
+@@ -2825,7 +2823,6 @@ export async function getTcpingSeriesByRule(
+           prev.minLatencyMs = (prev.minLatencyMs ?? 0) + Number(row.minLatencyMs ?? row.latencyMs);
+           prev.maxLatencyMs = (prev.maxLatencyMs ?? 0) + Number(row.maxLatencyMs ?? row.latencyMs);
+         }
+-        prev.count += 1;
+         if (at.getTime() > new Date(prev.recordedAt).getTime()) prev.recordedAt = at;
+         byBucket.set(key, prev);
+       }
+@@ -2836,10 +2833,8 @@ export async function getTcpingSeriesByRule(
+           // A bucket is a timeout only when every represented packet failed.
+           // Partial packet loss must remain a valid latency sample so the
+           // chart can calculate a non-zero loss rate from the counters.
+-          // A child that did not report in this bucket is retained as one
+-          // failed attempt, matching the pre-counter chain semantics.
+-          const missingChildAttempts = Math.max(0, childIds.length - bucket.count);
+-          const totalProbeCount = Math.max(1, bucket.probeCount + missingChildAttempts);
++          // Missing child reports are unknown observations, never failed probes.
++          const totalProbeCount = bucket.probeCount;
+           const probeSuccesses = Math.max(0, Math.min(totalProbeCount, bucket.probeSuccesses));
+           const isTimeout = probeSuccesses <= 0;
+           return {
