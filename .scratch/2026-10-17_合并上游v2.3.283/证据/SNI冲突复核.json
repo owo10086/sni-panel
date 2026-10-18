@@ -1,0 +1,661 @@
+{
+  "reviewedAt": "2026-10-18T01:12:13.983718+08:00",
+  "source": {
+    "head": "7adf15055096894b28dd058a2babad2616675a0e",
+    "unmergedIndex": "",
+    "conflictMarkers": [],
+    "sniCoreFiles": [
+      {
+        "file": "shared/sni.ts",
+        "unchangedFromBase": true,
+        "sha256": "689e760ae85180bc567b7cd8f62e95b56f5d705345ac32966f46e7f9e5bfece4"
+      },
+      {
+        "file": "server/sniRuntimeObservability.ts",
+        "unchangedFromBase": true,
+        "sha256": "cae89a6ebc36b078fd8151405ae8c46e5dbff212edb5a9ded838797d4770fe04"
+      },
+      {
+        "file": "server/ruleLimits.ts",
+        "unchangedFromBase": true,
+        "sha256": "ad0b3cf7faf273f8b69c50fdf64555e298e751878135ad42f603dc4d4bce64e7"
+      },
+      {
+        "file": "server/ruleQuotaReservations.ts",
+        "unchangedFromBase": true,
+        "sha256": "d6171e1323a9aa3ac66ae445bffeb05601d442177c78316fc7e76fe9ba7acd1a"
+      },
+      {
+        "file": "server/ruleOperationOwner.ts",
+        "unchangedFromBase": true,
+        "sha256": "9570448ebc560993286c7689ab6676027ff043c9be1bfe60aad2d663da754cc2"
+      },
+      {
+        "file": "client/src/lib/sniRuleForm.ts",
+        "unchangedFromBase": true,
+        "sha256": "9722674f79936c20d2f127a40316faddb71e4c1ebbb1d7bff3c163d30715cf96"
+      },
+      {
+        "file": "client/src/lib/ruleBulkSelection.ts",
+        "unchangedFromBase": true,
+        "sha256": "f44c5cf7ccc3ac9904ec37e75a3ce8a684ba5485e98cab367493f6bd206bcfe7"
+      },
+      {
+        "file": "client/src/lib/ruleImport.ts",
+        "unchangedFromBase": true,
+        "sha256": "c62a6708ec6228be4db582e0422afee7bbaeb0cbfc4bb1d1c5fc1fb76d51d847"
+      },
+      {
+        "file": "client/src/lib/ruleTransfer.ts",
+        "unchangedFromBase": true,
+        "sha256": "11e5c6b0101f50af348a9bd82b415484f1624621ee30684554ed2807485a1adc"
+      },
+      {
+        "file": "forwardx-fxp/traffic.go",
+        "unchangedFromBase": true,
+        "sha256": "651ba8831acfaa6fffbc20956b66e34a94f797eab83ee362b977b5af2a6a021c"
+      },
+      {
+        "file": "server/sniSourceMigration.ts",
+        "unchangedFromBase": true,
+        "sha256": "a87e68300bb8ac0907264ab596e35ad09853042be9aa47f1b2cbc7db361750d7"
+      },
+      {
+        "file": "server/sniEntryPortOverview.ts",
+        "unchangedFromBase": true,
+        "sha256": "3549bf28290482b4effac415efa29a318c9c85d99e980a372c22f59c6a9e60ce"
+      },
+      {
+        "file": "server/sniRuleWrite.ts",
+        "unchangedFromBase": true,
+        "sha256": "450fd473dc500894438908684c7b189fc17d23a0c5861b16e748aa5299e044b2"
+      },
+      {
+        "file": "server/sniRuntimeRunningState.ts",
+        "unchangedFromBase": true,
+        "sha256": "a745ee7c2964a8c56bba75b1a6ea187c5de3460a6027b2f6892ce828fd76968d"
+      },
+      {
+        "file": "server/forwardGroupSniHealth.ts",
+        "unchangedFromBase": true,
+        "sha256": "8e284d35e69c90d5856060c158db3c03f82f7578ae5a401510d143d28c88d3a3"
+      },
+      {
+        "file": "server/sniEntryPort.ts",
+        "unchangedFromBase": true,
+        "sha256": "b708b2db76c3f09ab7b087fba52f6f78d570d6c40d7007ca015b3b2904bd6a71"
+      },
+      {
+        "file": "server/repositories/forwardChainSniEntryScope.ts",
+        "unchangedFromBase": true,
+        "sha256": "d4bcdcb5e54f3ed06038335e3dd04bb384813b879803308a6ccffde92ca77f47"
+      },
+      {
+        "file": "server/routers/rules.ts",
+        "unchangedFromBase": true,
+        "sha256": "e98fedfb9a9f230ae55ccaa02b2f4b4fe5140d279d8163443cd88d9383098271"
+      },
+      {
+        "file": "server/repositories/forwardRuleRepository.ts",
+        "unchangedFromBase": true,
+        "sha256": "5bf718572a7b2c17f81d42da17a9e28f5dbe25d937b399d198a8178688034eb0"
+      }
+    ]
+  },
+  "checks": [
+    {
+      "name": "panel-sni",
+      "command": [
+        "node",
+        "--import",
+        "tsx",
+        "--test",
+        "server/sniRuleRouter.test.ts",
+        "server/sniForwardGroup.test.ts",
+        "server/sniForwardGroupHealth.test.ts",
+        "server/sniDesiredState.test.ts",
+        "server/sniRuntimeObservability.test.ts",
+        "server/sniBatchImport.test.ts",
+        "server/sniBatchEdit.test.ts",
+        "server/ruleOwnerSniPermissions.test.ts",
+        "server/ruleQuotaReservations.test.ts",
+        "server/portAccessLimits.test.ts",
+        "server/portAccessLimitRefresh.test.ts",
+        "server/paginationQueries.test.ts",
+        "server/groupMemberRelease.test.ts",
+        "server/forwardGroupTemplateHosts.test.ts",
+        "client/src/lib/sniRuleForm.test.ts",
+        "client/src/lib/batchOperations.test.ts",
+        "client/src/lib/ruleBulkSelection.test.ts"
+      ],
+      "exitCode": 0,
+      "seconds": 90.5,
+      "log": "/private/tmp/forwardx-283-sni-review/panel-sni.log",
+      "tests": 263,
+      "passed": 263,
+      "failed": 0,
+      "skipped": 0,
+      "logSha256": "246fbdde0ed4b9cb2a1430988eddaac80ab9beef35c8cd342f8ec7e2b6ee6da7"
+    },
+    {
+      "name": "agent-sni",
+      "command": [
+        "docker",
+        "--context",
+        "desktop-linux",
+        "run",
+        "--rm",
+        "--network",
+        "none",
+        "--cap-add",
+        "NET_ADMIN",
+        "--cap-add",
+        "SYS_ADMIN",
+        "--mount",
+        "type=bind,src=/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx,dst=/work,readonly",
+        "--mount",
+        "type=bind,src=/Users/macmini/go/pkg/mod,dst=/go/pkg/mod,readonly",
+        "--mount",
+        "type=bind,src=/private/tmp/forwardx-283-implementation/bin,dst=/verification,readonly",
+        "--mount",
+        "type=volume,src=forwardx283-go-build,dst=/root/.cache/go-build",
+        "-e",
+        "GOPROXY=off",
+        "-e",
+        "GOSUMDB=off",
+        "-e",
+        "FORWARDX_TEST_FXP_BINARY=/verification/forwardx-fxp",
+        "-e",
+        "FORWARDX_TEST_OLD_FXP_BINARY=/verification/forwardx-fxp-old",
+        "-e",
+        "FORWARDX_TEST_GOST_BINARY=/verification/gost",
+        "-e",
+        "FORWARDX_TEST_PORT_LIMITS=1",
+        "-e",
+        "FORWARDX_FXP_RELEASE_BINARY=/verification/forwardx-fxp-old",
+        "--name",
+        "forwardx-283-sni-review-agent-sni",
+        "-w",
+        "/work/agent",
+        "forwardx-sni-test:20261006",
+        "go",
+        "test",
+        "-json",
+        "-count=1",
+        "-timeout=180s",
+        "./...",
+        "-run",
+        "(?i)(sni|gost.*(additive|probe)|fxp.*(add|increment)|portaccess)"
+      ],
+      "exitCode": 0,
+      "seconds": 5.5,
+      "log": "/private/tmp/forwardx-283-sni-review/agent-sni.log",
+      "passTopLevel": 28,
+      "failTopLevel": 0,
+      "skipTopLevel": 3,
+      "skippedTests": [
+        "TestSniForwardGroupDestinationProbes",
+        "TestSniForwardGroupFailedRevocation",
+        "TestSniForwardGroupMemberActions"
+      ],
+      "logSha256": "044014bd5cd98fdb1310c95240e57487551c3d414d53bbae923140349e1b3ca5"
+    },
+    {
+      "name": "fxp-sni",
+      "command": [
+        "docker",
+        "--context",
+        "desktop-linux",
+        "run",
+        "--rm",
+        "--network",
+        "none",
+        "--cap-add",
+        "NET_ADMIN",
+        "--cap-add",
+        "SYS_ADMIN",
+        "--mount",
+        "type=bind,src=/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx,dst=/work,readonly",
+        "--mount",
+        "type=bind,src=/Users/macmini/go/pkg/mod,dst=/go/pkg/mod,readonly",
+        "--mount",
+        "type=bind,src=/private/tmp/forwardx-283-implementation/bin,dst=/verification,readonly",
+        "--mount",
+        "type=volume,src=forwardx283-go-build,dst=/root/.cache/go-build",
+        "-e",
+        "GOPROXY=off",
+        "-e",
+        "GOSUMDB=off",
+        "-e",
+        "FORWARDX_TEST_FXP_BINARY=/verification/forwardx-fxp",
+        "-e",
+        "FORWARDX_TEST_OLD_FXP_BINARY=/verification/forwardx-fxp-old",
+        "-e",
+        "FORWARDX_TEST_GOST_BINARY=/verification/gost",
+        "-e",
+        "FORWARDX_TEST_PORT_LIMITS=1",
+        "-e",
+        "FORWARDX_FXP_RELEASE_BINARY=/verification/forwardx-fxp-old",
+        "--name",
+        "forwardx-283-sni-review-fxp-sni",
+        "-w",
+        "/work/forwardx-fxp",
+        "forwardx-sni-test:20261006",
+        "go",
+        "test",
+        "-json",
+        "-count=1",
+        "-timeout=180s",
+        "./...",
+        "-run",
+        "(?i)(sni|additive|controlled)"
+      ],
+      "exitCode": 0,
+      "seconds": 2.01,
+      "log": "/private/tmp/forwardx-283-sni-review/fxp-sni.log",
+      "passTopLevel": 14,
+      "failTopLevel": 0,
+      "skipTopLevel": 0,
+      "skippedTests": [],
+      "logSha256": "25063caa2f6ea8444296ef15af5f895473cea3455076f711f87a279491a3c97a"
+    }
+  ],
+  "groupNetwork": {
+    "exitCode": 0,
+    "testName": "host failover SNI lifecycle preserves readiness, atomic saves, imports and accounting",
+    "log": "/private/tmp/forwardx-283-sni-review/group-network.log",
+    "logSha256": "3b5971fd67cf4ec9d94f2f6b2ddc4fae400a265ae6029b4d6e49dcc895143854",
+    "environment": {
+      "DOCKER_CONTEXT": "desktop-linux",
+      "FORWARDX_SNI_GROUP_NETWORK": "1",
+      "FORWARDX_SNI_GROUP_EXPORT": "/private/tmp/forwardx-283-sni-review/group-network"
+    },
+    "optionalChecksPassedViaExistingWrapper": [
+      "TestSniForwardGroupDestinationProbes",
+      "TestSniForwardGroupFailedRevocation",
+      "TestSniForwardGroupMemberActions"
+    ],
+    "probeResults": [
+      {
+        "file": "/private/tmp/forwardx-283-sni-review/group-network/probe-1-failed.json",
+        "sha256": "20b780d9f65f805846a0a3ec032477f2465413219c763b895534554c5c51113f",
+        "data": [
+          {
+            "healthPending": false,
+            "healthStatus": "unhealthy",
+            "isTimeout": true,
+            "latencyMs": 0,
+            "method": "tcping",
+            "probeCount": 3,
+            "probeKey": "rule:8:127.0.0.1:19443:tcping",
+            "probeSuccesses": 0,
+            "ruleId": 8,
+            "sourcePort": 18443,
+            "targetIp": "127.0.0.1",
+            "targetPort": 19443,
+            "tunnelId": 0
+          },
+          {
+            "healthPending": false,
+            "healthStatus": "healthy",
+            "isTimeout": false,
+            "latencyMs": 1,
+            "method": "tcping",
+            "probeCount": 3,
+            "probeKey": "rule:5:127.0.0.1:19445:tcping",
+            "probeSuccesses": 3,
+            "ruleId": 5,
+            "sourcePort": 18443,
+            "targetIp": "127.0.0.1",
+            "targetPort": 19445,
+            "tunnelId": 0
+          }
+        ]
+      },
+      {
+        "file": "/private/tmp/forwardx-283-sni-review/group-network/probe-1-healthy.json",
+        "sha256": "7826e4e21e316b2bf6345d527547d16f41372325f0cb99e8ee85d55e8fde67b5",
+        "data": [
+          {
+            "healthPending": false,
+            "healthStatus": "healthy",
+            "isTimeout": false,
+            "latencyMs": 1,
+            "method": "tcping",
+            "probeCount": 3,
+            "probeKey": "rule:8:127.0.0.1:19443:tcping",
+            "probeSuccesses": 3,
+            "ruleId": 8,
+            "sourcePort": 18443,
+            "targetIp": "127.0.0.1",
+            "targetPort": 19443,
+            "tunnelId": 0
+          },
+          {
+            "healthPending": false,
+            "healthStatus": "healthy",
+            "isTimeout": false,
+            "latencyMs": 1,
+            "method": "tcping",
+            "probeCount": 3,
+            "probeKey": "rule:5:127.0.0.1:19445:tcping",
+            "probeSuccesses": 3,
+            "ruleId": 5,
+            "sourcePort": 18443,
+            "targetIp": "127.0.0.1",
+            "targetPort": 19445,
+            "tunnelId": 0
+          }
+        ]
+      },
+      {
+        "file": "/private/tmp/forwardx-283-sni-review/group-network/probe-1-pending.json",
+        "sha256": "548d8160a2836f1688b0dfeac061c5ed24873c8ca51f7c9c8637c712d027fbf9",
+        "data": [
+          {
+            "healthPending": true,
+            "healthStatus": "healthy",
+            "isTimeout": true,
+            "latencyMs": 0,
+            "method": "tcping",
+            "probeCount": 3,
+            "probeKey": "rule:8:127.0.0.1:19443:tcping",
+            "probeSuccesses": 0,
+            "ruleId": 8,
+            "sourcePort": 18443,
+            "targetIp": "127.0.0.1",
+            "targetPort": 19443,
+            "tunnelId": 0
+          },
+          {
+            "healthPending": false,
+            "healthStatus": "healthy",
+            "isTimeout": false,
+            "latencyMs": 1,
+            "method": "tcping",
+            "probeCount": 3,
+            "probeKey": "rule:5:127.0.0.1:19445:tcping",
+            "probeSuccesses": 3,
+            "ruleId": 5,
+            "sourcePort": 18443,
+            "targetIp": "127.0.0.1",
+            "targetPort": 19445,
+            "tunnelId": 0
+          }
+        ]
+      },
+      {
+        "file": "/private/tmp/forwardx-283-sni-review/group-network/probe-1-recover-pending.json",
+        "sha256": "7d5beaf9a78c8bd9eb61ff2a352cac6707f8787714eafaf5b5f435bb4f86b800",
+        "data": [
+          {
+            "healthPending": false,
+            "healthStatus": "healthy",
+            "isTimeout": false,
+            "latencyMs": 1,
+            "method": "tcping",
+            "probeCount": 3,
+            "probeKey": "rule:5:127.0.0.1:19445:tcping",
+            "probeSuccesses": 3,
+            "ruleId": 5,
+            "sourcePort": 18443,
+            "targetIp": "127.0.0.1",
+            "targetPort": 19445,
+            "tunnelId": 0
+          },
+          {
+            "healthPending": true,
+            "healthStatus": "unhealthy",
+            "isTimeout": false,
+            "latencyMs": 1,
+            "method": "tcping",
+            "probeCount": 3,
+            "probeKey": "rule:8:127.0.0.1:19443:tcping",
+            "probeSuccesses": 3,
+            "ruleId": 8,
+            "sourcePort": 18443,
+            "targetIp": "127.0.0.1",
+            "targetPort": 19443,
+            "tunnelId": 0
+          }
+        ]
+      },
+      {
+        "file": "/private/tmp/forwardx-283-sni-review/group-network/probe-1-recovered.json",
+        "sha256": "d491de5fc9cef094bf8fb5260990baa601e778dbb3bf033b7877ac59b7f4d10b",
+        "data": [
+          {
+            "healthPending": false,
+            "healthStatus": "healthy",
+            "isTimeout": false,
+            "latencyMs": 1,
+            "method": "tcping",
+            "probeCount": 3,
+            "probeKey": "rule:5:127.0.0.1:19445:tcping",
+            "probeSuccesses": 3,
+            "ruleId": 5,
+            "sourcePort": 18443,
+            "targetIp": "127.0.0.1",
+            "targetPort": 19445,
+            "tunnelId": 0
+          },
+          {
+            "healthPending": false,
+            "healthStatus": "healthy",
+            "isTimeout": false,
+            "latencyMs": 1,
+            "method": "tcping",
+            "probeCount": 3,
+            "probeKey": "rule:8:127.0.0.1:19443:tcping",
+            "probeSuccesses": 3,
+            "ruleId": 8,
+            "sourcePort": 18443,
+            "targetIp": "127.0.0.1",
+            "targetPort": 19443,
+            "tunnelId": 0
+          }
+        ]
+      },
+      {
+        "file": "/private/tmp/forwardx-283-sni-review/group-network/probe-2-failed.json",
+        "sha256": "b5f8ce3cc9f56e5f187a59ba6e13a359e63dfbea3337c2e083c932976a5d1824",
+        "data": [
+          {
+            "healthPending": false,
+            "healthStatus": "healthy",
+            "isTimeout": false,
+            "latencyMs": 1,
+            "method": "tcping",
+            "probeCount": 3,
+            "probeKey": "rule:9:127.0.0.1:19443:tcping",
+            "probeSuccesses": 3,
+            "ruleId": 9,
+            "sourcePort": 18443,
+            "targetIp": "127.0.0.1",
+            "targetPort": 19443,
+            "tunnelId": 0
+          },
+          {
+            "healthPending": false,
+            "healthStatus": "healthy",
+            "isTimeout": false,
+            "latencyMs": 1,
+            "method": "tcping",
+            "probeCount": 3,
+            "probeKey": "rule:6:127.0.0.1:19445:tcping",
+            "probeSuccesses": 3,
+            "ruleId": 6,
+            "sourcePort": 18443,
+            "targetIp": "127.0.0.1",
+            "targetPort": 19445,
+            "tunnelId": 0
+          }
+        ]
+      },
+      {
+        "file": "/private/tmp/forwardx-283-sni-review/group-network/probe-2-healthy.json",
+        "sha256": "b5f8ce3cc9f56e5f187a59ba6e13a359e63dfbea3337c2e083c932976a5d1824",
+        "data": [
+          {
+            "healthPending": false,
+            "healthStatus": "healthy",
+            "isTimeout": false,
+            "latencyMs": 1,
+            "method": "tcping",
+            "probeCount": 3,
+            "probeKey": "rule:9:127.0.0.1:19443:tcping",
+            "probeSuccesses": 3,
+            "ruleId": 9,
+            "sourcePort": 18443,
+            "targetIp": "127.0.0.1",
+            "targetPort": 19443,
+            "tunnelId": 0
+          },
+          {
+            "healthPending": false,
+            "healthStatus": "healthy",
+            "isTimeout": false,
+            "latencyMs": 1,
+            "method": "tcping",
+            "probeCount": 3,
+            "probeKey": "rule:6:127.0.0.1:19445:tcping",
+            "probeSuccesses": 3,
+            "ruleId": 6,
+            "sourcePort": 18443,
+            "targetIp": "127.0.0.1",
+            "targetPort": 19445,
+            "tunnelId": 0
+          }
+        ]
+      },
+      {
+        "file": "/private/tmp/forwardx-283-sni-review/group-network/probe-2-pending.json",
+        "sha256": "b5f8ce3cc9f56e5f187a59ba6e13a359e63dfbea3337c2e083c932976a5d1824",
+        "data": [
+          {
+            "healthPending": false,
+            "healthStatus": "healthy",
+            "isTimeout": false,
+            "latencyMs": 1,
+            "method": "tcping",
+            "probeCount": 3,
+            "probeKey": "rule:9:127.0.0.1:19443:tcping",
+            "probeSuccesses": 3,
+            "ruleId": 9,
+            "sourcePort": 18443,
+            "targetIp": "127.0.0.1",
+            "targetPort": 19443,
+            "tunnelId": 0
+          },
+          {
+            "healthPending": false,
+            "healthStatus": "healthy",
+            "isTimeout": false,
+            "latencyMs": 1,
+            "method": "tcping",
+            "probeCount": 3,
+            "probeKey": "rule:6:127.0.0.1:19445:tcping",
+            "probeSuccesses": 3,
+            "ruleId": 6,
+            "sourcePort": 18443,
+            "targetIp": "127.0.0.1",
+            "targetPort": 19445,
+            "tunnelId": 0
+          }
+        ]
+      },
+      {
+        "file": "/private/tmp/forwardx-283-sni-review/group-network/probe-2-recover-pending.json",
+        "sha256": "757f1a38222e5dfaa11adaa6a2c77834dbe5e83b1dad12fc91999df27d6ba9f4",
+        "data": [
+          {
+            "healthPending": false,
+            "healthStatus": "healthy",
+            "isTimeout": false,
+            "latencyMs": 1,
+            "method": "tcping",
+            "probeCount": 3,
+            "probeKey": "rule:6:127.0.0.1:19445:tcping",
+            "probeSuccesses": 3,
+            "ruleId": 6,
+            "sourcePort": 18443,
+            "targetIp": "127.0.0.1",
+            "targetPort": 19445,
+            "tunnelId": 0
+          },
+          {
+            "healthPending": false,
+            "healthStatus": "healthy",
+            "isTimeout": false,
+            "latencyMs": 2,
+            "method": "tcping",
+            "probeCount": 3,
+            "probeKey": "rule:9:127.0.0.1:19443:tcping",
+            "probeSuccesses": 3,
+            "ruleId": 9,
+            "sourcePort": 18443,
+            "targetIp": "127.0.0.1",
+            "targetPort": 19443,
+            "tunnelId": 0
+          }
+        ]
+      },
+      {
+        "file": "/private/tmp/forwardx-283-sni-review/group-network/probe-2-recovered.json",
+        "sha256": "e8d55069b6e1726b78ca3851ab3769255cc5ef4acbe7027b44cb506472b5609f",
+        "data": [
+          {
+            "healthPending": false,
+            "healthStatus": "healthy",
+            "isTimeout": false,
+            "latencyMs": 1,
+            "method": "tcping",
+            "probeCount": 3,
+            "probeKey": "rule:6:127.0.0.1:19445:tcping",
+            "probeSuccesses": 3,
+            "ruleId": 6,
+            "sourcePort": 18443,
+            "targetIp": "127.0.0.1",
+            "targetPort": 19445,
+            "tunnelId": 0
+          },
+          {
+            "healthPending": false,
+            "healthStatus": "healthy",
+            "isTimeout": false,
+            "latencyMs": 1,
+            "method": "tcping",
+            "probeCount": 3,
+            "probeKey": "rule:9:127.0.0.1:19443:tcping",
+            "probeSuccesses": 3,
+            "ruleId": 9,
+            "sourcePort": 18443,
+            "targetIp": "127.0.0.1",
+            "targetPort": 19443,
+            "tunnelId": 0
+          }
+        ]
+      }
+    ],
+    "fxpSha256": "d6e758ec31cd517fc648ab9a5182087525e8f3eef9d6e351b25e0d7b577a3355",
+    "agentProbeSha256": "5954b19134afc89484b21957dd8fd44be59c78451ef9b4686b57709e1ccc1765"
+  },
+  "reviews": {
+    "standards": {
+      "findings": 0,
+      "scope": "0fb7ce0...7adf150 plus SNI shared call paths"
+    },
+    "spec": {
+      "missingOrPartial": 0,
+      "scopeCreep": 0,
+      "confirmedErrors": 0
+    }
+  },
+  "remainingVerificationGap": "3000规则压力检查仍未运行；本轮没有生产验收或用户人工确认。",
+  "cleanup": {
+    "ownContainersRemaining": []
+  },
+  "businessCodeChanged": false,
+  "protectedAndNativeFilesUnchanged": true,
+  "head": "7adf15055096894b28dd058a2babad2616675a0e"
+}
