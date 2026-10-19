@@ -861,6 +861,15 @@ test("port entry SNI uses each entry directly and confirms all resources before 
     mock.timers.tick(11_000);
     for (const id of [1, 2]) await heartbeat(id, localRules(current[id - 1]));
     await groups.runForwardGroupFailover(entryId, { manual: true, forceSync: true });
+    // A concurrent save after health evaluation must invalidate that selection.
+    // The trigger gives this race a deterministic database boundary, without a
+    // production test hook or replacing the actual DNS provider request.
+    await runtime.executeRaw('CREATE TRIGGER change_sni_during_health AFTER UPDATE OF "lastCheckedAt" ON "forward_group_members" WHEN NEW."groupId" = ' + entryId + ' BEGIN UPDATE "forward_rules" SET "targetIp" = \'203.0.113.88\' WHERE "id" = ' + third.id + ' OR "forwardGroupRuleId" = ' + third.id + '; END');
+    const beforeConcurrentSave = requests.length;
+    await groups.runForwardGroupFailover(entryId, { manual: true, forceSync: true });
+    assert.equal(requests.length, beforeConcurrentSave, "a decision made before a concurrent save must not reach DNS");
+    await runtime.executeRaw('DROP TRIGGER change_sni_during_health');
+    await runtime.executeRaw('UPDATE "forward_rules" SET "targetIp" = ? WHERE "id" = ? OR "forwardGroupRuleId" = ?', ["203.0.113.30", third.id, third.id]);
     await service.updateForwardGroupFromInput(entryId, { ...entryInput, members: [{ memberType: "host", hostId: 2, isEnabled: true }] });
     await groups.runForwardGroupFailover(entryId, { manual: true, forceSync: true });
     assert.deepEqual(requests.at(-1).values, ["192.0.2.2"], "removed A must leave managed DNS");

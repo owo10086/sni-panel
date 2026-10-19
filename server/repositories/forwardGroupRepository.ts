@@ -5060,34 +5060,44 @@ async function syncEntryGroupDdns(group: any, ddnsSettings: any, options: Forwar
   const agentLivenessByMemberId = new Map<number, MemberAgentLiveness>();
   const pendingHealthExpiryCandidates: number[] = [];
   let activeMemberId: number | null = null;
-  const referencedPortGroups = await db.select({ id: forwardGroups.id }).from(forwardGroups).where(and(
-    eq(forwardGroups.entryGroupId, Number(group.id)), eq(forwardGroups.groupMode, "port"), eq(forwardGroups.isEnabled, true),
-  ));
-  const referencedTemplates = (await Promise.all(referencedPortGroups.map((row: { id: number }) => getForwardGroupTemplateRules(Number(row.id))))).flat();
-  const referencedChildren = (await Promise.all(referencedPortGroups.map((row: { id: number }) => getForwardGroupChildRules(Number(row.id))))).flat();
+  const readPortGroupRefs = () => db.select({ id: forwardGroups.id, isEnabled: forwardGroups.isEnabled }).from(forwardGroups).where(and(
+    eq(forwardGroups.entryGroupId, Number(group.id)), eq(forwardGroups.groupMode, "port"),
+  )).orderBy(asc(forwardGroups.id));
+  const referencedPortGroups = await readPortGroupRefs();
+  const templateRows = await Promise.all(referencedPortGroups.map((row: { id: number }) => getForwardGroupTemplateRules(Number(row.id))));
+  const childRows = await Promise.all(referencedPortGroups.map((row: { id: number }) => getForwardGroupChildRules(Number(row.id))));
+  const referencedTemplates = templateRows.flatMap((rules, index) => dbBool(referencedPortGroups[index].isEnabled) ? rules : []);
+  const referencedChildren = childRows.flatMap((rules, index) => dbBool(referencedPortGroups[index].isEnabled) ? rules : []);
   const needsSniConfirmation = referencedTemplates.some(rule => normalizeSniValue(rule.sni));
   const topologySignature = (value: any) => JSON.stringify([
     value?.domain, value?.recordType, value?.isEnabled, value?.ddnsAutoResolveEnabled,
     sortedMembers(value).map((member: any) => [member.id, member.hostId, member.isEnabled, member.priority]),
   ]);
   const initialTopology = topologySignature(group);
-  const readSniScopeSignature = async () => {
-    if (!needsSniConfirmation) return "";
-    const refs = await db.select({ id: forwardGroups.id, isEnabled: forwardGroups.isEnabled }).from(forwardGroups)
-      .where(and(eq(forwardGroups.entryGroupId, Number(group.id)), eq(forwardGroups.groupMode, "port"))).orderBy(asc(forwardGroups.id));
-    const rules = (await Promise.all(refs.map(async (row: any) => [
-      ...await getForwardGroupTemplateRules(Number(row.id)), ...await getForwardGroupChildRules(Number(row.id)),
-    ]))).flat().sort((a: any, b: any) => Number(a.id) - Number(b.id));
+  const sniScopeSignature = (refs: Array<{ id: number; isEnabled: unknown }>, inputRules: any[]) => {
+    const rules = inputRules.slice().sort((a, b) => Number(a.id) - Number(b.id));
     const ports = [...new Set(rules.filter((rule: any) => normalizeSniValue(rule.sni)).map((rule: any) => Number(rule.sourcePort)))];
     return JSON.stringify([refs, rules.map((rule: any) => [rule.id, rule.hostId, rule.forwardGroupMemberId, rule.forwardGroupRuleId,
       rule.sourcePort, rule.targetIp, rule.targetPort, rule.sni, rule.rateLimitMbps, rule.maxConnections,
       rule.isEnabled, rule.pendingDelete, rule.disabledByGroup, rule.disabledByUser, rule.disabledByTunnel]),
       members.map(member => [member.hostId, ports.map(port => {
         const report = getSniRuntimeGroupStatus(member.hostId, port);
-        return [port, report?.currentVersion, report?.appliedRoutes, report?.interruptedAt,
+        return [port, report?.currentVersion, report?.appliedRoutes, report?.interruptedAt, sniRuntimeConfirmationBoundary(member.hostId),
           !!report?.confirmedAt && Date.now() < report.confirmedAt + forwardGroupRuleProbeFreshMs];
       })]),
     ]);
+  };
+  // Use the rows actually evaluated as the baseline. Reading it after health
+  // evaluation could accept a concurrent save while keeping the old decision.
+  // Include an empty scope too, so attaching the first SNI resource invalidates
+  // a selection that was made without any SNI confirmation requirement.
+  const initialSniScope = sniScopeSignature(referencedPortGroups, [...templateRows.flat(), ...childRows.flat()]);
+  const readSniScopeSignature = async () => {
+    const refs = await readPortGroupRefs();
+    const rules = (await Promise.all(refs.map(async (row: { id: number }) => [
+      ...await getForwardGroupTemplateRules(Number(row.id)), ...await getForwardGroupChildRules(Number(row.id)),
+    ]))).flat();
+    return sniScopeSignature(refs, rules);
   };
   const chinaHealthEnabled = dbBool(group.chinaHealthCheckEnabled);
   const chinaHealthNow = Date.now();
@@ -5243,7 +5253,6 @@ async function syncEntryGroupDdns(group: any, ddnsSettings: any, options: Forwar
     .filter((value): value is number => typeof value === "number" && value > chinaHealthNow)
     .sort((left, right) => left - right)[0] ?? null;
   forwardGroupHealthRechecks.replace(Number(group.id), nextHealthRecheckAt);
-  const initialSniScope = await readSniScopeSignature();
   const agentSelectionStillCurrent = async () => {
     if (topologySignature(await getForwardGroupById(Number(group.id))) !== initialTopology) return false;
     if (await readSniScopeSignature() !== initialSniScope) return false;

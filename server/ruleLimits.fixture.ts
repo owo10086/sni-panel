@@ -258,7 +258,7 @@ try {
   assert.equal((await db.getForwardRuleById(99))!.quotaUsedOut, 500);
   const lastReport = stat(40, 60, 99).stat;
   assert.equal((await report(1, [lastReport], "baseline-boundary")).status, 200);
-  assert.deepEqual(await report(1, [lastReport], "baseline-boundary"), { status: 200, body: { success: true, duplicate: true } });
+  assert.deepEqual(await report(1, [lastReport], "baseline-boundary"), { status: 200, body: { success: true, duplicate: true, sourceAnalyticsEnabled: false } });
   assert.equal((await db.getForwardRuleById(99))!.ruleLimitReason, "traffic_limit");
   assert.equal((await db.getForwardRuleById(99))!.quotaUsedIn, 440);
   assert.equal((await db.getForwardRuleById(99))!.quotaUsedOut, 560);

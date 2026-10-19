@@ -5747,7 +5747,9 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
       const ruleTunnel = tunnelId > 0 ? tunnelById.get(tunnelId) as any : null;
       if (!isRuleProtocolEnabled(forwardProtocolSettings, rule, ruleTunnel)) return;
       if (runtimeBool(rule.isEnabled) && sniRuntime.mode === "exit") {
-        if (["failover", "port"].includes(sniRuntime.resource) && !isSniEntryAgentVersionSupported(effectiveAgentVersion)) {
+        const requiresEntrySupport = sniRuntime.resource === "failover"
+          || (sniRuntime.resource === "port" && Number((await getForwardChainGroup(Number(rule.forwardGroupId)))?.entryGroupId || 0) > 0);
+        if (requiresEntrySupport && !isSniEntryAgentVersionSupported(effectiveAgentVersion)) {
           await db.markForwardRulesNotRunning([Number(rule.id)]);
           rule.isRunning = false;
           return;
