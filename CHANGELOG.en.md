@@ -4,6 +4,21 @@
 
 ## [Unreleased]
 
+## [3.4.1] - 2026-10-19
+
+### Fixes and improvements
+
+- Select members of host failover groups using entry runtime readiness and health. Failed, missing or expired ordinary business-target probes no longer independently block entry selection, stall DDNS or switch the entire group. Keep per-rule failures, latency, history and manual diagnostics.
+- Disabling the entry health check skips only its configured external probe. Retain member liveness, traffic policy, required running rules, observation delays, priority and automatic failback. SNI still requires confirmation of the complete current routing configuration.
+- Preserve each ordinary rule's current child failure start across panel restarts so an ongoing failure does not restart its failover delay. Recovery, replacement children and newly failed rules cannot borrow time from earlier failures or the entry health check.
+- Ignore retired children when selecting the current ordinary child after a rule moves to another group and back, allowing a prepared backup entry to qualify. Preserve SNI checks for revoked hostnames and obsolete routing configurations.
+
+### Versions and upgrade notes
+
+- Panel: `3.4.1`; Agent and ForwardX FXP runtime: `3.4.0`. Only the panel needs upgrading for this fix; no Agent/FXP upgrade is required.
+- This change applies only to host failover groups, including ordinary and mixed SNI groups. Keep the existing policies for parallel entry groups, port resources, exit groups, forwarding chains and tunnel failover groups.
+- This release does not repair failed business-target services. Running rules whose destinations are unreachable continue to display failures. Native Android and iOS/iPadOS applications remain excluded; no APK/IPA is published.
+
 ## [3.4.0] - 2026-10-19
 
 ### Features and improvements
