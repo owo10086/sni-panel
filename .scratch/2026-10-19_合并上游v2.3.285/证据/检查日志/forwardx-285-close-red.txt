@@ -1,0 +1,88 @@
+(node:63204) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+TAP version 13
+# (node:63205) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:63205) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: real SQLite rule quotas, admin permissions, expiry, resets, member inheritance and migration defaults
+ok 1 - real SQLite rule quotas, admin permissions, expiry, resets, member inheritance and migration defaults
+  ---
+  duration_ms: 1583.339667
+  type: 'test'
+  ...
+# (node:63206) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:63206) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: SNI chain running state waits for entry and exit snapshots
+ok 2 - SNI chain running state waits for entry and exit snapshots
+  ---
+  duration_ms: 1258.439583
+  type: 'test'
+  ...
+# (node:63207) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:63207) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: port entry SNI uses each entry directly and confirms all resources before DNS inclusion
+not ok 3 - port entry SNI uses each entry directly and confirms all resources before DNS inclusion
+  ---
+  duration_ms: 1464.017958
+  type: 'test'
+  location: '/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-4/server/sniForwardGroup.test.ts:697:350'
+  failureType: 'testCodeFailure'
+  error: |-
+    (node:63211) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+    (Use `node --trace-warnings ...` to show where the warning was created)
+    (node:63211) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+    (Use `node --trace-warnings ...` to show where the warning was created)
+    (node:63211) ExperimentalWarning: The MockTimers API is an experimental feature and might change at any time
+    [AgentEvent] host=1 event=agent-desired-state delivery issue reason=no-active-stream
+    [AgentEvent] host=2 event=agent-desired-state delivery issue reason=no-active-stream
+    node:internal/modules/run_main:123
+        triggerUncaughtException(
+        ^
+
+    AssertionError [ERR_ASSERTION]: a decision made before a concurrent save must not reach DNS
+
+    6 !== 5
+
+        at [90mfile:///Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-4/[39m[eval1]:151:12
+    [90m    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)[39m {
+      generatedMessage: [33mfalse[39m,
+      code: [32m'ERR_ASSERTION'[39m,
+      actual: [33m6[39m,
+      expected: [33m5[39m,
+      operator: [32m'strictEqual'[39m,
+      diff: [32m'simple'[39m
+    }
+
+    Node.js v22.22.3
+
+
+    1 !== 0
+
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 1
+  operator: 'strictEqual'
+  stack: |-
+    [90mfile:///Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-4/[39m[eval1]:151:12
+    verifySniGroupDeletion (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-4/server/sniForwardGroup.test.ts:113:12)
+    TestContext.<anonymous> (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-4/server/sniForwardGroup.test.ts:778:3)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.start (node:internal/test_runner/test:944:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:296:17)
+  ...
+1..3
+# tests 3
+# suites 0
+# pass 2
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2515.915375

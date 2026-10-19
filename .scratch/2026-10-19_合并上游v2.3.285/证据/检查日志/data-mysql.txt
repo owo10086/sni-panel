@@ -1,0 +1,15 @@
+(node:41963) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:41963) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[Database] MySQL connected at 127.0.0.1:59953/forwardx285
+[OperationsGeo] offline IPv4 database ready version=1bf6cabfb63c1a14
+[TrafficSummary] Bucket backfill complete marker=v3 rows=0 elapsedMs=4
+[TrafficCounter] User/rule counter backfill complete ruleRows=0 userRows=0 repairedRules=0 repairedBuckets=0 elapsedMs=10
+[MySQL] Health check started marker=mysql-health-20260612-query-cache-v1 force=true
+[MySQL] Health check complete marker=mysql-health-20260612-query-cache-v1 tablesAnalyzed=75 analyzeFailures=0 completed=true elapsedMs=216
+[TrafficSummary] Bucket backfill complete marker=v3 rows=0 elapsedMs=3
+[TrafficCounter] User/rule counter backfill complete ruleRows=0 userRows=0 repairedRules=0 repairedBuckets=0 elapsedMs=8
+[MySQL] Health check started marker=mysql-health-20260612-query-cache-v1 force=true
+[MySQL] Health check complete marker=mysql-health-20260612-query-cache-v1 tablesAnalyzed=75 analyzeFailures=0 completed=true elapsedMs=210
+{"database":"mysql","result":"passed","checks":["schema-idempotent","traffic-upsert-and-rollback","source-default-off","offline-geo","currency-separation","pagination-owner-isolation","full-backup-four-ops-and-probe-head","essential-backup-omits-ops","restore-full","legacy-missing-ops","history-cleanup-retains-money"]}

@@ -1,0 +1,203 @@
+[
+  {
+    "file": "forwardx-285-all-client-tests-final.txt",
+    "source": "/tmp/forwardx-285-all-client-tests-final.log",
+    "bytes": 100018,
+    "sha256": "ff917b4fcbef664df9f9dbcbff9ef50d6025d6a51174e902a28e71a8531db1ac"
+  },
+  {
+    "file": "forwardx-285-close-reproduce.txt",
+    "source": "/tmp/forwardx-285-close-reproduce.log",
+    "bytes": 5499,
+    "sha256": "ff9e0f517eb9e17f5942104634fc9f491700d69f2c0553736740c22ac6310c9d",
+    "sourceSha256": "695035c585c482a4a16c2e277edb3180923f79e4b23c1fbcb7f5d3c7f693bf5f",
+    "normalization": "仅清理行尾空白以通过补丁检查；原始字节另存gzip。",
+    "rawFile": "forwardx-285-close-reproduce.raw.gz"
+  },
+  {
+    "file": "forwardx-285-close-red.txt",
+    "source": "/tmp/forwardx-285-close-red.log",
+    "bytes": 4157,
+    "sha256": "a4c026595d6dad494de369d4bba634435cb84248c5847b0af2eae017ff817300",
+    "sourceSha256": "ff9121e531b973ab9cdbf189371c829969d2b18b64a0c394220e8844cbe8c8a6",
+    "normalization": "仅清理行尾空白以通过补丁检查；原始字节另存gzip。",
+    "rawFile": "forwardx-285-close-red.raw.gz"
+  },
+  {
+    "file": "forwardx-285-close-mixed-red.txt",
+    "source": "/tmp/forwardx-285-close-mixed-red.log",
+    "bytes": 3186,
+    "sha256": "24e83a06d0f954424c737bc4a88739259b05202c7860f6cc9c880a92e12713bb",
+    "sourceSha256": "ff0cd98ed812a29d3f4fa20805abdf2d548a83432436d1bdf81a5be8caf35fea",
+    "normalization": "仅清理行尾空白以通过补丁检查；原始字节另存gzip。",
+    "rawFile": "forwardx-285-close-mixed-red.raw.gz"
+  },
+  {
+    "file": "forwardx-285-close-mixed-green.txt",
+    "source": "/tmp/forwardx-285-close-mixed-green.log",
+    "bytes": 1140,
+    "sha256": "4ed701217a844a59f3588ef922e8ab0ceebba4250ddfc15644c06e11906b41df"
+  },
+  {
+    "file": "data-tests.txt",
+    "source": "/tmp/forwardx-285-implementation/data-tests.log",
+    "bytes": 29993,
+    "sha256": "e4c34328dc454e8609f69b0305b404bce21bdfff2e9d5ce884f4352e548f058d"
+  },
+  {
+    "file": "operations-green.txt",
+    "source": "/tmp/forwardx-285-implementation/operations-green.log",
+    "bytes": 2421,
+    "sha256": "fdcf03d86750f0d7b1ef354d55b94fd0c50606fb89e0c50ffc4bcbe5adb589f4"
+  },
+  {
+    "file": "data-protection-tests.txt",
+    "source": "/tmp/forwardx-285-implementation/data-protection-tests.log",
+    "bytes": 5186,
+    "sha256": "9a89956c15703c013e931c51bdc8ba6b82da65c2c0de75fbfc0241b3bbfe764d"
+  },
+  {
+    "file": "data-final-tests.txt",
+    "source": "/tmp/forwardx-285-implementation/data-final-tests.log",
+    "bytes": 5507,
+    "sha256": "bc9f0008035b90013976a1b9ba074ac7043d416b53219ac857ad11fa7152bff9"
+  },
+  {
+    "file": "payment-green.txt",
+    "source": "/tmp/forwardx-285-implementation/payment-green.log",
+    "bytes": 7109,
+    "sha256": "54597e3653ace585f402cb09f85b6bb88b653055413d5f52e20087d8b0bde413"
+  },
+  {
+    "file": "data-mysql.txt",
+    "source": "/tmp/forwardx-285-implementation/data-mysql.log",
+    "bytes": 1607,
+    "sha256": "df37e5df5e04c184146ca5ec41f49577ee551f3f1a213e2d36e8e8e0f50195cc"
+  },
+  {
+    "file": "data-postgresql.txt",
+    "source": "/tmp/forwardx-285-implementation/data-postgresql.log",
+    "bytes": 1982,
+    "sha256": "9354a24da7d7940947de7bddd4116d69f48671044e75f13888fc90b5b4c648b5"
+  },
+  {
+    "file": "affiliate-mysql.txt",
+    "source": "/tmp/forwardx-285-implementation/affiliate-mysql.log",
+    "bytes": 1037,
+    "sha256": "ede4a5b474bd71693e92940d3009cf2a6a37817a236336417ef68920f612cb78"
+  },
+  {
+    "file": "affiliate-postgresql.txt",
+    "source": "/tmp/forwardx-285-implementation/affiliate-postgresql.log",
+    "bytes": 1229,
+    "sha256": "9e9137d8ebe00ab4498cb1b7e183ded5658c4c60fbd83b85c353735481f67628"
+  },
+  {
+    "file": "finance-mysql-processing-green.txt",
+    "source": "/tmp/forwardx-285-implementation/finance-mysql-processing-green.log",
+    "bytes": 426,
+    "sha256": "2e3831c0c2870c8fbbe532a374280b44ee3e20e814cab033489c232f34c18cbb"
+  },
+  {
+    "file": "agent-vet-build.txt",
+    "source": "/tmp/forwardx-285-implementation/agent-vet-build.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "file": "fxp-vet.txt",
+    "source": "/tmp/forwardx-285-implementation/fxp-vet.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "file": "runtime-ts.txt",
+    "source": "/tmp/forwardx-285-implementation/runtime-ts.log",
+    "bytes": 20164,
+    "sha256": "b529e90f1fe2e56d09bed0e5888099db167485e9c0b0c176625729dfd4de3edb"
+  },
+  {
+    "file": "port-sni-network.txt",
+    "source": "/tmp/forwardx-285-implementation/port-sni-network.log",
+    "bytes": 9534,
+    "sha256": "bf4a951b5a5a007451528f411d4103a7a53ec76812eef719dc3b47913ff0a8a5"
+  },
+  {
+    "file": "port-sni-independent-export.txt",
+    "source": "/tmp/forwardx-285-implementation/port-sni-independent-export.log",
+    "bytes": 868,
+    "sha256": "4176fbb012c3cde29a3b14c18f94c695e6e06e5622130e086b7b99032b537e70"
+  },
+  {
+    "file": "deployment-docs.txt",
+    "source": "/tmp/forwardx-285-implementation/deployment-docs.log",
+    "bytes": 1499,
+    "sha256": "d49dab2e25975a210669cc268bf1d7ec34353d231d60c8dff00b64b60a9d0d6d"
+  },
+  {
+    "file": "lockfile-check.txt",
+    "source": "/tmp/forwardx-285-implementation/lockfile-check.log",
+    "bytes": 198,
+    "sha256": "f258ed10243365ff10ebf88ac5338d160553b5210f6b9c36a6704c3a0dbe4beb"
+  },
+  {
+    "file": "forwardx-285-close-server-full.txt",
+    "source": "/tmp/forwardx-285-close-server-full.log",
+    "bytes": 368629,
+    "sha256": "207d6aafa928ff7e89148b853a6325210a3111a905a438de597ebd3eff23d811"
+  },
+  {
+    "file": "forwardx-285-close-types.txt",
+    "source": "/tmp/forwardx-285-close-types.log",
+    "bytes": 164,
+    "sha256": "4aadff73516d5f1dcb8780553ff3ed638c7976dce0038113a8ce029952dee235"
+  },
+  {
+    "file": "forwardx-285-close-build.txt",
+    "source": "/tmp/forwardx-285-close-build.log",
+    "bytes": 1973,
+    "sha256": "c9a2450edbb89da868d993595ed12189bd05abfd6b1a94ba1b1a41924390aa6a"
+  },
+  {
+    "file": "forwardx-285-close-docs-build.txt",
+    "source": "/tmp/forwardx-285-close-docs-build.log",
+    "bytes": 961,
+    "sha256": "3f18209b94af8f34f775ec1664945eaf03b47dba1f49d6a92e08c24ff12cd06e"
+  },
+  {
+    "file": "forwardx-285-close-versions.txt",
+    "source": "/tmp/forwardx-285-close-versions.log",
+    "bytes": 373,
+    "sha256": "be57e1b88a04eb88215c1848af002126e6a76fa7e2786a8e8f597ae6e23b1765"
+  },
+  {
+    "file": "forwardx-285-close-docs-test.txt",
+    "source": "/tmp/forwardx-285-close-docs-test.log",
+    "bytes": 1500,
+    "sha256": "5e3f22a422d5770ab8b64ff38020565b1e91dfdd42fa1c3955a4ff59fc06f78e"
+  },
+  {
+    "file": "forwardx-285-close-reproduce.raw.gz",
+    "source": "/tmp/forwardx-285-close-reproduce.log",
+    "bytes": 1290,
+    "sha256": "3713e7a6120fc48e4db79154489813419d59cfd5303f270243b3de5a21293d47",
+    "encoding": "gzip",
+    "decodedSha256": "695035c585c482a4a16c2e277edb3180923f79e4b23c1fbcb7f5d3c7f693bf5f"
+  },
+  {
+    "file": "forwardx-285-close-red.raw.gz",
+    "source": "/tmp/forwardx-285-close-red.log",
+    "bytes": 1226,
+    "sha256": "f7c69ed7153b7234fa891dba3ebcea56cba1e3c862450aeda1099b430843259d",
+    "encoding": "gzip",
+    "decodedSha256": "ff9121e531b973ab9cdbf189371c829969d2b18b64a0c394220e8844cbe8c8a6"
+  },
+  {
+    "file": "forwardx-285-close-mixed-red.raw.gz",
+    "source": "/tmp/forwardx-285-close-mixed-red.log",
+    "bytes": 1058,
+    "sha256": "ccc7218160fe1f27c5735a6c2cb58dc750e7aea9051b0d2bddeb6d688ddcf69e",
+    "encoding": "gzip",
+    "decodedSha256": "ff0cd98ed812a29d3f4fa20805abdf2d548a83432436d1bdf81a5be8caf35fea"
+  }
+]

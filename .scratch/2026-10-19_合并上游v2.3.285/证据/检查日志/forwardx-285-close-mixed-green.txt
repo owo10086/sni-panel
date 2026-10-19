@@ -1,0 +1,28 @@
+(node:82523) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+TAP version 13
+# (node:82548) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:82548) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: port and chain SNI sharing one listener receive one complete table and preserve each other's routes
+ok 1 - port and chain SNI sharing one listener receive one complete table and preserve each other's routes
+  ---
+  duration_ms: 1010.897417
+  type: 'test'
+  ...
+# Subtest: port entry SNI uses each entry directly and confirms all resources before DNS inclusion
+ok 2 - port entry SNI uses each entry directly and confirms all resources before DNS inclusion
+  ---
+  duration_ms: 1421.767291
+  type: 'test'
+  ...
+1..2
+# tests 2
+# suites 0
+# pass 2
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2540.075334

@@ -1,0 +1,2447 @@
+(node:67137) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+TAP version 13
+# (node:67138) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:67138) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: picker shows all twenty local avatars, with bilingual accessible selection
+ok 1 - picker shows all twenty local avatars, with bilingual accessible selection
+  ---
+  duration_ms: 24.631875
+  type: 'test'
+  ...
+# Subtest: uploaded images survive editing and legacy avatars resolve to local assets
+ok 2 - uploaded images survive editing and legacy avatars resolve to local assets
+  ---
+  duration_ms: 2.210333
+  type: 'test'
+  ...
+# (node:67139) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:67139) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: database diagnostic view shows safe reasons without exposing a setup or login form
+ok 3 - database diagnostic view shows safe reasons without exposing a setup or login form
+  ---
+  duration_ms: 25.179875
+  type: 'test'
+  ...
+# (node:67140) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:67140) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: entry group uses the shared route member layout without inventing hop or failover roles
+ok 4 - entry group uses the shared route member layout without inventing hop or failover roles
+  ---
+  duration_ms: 9.849833
+  type: 'test'
+  ...
+# Subtest: compact table preview limits chips and preserves hidden member names
+ok 5 - compact table preview limits chips and preserves hidden member names
+  ---
+  duration_ms: 0.552708
+  type: 'test'
+  ...
+# Subtest: shared member labels support English without translating user group names
+ok 6 - shared member labels support English without translating user group names
+  ---
+  duration_ms: 9.233167
+  type: 'test'
+  ...
+# (node:67141) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:67141) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: day strip spans the latest 30 calendar days across month/year boundaries
+ok 7 - day strip spans the latest 30 calendar days across month/year boundaries
+  ---
+  duration_ms: 4.288833
+  type: 'test'
+  ...
+# Subtest: daily health uses weighted counters and preserves raw delay extrema
+ok 8 - daily health uses weighted counters and preserves raw delay extrema
+  ---
+  duration_ms: 0.520125
+  type: 'test'
+  ...
+# Subtest: day strip has bilingual, accessible dates and health colors, plus a Today action
+ok 9 - day strip has bilingual, accessible dates and health colors, plus a Today action
+  ---
+  duration_ms: 71.688375
+  type: 'test'
+  ...
+# (node:67142) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:67142) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: legacy health rows show latency without claiming accurate loss or serious unavailability
+ok 10 - legacy health rows show latency without claiming accurate loss or serious unavailability
+  ---
+  duration_ms: 17.534417
+  type: 'test'
+  ...
+# Subtest: cumulative summary clearly labels independent per-hop probes and latest report coverage
+ok 11 - cumulative summary clearly labels independent per-hop probes and latest report coverage
+  ---
+  duration_ms: 30.775291
+  type: 'test'
+  ...
+# Subtest: uniform Ping services keep the explicit Ping loss label
+ok 12 - uniform Ping services keep the explicit Ping loss label
+  ---
+  duration_ms: 0.650834
+  type: 'test'
+  ...
+# Subtest: English distinguishes Ping, TCP and hop failures and declares bounded latency coverage
+ok 13 - English distinguishes Ping, TCP and hop failures and declares bounded latency coverage
+  ---
+  duration_ms: 3.911666
+  type: 'test'
+  ...
+# (node:67143) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:67143) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: alternative paths render independent edges and honor the path-aware server total
+ok 14 - alternative paths render independent edges and honor the path-aware server total
+  ---
+  duration_ms: 14.62925
+  type: 'test'
+  ...
+# Subtest: completed segments remain visible while another segment is pending
+ok 15 - completed segments remain visible while another segment is pending
+  ---
+  duration_ms: 1.467042
+  type: 'test'
+  ...
+# Subtest: an unopened link test waits instead of claiming that a probe is running
+ok 16 - an unopened link test waits instead of claiming that a probe is running
+  ---
+  duration_ms: 0.739166
+  type: 'test'
+  ...
+# Subtest: the last reported latency remains visible before a new manual probe
+ok 17 - the last reported latency remains visible before a new manual probe
+  ---
+  duration_ms: 0.486792
+  type: 'test'
+  ...
+# Subtest: a user-started link test is the only state rendered as probing
+ok 18 - a user-started link test is the only state rendered as probing
+  ---
+  duration_ms: 0.596709
+  type: 'test'
+  ...
+# Subtest: a completed manual test replaces the inactive cache before the query key switches
+ok 19 - a completed manual test replaces the inactive cache before the query key switches
+  ---
+  duration_ms: 0.365375
+  type: 'test'
+  ...
+# Subtest: a missing manual test result cannot end the probing state
+ok 20 - a missing manual test result cannot end the probing state
+  ---
+  duration_ms: 0.093209
+  type: 'test'
+  ...
+# Subtest: a post-mutation query snapshot completes even when the server timestamp is unchanged
+ok 21 - a post-mutation query snapshot completes even when the server timestamp is unchanged
+  ---
+  duration_ms: 0.045666
+  type: 'test'
+  ...
+# Subtest: planned segments keep their latency after a host is renamed
+ok 22 - planned segments keep their latency after a host is renamed
+  ---
+  duration_ms: 0.567375
+  type: 'test'
+  ...
+# Subtest: an unmatched final target is not invented from an earlier hop result
+ok 23 - an unmatched final target is not invented from an earlier hop result
+  ---
+  duration_ms: 0.760875
+  type: 'test'
+  ...
+# Subtest: a single result from an old topology is not assigned to the new segment
+ok 24 - a single result from an old topology is not assigned to the new segment
+  ---
+  duration_ms: 0.4745
+  type: 'test'
+  ...
+# Subtest: a null hop index stays unknown instead of becoming the first hop
+ok 25 - a null hop index stays unknown instead of becoming the first hop
+  ---
+  duration_ms: 0.058084
+  type: 'test'
+  ...
+# Subtest: an explicit endpoint id is not overwritten by a legacy numeric label
+ok 26 - an explicit endpoint id is not overwritten by a legacy numeric label
+  ---
+  duration_ms: 0.059417
+  type: 'test'
+  ...
+# Subtest: entry and exit ordinals are not parsed as hop indexes
+ok 27 - entry and exit ordinals are not parsed as hop indexes
+  ---
+  duration_ms: 0.096584
+  type: 'test'
+  ...
+# Subtest: a legacy endpoint alias cannot attach an old result to a planned host id
+ok 28 - a legacy endpoint alias cannot attach an old result to a planned host id
+  ---
+  duration_ms: 0.977541
+  type: 'test'
+  ...
+# Subtest: a result from a shorter topology cannot populate the retained first edge
+ok 29 - a result from a shorter topology cannot populate the retained first edge
+  ---
+  duration_ms: 0.564417
+  type: 'test'
+  ...
+# Subtest: an entry that has not reported remains visible after a partial multi-entry result
+ok 30 - an entry that has not reported remains visible after a partial multi-entry result
+  ---
+  duration_ms: 3.4165
+  type: 'test'
+  ...
+# Subtest: current rule details discard an older planned tunnel latency fallback
+ok 31 - current rule details discard an older planned tunnel latency fallback
+  ---
+  duration_ms: 0.863
+  type: 'test'
+  ...
+# Subtest: a tunnel timeout marks the missing first segment and never totals only the target segment
+ok 32 - a tunnel timeout marks the missing first segment and never totals only the target segment
+  ---
+  duration_ms: 0.613208
+  type: 'test'
+  ...
+# Subtest: a tunnel rule keeps the current tunnel segment when it reconciles with the test total
+ok 33 - a tunnel rule keeps the current tunnel segment when it reconciles with the test total
+  ---
+  duration_ms: 0.555583
+  type: 'test'
+  ...
+# (node:67144) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:67144) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: notification toggles are accessible, bilingual, compact and retain checked/disabled state
+ok 34 - notification toggles are accessible, bilingual, compact and retain checked/disabled state
+  ---
+  duration_ms: 25.117042
+  type: 'test'
+  ...
+# Subtest: Profile centralizes notification preferences and no longer labels announcements as TG-only
+ok 35 - Profile centralizes notification preferences and no longer labels announcements as TG-only
+  ---
+  duration_ms: 0.906
+  type: 'test'
+  ...
+# (node:67145) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:67145) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: local province asset decodes all 34 regions into bounded nonempty SVG geometry
+ok 36 - local province asset decodes all 34 regions into bounded nonempty SVG geometry
+  ---
+  duration_ms: 23.716833
+  type: 'test'
+  ...
+# Subtest: date filters use built-in calendars with separate labels and wrapping in both languages
+ok 37 - date filters use built-in calendars with separate labels and wrapping in both languages
+  ---
+  duration_ms: 108.434833
+  type: 'test'
+  ...
+# Subtest: built-in calendar disables dates and navigation outside the operations range
+ok 38 - built-in calendar disables dates and navigation outside the operations range
+  ---
+  duration_ms: 2.164917
+  type: 'test'
+  ...
+# Subtest: source list has bounded height, sortable rankings and ten-row page navigation in both languages
+ok 39 - source list has bounded height, sortable rankings and ten-row page navigation in both languages
+  ---
+  duration_ms: 5.378
+  type: 'test'
+  ...
+# Subtest: source traffic renders unknown instead of zero and supports English
+ok 40 - source traffic renders unknown instead of zero and supports English
+  ---
+  duration_ms: 1.113959
+  type: 'test'
+  ...
+# Subtest: province heat uses distinct colors, not theme monochrome
+ok 41 - province heat uses distinct colors, not theme monochrome
+  ---
+  duration_ms: 0.084958
+  type: 'test'
+  ...
+# Subtest: finance amounts preserve currency and ledger types are translated in English
+ok 42 - finance amounts preserve currency and ledger types are translated in English
+  ---
+  duration_ms: 2.433084
+  type: 'test'
+  ...
+# (node:67146) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:67146) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: finance charts aggregate receipts per currency and never mix receipts with balance spending
+ok 43 - finance charts aggregate receipts per currency and never mix receipts with balance spending
+  ---
+  duration_ms: 15.9285
+  type: 'test'
+  ...
+# Subtest: chart states retain semantic colors, aggregate duplicates and guard invalid values
+ok 44 - chart states retain semantic colors, aggregate duplicates and guard invalid values
+  ---
+  duration_ms: 16.4375
+  type: 'test'
+  ...
+# Subtest: static ring sectors and textual legends use the same denominator
+ok 45 - static ring sectors and textual legends use the same denominator
+  ---
+  duration_ms: 13.805667
+  type: 'test'
+  ...
+# Subtest: empty and single-category charts never invent shares or invalid SVG sectors
+ok 46 - empty and single-category charts never invent shares or invalid SVG sectors
+  ---
+  duration_ms: 0.820083
+  type: 'test'
+  ...
+# Subtest: finance charts render three responsive panels, accessible labels and preserved adjustments in both languages
+ok 47 - finance charts render three responsive panels, accessible labels and preserved adjustments in both languages
+  ---
+  duration_ms: 18.192583
+  type: 'test'
+  ...
+# Subtest: payment chart falls back to an available currency after filters remove CNY
+ok 48 - payment chart falls back to an available currency after filters remove CNY
+  ---
+  duration_ms: 3.003042
+  type: 'test'
+  ...
+# Subtest: charts reuse summary data without network calls, chart runtimes or animations
+ok 49 - charts reuse summary data without network calls, chart runtimes or animations
+  ---
+  duration_ms: 0.309375
+  type: 'test'
+  ...
+# (node:67147) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:67147) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: refresh choices default to 30s and accept only the supported intervals
+ok 50 - refresh choices default to 30s and accept only the supported intervals
+  ---
+  duration_ms: 0.640042
+  type: 'test'
+  ...
+# Subtest: auto-refresh runs only on the visible dashboard, with no timers when off or away
+ok 51 - auto-refresh runs only on the visible dashboard, with no timers when off or away
+  ---
+  duration_ms: 0.097042
+  type: 'test'
+  ...
+# Subtest: refresh controls expose a linked label and the selected interval in both languages
+ok 52 - refresh controls expose a linked label and the selected interval in both languages
+  ---
+  duration_ms: 46.6585
+  type: 'test'
+  ...
+# Subtest: all dashboard queries share the selected refresh policy, including finance and open details
+ok 53 - all dashboard queries share the selected refresh policy, including finance and open details
+  ---
+  duration_ms: 0.61975
+  type: 'test'
+  ...
+# (node:67148) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:67148) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: missing, empty and whitespace descriptions retain default plan information
+ok 54 - missing, empty and whitespace descriptions retain default plan information
+  ---
+  duration_ms: 4.27625
+  type: 'test'
+  ...
+# Subtest: custom plain descriptions replace defaults and preserve lines
+ok 55 - custom plain descriptions replace defaults and preserve lines
+  ---
+  duration_ms: 12.205541
+  type: 'test'
+  ...
+# Subtest: plan descriptions render Markdown headings, lists, emphasis, links, quotes and code
+ok 56 - plan descriptions render Markdown headings, lists, emphasis, links, quotes and code
+  ---
+  duration_ms: 1.0895
+  type: 'test'
+  ...
+# Subtest: H5 plan descriptions allow basic layout but filter scripts, events, embeds and unsafe links
+ok 57 - H5 plan descriptions allow basic layout but filter scripts, events, embeds and unsafe links
+  ---
+  duration_ms: 1.335833
+  type: 'test'
+  ...
+# Subtest: new-plan templates and editor use preview and the same character limit without replacing saved descriptions
+ok 58 - new-plan templates and editor use preview and the same character limit without replacing saved descriptions
+  ---
+  duration_ms: 4.356625
+  type: 'test'
+  ...
+# Subtest: card and table edit actions use labeled pencil icons
+ok 59 - card and table edit actions use labeled pencil icons
+  ---
+  duration_ms: 0.230833
+  type: 'test'
+  ...
+# Subtest: plan management keeps status controls outside the replaceable card content and supports table view
+ok 60 - plan management keeps status controls outside the replaceable card content and supports table view
+  ---
+  duration_ms: 0.265458
+  type: 'test'
+  ...
+# Subtest: store replaces default benefits but retains actual price and purchase controls
+ok 61 - store replaces default benefits but retains actual price and purchase controls
+  ---
+  duration_ms: 0.129958
+  type: 'test'
+  ...
+# (node:67149) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:67149) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: plan management switches retain independent states and accessible labels in both languages
+ok 62 - plan management switches retain independent states and accessible labels in both languages
+  ---
+  duration_ms: 27.444042
+  type: 'test'
+  ...
+# Subtest: loading or failed settings cannot be toggled, independently of the other setting
+ok 63 - loading or failed settings cannot be toggled, independently of the other setting
+  ---
+  duration_ms: 2.466583
+  type: 'test'
+  ...
+# Subtest: plans start with the resource tabs rather than overview cards or billing summary requests
+ok 64 - plans start with the resource tabs rather than overview cards or billing summary requests
+  ---
+  duration_ms: 2.568917
+  type: 'test'
+  ...
+# (node:67150) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:67150) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: entry cards render only a dialog trigger, not inline diagnostic content
+ok 65 - entry cards render only a dialog trigger, not inline diagnostic content
+  ---
+  duration_ms: 9.17125
+  type: 'test'
+  ...
+# Subtest: dialog body distinguishes sync attempts from Agent execution failures and scrolls internally
+ok 66 - dialog body distinguishes sync attempts from Agent execution failures and scrolls internally
+  ---
+  duration_ms: 17.540292
+  type: 'test'
+  ...
+# Subtest: node diagnostics support English, idle nodes and empty resources
+ok 67 - node diagnostics support English, idle nodes and empty resources
+  ---
+  duration_ms: 17.077291
+  type: 'test'
+  ...
+# Subtest: node details use the portaled dialog with bounded height and a close action in all layouts
+ok 68 - node details use the portaled dialog with bounded height and a close action in all layouts
+  ---
+  duration_ms: 1.710042
+  type: 'test'
+  ...
+# (node:67151) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:67151) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: resource traffic cards show total and both directions with an explicit accounting scope
+ok 69 - resource traffic cards show total and both directions with an explicit accounting scope
+  ---
+  duration_ms: 5.617541
+  type: 'test'
+  ...
+# Subtest: compact resource totals retain directional details and empty resources show zero
+ok 70 - compact resource totals retain directional details and empty resources show zero
+  ---
+  duration_ms: 7.576375
+  type: 'test'
+  ...
+# Subtest: resource summaries can omit a duplicate count and translate rule scope
+ok 71 - resource summaries can omit a duplicate count and translate rule scope
+  ---
+  duration_ms: 16.445041
+  type: 'test'
+  ...
+# (node:67152) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:67152) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: overview metrics use colorful icons, static values and opt-in hover in every semantic tone
+ok 72 - overview metrics use colorful icons, static values and opt-in hover in every semantic tone
+  ---
+  duration_ms: 14.327542
+  type: 'test'
+  ...
+# Subtest: operations and finance both use the shared colored overview cards without changing data queries
+ok 73 - operations and finance both use the shared colored overview cards without changing data queries
+  ---
+  duration_ms: 1.212458
+  type: 'test'
+  ...
+# Subtest: payment status and paid amount icons stay colorful independently of the theme primary color
+ok 74 - payment status and paid amount icons stay colorful independently of the theme primary color
+  ---
+  duration_ms: 0.746209
+  type: 'test'
+  ...
+# Subtest: missing overview and product hover treatments are covered without moving sortable tunnel cards
+ok 75 - missing overview and product hover treatments are covered without moving sortable tunnel cards
+  ---
+  duration_ms: 8.676166
+  type: 'test'
+  ...
+# (node:67153) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:67153) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: ticket feature and notification settings are independent, accessible and bilingual
+ok 76 - ticket feature and notification settings are independent, accessible and bilingual
+  ---
+  duration_ms: 25.83975
+  type: 'test'
+  ...
+# Subtest: unavailable ticket settings cannot be changed and do not disable the other setting
+ok 77 - unavailable ticket settings cannot be changed and do not disable the other setting
+  ---
+  duration_ms: 1.4905
+  type: 'test'
+  ...
+# Subtest: administrators can reopen ticket settings after disabling the feature and the old notification control is removed
+ok 78 - administrators can reopen ticket settings after disabling the feature and the old notification control is removed
+  ---
+  duration_ms: 0.708042
+  type: 'test'
+  ...
+# (node:67154) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:67154) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: support conversations escape content and filenames and expose real download controls
+ok 79 - support conversations escape content and filenames and expose real download controls
+  ---
+  duration_ms: 43.208625
+  type: 'test'
+  ...
+# Subtest: support statuses, event timelines and staff-only labels translate into English
+ok 80 - support statuses, event timelines and staff-only labels translate into English
+  ---
+  duration_ms: 10.255125
+  type: 'test'
+  ...
+# Subtest: attachment reading bounds uploads before encoding and preserves UTF-8 bytes
+ok 81 - attachment reading bounds uploads before encoding and preserves UTF-8 bytes
+  ---
+  duration_ms: 0.733709
+  type: 'test'
+  ...
+# Subtest: all batch dialog count pills stay horizontal and headers wrap by panel width
+ok 82 - all batch dialog count pills stay horizontal and headers wrap by panel width
+  ---
+  duration_ms: 1.146125
+  type: 'test'
+  ...
+# (node:67155) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:67155) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: user options distinguish duplicate names with remarks, username, email and ID
+ok 83 - user options distinguish duplicate names with remarks, username, email and ID
+  ---
+  duration_ms: 0.360667
+  type: 'test'
+  ...
+# Subtest: visible rule owner lookup is bounded, deduplicated and includes the selected creation owner
+ok 84 - visible rule owner lookup is bounded, deduplicated and includes the selected creation owner
+  ---
+  duration_ms: 0.521708
+  type: 'test'
+  ...
+# Subtest: selector retains its selected label outside search results and has accessible bilingual triggers
+ok 85 - selector retains its selected label outside search results and has accessible bilingual triggers
+  ---
+  duration_ms: 30.270125
+  type: 'test'
+  ...
+# Subtest: all four user selection surfaces use the shared paginated selector instead of fetching every user
+ok 86 - all four user selection surfaces use the shared paginated selector instead of fetching every user
+  ---
+  duration_ms: 1.630834
+  type: 'test'
+  ...
+# (node:67156) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:67156) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: host availability colors use uptime, not probe loss, and support no/partial coverage
+ok 87 - host availability colors use uptime, not probe loss, and support no/partial coverage
+  ---
+  duration_ms: 117.422666
+  type: 'test'
+  ...
+# (node:67157) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:67157) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: host notification switch is accessible, bilingual and retains saved checked state
+ok 88 - host notification switch is accessible, bilingual and retains saved checked state
+  ---
+  duration_ms: 36.246583
+  type: 'test'
+  ...
+# Subtest: host form preserves defaults and sends the setting only in the administrator payload
+ok 89 - host form preserves defaults and sends the setting only in the administrator payload
+  ---
+  duration_ms: 0.482125
+  type: 'test'
+  ...
+# (node:67158) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:67158) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: formatBytes clamps values at the largest supported unit
+ok 90 - formatBytes clamps values at the largest supported unit
+  ---
+  duration_ms: 0.363708
+  type: 'test'
+  ...
+# Subtest: formatBytes handles non-finite values
+ok 91 - formatBytes handles non-finite values
+  ---
+  duration_ms: 0.056958
+  type: 'test'
+  ...
+# (node:67159) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:67159) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: resultSchema renders structured table data without exposing secrets
+ok 92 - resultSchema renders structured table data without exposing secrets
+  ---
+  duration_ms: 38.35575
+  type: 'test'
+  ...
+# Subtest: resultSchema renders keyValue fields and boolean labels
+ok 93 - resultSchema renders keyValue fields and boolean labels
+  ---
+  duration_ms: 0.353417
+  type: 'test'
+  ...
+# (node:67160) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:67160) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: extracts structured plugin errors before the process exit error
+ok 94 - extracts structured plugin errors before the process exit error
+  ---
+  duration_ms: 0.534416
+  type: 'test'
+  ...
+# Subtest: optimistically creates, updates, and deletes nested resource rows
+ok 95 - optimistically creates, updates, and deletes nested resource rows
+  ---
+  duration_ms: 0.565416
+  type: 'test'
+  ...
+# Subtest: failed refresh preserves the last successful source data
+ok 96 - failed refresh preserves the last successful source data
+  ---
+  duration_ms: 0.069792
+  type: 'test'
+  ...
+# Subtest: hydrates an empty resource view from the last Agent result without replacing fresher data
+ok 97 - hydrates an empty resource view from the last Agent result without replacing fresher data
+  ---
+  duration_ms: 0.077625
+  type: 'test'
+  ...
+# (node:67161) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:67161) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: ny preview shows every target, disabled state and options with translated safe wrapping
+ok 98 - ny preview shows every target, disabled state and options with translated safe wrapping
+  ---
+  duration_ms: 48.323417
+  type: 'test'
+  ...
+# (node:67162) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:67162) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: rule limits start collapsed, unlimited and timestamped now
+ok 99 - rule limits start collapsed, unlimited and timestamped now
+  ---
+  duration_ms: 70.636792
+  type: 'test'
+  ...
+# Subtest: date and time fields round-trip existing rule policy without truncating days or quotas
+ok 100 - date and time fields round-trip existing rule policy without truncating days or quotas
+  ---
+  duration_ms: 0.257042
+  type: 'test'
+  ...
+# Subtest: user-facing usage matches quota enforcement and contains no write controls
+ok 101 - user-facing usage matches quota enforcement and contains no write controls
+  ---
+  duration_ms: 1.264583
+  type: 'test'
+  ...
+# (node:67163) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:67163) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:67163) ExperimentalWarning: The MockTimers API is an experimental feature and might change at any time
+# Subtest: fast saves never flash a loading indicator
+ok 102 - fast saves never flash a loading indicator
+  ---
+  duration_ms: 0.9205
+  type: 'test'
+  ...
+# Subtest: slow saves show feedback after 200ms and keep it visible for at least 300ms
+ok 103 - slow saves show feedback after 200ms and keep it visible for at least 300ms
+  ---
+  duration_ms: 0.151541
+  type: 'test'
+  ...
+# Subtest: long saves do not add another minimum wait after completion
+ok 104 - long saves do not add another minimum wait after completion
+  ---
+  duration_ms: 0.133167
+  type: 'test'
+  ...
+# Subtest: retries cancel a stale hide timer and repeated pending updates do not restart the delay
+ok 105 - retries cancel a stale hide timer and repeated pending updates do not restart the delay
+  ---
+  duration_ms: 0.184417
+  type: 'test'
+  ...
+# Subtest: unmount cancels both delayed show and delayed hide without callbacks
+ok 106 - unmount cancels both delayed show and delayed hide without callbacks
+  ---
+  duration_ms: 0.145792
+  type: 'test'
+  ...
+# Subtest: pending buttons immediately block repeat submissions without replacing or resizing the label
+ok 107 - pending buttons immediately block repeat submissions without replacing or resizing the label
+  ---
+  duration_ms: 8.820166
+  type: 'test'
+  ...
+# Subtest: personalization save buttons keep their labels and block duplicate section submissions
+ok 108 - personalization save buttons keep their labels and block duplicate section submissions
+  ---
+  duration_ms: 1.707791
+  type: 'test'
+  ...
+# (node:67164) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:67164) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: Confirmation consumers require the provider and work inside it
+ok 109 - Confirmation consumers require the provider and work inside it
+  ---
+  duration_ms: 11.500375
+  type: 'test'
+  ...
+# Subtest: Re-evaluated dialog UI shares context with existing providers and consumers
+ok 110 - Re-evaluated dialog UI shares context with existing providers and consumers
+  ---
+  duration_ms: 19.635125
+  type: 'test'
+  ...
+# (node:67165) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:67165) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: overlay scroll locks preserve sticky navigation by locking the document rather than body
+ok 111 - overlay scroll locks preserve sticky navigation by locking the document rather than body
+  ---
+  duration_ms: 1.7835
+  type: 'test'
+  ...
+# Subtest: selects retain native Radix focus and open-state behavior without effect-based scroll overrides
+ok 112 - selects retain native Radix focus and open-state behavior without effect-based scroll overrides
+  ---
+  duration_ms: 14.93175
+  type: 'test'
+  ...
+# Subtest: animated stat values leave glyph bottoms visible at system-font and zoom boundaries
+ok 113 - animated stat values leave glyph bottoms visible at system-font and zoom boundaries
+  ---
+  duration_ms: 5.7855
+  type: 'test'
+  ...
+# Subtest: Dashboard stats match the tinted billing cards without ruler decorations
+ok 114 - Dashboard stats match the tinted billing cards without ruler decorations
+  ---
+  duration_ms: 366.501875
+  type: 'test'
+  ...
+# Subtest: Dashboard traffic shares one card with responsive internal sections
+ok 115 - Dashboard traffic shares one card with responsive internal sections
+  ---
+  duration_ms: 7.270417
+  type: 'test'
+  ...
+# Subtest: Dashboard status shares one card and preserves admin-only host visibility
+ok 116 - Dashboard status shares one card and preserves admin-only host visibility
+  ---
+  duration_ms: 6.149917
+  type: 'test'
+  ...
+# Subtest: Store plan decoration stays behind custom/default content and preserves purchase controls
+ok 117 - Store plan decoration stays behind custom/default content and preserves purchase controls
+  ---
+  duration_ms: 21.75675
+  type: 'test'
+  ...
+# Subtest: Language selectors expose only Chinese and English and select the effective default
+ok 118 - Language selectors expose only Chinese and English and select the effective default
+  ---
+  duration_ms: 10.214875
+  type: 'test'
+  ...
+# Subtest: Desktop workspace has no dark perimeter or frame-related offsets
+ok 119 - Desktop workspace has no dark perimeter or frame-related offsets
+  ---
+  duration_ms: 0.25375
+  type: 'test'
+  ...
+# Subtest: Desktop brand header and topbar share a fixed border-inclusive height
+ok 120 - Desktop brand header and topbar share a fixed border-inclusive height
+  ---
+  duration_ms: 0.466666
+  type: 'test'
+  ...
+# Subtest: Mobile page headings align left and card spacing remains overridable
+ok 121 - Mobile page headings align left and card spacing remains overridable
+  ---
+  duration_ms: 0.32575
+  type: 'test'
+  ...
+# Subtest: Web sidebar reserves safe areas while native shells retain local spacing
+ok 122 - Web sidebar reserves safe areas while native shells retain local spacing
+  ---
+  duration_ms: 0.135792
+  type: 'test'
+  ...
+# Subtest: Sidebar animation keeps one geometry transition and avoids large-area blur
+ok 123 - Sidebar animation keeps one geometry transition and avoids large-area blur
+  ---
+  duration_ms: 0.355083
+  type: 'test'
+  ...
+# Subtest: Sidebar marker follows CSS width instead of measuring every menu item every frame
+ok 124 - Sidebar marker follows CSS width instead of measuring every menu item every frame
+  ---
+  duration_ms: 0.120875
+  type: 'test'
+  ...
+# Subtest: Desktop topbar does not duplicate the sidebar toggle and mobile retains its trigger
+ok 125 - Desktop topbar does not duplicate the sidebar toggle and mobile retains its trigger
+  ---
+  duration_ms: 0.208958
+  type: 'test'
+  ...
+# Subtest: Theme switching stays in the topbar and mobile header, not the sidebar
+ok 126 - Theme switching stays in the topbar and mobile header, not the sidebar
+  ---
+  duration_ms: 0.229792
+  type: 'test'
+  ...
+# Subtest: Pearl buttons preserve Slot composition, form semantics, and caller overrides
+ok 127 - Pearl buttons preserve Slot composition, form semantics, and caller overrides
+  ---
+  duration_ms: 0.471334
+  type: 'test'
+  ...
+# Subtest: Pearl fields retain validation, autocomplete, read-only and disabled contracts
+ok 128 - Pearl fields retain validation, autocomplete, read-only and disabled contracts
+  ---
+  duration_ms: 0.314792
+  type: 'test'
+  ...
+# Subtest: Cards can opt out of entrances and dense tables retain cell-level overrides
+ok 129 - Cards can opt out of entrances and dense tables retain cell-level overrides
+  ---
+  duration_ms: 0.3865
+  type: 'test'
+  ...
+# Subtest: Progress exposes its real value and switches keep Radix checked/disabled semantics
+ok 130 - Progress exposes its real value and switches keep Radix checked/disabled semantics
+  ---
+  duration_ms: 0.922583
+  type: 'test'
+  ...
+# Subtest: Glass sliding tabs retain intrinsic long-label widths, selected semantics and readable text
+ok 131 - Glass sliding tabs retain intrinsic long-label widths, selected semantics and readable text
+  ---
+  duration_ms: 2.318292
+  type: 'test'
+  ...
+# Subtest: Theme text and primary controls meet WCAG AA contrast in light and dark palettes
+ok 132 - Theme text and primary controls meet WCAG AA contrast in light and dark palettes
+  ---
+  duration_ms: 0.282
+  type: 'test'
+  ...
+# Subtest: Network and iperf3 consoles follow theme colors and retain raw monospace output
+ok 133 - Network and iperf3 consoles follow theme colors and retain raw monospace output
+  ---
+  duration_ms: 6.453625
+  type: 'test'
+  ...
+# Subtest: Shared materials keep utility overrides, mobile safe areas and reduced-motion fallbacks
+ok 134 - Shared materials keep utility overrides, mobile safe areas and reduced-motion fallbacks
+  ---
+  duration_ms: 0.649958
+  type: 'test'
+  ...
+# Subtest: Featured and interactive cards preserve nested controls and caller attributes
+ok 135 - Featured and interactive cards preserve nested controls and caller attributes
+  ---
+  duration_ms: 0.283708
+  type: 'test'
+  ...
+# Subtest: standalone card hover is opt-in, pointer-only, reduced-motion safe and distinct from sortable feedback
+ok 136 - standalone card hover is opt-in, pointer-only, reduced-motion safe and distinct from sortable feedback
+  ---
+  duration_ms: 0.288
+  type: 'test'
+  ...
+# Subtest: Content switches render real content immediately without initial fade or layout scaling
+ok 137 - Content switches render real content immediately without initial fade or layout scaling
+  ---
+  duration_ms: 1.897958
+  type: 'test'
+  ...
+# Subtest: Limit disclosures remain native, collapsed by default and keep editable form values
+ok 138 - Limit disclosures remain native, collapsed by default and keep editable form values
+  ---
+  duration_ms: 9.083459
+  type: 'test'
+  ...
+# (node:67166) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:67166) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: sliding tabs reserve intrinsic translated label, icon and badge widths
+ok 139 - sliding tabs reserve intrinsic translated label, icon and badge widths
+  ---
+  duration_ms: 10.64975
+  type: 'test'
+  ...
+# Subtest: narrow section navigation folds only when its actual labels overflow
+ok 140 - narrow section navigation folds only when its actual labels overflow
+  ---
+  duration_ms: 0.092
+  type: 'test'
+  ...
+# Subtest: all section switchers use their existing controlled change handlers
+ok 141 - all section switchers use their existing controlled change handlers
+  ---
+  duration_ms: 3.683917
+  type: 'test'
+  ...
+# Subtest: standard tabs wrap long labels and dialog actions may grow without shrinking icons
+ok 142 - standard tabs wrap long labels and dialog actions may grow without shrinking icons
+  ---
+  duration_ms: 4.311625
+  type: 'test'
+  ...
+# Subtest: tab roots can shrink inside dialog grids without changing Radix semantics
+ok 143 - tab roots can shrink inside dialog grids without changing Radix semantics
+  ---
+  duration_ms: 1.227542
+  type: 'test'
+  ...
+# Subtest: tab scrolling only reveals clipped labels and clamps to the local scroller
+ok 144 - tab scrolling only reveals clipped labels and clamps to the local scroller
+  ---
+  duration_ms: 0.079292
+  type: 'test'
+  ...
+# (node:67167) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:67167) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: sidebar menu toggles retain display controls and distinguish independent business switches
+ok 145 - sidebar menu toggles retain display controls and distinguish independent business switches
+  ---
+  duration_ms: 1.06925
+  type: 'test'
+  ...
+# Subtest: ticket navigation belongs to management for both roles and keeps unread badges
+ok 146 - ticket navigation belongs to management for both roles and keeps unread badges
+  ---
+  duration_ms: 0.467917
+  type: 'test'
+  ...
+# Subtest: ticket actions distinguish administrator handling from user submission in both languages
+ok 147 - ticket actions distinguish administrator handling from user submission in both languages
+  ---
+  duration_ms: 532.073125
+  type: 'test'
+  ...
+# Subtest: cancelled subscriptions stay in default billing history, not in the package view
+ok 148 - cancelled subscriptions stay in default billing history, not in the package view
+  ---
+  duration_ms: 0.456166
+  type: 'test'
+  ...
+# Subtest: secondary help is native, collapsed, touch/keyboard accessible and retains full content
+ok 149 - secondary help is native, collapsed, touch/keyboard accessible and retains full content
+  ---
+  duration_ms: 0.828958
+  type: 'test'
+  ...
+# Subtest: card and dialog typography stay readable without forced desktop enlargement or clipping
+ok 150 - card and dialog typography stay readable without forced desktop enlargement or clipping
+  ---
+  duration_ms: 1.0695
+  type: 'test'
+  ...
+# Subtest: short pagination retains visible range, total, mobile page state and navigation
+ok 151 - short pagination retains visible range, total, mobile page state and navigation
+  ---
+  duration_ms: 1.154875
+  type: 'test'
+  ...
+# Subtest: English help and link selectors update without reloading module-level labels
+ok 152 - English help and link selectors update without reloading module-level labels
+  ---
+  duration_ms: 2.918083
+  type: 'test'
+  ...
+# Subtest: quota guidance stays available without changing the editable policy
+ok 153 - quota guidance stays available without changing the editable policy
+  ---
+  duration_ms: 18.822
+  type: 'test'
+  ...
+# Subtest: destructive and security warnings are preserved; no global CSS hides descriptions
+ok 154 - destructive and security warnings are preserved; no global CSS hides descriptions
+  ---
+  duration_ms: 1.631541
+  type: 'test'
+  ...
+# Subtest: Google login settings precede the final contact card without duplication
+ok 155 - Google login settings precede the final contact card without duplication
+  ---
+  duration_ms: 0.694875
+  type: 'test'
+  ...
+# Subtest: financial status badges and positive balances adapt to dark mode
+ok 156 - financial status badges and positive balances adapt to dark mode
+  ---
+  duration_ms: 0.423917
+  type: 'test'
+  ...
+# (node:67168) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:67168) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: manual choice wins over browser and IP country; unsupported storage resets to auto
+ok 157 - manual choice wins over browser and IP country; unsupported storage resets to auto
+  ---
+  duration_ms: 0.385542
+  type: 'test'
+  ...
+# Subtest: automatic selection follows supported browser language order before country
+ok 158 - automatic selection follows supported browser language order before country
+  ---
+  duration_ms: 0.188959
+  type: 'test'
+  ...
+# Subtest: interpolation preserves user values without recursive substitution or HTML processing
+ok 159 - interpolation preserves user values without recursive substitution or HTML processing
+  ---
+  duration_ms: 0.089416
+  type: 'test'
+  ...
+# Subtest: English catalog preserves every interpolation and numeric limit
+ok 160 - English catalog preserves every interpolation and numeric limit
+  ---
+  duration_ms: 10.591334
+  type: 'test'
+  ...
+# Subtest: English catalog has no duplicate keys
+ok 161 - English catalog has no duplicate keys
+  ---
+  duration_ms: 48.371041
+  type: 'test'
+  ...
+# Subtest: all static client translation keys have English entries
+ok 162 - all static client translation keys have English entries
+  ---
+  duration_ms: 348.841709
+  type: 'test'
+  ...
+# (node:67169) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:67169) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: language initialization, persistence and network/storage failures are safe
+ok 163 - language initialization, persistence and network/storage failures are safe
+  ---
+  duration_ms: 53.057875
+  type: 'test'
+  ...
+# (node:67170) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:67170) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: English network result states and built-in appearance options contain no Chinese
+ok 164 - English network result states and built-in appearance options contain no Chinese
+  ---
+  duration_ms: 716.063584
+  type: 'test'
+  ...
+# Subtest: Appearance settings translate built-in names without rewriting uploaded filenames
+ok 165 - Appearance settings translate built-in names without rewriting uploaded filenames
+  ---
+  duration_ms: 0.701334
+  type: 'test'
+  ...
+# (node:67171) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:67171) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: agent token status follows the server-computed host state for every heartbeat representation
+ok 166 - agent token status follows the server-computed host state for every heartbeat representation
+  ---
+  duration_ms: 2.235084
+  type: 'test'
+  ...
+# Subtest: an unbound token host is not online
+ok 167 - an unbound token host is not online
+  ---
+  duration_ms: 0.107
+  type: 'test'
+  ...
+# (node:67172) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:67172) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: batch operations keep order, limit concurrency, and retain individual failures
+ok 168 - batch operations keep order, limit concurrency, and retain individual failures
+  ---
+  duration_ms: 13.26725
+  type: 'test'
+  ...
+# Subtest: only port allocation failures use batch conflict handling
+ok 169 - only port allocation failures use batch conflict handling
+  ---
+  duration_ms: 0.476833
+  type: 'test'
+  ...
+# Subtest: batch item chunking preserves every item
+ok 170 - batch item chunking preserves every item
+  ---
+  duration_ms: 0.183042
+  type: 'test'
+  ...
+# (node:67173) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:67173) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: keeps Safari blob URLs alive until the browser has consumed the download
+ok 171 - keeps Safari blob URLs alive until the browser has consumed the download
+  ---
+  duration_ms: 1.02125
+  type: 'test'
+  ...
+# Subtest: falls back to a data URL when Safari rejects the blob URL
+ok 172 - falls back to a data URL when Safari rejects the blob URL
+  ---
+  duration_ms: 0.176375
+  type: 'test'
+  ...
+# Subtest: preserves Unicode content in the data URL fallback
+ok 173 - preserves Unicode content in the data URL fallback
+  ---
+  duration_ms: 0.088667
+  type: 'test'
+  ...
+# Subtest: falls back after a blob link click fails
+ok 174 - falls back after a blob link click fails
+  ---
+  duration_ms: 0.076625
+  type: 'test'
+  ...
+# Subtest: reports an actionable error when both browser download paths fail
+ok 175 - reports an actionable error when both browser download paths fail
+  ---
+  duration_ms: 0.214167
+  type: 'test'
+  ...
+# Subtest: does not expand a large backup into a memory-heavy data URL
+ok 176 - does not expand a large backup into a memory-heavy data URL
+  ---
+  duration_ms: 0.061792
+  type: 'test'
+  ...
+# Subtest: normalizes MIME types before using a data URL
+ok 177 - normalizes MIME types before using a data URL
+  ---
+  duration_ms: 0.109041
+  type: 'test'
+  ...
+# Subtest: normalizes unsafe or empty download filenames
+ok 178 - normalizes unsafe or empty download filenames
+  ---
+  duration_ms: 0.039083
+  type: 'test'
+  ...
+# Subtest: can be imported without a DOM and reports that downloads require a browser
+ok 179 - can be imported without a DOM and reports that downloads require a browser
+  ---
+  duration_ms: 0.205375
+  type: 'test'
+  ...
+# (node:67174) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:67174) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: recent successful reachability overrides incomplete child status
+ok 180 - recent successful reachability overrides incomplete child status
+  ---
+  duration_ms: 0.8425
+  type: 'test'
+  ...
+# Subtest: partial child reports are pending rather than a hard failure
+ok 181 - partial child reports are pending rather than a hard failure
+  ---
+  duration_ms: 0.117167
+  type: 'test'
+  ...
+# Subtest: a recent timeout remains an explicit failure
+ok 182 - a recent timeout remains an explicit failure
+  ---
+  duration_ms: 0.056458
+  type: 'test'
+  ...
+# Subtest: a timestamp without a latency value is not treated as reachable
+ok 183 - a timestamp without a latency value is not treated as reachable
+  ---
+  duration_ms: 0.045084
+  type: 'test'
+  ...
+# Subtest: disabled rules remain disabled even with a successful probe
+ok 184 - disabled rules remain disabled even with a successful probe
+  ---
+  duration_ms: 0.048833
+  type: 'test'
+  ...
+# Subtest: revoked resource access overrides cached running and probe state
+ok 185 - revoked resource access overrides cached running and probe state
+  ---
+  duration_ms: 0.3275
+  type: 'test'
+  ...
+# Subtest: revoked resource access remains explicit after the rule is stopped
+ok 186 - revoked resource access remains explicit after the rule is stopped
+  ---
+  duration_ms: 0.123375
+  type: 'test'
+  ...
+# Subtest: an available link alone does not claim that an unconfirmed rule is running
+ok 187 - an available link alone does not claim that an unconfirmed rule is running
+  ---
+  duration_ms: 0.045166
+  type: 'test'
+  ...
+# Subtest: a probe remains authoritative through the five minute report boundary
+ok 188 - a probe remains authoritative through the five minute report boundary
+  ---
+  duration_ms: 0.186083
+  type: 'test'
+  ...
+# Subtest: a probe older than the shared freshness window falls back to runtime state
+ok 189 - a probe older than the shared freshness window falls back to runtime state
+  ---
+  duration_ms: 0.269167
+  type: 'test'
+  ...
+# Subtest: an explicitly unavailable group overrides an older successful probe
+ok 190 - an explicitly unavailable group overrides an older successful probe
+  ---
+  duration_ms: 0.046083
+  type: 'test'
+  ...
+# Subtest: a successful probe remains visible while group data is still loading
+ok 191 - a successful probe remains visible while group data is still loading
+  ---
+  duration_ms: 0.039208
+  type: 'test'
+  ...
+# Subtest: an explicitly disabled runtime overrides an older successful probe
+ok 192 - an explicitly disabled runtime overrides an older successful probe
+  ---
+  duration_ms: 0.029625
+  type: 'test'
+  ...
+# Subtest: a recent timeout overrides the direct rule running flag
+ok 193 - a recent timeout overrides the direct rule running flag
+  ---
+  duration_ms: 0.035209
+  type: 'test'
+  ...
+# Subtest: last confirmed state is used while a new status is pending
+ok 194 - last confirmed state is used while a new status is pending
+  ---
+  duration_ms: 0.055125
+  type: 'test'
+  ...
+# Subtest: an explicit current result is never replaced by the cache
+ok 195 - an explicit current result is never replaced by the cache
+  ---
+  duration_ms: 0.045166
+  type: 'test'
+  ...
+# (node:67175) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:67175) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: host dependencies navigate to their real resource type, not the old failover-only page
+ok 196 - host dependencies navigate to their real resource type, not the old failover-only page
+  ---
+  duration_ms: 0.708458
+  type: 'test'
+  ...
+# Subtest: resource query failures are distinct from an authoritative empty list
+ok 197 - resource query failures are distinct from an authoritative empty list
+  ---
+  duration_ms: 0.392125
+  type: 'test'
+  ...
+# Subtest: resource links select the requested tab using Wouter's separate search value
+ok 198 - resource links select the requested tab using Wouter's separate search value
+  ---
+  duration_ms: 4.573625
+  type: 'test'
+  ...
+# (node:67176) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:67176) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: markdown links keep underscores in href attributes
+ok 199 - markdown links keep underscores in href attributes
+  ---
+  duration_ms: 0.761708
+  type: 'test'
+  ...
+# Subtest: markdown links keep asterisks in href attributes
+ok 200 - markdown links keep asterisks in href attributes
+  ---
+  duration_ms: 0.178083
+  type: 'test'
+  ...
+# (node:67178) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:67178) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: latency stability stats count partial packet loss
+ok 201 - latency stability stats count partial packet loss
+  ---
+  duration_ms: 0.766416
+  type: 'test'
+  ...
+# Subtest: latency stability stats preserve legacy binary rows
+ok 202 - latency stability stats preserve legacy binary rows
+  ---
+  duration_ms: 0.128708
+  type: 'test'
+  ...
+# Subtest: cumulative counters correct biased history without replaying cached failures
+ok 203 - cumulative counters correct biased history without replaying cached failures
+  ---
+  duration_ms: 0.312875
+  type: 'test'
+  ...
+# Subtest: old or unavailable telemetry preserves latency but does not invent an accurate loss rate
+ok 204 - old or unavailable telemetry preserves latency but does not invent an accurate loss rate
+  ---
+  duration_ms: 0.077084
+  type: 'test'
+  ...
+# Subtest: real partial failures remain visible and all failed probes still receive a low score
+ok 205 - real partial failures remain visible and all failed probes still receive a low score
+  ---
+  duration_ms: 0.234667
+  type: 'test'
+  ...
+# Subtest: compacted multi-batch rows keep counts larger than a single wire batch
+ok 206 - compacted multi-batch rows keep counts larger than a single wire batch
+  ---
+  duration_ms: 0.047833
+  type: 'test'
+  ...
+# Subtest: legacy chart latency stays visible without affecting cumulative stability scoring
+ok 207 - legacy chart latency stays visible without affecting cumulative stability scoring
+  ---
+  duration_ms: 0.088334
+  type: 'test'
+  ...
+# (node:67179) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:67179) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: direct port entry groups remain usable when one entry is offline and honor the dependency switch
+ok 208 - direct port entry groups remain usable when one entry is offline and honor the dependency switch
+  ---
+  duration_ms: 1.509334
+  type: 'test'
+  ...
+# Subtest: a fresh successful probe owns availability even when cached host state is offline
+ok 209 - a fresh successful probe owns availability even when cached host state is offline
+  ---
+  duration_ms: 0.09125
+  type: 'test'
+  ...
+# Subtest: a fresh timeout owns availability even when every host is online
+ok 210 - a fresh timeout owns availability even when every host is online
+  ---
+  duration_ms: 0.049625
+  type: 'test'
+  ...
+# Subtest: a stale probe falls back to current host state
+ok 211 - a stale probe falls back to current host state
+  ---
+  duration_ms: 0.101458
+  type: 'test'
+  ...
+# Subtest: a five minute failure snapshot remains authoritative until the next stable report
+ok 212 - a five minute failure snapshot remains authoritative until the next stable report
+  ---
+  duration_ms: 0.049209
+  type: 'test'
+  ...
+# Subtest: a multi-exit tunnel remains usable when one exit is online
+ok 213 - a multi-exit tunnel remains usable when one exit is online
+  ---
+  duration_ms: 0.149459
+  type: 'test'
+  ...
+# Subtest: a shared tunnel uses the server summary without exposing endpoint hosts
+ok 214 - a shared tunnel uses the server summary without exposing endpoint hosts
+  ---
+  duration_ms: 0.179
+  type: 'test'
+  ...
+# Subtest: an exit group using no strategy follows only its first enabled member
+ok 215 - an exit group using no strategy follows only its first enabled member
+  ---
+  duration_ms: 0.518708
+  type: 'test'
+  ...
+# Subtest: a relay failover tunnel only requires one relay host when probes are stale
+ok 216 - a relay failover tunnel only requires one relay host when probes are stale
+  ---
+  duration_ms: 0.27875
+  type: 'test'
+  ...
+# Subtest: a port forward without an independent probe follows its host
+ok 217 - a port forward without an independent probe follows its host
+  ---
+  duration_ms: 0.300166
+  type: 'test'
+  ...
+# Subtest: a shared group uses the server summary without exposing hidden members
+ok 218 - a shared group uses the server summary without exposing hidden members
+  ---
+  duration_ms: 0.096042
+  type: 'test'
+  ...
+# Subtest: forward-chain availability is independent from referenced rule runtime fields
+ok 219 - forward-chain availability is independent from referenced rule runtime fields
+  ---
+  duration_ms: 0.065458
+  type: 'test'
+  ...
+# Subtest: a missing endpoint group makes the saved tunnel configuration unavailable
+ok 220 - a missing endpoint group makes the saved tunnel configuration unavailable
+  ---
+  duration_ms: 0.291958
+  type: 'test'
+  ...
+# Subtest: a missing entry group makes a saved forward chain unavailable
+ok 221 - a missing entry group makes a saved forward chain unavailable
+  ---
+  duration_ms: 0.139125
+  type: 'test'
+  ...
+# Subtest: china health filtering never marks an unhealthy online member as usable
+ok 222 - china health filtering never marks an unhealthy online member as usable
+  ---
+  duration_ms: 0.447458
+  type: 'test'
+  ...
+# Subtest: an entry group without China health checks follows isOnline and ignores stale health fields
+ok 223 - an entry group without China health checks follows isOnline and ignores stale health fields
+  ---
+  duration_ms: 0.601083
+  type: 'test'
+  ...
+# Subtest: an entry group's healthy probe result wins over a stale offline host flag
+ok 224 - an entry group's healthy probe result wins over a stale offline host flag
+  ---
+  duration_ms: 0.162792
+  type: 'test'
+  ...
+# Subtest: SNI failover availability follows actual readiness and exposes the blocking reason
+ok 225 - SNI failover availability follows actual readiness and exposes the blocking reason
+  ---
+  duration_ms: 0.129167
+  type: 'test'
+  ...
+# (node:67180) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:67180) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: builds host node metadata with a normalized country code
+ok 226 - builds host node metadata with a normalized country code
+  ---
+  duration_ms: 0.493709
+  type: 'test'
+  ...
+# Subtest: adds host metadata aliases used by link-test nodes
+ok 227 - adds host metadata aliases used by link-test nodes
+  ---
+  duration_ms: 0.290208
+  type: 'test'
+  ...
+# Subtest: keeps target lookup country metadata available for flag rendering
+ok 228 - keeps target lookup country metadata available for flag rendering
+  ---
+  duration_ms: 0.082208
+  type: 'test'
+  ...
+# (node:67181) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:67181) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: probe UI deadlines are fixed and handle persisted and legacy pending messages
+ok 229 - probe UI deadlines are fixed and handle persisted and legacy pending messages
+  ---
+  duration_ms: 0.393792
+  type: 'test'
+  ...
+# Subtest: probe requests time out for stalled headers and bodies, then recover
+ok 230 - probe requests time out for stalled headers and bodies, then recover
+  ---
+  duration_ms: 40.164292
+  type: 'test'
+  ...
+# Subtest: caller cancellation propagates to the isolated probe request
+ok 231 - caller cancellation propagates to the isolated probe request
+  ---
+  duration_ms: 0.643292
+  type: 'test'
+  ...
+# (node:67182) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:67182) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: keeps public and private modes distinct when their configured addresses match
+ok 232 - keeps public and private modes distinct when their configured addresses match
+  ---
+  duration_ms: 0.627917
+  type: 'test'
+  ...
+# Subtest: restores an explicit IPv6 selection independently of private mode
+ok 233 - restores an explicit IPv6 selection independently of private mode
+  ---
+  duration_ms: 0.130875
+  type: 'test'
+  ...
+# (node:67183) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:67183) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: parseNginxPemFiles classifies separate certificate and key files
+ok 234 - parseNginxPemFiles classifies separate certificate and key files
+  ---
+  duration_ms: 0.742667
+  type: 'test'
+  ...
+# Subtest: parseNginxPemFiles accepts a combined PEM and removes duplicate certificates
+ok 235 - parseNginxPemFiles accepts a combined PEM and removes duplicate certificates
+  ---
+  duration_ms: 0.127458
+  type: 'test'
+  ...
+# Subtest: parseNginxPemFiles rejects files without valid PEM blocks
+ok 236 - parseNginxPemFiles rejects files without valid PEM blocks
+  ---
+  duration_ms: 0.209875
+  type: 'test'
+  ...
+# Subtest: parseNginxPemFiles rejects multiple different private keys
+ok 237 - parseNginxPemFiles rejects multiple different private keys
+  ---
+  duration_ms: 0.306083
+  type: 'test'
+  ...
+# Subtest: parseNginxPemFiles rejects oversized upload files
+ok 238 - parseNginxPemFiles rejects oversized upload files
+  ---
+  duration_ms: 0.089625
+  type: 'test'
+  ...
+# Subtest: parseNginxPemFiles rejects encrypted and OpenSSH private keys
+ok 239 - parseNginxPemFiles rejects encrypted and OpenSSH private keys
+  ---
+  duration_ms: 0.398791
+  type: 'test'
+  ...
+# Subtest: parseNginxPemFiles requires an ordered certificate chain in one file
+ok 240 - parseNginxPemFiles requires an ordered certificate chain in one file
+  ---
+  duration_ms: 0.126
+  type: 'test'
+  ...
+# Subtest: parseNginxPemFiles rejects binary CER content with a PEM-specific message
+ok 241 - parseNginxPemFiles rejects binary CER content with a PEM-specific message
+  ---
+  duration_ms: 0.052125
+  type: 'test'
+  ...
+# (node:67184) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:67184) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: ny official JSON lines retain names, fixed/random ports and IPv6 targets, always disabled
+ok 242 - ny official JSON lines retain names, fixed/random ports and IPv6 targets, always disabled
+  ---
+  duration_ms: 2.605583
+  type: 'test'
+  ...
+# Subtest: native versioned imports preserve existing enabled state and never opt into ny
+ok 243 - native versioned imports preserve existing enabled state and never opt into ny
+  ---
+  duration_ms: 0.203875
+  type: 'test'
+  ...
+# Subtest: ny JSON lines retain the original line and line number for partial failure retry
+ok 244 - ny JSON lines retain the original line and line number for partial failure retry
+  ---
+  duration_ms: 0.377625
+  type: 'test'
+  ...
+# Subtest: ny targets/policies convert only supported TCP GOST multi-target semantics
+ok 245 - ny targets/policies convert only supported TCP GOST multi-target semantics
+  ---
+  duration_ms: 10.426792
+  type: 'test'
+  ...
+# Subtest: ny PROXY is never silently overridden by resource-level settings
+ok 246 - ny PROXY is never silently overridden by resource-level settings
+  ---
+  duration_ms: 0.880125
+  type: 'test'
+  ...
+# Subtest: ny rate limits convert bytes/sec exactly and retain administrator-only permission
+ok 247 - ny rate limits convert bytes/sec exactly and retain administrator-only permission
+  ---
+  duration_ms: 0.205583
+  type: 'test'
+  ...
+# Subtest: experimental parsing fails closed on unsupported or malformed settings
+ok 248 - experimental parsing fails closed on unsupported or malformed settings
+  ---
+  duration_ms: 1.878875
+  type: 'test'
+  ...
+# Subtest: ny batch keeps conflicting ports and retains only failures for retry; native fallback remains
+ok 249 - ny batch keeps conflicting ports and retains only failures for retry; native fallback remains
+  ---
+  duration_ms: 0.517125
+  type: 'test'
+  ...
+# (node:67185) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:67185) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: query timers stop on off, hidden, navigation and unmount, and follow a changed interval
+ok 250 - query timers stop on off, hidden, navigation and unmount, and follow a changed interval
+  ---
+  duration_ms: 367.972333
+  type: 'test'
+  ...
+# (node:67186) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:67186) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: builds a direct changelog URL unless panel update acceleration is fully enabled
+ok 251 - builds a direct changelog URL unless panel update acceleration is fully enabled
+  ---
+  duration_ms: 8.2485
+  type: 'test'
+  ...
+# Subtest: accelerates generated and supplied GitHub release URLs
+ok 252 - accelerates generated and supplied GitHub release URLs
+  ---
+  duration_ms: 0.144958
+  type: 'test'
+  ...
+# Subtest: manual upgrade replaces the pinned image in the existing deployment and verifies the running version
+ok 253 - manual upgrade replaces the pinned image in the existing deployment and verifies the running version
+  ---
+  duration_ms: 567.494667
+  type: 'test'
+  ...
+# Subtest: manual upgrade also replaces an image supplied by an old .env setting
+ok 254 - manual upgrade also replaces an image supplied by an old .env setting
+  ---
+  duration_ms: 551.601208
+  type: 'test'
+  ...
+# Subtest: a failed image download leaves the original configuration and running container untouched
+ok 255 - a failed image download leaves the original configuration and running container untouched
+  ---
+  duration_ms: 485.832666
+  type: 'test'
+  ...
+# Subtest: manual upgrade fails if the recreated container still reports the old version
+ok 256 - manual upgrade fails if the recreated container still reports the old version
+  ---
+  duration_ms: 532.445083
+  type: 'test'
+  ...
+# Subtest: manual command uses the detected target version and rejects missing or unsafe versions
+ok 257 - manual command uses the detected target version and rejects missing or unsafe versions
+  ---
+  duration_ms: 0.101584
+  type: 'test'
+  ...
+# Subtest: the generated manual command passes Bash syntax validation
+ok 258 - the generated manual command passes Bash syntax validation
+  ---
+  duration_ms: 4.348875
+  type: 'test'
+  ...
+# Subtest: selecting the installer preserves its original command
+ok 259 - selecting the installer preserves its original command
+  ---
+  duration_ms: 0.0815
+  type: 'test'
+  ...
+# Subtest: the manual method displays exactly the command that will be copied
+ok 260 - the manual method displays exactly the command that will be copied
+  ---
+  duration_ms: 10.076417
+  type: 'test'
+  ...
+# Subtest: missing target versions show a check-update prompt instead of runnable manual commands
+ok 261 - missing target versions show a check-update prompt instead of runnable manual commands
+  ---
+  duration_ms: 2.145333
+  type: 'test'
+  ...
+# Subtest: renders the installer method without the manual command and explains rewritten files
+ok 262 - renders the installer method without the manual command and explains rewritten files
+  ---
+  duration_ms: 1.988291
+  type: 'test'
+  ...
+# Subtest: upgrade countdown uses elapsed wall time instead of counting timer ticks
+ok 263 - upgrade countdown uses elapsed wall time instead of counting timer ticks
+  ---
+  duration_ms: 0.152375
+  type: 'test'
+  ...
+# Subtest: background timer or resume event refreshes once after a throttled/frozen deadline
+ok 264 - background timer or resume event refreshes once after a throttled/frozen deadline
+  ---
+  duration_ms: 0.105625
+  type: 'test'
+  ...
+# Subtest: unmount cleanup stops callbacks; remount preserves the original deadline
+ok 265 - unmount cleanup stops callbacks; remount preserves the original deadline
+  ---
+  duration_ms: 0.093833
+  type: 'test'
+  ...
+# Subtest: refresh session persists both deadlines and completed job identity without accepting corrupt data
+ok 266 - refresh session persists both deadlines and completed job identity without accepting corrupt data
+  ---
+  duration_ms: 0.126291
+  type: 'test'
+  ...
+# Subtest: upgrade status observers allow background polling and the layout handles resume events
+ok 267 - upgrade status observers allow background polling and the layout handles resume events
+  ---
+  duration_ms: 0.803167
+  type: 'test'
+  ...
+# (node:67188) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:67188) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: native WeChat links are QR payloads, never web page links
+ok 268 - native WeChat links are QR payloads, never web page links
+  ---
+  duration_ms: 0.413708
+  type: 'test'
+  ...
+# Subtest: paid and processing are not treated as successful fulfillment
+ok 269 - paid and processing are not treated as successful fulfillment
+  ---
+  duration_ms: 0.078333
+  type: 'test'
+  ...
+# Subtest: expired orders requiring manual reconciliation show that next step instead of inviting another payment
+ok 270 - expired orders requiring manual reconciliation show that next step instead of inviting another payment
+  ---
+  duration_ms: 0.047375
+  type: 'test'
+  ...
+# Subtest: all payment surfaces share checkout and avoid asynchronous popup opening
+ok 271 - all payment surfaces share checkout and avoid asynchronous popup opening
+  ---
+  duration_ms: 1.025375
+  type: 'test'
+  ...
+# Subtest: orders live in paginated billing, not duplicated in payment configuration
+ok 272 - orders live in paginated billing, not duplicated in payment configuration
+  ---
+  duration_ms: 0.431166
+  type: 'test'
+  ...
+# (node:67189) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:67189) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: monitor requests preserve payload/headers and opt out of browser caching
+ok 273 - monitor requests preserve payload/headers and opt out of browser caching
+  ---
+  duration_ms: 10.388375
+  type: 'test'
+  ...
+# Subtest: monitor deadline aborts both stalled headers and stalled response bodies; subsequent requests recover
+ok 274 - monitor deadline aborts both stalled headers and stalled response bodies; subsequent requests recover
+  ---
+  duration_ms: 43.399417
+  type: 'test'
+  ...
+# Subtest: caller cancellation is propagated without cancelling later requests
+ok 275 - caller cancellation is propagated without cancelling later requests
+  ---
+  duration_ms: 0.901917
+  type: 'test'
+  ...
+# Subtest: network/server failures are not mistaken for a disabled monitor
+ok 276 - network/server failures are not mistaken for a disabled monitor
+  ---
+  duration_ms: 0.10875
+  type: 'test'
+  ...
+# Subtest: details choose the newest metric instead of freezing on the slower detail query
+ok 277 - details choose the newest metric instead of freezing on the slower detail query
+  ---
+  duration_ms: 0.130208
+  type: 'test'
+  ...
+# Subtest: long-running multi-service charts do not exceed the function argument limit
+ok 278 - long-running multi-service charts do not exceed the function argument limit
+  ---
+  duration_ms: 41.211542
+  type: 'test'
+  ...
+# Subtest: monitor preserves previous data after failure and refreshes on visibility/network recovery
+ok 279 - monitor preserves previous data after failure and refreshes on visibility/network recovery
+  ---
+  duration_ms: 4.230041
+  type: 'test'
+  ...
+# Subtest: a late host response cannot replace the selected host or block an independent monitor request
+ok 280 - a late host response cannot replace the selected host or block an independent monitor request
+  ---
+  duration_ms: 23.615375
+  type: 'test'
+  ...
+# (node:67190) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:67190) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: 仅普通且受支持的规则可以参与行内批量操作
+ok 281 - 仅普通且受支持的规则可以参与行内批量操作
+  ---
+  duration_ms: 0.800541
+  type: 'test'
+  ...
+# Subtest: 表头和组头的三态仅统计可选规则
+ok 282 - 表头和组头的三态仅统计可选规则
+  ---
+  duration_ms: 0.207334
+  type: 'test'
+  ...
+# Subtest: 选择整组与取消整组保留组外选择且跳过不可选规则
+ok 283 - 选择整组与取消整组保留组外选择且跳过不可选规则
+  ---
+  duration_ms: 0.101667
+  type: 'test'
+  ...
+# Subtest: 刷新后的选择集合仅保留本页仍存在且可选的编号
+ok 284 - 刷新后的选择集合仅保留本页仍存在且可选的编号
+  ---
+  duration_ms: 0.059792
+  type: 'test'
+  ...
+# Subtest: 相同入口类型预选该类型，混合入口类型保留空选并报告类型数
+ok 285 - 相同入口类型预选该类型，混合入口类型保留空选并报告类型数
+  ---
+  duration_ms: 0.067958
+  type: 'test'
+  ...
+# Subtest: 全部编辑成功时清空选择并关闭对话框
+ok 286 - 全部编辑成功时清空选择并关闭对话框
+  ---
+  duration_ms: 0.096709
+  type: 'test'
+  ...
+# Subtest: 部分跳过时保留跳过编号，全部跳过时保留对话框供调整策略
+ok 287 - 部分跳过时保留跳过编号，全部跳过时保留对话框供调整策略
+  ---
+  duration_ms: 0.061
+  type: 'test'
+  ...
+# Subtest: 部分失败与全部失败分别汇总，且只保留失败规则的编号
+ok 288 - 部分失败与全部失败分别汇总，且只保留失败规则的编号
+  ---
+  duration_ms: 0.127375
+  type: 'test'
+  ...
+# Subtest: 三类结果并存且顺序变化时仍保留跳过与失败编号
+ok 289 - 三类结果并存且顺序变化时仍保留跳过与失败编号
+  ---
+  duration_ms: 0.189208
+  type: 'test'
+  ...
+# Subtest: 删除结果移除成功项，保留失败项并显示首条错误
+ok 290 - 删除结果移除成功项，保留失败项并显示首条错误
+  ---
+  duration_ms: 0.299083
+  type: 'test'
+  ...
+# Subtest: 批量结果跟随当前语言，计数与原始诊断保持不变
+ok 291 - 批量结果跟随当前语言，计数与原始诊断保持不变
+  ---
+  duration_ms: 9.146
+  type: 'test'
+  ...
+# (node:67191) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:67191) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: uses a nested shared-resource host when it is not in the global host list
+ok 292 - uses a nested shared-resource host when it is not in the global host list
+  ---
+  duration_ms: 0.394167
+  type: 'test'
+  ...
+# Subtest: hides IPv6 when an IPv4 rule entry is available
+ok 293 - hides IPv6 when an IPv4 rule entry is available
+  ---
+  duration_ms: 0.478209
+  type: 'test'
+  ...
+# Subtest: hides IPv6 when a domain rule entry is available
+ok 294 - hides IPv6 when a domain rule entry is available
+  ---
+  duration_ms: 0.199625
+  type: 'test'
+  ...
+# Subtest: recognizes underscore host entries and preserves preferred address order
+ok 295 - recognizes underscore host entries and preserves preferred address order
+  ---
+  duration_ms: 0.15
+  type: 'test'
+  ...
+# Subtest: keeps IPv6 when it is the only usable address family
+ok 296 - keeps IPv6 when it is the only usable address family
+  ---
+  duration_ms: 0.053167
+  type: 'test'
+  ...
+# Subtest: recognizes bracketed and zone-scoped IPv6 addresses
+ok 297 - recognizes bracketed and zone-scoped IPv6 addresses
+  ---
+  duration_ms: 0.039083
+  type: 'test'
+  ...
+# (node:67192) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:67192) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: ordinary, SNI and mixed file imports use one save boundary and preserve original results
+ok 298 - ordinary, SNI and mixed file imports use one save boundary and preserve original results
+  ---
+  duration_ms: 2.874917
+  type: 'test'
+  ...
+# Subtest: a final save failure leaves every mixed item available for retry
+ok 299 - a final save failure leaves every mixed item available for retry
+  ---
+  duration_ms: 0.109375
+  type: 'test'
+  ...
+# Subtest: manual imports keep source lines and send fixed-port priority without reordering input
+ok 300 - manual imports keep source lines and send fixed-port priority without reordering input
+  ---
+  duration_ms: 0.3975
+  type: 'test'
+  ...
+# Subtest: empty input does not start an import
+ok 301 - empty input does not start an import
+  ---
+  duration_ms: 0.04775
+  type: 'test'
+  ...
+# (node:67194) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:67194) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: a fresh cached probe survives a temporary missing traffic row
+ok 302 - a fresh cached probe survives a temporary missing traffic row
+  ---
+  duration_ms: 0.476708
+  type: 'test'
+  ...
+# Subtest: probe caches are isolated by user
+ok 303 - probe caches are isolated by user
+  ---
+  duration_ms: 0.065625
+  type: 'test'
+  ...
+# Subtest: an out-of-order response cannot replace a newer cached probe
+ok 304 - an out-of-order response cannot replace a newer cached probe
+  ---
+  duration_ms: 0.057916
+  type: 'test'
+  ...
+# Subtest: an expired fallback is dropped while an authoritative current probe remains visible
+ok 305 - an expired fallback is dropped while an authoritative current probe remains visible
+  ---
+  duration_ms: 0.095959
+  type: 'test'
+  ...
+# Subtest: invalidation blocks the old probe until a result recorded after the change arrives
+ok 306 - invalidation blocks the old probe until a result recorded after the change arrives
+  ---
+  duration_ms: 0.193333
+  type: 'test'
+  ...
+# (node:67195) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:67195) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: writes and reads normalized snapshots by user and rule
+ok 307 - writes and reads normalized snapshots by user and rule
+  ---
+  duration_ms: 0.806417
+  type: 'test'
+  ...
+# Subtest: batch writes reject invalid IDs and preserve newer snapshots
+ok 308 - batch writes reject invalid IDs and preserve newer snapshots
+  ---
+  duration_ms: 0.152375
+  type: 'test'
+  ...
+# Subtest: localStorage snapshots survive a fresh module cache lookup and selected cleanup
+ok 309 - localStorage snapshots survive a fresh module cache lookup and selected cleanup
+  ---
+  duration_ms: 0.226792
+  type: 'test'
+  ...
+# Subtest: malformed or unavailable storage never breaks the memory fallback
+ok 310 - malformed or unavailable storage never breaks the memory fallback
+  ---
+  duration_ms: 0.138916
+  type: 'test'
+  ...
+# Subtest: selective cleanup loads and updates a persisted cache before memory is populated
+ok 311 - selective cleanup loads and updates a persisted cache before memory is populated
+  ---
+  duration_ms: 0.100125
+  type: 'test'
+  ...
+# (node:67196) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:67196) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: rule transfer parser preserves a valid exported rule
+ok 312 - rule transfer parser preserves a valid exported rule
+  ---
+  duration_ms: 1.806125
+  type: 'test'
+  ...
+# Subtest: rule transfer parser rejects coercible booleans and unknown enums
+ok 313 - rule transfer parser rejects coercible booleans and unknown enums
+  ---
+  duration_ms: 0.925875
+  type: 'test'
+  ...
+# Subtest: rule transfer parser enforces server-side timing and target constraints
+ok 314 - rule transfer parser enforces server-side timing and target constraints
+  ---
+  duration_ms: 0.198792
+  type: 'test'
+  ...
+# Subtest: rule transfer parser enforces the import count limit
+ok 315 - rule transfer parser enforces the import count limit
+  ---
+  duration_ms: 0.908375
+  type: 'test'
+  ...
+# Subtest: rule transfer conflict detection treats a listener port as one runtime identity
+ok 316 - rule transfer conflict detection treats a listener port as one runtime identity
+  ---
+  duration_ms: 0.181417
+  type: 'test'
+  ...
+# Subtest: 导入提示随语言切换，保存的默认名称和业务字段保持一致
+ok 317 - 导入提示随语言切换，保存的默认名称和业务字段保持一致
+  ---
+  duration_ms: 9.105375
+  type: 'test'
+  ...
+# Subtest: SNI transfer preserves quota and expiry alongside its route and member limits
+ok 318 - SNI transfer preserves quota and expiry alongside its route and member limits
+  ---
+  duration_ms: 0.44775
+  type: 'test'
+  ...
+# Subtest: manual import preserves mixed formats, original lines, defaults and IPv6
+ok 319 - manual import preserves mixed formats, original lines, defaults and IPv6
+  ---
+  duration_ms: 0.901667
+  type: 'test'
+  ...
+# Subtest: manual legacy format keeps existing numeric and unbracketed IPv6 behavior
+ok 320 - manual legacy format keeps existing numeric and unbracketed IPv6 behavior
+  ---
+  duration_ms: 0.22725
+  type: 'test'
+  ...
+# Subtest: manual four-field import enforces decimal port limits and actual input line numbers
+ok 321 - manual four-field import enforces decimal port limits and actual input line numbers
+  ---
+  duration_ms: 0.5415
+  type: 'test'
+  ...
+# Subtest: manual four-field import rejects malformed fields without falling back to legacy
+ok 322 - manual four-field import rejects malformed fields without falling back to legacy
+  ---
+  duration_ms: 0.192917
+  type: 'test'
+  ...
+# Subtest: manual import rejects empty input, bad legacy lines and more than 500 nonempty lines
+ok 323 - manual import rejects empty input, bad legacy lines and more than 500 nonempty lines
+  ---
+  duration_ms: 2.264833
+  type: 'test'
+  ...
+# Subtest: manual retry formatter rebuilds missing original lines including IPv6
+ok 324 - manual retry formatter rebuilds missing original lines including IPv6
+  ---
+  duration_ms: 0.063375
+  type: 'test'
+  ...
+# (node:67197) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:67197) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: sidebar keeps its lower scroll offset across page shell remounts and rapid navigation
+ok 325 - sidebar keeps its lower scroll offset across page shell remounts and rapid navigation
+  ---
+  duration_ms: 0.420542
+  type: 'test'
+  ...
+# Subtest: sidebar remembers intentional scrolling back to the top
+ok 326 - sidebar remembers intentional scrolling back to the top
+  ---
+  duration_ms: 0.066375
+  type: 'test'
+  ...
+# Subtest: account, desktop expansion and mobile offsets are isolated
+ok 327 - account, desktop expansion and mobile offsets are isolated
+  ---
+  duration_ms: 0.126083
+  type: 'test'
+  ...
+# Subtest: async menus retry a clamped restore without losing the saved position
+ok 328 - async menus retry a clamped restore without losing the saved position
+  ---
+  duration_ms: 0.050166
+  type: 'test'
+  ...
+# Subtest: user scrolling cancels a pending restoration
+ok 329 - user scrolling cancels a pending restoration
+  ---
+  duration_ms: 0.054458
+  type: 'test'
+  ...
+# Subtest: sidebar connects scroll memory to layout measurement and cleans up listeners
+ok 330 - sidebar connects scroll memory to layout measurement and cleans up listeners
+  ---
+  duration_ms: 0.762458
+  type: 'test'
+  ...
+# (node:67198) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:67198) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: 拨开开关锁定 443 并记住原来的端口
+ok 331 - 拨开开关锁定 443 并记住原来的端口
+  ---
+  duration_ms: 0.866416
+  type: 'test'
+  ...
+# Subtest: 拨回开关清空域名与限速，并还原打开前的端口
+ok 332 - 拨回开关清空域名与限速，并还原打开前的端口
+  ---
+  duration_ms: 0.06275
+  type: 'test'
+  ...
+# Subtest: 编辑一条 8443 的已有 SNI 规则时端口不被改写为 443
+ok 333 - 编辑一条 8443 的已有 SNI 规则时端口不被改写为 443
+  ---
+  duration_ms: 0.088125
+  type: 'test'
+  ...
+# Subtest: 编辑关联资源尚未取得的 SNI 规则时暂不推导路由类型
+ok 334 - 编辑关联资源尚未取得的 SNI 规则时暂不推导路由类型
+  ---
+  duration_ms: 0.0505
+  type: 'test'
+  ...
+# Subtest: 编辑一条 8443 的 SNI 规则时拨关再拨开，端口先回到 8443 再变成 443
+ok 335 - 编辑一条 8443 的 SNI 规则时拨关再拨开，端口先回到 8443 再变成 443
+  ---
+  duration_ms: 0.071833
+  type: 'test'
+  ...
+# Subtest: 普通转发规则反推出来的开关是关闭的
+ok 336 - 普通转发规则反推出来的开关是关闭的
+  ---
+  duration_ms: 0.04425
+  type: 'test'
+  ...
+# Subtest: 普通用户看不到开关
+ok 337 - 普通用户看不到开关
+  ---
+  duration_ms: 0.088417
+  type: 'test'
+  ...
+# Subtest: 主机型转发组允许 SNI，未选资源仍需先选择
+ok 338 - 主机型转发组允许 SNI，未选资源仍需先选择
+  ---
+  duration_ms: 0.153167
+  type: 'test'
+  ...
+# Subtest: 多出口隧道与负载均衡隧道置灰，单出口隧道可用
+ok 339 - 多出口隧道与负载均衡隧道置灰，单出口隧道可用
+  ---
+  duration_ms: 0.187709
+  type: 'test'
+  ...
+# Subtest: 端口转发资源必须且只能含一台启用主机
+ok 340 - 端口转发资源必须且只能含一台启用主机
+  ---
+  duration_ms: 0.269583
+  type: 'test'
+  ...
+# Subtest: 非主机型资源与未选资源都置灰
+ok 341 - 非主机型资源与未选资源都置灰
+  ---
+  duration_ms: 0.05475
+  type: 'test'
+  ...
+# Subtest: 转发链允许多台主机成员
+ok 342 - 转发链允许多台主机成员
+  ---
+  duration_ms: 0.034333
+  type: 'test'
+  ...
+# Subtest: 端口资源引用入口组时允许多个已启用的主机入口，权限和主机类型仍受限制
+ok 343 - 端口资源引用入口组时允许多个已启用的主机入口，权限和主机类型仍受限制
+  ---
+  duration_ms: 0.098791
+  type: 'test'
+  ...
+# Subtest: 域名格式错误有提示，空值和合法域名没有
+ok 344 - 域名格式错误有提示，空值和合法域名没有
+  ---
+  duration_ms: 0.1005
+  type: 'test'
+  ...
+# Subtest: SNI 入口端口预检携带规范化域名以识别可共享端口
+ok 345 - SNI 入口端口预检携带规范化域名以识别可共享端口
+  ---
+  duration_ms: 0.043209
+  type: 'test'
+  ...
+# Subtest: 清空 SNI 字段时保持引用不变以免触发多余渲染
+ok 346 - 清空 SNI 字段时保持引用不变以免触发多余渲染
+  ---
+  duration_ms: 0.035916
+  type: 'test'
+  ...
+# Subtest: 资源尚未加载出来时标记为 pending，调用方不得据此清空表单
+ok 347 - 资源尚未加载出来时标记为 pending，调用方不得据此清空表单
+  ---
+  duration_ms: 0.042792
+  type: 'test'
+  ...
+# Subtest: 编辑已有 SNI 规则时资源加载状态仍保持分流表单
+ok 348 - 编辑已有 SNI 规则时资源加载状态仍保持分流表单
+  ---
+  duration_ms: 0.037041
+  type: 'test'
+  ...
+# (node:67235) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:67235) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: keeps manual, plan, and purchased add-on traffic as separate sources
+ok 349 - keeps manual, plan, and purchased add-on traffic as separate sources
+  ---
+  duration_ms: 0.955083
+  type: 'test'
+  ...
+# Subtest: omits quota sources that do not exist
+ok 350 - omits quota sources that do not exist
+  ---
+  duration_ms: 0.157208
+  type: 'test'
+  ...
+# Subtest: keeps compatibility with an unsplit active add-on total
+ok 351 - keeps compatibility with an unsplit active add-on total
+  ---
+  duration_ms: 0.06975
+  type: 'test'
+  ...
+# Subtest: adds finite plan quotas and active add-ons across subscriptions
+ok 352 - adds finite plan quotas and active add-ons across subscriptions
+  ---
+  duration_ms: 0.060833
+  type: 'test'
+  ...
+# Subtest: adds paid traffic after choosing the larger manual or plan base quota
+ok 353 - adds paid traffic after choosing the larger manual or plan base quota
+  ---
+  duration_ms: 0.051167
+  type: 'test'
+  ...
+# Subtest: represents an active unlimited manual or plan grant without inventing bytes
+ok 354 - represents an active unlimited manual or plan grant without inventing bytes
+  ---
+  duration_ms: 0.057417
+  type: 'test'
+  ...
+# Subtest: ignores cancelled and expired subscription quota
+ok 355 - ignores cancelled and expired subscription quota
+  ---
+  duration_ms: 0.097875
+  type: 'test'
+  ...
+# (node:67236) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:67236) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: keeps multi-exit names in the route without a redundant mode label
+ok 356 - keeps multi-exit names in the route without a redundant mode label
+  ---
+  duration_ms: 0.866667
+  type: 'test'
+  ...
+# Subtest: uses the exit group name as the route endpoint and keeps member names in the exit summary
+ok 357 - uses the exit group name as the route endpoint and keeps member names in the exit summary
+  ---
+  duration_ms: 0.112833
+  type: 'test'
+  ...
+# Subtest: does not append an exit summary to single-exit tunnels
+ok 358 - does not append an exit summary to single-exit tunnels
+  ---
+  duration_ms: 0.047542
+  type: 'test'
+  ...
+# Subtest: does not display unused backup exits for the none strategy
+ok 359 - does not display unused backup exits for the none strategy
+  ---
+  duration_ms: 0.055459
+  type: 'test'
+  ...
+# Subtest: renders relay failover candidates as alternatives instead of a serial chain
+ok 360 - renders relay failover candidates as alternatives instead of a serial chain
+  ---
+  duration_ms: 0.108709
+  type: 'test'
+  ...
+# Subtest: uses the aggregate result when one multi-exit branch fails
+ok 361 - uses the aggregate result when one multi-exit branch fails
+  ---
+  duration_ms: 0.070416
+  type: 'test'
+  ...
+# (node:67237) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:67237) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: affiliate overview uses responsive non-shrinking cards and translates its labels
+ok 362 - affiliate overview uses responsive non-shrinking cards and translates its labels
+  ---
+  duration_ms: 15.160875
+  type: 'test'
+  ...
+# Subtest: affiliate UI and errors have English translations and preserve narrow-screen controls
+ok 363 - affiliate UI and errors have English translations and preserve narrow-screen controls
+  ---
+  duration_ms: 2.5005
+  type: 'test'
+  ...
+# Subtest: affiliate statistic icons use the shared colorful tile treatment in light and dark themes
+ok 364 - affiliate statistic icons use the shared colorful tile treatment in light and dark themes
+  ---
+  duration_ms: 1.5855
+  type: 'test'
+  ...
+# Subtest: affiliate settings live in the admin header dialog, including the independent business switch
+ok 365 - affiliate settings live in the admin header dialog, including the independent business switch
+  ---
+  duration_ms: 0.731584
+  type: 'test'
+  ...
+1..365
+# tests 365
+# suites 0
+# pass 365
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3749.770167

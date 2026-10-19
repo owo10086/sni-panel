@@ -1,0 +1,126 @@
+(node:60828) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+TAP version 13
+# (node:60829) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:60829) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: real SQLite rule quotas, admin permissions, expiry, resets, member inheritance and migration defaults
+not ok 1 - real SQLite rule quotas, admin permissions, expiry, resets, member inheritance and migration defaults
+  ---
+  duration_ms: 1212.684542
+  type: 'test'
+  location: '/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-4/server/ruleLimits.test.ts:1:1760'
+  failureType: 'testCodeFailure'
+  error: |-
+    (node:60833) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+    (Use `node --trace-warnings ...` to show where the warning was created)
+    (node:60833) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+    (Use `node --trace-warnings ...` to show where the warning was created)
+    node:internal/modules/run_main:123
+        triggerUncaughtException(
+        ^
+
+    AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+    [32m+ actual[39m [31m- expected[39m
+
+    [39m  {
+    [39m    body: {
+    [39m      duplicate: true,
+    [32m+[39m     sourceAnalyticsEnabled: false,
+    [39m      success: true
+    [39m    },
+    [39m    status: 200
+    [39m  }
+
+        at <anonymous> [90m(/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-4/[39mserver/ruleLimits.fixture.ts:261:10[90m)[39m
+    [90m    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)[39m {
+      generatedMessage: [33mtrue[39m,
+      code: [32m'ERR_ASSERTION'[39m,
+      actual: {
+        status: [33m200[39m,
+        body: { success: [33mtrue[39m, duplicate: [33mtrue[39m, sourceAnalyticsEnabled: [33mfalse[39m }
+      },
+      expected: { status: [33m200[39m, body: { success: [33mtrue[39m, duplicate: [33mtrue[39m } },
+      operator: [32m'deepStrictEqual'[39m,
+      diff: [32m'simple'[39m
+    }
+
+    Node.js v22.22.3
+
+
+    1 !== 0
+
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 1
+  operator: 'strictEqual'
+  stack: |-
+    <anonymous> [90m(/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-4/[39mserver/ruleLimits.fixture.ts:261:10[90m)[39m
+    TestContext.<anonymous> (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-4/server/ruleLimits.test.ts:36:12)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.start (node:internal/test_runner/test:944:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:296:17)
+  ...
+# (node:60830) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:60830) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: SNI chain running state waits for entry and exit snapshots
+not ok 2 - SNI chain running state waits for entry and exit snapshots
+  ---
+  duration_ms: 854.246417
+  type: 'test'
+  location: '/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-4/server/sniDesiredState.test.ts:1366:331'
+  failureType: 'testCodeFailure'
+  error: |-
+    (node:60831) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+    (Use `node --trace-warnings ...` to show where the warning was created)
+    (node:60831) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+    (Use `node --trace-warnings ...` to show where the warning was created)
+    [AgentEvent] host=1 event=agent-desired-state delivery issue reason=no-active-stream
+    [AgentEvent] host=2 event=agent-desired-state delivery issue reason=no-active-stream
+    node:internal/modules/run_main:123
+        triggerUncaughtException(
+        ^
+
+    AssertionError [ERR_ASSERTION]: false == true
+        at [90mfile:///Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-4/[39m[eval1]:186:14
+    [90m    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)[39m {
+      generatedMessage: [33mtrue[39m,
+      code: [32m'ERR_ASSERTION'[39m,
+      actual: [33mfalse[39m,
+      expected: [33mtrue[39m,
+      operator: [32m'=='[39m,
+      diff: [32m'simple'[39m
+    }
+
+    Node.js v22.22.3
+
+
+    1 !== 0
+
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 1
+  operator: 'strictEqual'
+  stack: |-
+    [90mfile:///Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-4/[39m[eval1]:186:14
+    TestContext.<anonymous> (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-4/server/sniDesiredState.test.ts:1687:10)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.start (node:internal/test_runner/test:944:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:296:17)
+  ...
+1..2
+# tests 2
+# suites 0
+# pass 0
+# fail 2
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1897.055333

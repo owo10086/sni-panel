@@ -1,0 +1,166 @@
+(node:44280) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+TAP version 13
+# (node:44281) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:44281) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: EasyPay signs the complete API request and configuration validation rejects unusable WeChat modes
+ok 1 - EasyPay signs the complete API request and configuration validation rejects unusable WeChat modes
+  ---
+  duration_ms: 791.610791
+  type: 'test'
+  ...
+# Subtest: verified delayed callbacks recover closed orders exactly once and reject wrong amounts, apps and merchants
+ok 2 - verified delayed callbacks recover closed orders exactly once and reject wrong amounts, apps and merchants
+  ---
+  duration_ms: 824.38475
+  type: 'test'
+  ...
+# Subtest: active queries verify provider signatures, enforce ownership/throttling and recover missing callbacks
+ok 3 - active queries verify provider signatures, enforce ownership/throttling and recover missing callbacks
+  ---
+  duration_ms: 807.03775
+  type: 'test'
+  ...
+# Subtest: seven-day recovery includes the exact deadline, falls back to creation time, and sends older orders to manual reconciliation
+ok 4 - seven-day recovery includes the exact deadline, falls back to creation time, and sends older orders to manual reconciliation
+  ---
+  duration_ms: 829.933
+  type: 'test'
+  ...
+# Subtest: WeChat create verifies signed raw responses and refuses unsigned QR links
+ok 5 - WeChat create verifies signed raw responses and refuses unsigned QR links
+  ---
+  duration_ms: 760.346333
+  type: 'test'
+  ...
+# Subtest: EasyPay active queries and GET/POST notifications verify merchant identity even after payments are disabled
+ok 6 - EasyPay active queries and GET/POST notifications verify merchant identity even after payments are disabled
+  ---
+  duration_ms: 791.152833
+  type: 'test'
+  ...
+# Subtest: fast verified callbacks win races with both successful and failed create responses
+ok 7 - fast verified callbacks win races with both successful and failed create responses
+  ---
+  duration_ms: 770.601625
+  type: 'test'
+  ...
+# Subtest: failed fulfillment retains confirmed payment and diagnostics until a safe retry completes
+ok 8 - failed fulfillment retains confirmed payment and diagnostics until a safe retry completes
+  ---
+  duration_ms: 790.441583
+  type: 'test'
+  ...
+# (node:44282) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:44282) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: payment settings validate keys before saving and failed gateway orders return safe errors
+ok 9 - payment settings validate keys before saving and failed gateway orders return safe errors
+  ---
+  duration_ms: 778.727917
+  type: 'test'
+  ...
+# Subtest: ordinary repository transitions cannot reactivate closed orders without verified recovery
+ok 10 - ordinary repository transitions cannot reactivate closed orders without verified recovery
+  ---
+  duration_ms: 710.766833
+  type: 'test'
+  ...
+# (node:44283) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:44283) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: Alipay timestamps use Beijing time across midnight regardless of server timezone
+ok 11 - Alipay timestamps use Beijing time across midnight regardless of server timezone
+  ---
+  duration_ms: 0.910167
+  type: 'test'
+  ...
+# Subtest: EasyPay root-relative links are resolved without rewriting opaque QR payloads
+ok 12 - EasyPay root-relative links are resolved without rewriting opaque QR payloads
+  ---
+  duration_ms: 0.074542
+  type: 'test'
+  ...
+# Subtest: Alipay response verification uses exact JSON bytes including whitespace and escapes
+ok 13 - Alipay response verification uses exact JSON bytes including whitespace and escapes
+  ---
+  duration_ms: 58.529584
+  type: 'test'
+  ...
+# Subtest: payment request timeout includes a stalled response body
+ok 14 - payment request timeout includes a stalled response body
+  ---
+  duration_ms: 12.940166
+  type: 'test'
+  ...
+# (node:44284) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:44284) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: payment RSA keys support PKCS\#1/PKCS\#8 PEM and headerless DER without changing signatures
+ok 15 - payment RSA keys support PKCS\#1/PKCS\#8 PEM and headerless DER without changing signatures
+  ---
+  duration_ms: 32.593916
+  type: 'test'
+  ...
+# Subtest: payment key validation rejects wrong, truncated, encrypted and non-RSA keys with safe field-specific messages
+ok 16 - payment key validation rejects wrong, truncated, encrypted and non-RSA keys with safe field-specific messages
+  ---
+  duration_ms: 12.347542
+  type: 'test'
+  ...
+# Subtest: payment order failures hide arbitrary gateway details and classify key, timeout and network errors
+ok 17 - payment order failures hide arbitrary gateway details and classify key, timeout and network errors
+  ---
+  duration_ms: 0.358583
+  type: 'test'
+  ...
+# Subtest: payment return paths only accept known panel pages
+ok 18 - payment return paths only accept known panel pages
+  ---
+  duration_ms: 0.062584
+  type: 'test'
+  ...
+# Subtest: payment URLs preserve a configured reverse-proxy base path
+ok 19 - payment URLs preserve a configured reverse-proxy base path
+  ---
+  duration_ms: 0.176916
+  type: 'test'
+  ...
+# Subtest: provider return URL carries the order and constrained destination
+ok 20 - provider return URL carries the order and constrained destination
+  ---
+  duration_ms: 0.130833
+  type: 'test'
+  ...
+# Subtest: frontend return URL forwards only expected payment state
+ok 21 - frontend return URL forwards only expected payment state
+  ---
+  duration_ms: 0.105333
+  type: 'test'
+  ...
+# Subtest: WeChat H5 redirect is encoded and keeps provider query parameters
+ok 22 - WeChat H5 redirect is encoded and keeps provider query parameters
+  ---
+  duration_ms: 0.155209
+  type: 'test'
+  ...
+# Subtest: EasyPay query parameters are normalized for GET notifications
+ok 23 - EasyPay query parameters are normalized for GET notifications
+  ---
+  duration_ms: 0.343125
+  type: 'test'
+  ...
+1..23
+# tests 23
+# suites 0
+# pass 23
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 6481.801458

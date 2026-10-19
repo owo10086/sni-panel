@@ -1,0 +1,146 @@
+{
+  "date": "2026-10-19",
+  "branch": "task/4",
+  "codeCommit": "ad95698",
+  "checks": [
+    {
+      "command": "pnpm test:server",
+      "exitCode": 0,
+      "log": "检查日志/forwardx-285-close-server-full.txt",
+      "groups": {
+        "tests": [
+          44,
+          95,
+          1144
+        ],
+        "pass": [
+          44,
+          95,
+          1144
+        ],
+        "fail": [
+          0,
+          0,
+          0
+        ],
+        "skipped": [
+          0,
+          0,
+          0
+        ],
+        "cancelled": [
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "command": "pnpm exec tsc --noEmit",
+      "exitCode": 0,
+      "log": "检查日志/forwardx-285-close-types.txt"
+    },
+    {
+      "command": "pnpm build",
+      "exitCode": 0,
+      "log": "检查日志/forwardx-285-close-build.txt",
+      "note": "已有大包体积提示，构建成功。"
+    },
+    {
+      "command": "pnpm docs:build",
+      "exitCode": 0,
+      "log": "检查日志/forwardx-285-close-docs-build.txt"
+    },
+    {
+      "command": "pnpm check:versions",
+      "exitCode": 0,
+      "log": "检查日志/forwardx-285-close-versions.txt"
+    },
+    {
+      "command": "node --import tsx --test server/deploymentDocs.test.ts",
+      "exitCode": 0,
+      "log": "检查日志/forwardx-285-close-docs-test.txt",
+      "groups": {
+        "tests": [
+          4
+        ],
+        "pass": [
+          4
+        ],
+        "fail": [
+          0
+        ],
+        "skipped": [
+          0
+        ],
+        "cancelled": [
+          0
+        ]
+      }
+    },
+    {
+      "command": "完整 client/src 自动检查（本轮先前运行，收尾未修改网页源码）",
+      "exitCode": 0,
+      "log": "检查日志/forwardx-285-all-client-tests-final.txt",
+      "groups": {
+        "tests": [
+          365
+        ],
+        "pass": [
+          365
+        ],
+        "fail": [
+          0
+        ],
+        "skipped": [
+          0
+        ],
+        "cancelled": [
+          0
+        ]
+      }
+    },
+    {
+      "command": "Agent Linux go test -count=1 -json ./...",
+      "exitCode": 0,
+      "summary": "agent-tests-summary.json",
+      "counts": {
+        "pass": 606,
+        "skip": 5,
+        "fail": 0
+      }
+    },
+    {
+      "command": "FXP Linux go test -count=1 -json ./...",
+      "exitCode": 0,
+      "summary": "fxp-tests-summary.json",
+      "counts": {
+        "pass": 247,
+        "skip": 0,
+        "fail": 0
+      }
+    },
+    {
+      "command": "Agent/FXP go vet and Linux build",
+      "exitCode": 0,
+      "logs": [
+        "检查日志/agent-vet-build.txt",
+        "检查日志/fxp-vet.txt"
+      ]
+    },
+    {
+      "command": "pnpm install --lockfile-only --frozen-lockfile --ignore-scripts",
+      "exitCode": 0,
+      "log": "检查日志/lockfile-check.txt"
+    }
+  ],
+  "independentReview": {
+    "rounds": 2,
+    "standardsUnresolvedImportant": 0,
+    "specUnresolvedImportant": 0,
+    "record": "../独立审查记录.md"
+  },
+  "nativeExcluded": 33,
+  "manualAcceptance": "pending-user-confirmation",
+  "note": "原始日志均已随交付保存；有重叠的专项检查不相加。Go和网页完整检查来自本轮先前运行，收尾未修改对应源码。具体未覆盖场景见实施与验证记录。"
+}

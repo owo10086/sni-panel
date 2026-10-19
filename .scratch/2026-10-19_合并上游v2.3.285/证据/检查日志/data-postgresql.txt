@@ -1,0 +1,15 @@
+(node:41962) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:41962) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[Database] PostgreSQL connected at 127.0.0.1:59954/forwardx285
+[OperationsGeo] offline IPv4 database ready version=1bf6cabfb63c1a14
+[TrafficSummary] Bucket backfill complete marker=v3 rows=0 elapsedMs=4
+[TrafficCounter] User/rule counter backfill complete ruleRows=0 userRows=0 repairedRules=0 repairedBuckets=0 elapsedMs=5
+[PostgreSQL] Health check started marker=pg-health-20260612-query-cache-v2 force=true
+[PostgreSQL] Health check complete marker=pg-health-20260612-query-cache-v2 indexesChecked=191 indexesCreated=0 indexFailures=0 tablesAnalyzed=75 analyzeFailures=0 largestTables=system_settings:28, payment_orders:25, users:2, operations_traffic_daily:1, operations_source_daily:1, operations_source_status:1 completed=true elapsedMs=130
+[TrafficSummary] Bucket backfill complete marker=v3 rows=0 elapsedMs=4
+[TrafficCounter] User/rule counter backfill complete ruleRows=0 userRows=0 repairedRules=0 repairedBuckets=0 elapsedMs=4
+[PostgreSQL] Health check started marker=pg-health-20260612-query-cache-v2 force=true
+[PostgreSQL] Health check complete marker=pg-health-20260612-query-cache-v2 indexesChecked=191 indexesCreated=0 indexFailures=0 tablesAnalyzed=75 analyzeFailures=0 largestTables=system_settings:28, payment_orders:25, users:2, probe_counter_heads:1, hosts:1, forward_rules:1 completed=true elapsedMs=119
+{"database":"postgresql","result":"passed","checks":["schema-idempotent","traffic-upsert-and-rollback","source-default-off","offline-geo","currency-separation","pagination-owner-isolation","full-backup-four-ops-and-probe-head","essential-backup-omits-ops","restore-full","legacy-missing-ops","history-cleanup-retains-money"]}

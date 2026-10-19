@@ -1,0 +1,69 @@
+(node:79175) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+TAP version 13
+# (node:79178) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:79178) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: port and chain SNI sharing one listener receive one complete table and preserve each other's routes
+not ok 1 - port and chain SNI sharing one listener receive one complete table and preserve each other's routes
+  ---
+  duration_ms: 853.201916
+  type: 'test'
+  location: '/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-4/server/sniForwardGroup.test.ts:697:350'
+  failureType: 'testCodeFailure'
+  error: |-
+    (node:79181) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+    (Use `node --trace-warnings ...` to show where the warning was created)
+    (node:79181) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+    (Use `node --trace-warnings ...` to show where the warning was created)
+    (node:79181) ExperimentalWarning: The MockTimers API is an experimental feature and might change at any time
+    [AgentEvent] host=1 event=agent-desired-state delivery issue reason=no-active-stream
+    node:internal/modules/run_main:123
+        triggerUncaughtException(
+        ^
+
+    AssertionError [ERR_ASSERTION]: one listener must receive one complete table
+
+    2 !== 1
+
+        at table [90m(file:///Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-4/[39m[eval1]:79:14[90m)[39m
+    [90m    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)[39m
+        at async [90mfile:///Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-4/[39m[eval1]:82:22 {
+      generatedMessage: [33mfalse[39m,
+      code: [32m'ERR_ASSERTION'[39m,
+      actual: [33m2[39m,
+      expected: [33m1[39m,
+      operator: [32m'strictEqual'[39m,
+      diff: [32m'simple'[39m
+    }
+
+    Node.js v22.22.3
+
+
+    1 !== 0
+
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 1
+  operator: 'strictEqual'
+  stack: |-
+    table [90m(file:///Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-4/[39m[eval1]:79:14[90m)[39m
+    async [90mfile:///Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-4/[39m[eval1]:82:22 {
+    verifySniGroupDeletion (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-4/server/sniForwardGroup.test.ts:113:12)
+    TestContext.<anonymous> (/Users/macmini/Documents/Aixiaoji/haproxy-sni/Forwardx-task-4/server/sniForwardGroup.test.ts:778:3)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.start (node:internal/test_runner/test:944:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:296:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 982.509708

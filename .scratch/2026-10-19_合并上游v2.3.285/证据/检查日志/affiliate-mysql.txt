@@ -1,0 +1,10 @@
+(node:51710) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:51710) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[Database] MySQL connected at 127.0.0.1:59953/forwardx285
+[TrafficSummary] Bucket backfill complete marker=v3 rows=0 elapsedMs=4
+[TrafficCounter] User/rule counter backfill complete ruleRows=0 userRows=0 repairedRules=0 repairedBuckets=0 elapsedMs=7
+[MySQL] Health check started marker=mysql-health-20260612-query-cache-v1 force=true
+[MySQL] Health check complete marker=mysql-health-20260612-query-cache-v1 tablesAnalyzed=75 analyzeFailures=0 completed=true elapsedMs=209
+{"database":"mysql","result":"passed","checks":["duplicate-commission-once","concurrent-transfer-cannot-overspend","consistent-financial-export","injected-ledger-failure-rolls-back-six-tables","clean-restore-retains-financial-ledger"]}

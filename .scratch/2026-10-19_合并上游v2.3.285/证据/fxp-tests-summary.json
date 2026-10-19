@@ -1,0 +1,1494 @@
+{
+  "source": "/tmp/forwardx-285-implementation/fxp-tests.jsonl",
+  "counts": {
+    "pass": 247,
+    "fail": 0,
+    "skip": 0
+  },
+  "cases": [
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp/internal/v3",
+      "Test": "TestFrameGolden",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp/internal/v3",
+      "Test": "TestPaddedControlIsTwoFrames",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp/internal/v3",
+      "Test": "TestFrameBoundsAndShortIO",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp/internal/v3",
+      "Test": "TestHTTPRequestGolden",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp/internal/v3",
+      "Test": "TestWSAcceptMatchesRFC6455",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp/internal/v3",
+      "Test": "TestHTTPClientLazyResponseAndRawPayload/HTTP/1.1_101",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp/internal/v3",
+      "Test": "TestHTTPClientLazyResponseAndRawPayload/HTTP/1.1_200",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp/internal/v3",
+      "Test": "TestHTTPClientLazyResponseAndRawPayload",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp/internal/v3",
+      "Test": "TestHTTPClientRejectsBrokenOrUnboundedResponse",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp/internal/v3",
+      "Test": "TestHTTPClientRejectsWrongWSAccept",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp/internal/v3",
+      "Test": "TestHTTPServerWSHandshakeEmitsAccept",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp/internal/v3",
+      "Test": "TestHTTPServerWithholdsResponseUntilPeerSends",
+      "Elapsed": 0.15
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp/internal/v3",
+      "Test": "TestHTTPServerPreservesCoalescedPrefaceAndPayload",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp/internal/v3",
+      "Test": "TestHTTPServerIncompletePrefaceRespectsDeadline",
+      "Elapsed": 0.05
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp/internal/v3",
+      "Test": "TestHKDFSHA256MatchesRFC5869",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp/internal/v3",
+      "Test": "TestInnerHandshakeAndRecordRoundTrip",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp/internal/v3",
+      "Test": "TestInnerRejectsWrongKey",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp/internal/v3",
+      "Test": "TestInnerRejectsTamperedHandshake",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp/internal/v3",
+      "Test": "TestInnerRejectsTamperedServerProof",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp/internal/v3",
+      "Test": "TestInnerRejectsWrongModeByte",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp/internal/v3",
+      "Test": "TestInnerSessionsWithSamePSKDoNotShareKeys",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp/internal/v3",
+      "Test": "TestInnerRejectsTamperedRecord",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp/internal/v3",
+      "Test": "TestInnerRejectsOversizedPayload",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp/internal/v3",
+      "Test": "TestInnerLargeWriteSplitsIntoRecords",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp/internal/v3",
+      "Test": "TestInnerConcurrentWritesDoNotInterleave",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp/internal/v3",
+      "Test": "TestInnerNonceExhaustionFailsClosed",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp/internal/v3",
+      "Test": "TestInnerHandshakeTagIsHMACSHA256",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestControlledFXPAddsRulesWithoutDisconnectingTCPOrUDPSessions/legacy",
+      "Elapsed": 0.26
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestControlledFXPAddsRulesWithoutDisconnectingTCPOrUDPSessions/http",
+      "Elapsed": 0.26
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestControlledFXPAddsRulesWithoutDisconnectingTCPOrUDPSessions/ws",
+      "Elapsed": 0.43
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp/internal/v3",
+      "Test": "TestInnerDeadlinesPropagateToUnderlyingConn",
+      "Elapsed": 1.01
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp/internal/v3",
+      "Test": "TestSessionConcurrentStreamsAndResourceRelease",
+      "Elapsed": 0.02
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp/internal/v3",
+      "Test": "TestSessionRepeatedOpenCloseDoesNotRetainSlots",
+      "Elapsed": 0.01
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp/internal/v3",
+      "Test": "TestSessionSlowConsumerBackpressureIsIsolated",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp/internal/v3",
+      "Test": "TestSessionRemoteClosePreservesTailAndClearsOnEOF",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp/internal/v3",
+      "Test": "TestSessionDeadlineChangesWakeBlockedReads",
+      "Elapsed": 0.02
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp/internal/v3",
+      "Test": "TestSessionLimitDrainAndIdle",
+      "Elapsed": 0.02
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp/internal/v3",
+      "Test": "TestSessionCloseReleasesUnreadBuffers",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp/internal/v3",
+      "Test": "TestSessionStalledPeerHasBoundedWriterLifetime",
+      "Elapsed": 0.03
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp/internal/v3",
+      "Test": "TestSessionRejectsUnverifiedType5",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp/internal/v3",
+      "Test": "TestSessionCreditWindowTransfersBeyondBufferWithoutDropping",
+      "Elapsed": 0.01
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestControlledFXPAddsRulesWithoutDisconnectingTCPOrUDPSessions/tls",
+      "Elapsed": 0.41
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestControlledFXPAddsRulesWithoutDisconnectingTCPOrUDPSessions",
+      "Elapsed": 1.36
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPControlRefusesToOverwriteRegularFiles",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestAdditiveControllerRecoversOnlyStoppedListener",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPByteBufferPoolUsesSmallestTier",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPByteBufferPoolDoesNotRetainOversizedFrames",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPByteBufferPoolHasBoundedRetainedSlots",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestReadConfigEntryGroup",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestValidateEntryGroupConfig/empty",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestValidateEntryGroupConfig/child_role",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestValidateEntryGroupConfig/tunnel_mismatch",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestValidateEntryGroupConfig/invalid_child",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestValidateEntryGroupConfig/tcp_conflict",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestValidateEntryGroupConfig/udp_conflict",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestValidateEntryGroupConfig/wildcard_conflict",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestValidateEntryGroupConfig/tcp_and_udp_same_port_are_separate_lanes",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestValidateEntryGroupConfig",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestNormalizeConfigNormalizesGroupedEntries",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp/internal/v3",
+      "Test": "TestSessionWriteDeadlineUnblocksCreditWaitOnlyForThisStream",
+      "Elapsed": 0.03
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestRunEntryClosesTCPListenerWhenUDPBindFails",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp/internal/v3",
+      "Test": "TestSessionForgedCreditOverrunResetsOnlyOffendingStream",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp/internal/v3",
+      "Test": "TestSessionAliveReflectsLastSuccessfulWrite",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp/internal/v3",
+      "Test": "TestSessionWriteRefreshesLiveness",
+      "Elapsed": 0.01
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp/internal/v3",
+      "Test": "TestSessionControlBurstDoesNotKillSession",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp/internal/v3",
+      "Test": "TestSessionTryControlReportsFullQueue",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp/internal/v3",
+      "Test": "TestSessionTinyWritesDoNotAccumulateBufferFragments",
+      "Elapsed": 0.01
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp/internal/v3",
+      "Test": "FuzzFrameRoundTrip/seed#0",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp/internal/v3",
+      "Test": "FuzzFrameRoundTrip/seed#1",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp/internal/v3",
+      "Test": "FuzzFrameRoundTrip",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestRunEntryGroupListensOnManyEntriesInOneRuntime",
+      "Elapsed": 0.06
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestRunEntryGroupStopsOtherEntriesOnRuntimeError",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestBoundedLogWriterDropsFloodAndReportsSuppression",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestCompactRuntimeLogLineLimitsSingleWrite",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestBoundedLogWriterCapsHighVolumeWithinWindow",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestDetectHTTPProtocolRequiresRequestLine",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFallbackDialTimeoutIsShorterThanNormalDial",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestSecureDialTimeoutIgnoresInvalidOrDuplicateExitEntries",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFallbackSelectorUsesPriorityAndRetriesPrimaryAfterCooldown",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestExitSelectorStrategies",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestForwardXFallbackUsesBackupForTCPAndUDP",
+      "Elapsed": 0.1
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestForwardXTCPRoundTrip",
+      "Elapsed": 0.11
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestForwardXUDPDirectRoundTrip",
+      "Elapsed": 0.02
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestForwardXBothSplitUDPWirePorts",
+      "Elapsed": 0.06
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestForwardXRelayUDPDirectRoundTrip",
+      "Elapsed": 0.03
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPv3EncryptsAuthenticatesAndRejectsReplay",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPFragmentsStayWithinSafeWireSizeAndReassembleOutOfOrder",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPSmallDatagramKeepsLegacyHeader",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPReassemblesAdjacentLargeDatagramsOutOfOrder",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPExitTargetIsConfigurationBound",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestForwardXProxyProtocolRoundTrip",
+      "Elapsed": 0.1
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestForwardXProxyProtocolSurvivesBackupExitSelection",
+      "Elapsed": 0.11
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestForwardXRelayTCPRoundTrip",
+      "Elapsed": 0.16
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestForwardXRelayChainTCPRoundTrip",
+      "Elapsed": 0.21
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFxpRejectsReplaySalt",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFxpServerAcceptsCompatibilityWireContext",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFxpClientRetriesCompatibilityWireContext",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestWaitBidirectionalKeepsCleanHalfClosedStreamsOpen",
+      "Elapsed": 0.07
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFxpWireContextRemainsStable",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFormatProxyProtocolV2",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPAgentChallengeProofMatchesPanelVector",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPPanelRequestUsesChallengeForSkewedEnvelope",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPPanelRequestRefreshesChallengeAfterExplicitRejection",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPConcurrentStaleChallengeRejectionsEachRetryOnce",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPPanelRequestDoesNotRetryAuthenticatedBusinessError",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPPanelRequestFallsBackToRawTokenForOlderPanel",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestUnauthenticatedHandshakeDoesNotPopulateReplayCache",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestReplayCacheRejectsDuplicatesAndExpiresEntries",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestReplayCacheEvictsOldestAtCapacity",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestReplayCacheWithZeroCapacityDoesNotRetainEntries",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestConnGateEnforcesTotalAndPerIPLimits",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestConnGateConcurrentAcquireNeverExceedsHardLimit",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestListenerConnGatesHaveDefaultsAndReleasePendingAfterHello",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestListenerConnGatesDoNotTreatAnEntryAgentAsOneUser",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestListenerConnGatesAllowMoreThanLegacyPerIPLimitFromOneEntry",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestLimiterWaitReturnsWhenSessionIsCanceled",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestServerHandshakeTimesOutWhenPeerStalls/no_handshake",
+      "Elapsed": 0.03
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestServerHandshakeTimesOutWhenPeerStalls/partial_handshake",
+      "Elapsed": 0.03
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestServerHandshakeTimesOutWhenPeerStalls",
+      "Elapsed": 0.06
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestClientHandshakeTimesOutWhenPeerDoesNotRead",
+      "Elapsed": 0.03
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestServerHelloTimesOutAfterSuccessfulHandshake",
+      "Elapsed": 0.03
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestHandshakeAndHelloDeadlinesAreClearedForEstablishedTraffic",
+      "Elapsed": 0.09
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestWaitForWaitGroupTracksSessionDrain",
+      "Elapsed": 0.01
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestWaitForWaitGroupHonorsTimeout",
+      "Elapsed": 0.01
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestSniSplitterForwardsMatchingClientHelloUnchanged",
+      "Elapsed": 0.01
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestSniSplitterForwardsClientHelloWithECHUsingReadableSNIUnchanged/first_extension",
+      "Elapsed": 0.01
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestSniSplitterForwardsClientHelloWithECHUsingReadableSNIUnchanged/middle_extension",
+      "Elapsed": 0.01
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestSniSplitterForwardsClientHelloWithECHUsingReadableSNIUnchanged/last_extension",
+      "Elapsed": 0.01
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestSniSplitterForwardsClientHelloWithECHUsingReadableSNIUnchanged",
+      "Elapsed": 0.03
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestPublishedSniSplitterForwardsClientHelloWithECH",
+      "Elapsed": 0.01
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestSniSplitterRejectsUnmatchedTraffic/unknown_sni",
+      "Elapsed": 0.01
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestSniSplitterRejectsUnmatchedTraffic/without_sni",
+      "Elapsed": 0.01
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestSniSplitterRejectsUnmatchedTraffic/plain_http",
+      "Elapsed": 0.01
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestSniSplitterRejectsUnmatchedTraffic/malformed_extension_length",
+      "Elapsed": 0.01
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestSniSplitterRejectsUnmatchedTraffic/oversized_record_length",
+      "Elapsed": 0.01
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestSniSplitterRejectsUnmatchedTraffic",
+      "Elapsed": 0.06
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestSniSplitterRejectsIncompleteHandshakeWithinReadWindow",
+      "Elapsed": 0.1
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestSniSplitterReassemblesFragmentedClientHello",
+      "Elapsed": 0.05
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestSniSplitterRoutesMultipleDomainsAndReportsTrafficByRule",
+      "Elapsed": 0.01
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestSniSplitterHotSwapsRouteTableWithoutRestartingUnchangedRules",
+      "Elapsed": 0.01
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestSniSplitterRateLimitAppliesToOnlyTheLimitedRule",
+      "Elapsed": 1.02
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestSniSplitterConnectionLimitAppliesToOnlyTheLimitedRule",
+      "Elapsed": 0.01
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestSniSplitterHotUpdatesLimitsWithoutDisturbingOtherRules",
+      "Elapsed": 0.02
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestSniSplitterConfigValidation/no_routes",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestSniSplitterConfigValidation/missing_version",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestSniSplitterConfigValidation/udp_protocol",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestSniSplitterConfigValidation/bad_route",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestSniSplitterConfigValidation",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestTrafficBatchRetainsFailedReportsAndAcknowledgesSuccess",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestTrafficConfigurationDiagnosticsAreRateLimitedAndDoNotLeakToken",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestTrafficDiagnosticBookkeepingIsBounded",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestTrafficReportFailureDiagnosticsAreRateLimitedAndRedacted",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestTrafficRequestFailureRetainsBatchAndIsRateLimited",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestEqualTrafficBatchesUseDifferentReportIDs",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestTrafficBatchKeepsConnectionOnlyDelta",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestTrafficReporterCountsSessionOnceWithoutChangingBytes",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPTrafficProducerIDIsStablePerRuntime",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestStopTrafficReporterDoesNotWaitForPanel",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPCodecIsWireCompatibleAndRejectsTampering",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPCodecPreservesMultiFragmentReassembly",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPCodecReducesPerPacketAllocations",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestUDPFragmentReassemblerReleasesBudgetOnCompletion",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestUDPFragmentReassemblerReleasesExpiredBudget",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestUDPFragmentReassemblerReleasesBudgetOnMetadataConflict",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestUDPFragmentReassemblerReleasesOldestBudgetOnEviction",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestUDPFragmentReassemblerClearAndRebindReleaseBudget",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestUDPFragmentReassemblerBudgetRejectionDropsAssembly",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestUDPFragmentReassemblerWithoutBudgetKeepsUnlimitedBehavior",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestUDPFragmentReassemblerCloseRejectsLateFragmentsWithoutBudgetLeak",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestUDPFragmentReassemblerActiveExpireReleasesBudget",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPQueueBudgetDefaults",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPQueueBudgetEnforcesRuleLimitWithoutPartialReservation",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPQueueBudgetEnforcesSharedProcessLimit",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPQueueBudgetReleaseRestoresBothLimits",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPQueueBudgetReplaceIsAtomic",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPQueueBudgetRejectsInvalidReservation",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPQueueBudgetConcurrentReservationsStayWithinLimit",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestCheckFXPUDPSessionCapacityUsesPrecomputedHardLimits/below_limits",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestCheckFXPUDPSessionCapacityUsesPrecomputedHardLimits/soft_limits_remain_admissible",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestCheckFXPUDPSessionCapacityUsesPrecomputedHardLimits/global_hard_boundary",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestCheckFXPUDPSessionCapacityUsesPrecomputedHardLimits/per_IP_hard_boundary",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestCheckFXPUDPSessionCapacityUsesPrecomputedHardLimits/scoped_hard_limit_has_priority",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestCheckFXPUDPSessionCapacityUsesPrecomputedHardLimits/empty_source_ignores_per_IP_count",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestCheckFXPUDPSessionCapacityUsesPrecomputedHardLimits",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestPlanFXPUDPPressureReclamationOnlyReclaimsQuiescentIdleSessions",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestPlanFXPUDPPressureReclamationScopesPerIPPressure",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestPlanFXPUDPPressureReclamationBoundsRepeatedChurn",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPSessionWorkerDrainPreservesFinalTrafficDelta",
+      "Elapsed": 0.03
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPDirectSnapshotsIncludeInFlightWork/entry",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPDirectSnapshotsIncludeInFlightWork/exit",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPDirectSnapshotsIncludeInFlightWork/relay",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPDirectSnapshotsIncludeInFlightWork",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPDirectSnapshotsProtectPartialFragmentAssemblies/entry_return",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPDirectSnapshotsProtectPartialFragmentAssemblies/exit_data",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPDirectSnapshotsProtectPartialFragmentAssemblies/relay_data",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPDirectSnapshotsProtectPartialFragmentAssemblies/relay_return",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPDirectSnapshotsProtectPartialFragmentAssemblies",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestExitUDPDirectSameSessionIDDifferentRulesPreservesOldSession",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPSequenceSeedAllocatorIsMonotonicWithinTickAndRollback",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPSequenceSeedAllocatorConcurrentAllocationsAreUniqueAndConsecutive",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPSequenceSeedAllocatorObserveAdvancesNextSeed",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPSequenceSeedAllocatorSurvivesClockRollback",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPRecreatedSenderDoesNotReuseNonce",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPSessionIdleAtBoundary",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPSessionExpirationWaitsForDrainButBoundsStalls",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPSessionSweeperStopsIdempotently",
+      "Elapsed": 0.01
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPQueueEnforcesPacketAndByteLimits",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPQueueRejectsOversizedPacketWithoutDiscardingQueue",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPQueueSharedBudgetTracksReplacementDrainAndClear",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPQueueRejectedReplacementPreservesExistingPacket",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPQueueLeaseProtectsInFlightPacketUntilDone",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPQueueCloseRejectsConcurrentEnqueueWithoutBudgetLeak",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPQueuedPacketSupersededDelayBoundary",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestDefaultFXPUDPSessionPolicyIsIndependentOfTCPPlanLimits",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestFXPUDPBufferBudgetsKeepPerSessionReservationBounded",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestV3PoolSharesAcrossRulesAndExpandsAtStreamLimit/http",
+      "Elapsed": 0.09
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestV3PoolSharesAcrossRulesAndExpandsAtStreamLimit/ws",
+      "Elapsed": 0.04
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestV3PoolSharesAcrossRulesAndExpandsAtStreamLimit/tls",
+      "Elapsed": 0.03
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestV3PoolSharesAcrossRulesAndExpandsAtStreamLimit",
+      "Elapsed": 0.16
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestV3PoolDoesNotShareDifferentSecurityOrOuterOptions",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestV3RelayPreservesMultiplexingAndPerHopKeys/http",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestV3RelayPreservesMultiplexingAndPerHopKeys/ws",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestV3RelayPreservesMultiplexingAndPerHopKeys/tls",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestV3RelayPreservesMultiplexingAndPerHopKeys",
+      "Elapsed": 0.01
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestV3FailedHandshakeReleasesPoolReservation",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestV3LogicalFramesRejectOversizeBeforeAllocation",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestV3MuxRejectsUnsupportedInnerMode",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestV3MultiplexCanBeDisabledWithoutChangingAuthentication",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestV3PoolClosedCannotDial",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestV3PoolReconnectAfterPhysicalFailure",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestV3FallbackToHealthyExitStillWorks",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestV3PoolSkipsStaleSessions",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestV3PoolReportsEndpointFailureToSelector",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestV3UsesInnerRecordLayerOnEveryTransport/http",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestV3UsesInnerRecordLayerOnEveryTransport/ws",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestV3UsesInnerRecordLayerOnEveryTransport/tls",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestV3UsesInnerRecordLayerOnEveryTransport",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestV3RejectsWrongTunnelKey/http",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestV3RejectsWrongTunnelKey/ws",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestV3RejectsWrongTunnelKey/tls",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestV3RejectsWrongTunnelKey",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestV3TCPExitRoutesRealTarget/http",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestV3TCPExitRoutesRealTarget/ws",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestV3TCPExitRoutesRealTarget/tls",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestV3TCPExitRoutesRealTarget",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestV3ConfigDoesNotSilentlyDowngrade",
+      "Elapsed": 0
+    },
+    {
+      "Action": "pass",
+      "Package": "github.com/poouo/Forwardx/forwardx-fxp",
+      "Test": "TestV3InvalidHTTPPathIsRejectedBeforeAuthentication",
+      "Elapsed": 0
+    }
+  ],
+  "note": "本轮先前完成的隔离Linux检查；收尾没有修改Go源码。计数包含子场景；跳过不算通过。",
+  "sourceSha256": "a7824660ddfec4c18800b47e7bdb9135e74dc9093043ee23e23afe6041d5355b"
+}

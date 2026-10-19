@@ -1,0 +1,288 @@
+{
+  "heartbeatFiles": {
+    "initial-1.json": "1812fffeac3cccd7d77208da30b3c29bf1aaf390f7624e039e98ed0e0981df93",
+    "initial-2.json": "e0dab8391f3037e4db89514e5059d2029a710e6c06a3920de535e9edfda21778",
+    "updated-1.json": "c92a3d5da954ba6f6d58cad1aa7a32ceb0197b9dd6cbf6b8258a242126db87bf",
+    "updated-2.json": "499213aec2ec1a92969fc324e9d8737a2a6752b4d89084d16640cb3856895d5f"
+  },
+  "binarySha256": "d5216d628618658f342ebbc02c8654143eed6acc2b7d7ef5ae99397ad293afe2",
+  "changedDomain": "parallel-0.example.test",
+  "unchangedDomains": [
+    "parallel-1.example.test",
+    "third.example.test"
+  ],
+  "checks": [
+    "both_entries_each_route_to_three_distinct_saved_destinations",
+    "exact_original_clienthello_reaches_destination",
+    "unknown_and_missing_sni_rejected_without_backend_connection",
+    "updating_A_does_not_update_B",
+    "other_domains_long_connections_survive_A_update",
+    "other_domains_long_connections_survive_B_update",
+    "route_updates_keep_both_process_ids",
+    "stopping_A_keeps_B_new_and_existing_connections_alive"
+  ],
+  "probes": [
+    {
+      "entry": 1,
+      "domain": "parallel-0.example.test",
+      "destination": "203.0.113.10:19443",
+      "stage": "initial",
+      "helloSha256": "44d1c958e385cf3a5e9a2cafb4f01ef6f65c7b77a922b8abbab6b608240f9121",
+      "tls": "TLSv1.3"
+    },
+    {
+      "entry": 1,
+      "domain": "parallel-1.example.test",
+      "destination": "203.0.113.20:20443",
+      "stage": "initial",
+      "helloSha256": "44f52c3f14334a6f02bffa0bd1770c151f136ce6619d4967f9a0e3c8e9c2bc04",
+      "tls": "TLSv1.3"
+    },
+    {
+      "entry": 1,
+      "domain": "third.example.test",
+      "destination": "203.0.113.30:21443",
+      "stage": "initial",
+      "helloSha256": "6cc3acaa5a4d734cd0da3ad4b55aadba81455330508cb3462b615c54dde8b6ba",
+      "tls": "TLSv1.3"
+    },
+    {
+      "entry": 2,
+      "domain": "parallel-0.example.test",
+      "destination": "203.0.113.10:19443",
+      "stage": "initial",
+      "helloSha256": "1c2dae7a6108325676cd5c0db289101fcd33f6a077c9ccd539cb674fd4ac9510",
+      "tls": "TLSv1.3"
+    },
+    {
+      "entry": 2,
+      "domain": "parallel-1.example.test",
+      "destination": "203.0.113.20:20443",
+      "stage": "initial",
+      "helloSha256": "3d6117402054b7b55fbc16b1af5a05b527b72e16416857f4548c8f08b841f5bd",
+      "tls": "TLSv1.3"
+    },
+    {
+      "entry": 2,
+      "domain": "third.example.test",
+      "destination": "203.0.113.30:21443",
+      "stage": "initial",
+      "helloSha256": "18c28716e7ee26e4ac804157f9c69eed4c2bc990a9925915df6bc0d5c20f40b0",
+      "tls": "TLSv1.3"
+    },
+    {
+      "entry": 1,
+      "domain": "parallel-1.example.test",
+      "destination": "203.0.113.20:20443",
+      "stage": "held-before-update",
+      "helloSha256": "e7dfd054ab7741794e2c7d9b59314bab55ab3b33f3cef08e8095492f7533df23",
+      "tls": "TLSv1.3"
+    },
+    {
+      "entry": 1,
+      "domain": "third.example.test",
+      "destination": "203.0.113.30:21443",
+      "stage": "held-before-update",
+      "helloSha256": "134c08be124fcee6581c31c1f19b78b2d180b01c47296343c75acc142ff8ca74",
+      "tls": "TLSv1.3"
+    },
+    {
+      "entry": 2,
+      "domain": "parallel-1.example.test",
+      "destination": "203.0.113.20:20443",
+      "stage": "held-before-update",
+      "helloSha256": "0f55886ac7690803e032645db9910f105de86780198639d4c270788c7920f488",
+      "tls": "TLSv1.3"
+    },
+    {
+      "entry": 2,
+      "domain": "third.example.test",
+      "destination": "203.0.113.30:21443",
+      "stage": "held-before-update",
+      "helloSha256": "9349940aa394de66aa0a7bdcdac5dc7e4ad2b7e9abe9988896a8a6f0466b8ce9",
+      "tls": "TLSv1.3"
+    },
+    {
+      "entry": 1,
+      "domain": "parallel-0.example.test",
+      "destination": "203.0.113.99:19443",
+      "stage": "only-A-updated",
+      "helloSha256": "96f6517ebb0939fc7d271e936fcde7fb3ea23033a5e5a787f79d4cf864649683",
+      "tls": "TLSv1.3"
+    },
+    {
+      "entry": 1,
+      "domain": "parallel-1.example.test",
+      "destination": "203.0.113.20:20443",
+      "stage": "only-A-updated",
+      "helloSha256": "344c5996abe790c291cb4aa4f485494ef9ff4581543f3318ee3e3899ddb11739",
+      "tls": "TLSv1.3"
+    },
+    {
+      "entry": 1,
+      "domain": "third.example.test",
+      "destination": "203.0.113.30:21443",
+      "stage": "only-A-updated",
+      "helloSha256": "49638b050c73089a31a7bc013ec0c465fb682960b8ebd9db7de21ab1317506c3",
+      "tls": "TLSv1.3"
+    },
+    {
+      "entry": 2,
+      "domain": "parallel-0.example.test",
+      "destination": "203.0.113.10:19443",
+      "stage": "B-still-initial",
+      "helloSha256": "d3b381ab343126b37f8753298089dd14f56519aeabc40bb624143f306b15e7fe",
+      "tls": "TLSv1.3"
+    },
+    {
+      "entry": 2,
+      "domain": "parallel-1.example.test",
+      "destination": "203.0.113.20:20443",
+      "stage": "B-still-initial",
+      "helloSha256": "101dd0bb16595489142c31f1a9cf3797f1bcdb28212e7e31d476bd4bc2c91c18",
+      "tls": "TLSv1.3"
+    },
+    {
+      "entry": 2,
+      "domain": "third.example.test",
+      "destination": "203.0.113.30:21443",
+      "stage": "B-still-initial",
+      "helloSha256": "cb0e75b9625582b7cd15808f0a579b71f203acb03909c386dbca031805997b08",
+      "tls": "TLSv1.3"
+    },
+    {
+      "entry": 1,
+      "domain": "parallel-1.example.test",
+      "destination": "203.0.113.20:20443",
+      "stage": "held-after-A-update",
+      "helloSha256": "e7dfd054ab7741794e2c7d9b59314bab55ab3b33f3cef08e8095492f7533df23",
+      "tls": "TLSv1.3"
+    },
+    {
+      "entry": 1,
+      "domain": "third.example.test",
+      "destination": "203.0.113.30:21443",
+      "stage": "held-after-A-update",
+      "helloSha256": "134c08be124fcee6581c31c1f19b78b2d180b01c47296343c75acc142ff8ca74",
+      "tls": "TLSv1.3"
+    },
+    {
+      "entry": 2,
+      "domain": "parallel-1.example.test",
+      "destination": "203.0.113.20:20443",
+      "stage": "held-after-A-update",
+      "helloSha256": "0f55886ac7690803e032645db9910f105de86780198639d4c270788c7920f488",
+      "tls": "TLSv1.3"
+    },
+    {
+      "entry": 2,
+      "domain": "third.example.test",
+      "destination": "203.0.113.30:21443",
+      "stage": "held-after-A-update",
+      "helloSha256": "9349940aa394de66aa0a7bdcdac5dc7e4ad2b7e9abe9988896a8a6f0466b8ce9",
+      "tls": "TLSv1.3"
+    },
+    {
+      "entry": 2,
+      "domain": "parallel-0.example.test",
+      "destination": "203.0.113.99:19443",
+      "stage": "both-updated",
+      "helloSha256": "86f5fc395e15a7c87b3778988a0ea90c73168f6f88285218cae5ea8ab3380ec6",
+      "tls": "TLSv1.3"
+    },
+    {
+      "entry": 2,
+      "domain": "parallel-1.example.test",
+      "destination": "203.0.113.20:20443",
+      "stage": "both-updated",
+      "helloSha256": "2e87db9e25c5397c9a7373eda8ab0cb561ed593d12551eaa5df38d230ce380f9",
+      "tls": "TLSv1.3"
+    },
+    {
+      "entry": 2,
+      "domain": "third.example.test",
+      "destination": "203.0.113.30:21443",
+      "stage": "both-updated",
+      "helloSha256": "435f9ff5251097b23f87e64b14a20b33aaec578616319af232a81c493ea65b52",
+      "tls": "TLSv1.3"
+    },
+    {
+      "entry": 1,
+      "domain": "parallel-1.example.test",
+      "destination": "203.0.113.20:20443",
+      "stage": "held-after-B-update",
+      "helloSha256": "e7dfd054ab7741794e2c7d9b59314bab55ab3b33f3cef08e8095492f7533df23",
+      "tls": "TLSv1.3"
+    },
+    {
+      "entry": 1,
+      "domain": "third.example.test",
+      "destination": "203.0.113.30:21443",
+      "stage": "held-after-B-update",
+      "helloSha256": "134c08be124fcee6581c31c1f19b78b2d180b01c47296343c75acc142ff8ca74",
+      "tls": "TLSv1.3"
+    },
+    {
+      "entry": 2,
+      "domain": "parallel-1.example.test",
+      "destination": "203.0.113.20:20443",
+      "stage": "held-after-B-update",
+      "helloSha256": "0f55886ac7690803e032645db9910f105de86780198639d4c270788c7920f488",
+      "tls": "TLSv1.3"
+    },
+    {
+      "entry": 2,
+      "domain": "third.example.test",
+      "destination": "203.0.113.30:21443",
+      "stage": "held-after-B-update",
+      "helloSha256": "9349940aa394de66aa0a7bdcdac5dc7e4ad2b7e9abe9988896a8a6f0466b8ce9",
+      "tls": "TLSv1.3"
+    },
+    {
+      "entry": 2,
+      "domain": "parallel-0.example.test",
+      "destination": "203.0.113.99:19443",
+      "stage": "A-stopped-B-still-serving",
+      "helloSha256": "83e1317cf2402f786865fd2ab7ac8b82d766894e1337f03725bb160ae5842938",
+      "tls": "TLSv1.3"
+    },
+    {
+      "entry": 2,
+      "domain": "parallel-1.example.test",
+      "destination": "203.0.113.20:20443",
+      "stage": "A-stopped-B-still-serving",
+      "helloSha256": "a70e2b10797f5d2b3d29b6e3a1d849255b26f9a662b015ab6e0974f8927a57cf",
+      "tls": "TLSv1.3"
+    },
+    {
+      "entry": 2,
+      "domain": "third.example.test",
+      "destination": "203.0.113.30:21443",
+      "stage": "A-stopped-B-still-serving",
+      "helloSha256": "92aef14eae580545e8d41d7ddde89f7c9dda29bdf0c60061db1f0107b75d8048",
+      "tls": "TLSv1.3"
+    },
+    {
+      "entry": 2,
+      "domain": "parallel-1.example.test",
+      "destination": "203.0.113.20:20443",
+      "stage": "B-held-after-A-stop",
+      "helloSha256": "0f55886ac7690803e032645db9910f105de86780198639d4c270788c7920f488",
+      "tls": "TLSv1.3"
+    },
+    {
+      "entry": 2,
+      "domain": "third.example.test",
+      "destination": "203.0.113.30:21443",
+      "stage": "B-held-after-A-stop",
+      "helloSha256": "9349940aa394de66aa0a7bdcdac5dc7e4ad2b7e9abe9988896a8a6f0466b8ce9",
+      "tls": "TLSv1.3"
+    }
+  ],
+  "processIds": [
+    22,
+    29
+  ],
+  "result": "passed",
+  "probeCount": 32
+}

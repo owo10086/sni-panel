@@ -1,6 +1,6 @@
 # 03：SNI逐入口完整确认与域名解析
 
-Status: ready-for-agent
+Status: ready-for-human
 
 **要完成：** 网页和域名解析使用同一份每入口准备状态，A 就绪可以先发布，B 未齐继续等待。
 
@@ -17,3 +17,13 @@ Status: ready-for-agent
 ## Comments
 
 2026-10-19：按用户“审查、补齐、按推荐开单后实施”的指令建立；完成须追加实际证据和限制，不代用户验收。
+
+## 实施交付与自动检查
+
+**实施状态：** 每入口完整确认、恢复等待、旧目标、成员移除禁用和跨入口组共享监听并发核对已接入。
+
+**证据：** sniForwardGroup、sniForwardGroupHealth、forwardGroupLiveness、受控 DDNS 请求。 汇总见[实施与验证记录](../实施与验证记录.md)。
+
+**人工验收：待用户确认。** 上方完成框保留为人工验收清单，不用自动结果代勾。当前 `ready-for-human` 表示等待用户复核本次交付。
+
+**实际边界：** 新 port 专门发布场景使用 A；AAAA／CNAME 由通用入口组回归覆盖。

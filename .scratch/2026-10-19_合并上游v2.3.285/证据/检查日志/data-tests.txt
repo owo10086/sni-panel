@@ -1,0 +1,624 @@
+(node:41634) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+TAP version 13
+# (node:41673) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:41673) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# [Security] JWT_SECRET is not set; generated persistent cookie secret at /tmp/codeg-acp-501/42052-b8a77809/forwardx-affiliate-test-Au2Pla/jwt.secret
+# [Database] SQLite opened at /tmp/codeg-acp-501/42052-b8a77809/forwardx-affiliate-test-Au2Pla/db.sqlite
+# Subtest: affiliate feature is disabled by default and APIs enforce new-code opt-in
+ok 1 - affiliate feature is disabled by default and APIs enforce new-code opt-in
+  ---
+  duration_ms: 1404.368709
+  type: 'test'
+  ...
+# Subtest: commission calculation uses cents, floors fractions and rejects unsafe values
+ok 2 - commission calculation uses cents, floors fractions and rejects unsafe values
+  ---
+  duration_ms: 0.162959
+  type: 'test'
+  ...
+# Subtest: affiliate business switch is independent from sidebar visibility and only admins may save it
+ok 3 - affiliate business switch is independent from sidebar visibility and only admins may save it
+  ---
+  duration_ms: 4.561708
+  type: 'test'
+  ...
+# Subtest: schema upgrade inherits the legacy affiliate state once and never re-couples the switches
+ok 4 - schema upgrade inherits the legacy affiliate state once and never re-couples the switches
+  ---
+  duration_ms: 77.735208
+  type: 'test'
+  ...
+# Subtest: affiliate parameters and business switch save atomically
+ok 5 - affiliate parameters and business switch save atomically
+  ---
+  duration_ms: 4.344417
+  type: 'test'
+  ...
+# Subtest: registration binds once, rejects self/disabled/unknown codes and keeps old referrals when code is disabled
+ok 6 - registration binds once, rejects self/disabled/unknown codes and keeps old referrals when code is disabled
+  ---
+  duration_ms: 5.662
+  type: 'test'
+  ...
+# Subtest: duplicate callbacks accrue only once and first-order mode excludes renewals
+ok 7 - duplicate callbacks accrue only once and first-order mode excludes renewals
+  ---
+  duration_ms: 2.869917
+  type: 'test'
+  ...
+# Subtest: continuous commissions use independent user rate, only fulfilled CNY plan payments count
+ok 8 - continuous commissions use independent user rate, only fulfilled CNY plan payments count
+  ---
+  duration_ms: 4.683417
+  type: 'test'
+  ...
+# Subtest: confirmation delay persists, early spending is forbidden, due settlement is idempotent
+ok 9 - confirmation delay persists, early spending is forbidden, due settlement is idempotent
+  ---
+  duration_ms: 5.903333
+  type: 'test'
+  ...
+# Subtest: withdrawal reserves money once; concurrent attempts cannot overspend; reject refunds once
+ok 10 - withdrawal reserves money once; concurrent attempts cannot overspend; reject refunds once
+  ---
+  duration_ms: 3.35075
+  type: 'test'
+  ...
+# Subtest: transfer is atomic, idempotent and creates exactly one regular balance credit
+ok 11 - transfer is atomic, idempotent and creates exactly one regular balance credit
+  ---
+  duration_ms: 4.598334
+  type: 'test'
+  ...
+# Subtest: disabled feature stops accrual but preserves history, settlement, withdrawals and transfer obligations
+ok 12 - disabled feature stops accrual but preserves history, settlement, withdrawals and transfer obligations
+  ---
+  duration_ms: 2.781375
+  type: 'test'
+  ...
+# Subtest: reversal is auditable and idempotent; spent commission becomes debt and pending payout is blocked
+ok 13 - reversal is auditable and idempotent; spent commission becomes debt and pending payout is blocked
+  ---
+  duration_ms: 2.302667
+  type: 'test'
+  ...
+# Subtest: user APIs ignore forged user filters and prohibit administrator actions
+ok 14 - user APIs ignore forged user filters and prohibit administrator actions
+  ---
+  duration_ms: 0.518125
+  type: 'test'
+  ...
+# Subtest: blocked affiliates cannot bind, accrue, withdraw or transfer; historical commission remains
+ok 15 - blocked affiliates cannot bind, accrue, withdraw or transfer; historical commission remains
+  ---
+  duration_ms: 1.888459
+  type: 'test'
+  ...
+# Subtest: pending cancellation never credits money and ledger always reconciles with wallet
+ok 16 - pending cancellation never credits money and ledger always reconciles with wallet
+  ---
+  duration_ms: 2.409
+  type: 'test'
+  ...
+# Subtest: referral browser storage validates codes, expiration and unavailable storage
+ok 17 - referral browser storage validates codes, expiration and unavailable storage
+  ---
+  duration_ms: 0.342209
+  type: 'test'
+  ...
+# Subtest: request identifiers work without secure-context randomUUID and are unique
+ok 18 - request identifiers work without secure-context randomUUID and are unique
+  ---
+  duration_ms: 1.062291
+  type: 'test'
+  ...
+# Subtest: wallet and regular balance both roll back when a transfer transaction fails
+ok 19 - wallet and regular balance both roll back when a transfer transaction fails
+  ---
+  duration_ms: 3.076084
+  type: 'test'
+  ...
+# Subtest: code quotas, zero custom rates and first orders during zero-rate periods remain enforced
+ok 20 - code quotas, zero custom rates and first orders during zero-rate periods remain enforced
+  ---
+  duration_ms: 4.566708
+  type: 'test'
+  ...
+# [Auth] Register success userId=41 username=re***@test.local emailVerified=false ip=127.0.0.1
+# Subtest: actual email and Google first registrations bind referrals, existing Google logins never rebind
+ok 21 - actual email and Google first registrations bind referrals, existing Google logins never rebind
+  ---
+  duration_ms: 95.225916
+  type: 'test'
+  ...
+# Subtest: actual signed payment webhook fulfills the plan and accrues once; invalid signatures do neither
+ok 22 - actual signed payment webhook fulfills the plan and accrues once; invalid signatures do neither
+  ---
+  duration_ms: 40.733083
+  type: 'test'
+  ...
+# Subtest: concurrent distinct withdrawal and transfer requests cannot overspend the wallet
+ok 23 - concurrent distinct withdrawal and transfer requests cannot overspend the wallet
+  ---
+  duration_ms: 5.151208
+  type: 'test'
+  ...
+# Subtest: live backup exports keep affiliate wallet and ledger consistent while transfers occur
+ok 24 - live backup exports keep affiliate wallet and ledger consistent while transfers occur
+  ---
+  duration_ms: 43.013709
+  type: 'test'
+  ...
+# [Database] SQLite opened at /tmp/codeg-acp-501/42052-b8a77809/forwardx-affiliate-test-Au2Pla/target.sqlite
+# [TrafficSummary] Bucket backfill complete marker=v3 rows=0 elapsedMs=0
+# [TrafficCounter] User/rule counter backfill complete ruleRows=0 userRows=0 repairedRules=0 repairedBuckets=0 elapsedMs=0
+# Subtest: affiliate migration preserves remapped ledger references and rejects unsafe incremental financial merges before writes
+ok 25 - affiliate migration preserves remapped ledger references and rejects unsafe incremental financial merges before writes
+  ---
+  duration_ms: 114.971791
+  type: 'test'
+  ...
+# Subtest: MySQL and PostgreSQL generate all affiliate tables with monetary types and unique constraints
+ok 26 - MySQL and PostgreSQL generate all affiliate tables with monetary types and unique constraints
+  ---
+  duration_ms: 9.090958
+  type: 'test'
+  ...
+# [Database] SQLite opened at /tmp/codeg-acp-501/42052-b8a77809/forwardx-affiliate-test-Au2Pla/restore-switch-0.sqlite
+# [TrafficSummary] Bucket backfill complete marker=v3 rows=0 elapsedMs=1
+# [TrafficCounter] User/rule counter backfill complete ruleRows=0 userRows=0 repairedRules=0 repairedBuckets=0 elapsedMs=0
+# [Database] SQLite opened at /tmp/codeg-acp-501/42052-b8a77809/forwardx-affiliate-test-Au2Pla/restore-switch-1.sqlite
+# [TrafficSummary] Bucket backfill complete marker=v3 rows=0 elapsedMs=0
+# [TrafficCounter] User/rule counter backfill complete ruleRows=0 userRows=0 repairedRules=0 repairedBuckets=0 elapsedMs=0
+# [Database] SQLite opened at /tmp/codeg-acp-501/42052-b8a77809/forwardx-affiliate-test-Au2Pla/restore-switch-2.sqlite
+# [TrafficSummary] Bucket backfill complete marker=v3 rows=0 elapsedMs=0
+# [TrafficCounter] User/rule counter backfill complete ruleRows=0 userRows=0 repairedRules=0 repairedBuckets=0 elapsedMs=0
+# [Database] SQLite opened at /tmp/codeg-acp-501/42052-b8a77809/forwardx-affiliate-test-Au2Pla/restore-switch-3.sqlite
+# [TrafficSummary] Bucket backfill complete marker=v3 rows=0 elapsedMs=0
+# [TrafficCounter] User/rule counter backfill complete ruleRows=0 userRows=0 repairedRules=0 repairedBuckets=0 elapsedMs=0
+# Subtest: restoring legacy backups inherits the old affiliate switch while modern backups keep their independent state
+ok 27 - restoring legacy backups inherits the old affiliate switch while modern backups keep their independent state
+  ---
+  duration_ms: 221.338125
+  type: 'test'
+  ...
+# (node:41674) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:41674) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: billing SQL pages retain all sources, stable ordering, diagnostics and user isolation
+ok 28 - billing SQL pages retain all sources, stable ordering, diagnostics and user isolation
+  ---
+  duration_ms: 1529.748166
+  type: 'test'
+  ...
+# (node:41675) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:41675) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: member removal synchronizes templates, preserves healthy siblings and safely deletes only unused hosts
+ok 29 - member removal synchronizes templates, preserves healthy siblings and safely deletes only unused hosts
+  ---
+  duration_ms: 1748.192
+  type: 'test'
+  ...
+# Subtest: disabled topology changes and historical tombstones release only obsolete host bindings
+ok 30 - disabled topology changes and historical tombstones release only obsolete host bindings
+  ---
+  duration_ms: 1279.887167
+  type: 'test'
+  ...
+# Subtest: deletion preview and mutation enforce host ownership and UI cannot force-delete actual dependencies
+ok 31 - deletion preview and mutation enforce host ownership and UI cannot force-delete actual dependencies
+  ---
+  duration_ms: 0.877125
+  type: 'test'
+  ...
+# (node:41676) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:41676) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# [Security] JWT_SECRET is not set; generated persistent cookie secret at /tmp/codeg-acp-501/42052-b8a77809/forwardx-host-notifications-KyDQRG/jwt.secret
+# [Database] SQLite opened at /tmp/codeg-acp-501/42052-b8a77809/forwardx-host-notifications-KyDQRG/notifications.db
+# Subtest: schema upgrade and new hosts default to notifications enabled; only admins can change the preference
+ok 32 - schema upgrade and new hosts default to notifications enabled; only admins can change the preference
+  ---
+  duration_ms: 1420.929791
+  type: 'test'
+  ...
+# [Notification] Host status notify status=online host=1 sent=1 failed=0
+# [Notification] Host status notify status=offline host=1 sent=1 failed=0
+# [Notification] Host status notify status=offline host=1 sent=1 failed=0
+# [Notification] Host status notify status=online host=1 sent=1 failed=0
+# [Notification] Host status notify status=offline host=1 sent=1 failed=0
+# [Notification] Host status notify status=offline host=1 sent=1 failed=0
+# [HostStatus] Fast offline confirmed host=1 silenceMs=20000
+# Subtest: both notification channels obey the host switch without suppressing offline state or replaying muted events
+ok 33 - both notification channels obey the host switch without suppressing offline state or replaying muted events
+  ---
+  duration_ms: 1805.047458
+  type: 'test'
+  ...
+# Subtest: queued fast-offline notification reads the latest saved preference, not its captured host snapshot
+ok 34 - queued fast-offline notification reads the latest saved preference, not its captured host snapshot
+  ---
+  duration_ms: 4.479375
+  type: 'test'
+  ...
+# (node:41677) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:41677) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: finance separates receipts and spending, preserves currencies, scopes accounts and pages history
+ok 35 - finance separates receipts and spending, preserves currencies, scopes accounts and pages history
+  ---
+  duration_ms: 1041.001334
+  type: 'test'
+  ...
+# (node:41678) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:41678) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: rule page retains all seven server IP matches without local resource metadata
+ok 36 - rule page retains all seven server IP matches without local resource metadata
+  ---
+  duration_ms: 150.97825
+  type: 'test'
+  ...
+# Subtest: rule page waits for fresh server results and accepts an authoritative empty page
+ok 37 - rule page waits for fresh server results and accepts an authoritative empty page
+  ---
+  duration_ms: 126.002208
+  type: 'test'
+  ...
+# Subtest: page helpers clamp stale pages after the last item is removed
+ok 38 - page helpers clamp stale pages after the last item is removed
+  ---
+  duration_ms: 0.155458
+  type: 'test'
+  ...
+# Subtest: user rule surfaces retain revoked roots and hide managed group children
+ok 39 - user rule surfaces retain revoked roots and hide managed group children
+  ---
+  duration_ms: 0.160333
+  type: 'test'
+  ...
+# Subtest: database-backed list queries page, search, scope, and hydrate only requested rows
+ok 40 - database-backed list queries page, search, scope, and hydrate only requested rows
+  ---
+  duration_ms: 1184.947
+  type: 'test'
+  ...
+# Subtest: admin all-host pagination keeps equal-sort groups contiguous across page boundaries
+ok 41 - admin all-host pagination keeps equal-sort groups contiguous across page boundaries
+  ---
+  duration_ms: 535.745084
+  type: 'test'
+  ...
+# (node:41679) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:41679) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: EasyPay signs the complete API request and configuration validation rejects unusable WeChat modes
+ok 42 - EasyPay signs the complete API request and configuration validation rejects unusable WeChat modes
+  ---
+  duration_ms: 1441.668208
+  type: 'test'
+  ...
+# Subtest: verified delayed callbacks recover closed orders exactly once and reject wrong amounts, apps and merchants
+ok 43 - verified delayed callbacks recover closed orders exactly once and reject wrong amounts, apps and merchants
+  ---
+  duration_ms: 886.76325
+  type: 'test'
+  ...
+# Subtest: active queries verify provider signatures, enforce ownership/throttling and recover missing callbacks
+ok 44 - active queries verify provider signatures, enforce ownership/throttling and recover missing callbacks
+  ---
+  duration_ms: 796.7295
+  type: 'test'
+  ...
+# Subtest: WeChat create verifies signed raw responses and refuses unsigned QR links
+ok 45 - WeChat create verifies signed raw responses and refuses unsigned QR links
+  ---
+  duration_ms: 783.542833
+  type: 'test'
+  ...
+# Subtest: EasyPay active queries and GET/POST notifications verify merchant identity even after payments are disabled
+ok 46 - EasyPay active queries and GET/POST notifications verify merchant identity even after payments are disabled
+  ---
+  duration_ms: 804.524458
+  type: 'test'
+  ...
+# Subtest: fast verified callbacks win races with both successful and failed create responses
+ok 47 - fast verified callbacks win races with both successful and failed create responses
+  ---
+  duration_ms: 779.566458
+  type: 'test'
+  ...
+# Subtest: failed fulfillment retains confirmed payment and diagnostics until a safe retry completes
+ok 48 - failed fulfillment retains confirmed payment and diagnostics until a safe retry completes
+  ---
+  duration_ms: 782.471667
+  type: 'test'
+  ...
+# (node:41680) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:41680) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: payment settings validate keys before saving and failed gateway orders return safe errors
+ok 49 - payment settings validate keys before saving and failed gateway orders return safe errors
+  ---
+  duration_ms: 1514.618875
+  type: 'test'
+  ...
+# Subtest: ordinary repository transitions cannot reactivate closed orders without verified recovery
+ok 50 - ordinary repository transitions cannot reactivate closed orders without verified recovery
+  ---
+  duration_ms: 765.885375
+  type: 'test'
+  ...
+# (node:41681) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:41681) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: Alipay timestamps use Beijing time across midnight regardless of server timezone
+ok 51 - Alipay timestamps use Beijing time across midnight regardless of server timezone
+  ---
+  duration_ms: 2.67325
+  type: 'test'
+  ...
+# Subtest: EasyPay root-relative links are resolved without rewriting opaque QR payloads
+ok 52 - EasyPay root-relative links are resolved without rewriting opaque QR payloads
+  ---
+  duration_ms: 0.226541
+  type: 'test'
+  ...
+# Subtest: Alipay response verification uses exact JSON bytes including whitespace and escapes
+ok 53 - Alipay response verification uses exact JSON bytes including whitespace and escapes
+  ---
+  duration_ms: 15.654625
+  type: 'test'
+  ...
+# Subtest: payment request timeout includes a stalled response body
+ok 54 - payment request timeout includes a stalled response body
+  ---
+  duration_ms: 16.48025
+  type: 'test'
+  ...
+# (node:41682) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:41682) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: payment RSA keys support PKCS\#1/PKCS\#8 PEM and headerless DER without changing signatures
+ok 55 - payment RSA keys support PKCS\#1/PKCS\#8 PEM and headerless DER without changing signatures
+  ---
+  duration_ms: 65.935208
+  type: 'test'
+  ...
+# Subtest: payment key validation rejects wrong, truncated, encrypted and non-RSA keys with safe field-specific messages
+ok 56 - payment key validation rejects wrong, truncated, encrypted and non-RSA keys with safe field-specific messages
+  ---
+  duration_ms: 22.376625
+  type: 'test'
+  ...
+# Subtest: payment order failures hide arbitrary gateway details and classify key, timeout and network errors
+ok 57 - payment order failures hide arbitrary gateway details and classify key, timeout and network errors
+  ---
+  duration_ms: 0.37625
+  type: 'test'
+  ...
+# Subtest: payment return paths only accept known panel pages
+ok 58 - payment return paths only accept known panel pages
+  ---
+  duration_ms: 0.066917
+  type: 'test'
+  ...
+# Subtest: payment URLs preserve a configured reverse-proxy base path
+ok 59 - payment URLs preserve a configured reverse-proxy base path
+  ---
+  duration_ms: 0.188208
+  type: 'test'
+  ...
+# Subtest: provider return URL carries the order and constrained destination
+ok 60 - provider return URL carries the order and constrained destination
+  ---
+  duration_ms: 0.146666
+  type: 'test'
+  ...
+# Subtest: frontend return URL forwards only expected payment state
+ok 61 - frontend return URL forwards only expected payment state
+  ---
+  duration_ms: 0.111625
+  type: 'test'
+  ...
+# Subtest: WeChat H5 redirect is encoded and keeps provider query parameters
+ok 62 - WeChat H5 redirect is encoded and keeps provider query parameters
+  ---
+  duration_ms: 0.163833
+  type: 'test'
+  ...
+# Subtest: EasyPay query parameters are normalized for GET notifications
+ok 63 - EasyPay query parameters are normalized for GET notifications
+  ---
+  duration_ms: 0.362875
+  type: 'test'
+  ...
+# (node:41683) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:41683) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# [Security] JWT_SECRET is not set; generated persistent cookie secret at /tmp/codeg-acp-501/42052-b8a77809/forwardx-ticket-notifications-u27XkL/jwt.secret
+# [Database] SQLite opened at /tmp/codeg-acp-501/42052-b8a77809/forwardx-ticket-notifications-u27XkL/notifications.db
+# [Settings] support ticket notifications enabled=false
+# [Auth] Profile updated userId=2
+# [Auth] Profile updated userId=2
+# [Settings] support ticket notifications enabled=true
+# [Auth] Profile updated userId=2
+# Subtest: upgrade defaults are enabled; only admins can change the master switch and users edit only themselves
+ok 64 - upgrade defaults are enabled; only admins can change the master switch and users edit only themselves
+  ---
+  duration_ms: 1420.825917
+  type: 'test'
+  ...
+# Subtest: both channels enforce master and recipient preferences while preserving ticket operations
+ok 65 - both channels enforce master and recipient preferences while preserving ticket operations
+  ---
+  duration_ms: 1801.092792
+  type: 'test'
+  ...
+# (node:41684) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:41684) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# [Security] JWT_SECRET is not set; generated persistent cookie secret at /tmp/codeg-acp-501/42052-b8a77809/forwardx-support-tests-dBbK26/jwt.secret
+# [Database] SQLite opened at /tmp/codeg-acp-501/42052-b8a77809/forwardx-support-tests-dBbK26/support.sqlite
+# Subtest: tickets are opt-in and disabling blocks every data endpoint without destroying history
+ok 66 - tickets are opt-in and disabling blocks every data endpoint without destroying history
+  ---
+  duration_ms: 1391.168292
+  type: 'test'
+  ...
+# Subtest: ticket settings are admin-only, always reachable, and independent from sidebar visibility and personal preferences
+ok 67 - ticket settings are admin-only, always reachable, and independent from sidebar visibility and personal preferences
+  ---
+  duration_ms: 4.805
+  type: 'test'
+  ...
+# Subtest: legacy ticket enablement is migrated once without coupling subsequent menu edits
+ok 68 - legacy ticket enablement is migrated once without coupling subsequent menu edits
+  ---
+  duration_ms: 64.082875
+  type: 'test'
+  ...
+# Subtest: saving both ticket switches is atomic
+ok 69 - saving both ticket switches is atomic
+  ---
+  duration_ms: 5.222875
+  type: 'test'
+  ...
+# Subtest: optional service, plain text, attachments and strict owner isolation
+ok 70 - optional service, plain text, attachments and strict owner isolation
+  ---
+  duration_ms: 11.003042
+  type: 'test'
+  ...
+# Subtest: private notes, assignments and their attachments never leak or create user unread alerts
+ok 71 - private notes, assignments and their attachments never leak or create user unread alerts
+  ---
+  duration_ms: 5.984916
+  type: 'test'
+  ...
+# Subtest: status lifecycle, optimistic conflicts, reply atomicity and rating constraints
+ok 72 - status lifecycle, optimistic conflicts, reply atomicity and rating constraints
+  ---
+  duration_ms: 5.428375
+  type: 'test'
+  ...
+# Subtest: bulk operations roll back entirely on stale/invalid tickets and admin filters work
+ok 73 - bulk operations roll back entirely on stale/invalid tickets and admin filters work
+  ---
+  duration_ms: 3.798667
+  type: 'test'
+  ...
+# Subtest: message pagination is bounded and private records are excluded before paging
+ok 74 - message pagination is bounded and private records are excluded before paging
+  ---
+  duration_ms: 5.627709
+  type: 'test'
+  ...
+# Subtest: service choices use direct permissions and billing grants, not hidden topology
+ok 75 - service choices use direct permissions and billing grants, not hidden topology
+  ---
+  duration_ms: 17.049625
+  type: 'test'
+  ...
+# Subtest: creation limits and per-user reply throttling are enforced in the database
+ok 76 - creation limits and per-user reply throttling are enforced in the database
+  ---
+  duration_ms: 10.8565
+  type: 'test'
+  ...
+# Subtest: attachments validate actual content, names, sizes and encodings
+ok 77 - attachments validate actual content, names, sizes and encodings
+  ---
+  duration_ms: 3.166875
+  type: 'test'
+  ...
+# Subtest: shared canned replies stay staff-only, and schema upgrades are idempotent
+ok 78 - shared canned replies stay staff-only, and schema upgrades are idempotent
+  ---
+  duration_ms: 14.695
+  type: 'test'
+  ...
+# Subtest: attachment quotas reject writes atomically without storing a partial reply
+ok 79 - attachment quotas reject writes atomically without storing a partial reply
+  ---
+  duration_ms: 1.683125
+  type: 'test'
+  ...
+# Subtest: service pagination and exact selection work beyond the first fifty resources
+ok 80 - service pagination and exact selection work beyond the first fifty resources
+  ---
+  duration_ms: 14.647958
+  type: 'test'
+  ...
+# Subtest: MySQL and PostgreSQL schema generation includes attachment capacity and unique read cursors
+ok 81 - MySQL and PostgreSQL schema generation includes attachment capacity and unique read cursors
+  ---
+  duration_ms: 7.404958
+  type: 'test'
+  ...
+# [TrafficSummary] Bucket backfill complete marker=v3 rows=0 elapsedMs=0
+# [TrafficCounter] User/rule counter backfill complete ruleRows=0 userRows=0 repairedRules=0 repairedBuckets=0 elapsedMs=1
+# Subtest: backup import remaps ticket, author, message and read IDs while preserving removed-service history
+ok 82 - backup import remaps ticket, author, message and read IDs while preserving removed-service history
+  ---
+  duration_ms: 38.595875
+  type: 'test'
+  ...
+# [Database] SQLite opened at /tmp/codeg-acp-501/42052-b8a77809/forwardx-support-tests-dBbK26/restore-switch-0.sqlite
+# [TrafficSummary] Bucket backfill complete marker=v3 rows=0 elapsedMs=0
+# [TrafficCounter] User/rule counter backfill complete ruleRows=0 userRows=0 repairedRules=0 repairedBuckets=0 elapsedMs=0
+# [Database] SQLite opened at /tmp/codeg-acp-501/42052-b8a77809/forwardx-support-tests-dBbK26/restore-switch-1.sqlite
+# [TrafficSummary] Bucket backfill complete marker=v3 rows=0 elapsedMs=0
+# [TrafficCounter] User/rule counter backfill complete ruleRows=0 userRows=0 repairedRules=0 repairedBuckets=0 elapsedMs=1
+# [Database] SQLite opened at /tmp/codeg-acp-501/42052-b8a77809/forwardx-support-tests-dBbK26/restore-switch-2.sqlite
+# [TrafficSummary] Bucket backfill complete marker=v3 rows=0 elapsedMs=0
+# [TrafficCounter] User/rule counter backfill complete ruleRows=0 userRows=0 repairedRules=0 repairedBuckets=0 elapsedMs=0
+# [Database] SQLite opened at /tmp/codeg-acp-501/42052-b8a77809/forwardx-support-tests-dBbK26/restore-switch-3.sqlite
+# [TrafficSummary] Bucket backfill complete marker=v3 rows=0 elapsedMs=1
+# [TrafficCounter] User/rule counter backfill complete ruleRows=0 userRows=0 repairedRules=0 repairedBuckets=0 elapsedMs=0
+# Subtest: legacy backups inherit ticket enablement while modern backups preserve their independent switch
+ok 83 - legacy backups inherit ticket enablement while modern backups preserve their independent switch
+  ---
+  duration_ms: 228.756208
+  type: 'test'
+  ...
+# (node:41685) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:41685) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: operations calendar days use Beijing time and reject invalid/out-of-retention ranges
+ok 84 - operations calendar days use Beijing time and reject invalid/out-of-retention ranges
+  ---
+  duration_ms: 2.943583
+  type: 'test'
+  ...
+# Subtest: province normalization does not confuse Shanxi with Shaanxi or infer China from foreign regions
+ok 85 - province normalization does not confuse Shanxi with Shaanxi or infer China from foreign regions
+  ---
+  duration_ms: 0.505125
+  type: 'test'
+  ...
+1..85
+# tests 85
+# suites 0
+# pass 85
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 6484.230333

@@ -1,0 +1,10 @@
+(node:51711) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:51711) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[Database] PostgreSQL connected at 127.0.0.1:59954/forwardx285
+[TrafficSummary] Bucket backfill complete marker=v3 rows=0 elapsedMs=6
+[TrafficCounter] User/rule counter backfill complete ruleRows=0 userRows=0 repairedRules=0 repairedBuckets=0 elapsedMs=7
+[PostgreSQL] Health check started marker=pg-health-20260612-query-cache-v2 force=true
+[PostgreSQL] Health check complete marker=pg-health-20260612-query-cache-v2 indexesChecked=191 indexesCreated=0 indexFailures=0 tablesAnalyzed=75 analyzeFailures=0 largestTables=system_settings:28, users:3, affiliate_ledger:2, affiliate_accounts:1, affiliate_codes:1, affiliate_referrals:1 completed=true elapsedMs=155
+{"database":"postgresql","result":"passed","checks":["duplicate-commission-once","concurrent-transfer-cannot-overspend","consistent-financial-export","injected-ledger-failure-rolls-back-six-tables","clean-restore-retains-financial-ledger"]}

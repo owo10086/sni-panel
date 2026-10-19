@@ -1,0 +1,552 @@
+(node:45561) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+TAP version 13
+# (node:45567) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:45567) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: GOST incremental sync uses root-only Unix APIs with legacy restart fallback
+ok 1 - GOST incremental sync uses root-only Unix APIs with legacy restart fallback
+  ---
+  duration_ms: 1.0455
+  type: 'test'
+  ...
+# Subtest: nft rule comments keep nft string quotes after shell parsing
+ok 2 - nft rule comments keep nft string quotes after shell parsing
+  ---
+  duration_ms: 0.514917
+  type: 'test'
+  ...
+# Subtest: process runtime actions leave counter reconciliation to the Agent
+ok 3 - process runtime actions leave counter reconciliation to the Agent
+  ---
+  duration_ms: 0.1105
+  type: 'test'
+  ...
+# Subtest: port-only counter cleanup retains IPv4, IPv6 and historical chain cleanup
+ok 4 - port-only counter cleanup retains IPv4, IPv6 and historical chain cleanup
+  ---
+  duration_ms: 0.135417
+  type: 'test'
+  ...
+# Subtest: managed port cleanup keeps protocol isolation after removing unused target arguments
+ok 5 - managed port cleanup keeps protocol isolation after removing unused target arguments
+  ---
+  duration_ms: 0.368
+  type: 'test'
+  ...
+# Subtest: legacy heartbeat cleanup keeps TCP and UDP owners isolated
+ok 6 - legacy heartbeat cleanup keeps TCP and UDP owners isolated
+  ---
+  duration_ms: 0.16375
+  type: 'test'
+  ...
+# Subtest: iptables forwarding gets only conntrack-scoped DNAT counters
+ok 7 - iptables forwarding gets only conntrack-scoped DNAT counters
+  ---
+  duration_ms: 0.32875
+  type: 'test'
+  ...
+# Subtest: native nft return counters keep shared targets isolated by original listener port
+ok 8 - native nft return counters keep shared targets isolated by original listener port
+  ---
+  duration_ms: 0.146083
+  type: 'test'
+  ...
+# Subtest: nft forwarding has compatibility fallbacks for selector and masquerade failures
+ok 9 - nft forwarding has compatibility fallbacks for selector and masquerade failures
+  ---
+  duration_ms: 0.227458
+  type: 'test'
+  ...
+# Subtest: kernel transition cleanup removes both nftables and iptables state
+ok 10 - kernel transition cleanup removes both nftables and iptables state
+  ---
+  duration_ms: 1.095375
+  type: 'test'
+  ...
+# Subtest: native backend transitions clean only the opposite backend
+ok 11 - native backend transitions clean only the opposite backend
+  ---
+  duration_ms: 0.116334
+  type: 'test'
+  ...
+# Subtest: nft cleanup without a rule id avoids synthetic chains
+ok 12 - nft cleanup without a rule id avoids synthetic chains
+  ---
+  duration_ms: 0.069083
+  type: 'test'
+  ...
+# Subtest: SNI source cleanup is nonempty for old Agents and only removes owned rules
+ok 13 - SNI source cleanup is nonempty for old Agents and only removes owned rules
+  ---
+  duration_ms: 0.141458
+  type: 'test'
+  ...
+# Subtest: process counters do not attribute shared target traffic to every listener
+ok 14 - process counters do not attribute shared target traffic to every listener
+  ---
+  duration_ms: 0.048542
+  type: 'test'
+  ...
+# Subtest: forward-hook counters isolate listeners that share one DNAT target
+ok 15 - forward-hook counters isolate listeners that share one DNAT target
+  ---
+  duration_ms: 0.121958
+  type: 'test'
+  ...
+# Subtest: iptables counters use ip6tables for IPv6 targets
+ok 16 - iptables counters use ip6tables for IPv6 targets
+  ---
+  duration_ms: 1.885708
+  type: 'test'
+  ...
+# Subtest: iptables additions are skipped when the target is not a resolved IP
+ok 17 - iptables additions are skipped when the target is not a resolved IP
+  ---
+  duration_ms: 0.997958
+  type: 'test'
+  ...
+# Subtest: self-reported and native nft modes only clean legacy fwx-stat rules
+ok 18 - self-reported and native nft modes only clean legacy fwx-stat rules
+  ---
+  duration_ms: 0.090917
+  type: 'test'
+  ...
+# Subtest: Mimic service reconciliation cleans stale hooks and has an skb fallback
+ok 19 - Mimic service reconciliation cleans stale hooks and has an skb fallback
+  ---
+  duration_ms: 0.2645
+  type: 'test'
+  ...
+# (node:45568) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:45568) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: shared tunnel runtime keeps the public source port on entry hosts
+ok 20 - shared tunnel runtime keeps the public source port on entry hosts
+  ---
+  duration_ms: 0.525625
+  type: 'test'
+  ...
+# Subtest: shared tunnel runtime uses the internal listener on exit-only hosts
+ok 21 - shared tunnel runtime uses the internal listener on exit-only hosts
+  ---
+  duration_ms: 0.058167
+  type: 'test'
+  ...
+# Subtest: direct rules always keep their source port
+ok 22 - direct rules always keep their source port
+  ---
+  duration_ms: 0.042834
+  type: 'test'
+  ...
+# Subtest: local ForwardX transport version survives a deleted tunnel record
+ok 23 - local ForwardX transport version survives a deleted tunnel record
+  ---
+  duration_ms: 0.059208
+  type: 'test'
+  ...
+# Subtest: missing local ForwardX transport version stays unknown after tunnel deletion
+ok 24 - missing local ForwardX transport version stays unknown after tunnel deletion
+  ---
+  duration_ms: 0.043375
+  type: 'test'
+  ...
+# Subtest: legacy local state falls back to the retained tunnel version
+ok 25 - legacy local state falls back to the retained tunnel version
+  ---
+  duration_ms: 0.04625
+  type: 'test'
+  ...
+# Subtest: a reported V3 runtime keeps its V3 transport version
+ok 26 - a reported V3 runtime keeps its V3 transport version
+  ---
+  duration_ms: 0.093167
+  type: 'test'
+  ...
+# Subtest: a V3 tunnel resolves to V3 when the Agent reports no version
+ok 27 - a V3 tunnel resolves to V3 when the Agent reports no version
+  ---
+  duration_ms: 0.037042
+  type: 'test'
+  ...
+# Subtest: unknown reported transport versions still fall back to the tunnel version
+ok 28 - unknown reported transport versions still fall back to the tunnel version
+  ---
+  duration_ms: 0.14125
+  type: 'test'
+  ...
+# Subtest: reported transport version parsing preserves every known version
+ok 29 - reported transport version parsing preserves every known version
+  ---
+  duration_ms: 0.268667
+  type: 'test'
+  ...
+# (node:45569) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:45569) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: V3 transport names are validated and unknown values are rejected
+ok 30 - V3 transport names are validated and unknown values are rejected
+  ---
+  duration_ms: 0.5065
+  type: 'test'
+  ...
+# Subtest: V3 multiplex normalises every database boolean representation
+ok 31 - V3 multiplex normalises every database boolean representation
+  ---
+  duration_ms: 0.07175
+  type: 'test'
+  ...
+# Subtest: applyForwardXTransport emits V3 with every configured option
+ok 32 - applyForwardXTransport emits V3 with every configured option
+  ---
+  duration_ms: 0.397667
+  type: 'test'
+  ...
+# Subtest: applyForwardXTransport omits empty V3 options and never invents a version
+ok 33 - applyForwardXTransport omits empty V3 options and never invents a version
+  ---
+  duration_ms: 0.062666
+  type: 'test'
+  ...
+# Subtest: a V3 tunnel without a usable transport is skipped instead of downgraded to V1
+ok 34 - a V3 tunnel without a usable transport is skipped instead of downgraded to V1
+  ---
+  duration_ms: 0.122875
+  type: 'test'
+  ...
+# Subtest: V1 and V2 transport handling stays unchanged
+ok 35 - V1 and V2 transport handling stays unchanged
+  ---
+  duration_ms: 0.083666
+  type: 'test'
+  ...
+# Subtest: V3 options are only read from the tunnel row and stay consistent per tunnel
+ok 36 - V3 options are only read from the tunnel row and stay consistent per tunnel
+  ---
+  duration_ms: 0.106459
+  type: 'test'
+  ...
+# Subtest: tunnel transport version picks V3, V2 and V1 in that order
+ok 37 - tunnel transport version picks V3, V2 and V1 in that order
+  ---
+  duration_ms: 0.053583
+  type: 'test'
+  ...
+# Subtest: a running V3 runtime is not considered drifted
+ok 38 - a running V3 runtime is not considered drifted
+  ---
+  duration_ms: 0.167
+  type: 'test'
+  ...
+# Subtest: V2 and V1 expectations still reject a V3 runtime
+ok 39 - V2 and V1 expectations still reject a V3 runtime
+  ---
+  duration_ms: 0.278792
+  type: 'test'
+  ...
+# Subtest: non-ForwardX expectations stay undefined
+ok 40 - non-ForwardX expectations stay undefined
+  ---
+  duration_ms: 0.047292
+  type: 'test'
+  ...
+# (node:45570) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:45570) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: derives stable, valid X25519 WireGuard keys
+ok 41 - derives stable, valid X25519 WireGuard keys
+  ---
+  duration_ms: 2.538333
+  type: 'test'
+  ...
+# Subtest: builds bidirectional peers while only the dialing side carries an endpoint
+ok 42 - builds bidirectional peers while only the dialing side carries an endpoint
+  ---
+  duration_ms: 0.680125
+  type: 'test'
+  ...
+# Subtest: keeps a private endpoint in the WireGuard peer plan
+ok 43 - keeps a private endpoint in the WireGuard peer plan
+  ---
+  duration_ms: 0.282958
+  type: 'test'
+  ...
+# Subtest: keeps a private endpoint in the Mimic remote filter
+ok 44 - keeps a private endpoint in the Mimic remote filter
+  ---
+  duration_ms: 0.492875
+  type: 'test'
+  ...
+# Subtest: keeps private endpoints on every hop in a Mimic WireGuard chain
+ok 45 - keeps private endpoints on every hop in a Mimic WireGuard chain
+  ---
+  duration_ms: 0.618625
+  type: 'test'
+  ...
+# Subtest: builds Mimic filters from the WireGuard peer plan
+ok 46 - builds Mimic filters from the WireGuard peer plan
+  ---
+  duration_ms: 2.106834
+  type: 'test'
+  ...
+# Subtest: both Agent delivery paths retain the WireGuard peer for tunnel self-tests
+ok 47 - both Agent delivery paths retain the WireGuard peer for tunnel self-tests
+  ---
+  duration_ms: 0.163167
+  type: 'test'
+  ...
+# Subtest: forward-chain final domain probes bypass unrelated runtime waits
+ok 48 - forward-chain final domain probes bypass unrelated runtime waits
+  ---
+  duration_ms: 0.117167
+  type: 'test'
+  ...
+# Subtest: normalizes PostgreSQL string numbers for every Agent self-test payload
+ok 49 - normalizes PostgreSQL string numbers for every Agent self-test payload
+  ---
+  duration_ms: 0.287
+  type: 'test'
+  ...
+# Subtest: reserves outer packet headroom only when Mimic is active
+ok 50 - reserves outer packet headroom only when Mimic is active
+  ---
+  duration_ms: 0.499417
+  type: 'test'
+  ...
+# Subtest: V3 tunnels are recognised separately from WireGuard V2
+ok 51 - V3 tunnels are recognised separately from WireGuard V2
+  ---
+  duration_ms: 0.076583
+  type: 'test'
+  ...
+# (node:45571) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:45571) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: covered protocols decide whether a rule port was verified
+ok 52 - covered protocols decide whether a rule port was verified
+  ---
+  duration_ms: 0.604417
+  type: 'test'
+  ...
+# Subtest: invalid version and rejected snapshots cannot reactivate a cached listener through summaries
+ok 53 - invalid version and rejected snapshots cannot reactivate a cached listener through summaries
+  ---
+  duration_ms: 0.311166
+  type: 'test'
+  ...
+# Subtest: panel accepts more than 256 listeners across ports but rejects an oversized single port
+ok 54 - panel accepts more than 256 listeners across ports but rejects an oversized single port
+  ---
+  duration_ms: 0.549458
+  type: 'test'
+  ...
+# Subtest: agent heartbeat caches verified listeners and requests a changed snapshot
+ok 55 - agent heartbeat caches verified listeners and requests a changed snapshot
+  ---
+  duration_ms: 2034.794917
+  type: 'test'
+  ...
+# Subtest: inactive rules release occupancy state without a current snapshot across group hosts
+ok 56 - inactive rules release occupancy state without a current snapshot across group hosts
+  ---
+  duration_ms: 733.328292
+  type: 'test'
+  ...
+# (node:45572) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:45572) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: counter persistence retains every received advancement and skips only retries
+ok 57 - counter persistence retains every received advancement and skips only retries
+  ---
+  duration_ms: 1.16125
+  type: 'test'
+  ...
+# Subtest: cumulative telemetry is optional, bounded and cannot reinterpret current health counters
+ok 58 - cumulative telemetry is optional, bounded and cannot reinterpret current health counters
+  ---
+  duration_ms: 0.430541
+  type: 'test'
+  ...
+# Subtest: SQLite cumulative probe statistics deduplicate retries, include suppressed probes, and respect windows/epochs/permissions
+ok 59 - SQLite cumulative probe statistics deduplicate retries, include suppressed probes, and respect windows/epochs/permissions
+  ---
+  duration_ms: 866.79525
+  type: 'test'
+  ...
+# (node:45573) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:45573) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: maps each GOST tunnel mode to its native transport
+ok 60 - maps each GOST tunnel mode to its native transport
+  ---
+  duration_ms: 0.849875
+  type: 'test'
+  ...
+# Subtest: normalizes GOST transport names and safely defaults unknown modes
+ok 61 - normalizes GOST transport names and safely defaults unknown modes
+  ---
+  duration_ms: 0.243667
+  type: 'test'
+  ...
+# Subtest: keeps a configured IPv6 endpoint after runtime restart
+ok 62 - keeps a configured IPv6 endpoint after runtime restart
+  ---
+  duration_ms: 0.268875
+  type: 'test'
+  ...
+# Subtest: entry-group direct tunnel test uses configured IPv6 instead of exit IPv4
+ok 63 - entry-group direct tunnel test uses configured IPv6 instead of exit IPv4
+  ---
+  duration_ms: 0.241208
+  type: 'test'
+  ...
+# Subtest: entry-group multi-hop tunnel test uses the next hop configured address
+ok 64 - entry-group multi-hop tunnel test uses the next hop configured address
+  ---
+  duration_ms: 0.128708
+  type: 'test'
+  ...
+# Subtest: entry-group WireGuard test keeps the next hop private address
+ok 65 - entry-group WireGuard test keeps the next hop private address
+  ---
+  duration_ms: 0.051333
+  type: 'test'
+  ...
+# Subtest: private tunnels recover the configured private host address for legacy rows
+ok 66 - private tunnels recover the configured private host address for legacy rows
+  ---
+  duration_ms: 0.05075
+  type: 'test'
+  ...
+# Subtest: keeps an idle GOST tunnel listening for latency probes
+ok 67 - keeps an idle GOST tunnel listening for latency probes
+  ---
+  duration_ms: 0.469917
+  type: 'test'
+  ...
+# Subtest: lets business listeners replace probes and keeps idle extra exits probeable
+ok 68 - lets business listeners replace probes and keeps idle extra exits probeable
+  ---
+  duration_ms: 0.22575
+  type: 'test'
+  ...
+# Subtest: does not listen on extra exits when the exit group strategy is disabled
+ok 69 - does not listen on extra exits when the exit group strategy is disabled
+  ---
+  duration_ms: 0.279625
+  type: 'test'
+  ...
+# Subtest: does not plan probes for disabled protocols or non-GOST tunnels
+ok 70 - does not plan probes for disabled protocols or non-GOST tunnels
+  ---
+  duration_ms: 0.097125
+  type: 'test'
+  ...
+# Subtest: manual tests do not restart an already running multi-exit tunnel
+ok 71 - manual tests do not restart an already running multi-exit tunnel
+  ---
+  duration_ms: 0.052791
+  type: 'test'
+  ...
+# Subtest: manual tests coordinate refresh only while tunnel runtime is stopped
+ok 72 - manual tests coordinate refresh only while tunnel runtime is stopped
+  ---
+  duration_ms: 0.035583
+  type: 'test'
+  ...
+# Subtest: keeps nginx tunnels out of the GOST runtime family
+ok 73 - keeps nginx tunnels out of the GOST runtime family
+  ---
+  duration_ms: 0.063417
+  type: 'test'
+  ...
+# Subtest: keeps ForwardX and GOST tunnel action types unchanged
+ok 74 - keeps ForwardX and GOST tunnel action types unchanged
+  ---
+  duration_ms: 0.049292
+  type: 'test'
+  ...
+# Subtest: recognizes only the passive ForwardX first-hop marker
+ok 75 - recognizes only the passive ForwardX first-hop marker
+  ---
+  duration_ms: 0.066041
+  type: 'test'
+  ...
+# Subtest: rejects unknown tunnel modes instead of treating them as GOST
+ok 76 - rejects unknown tunnel modes instead of treating them as GOST
+  ---
+  duration_ms: 0.085583
+  type: 'test'
+  ...
+# Subtest: reconciles a stale nginx runtime even when desired marker files are gone
+ok 77 - reconciles a stale nginx runtime even when desired marker files are gone
+  ---
+  duration_ms: 0.037708
+  type: 'test'
+  ...
+# Subtest: periodically reconciles desired and stale GOST shared runtimes
+ok 78 - periodically reconciles desired and stale GOST shared runtimes
+  ---
+  duration_ms: 0.03175
+  type: 'test'
+  ...
+# Subtest: V3 requires an explicit runtime capability on every host of the link
+ok 79 - V3 requires an explicit runtime capability on every host of the link
+  ---
+  duration_ms: 0.226375
+  type: 'test'
+  ...
+# Subtest: V3 runtime capability matching ignores case and surrounding whitespace
+ok 80 - V3 runtime capability matching ignores case and surrounding whitespace
+  ---
+  duration_ms: 0.033583
+  type: 'test'
+  ...
+# (node:45574) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:45574) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: tunnel API rejects V3 creation and switching while preserving existing V1 and V2
+ok 81 - tunnel API rejects V3 creation and switching while preserving existing V1 and V2
+  ---
+  duration_ms: 791.538791
+  type: 'test'
+  ...
+# (node:45575) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:45575) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: keeps every supported ForwardX version
+ok 82 - keeps every supported ForwardX version
+  ---
+  duration_ms: 1.181291
+  type: 'test'
+  ...
+# Subtest: normalizes case and whitespace without downgrading V3
+ok 83 - normalizes case and whitespace without downgrading V3
+  ---
+  duration_ms: 0.131833
+  type: 'test'
+  ...
+# Subtest: still downgrades unknown versions to V1
+ok 84 - still downgrades unknown versions to V1
+  ---
+  duration_ms: 0.070708
+  type: 'test'
+  ...
+1..84
+# tests 84
+# suites 0
+# pass 84
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2963.368083

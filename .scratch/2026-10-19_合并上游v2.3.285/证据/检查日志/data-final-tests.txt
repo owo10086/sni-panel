@@ -1,0 +1,114 @@
+(node:51095) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+TAP version 13
+# (node:51096) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:51096) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# [OperationsGeo] offline IPv4 database ready version=1bf6cabfb63c1a14
+# [OperationsGeo] offline IPv6 database ready version=1bf6cabfb63c1a14
+# Subtest: bundled offline geo verifies both IP families, domestic provinces and overseas locations
+ok 1 - bundled offline geo verifies both IP families, domestic provinces and overseas locations
+  ---
+  duration_ms: 157.639334
+  type: 'test'
+  ...
+# Subtest: local dev seed supplies 30 days of operations fixtures without network calls or production seeding
+ok 2 - local dev seed supplies 30 days of operations fixtures without network calls or production seeding
+  ---
+  duration_ms: 1206.902084
+  type: 'test'
+  ...
+# Subtest: source ingestion validates addresses, numbers, flags, bounded payload and mapped IPv4
+ok 3 - source ingestion validates addresses, numbers, flags, bounded payload and mapped IPv4
+  ---
+  duration_ms: 1.044208
+  type: 'test'
+  ...
+# Subtest: operations history transactions, source ingress isolation, geo aggregation and retention
+ok 4 - operations history transactions, source ingress isolation, geo aggregation and retention
+  ---
+  duration_ms: 672.150375
+  type: 'test'
+  ...
+# (node:51097) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:51097) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: finance separates receipts and spending, preserves currencies, scopes accounts and pages history
+ok 5 - finance separates receipts and spending, preserves currencies, scopes accounts and pages history
+  ---
+  duration_ms: 570.050125
+  type: 'test'
+  ...
+# (node:51098) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:51098) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: full operational backup restores four histories and natural-key probe heads; old and essential backups remain compatible
+ok 6 - full operational backup restores four histories and natural-key probe heads; old and essential backups remain compatible
+  ---
+  duration_ms: 957.967875
+  type: 'test'
+  ...
+# (node:51099) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:51099) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: EasyPay signs the complete API request and configuration validation rejects unusable WeChat modes
+ok 7 - EasyPay signs the complete API request and configuration validation rejects unusable WeChat modes
+  ---
+  duration_ms: 892.155834
+  type: 'test'
+  ...
+# Subtest: verified delayed callbacks recover closed orders exactly once and reject wrong amounts, apps and merchants
+ok 8 - verified delayed callbacks recover closed orders exactly once and reject wrong amounts, apps and merchants
+  ---
+  duration_ms: 871.247708
+  type: 'test'
+  ...
+# Subtest: active queries verify provider signatures, enforce ownership/throttling and recover missing callbacks
+ok 9 - active queries verify provider signatures, enforce ownership/throttling and recover missing callbacks
+  ---
+  duration_ms: 806.125166
+  type: 'test'
+  ...
+# Subtest: seven-day recovery includes the exact deadline, falls back to creation time, and sends older orders to manual reconciliation
+ok 10 - seven-day recovery includes the exact deadline, falls back to creation time, and sends older orders to manual reconciliation
+  ---
+  duration_ms: 793.867958
+  type: 'test'
+  ...
+# Subtest: WeChat create verifies signed raw responses and refuses unsigned QR links
+ok 11 - WeChat create verifies signed raw responses and refuses unsigned QR links
+  ---
+  duration_ms: 768.667375
+  type: 'test'
+  ...
+# Subtest: EasyPay active queries and GET/POST notifications verify merchant identity even after payments are disabled
+ok 12 - EasyPay active queries and GET/POST notifications verify merchant identity even after payments are disabled
+  ---
+  duration_ms: 807.469208
+  type: 'test'
+  ...
+# Subtest: fast verified callbacks win races with both successful and failed create responses
+ok 13 - fast verified callbacks win races with both successful and failed create responses
+  ---
+  duration_ms: 804.556042
+  type: 'test'
+  ...
+# Subtest: failed fulfillment retains confirmed payment and diagnostics until a safe retry completes
+ok 14 - failed fulfillment retains confirmed payment and diagnostics until a safe retry completes
+  ---
+  duration_ms: 801.323834
+  type: 'test'
+  ...
+1..14
+# tests 14
+# suites 0
+# pass 14
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 6671.633292

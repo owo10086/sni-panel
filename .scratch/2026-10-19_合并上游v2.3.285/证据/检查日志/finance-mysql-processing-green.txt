@@ -1,0 +1,6 @@
+(node:49583) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:49583) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[Database] MySQL connected at 127.0.0.1:59953/forwardx285
+processing receipt visible exactly once

@@ -1,0 +1,52 @@
+(node:41633) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+TAP version 13
+# (node:41671) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:41671) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# [OperationsGeo] offline IPv4 database ready version=1bf6cabfb63c1a14
+# [OperationsGeo] offline IPv6 database ready version=1bf6cabfb63c1a14
+# Subtest: bundled offline geo verifies both IP families, domestic provinces and overseas locations
+ok 1 - bundled offline geo verifies both IP families, domestic provinces and overseas locations
+  ---
+  duration_ms: 550.876042
+  type: 'test'
+  ...
+# Subtest: local dev seed supplies 30 days of operations fixtures without network calls or production seeding
+ok 2 - local dev seed supplies 30 days of operations fixtures without network calls or production seeding
+  ---
+  duration_ms: 1349.357875
+  type: 'test'
+  ...
+# Subtest: source ingestion validates addresses, numbers, flags, bounded payload and mapped IPv4
+ok 3 - source ingestion validates addresses, numbers, flags, bounded payload and mapped IPv4
+  ---
+  duration_ms: 1.067792
+  type: 'test'
+  ...
+# Subtest: operations history transactions, source ingress isolation, geo aggregation and retention
+ok 4 - operations history transactions, source ingress isolation, geo aggregation and retention
+  ---
+  duration_ms: 664.982709
+  type: 'test'
+  ...
+# (node:41672) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:41672) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: full operational backup restores four histories and natural-key probe heads; old and essential backups remain compatible
+ok 5 - full operational backup restores four histories and natural-key probe heads; old and essential backups remain compatible
+  ---
+  duration_ms: 1598.059917
+  type: 'test'
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 5
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3425.296958

@@ -83,7 +83,7 @@ try {
   }
   const entries=[];
   for(let i=0;i<2;i++) {
-    const listenHost='127.0.0.'+(i+1),configPath=path.join(work,'entry-'+(i+1)+'.json'),control=path.join(work,'entry-'+(i+1)+'.sock');
+    const listenHost=i===0?'127.0.0.1':'::1',configPath=path.join(work,'entry-'+(i+1)+'.json'),control=path.join(work,'entry-'+(i+1)+'.sock');
     // The only test-environment additions are listener binding and socket path.
     fs.writeFileSync(configPath,JSON.stringify({...initial[i],listenHost,controlSocketPath:control}));
     const child=spawn(binary,['-config',configPath],{stdio:['ignore','ignore','pipe']});processes.push(child);
