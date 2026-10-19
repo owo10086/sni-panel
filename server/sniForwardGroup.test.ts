@@ -774,6 +774,54 @@ test("host failover SNI lifecycle preserves readiness, atomic saves, imports and
 });
 
 
+test("port and chain SNI sharing one listener receive one complete table and preserve each other's routes", () => {
+  verifySniGroupDeletion(String.raw`
+    const { mock } = await import("node:test");
+    mock.timers.enable({ apis: ["Date"], now: Date.now() });
+    beforeHeartbeat = () => mock.timers.tick(100);
+    const service = await import("./server/services/forwardGroupService.ts");
+    const input = { name: "mixed", groupType: "host", forwardType: "gost", protocol: "tcp", isEnabled: true,
+      autoFailback: true, failoverSeconds: 10, recoverSeconds: 10, ddnsAutoResolveEnabled: false };
+    const entryId = await service.createForwardGroupFromInput({ ...input, groupMode: "entry", domain: "mixed.example.test",
+      members: [1, 2].map(hostId => ({ memberType: "host", hostId, isEnabled: true })) }, 1);
+    await service.updateForwardGroupFromInput(10, { ...input, groupMode: "port", entryGroupId: entryId, members: [] });
+    const [directId] = await createRules("direct", 1);
+    await insert("hosts", { id: 3, name: "chain-exit", ip: "192.0.2.3", ipv4: "192.0.2.3", agentToken: "token-3", userId: 1,
+      isOnline: 1, lastHeartbeat: Math.floor(Date.now() / 1000), agentVersion: "3.3.0", portRangeStart: 18000, portRangeEnd: 30000 });
+    const chainId = await service.createForwardGroupFromInput({ ...input, name: "mixed-chain", groupMode: "chain",
+      members: [1, 3].map(hostId => ({ memberType: "host", hostId, isEnabled: true })) }, 1);
+    const chain = await admin.create({ forwardGroupId: chainId, name: "chain", sourcePort: 18443, targetIp: "203.0.113.50",
+      targetPort: 443, sni: "chain.example.test", isEnabled: true });
+    const table = async (rules = []) => {
+      const result = await heartbeat(1, rules);
+      const actions = result.desiredState.actions.filter(action => action.op === "apply" && action.fxp?.role === "sni-splitter" && action.sourcePort === 18443);
+      assert.equal(actions.length, 1, "one listener must receive one complete table");
+      return actions[0];
+    };
+    const initial = (await table()).fxp;
+    assert.deepEqual(initial.sniRoutes.map(route => route.sni).sort(), ["chain.example.test", "direct-0.example.test"]);
+    const chainRoute = initial.sniRoutes.find(route => route.sni === "chain.example.test");
+    assert.equal(chainRoute.targetIp, "192.0.2.3");
+    await heartbeat(1, localRules(initial));
+    assert.equal((await admin.getById({ id: directId })).sniRuntime.entries.find(entry => entry.hostId === 1).applied, true,
+      "the complete mixed table can confirm its direct entry");
+    assert.equal((await admin.getById({ id: chain.id })).isRunning, false, "chain still waits for its own exit confirmation");
+    await admin.update({ id: directId, targetIp: "203.0.113.99" });
+    const updated = (await table(localRules(initial))).fxp;
+    assert.deepEqual(updated.sniRoutes.find(route => route.sni === "chain.example.test"), chainRoute);
+    assert.equal(updated.sniRoutes.find(route => route.sni === "direct-0.example.test").targetIp, "203.0.113.99");
+    await admin.toggle({ id: directId, isEnabled: false });
+    const chainOnly = await table(localRules(updated));
+    assert.deepEqual(chainOnly.fxp.sniRoutes.map(route => route.sni), ["chain.example.test"]);
+    assert.ok(chainOnly.postCommands?.length, "removing the direct route keeps revocation protection on the shared listener");
+    await admin.toggle({ id: directId, isEnabled: true });
+    const both = (await table(localRules(chainOnly.fxp))).fxp;
+    await admin.toggle({ id: chain.id, isEnabled: false });
+    const directOnly = (await table(localRules(both))).fxp;
+    assert.deepEqual(directOnly.sniRoutes.map(route => route.sni), ["direct-0.example.test"]);
+  `);
+});
+
 test("port entry SNI uses each entry directly and confirms all resources before DNS inclusion", () => {
   verifySniGroupDeletion(String.raw`
     const { mock } = await import("node:test");
@@ -835,6 +883,25 @@ test("port entry SNI uses each entry directly and confirms all resources before 
     await groups.runForwardGroupFailover(entryId, { manual: true, forceSync: true });
     entry = await groups.getForwardGroupById(entryId);
     assert.deepEqual(entry.lastDdnsValue.split(",").sort(), ["192.0.2.1", "192.0.2.2"]);
+    const { registerAgentReportRoutes } = await import("./server/agentReportRoutes.ts");
+    registerAgentReportRoutes(app);
+    const postUsage = async (hostId, bytesIn) => {
+      const route = initial[hostId - 1].sniRoutes.find(route => route.sni === "parallel-0.example.test");
+      const response = await fetch("http://127.0.0.1:" + server.address().port + "/api/agent/traffic", {
+        method: "POST", headers: { authorization: "Bearer token-" + hostId, "content-type": "application/json" },
+        body: JSON.stringify({ reportId: "1", reportProducerId: "port-entry-" + hostId,
+          stats: [{ ruleId: route.ruleId, bytesIn, bytesOut: 0, connections: 1 }] }),
+      });
+      assert.equal(response.status, 200);
+    };
+    await postUsage(1, 30_000_000_000);
+    await postUsage(2, 20_000_000_000);
+    await postUsage(1, 30_000_000_000);
+    const usage = await admin.traffic({ ruleId: ids[0] });
+    assert.equal(usage.reduce((sum, stat) => sum + stat.bytesIn, 0), 50_000_000_000,
+      "30 GB on A plus 20 GB on B totals 50 GB on the root, without counting the retry");
+    const metrics = await import("./server/repositories/metricsRepository.ts");
+    assert.deepEqual(await metrics.getTotalTraffic(1), { totalIn: 50_000_000_000, totalOut: 0 });
     await admin.update({ id: ids[0], targetIp: "203.0.113.99" });
     const firstUpdatedA = await heartbeat(1, localRules(initial[0]));
     row = (await admin.list()).find(rule => Number(rule.id) === ids[0]);
@@ -870,6 +937,18 @@ test("port entry SNI uses each entry directly and confirms all resources before 
     assert.equal(requests.length, beforeConcurrentSave, "a decision made before a concurrent save must not reach DNS");
     await runtime.executeRaw('DROP TRIGGER change_sni_during_health');
     await runtime.executeRaw('UPDATE "forward_rules" SET "targetIp" = ? WHERE "id" = ? OR "forwardGroupRuleId" = ?', ["203.0.113.30", third.id, third.id]);
+    // Sharing the listener through another entry group must have the same
+    // complete-confirmation and concurrent-save protection.
+    const anotherEntryId = await service.createForwardGroupFromInput({ ...input, groupMode: "entry", domain: "another-entry.example.test",
+      members: [1, 2].map(hostId => ({ memberType: "host", hostId, isEnabled: true })) }, 1);
+    await runtime.executeRaw('UPDATE "forward_groups" SET "entryGroupId" = ? WHERE "id" = ?', [anotherEntryId, otherId]);
+    await runtime.executeRaw('CREATE TRIGGER change_other_group_during_health AFTER UPDATE OF "lastCheckedAt" ON "forward_group_members" WHEN NEW."groupId" = ' + entryId + ' BEGIN UPDATE "forward_rules" SET "targetIp" = \'203.0.113.88\' WHERE "id" = ' + third.id + ' OR "forwardGroupRuleId" = ' + third.id + '; END');
+    const beforeOtherGroupSave = requests.length;
+    await groups.runForwardGroupFailover(entryId, { manual: true, forceSync: true });
+    assert.equal(requests.length, beforeOtherGroupSave, "a shared listener's other entry group must invalidate an old DNS decision");
+    await runtime.executeRaw('DROP TRIGGER change_other_group_during_health');
+    await runtime.executeRaw('UPDATE "forward_rules" SET "targetIp" = ? WHERE "id" = ? OR "forwardGroupRuleId" = ?', ["203.0.113.30", third.id, third.id]);
+    await runtime.executeRaw('UPDATE "forward_groups" SET "entryGroupId" = ? WHERE "id" = ?', [entryId, otherId]);
     await service.updateForwardGroupFromInput(entryId, { ...entryInput, members: [{ memberType: "host", hostId: 2, isEnabled: true }] });
     await groups.runForwardGroupFailover(entryId, { manual: true, forceSync: true });
     assert.deepEqual(requests.at(-1).values, ["192.0.2.2"], "removed A must leave managed DNS");

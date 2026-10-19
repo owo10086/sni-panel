@@ -271,21 +271,25 @@ export function isFailoverSniRuleApplied(rule: {
   id: unknown; hostId: unknown; userId: unknown; sourcePort: unknown; sni?: unknown;
   targetIp: unknown; targetPort: unknown; rateLimitMbps?: unknown; maxConnections?: unknown;
 }) {
-  const status = getSniRuntimeGroupStatus(rule.hostId, rule.sourcePort);
-  if (!status?.confirmedAt || Date.now() - status.confirmedAt >= FORWARD_GROUP_AGENT_HEALTH_FRESHNESS_TTL_MS) return false;
   const rate = Number(rule.rateLimitMbps);
   const bytesPerSecond = Number.isFinite(rate) && rate > 0 ? Math.floor(rate) * 125_000 : 0;
+  return isSniRouteApplied(rule, {
+    sni: rule.sni, targetIp: rule.targetIp, targetPort: rule.targetPort,
+    limitIn: bytesPerSecond, limitOut: bytesPerSecond,
+    maxConnections: Math.min(1_000_000, Math.max(0, Math.floor(Number(rule.maxConnections) || 0))),
+    maxIPs: 0, accessScope: `u${Number(rule.userId) || 0}_h${Number(rule.hostId)}`,
+  });
+}
+
+export function isSniRouteApplied(rule: { id: unknown; hostId: unknown; sourcePort: unknown }, expected: SniRuntimeRuleReport) {
+  const status = getSniRuntimeGroupStatus(rule.hostId, rule.sourcePort);
+  if (!status?.confirmedAt || Date.now() - status.confirmedAt >= FORWARD_GROUP_AGENT_HEALTH_FRESHNESS_TTL_MS) return false;
   return !!status?.appliedRoutes.some(route => (
     Number(route.ruleId) === Number(rule.id)
     && ["forwardx", "fxp"].includes(String(route.forwardType || "").toLowerCase())
     && String(route.protocol || "").toLowerCase() === "tcp"
     && (!Array.isArray(route.sourceAllowIps) || route.sourceAllowIps.length === 0)
-    && sniRouteContentMatches(route, {
-      sni: rule.sni, targetIp: rule.targetIp, targetPort: rule.targetPort,
-      limitIn: bytesPerSecond, limitOut: bytesPerSecond,
-      maxConnections: Math.min(1_000_000, Math.max(0, Math.floor(Number(rule.maxConnections) || 0))),
-      maxIPs: 0, accessScope: `u${Number(rule.userId) || 0}_h${Number(rule.hostId)}`,
-    })
+    && sniRouteContentMatches(route, expected)
   ));
 }
 

@@ -5796,6 +5796,29 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
         });
       }
     });
+    // Chain entrances and direct resources can legally own domains on the
+    // same listener. A splitter applies a complete table, so combine them
+    // before producing an action instead of letting the second table win.
+    for (const [port, entry] of sniEntrySplitterGroups) {
+      const exit = sniExitGroups.get(port);
+      if (!exit) continue;
+      if (isSniEntryAgentVersionSupported(effectiveAgentVersion)) {
+        exit.rules.push(...entry.rules);
+        exit.routes.push(...entry.routes);
+        for (const rule of entry.rules) {
+          expectedRulePorts.add(runtimePortProtocolKey(port, "tcp"));
+          expectedRuleIdentityKeys.add(ruleRuntimeIdentityKey(rule.id, port, "tcp"));
+          expectedRulePortIdentityKeys.add(ruleRuntimePortIdentityKey(rule.id, port));
+          protectActiveRulePort(rule, port);
+          addRunningRule({ ruleId: rule.id, sourcePort: port, targetIp: host.ip, targetPort: port, protocol: "tcp", forwardType: "forwardx" });
+        }
+      } else {
+        await db.markForwardRulesNotRunning(entry.rules.map(rule => Number(rule.id)));
+      }
+      // An unsupported chain route must not remove the whole listener when
+      // a legacy direct resource can still use it. The final table revokes it.
+      sniEntrySplitterGroups.delete(port);
+    }
     for (const group of Array.from(sniEntrySplitterGroups.values()).sort((a, b) => a.sourcePort - b.sourcePort)) {
       const rulesInGroup = group.rules.slice().sort((a, b) => Number(a.id) - Number(b.id));
       const representative = rulesInGroup[0];
@@ -5849,6 +5872,7 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
       });
       if (runtimeMatches && hasReportedRuntimeState) continue;
       const routes = group.routes.slice().sort((a, b) => String(a.sni).localeCompare(String(b.sni)));
+      const revocationGuard = buildSNISplitterRevocationGuardCmd(group.sourcePort, 0, routes.map(route => String(route.sni)));
       actions.push({
         ruleId: Number(representative.id),
         op: "apply",
@@ -5859,7 +5883,9 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
         protocol: "tcp",
         networkInterface: hostInterface,
         knownRunning: runtimeMatches,
-        commands: buildSNISplitterSourceRestrictionCleanupCmds(group.sourcePort),
+        commands: buildSNISplitterSourceRestrictionCleanupCmds(group.sourcePort)
+          .map(command => `(\n${command}\n) || { (\n${revocationGuard}\n); exit 1; }`),
+        postCommands: [revocationGuard],
         fxp: {
           role: "sni-splitter",
           ruleId: Number(representative.id),

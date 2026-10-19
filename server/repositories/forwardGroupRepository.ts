@@ -39,6 +39,7 @@ import {
   settleForwardRuleDelete,
   getForwardRulesByIds,
   getForwardRulesByTunnel,
+  getForwardRulesForAgent,
   markForwardRulePendingDelete,
   updateForwardRule,
 } from "./forwardRuleRepository";
@@ -5068,6 +5069,10 @@ async function syncEntryGroupDdns(group: any, ddnsSettings: any, options: Forwar
   const childRows = await Promise.all(referencedPortGroups.map((row: { id: number }) => getForwardGroupChildRules(Number(row.id))));
   const referencedTemplates = templateRows.flatMap((rules, index) => dbBool(referencedPortGroups[index].isEnabled) ? rules : []);
   const referencedChildren = childRows.flatMap((rules, index) => dbBool(referencedPortGroups[index].isEnabled) ? rules : []);
+  const readListenerRules = async () => (await Promise.all(members.map(async member =>
+    gateForwardRulesForRuntime(await getForwardRulesForAgent(Number(member.hostId))),
+  ))).flat().filter(rule => normalizeSniValue(rule.sni));
+  const initialListenerRules = await readListenerRules();
   const needsSniConfirmation = referencedTemplates.some(rule => normalizeSniValue(rule.sni));
   const topologySignature = (value: any) => JSON.stringify([
     value?.domain, value?.recordType, value?.isEnabled, value?.ddnsAutoResolveEnabled,
@@ -5075,7 +5080,8 @@ async function syncEntryGroupDdns(group: any, ddnsSettings: any, options: Forwar
   ]);
   const initialTopology = topologySignature(group);
   const sniScopeSignature = (refs: Array<{ id: number; isEnabled: unknown }>, inputRules: any[]) => {
-    const rules = inputRules.slice().sort((a, b) => Number(a.id) - Number(b.id));
+    const rules = [...new Map(inputRules.map(rule => [Number(rule.id), rule])).values()]
+      .sort((a, b) => Number(a.id) - Number(b.id));
     const ports = [...new Set(rules.filter((rule: any) => normalizeSniValue(rule.sni)).map((rule: any) => Number(rule.sourcePort)))];
     return JSON.stringify([refs, rules.map((rule: any) => [rule.id, rule.hostId, rule.forwardGroupMemberId, rule.forwardGroupRuleId,
       rule.sourcePort, rule.targetIp, rule.targetPort, rule.sni, rule.rateLimitMbps, rule.maxConnections,
@@ -5091,13 +5097,13 @@ async function syncEntryGroupDdns(group: any, ddnsSettings: any, options: Forwar
   // evaluation could accept a concurrent save while keeping the old decision.
   // Include an empty scope too, so attaching the first SNI resource invalidates
   // a selection that was made without any SNI confirmation requirement.
-  const initialSniScope = sniScopeSignature(referencedPortGroups, [...templateRows.flat(), ...childRows.flat()]);
+  const initialSniScope = sniScopeSignature(referencedPortGroups, [...templateRows.flat(), ...childRows.flat(), ...initialListenerRules]);
   const readSniScopeSignature = async () => {
     const refs = await readPortGroupRefs();
     const rules = (await Promise.all(refs.map(async (row: { id: number }) => [
       ...await getForwardGroupTemplateRules(Number(row.id)), ...await getForwardGroupChildRules(Number(row.id)),
     ]))).flat();
-    return sniScopeSignature(refs, rules);
+    return sniScopeSignature(refs, [...rules, ...await readListenerRules()]);
   };
   const chinaHealthEnabled = dbBool(group.chinaHealthCheckEnabled);
   const chinaHealthNow = Date.now();
