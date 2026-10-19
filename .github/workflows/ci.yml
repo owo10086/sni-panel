@@ -78,10 +78,19 @@ jobs:
           curl -fsSL --retry 3 --connect-timeout 15 --max-time 120 https://github.com/go-gost/gost/releases/download/v3.2.6/gost_3.2.6_linux_amd64.tar.gz -o "$gost_test_dir/gost.tgz"
           tar -xzf "$gost_test_dir/gost.tgz" -C "$gost_test_dir"
           export FORWARDX_TEST_GOST_BINARY="$gost_test_dir/gost"
-          (cd forwardx-fxp && go build -o "$gost_test_dir/forwardx-fxp" .)
-          export FORWARDX_TEST_FXP_BINARY="$gost_test_dir/forwardx-fxp"
+          (cd forwardx-fxp && CGO_ENABLED=0 go build -o "$gost_test_dir/forwardx-fxp" .)
           (cd agent && go test ./... && go vet ./...)
           (cd forwardx-fxp && go test ./... && go vet ./...)
+          (cd agent && CGO_ENABLED=0 go test -c -o "$gost_test_dir/agent.test")
+          # Real FXP fixtures require container isolation; keep their processes
+          # and userspace WireGuard peers off the runner's host network.
+          docker run --rm --network none \
+            --mount "type=bind,src=${gost_test_dir},dst=/fixtures,readonly" \
+            -e FORWARDX_TEST_FXP_BINARY=/fixtures/forwardx-fxp \
+            debian:bookworm-slim \
+            /fixtures/agent.test \
+            -test.run '^TestFXPRealAdditionsKeepTCPUDPAndProcessIdentity$' \
+            -test.v -test.timeout=90s
 
       - name: Verify TCP port limits in an isolated Linux network namespace
         run: |
