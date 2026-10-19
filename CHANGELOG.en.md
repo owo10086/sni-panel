@@ -4,6 +4,25 @@
 
 ## [Unreleased]
 
+## [3.4.0] - 2026-10-19
+
+### Features and improvements
+
+- Integrate upstream 283–285 web, server and Agent/FXP improvements while retaining local SNI routing, bilingual UI, permissions, batch operations, safe host deletion and accounting safeguards.
+- Port resources can use entry groups to serve traffic through simultaneous entries with separate configuration, missing-tool and port-conflict diagnostics. SNI port resources route each hostname directly from each entry to its saved destination without a shared exit, using one complete table per shared listener.
+- Qualify SNI entries using their complete current configurations, online state and recovery observation before publishing DNS. Cover shared listeners across resources and entry groups, reject stale selections after concurrent saves, and prevent removed or disabled entries from returning through fallback.
+- Add experimental ny/Nyanpass import through the existing batch-save path, preserving input line numbers, individual failures and explicit ports. Reject unsupported TLS inbound, shared-port and SNI child formats.
+- Integrate payment request/response verification, active status queries for Epay, Alipay and WeChat Pay, and verified late-payment recovery within the exact seven-day window. Callbacks, queries and retries credit once; expired recovery windows retain manual-reconciliation guidance.
+- Add server-side billing and balance pagination, administrator traffic and finance dashboards, offline IP lookup and optional source statistics. Sampling defaults off; SNI hostnames are never guessed from a shared port. Keep currencies and balance consumption separate. Include new operations data in full backups while preserving affiliate rollback and probe counters.
+- Separate affiliate/support functionality from menu visibility; add safe plan descriptions and previews, host notification controls, paginated user search, save feedback and navigation improvements. Ordinary TCP per-source-IP limits continue to exclude SNI.
+- Preserve GOST/FXP additive updates, existing connections and uncertain-result safeguards. Fix cleanup-call compatibility, probe-counter restoration and finance totals for verified payments. Include V3 internals while keeping V3 creation/switching disabled in the UI and API; existing V1/V2 tunnels are unchanged.
+
+### Versions and upgrade notes
+
+- Panel, Agent and ForwardX FXP runtime: `3.4.0`. This release changes runtime programs: back up first, then upgrade the panel and its matching Agent/FXP assets. Updating only the panel does not add capabilities to old binaries. Assets target Linux amd64; no APK/IPA is published.
+- Rate and connection limits apply separately at each entry; there is no strict real-time group-wide cap. Usage aggregates to the original rule and user. Saved configurations still require host confirmation. Binary upgrades may replace processes and interrupt connections.
+- Automated checks and independent review are complete. Full visual inspection, real multi-machine failures and per-entry limit stress scenarios retain coverage gaps. Conditional skips are not passes, and publishing does not imply manual acceptance of those scenarios.
+
 ## [3.3.8] - 2026-10-16
 
 ### Fixes and improvements
