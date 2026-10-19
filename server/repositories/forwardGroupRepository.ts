@@ -17,6 +17,7 @@ import {
   forwardGroups,
   forwardRules,
   hosts,
+  systemSettings,
   tunnels,
   userForwardGroupPermissions,
   type InsertForwardGroup,
@@ -27,6 +28,7 @@ import { appendPanelLog } from "../_core/panelLogger";
 import { getDdnsSettings, updateDdnsRecordValues } from "../ddns";
 import { afterDatabaseCommit, afterDatabaseTransactionSettled, rawAffectedRows, withDeferredDatabaseCommitCallbacks, executeRaw, getDb, insertAndGetId, isDatabaseTransactionActive, nowDate, queryRaw, withDatabaseTransaction } from "../dbRuntime";
 import { boolValue, countAll, inList, quoteIdentifier } from "../dbCompat";
+import { getSetting, invalidateAllSettingsCache, setSetting } from "./settingsRepository";
 import { pageResult, pageWindowForTotal, type PageRequest } from "../../shared/pagination";
 import {
   createForwardRule,
@@ -1976,6 +1978,7 @@ export async function updateForwardGroupMemberChinaHealth(input: {
         }
       : {};
   const db = await getDb();
+  const entryHealthOnly = usesHostFailoverEntryHealth(group);
   const hasSniRules = groupModeOf(group) === "failover"
     && (await getForwardGroupTemplateRules(Number(group.id))).some((rule: any) => normalizeSniValue(rule.sni));
   if (hasSniRules && input.reportedAt && input.reportedAt <= sniRuntimeConfirmationBoundary(Number(input.hostId))) return false;
@@ -1983,10 +1986,10 @@ export async function updateForwardGroupMemberChinaHealth(input: {
     chinaHealthStatus: nextStatus,
     chinaHealthLatencyMs: nextStatus === "healthy" ? input.latencyMs : null,
     chinaHealthCheckedAt: decisionNow,
-    ...(!hasSniRules ? decisionWindowPatch : {}),
+    ...(!entryHealthOnly ? decisionWindowPatch : {}),
     updatedAt: decisionNow,
   } as any).where(eq(forwardGroupMembers.id, Number(input.memberId)));
-  if (hasSniRules) recordSniChinaHealthDecision(Number(input.memberId), nextStatus, decisionNow.getTime(), agentDecision === "healthy" || agentDecision === "unhealthy");
+  if (entryHealthOnly) recordSniChinaHealthDecision(Number(input.memberId), nextStatus, decisionNow.getTime(), agentDecision === "healthy" || agentDecision === "unhealthy");
   scheduleForwardGroupFailover([Number(input.groupId)]);
   return true;
 }
@@ -1994,13 +1997,12 @@ export async function updateForwardGroupMemberChinaHealth(input: {
 export async function resetForwardGroupChinaHealth(groupId: number) {
   const db = await getDb();
   const group = await getForwardGroupById(groupId) as any;
-  const hasSniRules = groupModeOf(group) === "failover" && group?.groupType === "host"
-    && (await getForwardGroupTemplateRules(groupId) as any[]).some(rule => normalizeSniValue(rule.sni));
+  const entryHealthOnly = usesHostFailoverEntryHealth(group);
   await db.update(forwardGroupMembers).set({
     chinaHealthStatus: "unknown",
     chinaHealthLatencyMs: null,
     chinaHealthCheckedAt: null,
-    ...(!hasSniRules ? { healthStatus: "unknown", failureSince: null, healthySince: null, lastCheckedAt: null } : {}),
+    ...(!entryHealthOnly ? { healthStatus: "unknown", failureSince: null, healthySince: null, lastCheckedAt: null } : {}),
     updatedAt: nowDate(),
   } as any).where(eq(forwardGroupMembers.groupId, Number(groupId)));
 }
@@ -2114,8 +2116,7 @@ async function failoverAgentSelectionStillCurrent(group: any, active: any, next:
   const latest = await getForwardGroupById(Number(group?.id || 0)).catch(() => null) as any;
   if (!latest || Number(latest.activeMemberId || 0) !== Number(group?.activeMemberId || 0)) return false;
   if (!dbBool(latest.isEnabled) || exactDdnsSignature(latest, "") !== exactDdnsSignature(group, "")) return false;
-  if (group.groupType === "host" && groupModeOf(group) === "failover"
-    && (await getForwardGroupTemplateRules(Number(group.id))).some((rule: any) => normalizeSniValue(rule.sni))) {
+  if (usesHostFailoverEntryHealth(group)) {
     if (dbBool(latest.autoFailback) !== dbBool(group.autoFailback)
       || forwardGroupFailoverDelayMs(latest) !== forwardGroupFailoverDelayMs(group)
       || forwardGroupRecoverDelayMs(latest) !== forwardGroupRecoverDelayMs(group)
@@ -2137,8 +2138,7 @@ async function failoverAgentSelectionStillCurrent(group: any, active: any, next:
     if (!nextLiveness.available) return false;
   }
   if (next && (next.healthy || Number(next.id || 0) !== Number(active?.id || 0))
-    && groupModeOf(latest) === "failover"
-    && (await getForwardGroupTemplateRules(Number(latest.id))).some((rule: any) => normalizeSniValue(rule.sni))) {
+    && usesHostFailoverEntryHealth(latest)) {
     const candidate = (latest.members || []).find((member: any) => Number(member.id) === Number(next.id));
     if (!candidate) return false;
     const health = await evaluateMemberHealth(candidate, latest);
@@ -4347,6 +4347,7 @@ async function replaceForwardGroupMembersUnlocked(
       if (old.ruleId) await removeManagedRule(Number(old.ruleId), options);
       await db.update(forwardGroups).set({ activeMemberId: null, updatedAt: nowDate() })
         .where(and(eq(forwardGroups.id, groupId), eq(forwardGroups.activeMemberId, Number(old.id))));
+      await clearHostFailoverRuleFailures([Number(old.id)]);
       await db.delete(forwardGroupMembers).where(eq(forwardGroupMembers.id, old.id));
     }
   }
@@ -4404,6 +4405,7 @@ export async function deleteForwardGroup(id: number) {
     if (member.ruleId) await removeManagedRule(Number(member.ruleId));
   }
   await db.delete(forwardGroupEvents).where(eq(forwardGroupEvents.groupId, id));
+  await clearHostFailoverRuleFailures((members as any[]).map(member => Number(member.id)));
   await db.delete(forwardGroupMembers).where(eq(forwardGroupMembers.groupId, id));
   await db.delete(userForwardGroupPermissions).where(eq(userForwardGroupPermissions.forwardGroupId, id));
   await db.delete(forwardGroups).where(eq(forwardGroups.id, id));
@@ -4557,9 +4559,50 @@ async function latestTcping(ruleId: number) {
   return result[0];
 }
 
+function usesHostFailoverEntryHealth(group: any) {
+  return group?.groupType === "host" && groupModeOf(group) === "failover";
+}
+
+function hostFailoverRuleFailuresKey(memberId: number) {
+  return `forwardGroupEntryRuleFailuresV1:${memberId}`;
+}
+
+async function clearHostFailoverRuleFailures(memberIds: number[]) {
+  if (!memberIds.length) return;
+  const db = await getDb();
+  await db.delete(systemSettings).where(inArray(systemSettings.key, memberIds.map(hostFailoverRuleFailuresKey)));
+  invalidateAllSettingsCache();
+}
+
+async function persistHostFailoverRuleFailures(memberId: number, observations: SniMemberHealthObservation[], now: number) {
+  const key = hostFailoverRuleFailuresKey(memberId);
+  const saved = await getSetting(key);
+  let previous: Record<string, unknown> = {};
+  try {
+    const parsed = JSON.parse(saved || "{}");
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) previous = parsed;
+  } catch { /* Missing or invalid evidence starts a fresh observation. */ }
+  const failures: Record<string, number> = {};
+  for (const observation of observations) {
+    if (observation.healthy) continue;
+    const prior = previous[observation.key];
+    const failureAt = typeof prior === "number" && Number.isFinite(prior) && prior > 0 && prior <= now ? prior : now;
+    observation.failureAt = failureAt;
+    failures[observation.key] = failureAt;
+  }
+  const next = Object.keys(failures).length ? JSON.stringify(failures) : null;
+  // Keep only active ordinary-rule failures, independently of Agent/SNI/China
+  // observations. Healthy evaluations do not create rows or rewrite settings.
+  if (next !== saved) {
+    if (next === null) await clearHostFailoverRuleFailures([memberId]);
+    else await setSetting(key, next);
+  }
+}
+
 async function evaluateSniMemberHealth(member: any, group: any, templates: any[], entryChildren?: any[]) {
   const db = await getDb();
   const now = Date.now();
+  const entryHealthOnly = usesHostFailoverEntryHealth(group);
   const liveness = await resolveMemberAgentLiveness(member, now);
   const host = await getHostById(Number(member.hostId));
   if (!liveness.available && !liveness.trafficExcluded) {
@@ -4655,14 +4698,23 @@ async function evaluateSniMemberHealth(member: any, group: any, templates: any[]
     failureAt: sniFailureAt, confirmedAt, interruptedAt, expiresAt, message: sniMessage,
   });
   const latencies: number[] = [];
+  const ordinaryObservations: SniMemberHealthObservation[] = [];
   for (const template of required.filter(rule => !normalizeSniValue(rule.sni))) {
-    const child = children.find((rule: any) => Number(rule.forwardGroupRuleId) === Number(template.id));
+    const child = children.find((rule: any) => Number(rule.forwardGroupRuleId) === Number(template.id)
+      && (!entryHealthOnly || !dbBool(rule.pendingDelete)));
+    const running = !!child && dbBool(child.isEnabled) && dbBool(child.isRunning) && !dbBool(child.pendingDelete);
+    // Only host failover groups select by entry health. Entry groups keep
+    // their existing ordinary destination checks when sharing this evaluator.
+    if (entryHealthOnly) {
+      ordinaryObservations.push({ key: `rule:${template.id}:${Number(child?.id || 0)}`, healthy: running,
+        message: running ? "普通转发规则已运行" : "普通转发规则尚未运行" });
+      continue;
+    }
     const latest = child ? await latestTcping(Number(child.id)) : null;
     const stat = freshForwardGroupRuleProbe(latest, new Date(now));
     const status = String(stat?.healthStatus || "");
     const current = agentHealthSampleIsCurrent(liveness, latest?.recordedAt)
       && (!boundary || (toDate(latest?.recordedAt)?.getTime() || 0) > boundary);
-    const running = !!child && dbBool(child.isEnabled) && dbBool(child.isRunning) && !dbBool(child.pendingDelete);
     const checkedAt = toDate(latest?.recordedAt)?.getTime() || 0;
     const missingExpiryAt = (toDate(member.lastCheckedAt)?.getTime() || toDate(group.createdAt)?.getTime() || now) + forwardGroupRuleProbeFreshMs;
     const pending = running && ((!stat && !checkedAt && now < missingExpiryAt) || !current || status === "unknown");
@@ -4674,6 +4726,10 @@ async function evaluateSniMemberHealth(member: any, group: any, templates: any[]
       message: !running ? "普通转发规则尚未运行" : pending ? "等待普通规则的健康检测结果" : !stat ? "普通规则的健康检测结果已过期" : "普通规则的健康检测失败",
     });
     if (typeof stat?.latencyMs === "number") latencies.push(stat.latencyMs);
+  }
+  if (entryHealthOnly) {
+    await persistHostFailoverRuleFailures(Number(member.id), ordinaryObservations, now);
+    observations.push(...ordinaryObservations);
   }
   if (dbBool(group.chinaHealthCheckEnabled)) {
     const checkedAt = toDate(member.chinaHealthCheckedAt)?.getTime() || 0;
@@ -4690,8 +4746,15 @@ async function evaluateSniMemberHealth(member: any, group: any, templates: any[]
     });
     if (typeof member.chinaHealthLatencyMs === "number") latencies.push(member.chinaHealthLatencyMs);
   }
+  // Retain a stable ordinary entry across a panel restart only when its saved
+  // recovery window completed. A healthy flag alone also covers recovery in progress.
+  const priorHealthySince = toDate(member.healthySince)?.getTime();
+  const ordinaryRecoveryCompleted = String(member.healthStatus) === "healthy"
+    && priorHealthySince !== undefined && now - priorHealthySince >= forwardGroupRecoverDelayMs(group);
+  const previouslyObserved = !!toDate(member.lastCheckedAt)
+    && (templates.some(rule => normalizeSniValue(rule.sni)) || !ordinaryRecoveryCompleted);
   const result = evaluateSniMemberHealthWindows({
-    memberId: Number(member.id), previouslyObserved: !!toDate(member.lastCheckedAt), observations, now,
+    memberId: Number(member.id), previouslyObserved, observations, now,
     failoverMs: forwardGroupFailoverDelayMs(group), recoverMs: forwardGroupRecoverDelayMs(group),
   });
   const healthStatus = result.healthy ? "healthy" : result.healthPending ? "unknown" : "unhealthy";
@@ -4704,9 +4767,9 @@ async function evaluateSniMemberHealth(member: any, group: any, templates: any[]
 }
 
 async function evaluateMemberHealth(member: any, group: any) {
-  if (groupModeOf(group) === "failover" && group.groupType === "host") {
+  if (usesHostFailoverEntryHealth(group)) {
     const templates = await getForwardGroupTemplateRules(Number(group.id));
-    if (templates.some((rule: any) => normalizeSniValue(rule.sni))) return evaluateSniMemberHealth(member, group, templates);
+    return evaluateSniMemberHealth(member, group, templates);
   }
   const db = await getDb();
   const now = nowDate();

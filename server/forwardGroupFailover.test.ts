@@ -21,7 +21,286 @@ function runIsolatedScript(directory: string, databasePath: string, name: string
   assert.equal(result.status, 0, result.error?.stack || result.stderr || result.stdout);
 }
 
-test("forward group switches after its configured heartbeat failure window", () => {
+test("ordinary host failover keeps DDNS when business targets fail or have no reports", () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "forwardx-host-entry-health-"));
+  const script = String.raw`
+    import assert from "node:assert/strict";
+    import http from "node:http";
+    import path from "node:path";
+    import { pathToFileURL } from "node:url";
+    const mod = file => import(pathToFileURL(path.join(process.cwd(), file)).href);
+    const runtime = await mod("server/dbRuntime.ts");
+    await runtime.connectDatabase({ type: "sqlite", sqlite: { path: process.env.FORWARDX_TEST_DB } });
+    await (await mod("server/dbSchema.ts")).ensureDatabaseSchema();
+    const groups = await mod("server/repositories/forwardGroupRepository.ts");
+    const settings = await mod("server/repositories/settingsRepository.ts");
+    const requests = [];
+    const provider = http.createServer((request, response) => {
+      let body = "";
+      request.on("data", chunk => { body += chunk; });
+      request.on("end", () => { requests.push(JSON.parse(body)); response.writeHead(204); response.end(); });
+    });
+    await new Promise(resolve => provider.listen(0, "127.0.0.1", resolve));
+    await settings.setSettings({ ddnsEnabled: "true", ddnsProvider: "webhook", ddnsWebhookUrl: "http://127.0.0.1:" + provider.address().port + "/ddns", ddnsWebhookMethod: "POST" });
+    const { mock } = await import("node:test");
+    mock.timers.enable({ apis: ["Date"], now: Math.floor(Date.now() / 1000) * 1000 });
+    const insert = (table, data) => runtime.executeRaw('INSERT INTO "' + table + '" (' + Object.keys(data).map(k => '"' + k + '"').join(',') + ') VALUES (' + Object.keys(data).map(() => '?').join(',') + ')', Object.values(data));
+    const seconds = () => Math.floor(Date.now() / 1000);
+    const state = () => groups.getForwardGroupById(10);
+    const evaluate = () => groups.runForwardGroupFailover(10, { skipRuleSync: true });
+    const advance = async value => {
+      mock.timers.tick(value * 1000);
+      await runtime.executeRaw('UPDATE hosts SET lastHeartbeat = ?', [seconds()]);
+    };
+    const china = async (memberId, status = "healthy") => groups.updateForwardGroupMemberChinaHealth({
+      groupId: 10, memberId, hostId: memberId - 100, latencyMs: status === "healthy" ? 5 : null,
+      isTimeout: status !== "healthy", healthStatus: status,
+    });
+    try {
+      await insert("users", { id: 1, username: "admin", password: "x", role: "admin", canAddRules: 1, manualCanAddRules: 1 });
+      for (const id of [1, 2]) {
+        await insert("hosts", { id, name: "entry-" + id, ip: "198.51.100." + id, ipv4: "198.51.100." + id, userId: 1, isOnline: 1, lastHeartbeat: seconds() });
+      }
+      await insert("forward_groups", { id: 10, name: "ordinary entries", groupType: "host", groupMode: "failover", domain: "ordinary.example.test", targetIp: "0.0.0.0", userId: 1, isEnabled: 1, failoverSeconds: 10, recoverSeconds: 20, autoFailback: 1, chinaHealthCheckEnabled: 1 });
+      for (const id of [1, 2]) await insert("forward_group_members", { id: 100 + id, groupId: 10, memberType: "host", hostId: id, priority: id, isEnabled: 1 });
+      for (const id of [1000, 2000]) {
+        const rule = { name: "business-" + id, hostId: 1, sourcePort: id + 30000, targetIp: "203.0.113.10", targetPort: 443, forwardType: "nftables", protocol: "tcp", userId: 1, forwardGroupId: 10, isEnabled: 1 };
+        await insert("forward_rules", { ...rule, id, isForwardGroupTemplate: 1 });
+        for (const hostId of [1, 2]) await insert("forward_rules", { ...rule, id: id + hostId, hostId, forwardGroupRuleId: id, forwardGroupMemberId: 100 + hostId, isRunning: 1 });
+      }
+      for (const hostId of [1, 2]) {
+        await insert("tcping_stats", { ruleId: 1000 + hostId, hostId, isTimeout: 1, healthStatus: "unhealthy", healthPending: 0, recordedAt: seconds() });
+        await china(100 + hostId);
+      }
+      await evaluate();
+      assert.equal((await state()).activeMemberId, 101, "failed and missing business target results must not block an available entry");
+      assert.equal((await state()).lastDdnsValue, "198.51.100.1");
+      assert.deepEqual(requests.at(-1).values, ["198.51.100.1"], "the provider receives the healthy entry despite business target failures");
+      const metrics = await mod("server/repositories/metricsRepository.ts");
+      assert.ok((await metrics.getTcpingSeriesByRule(1001, { since: new Date(0) })).some(point => point.isTimeout), "the business failure remains visible in rule history");
+      await advance(330);
+      for (const id of [101, 102]) await china(id);
+      await evaluate();
+      assert.equal((await state()).lastStatus, "healthy", "expired business target reports do not expire entry health");
+      await runtime.executeRaw('UPDATE forward_groups SET chinaHealthCheckEnabled = 0 WHERE id=10');
+      await evaluate();
+      assert.equal((await state()).activeMemberId, 101, "disabling the entry probe does not restore target gating");
+      await runtime.executeRaw('UPDATE forward_rules SET isRunning=0 WHERE id=2001');
+      await evaluate();
+      assert.equal((await state()).activeMemberId, 101, "a local rule failure observes the configured failure delay");
+      await advance(11);
+      await evaluate();
+      assert.equal((await state()).activeMemberId, 102, "an entry with an unready local rule cannot serve the group");
+      await runtime.executeRaw('UPDATE forward_rules SET isRunning=1 WHERE id=2001');
+      await evaluate();
+      await advance(10);
+      await evaluate();
+      assert.equal((await state()).activeMemberId, 102, "entry recovery cannot borrow business probe health");
+      await advance(11);
+      await evaluate();
+      assert.equal((await state()).activeMemberId, 101, "the configured recovery window permits priority failback");
+      await runtime.executeRaw('UPDATE forward_groups SET chinaHealthCheckEnabled = 1 WHERE id=10');
+      await china(101, "unhealthy");
+      await china(102);
+      await evaluate();
+      assert.equal((await state()).activeMemberId, 102, "an enabled entry probe still controls failover");
+      await runtime.executeRaw('UPDATE hosts SET lastHeartbeat=? WHERE id=2', [seconds() - 170]);
+      await evaluate();
+      assert.notEqual((await state()).lastStatus, "healthy", "online and entry-probe requirements cannot be bypassed");
+    } finally { mock.timers.reset(); await runtime.closeDatabase(); await new Promise(resolve => provider.close(resolve)); }
+  `;
+  try { runIsolatedScript(directory, path.join(directory, "test.db"), "ordinary-entry", script); }
+  finally { fs.rmSync(directory, { recursive: true, force: true }); }
+});
+
+test("ordinary host failover cannot skip recovery by restarting the panel", () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "forwardx-host-entry-restart-"));
+  const database = path.join(directory, "test.db");
+  const script = String.raw`
+    import assert from "node:assert/strict";
+    import fs from "node:fs";
+    import path from "node:path";
+    import { pathToFileURL } from "node:url";
+    import { mock } from "node:test";
+    mock.timers.enable({ apis: ["Date"], now: phase === "prepare" ? Math.floor(Date.now()/1000)*1000 : Number(fs.readFileSync(process.env.FORWARDX_TEST_DB + ".clock", "utf8")) + 1000 });
+    const mod = file => import(pathToFileURL(path.join(process.cwd(), file)).href);
+    const runtime = await mod("server/dbRuntime.ts");
+    await runtime.connectDatabase({ type: "sqlite", sqlite: { path: process.env.FORWARDX_TEST_DB } });
+    await (await mod("server/dbSchema.ts")).ensureDatabaseSchema();
+    const groups = await mod("server/repositories/forwardGroupRepository.ts");
+    const insert = (table, data) => runtime.executeRaw('INSERT INTO "' + table + '" (' + Object.keys(data).map(k => '"' + k + '"').join(',') + ') VALUES (' + Object.keys(data).map(() => '?').join(',') + ')', Object.values(data));
+    const seconds = () => Math.floor(Date.now()/1000);
+    const evaluate = () => groups.runForwardGroupFailover(10, { skipRuleSync: true });
+    const active = async () => (await groups.getForwardGroupById(10)).activeMemberId;
+    const advance = async secondsToPass => { mock.timers.tick(secondsToPass*1000); await runtime.executeRaw('UPDATE hosts SET lastHeartbeat=?', [seconds()]); };
+    try {
+      if (phase === "prepare") {
+        await insert("users", { id: 1, username: "admin", password: "x", role: "admin", canAddRules: 1, manualCanAddRules: 1 });
+        await insert("forward_groups", { id: 10, name: "restart", groupType: "host", groupMode: "failover", domain: "restart.example.test", targetIp: "0.0.0.0", userId: 1, isEnabled: 1, failoverSeconds: 10, recoverSeconds: 20, autoFailback: 1 });
+        for (const id of [1,2]) {
+          await insert("hosts", { id, name: "entry-"+id, ip: "198.51.100."+id, ipv4: "198.51.100."+id, userId: 1, isOnline: 1, lastHeartbeat: seconds() });
+          await insert("forward_group_members", { id: 100+id, groupId: 10, memberType: "host", hostId: id, priority: id, isEnabled: 1 });
+        }
+        const rule = { name: "business", hostId: 1, sourcePort: 35212, targetIp: "203.0.113.10", targetPort: 443, forwardType: "nftables", protocol: "tcp", userId: 1, forwardGroupId: 10, isEnabled: 1 };
+        await insert("forward_rules", { ...rule, id: 1000, isForwardGroupTemplate: 1 });
+        for (const id of [1,2]) await insert("forward_rules", { ...rule, id: 1000+id, hostId: id, forwardGroupRuleId: 1000, forwardGroupMemberId: 100+id, isRunning: 1 });
+        await evaluate();
+        assert.equal(await active(), 101);
+        await runtime.executeRaw('UPDATE forward_rules SET isRunning=0 WHERE id=1001');
+        await evaluate(); await advance(11); await evaluate();
+        assert.equal(await active(), 102);
+        await runtime.executeRaw('UPDATE forward_rules SET isRunning=1 WHERE id=1001');
+        await evaluate(); await advance(1); await evaluate();
+        assert.equal(await active(), 102);
+        fs.writeFileSync(process.env.FORWARDX_TEST_DB + ".clock", String(Date.now()));
+      } else {
+        await advance(0); await evaluate();
+        assert.equal(await active(), 102, "restarting cannot turn an incomplete ordinary runtime recovery into a completed one");
+        await advance(21); await evaluate();
+        assert.equal(await active(), 101, "priority failback resumes after a complete recovery observation");
+      }
+    } finally { mock.timers.reset(); await runtime.closeDatabase(); }
+  `;
+  try {
+    for (const phase of ["prepare", "resume"]) runIsolatedScript(directory, database, phase, 'const phase = "' + phase + '";\n' + script);
+  } finally { fs.rmSync(directory, { recursive: true, force: true }); }
+});
+
+for (const scenario of ["continuous", "another-rule", "entry-probe", "recurred", "replacement"]) test("ordinary host failover persists the right failure clock across restart: " + scenario, () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "forwardx-host-entry-failure-restart-"));
+  const database = path.join(directory, "test.db");
+  const script = String.raw`
+    import assert from "node:assert/strict";
+    import fs from "node:fs";
+    import path from "node:path";
+    import { pathToFileURL } from "node:url";
+    import { mock } from "node:test";
+    mock.timers.enable({ apis: ["Date"], now: phase === "prepare" ? Math.floor(Date.now()/1000)*1000 : Number(fs.readFileSync(process.env.FORWARDX_TEST_DB + ".clock", "utf8")) + 1000 });
+    const mod = file => import(pathToFileURL(path.join(process.cwd(), file)).href);
+    const runtime = await mod("server/dbRuntime.ts");
+    await runtime.connectDatabase({ type: "sqlite", sqlite: { path: process.env.FORWARDX_TEST_DB } });
+    await (await mod("server/dbSchema.ts")).ensureDatabaseSchema();
+    const groups = await mod("server/repositories/forwardGroupRepository.ts");
+    const savedRules = await mod("server/repositories/forwardRuleRepository.ts");
+    const insert = (table, data) => runtime.executeRaw('INSERT INTO "' + table + '" (' + Object.keys(data).map(k => '"' + k + '"').join(',') + ') VALUES (' + Object.keys(data).map(() => '?').join(',') + ')', Object.values(data));
+    const seconds = () => Math.floor(Date.now()/1000);
+    const evaluate = () => groups.runForwardGroupFailover(10, { skipRuleSync: true });
+    const active = async () => (await groups.getForwardGroupById(10)).activeMemberId;
+    const advance = async value => { mock.timers.tick(value*1000); await runtime.executeRaw('UPDATE hosts SET lastHeartbeat=?', [seconds()]); };
+    const china = async (memberId, healthy) => groups.updateForwardGroupMemberChinaHealth({ groupId: 10, memberId, hostId: memberId - 100, latencyMs: healthy ? 5 : null, isTimeout: !healthy });
+    try {
+      if (phase === "prepare") {
+        await insert("users", { id: 1, username: "admin", password: "x", role: "admin", canAddRules: 1, manualCanAddRules: 1 });
+        await insert("forward_groups", { id: 10, name: "failure restart", groupType: "host", groupMode: "failover", domain: "failure.example.test", targetIp: "0.0.0.0", userId: 1, isEnabled: 1, failoverSeconds: 10, recoverSeconds: 20, autoFailback: 0, chinaHealthCheckEnabled: scenario === "entry-probe" ? 1 : 0 });
+        for (const id of [1, 2]) {
+          await insert("hosts", { id, name: "entry-" + id, ip: "198.51.100." + id, ipv4: "198.51.100." + id, userId: 1, isOnline: 1, lastHeartbeat: seconds() });
+          await insert("forward_group_members", { id: 100+id, groupId: 10, memberType: "host", hostId: id, priority: id, isEnabled: 1 });
+        }
+        for (const id of [1000, 2000]) {
+          const rule = { name: "business-" + id, hostId: 1, sourcePort: 30000+id, targetIp: "203.0.113.10", targetPort: 443, forwardType: "nftables", protocol: "tcp", userId: 1, forwardGroupId: 10, isEnabled: 1 };
+          await insert("forward_rules", { ...rule, id, isForwardGroupTemplate: 1 });
+          for (const hostId of [1, 2]) await insert("forward_rules", { ...rule, id: id+hostId, hostId, forwardGroupRuleId: id, forwardGroupMemberId: 100+hostId, isRunning: 1 });
+        }
+        if (scenario === "entry-probe") for (const id of [101, 102]) await china(id, true);
+        await evaluate();
+        assert.equal(await active(), 101);
+        if (scenario === "entry-probe") await china(101, false);
+        else await savedRules.updateRuleRunningStatus(1001, false);
+        await evaluate(); await advance(9);
+        if (scenario === "another-rule" || scenario === "entry-probe") await savedRules.updateRuleRunningStatus(2001, false);
+        if (scenario === "recurred") {
+          await savedRules.updateRuleRunningStatus(1001, true);
+          await evaluate();
+          await savedRules.updateRuleRunningStatus(1001, false);
+        }
+        if (scenario === "replacement") {
+          const { id, ...old } = await savedRules.getForwardRuleById(1001);
+          await savedRules.markForwardRulePendingDelete(id);
+          await savedRules.createForwardRule({ ...old, isEnabled: true, isRunning: false, pendingDelete: false });
+        }
+        await evaluate();
+        assert.equal(await active(), 101, "the original failure delay has not completed yet");
+        fs.writeFileSync(process.env.FORWARDX_TEST_DB + ".clock", String(Date.now()));
+      } else {
+        await advance(0);
+        if (scenario === "another-rule") await savedRules.updateRuleRunningStatus(1001, true);
+        if (scenario === "entry-probe") {
+          // A completed external check cannot lend its earlier failure time to a local rule.
+          await groups.updateForwardGroupMemberChinaHealth({ groupId: 10, memberId: 101, hostId: 1, latencyMs: 5, isTimeout: false, healthStatus: "healthy" });
+          await china(102, true);
+        }
+        await evaluate();
+        if (scenario === "continuous") assert.equal(await active(), 102, "a restart must retain the completed ordinary-rule failure delay");
+        else {
+          assert.equal(await active(), 101, "a newly failed rule cannot borrow the clock of another rule or entry probe");
+          await advance(8); await evaluate();
+          assert.equal(await active(), 101, "the rule's own failure delay is still incomplete");
+          await advance(1); await evaluate();
+          assert.equal(await active(), 102, "the new rule's own persisted failure delay completes normally");
+        }
+      }
+    } finally { mock.timers.reset(); await runtime.closeDatabase(); }
+  `;
+  try {
+    for (const phase of ["prepare", "resume"]) runIsolatedScript(directory, database, phase, 'const phase = "' + phase + '", scenario = "' + scenario + '";\n' + script);
+  } finally { fs.rmSync(directory, { recursive: true, force: true }); }
+});
+
+test("ordinary host failover selects the live replacement after moving a rule back", () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "forwardx-host-entry-move-back-"));
+  const script = String.raw`
+    import assert from "node:assert/strict";
+    import path from "node:path";
+    import { pathToFileURL } from "node:url";
+    import { mock } from "node:test";
+    mock.timers.enable({ apis: ["Date"], now: Math.floor(Date.now()/1000)*1000 });
+    const mod = file => import(pathToFileURL(path.join(process.cwd(), file)).href);
+    const runtime = await mod("server/dbRuntime.ts");
+    await runtime.connectDatabase({ type: "sqlite", sqlite: { path: process.env.FORWARDX_TEST_DB } });
+    await (await mod("server/dbSchema.ts")).ensureDatabaseSchema();
+    const groups = await mod("server/repositories/forwardGroupRepository.ts");
+    const savedRules = await mod("server/repositories/forwardRuleRepository.ts");
+    const { rulesRouter } = await mod("server/routers/rules.ts");
+    const admin = rulesRouter.createCaller({ req: { headers: {} }, res: { clearCookie() {} }, user: { id: 1, username: "admin", role: "admin", accountEnabled: true }, authSession: null, authFailureReason: null });
+    const insert = (table, data) => runtime.executeRaw('INSERT INTO "' + table + '" (' + Object.keys(data).map(k => '"' + k + '"').join(',') + ') VALUES (' + Object.keys(data).map(() => '?').join(',') + ')', Object.values(data));
+    const seconds = () => Math.floor(Date.now()/1000);
+    const evaluate = () => groups.runForwardGroupFailover(10, { skipRuleSync: true });
+    try {
+      await insert("users", { id: 1, username: "admin", password: "x", role: "admin", canAddRules: 1, manualCanAddRules: 1 });
+      for (const id of [1, 2]) await insert("hosts", { id, name: "entry-" + id, ip: "198.51.100." + id, ipv4: "198.51.100." + id, userId: 1, isOnline: 1, lastHeartbeat: seconds() });
+      for (const groupId of [10, 20]) {
+        await insert("forward_groups", { id: groupId, name: "group-" + groupId, groupType: "host", groupMode: "failover", domain: groupId === 10 ? "move.example.test" : null, targetIp: "0.0.0.0", userId: 1, isEnabled: 1, failoverSeconds: 10, recoverSeconds: 20 });
+        for (const hostId of [1, 2]) await insert("forward_group_members", { id: groupId * 10 + hostId, groupId, memberType: "host", hostId, priority: hostId, isEnabled: 1 });
+      }
+      const rule = await admin.create({ forwardGroupId: 10, name: "movable", sourcePort: 35212, targetIp: "203.0.113.10", targetPort: 443, forwardType: "nftables", protocol: "tcp", isEnabled: true });
+      const oldChildren = await savedRules.getForwardGroupChildRulesForTemplate(rule.id);
+      await admin.update({ id: rule.id, forwardGroupId: 20 });
+      await admin.update({ id: rule.id, forwardGroupId: 10 });
+      const children = await savedRules.getForwardGroupChildRulesForTemplate(rule.id);
+      assert.ok(oldChildren.every(old => children.some(child => child.id === old.id && child.pendingDelete)), "the real move retains retired children for Agent cleanup");
+      for (const child of children.filter(child => child.forwardGroupId === 10 && !child.pendingDelete)) {
+        await savedRules.updateRuleRunningStatus(child.id, true);
+      }
+      await runtime.executeRaw('UPDATE forward_groups SET activeMemberId=101,lastDdnsValue=? WHERE id=10', ["198.51.100.1"]);
+      await evaluate();
+      mock.timers.tick(21_000);
+      await evaluate();
+      const current = children.find(child => child.forwardGroupMemberId === 101 && !child.pendingDelete);
+      assert.ok(current);
+      await savedRules.updateRuleRunningStatus(current.id, false);
+      await evaluate();
+      mock.timers.tick(11_000);
+      await evaluate();
+      const state = await groups.getForwardGroupById(10);
+      assert.equal(state.activeMemberId, 102, "retired copies must not mask the prepared replacement backup");
+      assert.equal(state.lastStatus, "healthy");
+    } finally { mock.timers.reset(); await runtime.closeDatabase(); }
+  `;
+  try { runIsolatedScript(directory, path.join(directory, "test.db"), "move-back", script); }
+  finally { fs.rmSync(directory, { recursive: true, force: true }); }
+});
+
+test("tunnel failover retains destination gates and entry groups retain their health windows", () => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), "forwardx-group-failover-"));
   const databasePath = path.join(directory, "failover.db");
   const script = String.raw`
@@ -81,6 +360,7 @@ test("forward group switches after its configured heartbeat failure window", () 
     try {
       await runtime.connectDatabase({ type: "sqlite", sqlite: { path: process.env.FORWARDX_TEST_DB } });
       await schema.ensureDatabaseSchema();
+      await runtime.executeRaw('INSERT INTO users (id,username,password,role,canAddRules,manualCanAddRules) VALUES (1,\'admin\',\'x\',\'admin\',1,1)');
 
       const settings = await import(moduleUrl("server/repositories/settingsRepository.ts"));
       const ddns = await import(moduleUrl("server/ddns.ts"));
@@ -107,6 +387,15 @@ test("forward group switches after its configured heartbeat failure window", () 
         );
       };
       const now = Math.floor(Date.now() / 1000);
+      const useTunnelMembers = async (groupId, bindings) => {
+        await runtime.executeRaw('UPDATE forward_groups SET groupType=\'tunnel\' WHERE id=?', [groupId]);
+        for (const [memberId, hostId, ruleId] of bindings) {
+          await runtime.executeRaw('INSERT INTO tunnels (id,name,entryHostId,exitHostId,listenPort,mode,userId,isEnabled) VALUES (?, ?, ?, ?, ?, ?, 1, 1)',
+            [memberId, "tunnel-" + memberId, hostId, hostId === 1 ? 2 : 1, 19000 + memberId, "tls"]);
+          await runtime.executeRaw('UPDATE forward_group_members SET memberType=\'tunnel\',hostId=NULL,tunnelId=? WHERE id=?', [memberId, memberId]);
+          await runtime.executeRaw('UPDATE forward_rules SET tunnelId=?,forwardType=\'gost\' WHERE id=?', [memberId, ruleId]);
+        }
+      };
 
       await insert(
         "hosts",
@@ -152,7 +441,8 @@ test("forward group switches after its configured heartbeat failure window", () 
         [120, 2, null, 1, now - 360],
       );
 
-      await forwardGroups.runForwardGroupFailover(10);
+      await useTunnelMembers(10, [[101, 1, 110], [102, 2, 120]]);
+      await forwardGroups.runForwardGroupFailover(10, { skipRuleSync: true });
       let state = (await runtime.queryRaw(
         'SELECT "activeMemberId", "lastDdnsValue" FROM "forward_groups" WHERE "id" = 10',
       ))[0];
@@ -162,7 +452,7 @@ test("forward group switches after its configured heartbeat failure window", () 
       await runtime.executeRaw('UPDATE "hosts" SET "lastHeartbeat" = ? WHERE "id" = 1', [now - 75]);
       assert.equal((await hosts.getHostById(1)).isOnline, true, "global 150 second host TTL should not have expired yet");
 
-      await forwardGroups.runForwardGroupFailover(10);
+      await forwardGroups.runForwardGroupFailover(10, { skipRuleSync: true });
       state = (await runtime.queryRaw(
         'SELECT "activeMemberId", "lastDdnsValue" FROM "forward_groups" WHERE "id" = 10',
       ))[0];
@@ -177,7 +467,7 @@ test("forward group switches after its configured heartbeat failure window", () 
         ["ruleId", "hostId", "latencyMs", "isTimeout", "healthStatus", "healthPending", "recordedAt"],
         [120, 2, 12, 0, "healthy", 0, now],
       );
-      await forwardGroups.runForwardGroupFailover(10);
+      await forwardGroups.runForwardGroupFailover(10, { skipRuleSync: true });
       state = (await runtime.queryRaw(
         'SELECT "activeMemberId", "lastDdnsValue" FROM "forward_groups" WHERE "id" = 10',
       ))[0];
@@ -197,7 +487,7 @@ test("forward group switches after its configured heartbeat failure window", () 
         ["ruleId", "hostId", "latencyMs", "isTimeout", "healthStatus", "healthPending", "recordedAt"],
         [110, 1, 11, 0, "healthy", 0, now + 1],
       );
-      await forwardGroups.runForwardGroupFailover(10);
+      await forwardGroups.runForwardGroupFailover(10, { skipRuleSync: true });
       state = (await runtime.queryRaw(
         'SELECT "activeMemberId", "lastDdnsValue" FROM "forward_groups" WHERE "id" = 10',
       ))[0];
@@ -206,9 +496,9 @@ test("forward group switches after its configured heartbeat failure window", () 
       assert.deepEqual(requests.at(-1).values, ["198.51.100.10"], "failover groups must keep exactly one DDNS record");
 
       const held = holdNextWebhookRequest();
-      const firstSync = forwardGroups.runForwardGroupFailover(10, { forceSync: true });
+      const firstSync = forwardGroups.runForwardGroupFailover(10, { forceSync: true, skipRuleSync: true });
       await held.started;
-      const queuedSync = forwardGroups.runForwardGroupFailover(10, { forceSync: true });
+      const queuedSync = forwardGroups.runForwardGroupFailover(10, { forceSync: true, skipRuleSync: true });
       const queueDeadline = Date.now() + 2000;
       while (locks.keyedTaskDepth("forward-group-failover:10") < 2 && Date.now() < queueDeadline) {
         await new Promise((resolve) => setTimeout(resolve, 5));
@@ -267,7 +557,8 @@ test("forward group switches after its configured heartbeat failure window", () 
         ["ruleId", "hostId", "latencyMs", "isTimeout", "healthStatus", "healthPending", "recordedAt"],
         [320, 2, null, 1, "unhealthy", 0, now],
       );
-      await forwardGroups.runForwardGroupFailover(30);
+      await useTunnelMembers(30, [[301, 1, 310], [302, 2, 320]]);
+      await forwardGroups.runForwardGroupFailover(30, { skipRuleSync: true });
       let freshProbeState = (await runtime.queryRaw(
         'SELECT "activeMemberId", "lastDdnsValue", "lastStatus" FROM "forward_groups" WHERE "id" = 30',
       ))[0];
@@ -282,7 +573,7 @@ test("forward group switches after its configured heartbeat failure window", () 
         ["ruleId", "hostId", "latencyMs", "isTimeout", "healthStatus", "healthPending", "recordedAt"],
         [320, 2, 12, 0, "healthy", 0, now + 1],
       );
-      await forwardGroups.runForwardGroupFailover(30);
+      await forwardGroups.runForwardGroupFailover(30, { skipRuleSync: true });
       freshProbeState = (await runtime.queryRaw(
         'SELECT "activeMemberId", "lastDdnsValue", "lastStatus" FROM "forward_groups" WHERE "id" = 30',
       ))[0];
@@ -300,7 +591,7 @@ test("forward group switches after its configured heartbeat failure window", () 
       );
       await runtime.executeRaw('UPDATE "forward_groups" SET "chinaHealthCheckEnabled" = 1 WHERE "id" = 30');
       const requestCountBeforeOrdinaryPendingHealth = requests.length;
-      await forwardGroups.runForwardGroupFailover(30);
+      await forwardGroups.runForwardGroupFailover(30, { skipRuleSync: true });
       freshProbeState = (await runtime.queryRaw(
         'SELECT "activeMemberId", "lastDdnsValue", "lastStatus" FROM "forward_groups" WHERE "id" = 30',
       ))[0];
@@ -321,7 +612,7 @@ test("forward group switches after its configured heartbeat failure window", () 
         'UPDATE "forward_group_members" SET "chinaHealthStatus" = \'healthy\', "chinaHealthCheckedAt" = ? WHERE "id" = 302',
         [now - chinaHealthTtlSeconds - 61],
       );
-      await forwardGroups.runForwardGroupFailover(30);
+      await forwardGroups.runForwardGroupFailover(30, { skipRuleSync: true });
       freshProbeState = (await runtime.queryRaw(
         'SELECT "activeMemberId", "lastDdnsValue", "lastStatus" FROM "forward_groups" WHERE "id" = 30',
       ))[0];
@@ -507,7 +798,7 @@ test("forward group switches after its configured heartbeat failure window", () 
       assert.deepEqual(requests.at(-1).values, ["198.51.100.10"]);
 
       await runtime.executeRaw('UPDATE "hosts" SET "lastHeartbeat" = ?', [now - 75]);
-      await forwardGroups.runForwardGroupFailover(10, { forceSync: true });
+      await forwardGroups.runForwardGroupFailover(10, { forceSync: true, skipRuleSync: true });
       state = (await runtime.queryRaw(
         'SELECT "activeMemberId", "lastDdnsValue", "lastStatus" FROM "forward_groups" WHERE "id" = 10',
       ))[0];
@@ -866,11 +1157,15 @@ test("failover groups return to the highest-priority recovered member after mult
         'INSERT INTO "tcping_stats" ("ruleId", "hostId", "latencyMs", "isTimeout", "healthStatus", "healthPending", "recordedAt") VALUES (?, ?, ?, ?, ?, ?, ?)',
         [ruleId, Math.floor(ruleId / 10) - 80, status === "healthy" ? 10 : null, status === "healthy" ? 0 : 1, status, 0, recordedAt],
       );
+      const hostId = Math.floor(ruleId / 10) - 80;
+      await groups.updateForwardGroupMemberChinaHealth({ groupId: 80, memberId: 800 + hostId, hostId,
+        latencyMs: status === "healthy" ? 10 : null, isTimeout: status !== "healthy", healthStatus: status });
     };
 
     try {
       await runtime.connectDatabase({ type: "sqlite", sqlite: { path: process.env.FORWARDX_TEST_DB } });
       await schema.ensureDatabaseSchema();
+      await runtime.executeRaw('INSERT INTO users (id,username,password,role,canAddRules,manualCanAddRules) VALUES (1,\'admin\',\'x\',\'admin\',1,1)');
       const address = webhook.address();
       await settings.setSettings({
         ddnsEnabled: "true",
@@ -884,8 +1179,8 @@ test("failover groups return to the highest-priority recovered member after mult
       }
       await insert(
         "forward_groups",
-        ["id", "name", "groupType", "groupMode", "domain", "recordType", "targetIp", "userId", "isEnabled", "activeMemberId", "failoverSeconds", "recoverSeconds", "autoFailback"],
-        [80, "priority-failback", "host", "failover", "priority.example.test", "A", "0.0.0.0", 1, 1, 801, 10, 10, 1],
+        ["id", "name", "groupType", "groupMode", "domain", "recordType", "targetIp", "userId", "isEnabled", "activeMemberId", "failoverSeconds", "recoverSeconds", "autoFailback", "chinaHealthCheckEnabled"],
+        [80, "priority-failback", "host", "failover", "priority.example.test", "A", "0.0.0.0", 1, 1, 801, 10, 10, 1, 1],
       );
       for (const [memberId, hostId, priority] of [[801, 1, 0], [802, 2, 1], [803, 3, 2]]) {
         await insert("forward_group_members", ["id", "groupId", "memberType", "hostId", "priority", "isEnabled"], [memberId, 80, "host", hostId, priority, 1]);

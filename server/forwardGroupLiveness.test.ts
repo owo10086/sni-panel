@@ -19,6 +19,7 @@ test("confirmed Agent offline overrides fresh forwarding health and triggers DDN
     try {
       await runtime.connectDatabase({ type: "sqlite", sqlite: { path: process.env.FORWARDX_TEST_DB } });
       await schema.ensureDatabaseSchema();
+      await runtime.executeRaw('INSERT INTO users (id,username,password,role,canAddRules,manualCanAddRules) VALUES (1,\'admin\',\'x\',\'admin\',1,1)');
       const groups = await import(moduleUrl("server/repositories/forwardGroupRepository.ts"));
       const hostStatus = await import(moduleUrl("server/hostStatusNotifier.ts"));
 
@@ -62,7 +63,7 @@ test("confirmed Agent offline overrides fresh forwarding health and triggers DDN
         await insert(
           "forward_group_members",
           ["id", "groupId", "memberType", "hostId", "priority", "isEnabled", "healthStatus", "lastCheckedAt", "healthySince"],
-          [id, groupId, "host", hostId, priority, 1, "healthy", nowSeconds, nowSeconds - 20],
+          [id, groupId, "host", hostId, priority, 1, "healthy", nowSeconds, nowSeconds - 130],
         );
       }
       await runtime.executeRaw('UPDATE "forward_group_members" SET "failureSince" = ? WHERE "id" IN (101, 201)', [nowSeconds - 20]);

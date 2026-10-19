@@ -13,7 +13,7 @@ for (const [scenario, description] of [
   ["lifecycle", "SNI confirmation expiry, reconnect, process restart and unchanged reports use current evidence"],
   ["ddns", "SNI DDNS reconciles renamed domains, retries failures and rejects obsolete provider responses"],
   ["backup", "recently recovered SNI backups wait with failback on or off and respond to setting changes"],
-  ["mixed", "mixed groups retain ordinary probes, China health and allowed-rule exclusions"],
+  ["mixed", "mixed failover groups ignore ordinary destination failures but retain entry runtime and health gates"],
   ["failure-settings", "changing failure delays replaces pending deadlines and reevaluates automatically"],
   ["third-backup", "a qualified third entrance wins while the preferred backup is recovering"],
   ["china-expiry", "expired China probes block selection independently of fresh SNI confirmations"],
@@ -30,8 +30,9 @@ for (const [scenario, description] of [
   ["notifications", "automatic switch notifications and events follow provider success and manual sync semantics"],
   ["ddns-current", "an in-flight DDNS refresh requires the current entrance to finish recovery again"],
   ["ddns-failback-disabled", "disabling failback during a provider request preserves the healthy backup"],
-  ["pending-normal", "missing ordinary reports have a fixed waiting deadline in mixed groups"],
+  ["pending-normal", "missing ordinary destination reports do not block a mixed failover entrance"],
   ["pending-china", "missing China reports have a fixed waiting deadline despite continuous runtime reports"],
+  ["entry-mixed-scope", "multi-entry groups keep ordinary destination gating outside the host failover policy"],
 ]) test(description, () => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), "forwardx-sni-health-"));
   try {

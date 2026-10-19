@@ -593,7 +593,8 @@ try {
     await groups.runFailover();
     assert.equal((await state()).lastStatus, "unknown");
     await advance(330, { renew: [1, 2] });
-    assert.equal((await state()).lastStatus, "down", "continual evaluations cannot extend a missing report's waiting period forever");
+    assert.equal((await state()).lastStatus, scenario === "pending-normal" ? "healthy" : "down",
+      scenario === "pending-normal" ? "missing ordinary target reports never block a prepared host failover entrance" : "continual evaluations cannot extend a missing report's waiting period forever");
   }
   if (scenario === "backup") {
     for (const autoFailback of [true, false]) {
@@ -676,6 +677,28 @@ try {
     await settle();
     assert.equal((await state()).lastStatus, "healthy", "the Agent's final recovered China decision does not add another SNI recovery window");
   }
+  if (scenario === "entry-mixed-scope") {
+    await rules.create({ forwardGroupId: 10, name: "ordinary scope control", sourcePort: 18500, targetIp: "203.0.113.20", targetPort: 80, protocol: "tcp", forwardType: "nftables", isEnabled: true });
+    const normalReports = [];
+    for (const id of [1, 2]) {
+      const result = await heartbeat(id, configurations[id - 1]);
+      const probe = result.runningRules.find(rule => rule.sourcePort === 18500);
+      normalReports.push({ ruleId: probe.ruleId, sourcePort: 18500, targetIp: "203.0.113.20", targetPort: 80, latencyMs: 4, isTimeout: false, healthStatus: "healthy", probeCount: 1, probeSuccesses: 1 });
+      configurations[id - 1].push({ ruleId: probe.ruleId, port: 18500, targetIp: "203.0.113.20", targetPort: 80, protocol: "tcp", forwardType: "nftables", ready: true });
+      await heartbeat(id, configurations[id - 1]);
+      await post(id, "tcping", { force: true, results: [normalReports[id - 1]] });
+    }
+    // Reuse the already confirmed listeners in an isolated entry-group fixture.
+    await insert("forward_groups", { id: 20, name: "multi-entry scope", groupType: "host", groupMode: "entry", domain: "multi.example.test", recordType: "A", targetIp: "0.0.0.0", userId: 1, isEnabled: 1, failoverSeconds: 17, recoverSeconds: 23 });
+    for (const id of [1, 2]) await insert("forward_group_members", { id: 200 + id, groupId: 20, memberType: "host", hostId: id, priority: id, isEnabled: 1 });
+    await runtime.executeRaw('UPDATE forward_groups SET groupMode=\'port\', entryGroupId=20, domain=NULL WHERE id=10');
+    await runtime.executeRaw('UPDATE forward_rules SET forwardGroupMemberId=forwardGroupMemberId+100 WHERE forwardGroupId=10 AND isForwardGroupTemplate=0');
+    await groups.runFailover();
+    assert.deepEqual(requests.at(-1).values, ["127.0.0.1", "127.0.0.2"], "multi-entry still publishes both healthy members");
+    await post(1, "tcping", { force: true, results: [{ ...normalReports[0], latencyMs: null, isTimeout: true, healthStatus: "unhealthy", probeSuccesses: 0 }] });
+    await groups.runFailover();
+    assert.deepEqual(requests.at(-1).values, ["127.0.0.2"], "ordinary target failure still excludes a multi-entry member outside the approved scope");
+  }
   if (scenario === "mixed") {
     const ordinary = await rules.create({ forwardGroupId: 10, name: "ordinary service", sourcePort: 18500, targetIp: "203.0.113.20", targetPort: 80, protocol: "tcp", forwardType: "nftables", isEnabled: true });
     const normalReports = [];
@@ -690,22 +713,35 @@ try {
     }
     await groups.runFailover();
     assert.equal((await state()).activeMemberId, 101);
+    await advance(25, { renew: [1, 2] });
     await post(1, "tcping", { force: true, results: [{ ...normalReports[0], latencyMs: null, isTimeout: true, healthStatus: "unhealthy", probeSuccesses: 0 }] });
     await groups.runFailover();
-    assert.equal((await state()).activeMemberId, 102, "ordinary target failure still affects a mixed member");
+    assert.equal((await state()).activeMemberId, 101, "ordinary target failure cannot switch the mixed failover group");
+    await heartbeat(1, configurations[0].filter(rule => rule.port !== 18500));
+    await post(1, "rule-status", { ruleId: normalReports[0].ruleId, sourcePort: 18500, forwardType: "nftables", isRunning: false, message: "simulated ordinary rule apply failure" });
+    await groups.runFailover();
+    await advance(19, { renew: [2] });
+    assert.equal((await state()).activeMemberId, 102, "an ordinary rule missing on the entrance still triggers failover");
+    await heartbeat(1, configurations[0]);
+    await post(1, "rule-status", { ruleId: normalReports[0].ruleId, sourcePort: 18500, forwardType: "nftables", isRunning: true });
     await post(1, "tcping", { force: true, results: [normalReports[0]] });
     await groups.runFailover();
-    assert.equal((await state()).activeMemberId, 101, "an Agent's completed ordinary recovery needs no duplicate SNI wait");
+    assert.equal((await state()).activeMemberId, 102, "a healthy target cannot bypass an ordinary runtime recovery window");
+    await advance(25, { renew: [1, 2] });
+    assert.equal((await state()).activeMemberId, 101, "ordinary runtime recovery uses the configured observation window");
     const delayed = agentRequest(1, "tcping", { force: true, results: [normalReports[0]] });
     await advance(110, { online: [2], renew: [2] });
     assert.equal((await state()).activeMemberId, 102);
     await presence(1);
     await settle();
     await heartbeat(1, configurations[0]);
+    await heartbeat(1, configurations[0]);
     const delayedResponse = await fetch("http://127.0.0.1:" + server.address().port + "/api/agent/tcping", delayed);
     assert.equal(delayedResponse.status, 200);
+    await post(1, "rule-status", { ruleId: normalReports[0].ruleId, sourcePort: 18500, forwardType: "nftables", isRunning: true });
     await advance(25, { renew: [1, 2] });
-    assert.equal((await state()).activeMemberId, 102, "a pre-offline ordinary probe cannot qualify a mixed entrance after reconnect");
+    await advance(25, { renew: [1, 2] });
+    assert.equal((await state()).activeMemberId, 101, "a reconnected entrance with current runtime can recover without a new ordinary target probe");
     await post(1, "tcping", { force: true, results: [normalReports[0]] });
     await groups.runFailover();
     assert.equal((await state()).activeMemberId, 101);
