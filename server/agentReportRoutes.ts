@@ -1,4 +1,6 @@
 import { Router, Request, Response } from "express";
+import { observeProbeHealth, validateIpSwitchClaim } from "./hostProbeHealth";
+import { claimIpSwitchAgentTask, completeIpSwitchAgentTask } from "./agentIpSwitchTasks";
 import * as db from "./db";
 import { sourceAnalyticsEnabled, parseSourceObservations, recordOperationsTraffic, recordOperationsSources } from "./repositories/operationsRepository";
 import { reconcileRuleLimits, recordRuleQuotaTraffic } from "./ruleLimits";
@@ -22,6 +24,7 @@ import {
 import { recordForwardGroupAutoHopLatency } from "./forwardGroupAutoLatencyState";
 import { getTunnelAutoHopAggregate, recordTunnelAutoHopLatency } from "./tunnelAutoLatencyState";
 import { getTunnelMultiEntryLatency, recordTunnelMultiEntryLatency } from "./tunnelMultiEntryLatencyState";
+import { tunnelMultiEntryProbeMessage } from "./tunnelMultiEntryProbeMessage";
 import { completeLookingGlassAgentTask, updateLookingGlassAgentTaskProgress, type LookingGlassMethod } from "./lookingGlassAgentTasks";
 import { completeIperf3AgentTask } from "./iperf3AgentTasks";
 import { completePluginAgentTask } from "./pluginAgentTasks";
@@ -579,6 +582,23 @@ agentRouter.post("/api/agent/looking-glass-progress", async (req: Request, res: 
   }
 });
 
+agentRouter.post("/api/agent/ip-switch-claim", async (req: Request, res: Response) => {
+  try {
+    const host = await getAgentHostIdentityFromRequest(req);
+    if (!host) { res.status(401).json({ error: "Invalid token" }); return; }
+    const taskId = req.body?.taskId;
+    const allowed = typeof taskId === "string" && await claimIpSwitchAgentTask(host.id, taskId, (serviceId, id, ip) => withKeyedTaskLock(`probe-health-service:${serviceId}`, () => validateIpSwitchClaim(host.id, serviceId, id, ip)));
+    res.json({ allowed });
+  } catch { res.status(500).json({ error: "IP switch claim failed" }); }
+});
+agentRouter.post("/api/agent/ip-switch-result", async (req: Request, res: Response) => {
+  try {
+    const host = await getAgentHostIdentityFromRequest(req);
+    if (!host) { res.status(401).json({ error: "Invalid token" }); return; }
+    res.json({ success: completeIpSwitchAgentTask(host.id, req.body?.result) });
+  } catch { res.status(500).json({ error: "IP switch result failed" }); }
+});
+
 agentRouter.post("/api/agent/iperf3-result", async (req: Request, res: Response) => {
   try {
     const host = await getAgentHostIdentityFromRequest(req);
@@ -1113,6 +1133,17 @@ agentRouter.post("/api/agent/tcping", async (req: Request, res: Response) => {
       const multiEntryGeneration = `${topologyKey}:entries:${orderedEntryHostIds.join(",")}`;
       const relayFailover = isTunnelRelayFailover(tunnel, hops);
       const relayCandidateCount = relayFailover ? tunnelRelayCandidates(hops).length : 0;
+      const liveProbeMessage = (pathKey: string, hopCount: number, totalLatencyMs: number | null) => {
+        const snapshot = tunnelMultiEntryProbeMessage({
+          tunnelId, expectedEntryHostIds: orderedEntryHostIds, hopCount,
+          generation: multiEntryGeneration, pathKey, totalLatencyMs,
+        });
+        if (snapshot?.missingEntryHostIds.length && snapshot.sampleAgeMs >= 30_000
+          && shouldLogReport(`tunnel-probe-missing:${tunnelId}`, 5 * 60_000)) {
+          console.warn(`[TunnelProbe] incomplete tunnel=${tunnelId} path=${pathKey} missingEntryHosts=${snapshot.missingEntryHostIds.join(",")} expectedEntries=${orderedEntryHostIds.length}; no fresh Agent samples, not a confirmed network timeout`);
+        }
+        return snapshot?.message;
+      };
       const branchByKey = new Map<string, { key: string; label: string; latencyMs: number | null; isTimeout: boolean; probeCount?: number; probeSuccesses?: number }>();
       for (const report of reports) {
         if (!await validateTunnelProbeSource(Number(host.id), tunnel, report, { hops, exitNodes, entryHostIds, topologyKey })) continue;
@@ -1180,7 +1211,7 @@ agentRouter.post("/api/agent/tcping", async (req: Request, res: Response) => {
             seriesKey: "total",
             seriesLabel: aggregate.partial ? "可用入口最大延迟" : "多入口最大延迟",
             recordedAt,
-          }, { preserveMessage: true });
+          }, { preserveMessage: true, message: liveProbeMessage("default", hasHop ? hopCount : 1, aggregate.latencyMs) });
           if (aggregate.success && !tunnel.isRunning) {
             await db.updateTunnelRunningStatus(tunnelId, true);
             tunnel.isRunning = true;
@@ -1322,6 +1353,12 @@ agentRouter.post("/api/agent/tcping", async (req: Request, res: Response) => {
         }, { preserveMessage: true, updateTunnel: false });
       });
       const summary = summarizeTunnelBranches(branches);
+      // The total is the maximum available alternative, not every branch
+      // concatenated. Its diagram must describe that same path and generation.
+      const representative = [...branches].sort((a, b) => Number(b.latencyMs || 0) - Number(a.latencyMs || 0))[0];
+      const currentProbeMessage = multiEntry && representative
+        ? liveProbeMessage(representative.key, relayFailover ? 2 : Math.max(1, hops.length - 1), summary.latencyMs)
+        : undefined;
       await db.insertTunnelLatencyStat({
         tunnelId,
         latencyMs: summary.latencyMs,
@@ -1331,7 +1368,7 @@ agentRouter.post("/api/agent/tcping", async (req: Request, res: Response) => {
         seriesKey: "total",
         seriesLabel: summary.partial ? "可用出口最大延迟" : "最大延迟",
         recordedAt,
-      }, { preserveMessage: true });
+      }, { preserveMessage: true, message: currentProbeMessage });
       if (!summary.unavailable && !tunnel.isRunning) await db.updateTunnelRunningStatus(tunnelId, true);
     }));
     const needsForwardGroupHealthTopology = forwardGroupResults.some((report) => {
@@ -1453,6 +1490,7 @@ agentRouter.post("/api/agent/tcping", async (req: Request, res: Response) => {
     });
     if (serviceStats.length > 0) {
       await db.insertHostProbeServiceStats(serviceStats);
+      void observeProbeHealth(host, serviceResults).catch(() => console.warn(`[ChinaHealth] observation failed host=${host.id}`));
     }
 
     const reportCandidates = await db.getForwardRulesByIds(results.map(report => Number(report.ruleId || 0))) as any[];

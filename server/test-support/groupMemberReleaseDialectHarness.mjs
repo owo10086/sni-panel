@@ -51,7 +51,9 @@ try {
   await runtime.executeRaw("UPDATE " + q("forward_rules") + " SET " + q("hostId") + "=? WHERE " + q("id") + "=?", [oldHost, ruleId]);
   assert.equal((await hosts.getHostRuleDeleteBlockers(oldHost)).managedRuleCount, 0);
   assert.equal(Number((await readOwner())[0].hostId), newHost);
-  await hostsRouter.createCaller(context).delete({ id: oldHost });
+  await assert.rejects(() => hostsRouter.createCaller(context).delete({ id: oldHost }), /主机离线.*规则已停止/, "offline pending cleanup must require explicit confirmation");
+  assert.ok(await hosts.getHostById(oldHost), "rejected deletion must preserve the host");
+  await hostsRouter.createCaller(context).delete({ id: oldHost, confirmOfflineCleanup: true });
   assert.equal(Number((await readOwner())[0].hostId), newHost);
   const live = await runtime.queryRaw("SELECT COUNT(*) AS count FROM " + q("forward_rules") +
     " WHERE " + q("hostId") + "=? AND " + q("pendingDelete") + "=?", [oldHost, boolValue(false)]);

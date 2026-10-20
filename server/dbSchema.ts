@@ -149,6 +149,13 @@ async function backfillPostgresqlLastAutoTrafficReset(pool: pg.Pool) {
 }
 
 const tables: TableDef[] = [
+  // Provider credentials and action state must be reconfigured after core merge migrations.
+  { name: "host_probe_health", columns: [c("id", "id"), c("serviceId", "int", { notNull: true }), c("hostId", "int", { notNull: true }), c("config", "text", { notNull: true }), c("hookCiphertext", "longtext"), c("state", "text"), c("updatedAt", "epoch", { notNull: true })], unique: [["serviceId"]], indexes: [["hostId"]] },
+  { name: "host_ip_switch_attempts", columns: [c("id", "id"), c("hostId", "int", { notNull: true }), c("serviceId", "int", { notNull: true }), c("incidentId", "varchar", { length: 64, notNull: true }), c("status", "varchar", { length: 40, notNull: true }), c("createdAt", "epoch", { notNull: true }), c("finishedAt", "epoch"), c("newIp", "varchar", { length: 64 }), c("acknowledged", "bool", { notNull: true, default: false })], unique: [["incidentId"]], indexes: [["hostId", "createdAt"], ["serviceId", "createdAt"]] },
+  { name: "operations_alert_state", columns: [c("id", "id"), c("hostId", "int", { notNull: true }), c("metric", "varchar", { length: 16, notNull: true }), c("phase", "varchar", { length: 16, notNull: true }), c("since", "epoch", { notNull: true }), c("lastSeen", "epoch", { notNull: true }), c("peak", "int", { notNull: true })], unique: [["hostId", "metric"]], indexes: [["lastSeen"]] },
+  { name: "operations_alert_events", columns: [c("id", "id"), c("hostId", "int", { notNull: true }), c("hostName", "varchar", { length: 255, notNull: true }), c("metric", "varchar", { length: 16, notNull: true }), c("type", "varchar", { length: 16, notNull: true }), c("value", "int", { notNull: true }), c("createdAt", "epoch", { notNull: true })], indexes: [["createdAt"], ["hostId", "createdAt"]] },
+  // Credentials deliberately do not travel with merge migrations: issue fresh tokens at the destination.
+  { name: "external_mcp_tokens", columns: [c("id", "id"), c("userId", "int", { notNull: true }), c("name", "varchar", { length: 80, notNull: true }), c("tokenHash", "varchar", { length: 64, notNull: true }), c("prefix", "varchar", { length: 20, notNull: true }), c("expiresAt", "epoch", { notNull: true }), c("createdAt", "epoch", { notNull: true }), c("lastUsedAt", "epoch")], unique: [["tokenHash"]], indexes: [["userId"], ["expiresAt"]] },
   { name: "operations_traffic_daily", columns: [c("id", "id"), c("dayStart", "epoch", { notNull: true }), c("ruleId", "int", { notNull: true }), c("hostId", "int", { notNull: true }), c("userId", "int", { notNull: true }), c("logicalRuleId", "int", { notNull: true }), c("resourceKey", "varchar", { length: 64, notNull: true }), c("ruleName", "varchar", { length: 255, notNull: true }), c("hostName", "varchar", { length: 255, notNull: true }), c("resourceName", "varchar", { length: 255, notNull: true }), c("bytesIn", "bigint", { notNull: true, default: 0 }), c("bytesOut", "bigint", { notNull: true, default: 0 }), c("connections", "bigint", { notNull: true, default: 0 })], unique: [["dayStart", "ruleId", "hostId", "userId", "resourceKey"]], indexes: [["dayStart", "userId"], ["logicalRuleId", "dayStart"], ["hostId", "dayStart"], ["resourceKey", "dayStart"]] },
   { name: "operations_source_daily", columns: [c("id", "id"), c("dayStart", "epoch", { notNull: true }), c("ruleId", "int", { notNull: true }), c("hostId", "int", { notNull: true }), c("ip", "varchar", { length: 64, notNull: true }), c("userId", "int", { notNull: true }), c("logicalRuleId", "int", { notNull: true }), c("bytesIn", "bigint", { notNull: true, default: 0 }), c("bytesOut", "bigint", { notNull: true, default: 0 }), c("unknownSamples", "bigint", { notNull: true, default: 0 }), c("knownSamples", "bigint", { notNull: true, default: 0 }), c("lastSeen", "epoch", { notNull: true })], unique: [["dayStart", "ruleId", "hostId", "ip"]], indexes: [["dayStart", "ip"], ["userId", "dayStart"], ["hostId", "dayStart"]] },
   { name: "operations_source_status", columns: [c("id", "id"), c("hostId", "int", { notNull: true }), c("status", "varchar", { length: 32, notNull: true }), c("lastSeen", "epoch", { notNull: true })], unique: [["hostId"]], indexes: [["lastSeen"]] },
@@ -276,6 +283,7 @@ const tables: TableDef[] = [
     columns: [
       c("id", "id"), c("name", "text", { notNull: true }), c("ip", "text", { notNull: true }),
       c("ipv4", "text"), c("ipv6", "text"), c("hostType", "varchar", { length: 32, notNull: true, default: "slave" }),
+      c("ipv4Addresses", "text"), c("ipv6Addresses", "text"), c("preferredIpv4", "text"), c("preferredIpv6", "text"),
       c("agentToken", "text"), c("entryIp", "text"), c("tunnelEntryIp", "text"), c("osInfo", "text"), c("cpuInfo", "text"),
       c("memoryTotal", "bigint"), c("agentVersion", "text"),
       c("mimicAvailable", "bool"), c("mimicVersion", "text"), c("mimicStatus", "varchar", { length: 64 }),
@@ -299,6 +307,8 @@ const tables: TableDef[] = [
       c("trafficAutoReset", "bool", { notNull: true, default: false }), c("trafficResetDay", "int", { notNull: true, default: 1 }),
       c("lastTrafficReset", "epoch"), c("ddnsEnabled", "bool", { notNull: true, default: false }), c("ddnsDomain", "text"),
       c("ddnsRecordType", "varchar", { length: 8, notNull: true, default: "A" }), c("ddnsIpVersion", "varchar", { length: 8, notNull: true, default: "ipv4" }),
+      c("ddnsAddressMode", "varchar", { length: 16, notNull: true, default: "primary" }),
+      c("ddnsRecordSetManaged", "bool", { notNull: true, default: false }),
       c("lastDdnsValue", "text"), c("lastDdnsAt", "epoch"), c("lastDdnsError", "text"), c("networkInterface", "text"), c("sortOrder", "int", { notNull: true, default: 0 }),
       c("geoCountryCode", "varchar", { length: 8 }), c("geoCountryName", "text"), c("geoRegion", "text"), c("geoEmoji", "varchar", { length: 16 }),
       c("geoLatitudeMicro", "int"), c("geoLongitudeMicro", "int"), c("geoUpdatedAt", "epoch"),
@@ -493,7 +503,7 @@ const tables: TableDef[] = [
   { name: "user_subscriptions", columns: [c("id", "id"), c("userId", "int", { notNull: true }), c("planId", "int", { notNull: true }), c("status", "varchar", { length: 32, notNull: true, default: "active" }), c("source", "varchar", { length: 32, notNull: true, default: "admin" }), c("paymentOrderNo", "text"), c("planSnapshot", "text"), c("portRangeStart", "int"), c("portRangeEnd", "int"), c("nextTrafficResetAt", "epoch"), c("lastTrafficResetAt", "epoch"), c("userDismissedAt", "epoch"), c("adminDismissedAt", "epoch"), c("startedAt", "epoch", { notNull: true, default: "now" }), c("expiresAt", "epoch"), c("createdAt", "epoch", { notNull: true, default: "now" }), c("updatedAt", "epoch", { notNull: true, default: "now" })], indexes: [["userId", "status", "expiresAt"], ["planId"], ["paymentOrderNo"]] },
   { name: "user_traffic_addons", columns: [c("id", "id"), c("userId", "int", { notNull: true }), c("subscriptionId", "int", { notNull: true }), c("planId", "int", { notNull: true }), c("addonId", "int"), c("trafficBytes", "bigint", { notNull: true, default: 0 }), c("priceCents", "bigint", { notNull: true, default: 0 }), c("source", "varchar", { length: 32, notNull: true, default: "user" }), c("status", "varchar", { length: 32, notNull: true, default: "active" }), c("operatorUserId", "int"), c("description", "text"), c("cycleResetAt", "epoch"), c("expiresAt", "epoch"), c("expiredAt", "epoch"), c("createdAt", "epoch", { notNull: true, default: "now" }), c("updatedAt", "epoch", { notNull: true, default: "now" })], indexes: [["userId", "status", "expiresAt"], ["subscriptionId", "status"], ["addonId"]] },
   { name: "balance_transactions", columns: [c("id", "id"), c("userId", "int", { notNull: true }), c("type", "varchar", { length: 32, notNull: true }), c("amountCents", "bigint", { notNull: true }), c("balanceAfterCents", "bigint", { notNull: true }), c("description", "text"), c("operatorUserId", "int"), c("paymentOrderNo", "text"), c("redemptionCodeId", "int"), c("createdAt", "epoch", { notNull: true, default: "now" })], indexes: [["userId", "createdAt"], ["paymentOrderNo"]] },
-  { name: "traffic_billing_configs", columns: [c("id", "id"), c("resourceType", "varchar", { length: 16, notNull: true }), c("resourceId", "int", { notNull: true }), c("enabled", "bool", { notNull: true, default: true }), c("requiresPermission", "bool", { notNull: true, default: false }), c("description", "text"), c("pricePerGbCents", "bigint", { notNull: true, default: 0 }), c("pricePerGbMilliCents", "bigint", { notNull: true, default: 0 }), c("multiplier", "int", { notNull: true, default: 100 }), c("createdAt", "epoch", { notNull: true, default: "now" }), c("updatedAt", "epoch", { notNull: true, default: "now" })], unique: [["resourceType", "resourceId"]], indexes: [["enabled"], ["requiresPermission"]] },
+  { name: "traffic_billing_configs", columns: [c("id", "id"), c("sortOrder", "int", { notNull: true, default: 0 }), c("resourceType", "varchar", { length: 16, notNull: true }), c("resourceId", "int", { notNull: true }), c("enabled", "bool", { notNull: true, default: true }), c("requiresPermission", "bool", { notNull: true, default: false }), c("description", "text"), c("pricePerGbCents", "bigint", { notNull: true, default: 0 }), c("pricePerGbMilliCents", "bigint", { notNull: true, default: 0 }), c("multiplier", "int", { notNull: true, default: 100 }), c("createdAt", "epoch", { notNull: true, default: "now" }), c("updatedAt", "epoch", { notNull: true, default: "now" })], unique: [["resourceType", "resourceId"]], indexes: [["enabled"], ["requiresPermission"]] },
   { name: "traffic_billing_records", columns: [c("id", "id"), c("userId", "int", { notNull: true }), c("ruleId", "int", { notNull: true }), c("resourceType", "varchar", { length: 16, notNull: true }), c("resourceId", "int", { notNull: true }), c("bytes", "bigint", { notNull: true, default: 0 }), c("billedGb", "int", { notNull: true, default: 0 }), c("pricePerGbCents", "bigint", { notNull: true, default: 0 }), c("pricePerGbMilliCents", "bigint", { notNull: true, default: 0 }), c("multiplier", "int", { notNull: true, default: 100 }), c("amountCents", "bigint", { notNull: true, default: 0 }), c("balanceAfterCents", "bigint", { notNull: true, default: 0 }), c("createdAt", "epoch", { notNull: true, default: "now" })], indexes: [["userId", "createdAt"], ["resourceType", "resourceId", "createdAt"], ["ruleId", "createdAt"]] },
   { name: "traffic_billing_usage", columns: [c("id", "id"), c("userId", "int", { notNull: true }), c("resourceType", "varchar", { length: 16, notNull: true }), c("resourceId", "int", { notNull: true }), c("totalBytes", "bigint", { notNull: true, default: 0 }), c("billedGb", "int", { notNull: true, default: 0 }), c("pendingMilliCents", "bigint", { notNull: true, default: 0 }), c("updatedAt", "epoch", { notNull: true, default: "now" })], unique: [["userId", "resourceType", "resourceId"]], indexes: [["resourceType", "resourceId"]] },
   { name: "traffic_billing_rule_usage", columns: [c("id", "id"), c("userId", "int", { notNull: true }), c("ruleId", "int", { notNull: true }), c("resourceType", "varchar", { length: 16, notNull: true }), c("resourceId", "int", { notNull: true }), c("totalBytes", "bigint", { notNull: true, default: 0 }), c("billedGb", "int", { notNull: true, default: 0 }), c("pendingMilliCents", "bigint", { notNull: true, default: 0 }), c("settled", "bool", { notNull: true, default: false }), c("updatedAt", "epoch", { notNull: true, default: "now" })], unique: [["ruleId", "resourceType", "resourceId"]], indexes: [["userId", "resourceType", "resourceId"], ["resourceType", "resourceId"]] },
@@ -599,13 +609,14 @@ function columnSql(kind: SchemaKind, column: ColumnDef, forAlter = false) {
 }
 
 function mysqlKey(table: string, prefix: string, cols: string[]) {
-  const name = quote("mysql", `${prefix}_${table}_${cols.join("_")}`.slice(0, 60));
+  const rawName = `${prefix}_${table}_${cols.join("_")}`.slice(0, 60);
+  const name = quote("mysql", rawName);
   const expr = cols.map((col) => {
     const def = tables.find((t) => t.name === table)?.columns.find((c) => c.name === col);
     const q = quote("mysql", col);
     return def?.type === "text" || def?.type === "longtext" ? `${q}(191)` : q;
   }).join(", ");
-  return { name, expr };
+  return { name, expr, rawName };
 }
 
 function featureEnabledFromLegacySidebar(value: string | null | undefined, feature: "affiliates" | "tickets") {
@@ -618,7 +629,24 @@ function featureEnabledFromLegacySidebar(value: string | null | undefined, featu
 export const affiliateEnabledFromLegacySidebar = (value?: string | null) => featureEnabledFromLegacySidebar(value, "affiliates");
 export const supportTicketsEnabledFromLegacySidebar = (value?: string | null) => featureEnabledFromLegacySidebar(value, "tickets");
 
+async function mysqlSchemaQuery(pool: Pool, sql: string, context: string, duplicateCode?: string) {
+  try {
+    return await pool.query(sql);
+  } catch (error) {
+    const code = String((error as { code?: unknown })?.code || "");
+    const errno = Number((error as { errno?: unknown })?.errno);
+    // Concurrent initializers may have already added this exact column/index.
+    // Permission, data, storage and lock errors must fail initialization.
+    if (duplicateCode && (code === duplicateCode || errno === (duplicateCode === "ER_DUP_FIELDNAME" ? 1060 : 1061))) return;
+    console.error(`[DatabaseSchema] MySQL migration failed ${context} code=${/^[A-Z0-9_]+$/.test(code) ? code : "UNKNOWN"}`);
+    throw error;
+  }
+}
+
 async function ensureMysqlSchema(pool: Pool) {
+  let addedColumns = 0;
+  let addedIndexes = 0;
+  let widenedColumns = 0;
   for (const table of tables) {
     const columns = table.columns.map((column) => columnSql("mysql", column)).filter(Boolean);
     const unique = (table.unique || []).map((cols) => {
@@ -629,22 +657,43 @@ async function ensureMysqlSchema(pool: Pool) {
       const key = mysqlKey(table.name, "idx", cols);
       return `KEY ${key.name} (${key.expr})`;
     });
-    await pool.query(
+    await mysqlSchemaQuery(pool,
       `CREATE TABLE IF NOT EXISTS ${quote("mysql", table.name)} (${[...columns, ...unique, ...indexes].join(", ")}) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+      `operation=create-table table=${table.name}`,
     );
+    const columnResult = await mysqlSchemaQuery(pool, `SHOW COLUMNS FROM ${quote("mysql", table.name)}`, `operation=inspect-columns table=${table.name}`);
+    const existingColumns = new Map((columnResult![0] as Array<{ Field: string; Type: string }>).map(row => [row.Field, row.Type]));
+    const indexResult = await mysqlSchemaQuery(pool, `SHOW INDEX FROM ${quote("mysql", table.name)}`, `operation=inspect-indexes table=${table.name}`);
+    const existingIndexes = new Set((indexResult![0] as Array<{ Key_name: string }>).map(row => row.Key_name));
     for (const column of table.columns) {
       if (column.type === "id") continue;
-      await pool.query(`ALTER TABLE ${quote("mysql", table.name)} ADD COLUMN ${columnSql("mysql", column, true)}`).catch(() => undefined);
-      if (column.type === "longtext") {
+      if (!existingColumns.has(column.name)) {
+        await mysqlSchemaQuery(pool, `ALTER TABLE ${quote("mysql", table.name)} ADD COLUMN ${columnSql("mysql", column, true)}`,
+          `operation=add-column table=${table.name} column=${column.name}`, "ER_DUP_FIELDNAME");
+        addedColumns++;
+      }
+      // Existing LONGTEXT columns need no ALTER on every startup. In
+      // particular, avoid taking needless metadata locks on busy old tables.
+      if (column.type === "longtext" && existingColumns.has(column.name) && existingColumns.get(column.name)?.toLowerCase() !== "longtext") {
         const definition = columnSql("mysql", column, true);
-        await pool.query(`ALTER TABLE ${quote("mysql", table.name)} MODIFY COLUMN ${definition}${column.notNull ? "" : " NULL"}`);
+        await mysqlSchemaQuery(pool, `ALTER TABLE ${quote("mysql", table.name)} MODIFY COLUMN ${definition}${column.notNull ? "" : " NULL"}`,
+          `operation=widen-column table=${table.name} column=${column.name}`);
+        widenedColumns++;
       }
     }
     for (const cols of [...(table.indexes || []), ...(table.unique || [])]) {
       const uniquePrefix = (table.unique || []).some((u) => u.join("|") === cols.join("|")) ? "uniq" : "idx";
       const key = mysqlKey(table.name, uniquePrefix, cols);
-      await pool.query(`ALTER TABLE ${quote("mysql", table.name)} ADD ${uniquePrefix === "uniq" ? "UNIQUE " : ""}INDEX ${key.name} (${key.expr})`).catch(() => undefined);
+      if (!existingIndexes.has(key.rawName)) {
+        await mysqlSchemaQuery(pool, `ALTER TABLE ${quote("mysql", table.name)} ADD ${uniquePrefix === "uniq" ? "UNIQUE " : ""}INDEX ${key.name} (${key.expr})`,
+          `operation=add-index table=${table.name} index=${key.rawName}`, "ER_DUP_KEYNAME");
+        addedIndexes++;
+        existingIndexes.add(key.rawName);
+      }
     }
+  }
+  if (addedColumns || addedIndexes || widenedColumns) {
+    console.info(`[DatabaseSchema] MySQL schema updated columns=${addedColumns} indexes=${addedIndexes} widened=${widenedColumns}`);
   }
   for (const [key, value] of seedSettings) {
     await pool.execute(

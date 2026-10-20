@@ -10,6 +10,7 @@ import { getSniRuntimeGroupStatus, isFailoverSniRuleApplied, sniRuntimeConfirmat
 import { evaluateSniMemberHealthWindows, isSniChinaHealthDecisionFinal, recordSniChinaHealthDecision, sniMemberHealthSummary, type SniMemberHealthObservation } from "../forwardGroupSniHealth";
 import { clearRuleLatencyQueryCaches } from "../ruleLatencyQueryCache";
 import { isIP } from "node:net";
+import { deleteExpiredHistoryRows } from "./historyRetention";
 import { and, asc, desc, eq, inArray, isNotNull, isNull, notInArray, or, sql } from "drizzle-orm";
 import {
   forwardGroupEvents,
@@ -1480,10 +1481,7 @@ export async function getForwardGroupEvents(groupId: number, limit = 50) {
 
 export async function cleanOldForwardGroupEvents(retainHours = 72) {
   const cutoff = Math.floor((Date.now() - retainHours * 3600 * 1000) / 1000);
-  await executeRaw(
-    `DELETE FROM ${quoteIdentifier("forward_group_events")} WHERE ${quoteIdentifier("createdAt")} < ?`,
-    [cutoff],
-  );
+  await deleteExpiredHistoryRows("forward_group_events", "createdAt", cutoff);
 }
 
 async function withForwardChainTargetLabel(test: any, template: any) {
@@ -4425,7 +4423,7 @@ export async function reorderForwardGroupMembers(groupId: number, memberIds: num
   });
 }
 
-export async function syncForwardChainsForHost(hostId: number, previousHost?: any) {
+export async function syncForwardChainsForHost(hostId: number, previousHost?: any, options: { deferEntryDdns?: boolean } = {}) {
   const db = await getDb();
   if (!db) return;
   const currentHost = await getHostById(hostId);
@@ -4442,7 +4440,7 @@ export async function syncForwardChainsForHost(hostId: number, previousHost?: an
   for (const groupId of groupIds) {
     const group = await getForwardGroupById(groupId);
     const mode = groupModeOf(group);
-    if (mode === "entry") await runForwardGroupFailover(groupId);
+    if (mode === "entry" && !options.deferEntryDdns) await runForwardGroupFailover(groupId);
     if (mode === "chain") {
       const members = sortedMembers(group) as any[];
       const entryMembers = await chainEntryMembers(group);
