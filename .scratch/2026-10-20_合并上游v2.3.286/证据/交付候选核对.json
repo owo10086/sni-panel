@@ -1,14 +1,14 @@
 {
-  "codeCandidate": "f637e5c30e92cfec99a85cb1d37c6a03f69a5c18",
+  "codeCandidate": "c69717857e4057bf7d4491e186520fcff90e2786",
   "before": "563b1c691827f7ca13d3e8a687663b65f99f6b53",
   "upstream": "aca5d5dfb645393b6925f155ff7258006f46204e",
-  "fingerprintEntries": 1439,
-  "changedDeliveryFiles": 193,
+  "fingerprintEntries": 1441,
+  "changedDeliveryFiles": 195,
   "originalFiles": 51,
   "originalUnchanged": true,
   "nativeExcluded": 144,
   "allCandidateOidsRechecked": true,
-  "oidRecheckEvidence": "主代理工具运行记录：1439项全部一致；未用预合并片段代替最终指纹。",
+  "oidRecheckEvidence": "主代理工具运行记录：修补后1441项全部一致，原有51份保持。",
   "versions": {
     "panel": "3.4.1",
     "agent": "3.4.0",
@@ -26,5 +26,5 @@
   "pushed": false,
   "deployed": false,
   "manualAcceptance": "未进行",
-  "temporaryDatabaseContainers": "forwardx-286-mysql-test、forwardx-286-postgres-test已停止，均由--rm自动移除"
+  "temporaryDatabaseContainers": "初次检查两个容器和修补复核两个容器均已停止并--rm移除；浏览器夹具与自建标签已清理。"
 }

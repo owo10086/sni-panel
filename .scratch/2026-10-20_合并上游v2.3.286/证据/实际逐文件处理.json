@@ -14776,7 +14776,7 @@
         "kind": "blob",
         "oid": "e76d1582f6eaa59b027f5e8fbe3a41d3c812530e"
       },
-      "finalOid": "1234f0bf6867c82c8066cc6ad242ed045fb19cf0",
+      "finalOid": "2fcd25094b1c551e11facce0c44a08f565f5c306",
       "stateBefore": "两端不同",
       "result": "兼容纳入；本轮已改变",
       "changedByRound": true,
@@ -21045,7 +21045,7 @@
         "kind": "blob",
         "oid": "a5eeef0a1a3e4708bd0cbf364f70ae54989431e5"
       },
-      "finalOid": "5f5b557f51337f4f472f12622fc65187af505fe0",
+      "finalOid": "a7aa3b825a97a8545980c2596eb84c659ff40555",
       "stateBefore": "仅上游有",
       "result": "纳入；本轮已改变",
       "changedByRound": true,
@@ -21288,7 +21288,7 @@
       "path": "server/monitorRetention.fixture.ts",
       "before": null,
       "target": null,
-      "finalOid": "486738158dbee3645c2f81c157b25248cc233f15",
+      "finalOid": "2fe09e12b08ec2830cec4bbeea88214ef6418a5c",
       "stateBefore": "本轮新增兼容回归",
       "result": "为审查发现的分批清理与多进程上限补充真实回归",
       "changedByRound": true,

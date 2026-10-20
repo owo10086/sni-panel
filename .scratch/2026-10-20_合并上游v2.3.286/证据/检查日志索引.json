@@ -186,6 +186,12 @@
     "tapSummaries": []
   },
   {
+    "path": "证据/最终MySQL准备.log",
+    "sha256": "96ca857f06db95cf4543eea0763dacb2194b378d7ebe079a94f4c002c095581b",
+    "bytes": 37,
+    "tapSummaries": []
+  },
+  {
     "path": "证据/服务端完整检查.log",
     "sha256": "db2e5aa24f31d8e1c192786c8691f0750143768c260fb17c17bb73a418430080",
     "bytes": 716183,
@@ -467,6 +473,59 @@
     "path": "证据/运行时/fxp-linux-test.log",
     "sha256": "8e7b152c93de20346f8a9e59d2fef92dbeb9273b6b949abc91c10042fc74d066",
     "bytes": 59453,
+    "tapSummaries": []
+  },
+  {
+    "path": "证据/重复读修补MySQL最终.log",
+    "sha256": "40baceb3dc536be4e644c0b1e0c9358d696f07b5f3bf31849234ec4801206ec2",
+    "bytes": 1168,
+    "tapSummaries": []
+  },
+  {
+    "path": "证据/重复读修补专项.log",
+    "sha256": "6907c50a331bfb6d051d2074282e18f0a573e8f36a8c5c51a8cde6d1a1a66840",
+    "bytes": 3186,
+    "tapSummaries": [
+      "# tests 8",
+      "# pass 8",
+      "# fail 0",
+      "# skipped 0"
+    ]
+  },
+  {
+    "path": "证据/重复读修补后实库.log",
+    "sha256": "512f22d7de43a9d8419c65952a4fb1a002484ecddf9a78f01b99c51e06849151",
+    "bytes": 1213,
+    "tapSummaries": []
+  },
+  {
+    "path": "证据/重复读修补构建.log",
+    "sha256": "dd5175410aa165b9c818de1b04a75235420d56f34394fcd8f08810afdd734669",
+    "bytes": 22460,
+    "tapSummaries": []
+  },
+  {
+    "path": "证据/重复读修补类型.log",
+    "sha256": "60ecb67fe2e45718bfb8a3616038b6b7fdc311f2838a3ebd91556a7af2a9986c",
+    "bytes": 163,
+    "tapSummaries": []
+  },
+  {
+    "path": "证据/重复读准备.log",
+    "sha256": "fdab58166d740c26128314aa9b4133f6e38bd2cd639200421cbeacaaeab522ef",
+    "bytes": 42,
+    "tapSummaries": []
+  },
+  {
+    "path": "证据/重复读问题复现.log",
+    "sha256": "5d0ae6fe1aadd8ea5a0a1e60af3f290588c7b21259983eb2df9552c0a7668885",
+    "bytes": 1837,
+    "tapSummaries": []
+  },
+  {
+    "path": "证据/重复读问题实库确认.log",
+    "sha256": "1e39f8f5076cfdfb26ed40c5b2dc56e4ad5c9a3ed5f954ec5982185fd4ed6718",
+    "bytes": 275,
     "tapSummaries": []
   },
   {

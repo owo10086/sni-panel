@@ -1,0 +1,29 @@
+{
+  "head": "c69717857e4057bf7d4491e186520fcff90e2786",
+  "files": [
+    {
+      "path": "server/operationsMonitor.ts",
+      "sha256": "4fa9ba8eff5518ef3a86850ec93eb7c74db25f05264991426eecc693e44aea27"
+    },
+    {
+      "path": "server/hostProbeHealth.ts",
+      "sha256": "2578492158d50cbe0f3c616c2e2eefac26f321b8476047e0bbc66d9e4a651cd7"
+    },
+    {
+      "path": "server/mcpTokens.ts",
+      "sha256": "395b23109ce4e77f4077a14a1539935f1fe59e5fbb0dc5908048c93b00310b22"
+    },
+    {
+      "path": "server/dbSchema.ts",
+      "sha256": "9c1625126019f1491c89154f4c07a37109421ae6b1e8541af9ef87f1e5372e69"
+    },
+    {
+      "path": "server/monitorRetention.fixture.ts",
+      "sha256": "169ca8a0a2fd80382570c1f38eeb26b7895e5e1b02a232eca4893eb98fd4c142"
+    },
+    {
+      "path": "server/monitorRetention.test.ts",
+      "sha256": "ec3a6e6319a1434bee91de008dea826dc9b735661afc04e45bb6174a06604ab6"
+    }
+  ]
+}

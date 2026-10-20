@@ -7,11 +7,12 @@ import { quoteIdentifier as q, boolLiteral } from "./dbCompat";
 import { ensureDatabaseSchema } from "./dbSchema";
 import { cleanMonitorHistory } from "./operationsMonitor";
 import { cleanProbeHealthHistory } from "./hostProbeHealth";
-import { createMcpToken, listMcpTokens } from "./mcpTokens";
+import { createMcpToken, listMcpTokens, McpTokenLimitError } from "./mcpTokens";
 
 // The test runner always supplies a dedicated temporary database explicitly.
 const config = JSON.parse(fs.readFileSync(process.env.FORWARDX_TEST_RETENTION_CONFIG!, "utf8"));
 await runtime.connectDatabase(config);
+if (runtime.getDatabaseKind() === "postgresql") console.log("PostgreSQL isolation:", (await runtime.queryRaw<any>("SHOW default_transaction_isolation"))[0].default_transaction_isolation);
 if (process.argv.includes("--token-worker")) {
   try {
     process.send!({ type: "ready" });
@@ -20,7 +21,7 @@ if (process.argv.includes("--token-worker")) {
       await createMcpToken(1, `concurrent-${process.pid}`, 7);
       process.send!({ type: "result", created: true });
     } catch (error) {
-      if (!(error instanceof Error) || !/10/.test(error.message)) throw error;
+      if (!(error instanceof McpTokenLimitError)) throw error;
       process.send!({ type: "result", created: false });
     }
   } finally { await runtime.closeDatabase(); }

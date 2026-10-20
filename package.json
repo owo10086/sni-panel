@@ -58,7 +58,7 @@
     "test:billing-export": "node --import tsx --test server/billingExport.test.ts server/billingPagination.test.ts client/src/lib/billingExport.test.ts client/src/lib/fileDownload.test.ts",
     "test:host-addresses": "node --import tsx --test server/hostMultiIp.test.ts server/hostDdns.test.ts client/src/components/hosts/HostAddressSelectors.test.tsx",
     "test:china-health": "node --import tsx --test server/hostProbeHealth.test.ts client/src/components/hosts/HostChinaHealthSettings.test.tsx",
-    "test:observability": "node --import tsx --test server/observability.test.ts",
+    "test:observability": "node --import tsx --test server/observability.test.ts server/monitorRetention.test.ts",
     "test:startup": "node --import tsx --test client/src/lib/dashboardCache.test.ts client/src/lib/moduleResource.test.ts client/src/lib/siteFavicon.test.tsx client/src/components/PanelStartView.test.tsx client/src/components/RoutePage.test.tsx server/clientStatic.test.ts scripts/client-delivery-plugin.test.ts",
     "test:login-ui": "node --import tsx --test client/src/components/LoginLayout.test.tsx client/src/components/ui/ui-copy.test.tsx",
     "test:database-upgrade": "node --import tsx --test server/mysqlSchemaMigration.test.ts server/historyMaintenance.test.ts server/databaseStartupRetention.test.ts server/mysqlLongTextSchema.test.ts server/historyCleanupIndexes.test.ts server/mysqlUpgrade.integration.test.ts"
