@@ -169,4 +169,10 @@ ForwardX Agent includes the third-party userspace WireGuard implementation under
 
 ## Star history
 
-[![Stargazers over time](https://starchart.cc/owo10086/sni-panel.svg)](https://starchart.cc/owo10086/sni-panel)
+<a href="https://star-history.com/#owo10086/sni-panel&amp;Date">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=owo10086/sni-panel&amp;type=Date&amp;theme=dark" />
+    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=owo10086/sni-panel&amp;type=Date" />
+    <img alt="sni-panel Star History" src="https://api.star-history.com/svg?repos=owo10086/sni-panel&amp;type=Date" />
+  </picture>
+</a>

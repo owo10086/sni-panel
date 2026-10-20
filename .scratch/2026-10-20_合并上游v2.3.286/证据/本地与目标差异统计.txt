@@ -1,0 +1,655 @@
+ .env.example                                       |    2 +-
+ .github/workflows/android-apk.yml                  |   13 +-
+ .github/workflows/ci.yml                           |   46 +-
+ .github/workflows/docker-image.yml                 |   14 +-
+ .github/workflows/docs.yml                         |    3 +-
+ .github/workflows/ios-ipa.yml                      |  112 +
+ .github/workflows/release-agent.yml                |    3 +
+ .github/workflows/release-panel.yml                |    6 -
+ .gitignore                                         |    5 -
+ AGENTS.md                                          |    5 -
+ CHANGELOG.en.md                                    |  382 +---
+ CHANGELOG.md                                       |  384 +---
+ CLAUDE.md                                          |   13 -
+ CONTEXT.md                                         |  101 -
+ README.en.md                                       |  170 +-
+ README.md                                          |  119 +-
+ THIRD_PARTY_NOTICES.md                             |   15 +
+ agent/action_status.go                             |    4 -
+ agent/actions.go                                   |    9 +-
+ agent/fxp_additive_network_test.go                 |  367 ---
+ agent/fxp_additive_sync.go                         |   55 +-
+ agent/fxp_spec_test.go                             |  419 +---
+ agent/gost_additive_sync.go                        |   91 +-
+ agent/gost_additive_sync_test.go                   |   46 -
+ agent/gost_probe_replacement_test.go               |   29 -
+ agent/heartbeat_identity_test.go                   |   83 -
+ agent/ip_switch.go                                 |  256 +++
+ agent/ip_switch_test.go                            |  163 ++
+ agent/main.go                                      |  978 +-------
+ agent/managed_configs.go                           |   56 +-
+ agent/managed_configs_test.go                      |   26 -
+ agent/port_access_limits_linux_test.go             |   31 -
+ agent/port_occupancy.go                            |  382 ----
+ agent/port_occupancy_test.go                       |  261 ---
+ agent/public_addresses.go                          |  113 +
+ agent/public_addresses_test.go                     |   69 +
+ agent/runtime_persistence.go                       |   28 +-
+ agent/sni_forward_group_integration_test.go        |  131 --
+ agent/source_analytics_test.go                     |   17 -
+ agent/tcping_report_gate.go                        |   10 +-
+ android/app/keystore/community-release.p12         |  Bin 0 -> 2662 bytes
+ .../myapp/ExampleInstrumentedTest.java             |   26 -
+ android/app/src/main/AndroidManifest.xml           |  101 +-
+ .../main/java/com/forwardx/app/AppIconPlugin.java  |   71 +
+ .../main/java/com/forwardx/app/MainActivity.java   |    9 +-
+ .../ic_launcher_ember_dark_theme_background.xml    |    7 +
+ .../ic_launcher_ember_light_theme_background.xml   |    7 +
+ .../main/res/drawable/ic_launcher_foreground.xml   |   29 +-
+ .../ic_launcher_forest_dark_theme_background.xml   |    7 +
+ .../ic_launcher_forest_light_theme_background.xml  |    7 +
+ .../ic_launcher_ink_dark_theme_background.xml      |    7 +
+ .../main/res/drawable/ic_launcher_monochrome.xml   |    6 +
+ .../ic_launcher_sakura_dark_theme_background.xml   |    7 +
+ .../ic_launcher_sakura_light_theme_background.xml  |    7 +
+ .../ic_launcher_teal_dark_theme_background.xml     |    7 +
+ .../ic_launcher_teal_light_theme_background.xml    |    7 +
+ .../res/drawable/ic_launcher_theme_background.xml  |    7 +
+ .../ic_launcher_wisteria_dark_theme_background.xml |    7 +
+ ...ic_launcher_wisteria_light_theme_background.xml |    7 +
+ .../src/main/res/mipmap-anydpi-v26/ic_launcher.xml |    4 +-
+ .../mipmap-anydpi-v26/ic_launcher_ember_dark.xml   |    5 +
+ .../mipmap-anydpi-v26/ic_launcher_ember_light.xml  |    5 +
+ .../mipmap-anydpi-v26/ic_launcher_forest_dark.xml  |    5 +
+ .../mipmap-anydpi-v26/ic_launcher_forest_light.xml |    5 +
+ .../res/mipmap-anydpi-v26/ic_launcher_ink_dark.xml |    5 +
+ .../res/mipmap-anydpi-v26/ic_launcher_round.xml    |    4 +-
+ .../mipmap-anydpi-v26/ic_launcher_sakura_dark.xml  |    5 +
+ .../mipmap-anydpi-v26/ic_launcher_sakura_light.xml |    5 +
+ .../mipmap-anydpi-v26/ic_launcher_teal_dark.xml    |    5 +
+ .../mipmap-anydpi-v26/ic_launcher_teal_light.xml   |    5 +
+ .../ic_launcher_wisteria_dark.xml                  |    5 +
+ .../ic_launcher_wisteria_light.xml                 |    5 +
+ .../src/main/res/mipmap-anydpi-v33/ic_launcher.xml |    6 +
+ .../mipmap-anydpi-v33/ic_launcher_ember_dark.xml   |    6 +
+ .../mipmap-anydpi-v33/ic_launcher_ember_light.xml  |    6 +
+ .../mipmap-anydpi-v33/ic_launcher_forest_dark.xml  |    6 +
+ .../mipmap-anydpi-v33/ic_launcher_forest_light.xml |    6 +
+ .../res/mipmap-anydpi-v33/ic_launcher_ink_dark.xml |    6 +
+ .../res/mipmap-anydpi-v33/ic_launcher_round.xml    |    6 +
+ .../mipmap-anydpi-v33/ic_launcher_sakura_dark.xml  |    6 +
+ .../mipmap-anydpi-v33/ic_launcher_sakura_light.xml |    6 +
+ .../mipmap-anydpi-v33/ic_launcher_teal_dark.xml    |    6 +
+ .../mipmap-anydpi-v33/ic_launcher_teal_light.xml   |    6 +
+ .../ic_launcher_wisteria_dark.xml                  |    6 +
+ .../ic_launcher_wisteria_light.xml                 |    6 +
+ .../app/src/main/res/mipmap-hdpi/ic_launcher.png   |  Bin 1806 -> 4733 bytes
+ .../res/mipmap-hdpi/ic_launcher_ember_dark.png     |  Bin 0 -> 5022 bytes
+ .../res/mipmap-hdpi/ic_launcher_ember_light.png    |  Bin 0 -> 5622 bytes
+ .../res/mipmap-hdpi/ic_launcher_forest_dark.png    |  Bin 0 -> 5040 bytes
+ .../res/mipmap-hdpi/ic_launcher_forest_light.png   |  Bin 0 -> 4417 bytes
+ .../main/res/mipmap-hdpi/ic_launcher_ink_dark.png  |  Bin 0 -> 5685 bytes
+ .../src/main/res/mipmap-hdpi/ic_launcher_round.png |  Bin 1806 -> 4733 bytes
+ .../res/mipmap-hdpi/ic_launcher_sakura_dark.png    |  Bin 0 -> 4888 bytes
+ .../res/mipmap-hdpi/ic_launcher_sakura_light.png   |  Bin 0 -> 4505 bytes
+ .../main/res/mipmap-hdpi/ic_launcher_teal_dark.png |  Bin 0 -> 4333 bytes
+ .../res/mipmap-hdpi/ic_launcher_teal_light.png     |  Bin 0 -> 3937 bytes
+ .../res/mipmap-hdpi/ic_launcher_wisteria_dark.png  |  Bin 0 -> 5236 bytes
+ .../res/mipmap-hdpi/ic_launcher_wisteria_light.png |  Bin 0 -> 4616 bytes
+ .../app/src/main/res/mipmap-mdpi/ic_launcher.png   |  Bin 1130 -> 2765 bytes
+ .../res/mipmap-mdpi/ic_launcher_ember_dark.png     |  Bin 0 -> 2856 bytes
+ .../res/mipmap-mdpi/ic_launcher_ember_light.png    |  Bin 0 -> 3052 bytes
+ .../res/mipmap-mdpi/ic_launcher_forest_dark.png    |  Bin 0 -> 2587 bytes
+ .../res/mipmap-mdpi/ic_launcher_forest_light.png   |  Bin 0 -> 2525 bytes
+ .../main/res/mipmap-mdpi/ic_launcher_ink_dark.png  |  Bin 0 -> 2965 bytes
+ .../src/main/res/mipmap-mdpi/ic_launcher_round.png |  Bin 1130 -> 2765 bytes
+ .../res/mipmap-mdpi/ic_launcher_sakura_dark.png    |  Bin 0 -> 2667 bytes
+ .../res/mipmap-mdpi/ic_launcher_sakura_light.png   |  Bin 0 -> 2757 bytes
+ .../main/res/mipmap-mdpi/ic_launcher_teal_dark.png |  Bin 0 -> 2490 bytes
+ .../res/mipmap-mdpi/ic_launcher_teal_light.png     |  Bin 0 -> 2369 bytes
+ .../res/mipmap-mdpi/ic_launcher_wisteria_dark.png  |  Bin 0 -> 2743 bytes
+ .../res/mipmap-mdpi/ic_launcher_wisteria_light.png |  Bin 0 -> 2767 bytes
+ .../app/src/main/res/mipmap-xhdpi/ic_launcher.png  |  Bin 2551 -> 6648 bytes
+ .../res/mipmap-xhdpi/ic_launcher_ember_dark.png    |  Bin 0 -> 8150 bytes
+ .../res/mipmap-xhdpi/ic_launcher_ember_light.png   |  Bin 0 -> 8425 bytes
+ .../res/mipmap-xhdpi/ic_launcher_forest_dark.png   |  Bin 0 -> 7506 bytes
+ .../res/mipmap-xhdpi/ic_launcher_forest_light.png  |  Bin 0 -> 6266 bytes
+ .../main/res/mipmap-xhdpi/ic_launcher_ink_dark.png |  Bin 0 -> 8865 bytes
+ .../main/res/mipmap-xhdpi/ic_launcher_round.png    |  Bin 2551 -> 6648 bytes
+ .../res/mipmap-xhdpi/ic_launcher_sakura_dark.png   |  Bin 0 -> 7378 bytes
+ .../res/mipmap-xhdpi/ic_launcher_sakura_light.png  |  Bin 0 -> 7631 bytes
+ .../res/mipmap-xhdpi/ic_launcher_teal_dark.png     |  Bin 0 -> 6349 bytes
+ .../res/mipmap-xhdpi/ic_launcher_teal_light.png    |  Bin 0 -> 5711 bytes
+ .../res/mipmap-xhdpi/ic_launcher_wisteria_dark.png |  Bin 0 -> 8005 bytes
+ .../mipmap-xhdpi/ic_launcher_wisteria_light.png    |  Bin 0 -> 6920 bytes
+ .../app/src/main/res/mipmap-xxhdpi/ic_launcher.png |  Bin 3981 -> 12333 bytes
+ .../res/mipmap-xxhdpi/ic_launcher_ember_dark.png   |  Bin 0 -> 13655 bytes
+ .../res/mipmap-xxhdpi/ic_launcher_ember_light.png  |  Bin 0 -> 14735 bytes
+ .../res/mipmap-xxhdpi/ic_launcher_forest_dark.png  |  Bin 0 -> 12617 bytes
+ .../res/mipmap-xxhdpi/ic_launcher_forest_light.png |  Bin 0 -> 10926 bytes
+ .../res/mipmap-xxhdpi/ic_launcher_ink_dark.png     |  Bin 0 -> 15364 bytes
+ .../main/res/mipmap-xxhdpi/ic_launcher_round.png   |  Bin 3981 -> 12333 bytes
+ .../res/mipmap-xxhdpi/ic_launcher_sakura_dark.png  |  Bin 0 -> 13356 bytes
+ .../res/mipmap-xxhdpi/ic_launcher_sakura_light.png |  Bin 0 -> 11749 bytes
+ .../res/mipmap-xxhdpi/ic_launcher_teal_dark.png    |  Bin 0 -> 10732 bytes
+ .../res/mipmap-xxhdpi/ic_launcher_teal_light.png   |  Bin 0 -> 9392 bytes
+ .../mipmap-xxhdpi/ic_launcher_wisteria_dark.png    |  Bin 0 -> 14254 bytes
+ .../mipmap-xxhdpi/ic_launcher_wisteria_light.png   |  Bin 0 -> 12387 bytes
+ .../src/main/res/mipmap-xxxhdpi/ic_launcher.png    |  Bin 5630 -> 17453 bytes
+ .../res/mipmap-xxxhdpi/ic_launcher_ember_dark.png  |  Bin 0 -> 21541 bytes
+ .../res/mipmap-xxxhdpi/ic_launcher_ember_light.png |  Bin 0 -> 20605 bytes
+ .../res/mipmap-xxxhdpi/ic_launcher_forest_dark.png |  Bin 0 -> 18580 bytes
+ .../mipmap-xxxhdpi/ic_launcher_forest_light.png    |  Bin 0 -> 15947 bytes
+ .../res/mipmap-xxxhdpi/ic_launcher_ink_dark.png    |  Bin 0 -> 23279 bytes
+ .../main/res/mipmap-xxxhdpi/ic_launcher_round.png  |  Bin 5630 -> 17453 bytes
+ .../res/mipmap-xxxhdpi/ic_launcher_sakura_dark.png |  Bin 0 -> 20418 bytes
+ .../mipmap-xxxhdpi/ic_launcher_sakura_light.png    |  Bin 0 -> 19570 bytes
+ .../res/mipmap-xxxhdpi/ic_launcher_teal_dark.png   |  Bin 0 -> 15616 bytes
+ .../res/mipmap-xxxhdpi/ic_launcher_teal_light.png  |  Bin 0 -> 13442 bytes
+ .../mipmap-xxxhdpi/ic_launcher_wisteria_dark.png   |  Bin 0 -> 20648 bytes
+ .../mipmap-xxxhdpi/ic_launcher_wisteria_light.png  |  Bin 0 -> 17738 bytes
+ .../com/getcapacitor/myapp/ExampleUnitTest.java    |   18 -
+ capacitor.config.ts                                |    4 +
+ client/public/favicon.svg                          |   18 +
+ client/public/logo.svg                             |   21 +
+ client/src/App.tsx                                 |   87 +-
+ client/src/components/AgentTokenManager.tsx        |   13 +-
+ client/src/components/AnimatedStatValue.tsx        |    7 +-
+ client/src/components/AuthCaptchaFields.test.tsx   |   36 +
+ .../src/components/AuthCaptchaSettingsFields.tsx   |   37 +
+ client/src/components/BillingExportButton.tsx      |   33 +
+ client/src/components/DashboardLayout.tsx          |   89 +-
+ client/src/components/DatabaseHealthGate.test.tsx  |   68 +-
+ client/src/components/DatabaseHealthGate.tsx       |   13 +-
+ client/src/components/DiscordAccountCard.tsx       |    3 +-
+ client/src/components/DockerUpgradeCommands.tsx    |   49 -
+ client/src/components/ForwardXLogo.tsx             |   88 +
+ client/src/components/GoogleAccountCard.tsx        |   12 +-
+ client/src/components/HostFlatMap.tsx              |   17 +-
+ client/src/components/ImageCaptchaField.tsx        |   37 +
+ client/src/components/LanguageSelector.tsx         |   19 +-
+ .../src/components/LatencyStabilityStats.test.tsx  |   21 -
+ client/src/components/LatencyStabilityStats.tsx    |    7 +-
+ .../src/components/LinkTestLatencySummary.test.tsx |   30 +-
+ client/src/components/LinkTestLatencySummary.tsx   |   49 +-
+ client/src/components/LoginLayout.test.tsx         |   88 +
+ client/src/components/LoginLayout.tsx              |   97 +
+ client/src/components/McpAccessCard.tsx            |   31 +
+ client/src/components/MobileAppSettings.tsx        |   29 +-
+ client/src/components/MultiHopEditor.tsx           |    6 +-
+ client/src/components/NetworkDiagnostics.tsx       |   18 +
+ client/src/components/OperationsChinaMap.tsx       |   39 +-
+ client/src/components/OperationsMonitorPanel.tsx   |   31 +
+ client/src/components/OperationsRanking.test.tsx   |   31 +
+ client/src/components/OperationsRanking.tsx        |   25 +
+ client/src/components/PanelStartView.test.tsx      |   28 +
+ client/src/components/PanelStartView.tsx           |   19 +
+ client/src/components/PaymentCheckoutDialog.tsx    |    9 +-
+ client/src/components/PersonalizationLayer.tsx     |   20 +
+ client/src/components/ProductSorting.test.tsx      |   21 +
+ client/src/components/RoutePage.test.tsx           |   16 +
+ client/src/components/RoutePage.tsx                |   34 +
+ client/src/components/SeamlessMigrationGate.tsx    |   14 +-
+ client/src/components/SniEntryVersionPreflight.tsx |   81 -
+ .../src/components/SupportTicketMessage.test.tsx   |    2 +-
+ .../src/components/TrafficBillingConfigManager.tsx |   97 +-
+ client/src/components/UserSelect.test.tsx          |   15 +
+ .../components/hosts/HostAddressSelectors.test.tsx |   16 +
+ .../src/components/hosts/HostAddressSelectors.tsx  |   33 +
+ .../hosts/HostChinaHealthSettings.test.tsx         |  101 +
+ .../components/hosts/HostChinaHealthSettings.tsx   |  113 +
+ client/src/components/hosts/HostDeleteDialog.tsx   |    5 +-
+ client/src/components/hosts/HostGroupManager.tsx   |    2 +-
+ .../components/hosts/HostProbeServiceManager.tsx   |  129 +-
+ .../components/plugins/AgentResourceManager.tsx    |    6 +-
+ .../src/components/plugins/agentResourceState.ts   |    7 +-
+ client/src/components/rules/RuleBulkActionBar.tsx  |   31 -
+ client/src/components/rules/RuleBulkCheckbox.tsx   |   36 -
+ client/src/components/rules/RuleBulkEditDialog.tsx |  172 --
+ client/src/components/rules/RuleLimitsForm.tsx     |    4 +-
+ client/src/components/rules/RuleUsageSummary.tsx   |    2 +-
+ client/src/components/rules/useRuleBulkActions.ts  |   85 -
+ .../src/components/rules/useRuleBulkSelection.ts   |   56 -
+ client/src/components/ui/pearl-ui.test.tsx         |   28 +-
+ client/src/components/ui/ui-copy.test.tsx          |   20 +-
+ client/src/i18n/en.json                            | 1311 +++++------
+ client/src/i18n/index.ts                           |    9 +-
+ client/src/i18n/messages.ts                        |    2 -
+ client/src/i18n/runtime.test.ts                    |   29 +-
+ client/src/i18n/ui-coverage.test.tsx               |    7 +
+ client/src/index.css                               |   35 +-
+ client/src/lib/batchOperations.ts                  |    6 +-
+ client/src/lib/billingExport.test.ts               |   26 +
+ client/src/lib/billingExport.ts                    |   33 +
+ client/src/lib/brandLogo.ts                        |   20 +
+ client/src/lib/dashboardCache.test.ts              |  102 +
+ client/src/lib/dashboardCache.ts                   |  116 +
+ client/src/lib/fileDownload.test.ts                |   15 +
+ client/src/lib/fileDownload.ts                     |   14 +
+ client/src/lib/latencyChart.test.ts                |   16 +-
+ client/src/lib/latencyChart.ts                     |   11 -
+ client/src/lib/linkAvailability.test.ts            |   22 -
+ client/src/lib/linkAvailability.ts                 |   23 +-
+ client/src/lib/linkTestNodeMeta.ts                 |    9 +-
+ client/src/lib/loginTransition.ts                  |   16 +
+ client/src/lib/mapTooltipPosition.test.ts          |   52 +
+ client/src/lib/mapTooltipPosition.ts               |   36 +
+ client/src/lib/mobileAppIcon.test.ts               |   68 +
+ client/src/lib/mobileAppIcon.ts                    |   55 +
+ client/src/lib/mobileAppUpdate.test.ts             |   65 +
+ client/src/lib/mobileAppUpdate.ts                  |   31 +
+ client/src/lib/mobileNotifications.ts              |   69 +-
+ client/src/lib/moduleResource.test.ts              |   63 +
+ client/src/lib/moduleResource.ts                   |   28 +
+ client/src/lib/nginxPemFiles.ts                    |    2 +-
+ client/src/lib/nyanpassImport.test.ts              |   14 -
+ client/src/lib/nyanpassImport.ts                   |   21 +-
+ client/src/lib/panelUpgrade.test.ts                |  188 +-
+ client/src/lib/panelUpgrade.ts                     |   60 +-
+ client/src/lib/paymentCheckout.test.ts             |    7 -
+ client/src/lib/paymentCheckout.ts                  |    3 +-
+ client/src/lib/publicMonitor.test.ts               |   36 -
+ client/src/lib/routeModules.ts                     |   51 +
+ client/src/lib/ruleBulkSelection.test.ts           |  145 --
+ client/src/lib/ruleBulkSelection.ts                |  104 -
+ client/src/lib/ruleImport.test.ts                  |   56 -
+ client/src/lib/ruleImport.ts                       |   22 -
+ client/src/lib/ruleSortScope.test.ts               |   39 +
+ client/src/lib/ruleSortScope.ts                    |    7 +
+ client/src/lib/ruleTransfer.test.ts                |  139 --
+ client/src/lib/ruleTransfer.ts                     |  295 +--
+ client/src/lib/siteFavicon.test.tsx                |   79 +
+ client/src/lib/siteFavicon.ts                      |   25 +
+ client/src/lib/sniRuleForm.test.ts                 |  214 --
+ client/src/lib/sniRuleForm.ts                      |  205 --
+ client/src/main.tsx                                |   28 +-
+ client/src/pages/Affiliates.test.tsx               |    4 +-
+ client/src/pages/Affiliates.tsx                    |   15 +-
+ client/src/pages/Billing.tsx                       |    2 +
+ client/src/pages/ForwardGroups.tsx                 |   32 +-
+ client/src/pages/Home.tsx                          |   77 +-
+ client/src/pages/HostMonitor.tsx                   |   19 +-
+ client/src/pages/Hosts.tsx                         |   83 +-
+ client/src/pages/Login.tsx                         |  317 +--
+ client/src/pages/LookingGlass.tsx                  |    8 +
+ client/src/pages/Operations.tsx                    |   15 +-
+ client/src/pages/Payments.tsx                      |    2 +-
+ client/src/pages/Plans.tsx                         |   87 +-
+ client/src/pages/Plugins.tsx                       |    2 +-
+ client/src/pages/Profile.tsx                       |    4 +-
+ client/src/pages/PublicHome.tsx                    |   10 +-
+ client/src/pages/Rules.tsx                         | 1672 +++-----------
+ client/src/pages/Settings.tsx                      |  109 +-
+ client/src/pages/Setup.tsx                         |    5 +-
+ client/src/pages/SniEntryPorts.tsx                 |  169 --
+ client/src/pages/Store.tsx                         |    2 +-
+ client/src/pages/Tunnels.tsx                       |  136 +-
+ client/src/pages/Users.tsx                         |    6 +-
+ client/src/pages/Wallet.tsx                        |    4 +-
+ client/src/styles/pearl.css                        |   87 +-
+ docker-compose.yml                                 |    8 +-
+ docs/.vitepress/config.mts                         |   43 +-
+ ...ng-runs-as-a-standalone-fxp-role-at-the-exit.md |   39 -
+ docs/adr/0002-sni-rules-share-one-entry-port.md    |   31 -
+ ...bounded-derived-data-declares-exact-coverage.md |   11 -
+ ...no-host-occupancy-check-during-rule-creation.md |   11 -
+ ...-batch-sni-imports-preserve-per-rule-results.md |   11 -
+ ...6-sni-group-ddns-uses-confirmed-entry-health.md |   35 -
+ ...ort-entry-groups-forward-directly-to-targets.md |   25 -
+ .../0008-host-failover-groups-use-entry-health.md  |   19 -
+ docs/agents/domain.md                              |   51 -
+ docs/agents/issue-tracker.md                       |   30 -
+ docs/agents/triage-labels.md                       |   15 -
+ docs/guide/agent-proxy-manager.en.md               |    2 +-
+ docs/guide/agent-proxy-manager.md                  |    2 +-
+ docs/guide/agent.md                                |   30 +-
+ docs/guide/ai-assistant.md                         |    2 +
+ docs/guide/billing.md                              |   14 +-
+ docs/guide/cloudflare-cdn.md                       |  170 --
+ docs/guide/ddns.md                                 |   22 +-
+ docs/guide/deploy-docker.md                        |   47 +-
+ docs/guide/deploy-local.md                         |    6 +-
+ docs/guide/deploy-panel.md                         |    4 +-
+ docs/guide/development.md                          |   26 +-
+ docs/guide/env-vars.md                             |   14 +-
+ docs/guide/groups.md                               |   25 +-
+ docs/guide/hosts.md                                |   73 +-
+ docs/guide/images/entry-group-overview.png         |  Bin 0 -> 36064 bytes
+ docs/guide/index.md                                |    7 +-
+ docs/guide/interface.md                            |    4 +-
+ docs/guide/mobile-app.md                           |   59 +
+ docs/guide/nyanpass-import.en.md                   |    4 +-
+ docs/guide/nyanpass-import.md                      |   32 -
+ docs/guide/observability-mcp.md                    |  124 +
+ docs/guide/operations.en.md                        |    9 +-
+ docs/guide/operations.md                           |   11 +-
+ docs/guide/paths-logs.md                           |    4 +-
+ docs/guide/payments.md                             |    2 +-
+ docs/guide/port-entry-groups.en.md                 |    8 +-
+ docs/guide/port-entry-groups.md                    |   34 -
+ docs/guide/quick-start.md                          |    2 +-
+ docs/guide/releases.md                             |   64 +-
+ docs/guide/reverse-proxy.md                        |    7 +-
+ docs/guide/rules.md                                |   38 +-
+ docs/guide/sni-routing.en.md                       |   70 -
+ docs/guide/sni-routing.md                          |  237 --
+ docs/guide/traffic-latency.md                      |    4 +-
+ docs/guide/troubleshooting.md                      |   46 -
+ docs/guide/tunnels.md                              |    2 -
+ docs/guide/ui-review.md                            |   67 -
+ docs/guide/uninstall.md                            |   22 +-
+ docs/guide/upgrade-backup.md                       |   78 +-
+ docs/guide/users-billing.md                        |    8 +-
+ docs/index.md                                      |    2 +-
+ .../2026-10-15-manual-rule-import-source-port.md   |  202 --
+ .../2026-10-16-release-removed-group-hosts.md      | 2408 --------------------
+ drizzle/schema.ts                                  |   10 +-
+ forwardx-fxp/additive_control.go                   |   19 +-
+ forwardx-fxp/config.go                             |  113 -
+ forwardx-fxp/config_types.go                       |   16 -
+ forwardx-fxp/main.go                               | 1028 +--------
+ forwardx-fxp/setup_retry_test.go                   |   61 +
+ forwardx-fxp/sni_splitter_test.go                  | 1202 ----------
+ forwardx-fxp/traffic.go                            |   18 +-
+ forwardx-fxp/traffic_test.go                       |   74 +-
+ forwardx-poster.png                                |  Bin 0 -> 1772925 bytes
+ forwardx-poster.prompt.txt                         |   25 +
+ index.html                                         |    2 +
+ ios/.gitignore                                     |   13 +
+ ios/App/App.xcodeproj/project.pbxproj              |  384 ++++
+ .../xcshareddata/IDEWorkspaceChecks.plist          |    8 +
+ ios/App/App/AppDelegate.swift                      |  109 +
+ .../AppIcon.appiconset/AppIcon-512@2x.png          |  Bin 0 -> 49617 bytes
+ .../AppIcon.appiconset/Contents.json               |   14 +
+ .../AppIconEmberDark.appiconset/AppIcon-512@2x.png |  Bin 0 -> 68488 bytes
+ .../AppIconEmberDark.appiconset/Contents.json      |   14 +
+ .../AppIcon-512@2x.png                             |  Bin 0 -> 65444 bytes
+ .../AppIconEmberLight.appiconset/Contents.json     |   14 +
+ .../AppIcon-512@2x.png                             |  Bin 0 -> 59308 bytes
+ .../AppIconForestDark.appiconset/Contents.json     |   14 +
+ .../AppIcon-512@2x.png                             |  Bin 0 -> 52903 bytes
+ .../AppIconForestLight.appiconset/Contents.json    |   14 +
+ .../AppIconInkDark.appiconset/AppIcon-512@2x.png   |  Bin 0 -> 72275 bytes
+ .../AppIconInkDark.appiconset/Contents.json        |   14 +
+ .../AppIcon-512@2x.png                             |  Bin 0 -> 69159 bytes
+ .../AppIconSakuraDark.appiconset/Contents.json     |   14 +
+ .../AppIcon-512@2x.png                             |  Bin 0 -> 64692 bytes
+ .../AppIconSakuraLight.appiconset/Contents.json    |   14 +
+ .../AppIconTealDark.appiconset/AppIcon-512@2x.png  |  Bin 0 -> 55163 bytes
+ .../AppIconTealDark.appiconset/Contents.json       |   14 +
+ .../AppIconTealLight.appiconset/AppIcon-512@2x.png |  Bin 0 -> 48015 bytes
+ .../AppIconTealLight.appiconset/Contents.json      |   14 +
+ .../AppIcon-512@2x.png                             |  Bin 0 -> 66909 bytes
+ .../AppIconWisteriaDark.appiconset/Contents.json   |   14 +
+ .../AppIcon-512@2x.png                             |  Bin 0 -> 60105 bytes
+ .../AppIconWisteriaLight.appiconset/Contents.json  |   14 +
+ ios/App/App/Assets.xcassets/Contents.json          |    6 +
+ .../Assets.xcassets/Splash.imageset/Contents.json  |   23 +
+ .../Splash.imageset/splash-2732x2732-1.png         |  Bin 0 -> 41273 bytes
+ .../Splash.imageset/splash-2732x2732-2.png         |  Bin 0 -> 41273 bytes
+ .../Splash.imageset/splash-2732x2732.png           |  Bin 0 -> 41273 bytes
+ ios/App/App/Base.lproj/LaunchScreen.storyboard     |   42 +
+ ios/App/App/Base.lproj/Main.storyboard             |   19 +
+ ios/App/App/Info.plist                             |   61 +
+ ios/App/App/PrivacyInfo.xcprivacy                  |   19 +
+ ios/App/CapApp-SPM/.gitignore                      |    9 +
+ ios/App/CapApp-SPM/Package.swift                   |   33 +
+ ios/App/CapApp-SPM/README.md                       |    5 +
+ .../CapApp-SPM/Sources/CapApp-SPM/CapApp-SPM.swift |    1 +
+ ios/debug.xcconfig                                 |    1 +
+ package.json                                       |   73 +-
+ pnpm-lock.yaml                                     | 1834 ++++++++++++---
+ scripts/agent-proxy.sh                             |    2 +-
+ scripts/app-icons.test.ts                          |   90 +
+ scripts/benchmark-sni-import.mjs                   |   70 -
+ scripts/build-agent-release.sh                     |    4 +-
+ scripts/build-ios-ipa.mjs                          |  102 +
+ scripts/check-client-delivery.mjs                  |   34 +
+ scripts/check-versions.mjs                         |   26 +-
+ scripts/client-delivery-plugin.test.ts             |   76 +
+ scripts/client-delivery-plugin.ts                  |   66 +
+ scripts/forwardx-manage.sh                         |    2 +-
+ scripts/generate-app-icons.ts                      |  126 +
+ scripts/install-agent.sh                           |    8 +-
+ scripts/install-panel-docker.sh                    |   72 +-
+ scripts/install-panel-local.sh                     |    2 +-
+ scripts/ios-build.test.mjs                         |  101 +
+ scripts/ios-icon.swift                             |   58 +
+ scripts/verify-gost-agent-sync.mjs                 |  343 ---
+ scripts/verify-probe-agent-counters.mjs            |  112 -
+ scripts/verify-seamless-runtime.mjs                |  253 --
+ scripts/verify-sni-agent-recovery.mjs              |  195 --
+ scripts/verify-sni-forward-group-member.mjs        |   61 -
+ scripts/verify-sni-forward-group.mjs               |  192 --
+ scripts/verify-sni-source-cleanup.mjs              |  181 --
+ scripts/verify-sni-traffic-failover.mjs            |  115 -
+ server/_core/systemRouter.ts                       |   23 +-
+ server/affiliates.test.ts                          |    6 -
+ server/agentActionCommands.test.ts                 |   23 -
+ server/agentActionCommands.ts                      |  121 +-
+ server/agentAddressState.ts                        |   29 +-
+ server/agentAssets.test.ts                         |   58 -
+ server/agentAssets.ts                              |    5 +-
+ server/agentEncryptionMiddleware.ts                |   24 +-
+ server/agentEvents.ts                              |   31 -
+ server/agentHeartbeatGate.test.ts                  |    4 +-
+ server/agentHeartbeatRoute.ts                      | 1298 +----------
+ server/agentInstallScripts.test.ts                 |  106 +-
+ server/agentInstallScripts.ts                      |   85 +-
+ server/agentIpSwitchTasks.ts                       |   65 +
+ server/agentProbeCounterReportGate.ts              |   18 +-
+ server/agentReportRoutes.ts                        |  304 +--
+ server/agentRouteUtils.ts                          |    4 -
+ server/agentRoutes.ts                              |   11 +-
+ server/agentSelfTestRoutes.ts                      |    2 +-
+ server/agentStatusRoutes.ts                        |   47 -
+ server/agentTrafficRoute.test.ts                   |   58 +-
+ server/ai/analytics.ts                             |   80 +
+ server/ai/client.test.ts                           |   21 -
+ server/ai/client.ts                                |   17 +-
+ server/ai/panelTools.fixture.ts                    |   46 -
+ server/ai/panelTools.permissions.fixture.ts        |   85 -
+ server/ai/panelTools.test.ts                       |   10 -
+ server/ai/panelTools.ts                            |   91 +-
+ server/ai/planner.ts                               |   11 +-
+ server/ai/preciseQuery.ts                          |   28 +
+ server/ai/resources.ts                             |   16 +
+ server/ai/ruleCreateWizard.ts                      |   14 +-
+ server/ai/workflow.fixture.ts                      |  282 +--
+ server/ai/workflow.test.ts                         |    6 +-
+ server/authCaptcha.test.ts                         |   34 +
+ server/authCaptcha.ts                              |   42 +-
+ server/authCaptchaConfig.ts                        |    9 +
+ server/authCaptchaSettings.fixture.ts              |   70 +-
+ server/authRateLimit.ts                            |    6 +-
+ server/billingExport.test.ts                       |   71 +
+ server/billingExport.ts                            |  140 ++
+ server/billingExportRoutes.ts                      |   69 +
+ server/billingPagination.test.ts                   |   60 +
+ server/botAccounts.ts                              |    2 +-
+ server/botLocale.en.json                           |  324 ---
+ server/botLocale.ts                                |   25 -
+ server/boundedCache.test.ts                        |   25 +-
+ server/boundedCache.ts                             |   18 -
+ server/clientStatic.test.ts                        |   67 +
+ server/clientStatic.ts                             |   52 +
+ server/databaseHealth.test.ts                      |  148 +-
+ server/databaseHealthMonitor.ts                    |    8 +-
+ server/databaseHealthState.ts                      |   73 +-
+ server/databaseStartupRetention.test.ts            |   37 +
+ server/databaseTransaction.test.ts                 |  107 -
+ server/db.ts                                       |   20 +-
+ server/dbRuntime.ts                                |   96 +-
+ server/dbSchema.ts                                 |   83 +-
+ server/deploymentDocs.test.ts                      |    2 +-
+ server/directForwardLoop.ts                        |    6 +-
+ server/discordBot.ts                               |   18 +-
+ server/forwardGroupFailover.test.ts                |  323 +--
+ server/forwardGroupHealthRecheck.ts                |   10 -
+ server/forwardGroupLiveness.test.ts                |    3 +-
+ server/forwardGroupSniHealth.ts                    |  124 -
+ server/forwardGroupTemplateHosts.test.ts           |   67 -
+ server/forwardGroupTemplateHosts.ts                |   46 -
+ server/forwardRuleErrorNotifier.test.ts            |   29 +-
+ server/forwardRuleErrorNotifier.ts                 |   48 +-
+ server/gostTunnelProtocol.ts                       |   11 +-
+ server/groupMemberMutation.ts                      |   17 -
+ server/groupMemberRelease.test.ts                  | 1285 -----------
+ server/historyCleanupIndexes.test.ts               |   22 +
+ server/historyMaintenance.test.ts                  |   45 +
+ server/historyMaintenance.ts                       |   18 +
+ server/hostAvailability.test.ts                    |    9 -
+ server/hostDdns.ts                                 |   64 +-
+ server/hostDeletion.test.ts                        |   61 +-
+ server/hostDeletion.ts                             |   96 +-
+ server/hostGeo.ts                                  |    6 +-
+ server/hostIpSwitchProvider.ts                     |   30 +
+ server/hostMultiIp.fixture.ts                      |   96 +
+ server/hostMultiIp.test.ts                         |   53 +
+ server/hostProbeHealth.fixture.ts                  |  142 ++
+ server/hostProbeHealth.test.ts                     |  107 +
+ server/hostProbeHealth.ts                          |  197 ++
+ server/hostTrafficPolicy.test.ts                   |    8 -
+ server/hostTrafficRuntimePlan.ts                   |    2 -
+ server/imageCaptcha.ts                             |   22 +
+ server/index.ts                                    |   11 +-
+ server/keyedTaskLock.ts                            |   20 -
+ server/latencyAggregation.test.ts                  |    9 -
+ server/latencyHistory.test.ts                      |   43 +-
+ server/linkAccessView.ts                           |    2 +
+ server/localeHint.ts                               |   24 +-
+ server/managementProxy.test.ts                     |   26 +-
+ server/manualForwardChain.test.ts                  |   99 -
+ server/mcpRoutes.ts                                |   90 +
+ server/mcpTokens.ts                                |   28 +
+ server/migration.ts                                |   74 +-
+ server/mysqlLongTextSchema.test.ts                 |    5 +
+ server/mysqlSchemaMigration.test.ts                |   78 +
+ server/mysqlUpgrade.integration.test.ts            |   77 +
+ server/networkDiagnostics.ts                       |   48 +
+ server/notificationBackground.ts                   |    8 -
+ server/notificationSafety.fixture.ts               |  317 ---
+ server/notificationSafety.test.ts                  |   27 -
+ server/observability.fixture.ts                    |  103 +
+ server/observability.test.ts                       |   76 +
+ server/operations.test.ts                          |    8 -
+ server/operationsFinance.test.ts                   |    6 -
+ server/operationsMigration.test.ts                 |   88 -
+ server/operationsMonitor.ts                        |   98 +
+ server/operationsRuleNames.test.ts                 |   55 +
+ server/paginationQueries.test.ts                   |    3 -
+ server/panelDockerInstaller.test.ts                |   41 +-
+ server/panelInstallerAccelerator.test.ts           |   10 +-
+ server/panelSsl.ts                                 |   10 +-
+ server/panelSslCache.test.ts                       |   44 -
+ server/payment.ts                                  |   18 +-
+ server/paymentIntegration.test.ts                  |   24 -
+ server/portAccessLimits.test.ts                    |   21 -
+ server/portAccessLimits.ts                         |    7 +-
+ server/portEntryDiagnostics.test.ts                |    8 +-
+ server/portForwardRuleHosts.test.ts                |   25 +-
+ server/portOccupancy.ts                            |  162 --
+ server/portOccupancyHeartbeat.test.ts              |  327 ---
+ server/portRuleManifest.ts                         |  112 -
+ server/probeCounter.test.ts                        |   59 +-
+ server/productOrder.test.ts                        |   95 +
+ server/repositories/billingRepository.ts           |   57 +-
+ server/repositories/forwardChainSniEntryScope.ts   |  166 --
+ server/repositories/forwardGroupRepository.ts      | 1397 ++----------
+ server/repositories/forwardRuleRepository.ts       |  307 +--
+ server/repositories/forwardTestRepository.ts       |   40 +-
+ server/repositories/historyRetention.ts            |   30 +-
+ server/repositories/hostProbeServiceRepository.ts  |    1 +
+ server/repositories/hostRepository.ts              |  226 +-
+ server/repositories/metricsRepository.ts           |   79 +-
+ server/repositories/operationsFinanceRepository.ts |    2 +-
+ server/repositories/operationsRepository.ts        |   15 +-
+ server/repositories/permissionRepository.ts        |   16 +-
+ server/repositories/probeCounterRepository.ts      |  108 +-
+ server/repositories/productOrder.ts                |   37 +
+ server/repositories/repositoryUtils.ts             |   32 -
+ server/repositories/supportTicketRepository.ts     |    2 +-
+ server/repositories/tokenRepository.ts             |    4 +-
+ server/repositories/trafficBillingRepository.ts    |   41 +-
+ server/repositories/tunnelRepository.ts            |  359 +--
+ server/repositories/userRepository.ts              |   61 +-
+ server/routers.ts                                  |    2 +
+ server/routers/agentTokens.ts                      |   84 +-
+ server/routers/auth.ts                             |   44 +-
+ server/routers/forwardGroups.ts                    |    5 +-
+ server/routers/hosts.ts                            |   97 +-
+ server/routers/lookingGlass.ts                     |    3 +
+ server/routers/mcp.ts                              |   11 +
+ server/routers/operations.ts                       |    4 +
+ server/routers/plans.ts                            |    4 +
+ server/routers/ruleLimitInput.ts                   |   16 +-
+ server/routers/rules.crud.ts                       | 2292 +++++--------------
+ server/routers/rules.ports.ts                      |  236 +-
+ server/routers/rules.selfTest.ts                   |    4 +-
+ server/routers/rules.traffic.ts                    |    9 +-
+ server/routers/rules.ts                            |  254 +--
+ server/routers/telegram.ts                         |    1 -
+ server/routers/trafficBilling.ts                   |    6 +-
+ server/routers/tunnels.ts                          |   89 +-
+ server/ruleLimits.fixture.ts                       |  211 +-
+ server/ruleLimits.ts                               |   31 +-
+ server/ruleOperationOwner.test.ts                  |   16 -
+ server/ruleOwnerSniPermissions.test.ts             |  277 ---
+ server/rulePortFailure.ts                          |   24 -
+ server/rulePortOccupancy.ts                        |   75 -
+ server/rulePortValidation.ts                       |   29 -
+ server/ruleQuotaReservations.ts                    |   38 +-
+ server/rulesPortAvailability.test.ts               |  137 +-
+ server/scheduler.ts                                |   43 +-
+ server/seamlessMigration.fixture.ts                |   46 +-
+ server/seamlessMigration.test.ts                   |   36 -
+ server/seamlessRuntime.fixture.ts                  |   33 -
+ server/services/forwardGroupService.ts             |   89 +-
+ server/sniBatchEdit.test.ts                        |  713 ------
+ server/sniBatchImport.test.ts                      |  113 -
+ server/sniDesiredState.test.ts                     | 2164 ------------------
+ server/sniDirectRuntime.ts                         |   42 -
+ server/sniEntryPort.ts                             |  226 --
+ server/sniEntryPortOverview.ts                     |  172 --
+ server/sniForwardGroup.test.ts                     |  959 --------
+ server/sniForwardGroupHealth.test.ts               |   77 -
+ server/sniRuleRouter.test.ts                       | 1063 ---------
+ server/sniRuleWrite.ts                             |  116 -
+ server/sniRuntimeObservability.test.ts             |   95 -
+ server/sniRuntimeObservability.ts                  |  306 ---
+ server/sniRuntimeRunningState.ts                   |  201 --
+ server/sniSourceMigration.ts                       |   40 -
+ server/supportBundle.test.ts                       |   27 +-
+ server/supportTickets.test.ts                      |   13 -
+ server/telegramBot.ts                              |  727 +++---
+ .../groupMemberReleaseDialectHarness.mjs           |   60 -
+ server/test-support/groupMemberReleaseHarness.ts   |  203 --
+ .../test-support/sniForwardGroupHealthHarness.mjs  |  835 -------
+ server/test-support/sniImportHarness.mjs           |  919 --------
+ server/test-support/sniLiveConnection.mjs          |   96 -
+ server/trafficBatch.test.ts                        |    4 +
+ server/tunnelExitPortAllocation.test.ts            |   64 -
+ server/tunnelManualProbe.test.ts                   |   22 +-
+ server/tunnelManualProbe.ts                        |    6 -
+ server/tunnelMultiEntryLatencyState.test.ts        |   37 +
+ server/tunnelMultiEntryProbeMessage.ts             |   44 +
+ server/tunnelVersionAccess.test.ts                 |   70 -
+ shared/agentDtos.ts                                |   15 +-
+ shared/appIcons.ts                                 |   21 +
+ shared/authCaptcha.ts                              |    7 +
+ shared/clientRoutes.ts                             |   45 +
+ shared/githubAccelerator.test.ts                   |    4 +-
+ shared/githubAccelerator.ts                        |    6 +-
+ shared/hostAddresses.ts                            |   36 +
+ shared/hostChinaHealth.ts                          |   67 +
+ shared/networkTestSummary.ts                       |   30 +
+ shared/operationsMonitor.ts                        |   30 +
+ shared/paymentErrors.ts                            |    1 -
+ shared/probeStatistics.ts                          |    3 -
+ shared/repo.ts                                     |   25 -
+ shared/ruleImport.ts                               |    5 -
+ shared/sni.ts                                      |   42 -
+ shared/supportTickets.ts                           |    2 +-
+ shared/versions.ts                                 |    9 +-
+ vite.config.ts                                     |    4 +-
+ 654 files changed, 15017 insertions(+), 38684 deletions(-)

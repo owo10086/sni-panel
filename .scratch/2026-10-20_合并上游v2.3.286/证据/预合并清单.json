@@ -1,0 +1,1748 @@
+[
+  {
+    "path": ".github/workflows/android-apk.yml",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": ".github/workflows/ci.yml",
+    "handling": "共用内容，拆分本地保护与上游改进",
+    "result": "文本可兼容合并",
+    "conflicts": 0
+  },
+  {
+    "path": ".github/workflows/ios-ipa.yml",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "CHANGELOG.en.md",
+    "handling": "待逐段核对",
+    "result": "需逐段处理",
+    "conflicts": 1
+  },
+  {
+    "path": "CHANGELOG.md",
+    "handling": "待逐段核对",
+    "result": "需逐段处理",
+    "conflicts": 1
+  },
+  {
+    "path": "README.en.md",
+    "handling": "待逐段核对",
+    "result": "需逐段处理",
+    "conflicts": 2
+  },
+  {
+    "path": "README.md",
+    "handling": "待逐段核对",
+    "result": "需逐段处理",
+    "conflicts": 1
+  },
+  {
+    "path": "THIRD_PARTY_NOTICES.md",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "agent/ip_switch.go",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "agent/ip_switch_test.go",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "agent/main.go",
+    "handling": "待逐段核对",
+    "result": "需逐段处理",
+    "conflicts": 2
+  },
+  {
+    "path": "agent/public_addresses.go",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "agent/public_addresses_test.go",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "android/app/src/main/AndroidManifest.xml",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/java/com/forwardx/app/AppIconPlugin.java",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/java/com/forwardx/app/MainActivity.java",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/drawable/ic_launcher_ember_dark_theme_background.xml",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/drawable/ic_launcher_ember_light_theme_background.xml",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/drawable/ic_launcher_foreground.xml",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/drawable/ic_launcher_forest_dark_theme_background.xml",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/drawable/ic_launcher_forest_light_theme_background.xml",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/drawable/ic_launcher_ink_dark_theme_background.xml",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/drawable/ic_launcher_monochrome.xml",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/drawable/ic_launcher_sakura_dark_theme_background.xml",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/drawable/ic_launcher_sakura_light_theme_background.xml",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/drawable/ic_launcher_teal_dark_theme_background.xml",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/drawable/ic_launcher_teal_light_theme_background.xml",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/drawable/ic_launcher_theme_background.xml",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/drawable/ic_launcher_wisteria_dark_theme_background.xml",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/drawable/ic_launcher_wisteria_light_theme_background.xml",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_ember_dark.xml",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_ember_light.xml",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_forest_dark.xml",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_forest_light.xml",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_ink_dark.xml",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_sakura_dark.xml",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_sakura_light.xml",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_teal_dark.xml",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_teal_light.xml",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_wisteria_dark.xml",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_wisteria_light.xml",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-anydpi-v33/ic_launcher.xml",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-anydpi-v33/ic_launcher_ember_dark.xml",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-anydpi-v33/ic_launcher_ember_light.xml",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-anydpi-v33/ic_launcher_forest_dark.xml",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-anydpi-v33/ic_launcher_forest_light.xml",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-anydpi-v33/ic_launcher_ink_dark.xml",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-anydpi-v33/ic_launcher_round.xml",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-anydpi-v33/ic_launcher_sakura_dark.xml",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-anydpi-v33/ic_launcher_sakura_light.xml",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-anydpi-v33/ic_launcher_teal_dark.xml",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-anydpi-v33/ic_launcher_teal_light.xml",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-anydpi-v33/ic_launcher_wisteria_dark.xml",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-anydpi-v33/ic_launcher_wisteria_light.xml",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-hdpi/ic_launcher.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-hdpi/ic_launcher_ember_dark.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-hdpi/ic_launcher_ember_light.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-hdpi/ic_launcher_forest_dark.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-hdpi/ic_launcher_forest_light.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-hdpi/ic_launcher_ink_dark.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-hdpi/ic_launcher_round.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-hdpi/ic_launcher_sakura_dark.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-hdpi/ic_launcher_sakura_light.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-hdpi/ic_launcher_teal_dark.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-hdpi/ic_launcher_teal_light.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-hdpi/ic_launcher_wisteria_dark.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-hdpi/ic_launcher_wisteria_light.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-mdpi/ic_launcher.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-mdpi/ic_launcher_ember_dark.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-mdpi/ic_launcher_ember_light.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-mdpi/ic_launcher_forest_dark.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-mdpi/ic_launcher_forest_light.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-mdpi/ic_launcher_ink_dark.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-mdpi/ic_launcher_round.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-mdpi/ic_launcher_sakura_dark.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-mdpi/ic_launcher_sakura_light.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-mdpi/ic_launcher_teal_dark.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-mdpi/ic_launcher_teal_light.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-mdpi/ic_launcher_wisteria_dark.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-mdpi/ic_launcher_wisteria_light.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xhdpi/ic_launcher.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xhdpi/ic_launcher_ember_dark.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xhdpi/ic_launcher_ember_light.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xhdpi/ic_launcher_forest_dark.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xhdpi/ic_launcher_forest_light.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xhdpi/ic_launcher_ink_dark.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xhdpi/ic_launcher_round.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xhdpi/ic_launcher_sakura_dark.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xhdpi/ic_launcher_sakura_light.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xhdpi/ic_launcher_teal_dark.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xhdpi/ic_launcher_teal_light.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xhdpi/ic_launcher_wisteria_dark.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xhdpi/ic_launcher_wisteria_light.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xxhdpi/ic_launcher_ember_dark.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xxhdpi/ic_launcher_ember_light.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xxhdpi/ic_launcher_forest_dark.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xxhdpi/ic_launcher_forest_light.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xxhdpi/ic_launcher_ink_dark.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xxhdpi/ic_launcher_sakura_dark.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xxhdpi/ic_launcher_sakura_light.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xxhdpi/ic_launcher_teal_dark.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xxhdpi/ic_launcher_teal_light.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xxhdpi/ic_launcher_wisteria_dark.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xxhdpi/ic_launcher_wisteria_light.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_ember_dark.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_ember_light.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_forest_dark.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_forest_light.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_ink_dark.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_sakura_dark.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_sakura_light.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_teal_dark.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_teal_light.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_wisteria_dark.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_wisteria_light.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "client/src/App.tsx",
+    "handling": "共用内容，拆分本地保护与上游改进",
+    "result": "需逐段处理",
+    "conflicts": 1
+  },
+  {
+    "path": "client/src/components/AnimatedStatValue.tsx",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "client/src/components/AuthCaptchaFields.test.tsx",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "client/src/components/AuthCaptchaSettingsFields.tsx",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "client/src/components/BillingExportButton.tsx",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "client/src/components/DashboardLayout.tsx",
+    "handling": "待逐段核对",
+    "result": "需逐段处理",
+    "conflicts": 1
+  },
+  {
+    "path": "client/src/components/DatabaseHealthGate.test.tsx",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "client/src/components/DatabaseHealthGate.tsx",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "client/src/components/ForwardXLogo.tsx",
+    "handling": "待逐段核对",
+    "result": "新增（核对共用文件）"
+  },
+  {
+    "path": "client/src/components/ImageCaptchaField.tsx",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "client/src/components/LanguageSelector.tsx",
+    "handling": "待逐段核对",
+    "result": "文本可兼容合并",
+    "conflicts": 0
+  },
+  {
+    "path": "client/src/components/LinkTestLatencySummary.test.tsx",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "client/src/components/LinkTestLatencySummary.tsx",
+    "handling": "待逐段核对",
+    "result": "需逐段处理",
+    "conflicts": 1
+  },
+  {
+    "path": "client/src/components/LoginLayout.test.tsx",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "client/src/components/LoginLayout.tsx",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "client/src/components/McpAccessCard.tsx",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "client/src/components/NetworkDiagnostics.tsx",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "client/src/components/OperationsChinaMap.tsx",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "client/src/components/OperationsMonitorPanel.tsx",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "client/src/components/OperationsRanking.test.tsx",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "client/src/components/OperationsRanking.tsx",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "client/src/components/PanelStartView.test.tsx",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "client/src/components/PanelStartView.tsx",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "client/src/components/PersonalizationLayer.tsx",
+    "handling": "共用内容，拆分本地保护与上游改进",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "client/src/components/ProductSorting.test.tsx",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "client/src/components/RoutePage.test.tsx",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "client/src/components/RoutePage.tsx",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "client/src/components/TrafficBillingConfigManager.tsx",
+    "handling": "待逐段核对",
+    "result": "需逐段处理",
+    "conflicts": 1
+  },
+  {
+    "path": "client/src/components/UserSelect.test.tsx",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "client/src/components/hosts/HostAddressSelectors.test.tsx",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "client/src/components/hosts/HostAddressSelectors.tsx",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "client/src/components/hosts/HostChinaHealthSettings.test.tsx",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "client/src/components/hosts/HostChinaHealthSettings.tsx",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "client/src/components/hosts/HostProbeServiceManager.tsx",
+    "handling": "待逐段核对",
+    "result": "文本可兼容合并",
+    "conflicts": 0
+  },
+  {
+    "path": "client/src/components/ui/pearl-ui.test.tsx",
+    "handling": "待逐段核对",
+    "result": "文本可兼容合并",
+    "conflicts": 0
+  },
+  {
+    "path": "client/src/components/ui/ui-copy.test.tsx",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "client/src/i18n/en.json",
+    "handling": "待逐段核对",
+    "result": "需逐段处理",
+    "conflicts": 6
+  },
+  {
+    "path": "client/src/i18n/index.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "client/src/i18n/runtime.test.ts",
+    "handling": "待逐段核对",
+    "result": "文本可兼容合并",
+    "conflicts": 0
+  },
+  {
+    "path": "client/src/i18n/ui-coverage.test.tsx",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "client/src/lib/billingExport.test.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "client/src/lib/billingExport.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "client/src/lib/brandLogo.ts",
+    "handling": "共用内容，拆分本地保护与上游改进",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "client/src/lib/dashboardCache.test.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "client/src/lib/dashboardCache.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "client/src/lib/fileDownload.test.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "client/src/lib/fileDownload.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "client/src/lib/loginTransition.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "client/src/lib/mapTooltipPosition.test.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "client/src/lib/mapTooltipPosition.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "client/src/lib/mobileAppIcon.test.ts",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "client/src/lib/mobileAppIcon.ts",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "client/src/lib/moduleResource.test.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "client/src/lib/moduleResource.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "client/src/lib/routeModules.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "client/src/lib/ruleSortScope.test.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "client/src/lib/ruleSortScope.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "client/src/lib/siteFavicon.test.tsx",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "client/src/lib/siteFavicon.ts",
+    "handling": "共用内容，拆分本地保护与上游改进",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "client/src/main.tsx",
+    "handling": "共用内容，拆分本地保护与上游改进",
+    "result": "文本可兼容合并",
+    "conflicts": 0
+  },
+  {
+    "path": "client/src/pages/Affiliates.test.tsx",
+    "handling": "待逐段核对",
+    "result": "文本可兼容合并",
+    "conflicts": 0
+  },
+  {
+    "path": "client/src/pages/Billing.tsx",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "client/src/pages/Home.tsx",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "client/src/pages/Hosts.tsx",
+    "handling": "待逐段核对",
+    "result": "文本可兼容合并",
+    "conflicts": 0
+  },
+  {
+    "path": "client/src/pages/Login.tsx",
+    "handling": "待逐段核对",
+    "result": "需逐段处理",
+    "conflicts": 4
+  },
+  {
+    "path": "client/src/pages/LookingGlass.tsx",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "client/src/pages/Operations.tsx",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "client/src/pages/Plans.tsx",
+    "handling": "待逐段核对",
+    "result": "文本可兼容合并",
+    "conflicts": 0
+  },
+  {
+    "path": "client/src/pages/PublicHome.tsx",
+    "handling": "待逐段核对",
+    "result": "需逐段处理",
+    "conflicts": 1
+  },
+  {
+    "path": "client/src/pages/Rules.tsx",
+    "handling": "待逐段核对",
+    "result": "需逐段处理",
+    "conflicts": 1
+  },
+  {
+    "path": "client/src/pages/Settings.tsx",
+    "handling": "待逐段核对",
+    "result": "文本可兼容合并",
+    "conflicts": 0
+  },
+  {
+    "path": "client/src/pages/Wallet.tsx",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "client/src/styles/pearl.css",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "docs/.vitepress/config.mts",
+    "handling": "网页服务端文档，按本地实际能力对照",
+    "result": "文本可兼容合并",
+    "conflicts": 0
+  },
+  {
+    "path": "docs/guide/ai-assistant.md",
+    "handling": "网页服务端文档，按本地实际能力对照",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "docs/guide/billing.md",
+    "handling": "网页服务端文档，按本地实际能力对照",
+    "result": "文本可兼容合并",
+    "conflicts": 0
+  },
+  {
+    "path": "docs/guide/ddns.md",
+    "handling": "网页服务端文档，按本地实际能力对照",
+    "result": "文本可兼容合并",
+    "conflicts": 0
+  },
+  {
+    "path": "docs/guide/development.md",
+    "handling": "网页服务端文档，按本地实际能力对照",
+    "result": "文本可兼容合并",
+    "conflicts": 0
+  },
+  {
+    "path": "docs/guide/hosts.md",
+    "handling": "网页服务端文档，按本地实际能力对照",
+    "result": "文本可兼容合并",
+    "conflicts": 0
+  },
+  {
+    "path": "docs/guide/mobile-app.md",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "docs/guide/observability-mcp.md",
+    "handling": "网页服务端文档，按本地实际能力对照",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "docs/guide/operations.en.md",
+    "handling": "网页服务端文档，按本地实际能力对照",
+    "result": "文本可兼容合并",
+    "conflicts": 0
+  },
+  {
+    "path": "docs/guide/operations.md",
+    "handling": "网页服务端文档，按本地实际能力对照",
+    "result": "文本可兼容合并",
+    "conflicts": 0
+  },
+  {
+    "path": "docs/guide/reverse-proxy.md",
+    "handling": "网页服务端文档，按本地实际能力对照",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "docs/guide/users-billing.md",
+    "handling": "网页服务端文档，按本地实际能力对照",
+    "result": "文本可兼容合并",
+    "conflicts": 0
+  },
+  {
+    "path": "drizzle/schema.ts",
+    "handling": "待逐段核对",
+    "result": "文本可兼容合并",
+    "conflicts": 0
+  },
+  {
+    "path": "forwardx-fxp/main.go",
+    "handling": "待逐段核对",
+    "result": "需逐段处理",
+    "conflicts": 1
+  },
+  {
+    "path": "forwardx-fxp/setup_retry_test.go",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "index.html",
+    "handling": "待逐段核对",
+    "result": "文本可兼容合并",
+    "conflicts": 0
+  },
+  {
+    "path": "ios/App/App.xcodeproj/project.pbxproj",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "ios/App/App/AppDelegate.swift",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "ios/App/App/Assets.xcassets/AppIcon.appiconset/Contents.json",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "ios/App/App/Assets.xcassets/AppIconEmberDark.appiconset/AppIcon-512@2x.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "ios/App/App/Assets.xcassets/AppIconEmberDark.appiconset/Contents.json",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "ios/App/App/Assets.xcassets/AppIconEmberLight.appiconset/AppIcon-512@2x.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "ios/App/App/Assets.xcassets/AppIconEmberLight.appiconset/Contents.json",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "ios/App/App/Assets.xcassets/AppIconForestDark.appiconset/AppIcon-512@2x.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "ios/App/App/Assets.xcassets/AppIconForestDark.appiconset/Contents.json",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "ios/App/App/Assets.xcassets/AppIconForestLight.appiconset/AppIcon-512@2x.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "ios/App/App/Assets.xcassets/AppIconForestLight.appiconset/Contents.json",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "ios/App/App/Assets.xcassets/AppIconInkDark.appiconset/AppIcon-512@2x.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "ios/App/App/Assets.xcassets/AppIconInkDark.appiconset/Contents.json",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "ios/App/App/Assets.xcassets/AppIconSakuraDark.appiconset/AppIcon-512@2x.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "ios/App/App/Assets.xcassets/AppIconSakuraDark.appiconset/Contents.json",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "ios/App/App/Assets.xcassets/AppIconSakuraLight.appiconset/AppIcon-512@2x.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "ios/App/App/Assets.xcassets/AppIconSakuraLight.appiconset/Contents.json",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "ios/App/App/Assets.xcassets/AppIconTealDark.appiconset/AppIcon-512@2x.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "ios/App/App/Assets.xcassets/AppIconTealDark.appiconset/Contents.json",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "ios/App/App/Assets.xcassets/AppIconTealLight.appiconset/AppIcon-512@2x.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "ios/App/App/Assets.xcassets/AppIconTealLight.appiconset/Contents.json",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "ios/App/App/Assets.xcassets/AppIconWisteriaDark.appiconset/AppIcon-512@2x.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "ios/App/App/Assets.xcassets/AppIconWisteriaDark.appiconset/Contents.json",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "ios/App/App/Assets.xcassets/AppIconWisteriaLight.appiconset/AppIcon-512@2x.png",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "ios/App/App/Assets.xcassets/AppIconWisteriaLight.appiconset/Contents.json",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "ios/App/App/Base.lproj/Main.storyboard",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "package.json",
+    "handling": "共用内容，拆分本地保护与上游改进",
+    "result": "需逐段处理",
+    "conflicts": 4
+  },
+  {
+    "path": "pnpm-lock.yaml",
+    "handling": "共用内容，拆分本地保护与上游改进",
+    "result": "需逐段处理",
+    "conflicts": 2
+  },
+  {
+    "path": "scripts/app-icons.test.ts",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "scripts/build-ios-ipa.mjs",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "scripts/check-client-delivery.mjs",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "scripts/client-delivery-plugin.test.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "scripts/client-delivery-plugin.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "scripts/generate-app-icons.ts",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "server/_core/systemRouter.ts",
+    "handling": "待逐段核对",
+    "result": "文本可兼容合并",
+    "conflicts": 0
+  },
+  {
+    "path": "server/agentAddressState.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "server/agentEncryptionMiddleware.ts",
+    "handling": "待逐段核对",
+    "result": "文本可兼容合并",
+    "conflicts": 0
+  },
+  {
+    "path": "server/agentHeartbeatGate.test.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "server/agentHeartbeatRoute.ts",
+    "handling": "待逐段核对",
+    "result": "需逐段处理",
+    "conflicts": 2
+  },
+  {
+    "path": "server/agentInstallScripts.test.ts",
+    "handling": "待逐段核对",
+    "result": "文本可兼容合并",
+    "conflicts": 0
+  },
+  {
+    "path": "server/agentInstallScripts.ts",
+    "handling": "待逐段核对",
+    "result": "文本可兼容合并",
+    "conflicts": 0
+  },
+  {
+    "path": "server/agentIpSwitchTasks.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "server/agentReportRoutes.ts",
+    "handling": "待逐段核对",
+    "result": "文本可兼容合并",
+    "conflicts": 0
+  },
+  {
+    "path": "server/agentRoutes.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "server/ai/analytics.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "server/ai/panelTools.ts",
+    "handling": "待逐段核对",
+    "result": "文本可兼容合并",
+    "conflicts": 0
+  },
+  {
+    "path": "server/ai/planner.ts",
+    "handling": "待逐段核对",
+    "result": "文本可兼容合并",
+    "conflicts": 0
+  },
+  {
+    "path": "server/ai/preciseQuery.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "server/ai/resources.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "server/authCaptcha.test.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "server/authCaptcha.ts",
+    "handling": "待逐段核对",
+    "result": "需逐段处理",
+    "conflicts": 1
+  },
+  {
+    "path": "server/authCaptchaConfig.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "server/authCaptchaSettings.fixture.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "server/billingExport.test.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "server/billingExport.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "server/billingExportRoutes.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "server/billingPagination.test.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "server/clientStatic.test.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "server/clientStatic.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "server/databaseHealth.test.ts",
+    "handling": "待逐段核对",
+    "result": "文本可兼容合并",
+    "conflicts": 0
+  },
+  {
+    "path": "server/databaseHealthMonitor.ts",
+    "handling": "待逐段核对",
+    "result": "文本可兼容合并",
+    "conflicts": 0
+  },
+  {
+    "path": "server/databaseHealthState.ts",
+    "handling": "待逐段核对",
+    "result": "需逐段处理",
+    "conflicts": 3
+  },
+  {
+    "path": "server/databaseStartupRetention.test.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "server/db.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "server/dbSchema.ts",
+    "handling": "待逐段核对",
+    "result": "文本可兼容合并",
+    "conflicts": 0
+  },
+  {
+    "path": "server/directForwardLoop.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "server/historyCleanupIndexes.test.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "server/historyMaintenance.test.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "server/historyMaintenance.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "server/hostDdns.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "server/hostGeo.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "server/hostIpSwitchProvider.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "server/hostMultiIp.fixture.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "server/hostMultiIp.test.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "server/hostProbeHealth.fixture.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "server/hostProbeHealth.test.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "server/hostProbeHealth.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "server/imageCaptcha.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "server/index.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "server/linkAccessView.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "server/localeHint.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "server/mcpRoutes.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "server/mcpTokens.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "server/mysqlLongTextSchema.test.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "server/mysqlSchemaMigration.test.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "server/mysqlUpgrade.integration.test.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "server/networkDiagnostics.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "server/observability.fixture.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "server/observability.test.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "server/operationsMonitor.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "server/operationsRuleNames.test.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "server/productOrder.test.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "server/repositories/billingRepository.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "server/repositories/forwardGroupRepository.ts",
+    "handling": "待逐段核对",
+    "result": "文本可兼容合并",
+    "conflicts": 0
+  },
+  {
+    "path": "server/repositories/forwardRuleRepository.ts",
+    "handling": "待逐段核对",
+    "result": "文本可兼容合并",
+    "conflicts": 0
+  },
+  {
+    "path": "server/repositories/forwardTestRepository.ts",
+    "handling": "待逐段核对",
+    "result": "需逐段处理",
+    "conflicts": 1
+  },
+  {
+    "path": "server/repositories/historyRetention.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "server/repositories/hostProbeServiceRepository.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "server/repositories/hostRepository.ts",
+    "handling": "待逐段核对",
+    "result": "需逐段处理",
+    "conflicts": 1
+  },
+  {
+    "path": "server/repositories/operationsRepository.ts",
+    "handling": "待逐段核对",
+    "result": "文本可兼容合并",
+    "conflicts": 0
+  },
+  {
+    "path": "server/repositories/productOrder.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "server/repositories/trafficBillingRepository.ts",
+    "handling": "待逐段核对",
+    "result": "文本可兼容合并",
+    "conflicts": 0
+  },
+  {
+    "path": "server/routers.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "server/routers/auth.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "server/routers/hosts.ts",
+    "handling": "待逐段核对",
+    "result": "文本可兼容合并",
+    "conflicts": 0
+  },
+  {
+    "path": "server/routers/lookingGlass.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "server/routers/mcp.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "server/routers/operations.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "server/routers/plans.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "server/routers/trafficBilling.ts",
+    "handling": "待逐段核对",
+    "result": "文本可兼容合并",
+    "conflicts": 0
+  },
+  {
+    "path": "server/scheduler.ts",
+    "handling": "待逐段核对",
+    "result": "需逐段处理",
+    "conflicts": 1
+  },
+  {
+    "path": "server/supportBundle.test.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "server/telegramBot.ts",
+    "handling": "待逐段核对",
+    "result": "文本可兼容合并",
+    "conflicts": 0
+  },
+  {
+    "path": "server/trafficBatch.test.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "server/tunnelManualProbe.test.ts",
+    "handling": "待逐段核对",
+    "result": "文本可兼容合并",
+    "conflicts": 0
+  },
+  {
+    "path": "server/tunnelMultiEntryLatencyState.test.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "server/tunnelMultiEntryProbeMessage.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "shared/appIcons.ts",
+    "handling": "原生专属，按长期约定排除",
+    "result": "排除"
+  },
+  {
+    "path": "shared/authCaptcha.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "shared/clientRoutes.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "shared/hostAddresses.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "shared/hostChinaHealth.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "shared/networkTestSummary.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "shared/operationsMonitor.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  },
+  {
+    "path": "shared/versions.ts",
+    "handling": "待逐段核对",
+    "result": "需逐段处理",
+    "conflicts": 1
+  },
+  {
+    "path": "vite.config.ts",
+    "handling": "待逐段核对",
+    "result": "可直接应用本轮上游变化"
+  }
+]

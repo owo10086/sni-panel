@@ -1,0 +1,6 @@
+origin https://github.com/poouo/Forwardx.git
+v2.3.285 tag e2bebf108e22ad99f4bfe0a72d0424ab0ffa50dd
+v2.3.285 commit 4bc7602b9f62cd8397f56a9efda91e85aecfbb80
+v2.3.286 tag de7112d709415909d276e776518a8cd1d19e0e29
+v2.3.286 commit aca5d5dfb645393b6925f155ff7258006f46204e
+抓取位置 refs/upstream/sni-flow/v2.3.286；未移动分支或已有标签。

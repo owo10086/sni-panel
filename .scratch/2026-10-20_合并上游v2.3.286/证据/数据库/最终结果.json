@@ -1,0 +1,14 @@
+[
+  {
+    "label": "mysql-upgrade",
+    "exitCode": 0
+  },
+  {
+    "label": "mysql-member-release",
+    "exitCode": 0
+  },
+  {
+    "label": "postgresql-member-release",
+    "exitCode": 0
+  }
+]

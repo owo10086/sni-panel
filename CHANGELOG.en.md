@@ -4,6 +4,14 @@
 
 ## [Unreleased]
 
+- Integrate upstream 286 web, server and Agent/FXP improvements while preserving local SNI, host failover entry health, billing, security, branding and installation sources. Native applications remain excluded.
+- Discover multiple public IPv4/IPv6 addresses, select primary addresses and optionally synchronize dual-stack or complete address sets. Existing single-IP configurations retain single-record updates; explicitly enabling the new mode manages the complete selected record sets, including removal of extra records after returning to primary-only mode.
+- Add independent host health checks and optional automatic IP switching, disabled by default. Explicit administrator configuration lets the corresponding Agent call the provider with cooldowns, attempt limits and no blind retries for uncertain outcomes. Address synchronization retains SNI configuration confirmation and group DNS observation rules.
+- Add administrator-only read-only external MCP access, CAPTCHA provider selection and optional sustained resource alerts. No tokens are generated automatically; existing login and write-confirmation safeguards remain.
+- Export complete billing ledgers to Excel and persist product/resource ordering in the store. Improve precise statistics, network diagnostics, multi-entry latency and map details.
+- Load pages on demand while retaining navigation, restore isolated presentation caches before refreshing the dashboard, and improve login layouts, languages and local logo synchronization. FXP retries connection/initial hello setup only before business payload is sent; it does not replay established streams.
+- Improve database upgrades, safe failure explanations and paced background retention across supported databases. Installation scripts check source-accounting dependencies. Version numbers are unchanged; these changes are unreleased, and source updates do not imply deployed binaries or manual acceptance.
+
 ## [3.4.1] - 2026-10-19
 
 ### Fixes and improvements

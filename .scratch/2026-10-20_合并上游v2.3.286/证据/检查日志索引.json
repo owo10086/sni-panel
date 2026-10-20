@@ -1,0 +1,449 @@
+[
+  {
+    "path": "证据/AI完整检查.log",
+    "sha256": "b5cd10370c310eb6de54f1ec812e77f421f952f1be38a47e02c2398b7ca1cebb",
+    "bytes": 11284,
+    "tapSummaries": [
+      "# tests 33",
+      "# pass 33",
+      "# fail 0",
+      "# skipped 0"
+    ]
+  },
+  {
+    "path": "证据/主机与解析/健康最终回归.log",
+    "sha256": "a6aa66437c8b683ae3509a915b7800afc06f372d8023bde0122edb62f42ab6ef",
+    "bytes": 2107,
+    "tapSummaries": [
+      "# tests 6",
+      "# pass 6",
+      "# fail 0",
+      "# skipped 0"
+    ]
+  },
+  {
+    "path": "证据/主机与解析/完整回归.log",
+    "sha256": "2bbef99ac6e394af57d98732a6f83d48262d9124dafbce11b6cdfabe99cc7c36",
+    "bytes": 8190,
+    "tapSummaries": [
+      "# tests 28",
+      "# pass 28",
+      "# fail 0",
+      "# skipped 0"
+    ]
+  },
+  {
+    "path": "证据/主机与解析/最终完整回归.log",
+    "sha256": "153e20f32306442eddd1363ddbbbd2791c878075b64d5746ac08188ff082445c",
+    "bytes": 8191,
+    "tapSummaries": [
+      "# tests 28",
+      "# pass 28",
+      "# fail 0",
+      "# skipped 0"
+    ]
+  },
+  {
+    "path": "证据/主机与解析/最终类型检查.log",
+    "sha256": "bffdcf7c7ad510519b3b2d8cc8ac7ea512636e1abe2ba9ac3bb425664cd618aa",
+    "bytes": 164,
+    "tapSummaries": []
+  },
+  {
+    "path": "证据/主机与解析/类型复核.log",
+    "sha256": "2c5bd7d18c73b866938bcb1cfe145eee79916471f032045108def8fdcb734bb5",
+    "bytes": 164,
+    "tapSummaries": []
+  },
+  {
+    "path": "证据/主机与解析/类型检查.log",
+    "sha256": "519e63ccc9ae05c2c5fd6a4bd6400df938e454fd1eba69214c22e00a60282c2d",
+    "bytes": 164,
+    "tapSummaries": []
+  },
+  {
+    "path": "证据/主机与解析/解析最终回归.log",
+    "sha256": "3c879ca1471e0aed6c4112f7903ea88c951082bed12349af7941315a8d6e9566",
+    "bytes": 3800,
+    "tapSummaries": [
+      "# tests 14",
+      "# pass 14",
+      "# fail 0",
+      "# skipped 0"
+    ]
+  },
+  {
+    "path": "证据/主机与解析/首次回归.log",
+    "sha256": "153311d5acc7c2d5c9233beb1d1b4f1bf04e30ef261e1f7eaaedf3a2316008a6",
+    "bytes": 11200,
+    "tapSummaries": [
+      "# tests 20",
+      "# pass 18",
+      "# fail 2",
+      "# skipped 0"
+    ]
+  },
+  {
+    "path": "证据/依赖安装.log",
+    "sha256": "47c7354aa2bf1fcad5624567a68178535c9d9fd355d0e564747f8aaca5f323e2",
+    "bytes": 4274,
+    "tapSummaries": []
+  },
+  {
+    "path": "证据/依赖锁文件更新.log",
+    "sha256": "aedd789027e306f03c0ce7632439fbb0b271099c4a35cc9dad89841cf770b33d",
+    "bytes": 3026,
+    "tapSummaries": []
+  },
+  {
+    "path": "证据/依赖锁文件联网更新.log",
+    "sha256": "d69365e978d8e3815cf485e437230a82e9e22798d2c7c98077836f3d727635c2",
+    "bytes": 5250,
+    "tapSummaries": []
+  },
+  {
+    "path": "证据/双语检查.log",
+    "sha256": "ae4dd41584434a44537e3e79486d3ba5a4f290fe1a4c7d642d9e0882b07eac1f",
+    "bytes": 6492,
+    "tapSummaries": [
+      "# tests 19",
+      "# pass 19",
+      "# fail 0",
+      "# skipped 0"
+    ]
+  },
+  {
+    "path": "证据/发布说明检查.log",
+    "sha256": "ef803681f7a135db38a2199ca2b6fb22591980eca09de156af419aa9fc30f019",
+    "bytes": 1847,
+    "tapSummaries": [
+      "# tests 5",
+      "# pass 5",
+      "# fail 0",
+      "# skipped 0"
+    ]
+  },
+  {
+    "path": "证据/推广菜单说明兼容复验.log",
+    "sha256": "a3e278142cfe2835d46825746074c9b3a797e9a0f147d50f7e449d74ba3bc2da",
+    "bytes": 1594,
+    "tapSummaries": [
+      "# tests 4",
+      "# pass 4",
+      "# fail 0",
+      "# skipped 0"
+    ]
+  },
+  {
+    "path": "证据/数据库/mysql-member-release.log",
+    "sha256": "f43b3bc546070ac404c04a34d57cb41c30b430bc5322edbc25e3a5d8d2c79926",
+    "bytes": 457,
+    "tapSummaries": []
+  },
+  {
+    "path": "证据/数据库/mysql-upgrade.log",
+    "sha256": "4faddc1d240aa4202a2d7c44564eb1805c644fa8393f8cb7d9fe0ee6f00d7abf",
+    "bytes": 1197,
+    "tapSummaries": [
+      "# tests 1",
+      "# pass 1",
+      "# fail 0",
+      "# skipped 0"
+    ]
+  },
+  {
+    "path": "证据/数据库/postgresql-member-release.log",
+    "sha256": "535607bf085b5c6ecb16a4922c9728aafc5ce44e6e55f3ac27e879bf6f6c14d9",
+    "bytes": 682,
+    "tapSummaries": []
+  },
+  {
+    "path": "证据/数据库HTTP正常权限.log",
+    "sha256": "0182e9ea867e2db23bca674be670b4e5f0996e63e1c0f9b5c2d4b7e7f342fa03",
+    "bytes": 6274,
+    "tapSummaries": [
+      "# tests 19",
+      "# pass 19",
+      "# fail 0",
+      "# skipped 0"
+    ]
+  },
+  {
+    "path": "证据/数据库专项首次.log",
+    "sha256": "a19d1e1c4984ec6a1cab9e2fee7ad576dfcf4088a534a3891aaf84318c9da3f5",
+    "bytes": 15158,
+    "tapSummaries": [
+      "# tests 38",
+      "# pass 35",
+      "# fail 3",
+      "# skipped 0"
+    ]
+  },
+  {
+    "path": "证据/文档构建.log",
+    "sha256": "ed86b33bccca6e64708f0d7194c1e5d63b4f81ce4235a149baf06bbaaf3c441b",
+    "bytes": 954,
+    "tapSummaries": []
+  },
+  {
+    "path": "证据/服务端完整检查.log",
+    "sha256": "db2e5aa24f31d8e1c192786c8691f0750143768c260fb17c17bb73a418430080",
+    "bytes": 716183,
+    "tapSummaries": [
+      "# tests 44",
+      "# pass 44",
+      "# fail 0",
+      "# skipped 0",
+      "# tests 95",
+      "# pass 95",
+      "# fail 0",
+      "# skipped 0",
+      "# tests 1169",
+      "# pass 1168",
+      "# fail 1",
+      "# skipped 0"
+    ]
+  },
+  {
+    "path": "证据/服务端最终完整检查.log",
+    "sha256": "ea5b9205bfee9f60adbb6917c76916fe935be04276a317b86f845b6346fe39d4",
+    "bytes": 375521,
+    "tapSummaries": [
+      "# tests 44",
+      "# pass 44",
+      "# fail 0",
+      "# skipped 0",
+      "# tests 95",
+      "# pass 95",
+      "# fail 0",
+      "# skipped 0",
+      "# tests 1169",
+      "# pass 1169",
+      "# fail 0",
+      "# skipped 0"
+    ]
+  },
+  {
+    "path": "证据/版本检查.log",
+    "sha256": "7da30f7258d7bc16c8def65cf120ce6f9073c760ee2348fa5b531bedde134e64",
+    "bytes": 366,
+    "tapSummaries": []
+  },
+  {
+    "path": "证据/管理与安全/HTTP检查.log",
+    "sha256": "95916c4bae6c7e578dfdef33b58821d0ce3ea5dc15ff2f8b3f36071509aedc89",
+    "bytes": 4847,
+    "tapSummaries": [
+      "# tests 17",
+      "# pass 17",
+      "# fail 0",
+      "# skipped 0"
+    ]
+  },
+  {
+    "path": "证据/管理与安全/统计双语检查.log",
+    "sha256": "eb204b625a3ea496b613894f8090bdd4cf8aa9f34783a63d1adecae678641629",
+    "bytes": 2290,
+    "tapSummaries": [
+      "# tests 7",
+      "# pass 7",
+      "# fail 0",
+      "# skipped 0"
+    ]
+  },
+  {
+    "path": "证据/管理与安全/账单导出检查.log",
+    "sha256": "8330283cabfd9540cb61d9c77394f834cea52058eb9261204d2968c4f9413ecb",
+    "bytes": 2450,
+    "tapSummaries": [
+      "# tests 5",
+      "# pass 5",
+      "# fail 0",
+      "# skipped 0"
+    ]
+  },
+  {
+    "path": "证据/管理与安全/边界补充检查.log",
+    "sha256": "4094a11fb7ad6616b443dff11f192822933c80fa8d3af18537d640b468f25944",
+    "bytes": 3633,
+    "tapSummaries": [
+      "# tests 10",
+      "# pass 10",
+      "# fail 0",
+      "# skipped 0"
+    ]
+  },
+  {
+    "path": "证据/管理与安全/运维回归检查.log",
+    "sha256": "74d0f93a809d942116e0aa7f9bb3d05932b3208bee7992f0b87b1c46dcb61867",
+    "bytes": 13717,
+    "tapSummaries": [
+      "# tests 37",
+      "# pass 37",
+      "# fail 0",
+      "# skipped 0"
+    ]
+  },
+  {
+    "path": "证据/管理与安全/首轮检查.log",
+    "sha256": "72a32108baf13b09dbcd0e29d75b2a67a20446648f2cd215f4134415aed363ae",
+    "bytes": 18910,
+    "tapSummaries": [
+      "# tests 40",
+      "# pass 38",
+      "# fail 2",
+      "# skipped 0"
+    ]
+  },
+  {
+    "path": "证据/类型整合检查.log",
+    "sha256": "0be887eb1569013295512cd8e922c49ba69b6adf62aae8f0946e2ce6052fbdf3",
+    "bytes": 164,
+    "tapSummaries": []
+  },
+  {
+    "path": "证据/类型最终检查.log",
+    "sha256": "983ccf46375bca9c35986e8e4a81d9122b3a22eb3fc5074e1e3cd8ae1967278e",
+    "bytes": 164,
+    "tapSummaries": []
+  },
+  {
+    "path": "证据/类型首次.log",
+    "sha256": "906cf79627c3dc1d7b120d55629d209deb400446d2abbf2c1efb332b6d803ecc",
+    "bytes": 2253,
+    "tapSummaries": []
+  },
+  {
+    "path": "证据/网页兼容/专项首次.log",
+    "sha256": "c22d7b8fa7ce704d57535d9f0c9ef7c041ca09ad7d246040fb73ae597659ba1f",
+    "bytes": 30218,
+    "tapSummaries": [
+      "# tests 113",
+      "# pass 113",
+      "# fail 0",
+      "# skipped 0"
+    ]
+  },
+  {
+    "path": "证据/网页兼容/启动集成.log",
+    "sha256": "8d69290c5fdbd4d8e04f5d89a05792ac7b40834a64c7fe527129b881c946d715",
+    "bytes": 7897,
+    "tapSummaries": [
+      "# tests 18",
+      "# pass 17",
+      "# fail 1",
+      "# skipped 0"
+    ]
+  },
+  {
+    "path": "证据/网页兼容/启动集成授权环境.log",
+    "sha256": "3410069539b22946cea48106d7fb4d04e4242b26213b9682d690cb78fb25ae27",
+    "bytes": 7391,
+    "tapSummaries": [
+      "# tests 18",
+      "# pass 18",
+      "# fail 0",
+      "# skipped 0"
+    ]
+  },
+  {
+    "path": "证据/网页兼容/登录品牌.log",
+    "sha256": "ea12eacca20129c2bbdce1a2698d00f7a271973b37662836d98c5e4a7a2d6ad2",
+    "bytes": 5369,
+    "tapSummaries": [
+      "# tests 18",
+      "# pass 18",
+      "# fail 0",
+      "# skipped 0"
+    ]
+  },
+  {
+    "path": "证据/网页兼容/登录标题复核.log",
+    "sha256": "c15bdbc59d0e5fec6aa897f0048900c968abc935ac2181ae76a1e90175a4888d",
+    "bytes": 5368,
+    "tapSummaries": [
+      "# tests 18",
+      "# pass 18",
+      "# fail 0",
+      "# skipped 0"
+    ]
+  },
+  {
+    "path": "证据/网页兼容/类型初查.log",
+    "sha256": "447138455d50efb4481579fd5d1ebdd8fb0bcb7e1b554ca1669d3604962839ba",
+    "bytes": 164,
+    "tapSummaries": []
+  },
+  {
+    "path": "证据/运行时/agent-go-test-正常权限.log",
+    "sha256": "63df772aac767be1280a9daccbd904f1d52cfc4d85e148ad7782e09ea42c9a1d",
+    "bytes": 44,
+    "tapSummaries": []
+  },
+  {
+    "path": "证据/运行时/agent-go-test.log",
+    "sha256": "d27d525347a77cae2222f50948cbbd54da3cb73f610c2a19ab85ccb4b16692bf",
+    "bytes": 230,
+    "tapSummaries": []
+  },
+  {
+    "path": "证据/运行时/agent-go-vet.log",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0,
+    "tapSummaries": []
+  },
+  {
+    "path": "证据/运行时/agent-linux-test.log",
+    "sha256": "e8d6b2ac585d00c1c205c3c176f94a33d4f79be4eade45d754f7ab402c72459a",
+    "bytes": 140049,
+    "tapSummaries": []
+  },
+  {
+    "path": "证据/运行时/fxp-go-test-正常权限.log",
+    "sha256": "7081ef685d9d32de1c8c07ae6d74ed6700785e07f9576529812bbadca5b27abf",
+    "bytes": 34074,
+    "tapSummaries": []
+  },
+  {
+    "path": "证据/运行时/fxp-go-test.log",
+    "sha256": "a43746d54d60b51553898f9c33bbc77eca0e4b90c3fddfd9db6ef755b6f2f51f",
+    "bytes": 2153,
+    "tapSummaries": []
+  },
+  {
+    "path": "证据/运行时/fxp-go-vet.log",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0,
+    "tapSummaries": []
+  },
+  {
+    "path": "证据/运行时/fxp-linux-test.log",
+    "sha256": "8e7b152c93de20346f8a9e59d2fef92dbeb9273b6b949abc91c10042fc74d066",
+    "bytes": 59453,
+    "tapSummaries": []
+  },
+  {
+    "path": "证据/隔离数据库准备.log",
+    "sha256": "8a180cf4702e2abd23234a026e0139b83a105e825464c9fc152b71d17de20edf",
+    "bytes": 79,
+    "tapSummaries": []
+  },
+  {
+    "path": "证据/隔离数据库补验准备.log",
+    "sha256": "8a180cf4702e2abd23234a026e0139b83a105e825464c9fc152b71d17de20edf",
+    "bytes": 79,
+    "tapSummaries": []
+  },
+  {
+    "path": "证据/面板最终构建.log",
+    "sha256": "c576bd3a2f40056eb6325c269336673b86e6354a3ce9c708e5d13301e9fc6b38",
+    "bytes": 22463,
+    "tapSummaries": []
+  },
+  {
+    "path": "证据/面板构建.log",
+    "sha256": "6027e2d6c60ff9ffc162c2bb176ec44ae6de9d24c9f3a59fa0bc8b72514a31c7",
+    "bytes": 22463,
+    "tapSummaries": []
+  }
+]

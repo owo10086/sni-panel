@@ -1,0 +1,7559 @@
+[
+  {
+    "path": ".github/workflows/android-apk.yml",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "e5a69688519cef333c0486c33316b61d8e40d772"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "9d6a5a974f257a3e0b1e5adc9d63a98d07fa8521"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "f8e93f7041cd07a828baf6a75a40617897c2b8e7"
+    },
+    "state": "两端不同",
+    "source": "上游与本地都改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": ".github/workflows/ci.yml",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "fb315b7dd3102702b0d031b53cca3150786446a9"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "4ace8f98f6e4dba03943e55453fb5f92c4f8fd18"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "e2a5acb2cfdd5db18e776b0a1bfa576e41a92e1a"
+    },
+    "state": "两端不同",
+    "source": "上游与本地都改动",
+    "handling": "兼容纳入",
+    "requirement": "D01/D09",
+    "acceptance": "A01/A22",
+    "decision": "拆分网页/服务端检查与依赖；排除test:ios、原生图标/发布及专属依赖；保留本地版本",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": ".github/workflows/ios-ipa.yml",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "c8fc01a56128332efc61eeb4ad990c7885016e05"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "158c501f692732a91977cf8628b5dde4d8a9141d"
+    },
+    "state": "仅上游有",
+    "source": "上游与本地都改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "CHANGELOG.en.md",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "3721d9fa53170dfab15ac409efd36c45bbfd7117"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "efe0d7951bfa3913c21777ea71d5bca194643cd5"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "5e57a7e53b464944b6a4e70ad5454677f15bdec4"
+    },
+    "state": "两端不同",
+    "source": "上游与本地都改动",
+    "handling": "兼容纳入",
+    "requirement": "D01/D09",
+    "acceptance": "A01/A22",
+    "decision": "按本地最终功能兼容文档、来源和未发布状态",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "CHANGELOG.md",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "b3f06c2dbb27ccdc8a264c08f0ecf002c79e237b"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "b276a802fbf146facf76beb34243f602205dc293"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "94bbb66c734ec17234c5534b1359db0f522293d6"
+    },
+    "state": "两端不同",
+    "source": "上游与本地都改动",
+    "handling": "兼容纳入",
+    "requirement": "D01/D09",
+    "acceptance": "A01/A22",
+    "decision": "按本地最终功能兼容文档、来源和未发布状态",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "README.en.md",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "8eefce45cdc55c715a3aba1a5ab18518aeb081c7"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "c17471617d32e0961cf49d1a54a0cd102d588b85"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "3c864c762a7a9c5a4647ecc23fe1d3aae9dfef0f"
+    },
+    "state": "两端不同",
+    "source": "上游与本地都改动",
+    "handling": "兼容纳入",
+    "requirement": "D01/D09",
+    "acceptance": "A01/A22",
+    "decision": "按本地最终功能兼容文档、来源和未发布状态",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "README.md",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "93c56ea4dfb7a25120d144f3424402327223a8ea"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "0514794adf82dd75a9dc014182024e39b25e6177"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "5ec23d485d440fda052af183e15d4b90490f13c2"
+    },
+    "state": "两端不同",
+    "source": "上游与本地都改动",
+    "handling": "兼容纳入",
+    "requirement": "D01/D09",
+    "acceptance": "A01/A22",
+    "decision": "按本地最终功能兼容文档、来源和未发布状态",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "THIRD_PARTY_NOTICES.md",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "e08cb4f9fd753d1ef998b62f7f32b328ed8d4a9d"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "b5e00168a4c9efaac80a05e72f9c2237f901ddde"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "e08cb4f9fd753d1ef998b62f7f32b328ed8d4a9d"
+    },
+    "state": "两端不同",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D01/D09",
+    "acceptance": "A01/A22",
+    "decision": "按本地最终功能兼容文档、来源和未发布状态",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "agent/ip_switch.go",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "a917588a58d9448b52076dd644c9005bee51fc62"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D04/D09",
+    "acceptance": "A05/A08/A09/A20/A22",
+    "decision": "兼容多IP、换IP和建连改进，保留本地SNI/版本/运行时",
+    "tickets": [
+      "02",
+      "08"
+    ]
+  },
+  {
+    "path": "agent/ip_switch_test.go",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "a8374a1b55f641f1d904b47a9b7c15507430869f"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D04/D09",
+    "acceptance": "A05/A08/A09/A20/A22",
+    "decision": "兼容多IP、换IP和建连改进，保留本地SNI/版本/运行时",
+    "tickets": [
+      "02",
+      "08"
+    ]
+  },
+  {
+    "path": "agent/main.go",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "615eabe7a1d9a02e998b4d2dcd80f46630cb5061"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "39adf9595bbafeb979e0e90a50358d53d95fb575"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "846d5fa6aeae895a52e8d55d6e4cf704eb8f0805"
+    },
+    "state": "两端不同",
+    "source": "上游与本地都改动",
+    "handling": "兼容纳入",
+    "requirement": "D04/D09",
+    "acceptance": "A05/A08/A09/A20/A22",
+    "decision": "兼容多IP、换IP和建连改进，保留本地SNI/版本/运行时",
+    "tickets": [
+      "02",
+      "08"
+    ]
+  },
+  {
+    "path": "agent/public_addresses.go",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "79292a01fc43b821196473789cd427a363e9da6c"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D04/D09",
+    "acceptance": "A05/A08/A09/A20/A22",
+    "decision": "兼容多IP、换IP和建连改进，保留本地SNI/版本/运行时",
+    "tickets": [
+      "02",
+      "08"
+    ]
+  },
+  {
+    "path": "agent/public_addresses_test.go",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "881d9561641b3373e558a0b874899ad1b84fae76"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D04/D09",
+    "acceptance": "A05/A08/A09/A20/A22",
+    "decision": "兼容多IP、换IP和建连改进，保留本地SNI/版本/运行时",
+    "tickets": [
+      "02",
+      "08"
+    ]
+  },
+  {
+    "path": "android/app/src/main/AndroidManifest.xml",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "423d0843910b9e26d7a356557bb0b109eec46c08"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "9f895fed62949536bb208594eba48fc9c92faba9"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "423d0843910b9e26d7a356557bb0b109eec46c08"
+    },
+    "state": "两端不同",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/java/com/forwardx/app/AppIconPlugin.java",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "a9c85906893e05028ed852e78d4ca48228b28281"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/java/com/forwardx/app/MainActivity.java",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "c00f9476818343af0368276916b49f6f26c13148"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "9c9e23f4ed4bf70f2e6f024c79d063e1a2e3171a"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "c00f9476818343af0368276916b49f6f26c13148"
+    },
+    "state": "两端不同",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/drawable/ic_launcher_ember_dark_theme_background.xml",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "84d708c0746f5c94b08e70dbe4bd3852e1f1fd04"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/drawable/ic_launcher_ember_light_theme_background.xml",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "bddc05b4bc008d4bce50847e40486b87eb80dc30"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/drawable/ic_launcher_foreground.xml",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "0d9f135f63e24d8c193f71aeffb3d2c5ec480daa"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "147213f0c7eddc7d2b25bca65022cdefb471a6c2"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "0d9f135f63e24d8c193f71aeffb3d2c5ec480daa"
+    },
+    "state": "两端不同",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/drawable/ic_launcher_forest_dark_theme_background.xml",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "7c6ae09b236df012a44ece40c39dc06b830c47c5"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/drawable/ic_launcher_forest_light_theme_background.xml",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "9c6af4d2713cae452798b04c38a52cd90a970fa3"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/drawable/ic_launcher_ink_dark_theme_background.xml",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "c7d6b9e06dfc8f0e7daeaefcc0f00c56b94ca9d5"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/drawable/ic_launcher_monochrome.xml",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "12b222b8cb533e34892f224c221b2a9ed3473e47"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/drawable/ic_launcher_sakura_dark_theme_background.xml",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "fff3b60c908581b35e42fe9ec64f08657e85d70a"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/drawable/ic_launcher_sakura_light_theme_background.xml",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "33f3f69f2223f6f4f9e4ed5202fd9f2fc839f34c"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/drawable/ic_launcher_teal_dark_theme_background.xml",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "d8bb497ca26afe90ded17eb1739dadd9ae77c9ab"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/drawable/ic_launcher_teal_light_theme_background.xml",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "31f2797df2663a327a58e1413c26a4eac950e20d"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/drawable/ic_launcher_theme_background.xml",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "2f261b529dbf81cf1f27db0f252772f9e99be86f"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/drawable/ic_launcher_wisteria_dark_theme_background.xml",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "179a6a8c36ebef5b3535c4a6cff09e48f6e99d2d"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/drawable/ic_launcher_wisteria_light_theme_background.xml",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "6ba58f0fd4950ff54a0b3ca3a3676c644b1831ad"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "5ed0a2df70488dcb1594ccf43cc7dd1d3f498275"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "7e3fde2e750bba1e6fac224752a1aafc085c9476"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "5ed0a2df70488dcb1594ccf43cc7dd1d3f498275"
+    },
+    "state": "两端不同",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_ember_dark.xml",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "98478af3bd35ef1f20f934605c825ce2463bf115"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_ember_light.xml",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "5f60badfd54247270fde8a3493122560ceb0ecd4"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_forest_dark.xml",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "841452907f709407aca1ba9dbcaef554c9c61c13"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_forest_light.xml",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "39b61bf0304a6a21977b0f8a83cf9d76f121f881"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_ink_dark.xml",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "82c5b85c23cc4cae2f57de0ce227d6416acb2649"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "5ed0a2df70488dcb1594ccf43cc7dd1d3f498275"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "7e3fde2e750bba1e6fac224752a1aafc085c9476"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "5ed0a2df70488dcb1594ccf43cc7dd1d3f498275"
+    },
+    "state": "两端不同",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_sakura_dark.xml",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "c6f3b9e6dbcf1a786d28a1491c305c116cc2c61f"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_sakura_light.xml",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "33e894410832479b553dda40395388ec74599bc8"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_teal_dark.xml",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "b56b3e99966c0fdde72a3dcbbba19d1b4d3e9e3c"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_teal_light.xml",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "383df20cbf713683c19324f418cca0d16b0372ae"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_wisteria_dark.xml",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "6af09dd646b59d77bea1d7d1454e7af15a4115d5"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_wisteria_light.xml",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "726f1c5ea56b7bd3f044d9f3946bb2c12378a809"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-anydpi-v33/ic_launcher.xml",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "46ba075d3482a381248899d4d2301dc063886cc0"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-anydpi-v33/ic_launcher_ember_dark.xml",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "a6e5d71f17427ae801d908ee9d13ac05e32e9648"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-anydpi-v33/ic_launcher_ember_light.xml",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "f80165247b01b4c22d78d757a362f9848769aef9"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-anydpi-v33/ic_launcher_forest_dark.xml",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "01f3cf29c66add7d017f2ee0aa88371790546562"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-anydpi-v33/ic_launcher_forest_light.xml",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "6283b6a5c0760f867be36781abca1496e427ff7f"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-anydpi-v33/ic_launcher_ink_dark.xml",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "fc59e94280a4c02767595c78a126be3bfa3e1402"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-anydpi-v33/ic_launcher_round.xml",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "46ba075d3482a381248899d4d2301dc063886cc0"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-anydpi-v33/ic_launcher_sakura_dark.xml",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "ab7fce29122a8eeea87f7c857cdd66688a69ddc8"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-anydpi-v33/ic_launcher_sakura_light.xml",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "a38c6944a55a4c4afe7a984d22533b8806e0a97b"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-anydpi-v33/ic_launcher_teal_dark.xml",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "fe035180f253d8f5e235bf4cf6830649052cf6b0"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-anydpi-v33/ic_launcher_teal_light.xml",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "8b23563f82e64ed91d22a5cca729f3f5965257ba"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-anydpi-v33/ic_launcher_wisteria_dark.xml",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "9b27f7315163d40808513b71669ff047f6ec9694"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-anydpi-v33/ic_launcher_wisteria_light.xml",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "4b5673d5f2ce38f4b33b04bd073d7a09b631d91c"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-hdpi/ic_launcher.png",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "d65a48d5b9766da5bb4743d316046367348eecc6"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "98d92ed22a889936dbdcc9b45d7d47d7bf605a67"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "d65a48d5b9766da5bb4743d316046367348eecc6"
+    },
+    "state": "两端不同",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-hdpi/ic_launcher_ember_dark.png",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "98c9b82f36a35e18e40523efed980619bf40c8f2"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-hdpi/ic_launcher_ember_light.png",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "9cda86db96be0a823a7feaf418fbf9afc139f2bf"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-hdpi/ic_launcher_forest_dark.png",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "98885f795ca8563867e08cb7e83dcddcb0aabf2b"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-hdpi/ic_launcher_forest_light.png",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "404a8ffca075548a3e790a915d9c44a302553810"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-hdpi/ic_launcher_ink_dark.png",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "35d7d1ba4f3da3a123d6b9390ebfd4358a1f66be"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-hdpi/ic_launcher_round.png",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "d65a48d5b9766da5bb4743d316046367348eecc6"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "98d92ed22a889936dbdcc9b45d7d47d7bf605a67"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "d65a48d5b9766da5bb4743d316046367348eecc6"
+    },
+    "state": "两端不同",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-hdpi/ic_launcher_sakura_dark.png",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "8ac2b971844d50a13b686b61df7d78c5a6b209ce"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-hdpi/ic_launcher_sakura_light.png",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "ddf3c47473e5051c8a642e902edcfd27c2c443e8"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-hdpi/ic_launcher_teal_dark.png",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "3b182d14efde126dd67ec1acb1cb286a0f005059"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-hdpi/ic_launcher_teal_light.png",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "225e57565937c8047e06d9bf6146c10687ba9b54"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-hdpi/ic_launcher_wisteria_dark.png",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "7dc2bc71dfcf093a25b63e1c54c559959c7c8259"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-hdpi/ic_launcher_wisteria_light.png",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "528395f0d439249690ef7e4b0fee828cf407fb5a"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-mdpi/ic_launcher.png",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "d1b4e6f28ba9839f385c3da5749cb3d13c0b3b6a"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "d4b0b0bb09430f612e90f9aa172989f736aac465"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "d1b4e6f28ba9839f385c3da5749cb3d13c0b3b6a"
+    },
+    "state": "两端不同",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-mdpi/ic_launcher_ember_dark.png",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "1e6212978b94088f02a2621aa9b1718c934e3568"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-mdpi/ic_launcher_ember_light.png",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "0e3cce1075e079c82b1dcf2c02364b8d8827e235"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-mdpi/ic_launcher_forest_dark.png",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "1f34423d7ac8d279f74c25b9139248cf42b00b84"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-mdpi/ic_launcher_forest_light.png",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "65212c5beee59b078e3dbf3b698735ce041b599b"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-mdpi/ic_launcher_ink_dark.png",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "99c5438c4be796111029c4f7b0ff0298aa8c9194"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-mdpi/ic_launcher_round.png",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "d1b4e6f28ba9839f385c3da5749cb3d13c0b3b6a"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "d4b0b0bb09430f612e90f9aa172989f736aac465"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "d1b4e6f28ba9839f385c3da5749cb3d13c0b3b6a"
+    },
+    "state": "两端不同",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-mdpi/ic_launcher_sakura_dark.png",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "e4c8d0b0afb5735db42070f11cd12f8493a86b2e"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-mdpi/ic_launcher_sakura_light.png",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "b20a1dd10bcc98741c32869b5bc1b8987c0f27b2"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-mdpi/ic_launcher_teal_dark.png",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "e5fc8f6d799c54e544c9432ace2bc49eeabd6532"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-mdpi/ic_launcher_teal_light.png",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "67536b047d04747e152c7f5ba057c7228c3fba2f"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-mdpi/ic_launcher_wisteria_dark.png",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "670d2289adbb0d9ae4bafbf85f1b046bb0648a6d"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-mdpi/ic_launcher_wisteria_light.png",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "8aa403cc533c763e7b1aa7d4927ad7b6f0f89074"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xhdpi/ic_launcher.png",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "8bbf49d2d4d574a6a13eb4656a8079697af3c998"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "47cfac361bf30242c771669ec8e6c2ba046b91ce"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "8bbf49d2d4d574a6a13eb4656a8079697af3c998"
+    },
+    "state": "两端不同",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xhdpi/ic_launcher_ember_dark.png",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "3b9733fc5f7eb9aafbbc54b7fcf95264d1300249"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xhdpi/ic_launcher_ember_light.png",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "b0762f0852bc6d76f5e36c2fa4a2c3ae2543725e"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xhdpi/ic_launcher_forest_dark.png",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "177e9abfbfaefddbd3668b079f554e605fa93523"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xhdpi/ic_launcher_forest_light.png",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "e13169bc5244169ad3a0130419673f4b5d8f3d1b"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xhdpi/ic_launcher_ink_dark.png",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "30e557c82325e7976c5b30c5b42abc4faf03c54b"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xhdpi/ic_launcher_round.png",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "8bbf49d2d4d574a6a13eb4656a8079697af3c998"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "47cfac361bf30242c771669ec8e6c2ba046b91ce"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "8bbf49d2d4d574a6a13eb4656a8079697af3c998"
+    },
+    "state": "两端不同",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xhdpi/ic_launcher_sakura_dark.png",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "0849c3d4187672de0c537ee385406820423726e0"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xhdpi/ic_launcher_sakura_light.png",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "7317d0641c5502a8bcd167b3a0dca4d6cdc49f1a"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xhdpi/ic_launcher_teal_dark.png",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "04baf19c23254055fb302b85454ab0f4b97faf5c"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xhdpi/ic_launcher_teal_light.png",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "7a7b255197c4f031b0a1186bfb39e9cd9b147297"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xhdpi/ic_launcher_wisteria_dark.png",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "826b6b5ec5d2afacfe9d4cab46360daa7388f0ce"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xhdpi/ic_launcher_wisteria_light.png",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "63b5c4d61fd0711802e5fe6aed7223a58e31da2e"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "83e52b50f4a585c6dbfbb462c02cc4c06fab2109"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "3b0e771b5d8fc19aa657116ef098cd8793469f12"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "83e52b50f4a585c6dbfbb462c02cc4c06fab2109"
+    },
+    "state": "两端不同",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xxhdpi/ic_launcher_ember_dark.png",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "e69c203bf98325237a99cbccea506af7e592aa7e"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xxhdpi/ic_launcher_ember_light.png",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "4ac3a8c9eabdca68ca982e329a6af571e6b62d89"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xxhdpi/ic_launcher_forest_dark.png",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "c4b19333d48f3e42d0dd2d88656997aaf2e16d02"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xxhdpi/ic_launcher_forest_light.png",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "e92886da192043d14e406414a7f34f497cfef50c"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xxhdpi/ic_launcher_ink_dark.png",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "2203a20ab70d7b655d96ec709fe4d88dc0696ac1"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "83e52b50f4a585c6dbfbb462c02cc4c06fab2109"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "3b0e771b5d8fc19aa657116ef098cd8793469f12"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "83e52b50f4a585c6dbfbb462c02cc4c06fab2109"
+    },
+    "state": "两端不同",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xxhdpi/ic_launcher_sakura_dark.png",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "e2f71b0cf5e5999ecb52c4dd4d70402fed73cc63"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xxhdpi/ic_launcher_sakura_light.png",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "5c2e5e78b843194ed07ec36b9f1d9162a0dc3b9b"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xxhdpi/ic_launcher_teal_dark.png",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "fa776454ea1b8f1f62627ac2f262425fa01dd778"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xxhdpi/ic_launcher_teal_light.png",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "21a1522655be0a3005bc963bc17841d08e72dc73"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xxhdpi/ic_launcher_wisteria_dark.png",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "6e386347e4e4a1a488ebb05753d83293d9f5b36a"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xxhdpi/ic_launcher_wisteria_light.png",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "8964e49f106dd649f7ccd54e0fb38b08b75de03c"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "b0fca501dce36b8fd2e3d9689ffaff1e9ef24466"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "654fe08787788d0185db405083f3648e05dca7ca"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "b0fca501dce36b8fd2e3d9689ffaff1e9ef24466"
+    },
+    "state": "两端不同",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_ember_dark.png",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "62761c4bbf9b6c41858cb8252c162f71f5a4af79"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_ember_light.png",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "4f0780f704574c93e406a2af898e95ffc997a9ac"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_forest_dark.png",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "e16b83a1ee8ab69d7f35e201b4131f3619495803"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_forest_light.png",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "94e6bf89b6e0aa6be5ced1c69a168ae6baa87671"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_ink_dark.png",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "a79c426ab7e6ee788089ca14362e325f94911f69"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "b0fca501dce36b8fd2e3d9689ffaff1e9ef24466"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "654fe08787788d0185db405083f3648e05dca7ca"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "b0fca501dce36b8fd2e3d9689ffaff1e9ef24466"
+    },
+    "state": "两端不同",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_sakura_dark.png",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "7d302af0828963215dcbd0b19518079694bb8013"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_sakura_light.png",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "a4b6980870422c9cefc9dc41135fb0353d602f5d"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_teal_dark.png",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "d188f0bb3c0cdce8214261c5db1ae4ec18fbdef7"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_teal_light.png",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "28832efd8ef4fc67150e629ca542b96b71489dc0"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_wisteria_dark.png",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "fca56a0be3c744f69efd6bab20c81fbaeafe6875"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_wisteria_light.png",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "3bc2d13584d96da4b05dcfab9a06eeb25abaacd8"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "client/src/App.tsx",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "4b14237c4c2589f346b62eefae13689ab55ecfc5"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "59ccd7b59e7889089cc2a2b73fcd1ac1283b960a"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "e890e3158d260f73339264c5c7f4a454661746ff"
+    },
+    "state": "两端不同",
+    "source": "上游与本地都改动",
+    "handling": "兼容纳入",
+    "requirement": "D08/D09",
+    "acceptance": "A15/A17/A18/A22",
+    "decision": "兼容网页/路由/品牌/双语/安装/构建，保留本地SNI入口与原生排除",
+    "tickets": [
+      "07"
+    ]
+  },
+  {
+    "path": "client/src/components/AnimatedStatValue.tsx",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "631609832d4edb407d3eb19779e8b58fa3ccee47"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "de473781382976e9f97b91709dca3422cb867d15"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "631609832d4edb407d3eb19779e8b58fa3ccee47"
+    },
+    "state": "两端不同",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D08/D09",
+    "acceptance": "A15/A17/A18/A22",
+    "decision": "兼容网页/路由/品牌/双语/安装/构建，保留本地SNI入口与原生排除",
+    "tickets": [
+      "07"
+    ]
+  },
+  {
+    "path": "client/src/components/AuthCaptchaFields.test.tsx",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "d4687b0b3c336bb99f18452d7bb9cc1eb469d4bd"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D05/D06/D07",
+    "acceptance": "A11/A12/A13/A16",
+    "decision": "纳入只读/验证码/告警/统计，保留本地权限和确认快照",
+    "tickets": [
+      "03",
+      "04",
+      "05"
+    ]
+  },
+  {
+    "path": "client/src/components/AuthCaptchaSettingsFields.tsx",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "c1dc15d29268f1ff20b424da27b38854285222eb"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D05/D06/D07",
+    "acceptance": "A11/A12/A13/A16",
+    "decision": "纳入只读/验证码/告警/统计，保留本地权限和确认快照",
+    "tickets": [
+      "03",
+      "04",
+      "05"
+    ]
+  },
+  {
+    "path": "client/src/components/BillingExportButton.tsx",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "1e5ccef7c97ef5014ac6df89fc3bead7972d3a99"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D07",
+    "acceptance": "A14/A15",
+    "decision": "纳入导出与顺序，保留权限/账目/币种",
+    "tickets": [
+      "06"
+    ]
+  },
+  {
+    "path": "client/src/components/DashboardLayout.tsx",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "0f4a56ec634244652aa5e590f8313c47b49d461d"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "d083117d56ad70c66e0dca630d379388dc972ad9"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "b4eae7d696c4ca2b877dcd7cb617e7a531890824"
+    },
+    "state": "两端不同",
+    "source": "上游与本地都改动",
+    "handling": "兼容纳入",
+    "requirement": "D08/D09",
+    "acceptance": "A15/A17/A18/A22",
+    "decision": "兼容网页/路由/品牌/双语/安装/构建，保留本地SNI入口与原生排除",
+    "tickets": [
+      "07"
+    ]
+  },
+  {
+    "path": "client/src/components/DatabaseHealthGate.test.tsx",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "6b673e06b467c4ce27fe036c66b8d9bc02b07abc"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "033c071c3fa6e6d89c62aa8874cea3f7dce5607e"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "6b673e06b467c4ce27fe036c66b8d9bc02b07abc"
+    },
+    "state": "两端不同",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D09",
+    "acceptance": "A21",
+    "decision": "兼容三库启动与清理，保留本地表/计时/账目",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "client/src/components/DatabaseHealthGate.tsx",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "49167e91e13a3eca9f2c3fa3f18e89dffde6c0dc"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "07fffd9df3ebf14a0b5043c906df24e8b2f71cc1"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "49167e91e13a3eca9f2c3fa3f18e89dffde6c0dc"
+    },
+    "state": "两端不同",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D09",
+    "acceptance": "A21",
+    "decision": "兼容三库启动与清理，保留本地表/计时/账目",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "client/src/components/ForwardXLogo.tsx",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "db11ebc79a0083f8783436e930ef7274b8545bc3"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "4240b04a8a7c22c9b13e1a2351c508006e2720bb"
+    },
+    "state": "仅上游有",
+    "source": "上游与本地都改动",
+    "handling": "保留本地品牌",
+    "requirement": "D08",
+    "acceptance": "A18",
+    "decision": "不新增上游默认F图案；网页标签/登录改用本地默认PNG及上传标志",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "client/src/components/ImageCaptchaField.tsx",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "e03c5a557e1fc7e7b6600546342300c20841dc94"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D05/D06/D07",
+    "acceptance": "A11/A12/A13/A16",
+    "decision": "纳入只读/验证码/告警/统计，保留本地权限和确认快照",
+    "tickets": [
+      "03",
+      "04",
+      "05"
+    ]
+  },
+  {
+    "path": "client/src/components/LanguageSelector.tsx",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "3e2f7e8df7f224616a0e18faeb92a83eb99d47b0"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "6eb3e695a3dddf349d78be1a1f2e2f066c2ea60d"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "172c9a8fe9cd343919ab50f0687ed06ad8dbb429"
+    },
+    "state": "两端不同",
+    "source": "上游与本地都改动",
+    "handling": "兼容纳入",
+    "requirement": "D08/D09",
+    "acceptance": "A15/A17/A18/A22",
+    "decision": "兼容网页/路由/品牌/双语/安装/构建，保留本地SNI入口与原生排除",
+    "tickets": [
+      "07"
+    ]
+  },
+  {
+    "path": "client/src/components/LinkTestLatencySummary.test.tsx",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "e0036ed464b5e57161775ed781582def14a51aa5"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "930d6a157e2aa6c048b69d25c56e0654d377816c"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "e0036ed464b5e57161775ed781582def14a51aa5"
+    },
+    "state": "两端不同",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D07/D09",
+    "acceptance": "A16/A19",
+    "decision": "纳入诊断/名称/地图与延迟修复，保留本地计数和去重",
+    "tickets": [
+      "03",
+      "05",
+      "06"
+    ]
+  },
+  {
+    "path": "client/src/components/LinkTestLatencySummary.tsx",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "528081bdaaedbd0513b652d6967fe99d0044ccae"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "ea567591cbce5ed6b757793133a85a7ffd12b340"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "8482114e6466e2c4989081a4fd8cef07ef129536"
+    },
+    "state": "两端不同",
+    "source": "上游与本地都改动",
+    "handling": "兼容纳入",
+    "requirement": "D07/D09",
+    "acceptance": "A16/A19",
+    "decision": "纳入诊断/名称/地图与延迟修复，保留本地计数和去重",
+    "tickets": [
+      "03",
+      "05",
+      "06"
+    ]
+  },
+  {
+    "path": "client/src/components/LoginLayout.test.tsx",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "bf5f5b6e9733256797dcdfc2b2a2e06ec7db0c85"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D08/D09",
+    "acceptance": "A15/A17/A18/A22",
+    "decision": "兼容网页/路由/品牌/双语/安装/构建，保留本地SNI入口与原生排除",
+    "tickets": [
+      "07"
+    ]
+  },
+  {
+    "path": "client/src/components/LoginLayout.tsx",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "ad1c2554dbc32f135c3032047180784c4b92aef8"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D08/D09",
+    "acceptance": "A15/A17/A18/A22",
+    "decision": "兼容网页/路由/品牌/双语/安装/构建，保留本地SNI入口与原生排除",
+    "tickets": [
+      "07"
+    ]
+  },
+  {
+    "path": "client/src/components/McpAccessCard.tsx",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "61bc55b0435d1164ec3e213adcb015e099d9759d"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D05/D06/D07",
+    "acceptance": "A11/A12/A13/A16",
+    "decision": "纳入只读/验证码/告警/统计，保留本地权限和确认快照",
+    "tickets": [
+      "03",
+      "04",
+      "05"
+    ]
+  },
+  {
+    "path": "client/src/components/NetworkDiagnostics.tsx",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "7148dcce8ab85745ebc50ef740f492cd79c7b577"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D07/D09",
+    "acceptance": "A16/A19",
+    "decision": "纳入诊断/名称/地图与延迟修复，保留本地计数和去重",
+    "tickets": [
+      "03",
+      "05",
+      "06"
+    ]
+  },
+  {
+    "path": "client/src/components/OperationsChinaMap.tsx",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "8245dfe3ca661e47cd87c89a067f6e1c898645cb"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "68fb773bf686680cb2a3ec50540356fb441da8f7"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "8245dfe3ca661e47cd87c89a067f6e1c898645cb"
+    },
+    "state": "两端不同",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D07/D09",
+    "acceptance": "A16/A19",
+    "decision": "纳入诊断/名称/地图与延迟修复，保留本地计数和去重",
+    "tickets": [
+      "03",
+      "05",
+      "06"
+    ]
+  },
+  {
+    "path": "client/src/components/OperationsMonitorPanel.tsx",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "3eb533acd195e33a2701e58db2a6e3f8ae8611e3"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D05/D06/D07",
+    "acceptance": "A11/A12/A13/A16",
+    "decision": "纳入只读/验证码/告警/统计，保留本地权限和确认快照",
+    "tickets": [
+      "03",
+      "04",
+      "05"
+    ]
+  },
+  {
+    "path": "client/src/components/OperationsRanking.test.tsx",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "1a19c2918159548464e7678a691f276433aace64"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D07/D09",
+    "acceptance": "A16/A19",
+    "decision": "纳入诊断/名称/地图与延迟修复，保留本地计数和去重",
+    "tickets": [
+      "03",
+      "05",
+      "06"
+    ]
+  },
+  {
+    "path": "client/src/components/OperationsRanking.tsx",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "809ef561f729bef024b256048e4bfae9ab1a68aa"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D07/D09",
+    "acceptance": "A16/A19",
+    "decision": "纳入诊断/名称/地图与延迟修复，保留本地计数和去重",
+    "tickets": [
+      "03",
+      "05",
+      "06"
+    ]
+  },
+  {
+    "path": "client/src/components/PanelStartView.test.tsx",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "3e40bff26fcf7522d4f01bd9bceb7fa61ade9825"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D08/D09",
+    "acceptance": "A15/A17/A18/A22",
+    "decision": "兼容网页/路由/品牌/双语/安装/构建，保留本地SNI入口与原生排除",
+    "tickets": [
+      "07"
+    ]
+  },
+  {
+    "path": "client/src/components/PanelStartView.tsx",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "5c03f27e5b58a4a3a0f77bb3db731223bedbaba5"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D08/D09",
+    "acceptance": "A15/A17/A18/A22",
+    "decision": "兼容网页/路由/品牌/双语/安装/构建，保留本地SNI入口与原生排除",
+    "tickets": [
+      "07"
+    ]
+  },
+  {
+    "path": "client/src/components/PersonalizationLayer.tsx",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "c8e4869601f42e1148741a3503aca398e750f4ef"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "5cb73f28c2cb45295d0db4b2aa817394ba2263bc"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "c8e4869601f42e1148741a3503aca398e750f4ef"
+    },
+    "state": "两端不同",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D08/D09",
+    "acceptance": "A15/A17/A18/A22",
+    "decision": "兼容网页/路由/品牌/双语/安装/构建，保留本地SNI入口与原生排除",
+    "tickets": [
+      "07"
+    ]
+  },
+  {
+    "path": "client/src/components/ProductSorting.test.tsx",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "220905dd9626853464fe1261bc164e54a5cdf683"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D07",
+    "acceptance": "A14/A15",
+    "decision": "纳入导出与顺序，保留权限/账目/币种",
+    "tickets": [
+      "06"
+    ]
+  },
+  {
+    "path": "client/src/components/RoutePage.test.tsx",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "ef4a08d27847845bd3eccd0ef9baf688f8f48ad3"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D08/D09",
+    "acceptance": "A15/A17/A18/A22",
+    "decision": "兼容网页/路由/品牌/双语/安装/构建，保留本地SNI入口与原生排除",
+    "tickets": [
+      "07"
+    ]
+  },
+  {
+    "path": "client/src/components/RoutePage.tsx",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "fb9d51dc0152a25c5998a59951173b63a9f82f76"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D08/D09",
+    "acceptance": "A15/A17/A18/A22",
+    "decision": "兼容网页/路由/品牌/双语/安装/构建，保留本地SNI入口与原生排除",
+    "tickets": [
+      "07"
+    ]
+  },
+  {
+    "path": "client/src/components/TrafficBillingConfigManager.tsx",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "fed59e913f170cb406d043a90bf0862b2837d84b"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "4564634cbf21a8a4480b3186821387e2dd8a2be0"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "9cf2318a4d55c2a9c33cb9fe11d97c6b330f6574"
+    },
+    "state": "两端不同",
+    "source": "上游与本地都改动",
+    "handling": "兼容纳入",
+    "requirement": "D07",
+    "acceptance": "A14/A15",
+    "decision": "纳入导出与顺序，保留权限/账目/币种",
+    "tickets": [
+      "06"
+    ]
+  },
+  {
+    "path": "client/src/components/UserSelect.test.tsx",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "9b77ab2b4aa2ad46fbf94b5eb5b51ae037daa98d"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "0ef0c5e825d7126cca0bacb26a01696da41d94a8"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "9b77ab2b4aa2ad46fbf94b5eb5b51ae037daa98d"
+    },
+    "state": "两端不同",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D08/D09",
+    "acceptance": "A15/A17/A18/A22",
+    "decision": "兼容网页/路由/品牌/双语/安装/构建，保留本地SNI入口与原生排除",
+    "tickets": [
+      "07"
+    ]
+  },
+  {
+    "path": "client/src/components/hosts/HostAddressSelectors.test.tsx",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "17cd228158d59a5e4e7e547b431669530c3394e7"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D03/D04",
+    "acceptance": "A05/A06/A07/A08/A09/A10",
+    "decision": "纳入多IP与独立健康；旧DDNS兼容、自动动作保护及重新确认",
+    "tickets": [
+      "01",
+      "02"
+    ]
+  },
+  {
+    "path": "client/src/components/hosts/HostAddressSelectors.tsx",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "18e4c934f813e43bd3fe9d9a30d0b8f413d00aa3"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D03/D04",
+    "acceptance": "A05/A06/A07/A08/A09/A10",
+    "decision": "纳入多IP与独立健康；旧DDNS兼容、自动动作保护及重新确认",
+    "tickets": [
+      "01",
+      "02"
+    ]
+  },
+  {
+    "path": "client/src/components/hosts/HostChinaHealthSettings.test.tsx",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "3f575aee19847e011416fa3d71b8603fb7a7b36e"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D03/D04",
+    "acceptance": "A05/A06/A07/A08/A09/A10",
+    "decision": "纳入多IP与独立健康；旧DDNS兼容、自动动作保护及重新确认",
+    "tickets": [
+      "01",
+      "02"
+    ]
+  },
+  {
+    "path": "client/src/components/hosts/HostChinaHealthSettings.tsx",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "414fede1486b1971cb0740bdb9ab8fbb11afcdf0"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D03/D04",
+    "acceptance": "A05/A06/A07/A08/A09/A10",
+    "decision": "纳入多IP与独立健康；旧DDNS兼容、自动动作保护及重新确认",
+    "tickets": [
+      "01",
+      "02"
+    ]
+  },
+  {
+    "path": "client/src/components/hosts/HostProbeServiceManager.tsx",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "073e1dfb3fe9e00054b4601eaee776a242f3224b"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "ceebb9e773521dd2deb5049e818b6a4fc10baa1c"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "e620e89562cb6757701d95c1d74997466677ca9e"
+    },
+    "state": "两端不同",
+    "source": "上游与本地都改动",
+    "handling": "兼容纳入",
+    "requirement": "D03/D04",
+    "acceptance": "A05/A06/A07/A08/A09/A10",
+    "decision": "纳入多IP与独立健康；旧DDNS兼容、自动动作保护及重新确认",
+    "tickets": [
+      "01",
+      "02"
+    ]
+  },
+  {
+    "path": "client/src/components/ui/pearl-ui.test.tsx",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "1ad326b2eec25aa5a31eb579e52124f3c2963ad2"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "a26495abe91382244b4f0231e7c0b7db2069ab95"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "5ac6d554b06e7541ca3fd7c96358dd8a17ab513c"
+    },
+    "state": "两端不同",
+    "source": "上游与本地都改动",
+    "handling": "兼容纳入",
+    "requirement": "D08/D09",
+    "acceptance": "A15/A17/A18/A22",
+    "decision": "兼容网页/路由/品牌/双语/安装/构建，保留本地SNI入口与原生排除",
+    "tickets": [
+      "07"
+    ]
+  },
+  {
+    "path": "client/src/components/ui/ui-copy.test.tsx",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "abf41c46c8b8001156b07146fae33241244f7b0b"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "5f4bf0ee41d05c4d498c94c1989b9f6117d5ccc5"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "abf41c46c8b8001156b07146fae33241244f7b0b"
+    },
+    "state": "两端不同",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D08/D09",
+    "acceptance": "A15/A17/A18/A22",
+    "decision": "兼容网页/路由/品牌/双语/安装/构建，保留本地SNI入口与原生排除",
+    "tickets": [
+      "07"
+    ]
+  },
+  {
+    "path": "client/src/i18n/en.json",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "dda48855fff1a30b1762c9bd789900e90fa91f69"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "c51e6ce564c2174d5a78899e2ff00364dbcf04d9"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "f6f2fb2edf42e54a990033673dc371dd9fbb0603"
+    },
+    "state": "两端不同",
+    "source": "上游与本地都改动",
+    "handling": "兼容纳入",
+    "requirement": "D08/D09",
+    "acceptance": "A15/A17/A18/A22",
+    "decision": "兼容网页/路由/品牌/双语/安装/构建，保留本地SNI入口与原生排除",
+    "tickets": [
+      "07"
+    ]
+  },
+  {
+    "path": "client/src/i18n/index.ts",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "0016179b1bf136794f26d87ed5dc312c1430e727"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "6f53d253bbf1fe760bc442b59ac91fa421ff0fce"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "0016179b1bf136794f26d87ed5dc312c1430e727"
+    },
+    "state": "两端不同",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D08/D09",
+    "acceptance": "A15/A17/A18/A22",
+    "decision": "兼容网页/路由/品牌/双语/安装/构建，保留本地SNI入口与原生排除",
+    "tickets": [
+      "07"
+    ]
+  },
+  {
+    "path": "client/src/i18n/runtime.test.ts",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "9c35a89a0cba73b3b54ca647a2b4c51f4b5c8e96"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "3704aaff7318967cdc2ce42152f5e203bf427dfe"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "d092e0e249db532d7fe53cd70f7149e6d66e5260"
+    },
+    "state": "两端不同",
+    "source": "上游与本地都改动",
+    "handling": "兼容纳入",
+    "requirement": "D08/D09",
+    "acceptance": "A15/A17/A18/A22",
+    "decision": "兼容网页/路由/品牌/双语/安装/构建，保留本地SNI入口与原生排除",
+    "tickets": [
+      "07"
+    ]
+  },
+  {
+    "path": "client/src/i18n/ui-coverage.test.tsx",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "a933827f7a59b4d6546317de8d9f1ab3c3257f2f"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "aac184c3ef45110cb2e2f19005a4880626449a57"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "a933827f7a59b4d6546317de8d9f1ab3c3257f2f"
+    },
+    "state": "两端不同",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D08/D09",
+    "acceptance": "A15/A17/A18/A22",
+    "decision": "兼容网页/路由/品牌/双语/安装/构建，保留本地SNI入口与原生排除",
+    "tickets": [
+      "07"
+    ]
+  },
+  {
+    "path": "client/src/lib/billingExport.test.ts",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "77c80f3864d0a5b14c157ae4792638238ec5564e"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D07",
+    "acceptance": "A14/A15",
+    "decision": "纳入导出与顺序，保留权限/账目/币种",
+    "tickets": [
+      "06"
+    ]
+  },
+  {
+    "path": "client/src/lib/billingExport.ts",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "5dda282dd21da3c0dc3d5e638e11d09cc8d9d19c"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D07",
+    "acceptance": "A14/A15",
+    "decision": "纳入导出与顺序，保留权限/账目/币种",
+    "tickets": [
+      "06"
+    ]
+  },
+  {
+    "path": "client/src/lib/brandLogo.ts",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "1c527a80239726f74a18d58e2808038031eca1b4"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "保留本地品牌",
+    "requirement": "D08",
+    "acceptance": "A18",
+    "decision": "不新增上游默认F图案；网页标签/登录改用本地默认PNG及上传标志",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "client/src/lib/dashboardCache.test.ts",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "978a49cfca52dc08b1e1e1b29b1da6e352d7831d"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D08/D09",
+    "acceptance": "A15/A17/A18/A22",
+    "decision": "兼容网页/路由/品牌/双语/安装/构建，保留本地SNI入口与原生排除",
+    "tickets": [
+      "07"
+    ]
+  },
+  {
+    "path": "client/src/lib/dashboardCache.ts",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "218fddc5896840b96df04aff0b0440c86503bb5e"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D08/D09",
+    "acceptance": "A15/A17/A18/A22",
+    "decision": "兼容网页/路由/品牌/双语/安装/构建，保留本地SNI入口与原生排除",
+    "tickets": [
+      "07"
+    ]
+  },
+  {
+    "path": "client/src/lib/fileDownload.test.ts",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "7f22ebc36e08606ba57ae63e89e8fa316af55fd0"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "847657da55fc2d9e17c4ea54d573135c2ef19477"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "7f22ebc36e08606ba57ae63e89e8fa316af55fd0"
+    },
+    "state": "两端不同",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D08/D09",
+    "acceptance": "A15/A17/A18/A22",
+    "decision": "兼容网页/路由/品牌/双语/安装/构建，保留本地SNI入口与原生排除",
+    "tickets": [
+      "07"
+    ]
+  },
+  {
+    "path": "client/src/lib/fileDownload.ts",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "7fbf20c60fd7b829c485771311565805c5d5e775"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "acfd18da1a1b7bd397986a1a9e09c325b78e8475"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "7fbf20c60fd7b829c485771311565805c5d5e775"
+    },
+    "state": "两端不同",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D08/D09",
+    "acceptance": "A15/A17/A18/A22",
+    "decision": "兼容网页/路由/品牌/双语/安装/构建，保留本地SNI入口与原生排除",
+    "tickets": [
+      "07"
+    ]
+  },
+  {
+    "path": "client/src/lib/loginTransition.ts",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "67b24702e72b7e38ae7def74cc9da3a33fbbf09d"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D08/D09",
+    "acceptance": "A15/A17/A18/A22",
+    "decision": "兼容网页/路由/品牌/双语/安装/构建，保留本地SNI入口与原生排除",
+    "tickets": [
+      "07"
+    ]
+  },
+  {
+    "path": "client/src/lib/mapTooltipPosition.test.ts",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "74b7d749d32d0874581203bf11dab512ba7c9bcf"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D08/D09",
+    "acceptance": "A15/A17/A18/A22",
+    "decision": "兼容网页/路由/品牌/双语/安装/构建，保留本地SNI入口与原生排除",
+    "tickets": [
+      "07"
+    ]
+  },
+  {
+    "path": "client/src/lib/mapTooltipPosition.ts",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "dc46e68b46208aacfa2cb615b4cf10fa71cf2c64"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D08/D09",
+    "acceptance": "A15/A17/A18/A22",
+    "decision": "兼容网页/路由/品牌/双语/安装/构建，保留本地SNI入口与原生排除",
+    "tickets": [
+      "07"
+    ]
+  },
+  {
+    "path": "client/src/lib/mobileAppIcon.test.ts",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "52df1f388403b8c07aa6b121c21282b78bbed51e"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "client/src/lib/mobileAppIcon.ts",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "c28b6c56eacc53a522a75a653e0d33688d808789"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "client/src/lib/moduleResource.test.ts",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "e9b92141b69b6be571c12265bc9c921b9f4c9206"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D08/D09",
+    "acceptance": "A15/A17/A18/A22",
+    "decision": "兼容网页/路由/品牌/双语/安装/构建，保留本地SNI入口与原生排除",
+    "tickets": [
+      "07"
+    ]
+  },
+  {
+    "path": "client/src/lib/moduleResource.ts",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "5dc5a723c2f5de91315afc6e0953635824d408cc"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D08/D09",
+    "acceptance": "A15/A17/A18/A22",
+    "decision": "兼容网页/路由/品牌/双语/安装/构建，保留本地SNI入口与原生排除",
+    "tickets": [
+      "07"
+    ]
+  },
+  {
+    "path": "client/src/lib/routeModules.ts",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "40bbd99daf5a93e856a07a9499c7b6d264fbca77"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D08/D09",
+    "acceptance": "A15/A17/A18/A22",
+    "decision": "兼容网页/路由/品牌/双语/安装/构建，保留本地SNI入口与原生排除",
+    "tickets": [
+      "07"
+    ]
+  },
+  {
+    "path": "client/src/lib/ruleSortScope.test.ts",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "463fec6ad766129d6c92e425e85d044f5d7c8b67"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D08/D09",
+    "acceptance": "A15/A17/A18/A22",
+    "decision": "兼容网页/路由/品牌/双语/安装/构建，保留本地SNI入口与原生排除",
+    "tickets": [
+      "07"
+    ]
+  },
+  {
+    "path": "client/src/lib/ruleSortScope.ts",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "329c1abdc545723c12672594a93782163688394e"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D08/D09",
+    "acceptance": "A15/A17/A18/A22",
+    "decision": "兼容网页/路由/品牌/双语/安装/构建，保留本地SNI入口与原生排除",
+    "tickets": [
+      "07"
+    ]
+  },
+  {
+    "path": "client/src/lib/siteFavicon.test.tsx",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "9d414003eba9caf742d8abce45a87de6a5acd2f2"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D08/D09",
+    "acceptance": "A15/A17/A18/A22",
+    "decision": "兼容网页/路由/品牌/双语/安装/构建，保留本地SNI入口与原生排除",
+    "tickets": [
+      "07"
+    ]
+  },
+  {
+    "path": "client/src/lib/siteFavicon.ts",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "8290f59e755d5e737241f30de0cb8bc61f7af26f"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D08/D09",
+    "acceptance": "A15/A17/A18/A22",
+    "decision": "兼容网页/路由/品牌/双语/安装/构建，保留本地SNI入口与原生排除",
+    "tickets": [
+      "07"
+    ]
+  },
+  {
+    "path": "client/src/main.tsx",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "d25bcce46f83283ceee877bba1076a8c1d6c4693"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "c137196e75979746cc49ba0bac9a8ea69d5e8a38"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "47620b47780947b9cf066fb687c70a61bdbd3d2e"
+    },
+    "state": "两端不同",
+    "source": "上游与本地都改动",
+    "handling": "兼容纳入",
+    "requirement": "D08/D09",
+    "acceptance": "A15/A17/A18/A22",
+    "decision": "兼容网页/路由/品牌/双语/安装/构建，保留本地SNI入口与原生排除",
+    "tickets": [
+      "07"
+    ]
+  },
+  {
+    "path": "client/src/pages/Affiliates.test.tsx",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "d9db3180a02c482d1f13690de46e9236ef6e3abd"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "7177ae9de590bbe95eba0976b64d3b223a687467"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "08b2ebbd87769c4ee9cbb4c1f2a1d1d669fc33d9"
+    },
+    "state": "两端不同",
+    "source": "上游与本地都改动",
+    "handling": "兼容纳入",
+    "requirement": "D08/D09",
+    "acceptance": "A15/A17/A18/A22",
+    "decision": "兼容网页/路由/品牌/双语/安装/构建，保留本地SNI入口与原生排除",
+    "tickets": [
+      "07"
+    ]
+  },
+  {
+    "path": "client/src/pages/Billing.tsx",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "7445419219520799ff2ffa1d4e656273c4266412"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "38fb271b192d3e39ba2dd1bbb9567cfac8c430a8"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "7445419219520799ff2ffa1d4e656273c4266412"
+    },
+    "state": "两端不同",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D07",
+    "acceptance": "A14/A15",
+    "decision": "纳入导出与顺序，保留权限/账目/币种",
+    "tickets": [
+      "06"
+    ]
+  },
+  {
+    "path": "client/src/pages/Home.tsx",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "49fc3bc1ec75b959a7e050b6e72a1e33ff53f495"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "4e9ea146d3c42b6570b5b7f7d9b728395b58346b"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "49fc3bc1ec75b959a7e050b6e72a1e33ff53f495"
+    },
+    "state": "两端不同",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D08/D09",
+    "acceptance": "A15/A17/A18/A22",
+    "decision": "兼容网页/路由/品牌/双语/安装/构建，保留本地SNI入口与原生排除",
+    "tickets": [
+      "07"
+    ]
+  },
+  {
+    "path": "client/src/pages/Hosts.tsx",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "8fb1ff9144efc0b283acc165f5b406b142c4c15c"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "05c8de56093028bc64b0030b59cc5666d24b61a0"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "ce238a0bc60b66714f837856beae183bdd47fd26"
+    },
+    "state": "两端不同",
+    "source": "上游与本地都改动",
+    "handling": "兼容纳入",
+    "requirement": "D03/D04",
+    "acceptance": "A05/A06/A07/A08/A09/A10",
+    "decision": "纳入多IP与独立健康；旧DDNS兼容、自动动作保护及重新确认",
+    "tickets": [
+      "01",
+      "02"
+    ]
+  },
+  {
+    "path": "client/src/pages/Login.tsx",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "00996a57c9c9e5ee0569e056ad89c9a3dedb0136"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "888c171675e0609cee84fe1bef3c0a7a5b2ad4cd"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "b0613b8b3eb546befd2fab0727054ef510e467af"
+    },
+    "state": "两端不同",
+    "source": "上游与本地都改动",
+    "handling": "兼容纳入",
+    "requirement": "D08/D09",
+    "acceptance": "A15/A17/A18/A22",
+    "decision": "兼容网页/路由/品牌/双语/安装/构建，保留本地SNI入口与原生排除",
+    "tickets": [
+      "07"
+    ]
+  },
+  {
+    "path": "client/src/pages/LookingGlass.tsx",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "bb0aa0135690d931e543f2a5b2b815d69ad3202d"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "45f9bc9d9e6c4e4713073306b3e03b41445d2dcf"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "bb0aa0135690d931e543f2a5b2b815d69ad3202d"
+    },
+    "state": "两端不同",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D07/D09",
+    "acceptance": "A16/A19",
+    "decision": "纳入诊断/名称/地图与延迟修复，保留本地计数和去重",
+    "tickets": [
+      "03",
+      "05",
+      "06"
+    ]
+  },
+  {
+    "path": "client/src/pages/Operations.tsx",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "3d5dd80226768b3a605fe45b447a513672a6bb68"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "fa4ace5916777ae706ea1cef8d3af689820c24c9"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "3d5dd80226768b3a605fe45b447a513672a6bb68"
+    },
+    "state": "两端不同",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D07/D09",
+    "acceptance": "A16/A19",
+    "decision": "纳入诊断/名称/地图与延迟修复，保留本地计数和去重",
+    "tickets": [
+      "03",
+      "05",
+      "06"
+    ]
+  },
+  {
+    "path": "client/src/pages/Plans.tsx",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "573a5f64fa9a4db1c91ca5d81e7cce586610f005"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "ec0467f95dc2b6adde673b65a3cd494af96374a9"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "fe163d1d403679724b62d5bf0424a33d821f3b25"
+    },
+    "state": "两端不同",
+    "source": "上游与本地都改动",
+    "handling": "兼容纳入",
+    "requirement": "D07",
+    "acceptance": "A14/A15",
+    "decision": "纳入导出与顺序，保留权限/账目/币种",
+    "tickets": [
+      "06"
+    ]
+  },
+  {
+    "path": "client/src/pages/PublicHome.tsx",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "24058af25724ad3653a0596ef044731b9aa7f75c"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "74d4f9d0cebb3cc167bced4863ab6efcb307ab15"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "d3414edc8741e9f0a0d9cdfc88528c11acfd344e"
+    },
+    "state": "两端不同",
+    "source": "上游与本地都改动",
+    "handling": "兼容纳入",
+    "requirement": "D08/D09",
+    "acceptance": "A15/A17/A18/A22",
+    "decision": "兼容网页/路由/品牌/双语/安装/构建，保留本地SNI入口与原生排除",
+    "tickets": [
+      "07"
+    ]
+  },
+  {
+    "path": "client/src/pages/Rules.tsx",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "7fdefd9ae1f8177514e655237cc70d39cc733d40"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "5a1f3b1f26d0955bd07ace828029aaf60efa6d98"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "5907862d9630e2bcd5febf40d9d99fd30e9b252d"
+    },
+    "state": "两端不同",
+    "source": "上游与本地都改动",
+    "handling": "兼容纳入",
+    "requirement": "D08/D09",
+    "acceptance": "A15/A17/A18/A22",
+    "decision": "兼容网页/路由/品牌/双语/安装/构建，保留本地SNI入口与原生排除",
+    "tickets": [
+      "07"
+    ]
+  },
+  {
+    "path": "client/src/pages/Settings.tsx",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "3be50daea09371961ebc3b73b76ecb4a3dd2eff5"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "3587bf99b5f3e57370e68c68fbb56ad13b58dce1"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "7f3708842bfa30bfeafd4e9b7a2161b4674272e6"
+    },
+    "state": "两端不同",
+    "source": "上游与本地都改动",
+    "handling": "兼容纳入",
+    "requirement": "D08/D09",
+    "acceptance": "A15/A17/A18/A22",
+    "decision": "兼容网页/路由/品牌/双语/安装/构建，保留本地SNI入口与原生排除",
+    "tickets": [
+      "07"
+    ]
+  },
+  {
+    "path": "client/src/pages/Wallet.tsx",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "fe240de307dfd6b5ff558a9cd09e17f7985e9587"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "8dee15dd9d918d83537516bf7ee4b95b08cee576"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "fe240de307dfd6b5ff558a9cd09e17f7985e9587"
+    },
+    "state": "两端不同",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D07",
+    "acceptance": "A14/A15",
+    "decision": "纳入导出与顺序，保留权限/账目/币种",
+    "tickets": [
+      "06"
+    ]
+  },
+  {
+    "path": "client/src/styles/pearl.css",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "2b4ba7f40680e362bab281e5634a90d8fcf8e9b9"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "ea22b4da731a6fa975d550d29974add7a9419a7b"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "2b4ba7f40680e362bab281e5634a90d8fcf8e9b9"
+    },
+    "state": "两端不同",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D08/D09",
+    "acceptance": "A15/A17/A18/A22",
+    "decision": "兼容网页/路由/品牌/双语/安装/构建，保留本地SNI入口与原生排除",
+    "tickets": [
+      "07"
+    ]
+  },
+  {
+    "path": "docs/.vitepress/config.mts",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "3e86bd20e9d0e5d717f17ae038f3ad74d070ead5"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "97d9dbd7c2756b3f6c0ca7eb6ff81a45fa3ec938"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "0c4c56ef06142f69bf47bcc6a81ca726950a45f0"
+    },
+    "state": "两端不同",
+    "source": "上游与本地都改动",
+    "handling": "兼容纳入",
+    "requirement": "D01/D09",
+    "acceptance": "A01/A22",
+    "decision": "按本地最终功能兼容文档、来源和未发布状态",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "docs/guide/ai-assistant.md",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "3354b59233f54b1d2865e44c2967dbc44b9352c3"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "32917d8738f3c69099a3d7a2b5a0adad75952cb5"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "3354b59233f54b1d2865e44c2967dbc44b9352c3"
+    },
+    "state": "两端不同",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D01/D09",
+    "acceptance": "A01/A22",
+    "decision": "按本地最终功能兼容文档、来源和未发布状态",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "docs/guide/billing.md",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "8f476f4ccd3ef371800b84ca34c5d7d133fce724"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "91f6d599f00fe5d17af463aba8f6528268aedb3a"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "896292cd5bfc30bc46e4f17659b23612bb1afb50"
+    },
+    "state": "两端不同",
+    "source": "上游与本地都改动",
+    "handling": "兼容纳入",
+    "requirement": "D01/D09",
+    "acceptance": "A01/A22",
+    "decision": "按本地最终功能兼容文档、来源和未发布状态",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "docs/guide/ddns.md",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "c4049f762de7463a8375c9e4bd4fd2ae183e3f65"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "6d92c247e97f6947821ee1c4277c7ddbaabc74de"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "1f9b06cb9e511a6f519ae8c92f8243bbbea618a9"
+    },
+    "state": "两端不同",
+    "source": "上游与本地都改动",
+    "handling": "兼容纳入",
+    "requirement": "D01/D09",
+    "acceptance": "A01/A22",
+    "decision": "按本地最终功能兼容文档、来源和未发布状态",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "docs/guide/development.md",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "95cebd2e13a7cea7e64778a300966418eaae7183"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "78f62ef2d9737b848518cbdce5ae1b15a3c766bb"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "11502331995835334508e3d0f0076849080853c6"
+    },
+    "state": "两端不同",
+    "source": "上游与本地都改动",
+    "handling": "兼容纳入",
+    "requirement": "D01/D09",
+    "acceptance": "A01/A22",
+    "decision": "按本地最终功能兼容文档、来源和未发布状态",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "docs/guide/hosts.md",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "0dce58bc33083b8081b6d09aacfb44ddf7e3a74c"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "a6ea8e2a2601bff04e0079a9d5e44cf9e3e09e5f"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "2aeae643b109b959b31f1db808acb0f7ba189587"
+    },
+    "state": "两端不同",
+    "source": "上游与本地都改动",
+    "handling": "兼容纳入",
+    "requirement": "D01/D09",
+    "acceptance": "A01/A22",
+    "decision": "按本地最终功能兼容文档、来源和未发布状态",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "docs/guide/mobile-app.md",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "65e874a8fcc65a1dc3ad5a9bab6c04ff18004ec6"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "354c3575ebb0e75425172b125fd746c4e6814516"
+    },
+    "state": "仅上游有",
+    "source": "上游与本地都改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "docs/guide/observability-mcp.md",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "241fd6ba3a4a899040b9695ed50ae852aac85b1d"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D01/D09",
+    "acceptance": "A01/A22",
+    "decision": "按本地最终功能兼容文档、来源和未发布状态",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "docs/guide/operations.en.md",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "aeca21037c3f9288b47db503d2e968c32516d318"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "66d94f9b319d5b1501e2cd8d449f3f63d20f763d"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "0da5a64236feca4b7cb153540c6e090ac2f7ba48"
+    },
+    "state": "两端不同",
+    "source": "上游与本地都改动",
+    "handling": "兼容纳入",
+    "requirement": "D01/D09",
+    "acceptance": "A01/A22",
+    "decision": "按本地最终功能兼容文档、来源和未发布状态",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "docs/guide/operations.md",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "df3dfeae43827e1b671bba18b3dce898babff327"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "5cbb29f5112a9218a7fc0e18d8ac1c0e38e705d8"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "a757d8b75b59bb86720381e039847724d79be009"
+    },
+    "state": "两端不同",
+    "source": "上游与本地都改动",
+    "handling": "兼容纳入",
+    "requirement": "D01/D09",
+    "acceptance": "A01/A22",
+    "decision": "按本地最终功能兼容文档、来源和未发布状态",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "docs/guide/reverse-proxy.md",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "33fb793b94dd95bb6d910062a26d0748f5fbb2d3"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "c115a8464904d601eddb5c3d4e1ad5e6dd19e122"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "33fb793b94dd95bb6d910062a26d0748f5fbb2d3"
+    },
+    "state": "两端不同",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D01/D09",
+    "acceptance": "A01/A22",
+    "decision": "按本地最终功能兼容文档、来源和未发布状态",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "docs/guide/users-billing.md",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "0c2be92af6f3c1bb0b7728588ebb7b9f000d972a"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "5acffdd6f5979d478f7964b1da9d572ed1f7b264"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "9e1ca1b7eb78d319a668c6aab5477ca718a15e34"
+    },
+    "state": "两端不同",
+    "source": "上游与本地都改动",
+    "handling": "兼容纳入",
+    "requirement": "D01/D09",
+    "acceptance": "A01/A22",
+    "decision": "按本地最终功能兼容文档、来源和未发布状态",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "drizzle/schema.ts",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "2ea9836a21ab06b924a56d401a350133ec97f48c"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "8ffb0da574a78e255cbd3d5d1860ec3c5c609eeb"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "13b7c5b0bfe062555509cb4accda7f305106859f"
+    },
+    "state": "两端不同",
+    "source": "上游与本地都改动",
+    "handling": "兼容纳入",
+    "requirement": "D08/D09",
+    "acceptance": "A15/A17/A18/A22",
+    "decision": "兼容网页/路由/品牌/双语/安装/构建，保留本地SNI入口与原生排除",
+    "tickets": [
+      "07"
+    ]
+  },
+  {
+    "path": "forwardx-fxp/main.go",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "0ed575e79146d78a2762e0edb6e154798ea27699"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "3b51ca3844293a98b7c6fa29c0d14b682aff84d1"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "2f0399d9fbacdd95dce6c1c3ae23bc488e974f31"
+    },
+    "state": "两端不同",
+    "source": "上游与本地都改动",
+    "handling": "兼容纳入",
+    "requirement": "D04/D09",
+    "acceptance": "A05/A08/A09/A20/A22",
+    "decision": "兼容多IP、换IP和建连改进，保留本地SNI/版本/运行时",
+    "tickets": [
+      "02",
+      "08"
+    ]
+  },
+  {
+    "path": "forwardx-fxp/setup_retry_test.go",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "2bc214b9911a88a96332e9320ff61c1eb4ee5bd6"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D04/D09",
+    "acceptance": "A05/A08/A09/A20/A22",
+    "decision": "兼容多IP、换IP和建连改进，保留本地SNI/版本/运行时",
+    "tickets": [
+      "02",
+      "08"
+    ]
+  },
+  {
+    "path": "index.html",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "4fdd5d85baf1156724d2a4a12747539969157491"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "ec879c56c4b953204877324bf17e7c30fe988712"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "e54813d7b2c98ae27e75ab5ccd0efd0b26f9cde4"
+    },
+    "state": "两端不同",
+    "source": "上游与本地都改动",
+    "handling": "兼容纳入",
+    "requirement": "D08/D09",
+    "acceptance": "A15/A17/A18/A22",
+    "decision": "兼容网页/路由/品牌/双语/安装/构建，保留本地SNI入口与原生排除",
+    "tickets": [
+      "07"
+    ]
+  },
+  {
+    "path": "ios/App/App.xcodeproj/project.pbxproj",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "660833bbfe140b16ea0a2abb4ba9401dff72dfd3"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "0f619d8c1169a279f58dc51219f8f67500fa3e23"
+    },
+    "state": "仅上游有",
+    "source": "上游与本地都改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "ios/App/App/AppDelegate.swift",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "f557042a4e755bd05e9746ab4a4213c236a626d3"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "c3cd83b5c0a62be3fc56a7909aedc70ccf6a92c0"
+    },
+    "state": "仅上游有",
+    "source": "上游与本地都改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "3af9eb9cbe7b4eabfb362df8a645279ba488dbc4"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "313f5aa09ecff3c6ab72e17007afc131b019926f"
+    },
+    "state": "仅上游有",
+    "source": "上游与本地都改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "ios/App/App/Assets.xcassets/AppIcon.appiconset/Contents.json",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "00b5bd341c1ae473a68c7289c96226c59eec0228"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "9b7d382dcecca887eac19d7f1c4c8dc57abe00e4"
+    },
+    "state": "仅上游有",
+    "source": "上游与本地都改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "ios/App/App/Assets.xcassets/AppIconEmberDark.appiconset/AppIcon-512@2x.png",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "37ef5613cbb4705e6597cbcdf43faff1ebbef283"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "ios/App/App/Assets.xcassets/AppIconEmberDark.appiconset/Contents.json",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "00b5bd341c1ae473a68c7289c96226c59eec0228"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "ios/App/App/Assets.xcassets/AppIconEmberLight.appiconset/AppIcon-512@2x.png",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "3a261fa4fcc72e42048ffed89a0c2f61272b1b90"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "ios/App/App/Assets.xcassets/AppIconEmberLight.appiconset/Contents.json",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "00b5bd341c1ae473a68c7289c96226c59eec0228"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "ios/App/App/Assets.xcassets/AppIconForestDark.appiconset/AppIcon-512@2x.png",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "1b401ed8a88565a97095c3a6acba81b641f47960"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "ios/App/App/Assets.xcassets/AppIconForestDark.appiconset/Contents.json",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "00b5bd341c1ae473a68c7289c96226c59eec0228"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "ios/App/App/Assets.xcassets/AppIconForestLight.appiconset/AppIcon-512@2x.png",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "1c6cc05684599dc4fa28a9bdceac2ee00be33449"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "ios/App/App/Assets.xcassets/AppIconForestLight.appiconset/Contents.json",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "00b5bd341c1ae473a68c7289c96226c59eec0228"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "ios/App/App/Assets.xcassets/AppIconInkDark.appiconset/AppIcon-512@2x.png",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "a8da665c69183fdb3d367bc92f6950f838327ce4"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "ios/App/App/Assets.xcassets/AppIconInkDark.appiconset/Contents.json",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "00b5bd341c1ae473a68c7289c96226c59eec0228"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "ios/App/App/Assets.xcassets/AppIconSakuraDark.appiconset/AppIcon-512@2x.png",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "84750a4e36ad75f2a85699b1eb239e947528ef6e"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "ios/App/App/Assets.xcassets/AppIconSakuraDark.appiconset/Contents.json",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "00b5bd341c1ae473a68c7289c96226c59eec0228"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "ios/App/App/Assets.xcassets/AppIconSakuraLight.appiconset/AppIcon-512@2x.png",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "e0fa413eca0f0393ea91c663fd09987769d139a1"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "ios/App/App/Assets.xcassets/AppIconSakuraLight.appiconset/Contents.json",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "00b5bd341c1ae473a68c7289c96226c59eec0228"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "ios/App/App/Assets.xcassets/AppIconTealDark.appiconset/AppIcon-512@2x.png",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "bf96d0e927e32aed39510e360cb5ce4362f8c33b"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "ios/App/App/Assets.xcassets/AppIconTealDark.appiconset/Contents.json",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "00b5bd341c1ae473a68c7289c96226c59eec0228"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "ios/App/App/Assets.xcassets/AppIconTealLight.appiconset/AppIcon-512@2x.png",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "3732bbe7d617fead443f375256e7d1b1cdaa21a2"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "ios/App/App/Assets.xcassets/AppIconTealLight.appiconset/Contents.json",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "00b5bd341c1ae473a68c7289c96226c59eec0228"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "ios/App/App/Assets.xcassets/AppIconWisteriaDark.appiconset/AppIcon-512@2x.png",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "aaab0f3d5c39cbb15ae8f76f2e4de76aebf0fb6a"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "ios/App/App/Assets.xcassets/AppIconWisteriaDark.appiconset/Contents.json",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "00b5bd341c1ae473a68c7289c96226c59eec0228"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "ios/App/App/Assets.xcassets/AppIconWisteriaLight.appiconset/AppIcon-512@2x.png",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "47ec96be2fc89ab599bc57ba1310d2370d64d3f9"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "ios/App/App/Assets.xcassets/AppIconWisteriaLight.appiconset/Contents.json",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "00b5bd341c1ae473a68c7289c96226c59eec0228"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "ios/App/App/Base.lproj/Main.storyboard",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "2afe28610062a415280b31feb01e4f35aa3a628e"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "b44df7be8f82acfcd747fd8d77fcd7a87b788f6f"
+    },
+    "state": "仅上游有",
+    "source": "上游与本地都改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "package.json",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "6ca6fa4a2656f675733219414360c14808262d41"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "e76d1582f6eaa59b027f5e8fbe3a41d3c812530e"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "fabf04616b231c48f031c5d0727786b71273b402"
+    },
+    "state": "两端不同",
+    "source": "上游与本地都改动",
+    "handling": "兼容纳入",
+    "requirement": "D01/D09",
+    "acceptance": "A01/A22",
+    "decision": "拆分网页/服务端检查与依赖；排除test:ios、原生图标/发布及专属依赖；保留本地版本",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "pnpm-lock.yaml",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "b6487c7eef2a2f15929bf5e56ffe4c5f0dab765c"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "26f2ec7a4860ff4496f242fb8e7d6a5a2314aac4"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "87047334cd51742fe86c505043a7e340f5cf68a6"
+    },
+    "state": "两端不同",
+    "source": "上游与本地都改动",
+    "handling": "兼容纳入",
+    "requirement": "D01/D09",
+    "acceptance": "A01/A22",
+    "decision": "拆分网页/服务端检查与依赖；排除test:ios、原生图标/发布及专属依赖；保留本地版本",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "scripts/app-icons.test.ts",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "459fbcd2f22062ced818113af73109dfb9dc928a"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "scripts/build-ios-ipa.mjs",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "ceee5a90d8e3220d117d10406a068e379e55c652"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "fc52a1458ea989ffb0cc0e12a9cb819b04a30594"
+    },
+    "state": "仅上游有",
+    "source": "上游与本地都改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "scripts/check-client-delivery.mjs",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "b4ee4c285a298ef02f8cec2902807744bb212979"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D08/D09",
+    "acceptance": "A15/A17/A18/A22",
+    "decision": "兼容网页/路由/品牌/双语/安装/构建，保留本地SNI入口与原生排除",
+    "tickets": [
+      "07"
+    ]
+  },
+  {
+    "path": "scripts/client-delivery-plugin.test.ts",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "cfe75bc6c1d50fd408217af2790a9f7257e237e7"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D08/D09",
+    "acceptance": "A15/A17/A18/A22",
+    "decision": "兼容网页/路由/品牌/双语/安装/构建，保留本地SNI入口与原生排除",
+    "tickets": [
+      "07"
+    ]
+  },
+  {
+    "path": "scripts/client-delivery-plugin.ts",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "7019b1f78de2c774817909fbe5ed8c40c9b68a57"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D08/D09",
+    "acceptance": "A15/A17/A18/A22",
+    "decision": "兼容网页/路由/品牌/双语/安装/构建，保留本地SNI入口与原生排除",
+    "tickets": [
+      "07"
+    ]
+  },
+  {
+    "path": "scripts/generate-app-icons.ts",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "405346e13c67a74502a0c0dbe4af52b4d8381b46"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "server/_core/systemRouter.ts",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "f207963b27abdf73fb8a6b1ac647077beffb4ff0"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "21666989ad6442ec354760a89dbe4b9acd89535a"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "f34109cc8e740973a82ac80dc269ed1a1409b377"
+    },
+    "state": "两端不同",
+    "source": "上游与本地都改动",
+    "handling": "兼容纳入",
+    "requirement": "D08/D09",
+    "acceptance": "A15/A17/A18/A22",
+    "decision": "兼容网页/路由/品牌/双语/安装/构建，保留本地SNI入口与原生排除",
+    "tickets": [
+      "07"
+    ]
+  },
+  {
+    "path": "server/agentAddressState.ts",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "9defc7cc3b3978da222898c6883c2eb8fd646a8b"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "7191e1501c8e9bdff879f560aaaae58906734977"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "9defc7cc3b3978da222898c6883c2eb8fd646a8b"
+    },
+    "state": "两端不同",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D08/D09",
+    "acceptance": "A15/A17/A18/A22",
+    "decision": "兼容网页/路由/品牌/双语/安装/构建，保留本地SNI入口与原生排除",
+    "tickets": [
+      "07"
+    ]
+  },
+  {
+    "path": "server/agentEncryptionMiddleware.ts",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "4c9bdf36f61d0729d59b3a674d50a19fbaca2a5c"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "1c41d05960cc3627b4eaba22a9d069b2318d33dd"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "fb1ca8d1eceb6cf3849f0cd153e832076fb9b52e"
+    },
+    "state": "两端不同",
+    "source": "上游与本地都改动",
+    "handling": "兼容纳入",
+    "requirement": "D02/D04/D09",
+    "acceptance": "A02/A03/A04/A08/A10/A19",
+    "decision": "仅取286新增部分，保留SNI/主备/计费/加密，接新能力报告",
+    "tickets": [
+      "02",
+      "08"
+    ]
+  },
+  {
+    "path": "server/agentHeartbeatGate.test.ts",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "398ae4d71f761b87f04ac439082e60412d920cda"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "439bca37da1dc63d0353c174dc913ee86e36973c"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "398ae4d71f761b87f04ac439082e60412d920cda"
+    },
+    "state": "两端不同",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D02/D04/D09",
+    "acceptance": "A02/A03/A04/A08/A10/A19",
+    "decision": "仅取286新增部分，保留SNI/主备/计费/加密，接新能力报告",
+    "tickets": [
+      "02",
+      "08"
+    ]
+  },
+  {
+    "path": "server/agentHeartbeatRoute.ts",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "2063acebba0f08633ae28051f11a4243db0a7505"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "76e45828b9443eaaae92bacfcc0a9ddd3fc46314"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "2380cc2b7e00f682992066d14bc551f001cc60d3"
+    },
+    "state": "两端不同",
+    "source": "上游与本地都改动",
+    "handling": "兼容纳入",
+    "requirement": "D02/D04/D09",
+    "acceptance": "A02/A03/A04/A08/A10/A19",
+    "decision": "仅取286新增部分，保留SNI/主备/计费/加密，接新能力报告",
+    "tickets": [
+      "02",
+      "08"
+    ]
+  },
+  {
+    "path": "server/agentInstallScripts.test.ts",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "61dd814ef8760824a706c6176d2d6bf528693cad"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "c7ba89d8843aa6f7b6633566fdd702b242933170"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "5febace24f869b179c0664c7124b660832645e15"
+    },
+    "state": "两端不同",
+    "source": "上游与本地都改动",
+    "handling": "兼容纳入",
+    "requirement": "D08/D09",
+    "acceptance": "A15/A17/A18/A22",
+    "decision": "兼容网页/路由/品牌/双语/安装/构建，保留本地SNI入口与原生排除",
+    "tickets": [
+      "07"
+    ]
+  },
+  {
+    "path": "server/agentInstallScripts.ts",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "084d9d83d5e5f9287d086278b1f4f0a04d51e504"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "69b87c89b31ff7f72c6fdf2d75e3f935fe22553f"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "5992b09df643f96d6f30c2b9592fca447787abdf"
+    },
+    "state": "两端不同",
+    "source": "上游与本地都改动",
+    "handling": "兼容纳入",
+    "requirement": "D08/D09",
+    "acceptance": "A15/A17/A18/A22",
+    "decision": "兼容网页/路由/品牌/双语/安装/构建，保留本地SNI入口与原生排除",
+    "tickets": [
+      "07"
+    ]
+  },
+  {
+    "path": "server/agentIpSwitchTasks.ts",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "53379687295fe3ed10a9fb07ad95019c62694b6f"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D03/D04",
+    "acceptance": "A05/A06/A07/A08/A09/A10",
+    "decision": "纳入多IP与独立健康；旧DDNS兼容、自动动作保护及重新确认",
+    "tickets": [
+      "01",
+      "02"
+    ]
+  },
+  {
+    "path": "server/agentReportRoutes.ts",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "8f4cb3dc9a5fc00084f2c705115bf1b0ff6bee7f"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "152b5c9fe38d37b6b50000017680d73415a027fe"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "6d522b54ca723f1117a7040f4da1c7625bcfb411"
+    },
+    "state": "两端不同",
+    "source": "上游与本地都改动",
+    "handling": "兼容纳入",
+    "requirement": "D02/D04/D09",
+    "acceptance": "A02/A03/A04/A08/A10/A19",
+    "decision": "仅取286新增部分，保留SNI/主备/计费/加密，接新能力报告",
+    "tickets": [
+      "02",
+      "08"
+    ]
+  },
+  {
+    "path": "server/agentRoutes.ts",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "7a82339668676b8805dcd9d659eef8eb64a39790"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "1f8aec577866aa9bfe2d7b50211bd157f9169093"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "7a82339668676b8805dcd9d659eef8eb64a39790"
+    },
+    "state": "两端不同",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D02/D04/D09",
+    "acceptance": "A02/A03/A04/A08/A10/A19",
+    "decision": "仅取286新增部分，保留SNI/主备/计费/加密，接新能力报告",
+    "tickets": [
+      "02",
+      "08"
+    ]
+  },
+  {
+    "path": "server/ai/analytics.ts",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "f4540b896fc362bf0558dec79b261e893f8a85d2"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D05/D06/D07",
+    "acceptance": "A11/A12/A13/A16",
+    "decision": "纳入只读/验证码/告警/统计，保留本地权限和确认快照",
+    "tickets": [
+      "03",
+      "04",
+      "05"
+    ]
+  },
+  {
+    "path": "server/ai/panelTools.ts",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "6dd7e668caa15912fedaf75f7955312b500b67a4"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "3324acd795defc9c8f65702126fd1c1a3cc9567f"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "529bde44ab0311d6b82d7e4eb980b27370caa496"
+    },
+    "state": "两端不同",
+    "source": "上游与本地都改动",
+    "handling": "兼容纳入",
+    "requirement": "D05/D06/D07",
+    "acceptance": "A11/A12/A13/A16",
+    "decision": "纳入只读/验证码/告警/统计，保留本地权限和确认快照",
+    "tickets": [
+      "03",
+      "04",
+      "05"
+    ]
+  },
+  {
+    "path": "server/ai/planner.ts",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "8a82fd0652918f848b446f58d92292b4d497dcd2"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "67e938dabb3868f54b11c24a46f125804076ee26"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "6de5f8d0c163c535de1dc4c82ea6e83f408928ec"
+    },
+    "state": "两端不同",
+    "source": "上游与本地都改动",
+    "handling": "兼容纳入",
+    "requirement": "D05/D06/D07",
+    "acceptance": "A11/A12/A13/A16",
+    "decision": "纳入只读/验证码/告警/统计，保留本地权限和确认快照",
+    "tickets": [
+      "03",
+      "04",
+      "05"
+    ]
+  },
+  {
+    "path": "server/ai/preciseQuery.ts",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "76218c7eb3176c27045d50f314f16ac616c1ec54"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D05/D06/D07",
+    "acceptance": "A11/A12/A13/A16",
+    "decision": "纳入只读/验证码/告警/统计，保留本地权限和确认快照",
+    "tickets": [
+      "03",
+      "04",
+      "05"
+    ]
+  },
+  {
+    "path": "server/ai/resources.ts",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "7f82268268969ad37896ec6fb90e543510bf0548"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D05/D06/D07",
+    "acceptance": "A11/A12/A13/A16",
+    "decision": "纳入只读/验证码/告警/统计，保留本地权限和确认快照",
+    "tickets": [
+      "03",
+      "04",
+      "05"
+    ]
+  },
+  {
+    "path": "server/authCaptcha.test.ts",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "62bd1b2c49fb817852764933752ae6e2f06ca98e"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "021a1c1520f595a9b6b3f9d971f13f074ce73aac"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "62bd1b2c49fb817852764933752ae6e2f06ca98e"
+    },
+    "state": "两端不同",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D05/D06/D07",
+    "acceptance": "A11/A12/A13/A16",
+    "decision": "纳入只读/验证码/告警/统计，保留本地权限和确认快照",
+    "tickets": [
+      "03",
+      "04",
+      "05"
+    ]
+  },
+  {
+    "path": "server/authCaptcha.ts",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "447cf74683aef4863aec4e98fa78837bafd28ae2"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "58b8e85c7916c76ddb672888e40aff56b87a950e"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "924836d87fd75ca53fde209f7bd6fe7adf837ce5"
+    },
+    "state": "两端不同",
+    "source": "上游与本地都改动",
+    "handling": "兼容纳入",
+    "requirement": "D05/D06/D07",
+    "acceptance": "A11/A12/A13/A16",
+    "decision": "纳入只读/验证码/告警/统计，保留本地权限和确认快照",
+    "tickets": [
+      "03",
+      "04",
+      "05"
+    ]
+  },
+  {
+    "path": "server/authCaptchaConfig.ts",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "0afa687d662c96bcfc1f75280b01bc2bed4ac75c"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D05/D06/D07",
+    "acceptance": "A11/A12/A13/A16",
+    "decision": "纳入只读/验证码/告警/统计，保留本地权限和确认快照",
+    "tickets": [
+      "03",
+      "04",
+      "05"
+    ]
+  },
+  {
+    "path": "server/authCaptchaSettings.fixture.ts",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "10cdb08a4e0a63e926bf9078202a18805ba34b09"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "0d2ea872eee4c2d5e77c0627b38c08108dd41240"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "10cdb08a4e0a63e926bf9078202a18805ba34b09"
+    },
+    "state": "两端不同",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D05/D06/D07",
+    "acceptance": "A11/A12/A13/A16",
+    "decision": "纳入只读/验证码/告警/统计，保留本地权限和确认快照",
+    "tickets": [
+      "03",
+      "04",
+      "05"
+    ]
+  },
+  {
+    "path": "server/billingExport.test.ts",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "9c6ac67062f55165ad38a1bb714004c244866cd3"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D07",
+    "acceptance": "A14/A15",
+    "decision": "纳入导出与顺序，保留权限/账目/币种",
+    "tickets": [
+      "06"
+    ]
+  },
+  {
+    "path": "server/billingExport.ts",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "1eda414aceda7f429e7d242e50917bffdd1b8f89"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D07",
+    "acceptance": "A14/A15",
+    "decision": "纳入导出与顺序，保留权限/账目/币种",
+    "tickets": [
+      "06"
+    ]
+  },
+  {
+    "path": "server/billingExportRoutes.ts",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "022f6ae0687cb2be06ebce98cdfbb8a3dc041e50"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D07",
+    "acceptance": "A14/A15",
+    "decision": "纳入导出与顺序，保留权限/账目/币种",
+    "tickets": [
+      "06"
+    ]
+  },
+  {
+    "path": "server/billingPagination.test.ts",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "33dcf3ce02c96fdcedf8eea626f3a6eab91d2069"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "50a32de7f65d2ca17138fc86ba6dcf91e846d44a"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "33dcf3ce02c96fdcedf8eea626f3a6eab91d2069"
+    },
+    "state": "两端不同",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D07",
+    "acceptance": "A14/A15",
+    "decision": "纳入导出与顺序，保留权限/账目/币种",
+    "tickets": [
+      "06"
+    ]
+  },
+  {
+    "path": "server/clientStatic.test.ts",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "bf2fe3844be64da63c28b4e9940e797f80861118"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D08/D09",
+    "acceptance": "A15/A17/A18/A22",
+    "decision": "兼容网页/路由/品牌/双语/安装/构建，保留本地SNI入口与原生排除",
+    "tickets": [
+      "07"
+    ]
+  },
+  {
+    "path": "server/clientStatic.ts",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "f57c76726fb381be7126f332599d27cc85c8f386"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D08/D09",
+    "acceptance": "A15/A17/A18/A22",
+    "decision": "兼容网页/路由/品牌/双语/安装/构建，保留本地SNI入口与原生排除",
+    "tickets": [
+      "07"
+    ]
+  },
+  {
+    "path": "server/databaseHealth.test.ts",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "fd9a11909752d85eb8be58e8e5df9a08760065e5"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "555822621342b83a013d5521368f6d192383e30c"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "c849cd9d8eed932ac3dc17c7ff9d71a1a60e65ad"
+    },
+    "state": "两端不同",
+    "source": "上游与本地都改动",
+    "handling": "兼容纳入",
+    "requirement": "D09",
+    "acceptance": "A21",
+    "decision": "兼容三库启动与清理，保留本地表/计时/账目",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "server/databaseHealthMonitor.ts",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "ffdfb807d5651b665c44f0854662183b60ab7368"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "f8676b18d13dab5dc87eb5694de44d6dac848e92"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "d6882ca16f4f4b652dcb107bfa6840d069756242"
+    },
+    "state": "两端不同",
+    "source": "上游与本地都改动",
+    "handling": "兼容纳入",
+    "requirement": "D09",
+    "acceptance": "A21",
+    "decision": "兼容三库启动与清理，保留本地表/计时/账目",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "server/databaseHealthState.ts",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "9033a46fdf55155c35e4df2792d44931203d560d"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "ca96c981daef466133e1969f173726c07774300e"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "cd08c707faa87fd6a6c03a24ac07bbb543327668"
+    },
+    "state": "两端不同",
+    "source": "上游与本地都改动",
+    "handling": "兼容纳入",
+    "requirement": "D09",
+    "acceptance": "A21",
+    "decision": "兼容三库启动与清理，保留本地表/计时/账目",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "server/databaseStartupRetention.test.ts",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "f1769f086fac1d1d6f16cf2cd30c99bfa93c8e2e"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D09",
+    "acceptance": "A21",
+    "decision": "兼容三库启动与清理，保留本地表/计时/账目",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "server/db.ts",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "831acfe558cb177490e3e2818eb79f6ed6dd1b78"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "64cc44419060c48e5ca82c45184d61c55d85be65"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "831acfe558cb177490e3e2818eb79f6ed6dd1b78"
+    },
+    "state": "两端不同",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D09",
+    "acceptance": "A21",
+    "decision": "兼容三库启动与清理，保留本地表/计时/账目",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "server/dbSchema.ts",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "aca4a39e920c449779fc531cc6b8f9acbd8cfe0e"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "4cf7fe65e83c170c33b423fefdc6fbebdc7f5312"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "6ea13d49c19d200ee355f9b6bc72111c6ffa9c47"
+    },
+    "state": "两端不同",
+    "source": "上游与本地都改动",
+    "handling": "兼容纳入",
+    "requirement": "D09",
+    "acceptance": "A21",
+    "decision": "兼容三库启动与清理，保留本地表/计时/账目",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "server/directForwardLoop.ts",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "4eecfdf51e8d434e00b5d9d166cdbb05f06c1cbe"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "2bb104bd5bb12802f89ae29b08411a592b8cf51e"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "4eecfdf51e8d434e00b5d9d166cdbb05f06c1cbe"
+    },
+    "state": "两端不同",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D08/D09",
+    "acceptance": "A15/A17/A18/A22",
+    "decision": "兼容网页/路由/品牌/双语/安装/构建，保留本地SNI入口与原生排除",
+    "tickets": [
+      "07"
+    ]
+  },
+  {
+    "path": "server/historyCleanupIndexes.test.ts",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "8507486c9de3667b06cfbff70199a941c588bdba"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "59475175fbb15fba8ff2540bb3632cc486d00065"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "8507486c9de3667b06cfbff70199a941c588bdba"
+    },
+    "state": "两端不同",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D09",
+    "acceptance": "A21",
+    "decision": "兼容三库启动与清理，保留本地表/计时/账目",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "server/historyMaintenance.test.ts",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "b9d0f119c1d638daedb7294a302d9cfdadd80776"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D09",
+    "acceptance": "A21",
+    "decision": "兼容三库启动与清理，保留本地表/计时/账目",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "server/historyMaintenance.ts",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "cdd605bf9cb161947fbb2a82dcb106147893a0b7"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D09",
+    "acceptance": "A21",
+    "decision": "兼容三库启动与清理，保留本地表/计时/账目",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "server/hostDdns.ts",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "5be2507a5017fec71d207c5839e5c70dcd2e7331"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "1dead395bccecd97a6b58c2913cbe7b638577249"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "5be2507a5017fec71d207c5839e5c70dcd2e7331"
+    },
+    "state": "两端不同",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D03/D04",
+    "acceptance": "A05/A06/A07/A08/A09/A10",
+    "decision": "纳入多IP与独立健康；旧DDNS兼容、自动动作保护及重新确认",
+    "tickets": [
+      "01",
+      "02"
+    ]
+  },
+  {
+    "path": "server/hostGeo.ts",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "f85ee0ed64d231b29caa3552121a50d1b5ab130c"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "0cd875fd37167cc14f6f513c7b86009d9e976728"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "f85ee0ed64d231b29caa3552121a50d1b5ab130c"
+    },
+    "state": "两端不同",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D07/D09",
+    "acceptance": "A16/A19",
+    "decision": "纳入诊断/名称/地图与延迟修复，保留本地计数和去重",
+    "tickets": [
+      "03",
+      "05",
+      "06"
+    ]
+  },
+  {
+    "path": "server/hostIpSwitchProvider.ts",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "84653e5251141ddb7e499a3925a04601a66b8131"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D03/D04",
+    "acceptance": "A05/A06/A07/A08/A09/A10",
+    "decision": "纳入多IP与独立健康；旧DDNS兼容、自动动作保护及重新确认",
+    "tickets": [
+      "01",
+      "02"
+    ]
+  },
+  {
+    "path": "server/hostMultiIp.fixture.ts",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "8c165d444468ec19e4255625131a4c820b128aa9"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D03/D04",
+    "acceptance": "A05/A06/A07/A08/A09/A10",
+    "decision": "纳入多IP与独立健康；旧DDNS兼容、自动动作保护及重新确认",
+    "tickets": [
+      "01",
+      "02"
+    ]
+  },
+  {
+    "path": "server/hostMultiIp.test.ts",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "44b36dc9871da65a7b1c1a42c4e757acbad64679"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D03/D04",
+    "acceptance": "A05/A06/A07/A08/A09/A10",
+    "decision": "纳入多IP与独立健康；旧DDNS兼容、自动动作保护及重新确认",
+    "tickets": [
+      "01",
+      "02"
+    ]
+  },
+  {
+    "path": "server/hostProbeHealth.fixture.ts",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "6fb1d1d058585fa23d3735ec47741b9c5d7dcd97"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D03/D04",
+    "acceptance": "A05/A06/A07/A08/A09/A10",
+    "decision": "纳入多IP与独立健康；旧DDNS兼容、自动动作保护及重新确认",
+    "tickets": [
+      "01",
+      "02"
+    ]
+  },
+  {
+    "path": "server/hostProbeHealth.test.ts",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "4065a11b0de5bb09505d9b028501fab720751469"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D03/D04",
+    "acceptance": "A05/A06/A07/A08/A09/A10",
+    "decision": "纳入多IP与独立健康；旧DDNS兼容、自动动作保护及重新确认",
+    "tickets": [
+      "01",
+      "02"
+    ]
+  },
+  {
+    "path": "server/hostProbeHealth.ts",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "bcd27c4da7a5b6d45d980769a980a2491ec8b25b"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D03/D04",
+    "acceptance": "A05/A06/A07/A08/A09/A10",
+    "decision": "纳入多IP与独立健康；旧DDNS兼容、自动动作保护及重新确认",
+    "tickets": [
+      "01",
+      "02"
+    ]
+  },
+  {
+    "path": "server/imageCaptcha.ts",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "cb2f3f93b4959fe7c3f701367cbb0c30e09fdf0f"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D05/D06/D07",
+    "acceptance": "A11/A12/A13/A16",
+    "decision": "纳入只读/验证码/告警/统计，保留本地权限和确认快照",
+    "tickets": [
+      "03",
+      "04",
+      "05"
+    ]
+  },
+  {
+    "path": "server/index.ts",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "8d80ee0b262ec0204c13a849e2da84c0cbc7d48c"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "f556c4e416a20277a6238930a0c3d5b087765008"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "8d80ee0b262ec0204c13a849e2da84c0cbc7d48c"
+    },
+    "state": "两端不同",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D08/D09",
+    "acceptance": "A15/A17/A18/A22",
+    "decision": "兼容网页/路由/品牌/双语/安装/构建，保留本地SNI入口与原生排除",
+    "tickets": [
+      "07"
+    ]
+  },
+  {
+    "path": "server/linkAccessView.ts",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "b1f8015ea70a8818718f12b2b5360f9e21e56017"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "536d3b003477e949c151b341ec77c7c0c1724f15"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "b1f8015ea70a8818718f12b2b5360f9e21e56017"
+    },
+    "state": "两端不同",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D07/D09",
+    "acceptance": "A16/A19",
+    "decision": "纳入诊断/名称/地图与延迟修复，保留本地计数和去重",
+    "tickets": [
+      "03",
+      "05",
+      "06"
+    ]
+  },
+  {
+    "path": "server/localeHint.ts",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "015590f0c9a2a47a72ae4352f166b105e5c065f4"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "da8e13d5060745126b570da687fdc20eabe855d8"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "015590f0c9a2a47a72ae4352f166b105e5c065f4"
+    },
+    "state": "两端不同",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D08/D09",
+    "acceptance": "A15/A17/A18/A22",
+    "decision": "兼容网页/路由/品牌/双语/安装/构建，保留本地SNI入口与原生排除",
+    "tickets": [
+      "07"
+    ]
+  },
+  {
+    "path": "server/mcpRoutes.ts",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "82a5ddbce7e91dd66e26d6d2ea16956e8b752d83"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D05/D06/D07",
+    "acceptance": "A11/A12/A13/A16",
+    "decision": "纳入只读/验证码/告警/统计，保留本地权限和确认快照",
+    "tickets": [
+      "03",
+      "04",
+      "05"
+    ]
+  },
+  {
+    "path": "server/mcpTokens.ts",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "a5eeef0a1a3e4708bd0cbf364f70ae54989431e5"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D05/D06/D07",
+    "acceptance": "A11/A12/A13/A16",
+    "decision": "纳入只读/验证码/告警/统计，保留本地权限和确认快照",
+    "tickets": [
+      "03",
+      "04",
+      "05"
+    ]
+  },
+  {
+    "path": "server/mysqlLongTextSchema.test.ts",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "95b4dbb4dd873bc308a9118e2d539b5486f30b86"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "8fdf69d7118b7b3f6ba68d7f0318af84332a9027"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "95b4dbb4dd873bc308a9118e2d539b5486f30b86"
+    },
+    "state": "两端不同",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D09",
+    "acceptance": "A21",
+    "decision": "兼容三库启动与清理，保留本地表/计时/账目",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "server/mysqlSchemaMigration.test.ts",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "8d6bca98c2aa3269a86ad224fb12644a438dd58c"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D09",
+    "acceptance": "A21",
+    "decision": "兼容三库启动与清理，保留本地表/计时/账目",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "server/mysqlUpgrade.integration.test.ts",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "b4bef27392220c61d6ad9df227b2c99fe6acdd70"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D09",
+    "acceptance": "A21",
+    "decision": "兼容三库启动与清理，保留本地表/计时/账目",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "server/networkDiagnostics.ts",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "d6753f0bd94b96062184961abdfe1c8e0d580b47"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D07/D09",
+    "acceptance": "A16/A19",
+    "decision": "纳入诊断/名称/地图与延迟修复，保留本地计数和去重",
+    "tickets": [
+      "03",
+      "05",
+      "06"
+    ]
+  },
+  {
+    "path": "server/observability.fixture.ts",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "83fa00895f66b89d55489c335f6ef8da50beeae5"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D05/D06/D07",
+    "acceptance": "A11/A12/A13/A16",
+    "decision": "纳入只读/验证码/告警/统计，保留本地权限和确认快照",
+    "tickets": [
+      "03",
+      "04",
+      "05"
+    ]
+  },
+  {
+    "path": "server/observability.test.ts",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "28e6cf456324030ca50bca3d8bd440d03f618492"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D05/D06/D07",
+    "acceptance": "A11/A12/A13/A16",
+    "decision": "纳入只读/验证码/告警/统计，保留本地权限和确认快照",
+    "tickets": [
+      "03",
+      "04",
+      "05"
+    ]
+  },
+  {
+    "path": "server/operationsMonitor.ts",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "5599d69dca5ecdf6146e87149521c7a05adaf2c5"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D05/D06/D07",
+    "acceptance": "A11/A12/A13/A16",
+    "decision": "纳入只读/验证码/告警/统计，保留本地权限和确认快照",
+    "tickets": [
+      "03",
+      "04",
+      "05"
+    ]
+  },
+  {
+    "path": "server/operationsRuleNames.test.ts",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "41e5efdf4371229b62e4a3d5d5da88c87efafd4b"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D07/D09",
+    "acceptance": "A16/A19",
+    "decision": "纳入诊断/名称/地图与延迟修复，保留本地计数和去重",
+    "tickets": [
+      "03",
+      "05",
+      "06"
+    ]
+  },
+  {
+    "path": "server/productOrder.test.ts",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "9fbca5dc98af70c59eb87b76aee2088d50cde42d"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D07",
+    "acceptance": "A14/A15",
+    "decision": "纳入导出与顺序，保留权限/账目/币种",
+    "tickets": [
+      "06"
+    ]
+  },
+  {
+    "path": "server/repositories/billingRepository.ts",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "31aabdcfebb65b7c1432e42dbca460f59eb1619e"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "66db68e8ded4e95b98f2b58ab4a82d4678442466"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "31aabdcfebb65b7c1432e42dbca460f59eb1619e"
+    },
+    "state": "两端不同",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D07",
+    "acceptance": "A14/A15",
+    "decision": "纳入导出与顺序，保留权限/账目/币种",
+    "tickets": [
+      "06"
+    ]
+  },
+  {
+    "path": "server/repositories/forwardGroupRepository.ts",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "4d6b7ad6ad6b9db8ca45813ab4653b27fd3dc2b7"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "52adabc2c1c8bd88fc52646fb43ca87c399845ba"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "662efbc7ad218ae8dca2c96c2baad8f0314f5607"
+    },
+    "state": "两端不同",
+    "source": "上游与本地都改动",
+    "handling": "兼容纳入",
+    "requirement": "D02/D04/D09",
+    "acceptance": "A02/A03/A04/A08/A10/A19",
+    "decision": "仅取286新增部分，保留SNI/主备/计费/加密，接新能力报告",
+    "tickets": [
+      "02",
+      "08"
+    ]
+  },
+  {
+    "path": "server/repositories/forwardRuleRepository.ts",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "bc7711b9e0bc989c98f39c682c4f5ba6beade726"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "bb8ac30006c1ceee55d9c7b1e1f03c186d37b436"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "3bfd701ee389f143c7772b851e96b27baccf8d92"
+    },
+    "state": "两端不同",
+    "source": "上游与本地都改动",
+    "handling": "兼容纳入",
+    "requirement": "D02/D04/D09",
+    "acceptance": "A02/A03/A04/A08/A10/A19",
+    "decision": "仅取286新增部分，保留SNI/主备/计费/加密，接新能力报告",
+    "tickets": [
+      "02",
+      "08"
+    ]
+  },
+  {
+    "path": "server/repositories/forwardTestRepository.ts",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "dda505c647f73d3e8a6a09f06e3ba49947c06746"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "7bffb8d3cec74f84488d050392198f3db2fe7ecb"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "2b4fa08fe34e24ffdcbf5528a1ec23957e8303fd"
+    },
+    "state": "两端不同",
+    "source": "上游与本地都改动",
+    "handling": "兼容纳入",
+    "requirement": "D07/D09",
+    "acceptance": "A16/A19",
+    "decision": "纳入诊断/名称/地图与延迟修复，保留本地计数和去重",
+    "tickets": [
+      "03",
+      "05",
+      "06"
+    ]
+  },
+  {
+    "path": "server/repositories/historyRetention.ts",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "7436b340d3d7d562ebb31e120910e83b4ca44221"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "52ac98b361969f517cb0c085eb7d2d45e1a5eb61"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "7436b340d3d7d562ebb31e120910e83b4ca44221"
+    },
+    "state": "两端不同",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D09",
+    "acceptance": "A21",
+    "decision": "兼容三库启动与清理，保留本地表/计时/账目",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "server/repositories/hostProbeServiceRepository.ts",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "3f9dd2f2f6863a188f7e672b5cf97f848a27bcea"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "e511863cab6df8bbff99e557437da932d0d8069a"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "3f9dd2f2f6863a188f7e672b5cf97f848a27bcea"
+    },
+    "state": "两端不同",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D03/D04",
+    "acceptance": "A05/A06/A07/A08/A09/A10",
+    "decision": "纳入多IP与独立健康；旧DDNS兼容、自动动作保护及重新确认",
+    "tickets": [
+      "01",
+      "02"
+    ]
+  },
+  {
+    "path": "server/repositories/hostRepository.ts",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "e2aad7a0eca7fa3ea4e83b6aef7b6760c9c28493"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "fae137efd05cfe6eac4be59b0dcf1262a9e26d00"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "161c4f8fb6bb9e299bbb2144c429e64e545b1903"
+    },
+    "state": "两端不同",
+    "source": "上游与本地都改动",
+    "handling": "兼容纳入",
+    "requirement": "D03/D04",
+    "acceptance": "A05/A06/A07/A08/A09/A10",
+    "decision": "纳入多IP与独立健康；旧DDNS兼容、自动动作保护及重新确认",
+    "tickets": [
+      "01",
+      "02"
+    ]
+  },
+  {
+    "path": "server/repositories/operationsRepository.ts",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "d245613b9637f71cc48461c178e06ad92b2efe3c"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "79660abd1838ee3acf83b8909419cd5c1a35e71f"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "287120126b318f1e60f5b5483abf55fcbb072383"
+    },
+    "state": "两端不同",
+    "source": "上游与本地都改动",
+    "handling": "兼容纳入",
+    "requirement": "D07/D09",
+    "acceptance": "A16/A19",
+    "decision": "纳入诊断/名称/地图与延迟修复，保留本地计数和去重",
+    "tickets": [
+      "03",
+      "05",
+      "06"
+    ]
+  },
+  {
+    "path": "server/repositories/productOrder.ts",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "bd8241572ed72a5f36106ae9fbd995254835e028"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D07",
+    "acceptance": "A14/A15",
+    "decision": "纳入导出与顺序，保留权限/账目/币种",
+    "tickets": [
+      "06"
+    ]
+  },
+  {
+    "path": "server/repositories/trafficBillingRepository.ts",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "4cda7bb24b7e86814d59dcec68af45fb00eaa027"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "b4c7705b292cda4f9a75ef934fc3a576b7a8c4c9"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "fc205c1b185dc2fc37618440fede24ba9d29f8cc"
+    },
+    "state": "两端不同",
+    "source": "上游与本地都改动",
+    "handling": "兼容纳入",
+    "requirement": "D07",
+    "acceptance": "A14/A15",
+    "decision": "纳入导出与顺序，保留权限/账目/币种",
+    "tickets": [
+      "06"
+    ]
+  },
+  {
+    "path": "server/routers.ts",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "dc8568919caf7aa849284a84a7ab8386d6c27a85"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "0feec167c9c14f731c439c2b90a80af741b33f05"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "dc8568919caf7aa849284a84a7ab8386d6c27a85"
+    },
+    "state": "两端不同",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D08/D09",
+    "acceptance": "A15/A17/A18/A22",
+    "decision": "兼容网页/路由/品牌/双语/安装/构建，保留本地SNI入口与原生排除",
+    "tickets": [
+      "07"
+    ]
+  },
+  {
+    "path": "server/routers/auth.ts",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "a6483d703fa2d430b855837631ecf080276442e3"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "62450aedd0f365be4037e2117538e5a1df063a83"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "a6483d703fa2d430b855837631ecf080276442e3"
+    },
+    "state": "两端不同",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D05/D06/D07",
+    "acceptance": "A11/A12/A13/A16",
+    "decision": "纳入只读/验证码/告警/统计，保留本地权限和确认快照",
+    "tickets": [
+      "03",
+      "04",
+      "05"
+    ]
+  },
+  {
+    "path": "server/routers/hosts.ts",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "31cd7e00cb8c5efc4715dda481132b09589658d8"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "853ec594c0a3b7c285ae542c5dced33f27529198"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "26b3ab17a82a897052cbf646da24dae6ecbbffc0"
+    },
+    "state": "两端不同",
+    "source": "上游与本地都改动",
+    "handling": "兼容纳入",
+    "requirement": "D03/D04",
+    "acceptance": "A05/A06/A07/A08/A09/A10",
+    "decision": "纳入多IP与独立健康；旧DDNS兼容、自动动作保护及重新确认",
+    "tickets": [
+      "01",
+      "02"
+    ]
+  },
+  {
+    "path": "server/routers/lookingGlass.ts",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "cbd5ce49979921096464f73a801e5d395f2e89a2"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "99f0d2ffad021362682d716132a7d3f11f25b7dc"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "cbd5ce49979921096464f73a801e5d395f2e89a2"
+    },
+    "state": "两端不同",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D07/D09",
+    "acceptance": "A16/A19",
+    "decision": "纳入诊断/名称/地图与延迟修复，保留本地计数和去重",
+    "tickets": [
+      "03",
+      "05",
+      "06"
+    ]
+  },
+  {
+    "path": "server/routers/mcp.ts",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "0435e18921e9d4d7b2fc547d1055c3f886ca16c7"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D05/D06/D07",
+    "acceptance": "A11/A12/A13/A16",
+    "decision": "纳入只读/验证码/告警/统计，保留本地权限和确认快照",
+    "tickets": [
+      "03",
+      "04",
+      "05"
+    ]
+  },
+  {
+    "path": "server/routers/operations.ts",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "489ccd01564c996f180b453b60be5942ab0bdcb0"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "45e348d3b0e14ce93337a3203227bdc775647380"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "489ccd01564c996f180b453b60be5942ab0bdcb0"
+    },
+    "state": "两端不同",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D07/D09",
+    "acceptance": "A16/A19",
+    "decision": "纳入诊断/名称/地图与延迟修复，保留本地计数和去重",
+    "tickets": [
+      "03",
+      "05",
+      "06"
+    ]
+  },
+  {
+    "path": "server/routers/plans.ts",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "cd3aa5def696ae305374f428d87ad6adf3f363dc"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "869ca5c85a90346b98f0fe28a556d073150979e3"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "cd3aa5def696ae305374f428d87ad6adf3f363dc"
+    },
+    "state": "两端不同",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D07",
+    "acceptance": "A14/A15",
+    "decision": "纳入导出与顺序，保留权限/账目/币种",
+    "tickets": [
+      "06"
+    ]
+  },
+  {
+    "path": "server/routers/trafficBilling.ts",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "f7a85e440f2567ac182ace916bf91574e0ce08e8"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "a8e924adcc70c1b189afb9ac0400344b05900978"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "8d2a807c86c8bf3f9b62db6c4253fc1533f754ec"
+    },
+    "state": "两端不同",
+    "source": "上游与本地都改动",
+    "handling": "兼容纳入",
+    "requirement": "D07",
+    "acceptance": "A14/A15",
+    "decision": "纳入导出与顺序，保留权限/账目/币种",
+    "tickets": [
+      "06"
+    ]
+  },
+  {
+    "path": "server/scheduler.ts",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "c154f3f03714bc70af6784f3042ca8037a0fc19f"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "538c162f884778e932fbea9b776b4e63c1eea775"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "ad296230680b1e2fa4d2a999c9ef3177aa772a58"
+    },
+    "state": "两端不同",
+    "source": "上游与本地都改动",
+    "handling": "兼容纳入",
+    "requirement": "D09",
+    "acceptance": "A21",
+    "decision": "兼容三库启动与清理，保留本地表/计时/账目",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "server/supportBundle.test.ts",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "0605d81d51e95b6f79ec435b1db31d8f3a18e76c"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "e1dbf15b097bafef9465e579d41447b40931cc05"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "0605d81d51e95b6f79ec435b1db31d8f3a18e76c"
+    },
+    "state": "两端不同",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D08/D09",
+    "acceptance": "A15/A17/A18/A22",
+    "decision": "兼容网页/路由/品牌/双语/安装/构建，保留本地SNI入口与原生排除",
+    "tickets": [
+      "07"
+    ]
+  },
+  {
+    "path": "server/telegramBot.ts",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "0961e9dd242aeb3abd5f47c31dffac0b10267802"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "6f9563b5297d55023f2110a11e4229d02e5e0bf0"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "4c0dcba5660d30e214c83e7f575fda2445cead09"
+    },
+    "state": "两端不同",
+    "source": "上游与本地都改动",
+    "handling": "兼容纳入",
+    "requirement": "D08/D09",
+    "acceptance": "A15/A17/A18/A22",
+    "decision": "兼容网页/路由/品牌/双语/安装/构建，保留本地SNI入口与原生排除",
+    "tickets": [
+      "07"
+    ]
+  },
+  {
+    "path": "server/trafficBatch.test.ts",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "a5bb1c287a14db005d4e0ed424d2e8372dd1e756"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "588cf2807dce47d8fd2ad04b33fa6bb52d644313"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "a5bb1c287a14db005d4e0ed424d2e8372dd1e756"
+    },
+    "state": "两端不同",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D02/D04/D09",
+    "acceptance": "A02/A03/A04/A08/A10/A19",
+    "decision": "仅取286新增部分，保留SNI/主备/计费/加密，接新能力报告",
+    "tickets": [
+      "02",
+      "08"
+    ]
+  },
+  {
+    "path": "server/tunnelManualProbe.test.ts",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "2a8d3a230b7440dd7be012fd1ba561109a19b620"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "8aefb461ff7d62c9fe6fe9fccbb6caa7a3596ad0"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "75030eb7f3ad6bdd35a3ed7086a04645d4bc18cc"
+    },
+    "state": "两端不同",
+    "source": "上游与本地都改动",
+    "handling": "兼容纳入",
+    "requirement": "D08/D09",
+    "acceptance": "A15/A17/A18/A22",
+    "decision": "兼容网页/路由/品牌/双语/安装/构建，保留本地SNI入口与原生排除",
+    "tickets": [
+      "07"
+    ]
+  },
+  {
+    "path": "server/tunnelMultiEntryLatencyState.test.ts",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "7822f64f3b306abb34504b351e53049a376772e8"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "1e34690629073aef66d5f48acbc6dcc230f9220c"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "7822f64f3b306abb34504b351e53049a376772e8"
+    },
+    "state": "两端不同",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D07/D09",
+    "acceptance": "A16/A19",
+    "decision": "纳入诊断/名称/地图与延迟修复，保留本地计数和去重",
+    "tickets": [
+      "03",
+      "05",
+      "06"
+    ]
+  },
+  {
+    "path": "server/tunnelMultiEntryProbeMessage.ts",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "8e6b266513a5c0da4c37f47bfe289908365a2112"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D08/D09",
+    "acceptance": "A15/A17/A18/A22",
+    "decision": "兼容网页/路由/品牌/双语/安装/构建，保留本地SNI入口与原生排除",
+    "tickets": [
+      "07"
+    ]
+  },
+  {
+    "path": "shared/appIcons.ts",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "63117b778e4c46c8d4904168f2d713b7cdfba251"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "按长期约定排除",
+    "requirement": "D01",
+    "acceptance": "A01",
+    "decision": "原生安装应用及专属更新/依赖/图标/发布内容保持本地",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "shared/authCaptcha.ts",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "7793d1a17a9f8bf642383110176e119ec7a8bbf8"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D05/D06/D07",
+    "acceptance": "A11/A12/A13/A16",
+    "decision": "纳入只读/验证码/告警/统计，保留本地权限和确认快照",
+    "tickets": [
+      "03",
+      "04",
+      "05"
+    ]
+  },
+  {
+    "path": "shared/clientRoutes.ts",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "d9029fdd4826020f9151768af975a8c37af2b455"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D08/D09",
+    "acceptance": "A15/A17/A18/A22",
+    "decision": "兼容网页/路由/品牌/双语/安装/构建，保留本地SNI入口与原生排除",
+    "tickets": [
+      "07"
+    ]
+  },
+  {
+    "path": "shared/hostAddresses.ts",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "043161e5d0b54964c045f3b7a403e5ba9353a3d1"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D03/D04",
+    "acceptance": "A05/A06/A07/A08/A09/A10",
+    "decision": "纳入多IP与独立健康；旧DDNS兼容、自动动作保护及重新确认",
+    "tickets": [
+      "01",
+      "02"
+    ]
+  },
+  {
+    "path": "shared/hostChinaHealth.ts",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "bac11f9a0beaccc50231f52a9a65512d3febf4e6"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D03/D04",
+    "acceptance": "A05/A06/A07/A08/A09/A10",
+    "decision": "纳入多IP与独立健康；旧DDNS兼容、自动动作保护及重新确认",
+    "tickets": [
+      "01",
+      "02"
+    ]
+  },
+  {
+    "path": "shared/networkTestSummary.ts",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "ce663bcf1df56d6ace429e32ae09e508dd180b0b"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D07/D09",
+    "acceptance": "A16/A19",
+    "decision": "纳入诊断/名称/地图与延迟修复，保留本地计数和去重",
+    "tickets": [
+      "03",
+      "05",
+      "06"
+    ]
+  },
+  {
+    "path": "shared/operationsMonitor.ts",
+    "local": null,
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "c88a752fbb24528514a96d983c4d38715f9e0d12"
+    },
+    "upstream285": null,
+    "state": "仅上游有",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D05/D06/D07",
+    "acceptance": "A11/A12/A13/A16",
+    "decision": "纳入只读/验证码/告警/统计，保留本地权限和确认快照",
+    "tickets": [
+      "03",
+      "04",
+      "05"
+    ]
+  },
+  {
+    "path": "shared/versions.ts",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "c5eaa5f894dc6e91dce149227d6b9bc06636a714"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "ebffacda501b840524cecd0a832d5f51575c441e"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "63596371a82bbfb73bb2cf1ae328210e97ce19d3"
+    },
+    "state": "两端不同",
+    "source": "上游与本地都改动",
+    "handling": "保留本地版本",
+    "requirement": "D01",
+    "acceptance": "A01/A22",
+    "decision": "保留本地全部版本，不引入原生更新与发布信息",
+    "tickets": [
+      "09"
+    ]
+  },
+  {
+    "path": "vite.config.ts",
+    "local": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "4d0c9e8c9cc7ffd80c65ff91c352918ff57dc379"
+    },
+    "upstream": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "cea24f9a91e047afdf8efb2b8535c8f860b94b80"
+    },
+    "upstream285": {
+      "mode": "100644",
+      "kind": "blob",
+      "oid": "4d0c9e8c9cc7ffd80c65ff91c352918ff57dc379"
+    },
+    "state": "两端不同",
+    "source": "本地沿用285，上游286改动",
+    "handling": "纳入",
+    "requirement": "D08/D09",
+    "acceptance": "A15/A17/A18/A22",
+    "decision": "兼容网页/路由/品牌/双语/安装/构建，保留本地SNI入口与原生排除",
+    "tickets": [
+      "07"
+    ]
+  }
+]
