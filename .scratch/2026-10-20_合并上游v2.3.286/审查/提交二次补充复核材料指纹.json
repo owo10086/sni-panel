@@ -1,0 +1,17 @@
+{
+  "head": "65ef89db85619172527f2be2b108f0bb5721ba65",
+  "files": [
+    {
+      "path": "server/mcpTokens.ts",
+      "sha256": "d3c192cd119df5e3fb820d0591cfc28a64778d876988cf6dbad7dec6bd243f5b"
+    },
+    {
+      "path": "server/monitorRetention.fixture.ts",
+      "sha256": "dbff34038c8b4df674775d4ccdf3b291eb1e84b768c2413b22e4cf0482e21061"
+    },
+    {
+      "path": "package.json",
+      "sha256": "4cf741fefa3f88da8a821c33acb2c4182c17657ecd8bb5c422f6ce84aad90057"
+    }
+  ]
+}

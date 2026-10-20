@@ -1,0 +1,47 @@
+[
+  {
+    "report": "需求审查.md",
+    "reportSha256": "541674cdbf96d6cdf4030500f0aa033e2a36eb8b0a233014625d9e2852363521",
+    "log": "需求审查运行.log",
+    "logSha256": "f6a8c1e58467c55d7cdcade5ca7d5d8a47a444fa3a698ffcb03cfb72e8a9ee48",
+    "exitCode": 0,
+    "scope": "正式规格初稿",
+    "result": "3项文档问题补齐"
+  },
+  {
+    "report": "需求补充复核.md",
+    "reportSha256": "a00cd824b077ebf1f8e1ee9801521bad3dfaa197ffef03012d61154ff868dc16",
+    "log": "需求补充复核运行.log",
+    "logSha256": "4a627d0d8d5a59c21a3feb2dbcb78244c7dcdf477693ccecd5deff9437ad63c7",
+    "exitCode": 0,
+    "scope": "补齐后的规格",
+    "result": "可拆工单，无阻塞"
+  },
+  {
+    "report": "提交点评.md",
+    "reportSha256": "8c5ca198279e64f47cdc6f0582e6db97d8be16078777dd7478269b25f0606450",
+    "log": "提交点评运行.log",
+    "logSha256": "2a22951f9d4cca1a6c19bfeea8fcffd3013649849062721970abad9039d627d8",
+    "exitCode": 0,
+    "scope": "563b1c6到f637e5c四笔提交",
+    "result": "P2清理阻塞及普通建议，另交修补"
+  },
+  {
+    "report": "提交补充复核.md",
+    "reportSha256": "933b1e3b702bb27b6b39c4cffebfeb647c55b050b8e07c92d2c2b03335841667",
+    "log": "提交补充复核运行.log",
+    "logSha256": "2706a4b6f41fbdac2055a187af8afa423050f276f47603f127fbe82ce3d802ce",
+    "exitCode": 0,
+    "scope": "c697178修补",
+    "result": "原清理及关联关闭，重复读P2待修补"
+  },
+  {
+    "report": "提交二次补充复核.md",
+    "reportSha256": "f9825969126fc2bbffaf4e3784b2a8a26a81df513b3ebd116cb20d5327aa2999",
+    "log": "提交二次补充复核运行.log",
+    "logSha256": "17a121d96fdbc0a1ac7eb19b5cc8e894c275cbd5dc284b9ffa2ea42299855aec",
+    "exitCode": 0,
+    "scope": "65ef89d修补",
+    "result": "无已发现阻塞，保留高并发重试普通建议"
+  }
+]

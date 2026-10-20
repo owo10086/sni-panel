@@ -1,5 +1,5 @@
 {
-  "codeCandidate": "c69717857e4057bf7d4491e186520fcff90e2786",
+  "codeCandidate": "65ef89db85619172527f2be2b108f0bb5721ba65",
   "before": "563b1c691827f7ca13d3e8a687663b65f99f6b53",
   "upstream": "aca5d5dfb645393b6925f155ff7258006f46204e",
   "fingerprintEntries": 1441,
@@ -8,7 +8,7 @@
   "originalUnchanged": true,
   "nativeExcluded": 144,
   "allCandidateOidsRechecked": true,
-  "oidRecheckEvidence": "主代理工具运行记录：修补后1441项全部一致，原有51份保持。",
+  "oidRecheckEvidence": "主代理最后一次工具核对：1441项最终指纹一致、原有51份保持。",
   "versions": {
     "panel": "3.4.1",
     "agent": "3.4.0",
@@ -26,5 +26,5 @@
   "pushed": false,
   "deployed": false,
   "manualAcceptance": "未进行",
-  "temporaryDatabaseContainers": "初次检查两个容器和修补复核两个容器均已停止并--rm移除；浏览器夹具与自建标签已清理。"
+  "temporaryDatabaseContainers": "本轮创建的6个临时数据库容器均已停止并--rm自动移除；网页夹具和自建浏览器标签已清理。"
 }
