@@ -18345,8 +18345,10 @@
       "stateBefore": "仅本地有",
       "result": "为286已定兼容要求补齐本地文件",
       "changedByRound": true,
-      "requirement": "D08/D09",
-      "tickets": []
+      "requirement": "D07",
+      "tickets": [
+        "03"
+      ]
     },
     {
       "path": "server/botLocale.ts",
@@ -18795,7 +18797,7 @@
         "kind": "blob",
         "oid": "4cf7fe65e83c170c33b423fefdc6fbebdc7f5312"
       },
-      "finalOid": "13cb4331f9721431abea0a80c894a5dbdd4aa038",
+      "finalOid": "27bdd7dd71ff1af8964e942141c394f704c5d984",
       "stateBefore": "两端不同",
       "result": "兼容纳入；本轮已改变",
       "changedByRound": true,
@@ -19959,8 +19961,12 @@
       "stateBefore": "相同",
       "result": "为286已定兼容要求补齐本地文件",
       "changedByRound": true,
-      "requirement": "D03/D04",
-      "tickets": []
+      "requirement": "D02/D03/D04",
+      "tickets": [
+        "01",
+        "02",
+        "08"
+      ]
     },
     {
       "path": "server/hostAvailability.test.ts",
@@ -20295,7 +20301,7 @@
         "kind": "blob",
         "oid": "bcd27c4da7a5b6d45d980769a980a2491ec8b25b"
       },
-      "finalOid": "aa1d5aa2a2d978b791f2c16c93c929464eb66fae",
+      "finalOid": "3e1ba2479be1f10b61efffbd52b159d9726e1954",
       "stateBefore": "仅上游有",
       "result": "纳入；本轮已改变",
       "changedByRound": true,
@@ -21039,7 +21045,7 @@
         "kind": "blob",
         "oid": "a5eeef0a1a3e4708bd0cbf364f70ae54989431e5"
       },
-      "finalOid": "a5eeef0a1a3e4708bd0cbf364f70ae54989431e5",
+      "finalOid": "5f5b557f51337f4f472f12622fc65187af505fe0",
       "stateBefore": "仅上游有",
       "result": "纳入；本轮已改变",
       "changedByRound": true,
@@ -21277,6 +21283,36 @@
       "changedByRound": false,
       "requirement": "D08/D09",
       "tickets": []
+    },
+    {
+      "path": "server/monitorRetention.fixture.ts",
+      "before": null,
+      "target": null,
+      "finalOid": "486738158dbee3645c2f81c157b25248cc233f15",
+      "stateBefore": "本轮新增兼容回归",
+      "result": "为审查发现的分批清理与多进程上限补充真实回归",
+      "changedByRound": true,
+      "requirement": "D05/D06/D09",
+      "tickets": [
+        "03",
+        "05",
+        "09"
+      ]
+    },
+    {
+      "path": "server/monitorRetention.test.ts",
+      "before": null,
+      "target": null,
+      "finalOid": "02a1ab15dac1eb4b7e4667a79d83e53749cb644e",
+      "stateBefore": "本轮新增兼容回归",
+      "result": "为审查发现的分批清理与多进程上限补充真实回归",
+      "changedByRound": true,
+      "requirement": "D05/D06/D09",
+      "tickets": [
+        "03",
+        "05",
+        "09"
+      ]
     },
     {
       "path": "server/mysqlLongTextSchema.test.ts",
@@ -21572,7 +21608,7 @@
         "kind": "blob",
         "oid": "5599d69dca5ecdf6146e87149521c7a05adaf2c5"
       },
-      "finalOid": "5599d69dca5ecdf6146e87149521c7a05adaf2c5",
+      "finalOid": "b914e9a8a992a569f5cdc0a208b2ca77cf2dc475",
       "stateBefore": "仅上游有",
       "result": "纳入；本轮已改变",
       "changedByRound": true,
@@ -25063,8 +25099,11 @@
       "stateBefore": "仅本地有",
       "result": "为286已定兼容要求补齐本地文件",
       "changedByRound": true,
-      "requirement": "D08/D09",
-      "tickets": []
+      "requirement": "D02/D09",
+      "tickets": [
+        "08",
+        "09"
+      ]
     },
     {
       "path": "server/test-support/groupMemberReleaseHarness.ts",

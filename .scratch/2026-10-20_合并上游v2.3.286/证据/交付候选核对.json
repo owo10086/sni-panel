@@ -1,0 +1,30 @@
+{
+  "codeCandidate": "f637e5c30e92cfec99a85cb1d37c6a03f69a5c18",
+  "before": "563b1c691827f7ca13d3e8a687663b65f99f6b53",
+  "upstream": "aca5d5dfb645393b6925f155ff7258006f46204e",
+  "fingerprintEntries": 1439,
+  "changedDeliveryFiles": 193,
+  "originalFiles": 51,
+  "originalUnchanged": true,
+  "nativeExcluded": 144,
+  "allCandidateOidsRechecked": true,
+  "oidRecheckEvidence": "主代理工具运行记录：1439项全部一致；未用预合并片段代替最终指纹。",
+  "versions": {
+    "panel": "3.4.1",
+    "agent": "3.4.0",
+    "fxp": "3.4.0"
+  },
+  "gitDiffCheckExit": 0,
+  "trackedUncommittedPaths": [
+    ".gitignore",
+    ".scratch/2026-10-08_合并上游v2.3.282/spec.md",
+    ".scratch/2026-10-17_合并上游v2.3.283/284接续记录.md",
+    "AGENTS.md",
+    "docs/adr/0008-host-failover-groups-use-entry-health.md"
+  ],
+  "productionOperations": false,
+  "pushed": false,
+  "deployed": false,
+  "manualAcceptance": "未进行",
+  "temporaryDatabaseContainers": "forwardx-286-mysql-test、forwardx-286-postgres-test已停止，均由--rm自动移除"
+}

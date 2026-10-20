@@ -15,6 +15,7 @@ import { seamlessBackgroundPaused } from "./seamlessMigrationState";
 import { setBoundedMapValue } from "./boundedCache";
 import { ipSwitchAgentReady } from "./agentIpSwitchTasks";
 import { recordConfigAuditEvent } from "./configAudit";
+import { deleteExpiredHistoryRows } from "./repositories/historyRetention";
 
 const key = createHash("sha256").update("forwardx-host-ip-switch-v1:").update(ENV.cookieSecret).digest();
 const inactiveHosts = new Map<number, number>();
@@ -211,5 +212,7 @@ export async function validateIpSwitchClaim(hostId: number, serviceId: number, i
   return !!(host && hostIngressAddress(host) === expectedIp && config.enabled && config.autoSwitch && service?.isEnabled && service.hostScope === "specific" && service.hostIds.length === 1 && service.hostIds[0] === hostId && state?.incidentId === incidentId && state.phase === "unhealthy" && state.actionAttempted && attempt?.status === "pending");
 }
 export async function cleanProbeHealthHistory() {
-  await executeRaw(`DELETE FROM ${q("host_ip_switch_attempts")} WHERE ${q("createdAt")} < ? AND (${q("status")} NOT IN ('pending','uncertain') OR ${q("acknowledged")} = ${boolLiteral(true)})`, [Math.floor(Date.now() / 1000) - 90 * 86400]);
+  await deleteExpiredHistoryRows("host_ip_switch_attempts", "createdAt", Math.floor(Date.now() / 1000) - 90 * 86400, {
+    whereSql: `(${q("status")} NOT IN ('pending','uncertain') OR ${q("acknowledged")} = ${boolLiteral(true)})`,
+  });
 }

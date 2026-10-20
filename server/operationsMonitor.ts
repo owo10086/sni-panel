@@ -7,6 +7,7 @@ import { getNotificationAdminRecipients, sendUserNotification } from "./notifica
 import { getHosts, getLatestHostMetricRows } from "./db";
 import { setBoundedMapValue } from "./boundedCache";
 import { seamlessBackgroundPaused } from "./seamlessMigrationState";
+import { deleteExpiredHistoryRows } from "./repositories/historyRetention";
 
 const settingKey = "operationsResourceAlerts";
 const observed = new Map<number, number>();
@@ -91,8 +92,9 @@ export async function monitorOverview(page = 0) {
 }
 
 export async function cleanMonitorHistory() {
-  const cutoff = Math.floor(Date.now() / 1000) - 30 * 86400;
-  await executeRaw(`DELETE FROM ${q("operations_alert_events")} WHERE ${q("createdAt")} < ?`, [cutoff]);
-  await executeRaw(`DELETE FROM ${q("operations_alert_state")} WHERE ${q("lastSeen")} < ?`, [cutoff]);
-  await executeRaw(`DELETE FROM ${q("external_mcp_tokens")} WHERE ${q("expiresAt")} <= ?`, [Math.floor(Date.now() / 1000)]);
+  const now = Math.floor(Date.now() / 1000), cutoff = now - 30 * 86400;
+  await deleteExpiredHistoryRows("operations_alert_events", "createdAt", cutoff);
+  await deleteExpiredHistoryRows("operations_alert_state", "lastSeen", cutoff);
+  // Epoch columns are whole seconds; < now + 1 retains the previous <= now boundary.
+  await deleteExpiredHistoryRows("external_mcp_tokens", "expiresAt", now + 1);
 }

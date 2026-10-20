@@ -1,0 +1,17 @@
+{
+  "url": "http://127.0.0.1:18860/login",
+  "title": "sni-panel",
+  "icons": [
+    {
+      "href": "/logo-light.png",
+      "type": "image/png"
+    }
+  ],
+  "images": [
+    {
+      "src": "/logo-light.png",
+      "complete": true,
+      "naturalWidth": 192
+    }
+  ]
+}

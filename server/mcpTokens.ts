@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from "node:crypto";
-import { executeRaw, insertAndGetId, queryRaw } from "./dbRuntime";
+import { executeRaw, getDatabaseKind, insertAndGetId, queryRaw, withDatabaseTransaction } from "./dbRuntime";
 import { quoteIdentifier as q } from "./dbCompat";
 import { withKeyedTaskLock } from "./keyedTaskLock";
 
@@ -8,14 +8,18 @@ export async function listMcpTokens(userId: number) {
   return queryRaw<any>(`SELECT ${fields} FROM ${q("external_mcp_tokens")} WHERE ${q("userId")} = ? ORDER BY ${q("id")} DESC`, [userId]);
 }
 export async function createMcpToken(userId: number, name: string, days: number) {
-  return withKeyedTaskLock(`mcp-tokens:${userId}`, async () => {
+  return withKeyedTaskLock(`mcp-tokens:${userId}`, () => withDatabaseTransaction(async () => {
+    // Lock the stable account row before counting, including across panel processes.
+    // SQLite's BEGIN IMMEDIATE already serializes writers across connections.
+    const [owner] = await queryRaw(`SELECT ${q("id")} FROM ${q("users")} WHERE ${q("id")} = ?${getDatabaseKind() === "sqlite" ? "" : " FOR UPDATE"}`, [userId]);
+    if (!owner) throw new Error("用户不存在");
     const now = Math.floor(Date.now() / 1000);
     await executeRaw(`DELETE FROM ${q("external_mcp_tokens")} WHERE ${q("userId")} = ? AND ${q("expiresAt")} <= ?`, [userId, now]);
     if ((await listMcpTokens(userId)).length >= 10) throw new Error("最多保留 10 个有效 MCP 令牌，请先撤销旧令牌");
     const token = `fxm_${randomBytes(32).toString("hex")}`;
     const id = await insertAndGetId("external_mcp_tokens", { userId, name, prefix: token.slice(0, 12), tokenHash: hashMcpToken(token), createdAt: now, expiresAt: now + days * 86400 });
     return { id, token, expiresAt: now + days * 86400 };
-  });
+  }));
 }
 export const hashMcpToken = (value: string) => createHash("sha256").update(value).digest("hex");
 export async function revokeMcpToken(userId: number, id: number) {

@@ -224,6 +224,53 @@
     ]
   },
   {
+    "path": "证据/浏览器/演示夹具运行.log",
+    "sha256": "8e999dcf11a1c161d968f6d788ba8dc089ec8fb3e433db178c90029324c481b3",
+    "bytes": 1705,
+    "tapSummaries": []
+  },
+  {
+    "path": "证据/点评修补MySQL实库.log",
+    "sha256": "919098bd727b1417223aa8cc1031321d9b129243f47dae219c128f4e34738d5c",
+    "bytes": 1165,
+    "tapSummaries": []
+  },
+  {
+    "path": "证据/点评修补PostgreSQL实库.log",
+    "sha256": "c37c8dbf66abf75d36ab0d965bb4cfea0451f3f7b935abc08949c17b23f43ee4",
+    "bytes": 1168,
+    "tapSummaries": []
+  },
+  {
+    "path": "证据/点评修补三库准备.log",
+    "sha256": "8a180cf4702e2abd23234a026e0139b83a105e825464c9fc152b71d17de20edf",
+    "bytes": 79,
+    "tapSummaries": []
+  },
+  {
+    "path": "证据/点评修补专项检查.log",
+    "sha256": "453713b1f2ce09a6314a98feeced5127d6d24eba6413bda64464f2d6159ba7a1",
+    "bytes": 7585,
+    "tapSummaries": [
+      "# tests 24",
+      "# pass 24",
+      "# fail 0",
+      "# skipped 0"
+    ]
+  },
+  {
+    "path": "证据/点评修补最终构建.log",
+    "sha256": "ace8807b42ddec2f68af8af06feb6544c9c069ed1b783069b2bf224cc26dcae6",
+    "bytes": 22463,
+    "tapSummaries": []
+  },
+  {
+    "path": "证据/点评修补类型检查.log",
+    "sha256": "98243fedc3291508b3e9237a461a492e436de6ed9815a6198d45dd034ac8f289",
+    "bytes": 164,
+    "tapSummaries": []
+  },
+  {
     "path": "证据/版本检查.log",
     "sha256": "7da30f7258d7bc16c8def65cf120ce6f9073c760ee2348fa5b531bedde134e64",
     "bytes": 366,
