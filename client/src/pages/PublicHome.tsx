@@ -35,7 +35,8 @@ export default function PublicHome() {
   const { resolvedTheme } = useTheme();
   const { data: info } = trpc.system.publicInfo.useQuery(undefined, { refetchOnWindowFocus: false });
   const registrationEnabled = info?.registrationEnabled !== false;
-  const siteTitle = (info?.siteTitle || "ForwardX").trim() || "ForwardX";
+  const siteTitle = (info?.siteTitle || "sni-panel").trim() || "sni-panel";
+
   const logoSrc = info?.siteLogoDataUrl || (resolvedTheme === "dark" ? "/logo-dark.png" : "/logo-light.png");
 
   const handleRegisterClick = (event: React.MouseEvent<HTMLAnchorElement>) => {

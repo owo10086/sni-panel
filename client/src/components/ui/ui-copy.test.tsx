@@ -10,6 +10,15 @@ import { PersistentPagination, type PersistentPaginationState } from "../Persist
 import { RuleLimitsForm, newRuleLimitsForm } from "../rules/RuleLimitsForm";
 import { getLanguagePreference, initializeLanguage, setLanguagePreference } from "@/i18n";
 
+test("public homepage uses one local PNG or uploaded logo", () => {
+  const page = readFileSync("client/src/pages/PublicHome.tsx", "utf8");
+  const header = page.slice(page.indexOf("<header"), page.indexOf("</header>"));
+  assert.equal((header.match(/<img\b/g) || []).length, 1);
+  assert.match(header, /src=\{logoSrc\}/);
+  assert.match(page, /info\?\.siteLogoDataUrl \|\| \(resolvedTheme === "dark" \? "\/logo-dark.png" : "\/logo-light.png"\)/);
+  assert.doesNotMatch(header, /ForwardXLogo|<svg\b/);
+});
+
 test("sidebar menu toggles retain display controls and distinguish independent business switches", () => {
   const settings = readFileSync("client/src/pages/Settings.tsx", "utf8");
   const rows = settings.slice(settings.indexOf("{SIDEBAR_MENU_KEYS.map((key) => ("));

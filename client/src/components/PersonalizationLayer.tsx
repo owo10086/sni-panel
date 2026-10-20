@@ -2,6 +2,7 @@ import { trpc } from "@/lib/trpc";
 import { mobileAuth } from "@/lib/mobileAuth";
 import { applyPersonalizationTheme, clearPersonalizationTheme } from "@/lib/personalizationTheme";
 import { useEffect, useLayoutEffect, useState } from "react";
+import { applySiteFavicon } from "@/lib/siteFavicon";
 
 const MOBILE_BACKGROUND_MEDIA = "(max-width: 767px), (pointer: coarse)";
 
@@ -83,6 +84,18 @@ export default function PersonalizationLayer() {
       clearPersonalizationTheme(root);
     };
   }, [personalizationTheme]);
+
+  useLayoutEffect(() => {
+    if (!data) return;
+    const root = document.documentElement;
+    const sync = () => applySiteFavicon(document, data.siteLogoDataUrl, root.classList.contains("dark"));
+    sync();
+    // The tab follows the same uploaded image or light/dark PNG as the page.
+    // Custom uploaded images remain unchanged when switching light/dark mode.
+    const observer = new MutationObserver(sync);
+    observer.observe(root, { attributes: true, attributeFilter: ["class", "style"] });
+    return () => observer.disconnect();
+  }, [data?.siteLogoDataUrl, !!data]);
 
   if (!showVideo) return null;
 

@@ -12,8 +12,8 @@
     "dev": "tsx server/index.ts",
     "dev:panel": "node scripts/dev-panel.mjs",
     "dev:hosts-showcase": "node scripts/dev-panel.mjs",
-    "build": "vite build && node esbuild.config.mjs",
-    "build:client": "vite build",
+    "build": "vite build && node scripts/check-client-delivery.mjs && node esbuild.config.mjs",
+    "build:client": "vite build && node scripts/check-client-delivery.mjs",
     "build:server": "node esbuild.config.mjs",
     "mobile:sync": "pnpm mobile:sync:android",
     "mobile:sync:android": "pnpm build:client && cap sync android",
@@ -38,10 +38,10 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
-    "test:ui": "node --import tsx --test client/src/components/ui/pearl-ui.test.tsx client/src/components/ui/sliding-tabs.test.tsx client/src/components/ui/confirm-dialog.test.tsx client/src/components/ui/ui-copy.test.tsx client/src/lib/sidebarScroll.test.ts client/src/components/ui/async-button.test.tsx",
+    "test:ui": "node --import tsx --test client/src/components/ui/pearl-ui.test.tsx client/src/components/ui/sliding-tabs.test.tsx client/src/components/ui/confirm-dialog.test.tsx client/src/components/ui/ui-copy.test.tsx client/src/lib/sidebarScroll.test.ts client/src/components/ui/async-button.test.tsx client/src/lib/ruleSortScope.test.ts",
     "test:host-deletion": "node --import tsx --test server/hostDeletion.test.ts server/groupMemberRelease.test.ts server/forwardGroupTemplateHosts.test.ts server/forwardRuleErrorNotifier.test.ts client/src/lib/hostDependencyLinks.test.ts",
     "test:port-access-limits": "node --import tsx --test server/portAccessLimits.test.ts server/portAccessLimitRefresh.test.ts",
-    "test:plan-display": "node --import tsx --test client/src/components/PlanDetails.test.tsx client/src/components/PlanManagementSettings.test.tsx server/planDescription.test.ts",
+    "test:plan-display": "node --import tsx --test client/src/components/PlanDetails.test.tsx client/src/components/PlanManagementSettings.test.tsx client/src/components/ProductSorting.test.tsx server/planDescription.test.ts server/productOrder.test.ts",
     "test:affiliates": "node --import tsx --test server/affiliates.test.ts client/src/pages/Affiliates.test.tsx",
     "test:avatars": "node --import tsx --test shared/avatar.test.ts server/avatars.test.ts client/src/components/AvatarPicker.test.tsx",
     "test:latency-history": "node --import tsx --test server/latencyHistory.test.ts server/hostAvailability.test.ts client/src/components/hosts/HostAvailabilityHistory.test.tsx client/src/components/LatencyHistoryDays.test.tsx server/historyCleanupIndexes.test.ts server/latencySeries.test.ts server/probeCounter.test.ts client/src/lib/latencyChart.test.ts",
@@ -51,9 +51,17 @@
     "test:payments": "node --import tsx --test server/paymentProtocol.test.ts server/paymentIntegration.test.ts server/paymentOrderState.test.ts server/paymentUrls.test.ts server/gmPay.test.ts server/billingPagination.test.ts client/src/lib/paymentCheckout.test.ts",
     "test:user-selection": "node --import tsx --test server/userOptions.test.ts client/src/components/UserSelect.test.tsx",
     "test:host-notifications": "node --import tsx --test server/hostStatusNotifier.test.ts client/src/components/hosts/HostStatusNotificationSetting.test.tsx",
-    "test:operations": "node --import tsx --test shared/operations.test.ts server/operations.test.ts server/operationsFinance.test.ts client/src/components/OperationsChinaMap.test.tsx client/src/components/OperationsFinanceCharts.test.tsx client/src/components/OperationsRefreshSelect.test.tsx client/src/components/SummaryMetricCard.test.tsx client/src/lib/operationsRefresh.test.ts",
+    "test:operations": "node --import tsx --test shared/operations.test.ts server/operations.test.ts server/operationsRuleNames.test.ts server/operationsFinance.test.ts client/src/components/OperationsChinaMap.test.tsx client/src/components/OperationsFinanceCharts.test.tsx client/src/components/OperationsRefreshSelect.test.tsx client/src/components/OperationsRanking.test.tsx client/src/components/SummaryMetricCard.test.tsx client/src/lib/operationsRefresh.test.ts client/src/lib/mapTooltipPosition.test.ts",
     "test:nyanpass-import": "node --import tsx --test client/src/lib/nyanpassImport.test.ts client/src/components/rules/NyanpassImportPreview.test.tsx client/src/lib/ruleTransfer.test.ts client/src/lib/batchOperations.test.ts",
-    "test:port-entry": "node --import tsx --test server/portEntryGroup.test.ts server/portEntryRuntime.test.ts server/portEntryDiagnostics.test.ts client/src/components/PortEntryRuntimeSummary.test.tsx client/src/components/ForwardGroupMembers.test.tsx server/resourceTrafficSummary.test.ts client/src/components/ResourceTrafficSummary.test.tsx client/src/lib/linkAvailability.test.ts server/forwardGroupRuntimeStatus.test.ts server/forwardGroupRename.test.ts server/forwardGroupToggle.test.ts"
+    "test:port-entry": "node --import tsx --test server/portEntryGroup.test.ts server/portEntryRuntime.test.ts server/portEntryDiagnostics.test.ts client/src/components/PortEntryRuntimeSummary.test.tsx client/src/components/ForwardGroupMembers.test.tsx server/resourceTrafficSummary.test.ts client/src/components/ResourceTrafficSummary.test.tsx client/src/lib/linkAvailability.test.ts server/forwardGroupRuntimeStatus.test.ts server/forwardGroupRename.test.ts server/forwardGroupToggle.test.ts",
+    "test:auth-captcha": "node --import tsx --test server/authCaptcha.test.ts server/authRateLimit.test.ts client/src/components/AuthCaptchaFields.test.tsx client/src/components/LoginLayout.test.tsx",
+    "test:billing-export": "node --import tsx --test server/billingExport.test.ts server/billingPagination.test.ts client/src/lib/billingExport.test.ts client/src/lib/fileDownload.test.ts",
+    "test:host-addresses": "node --import tsx --test server/hostMultiIp.test.ts server/hostDdns.test.ts client/src/components/hosts/HostAddressSelectors.test.tsx",
+    "test:china-health": "node --import tsx --test server/hostProbeHealth.test.ts client/src/components/hosts/HostChinaHealthSettings.test.tsx",
+    "test:observability": "node --import tsx --test server/observability.test.ts",
+    "test:startup": "node --import tsx --test client/src/lib/dashboardCache.test.ts client/src/lib/moduleResource.test.ts client/src/lib/siteFavicon.test.tsx client/src/components/PanelStartView.test.tsx client/src/components/RoutePage.test.tsx server/clientStatic.test.ts scripts/client-delivery-plugin.test.ts",
+    "test:login-ui": "node --import tsx --test client/src/components/LoginLayout.test.tsx client/src/components/ui/ui-copy.test.tsx",
+    "test:database-upgrade": "node --import tsx --test server/mysqlSchemaMigration.test.ts server/historyMaintenance.test.ts server/databaseStartupRetention.test.ts server/mysqlLongTextSchema.test.ts server/historyCleanupIndexes.test.ts server/mysqlUpgrade.integration.test.ts"
   },
   "dependencies": {
     "@cap.js/server": "^4.0.5",
@@ -105,7 +113,8 @@
     "svg-captcha": "^1.4.0",
     "zod": "^3.24.0",
     "@radix-ui/react-popover": "^1.1.15",
-    "ip2region.js": "3.1.8"
+    "ip2region.js": "3.1.8",
+    "exceljs": "4.4.0"
   },
   "devDependencies": {
     "@capacitor/cli": "^8.3.4",
