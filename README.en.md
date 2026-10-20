@@ -29,7 +29,7 @@ Most detailed guides are in Chinese. English guides cover [Agent proxies](docs/g
 - User permissions, rule quotas, plans, balances, payment integrations, billing pagination, affiliates and support tickets.
 - Chinese/English interfaces, optional Google sign-in, AI-assisted confirmed operations, email and Telegram/Discord notifications.
 
-Version **3.4.0** integrates upstream 283–285 and adds direct SNI forwarding through simultaneous port entry groups. Upgrade the panel and its matching Agent/FXP assets together; native applications remain excluded. V3 internals are included, while both the web form and API reject V3 creation/switching; existing V1/V2 tunnels keep their versions. Published assets are available from [this project’s Release](https://github.com/owo10086/sni-panel/releases/tag/v3.4.0). See [version and compatibility notes](docs/guide/releases.md).
+Version **3.5.0** integrates upstream 286, including host multi-address support, optional health checks and IP switching, administrator read-only access, complete billing exports and faster page loading. Preserve local SNI and host failover behavior, billing, security, branding and installation sources; native applications remain excluded. Upgrade the panel and matching Agent/FXP assets together. V3 creation/switching stays disabled and existing V1/V2 tunnels keep their versions. Published assets are available from [this project's Release](https://github.com/owo10086/sni-panel/releases/tag/v3.5.0). See [version and compatibility notes](docs/guide/releases.md).
 
 ## Deployment
 

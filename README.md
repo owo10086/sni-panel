@@ -228,9 +228,9 @@ ForwardX Agent also includes the third-party userspace WireGuard implementation 
   </picture>
 </a>
 
-## 3.4.0：整合上游 283—285
+## 3.5.0：整合上游 286
 
-面板、Agent 和 FXP 一起更新为 3.4.0，整合上游 283—285 的网页、服务端和运行程序改进，并新增 SNI 端口资源通过入口组直接分流。请升级面板及配套 Agent／FXP；原生应用继续排除。V3 仅合入底层，网页和接口均不开放新建或切换，已有 V1／V2 不转换。发布附件以[本项目 Releases](https://github.com/owo10086/sni-panel/releases/tag/v3.4.0)为准；兼容与验证边界见[版本说明](docs/guide/releases.md)。
+面板、Agent 和 FXP 一起更新为 3.5.0，纳入主机多地址、可选健康与自动换 IP、管理员外部只读接入、完整账单导出及网页加载改进。保留本地 SNI、主机型主备判断、计费、安全、品牌和安装来源；原生应用继续排除。请升级面板及配套 Agent／FXP。V3 新建和切换继续关闭，已有 V1／V2 不转换。发布附件以[本项目 Releases](https://github.com/owo10086/sni-panel/releases/tag/v3.5.0)为准；兼容与验证边界见[版本说明](docs/guide/releases.md)。
 
 [Agent proxy](docs/guide/agent-proxy-manager.en.md) · [SSH management](docs/guide/ssh-management.md) · [Affiliates](docs/guide/affiliates.md) · [Support tickets](docs/guide/support-tickets.md)
 

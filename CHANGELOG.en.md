@@ -4,13 +4,26 @@
 
 ## [Unreleased]
 
+## [3.5.0] - 2026-10-20
+
+### Features and improvements
+
 - Integrate upstream 286 web, server and Agent/FXP improvements while preserving local SNI, host failover entry health, billing, security, branding and installation sources. Native applications remain excluded.
 - Discover multiple public IPv4/IPv6 addresses, select primary addresses and optionally synchronize dual-stack or complete address sets. Existing single-IP configurations retain single-record updates; explicitly enabling the new mode manages the complete selected record sets, including removal of extra records after returning to primary-only mode.
 - Add independent host health checks and optional automatic IP switching, disabled by default. Explicit administrator configuration lets the corresponding Agent call the provider with cooldowns, attempt limits and no blind retries for uncertain outcomes. Address synchronization retains SNI configuration confirmation and group DNS observation rules.
 - Add administrator-only read-only external MCP access, CAPTCHA provider selection and optional sustained resource alerts. No tokens are generated automatically; existing login and write-confirmation safeguards remain.
 - Export complete billing ledgers to Excel and persist product/resource ordering in the store. Improve precise statistics, network diagnostics, multi-entry latency and map details.
 - Load pages on demand while retaining navigation, restore isolated presentation caches before refreshing the dashboard, and improve login layouts, languages and local logo synchronization. FXP retries connection/initial hello setup only before business payload is sent; it does not replay established streams.
-- Improve database upgrades, safe failure explanations and paced background retention across supported databases. Installation scripts check source-accounting dependencies. Version numbers are unchanged; these changes are unreleased, and source updates do not imply deployed binaries or manual acceptance.
+- Improve database upgrades, safe failure explanations and paced background retention across supported databases. Installation scripts check source-accounting dependencies.
+- Apply bounded batches and time budgets to new history tables while retaining unacknowledged IP-switch attempts. Administrator read-only access tokens remain limited to ten per account, including concurrent issuance under repeatable-read database settings.
+
+### Versions and upgrade notes
+
+- Panel, Agent and ForwardX FXP runtime: `3.5.0`. Runtime programs have changed: back up first, then upgrade the panel and matching Agent/FXP assets. Updating only the panel does not give older binaries multi-address reporting or automatic IP-switch capabilities.
+- Automatic IP switching and sustained resource alerts default off; external read-only access generates no tokens automatically. Use a dedicated domain for complete-record-set DDNS management; returning to primary-only mode still removes extra records.
+- Preserve ADR-0006/0008 entry health, complete current SNI configuration confirmation, observation waits and pre-publication rechecks. Destination-probe failures alone do not block SNI or host failover entry selection.
+- Assets target Linux amd64. Native Android and iOS/iPadOS applications remain excluded; no APK/IPA is published.
+- Automated checks and independent review are complete. Real provider IP changes, production DNS, alert delivery and some scale scenarios retain acceptance gaps. Publishing does not imply upgraded hosts or user acceptance.
 
 ## [3.4.1] - 2026-10-19
 
