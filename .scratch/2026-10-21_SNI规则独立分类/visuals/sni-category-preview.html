@@ -1,0 +1,179 @@
+<div id="sni-category-preview">
+  <style>
+    #sni-category-preview{color-scheme:light dark;--fx-bg:light-dark(#f3f6f4,#141b19);--fx-panel:light-dark(#ffffff,#1c2521);--fx-text:light-dark(#26342f,#e5eee9);--fx-sub:light-dark(#6f7e76,#a0b1a7);--fx-line:light-dark(#e0e7e2,#34443b);--fx-soft:light-dark(#edf2ee,#26362c);--fx-brand:light-dark(#205e45,#98d4b0);--fx-selected:light-dark(#e4f0e8,#253d2e);--fx-red:light-dark(#b94f5b,#f098a2);--fx-shadow:light-dark(0 2px 7px #233b2b0a,0 2px 7px #00000020);font:13px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;color:var(--fx-text)}
+    #sni-category-preview *{box-sizing:border-box}
+    #sni-category-preview [hidden]{display:none!important}
+    #sni-category-preview button,#sni-category-preview input{font:inherit;color:inherit}
+    #sni-category-preview .fx-shell{display:grid;grid-template-columns:132px minmax(0,1fr);background:var(--fx-bg);border:1px solid var(--fx-line);border-radius:12px;overflow:clip;min-height:690px}
+    #sni-category-preview .fx-sidebar{background:var(--fx-panel);border-right:1px solid var(--fx-line);display:flex;flex-direction:column;gap:4px;padding:16px 9px}
+    #sni-category-preview .fx-brand{display:flex;align-items:center;gap:7px;font-weight:600;padding:0 3px 22px}
+    #sni-category-preview .fx-logo{display:grid;place-items:center;background:var(--fx-brand);color:var(--fx-panel);border-radius:7px;width:26px;height:26px;font-size:12px}
+    #sni-category-preview .fx-navlabel{font-size:11px;letter-spacing:.06em;color:var(--fx-sub);margin:7px 9px}
+    #sni-category-preview .fx-navitem{display:flex;align-items:center;gap:9px;padding:9px 8px;border-radius:8px;color:var(--fx-sub);font-size:12px;white-space:nowrap}
+    #sni-category-preview .fx-navitem.active{background:var(--fx-soft);color:var(--fx-text);font-weight:600}
+    #sni-category-preview .fx-navitem svg{width:15px;height:15px;flex-shrink:0}
+    #sni-category-preview .fx-profile{margin-top:auto;border-top:1px solid var(--fx-line);padding:14px 5px 0;font-size:11px;color:var(--fx-sub)}
+    #sni-category-preview .fx-profile strong{display:block;color:var(--fx-text);font-size:12px;font-weight:500}
+    #sni-category-preview .fx-workspace{min-width:0}
+    #sni-category-preview .fx-topbar{min-height:54px;background:var(--fx-panel);border-bottom:1px solid var(--fx-line);display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 18px;font-size:11px;color:var(--fx-sub)}
+    #sni-category-preview .fx-topbar-right{display:flex;align-items:center;gap:16px;padding-right:92px}
+    #sni-category-preview .fx-main{padding:20px 18px 24px;min-width:0}
+    #sni-category-preview .fx-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:17px}
+    #sni-category-preview h1{font-size:20px;line-height:1.4;font-weight:600;margin:0}
+    #sni-category-preview h2{font-size:14px;font-weight:600;margin:0}
+    #sni-category-preview h3{font-size:13px;font-weight:600;margin:0}
+    #sni-category-preview .fx-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+    #sni-category-preview .fx-button{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:31px;padding:5px 10px;border:1px solid var(--fx-line);border-radius:8px;background:var(--fx-panel);font-size:12px;white-space:nowrap}
+    #sni-category-preview .fx-button.primary{background:var(--fx-text);border-color:var(--fx-text);color:var(--fx-panel)}
+    #sni-category-preview .fx-button svg{width:14px;height:14px}
+    #sni-category-preview .fx-filter{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:14px;color:var(--fx-sub);font-size:12px}
+    #sni-category-preview .fx-search{border:1px solid var(--fx-line);border-radius:20px;background:var(--fx-panel);padding:7px 11px;display:flex;align-items:center;gap:8px;min-width:190px;flex:1;max-width:270px}
+    #sni-category-preview .fx-search svg{width:13px;height:13px}
+    #sni-category-preview .fx-filter-pill{padding:6px 12px;border:1px solid var(--fx-line);border-radius:20px;background:var(--fx-panel)}
+    #sni-category-preview .fx-tabs{display:flex;flex-wrap:wrap;gap:3px;padding:5px;background:var(--fx-soft);border:1px solid var(--fx-line);border-radius:25px;margin:0 0 18px}
+    #sni-category-preview .fx-tab{border:1px solid transparent;border-radius:20px;background:transparent;color:var(--fx-sub);padding:7px 9px;display:inline-flex;align-items:center;justify-content:center;gap:6px;flex:1;white-space:nowrap;font-size:12px}
+    #sni-category-preview .fx-tab[aria-selected=true]{background:var(--fx-panel);border-color:var(--fx-line);color:var(--fx-text);font-weight:600;box-shadow:var(--fx-shadow)}
+    #sni-category-preview .fx-count{font-size:11px;border-radius:9px;padding:0 5px;background:var(--fx-soft);font-variant-numeric:tabular-nums}
+    #sni-category-preview .fx-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:19px}
+    #sni-category-preview .fx-stat{background:var(--fx-panel);border:1px solid var(--fx-line);border-radius:11px;padding:11px 12px;box-shadow:var(--fx-shadow)}
+    #sni-category-preview .fx-statlabel{color:var(--fx-sub);font-size:11px;margin-bottom:4px}
+    #sni-category-preview .fx-stat strong{font-size:17px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+    #sni-category-preview .fx-stat small{font-size:11px;color:var(--fx-sub);margin-left:5px;white-space:nowrap}
+    #sni-category-preview .fx-sectionbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;min-height:34px}
+    #sni-category-preview .fx-sectiontitle{display:flex;align-items:center;gap:8px}
+    #sni-category-preview .fx-sub{color:var(--fx-sub);font-size:11px}
+    #sni-category-preview .fx-group{background:var(--fx-panel);border:1px solid var(--fx-line);border-radius:11px;overflow:clip;margin-bottom:13px}
+    #sni-category-preview .fx-grouphead{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:13px 12px;background:var(--fx-panel)}
+    #sni-category-preview .fx-grouphead-left{min-width:190px}
+    #sni-category-preview .fx-group-toggle{display:flex;align-items:center;gap:6px;background:none;border:0;padding:0;text-align:left;font-weight:600;font-size:13px}
+    #sni-category-preview .fx-group-toggle svg{width:14px;height:14px}
+    #sni-category-preview .fx-groupsub{margin-top:5px;font-size:11px;color:var(--fx-sub);display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+    #sni-category-preview .fx-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--fx-brand);flex-shrink:0}
+    #sni-category-preview .fx-entrylines{font-size:11px;text-align:right;color:var(--fx-sub);display:grid;gap:4px}
+    #sni-category-preview .fx-entrylines strong{color:var(--fx-text);font-weight:500}
+    #sni-category-preview .fx-tablewrap{overflow-x:auto;max-width:100%}
+    #sni-category-preview table{width:100%;border-collapse:collapse;font-size:11px;table-layout:fixed;min-width:760px;background:var(--fx-panel)}
+    #sni-category-preview th{color:var(--fx-sub);font-weight:500;text-align:left;padding:11px 7px;background:var(--fx-soft);border-block:1px solid var(--fx-line);white-space:nowrap}
+    #sni-category-preview td{padding:13px 7px;border-bottom:1px solid var(--fx-line);vertical-align:middle;overflow-wrap:anywhere}
+    #sni-category-preview tr:last-child td{border-bottom:0}
+    #sni-category-preview .fx-rule{font-weight:600;display:flex;align-items:flex-start;gap:5px}
+    #sni-category-preview .fx-rule .fx-dot{margin-top:5px}
+    #sni-category-preview .fx-mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px}
+    #sni-category-preview .fx-port{color:var(--fx-sub)}
+    #sni-category-preview .fx-resource,#sni-category-preview .fx-link{background:none;border:0;padding:0;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px;font-size:11px;color:var(--fx-brand);text-align:left}
+    #sni-category-preview .fx-tag{display:inline-block;font-size:11px;border-radius:10px;background:var(--fx-soft);padding:2px 6px;color:var(--fx-sub)}
+    #sni-category-preview .fx-value{font-variant-numeric:tabular-nums;white-space:nowrap}
+    #sni-category-preview .fx-inline{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+    #sni-category-preview .fx-rowactions{display:flex;align-items:center;gap:7px;white-space:nowrap;justify-content:flex-end}
+    #sni-category-preview .fx-switch{width:24px;height:14px;background:var(--fx-brand);border-radius:10px;position:relative;display:inline-block;flex-shrink:0}
+    #sni-category-preview .fx-switch:after{content:"";width:10px;height:10px;background:var(--fx-panel);position:absolute;right:2px;top:2px;border-radius:50%}
+    #sni-category-preview .fx-textbutton{border:0;padding:0;background:none;font-size:11px}
+    #sni-category-preview .fx-detail td{background:var(--fx-soft);padding:12px}
+    #sni-category-preview .fx-detailline{display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-bottom:7px;font-size:11px}
+    #sni-category-preview .fx-detailline:last-child{margin-bottom:0;color:var(--fx-sub)}
+    #sni-category-preview .fx-detailline strong{font-weight:600}
+    #sni-category-preview .fx-detail-gap{margin-left:13px}
+    #sni-category-preview .fx-pagination{display:flex;align-items:center;justify-content:space-between;color:var(--fx-sub);font-size:11px;margin-top:14px;gap:10px}
+    #sni-category-preview .fx-warning{display:flex;align-items:flex-start;gap:7px;color:var(--fx-red);font-size:12px;padding:0 12px 12px;overflow-wrap:anywhere}
+    #sni-category-preview .fx-warning svg{width:15px;height:15px;flex-shrink:0;margin-top:2px}
+    #sni-category-preview .fx-dot.warning{background:var(--fx-red)}
+    #sni-category-preview .fx-dialog{border:1px solid var(--fx-line);border-radius:12px;background:var(--fx-panel);color:var(--fx-text);padding:21px;width:min(430px,calc(100% - 28px));box-shadow:var(--fx-shadow)}
+    #sni-category-preview .fx-dialog::backdrop{background:light-dark(#132a2240,#00000080)}
+    #sni-category-preview .fx-dialog dl{display:grid;grid-template-columns:1fr auto;gap:11px;font-size:13px;margin:18px 0}
+    #sni-category-preview .fx-dialog dt{color:var(--fx-sub)}
+    #sni-category-preview .fx-dialog dd{margin:0;text-align:right}
+    @media(max-width:800px){#sni-category-preview .fx-shell{grid-template-columns:100px minmax(0,1fr)}#sni-category-preview .fx-brand{font-size:12px;gap:5px}#sni-category-preview .fx-sidebar{padding-inline:5px}#sni-category-preview .fx-navitem{font-size:11px;padding-inline:6px;gap:6px}#sni-category-preview .fx-main{padding:16px 12px}#sni-category-preview .fx-topbar{padding-inline:12px}#sni-category-preview .fx-topbar-right{padding-right:0}#sni-category-preview .fx-grouphead{flex-direction:column}#sni-category-preview .fx-entrylines{text-align:left}#sni-category-preview .fx-tab{flex:1 0 28%}#sni-category-preview .fx-stat strong{font-size:15px}#sni-category-preview .fx-stat small{display:block;margin:2px 0 0}}
+    @media(max-width:520px){#sni-category-preview .fx-shell{grid-template-columns:minmax(0,1fr)}#sni-category-preview .fx-sidebar{display:none}#sni-category-preview h1{font-size:18px}#sni-category-preview .fx-heading{align-items:flex-start}#sni-category-preview .fx-heading .fx-actions .fx-button:not(.primary){display:none}#sni-category-preview .fx-stats{gap:6px}#sni-category-preview .fx-stat{padding:10px 8px}#sni-category-preview .fx-filter-pill:last-child{display:none}#sni-category-preview .fx-topbar-right span:last-child{display:none}}
+  </style>
+  <div class="fx-shell">
+    <aside class="fx-sidebar" aria-label="侧边导航">
+      <div class="fx-brand"><span class="fx-logo">FX</span>ForwardX</div>
+      <div class="fx-navlabel">主菜单</div>
+      <div class="fx-navitem"><i data-lucide="layout-dashboard" aria-hidden="true"></i>仪表盘</div>
+      <div class="fx-navitem"><i data-lucide="server" aria-hidden="true"></i>主机管理</div>
+      <div class="fx-navitem"><i data-lucide="link" aria-hidden="true"></i>链路管理</div>
+      <div class="fx-navitem active"><i data-lucide="arrow-left-right" aria-hidden="true"></i>转发规则</div>
+      <div class="fx-navitem"><i data-lucide="megaphone" aria-hidden="true"></i>公告</div>
+      <div class="fx-navlabel">管理</div>
+      <div class="fx-navitem"><i data-lucide="user-round" aria-hidden="true"></i>个人资料</div>
+      <div class="fx-navitem"><i data-lucide="messages-square" aria-hidden="true"></i>工单支持</div>
+      <div class="fx-navitem"><i data-lucide="activity" aria-hidden="true"></i>运维看板</div>
+      <div class="fx-navitem"><i data-lucide="credit-card" aria-hidden="true"></i>支付对接</div>
+      <div class="fx-navitem"><i data-lucide="users" aria-hidden="true"></i>用户管理</div>
+      <div class="fx-navitem"><i data-lucide="settings" aria-hidden="true"></i>系统设置</div>
+      <div class="fx-profile"><strong>Local Dev Admin</strong>管理员</div>
+    </aside>
+    <div class="fx-workspace">
+      <header class="fx-topbar"><span>ForwardX / 转发规则</span><div class="fx-topbar-right"><span>简体中文⌄</span><span>管理员</span></div></header>
+      <main class="fx-main">
+        <section id="fx-rule-page">
+          <div class="fx-heading"><h1>转发规则</h1><div class="fx-actions"><button class="fx-button" type="button">批量管理</button><button class="fx-button primary" type="button"><i data-lucide="plus" aria-hidden="true"></i>添加规则</button></div></div>
+          <div class="fx-filter"><span>筛选：</span><div class="fx-search"><i data-lucide="search" aria-hidden="true"></i><span>搜索端口、IP、域名或备注</span></div><span class="fx-filter-pill">我的规则⌄</span><span class="fx-filter-pill" id="fx-resource-filter">全部 SNI 资源⌄</span><span class="fx-filter-pill">每页12项⌄</span></div>
+          <div class="fx-tabs" role="tablist" aria-label="转发规则分类">
+            <button class="fx-tab" type="button" role="tab" id="fx-tab-all" aria-controls="fx-category-content" aria-selected="false" data-category="all">全部<span class="fx-count">16</span></button>
+            <button class="fx-tab" type="button" role="tab" id="fx-tab-local" aria-controls="fx-category-content" aria-selected="false" data-category="local">端口转发<span class="fx-count">6</span></button>
+            <button class="fx-tab" type="button" role="tab" id="fx-tab-tunnel" aria-controls="fx-category-content" aria-selected="false" data-category="tunnel">隧道转发<span class="fx-count">4</span></button>
+            <button class="fx-tab" type="button" role="tab" id="fx-tab-chain" aria-controls="fx-category-content" aria-selected="false" data-category="chain">转发链<span class="fx-count">3</span></button>
+            <button class="fx-tab" type="button" role="tab" id="fx-tab-group" aria-controls="fx-category-content" aria-selected="false" data-category="group">转发组<span class="fx-count">3</span></button>
+            <button class="fx-tab" type="button" role="tab" id="fx-tab-sni" aria-controls="fx-category-content" aria-selected="true" data-category="sni">sni规则组<span class="fx-count">2</span></button>
+          </div>
+          <div id="fx-category-content" role="tabpanel" aria-labelledby="fx-tab-sni">
+            <div class="fx-stats"><div class="fx-stat"><div class="fx-statlabel">入向流量</div><strong id="fx-in-total">6.22 GB</strong><small id="fx-in-daily">24H 51.14 MB</small></div><div class="fx-stat"><div class="fx-statlabel">出向流量</div><strong id="fx-out-total">5.20 GB</strong><small id="fx-out-daily">24H 1.71 GB</small></div><div class="fx-stat"><div class="fx-statlabel">连接次数</div><strong id="fx-connections">13,798</strong><small id="fx-connections-daily">24H 2,870</small></div></div>
+            <div class="fx-sectionbar"><div class="fx-sectiontitle"><h2 id="fx-category-heading">sni规则组</h2><span class="fx-sub" id="fx-category-count">共 2 条规则 · 1 个组</span></div></div>
+            <div id="fx-sni-content">
+              <section class="fx-group" aria-label="Media failover group SNI 规则">
+                <div class="fx-grouphead"><div class="fx-grouphead-left"><button class="fx-group-toggle" id="fx-toggle-group" type="button" aria-expanded="true" aria-controls="fx-sni-table"><i data-lucide="chevron-down" aria-hidden="true"></i>Media failover group · SNI 分流</button><div class="fx-groupsub"><span class="fx-dot warning"></span>域名配置不一致<span>2 条规则</span><span>入口端口 443</span></div></div><div class="fx-entrylines"><div><strong>当前入口　入口-美国:443</strong>　配置编号 6170　未匹配 2,870</div><div><strong>备用入口　入口-hkt:443</strong>　配置待核对　未匹配 79</div></div></div>
+                <div class="fx-warning" role="status"><i data-lucide="triangle-alert" aria-hidden="true"></i><span>备用入口「入口-hkt:443」的域名配置不完整，缺少：<span class="fx-mono">hk.preview.example</span></span></div>
+                <div id="fx-sni-table" class="fx-tablewrap">
+                  <table aria-label="SNI 规则表格"><colgroup><col style="width:13%"><col style="width:14%"><col style="width:12%"><col style="width:12%"><col style="width:11%"><col style="width:5%"><col style="width:12%"><col style="width:8%"><col style="width:13%"></colgroup><thead><tr><th>□ 规则</th><th>SNI 域名</th><th>所属资源</th><th>转发入口</th><th>转发出口</th><th>协议</th><th>累计</th><th>延迟</th><th style="text-align:right">操作</th></tr></thead><tbody>
+                    <tr><td><span class="fx-rule"><span class="fx-dot"></span>SNI preview Tokyo</span></td><td class="fx-mono">jp.preview.example</td><td><button id="fx-toggle-resource" class="fx-resource" type="button" aria-expanded="true" aria-controls="fx-resource-detail">Media failover group⌄</button></td><td class="fx-mono">entry-us.example<span class="fx-port">:443</span></td><td class="fx-mono">192.0.2.20<span class="fx-port">:443</span></td><td><span class="fx-tag">TCP</span></td><td><div class="fx-inline"><span class="fx-value">9.27 GB</span><button class="fx-link" type="button" data-traffic="Tokyo">详细</button></div></td><td><span class="fx-value">147 ms</span><div class="fx-sub">良好</div></td><td><div class="fx-rowactions"><span class="fx-switch" aria-label="已启用"></span><button class="fx-textbutton" type="button">编辑</button><button class="fx-textbutton" type="button">更多⋯</button></div></td></tr>
+                    <tr class="fx-detail" id="fx-resource-detail"><td colspan="9"><div class="fx-detailline"><strong>转发组：</strong>Media failover group · 主机型 · 主备 · SNI 分流<strong class="fx-detail-gap">链路：</strong><span class="fx-tag">转发组</span><span class="fx-tag">realm</span><strong class="fx-detail-gap">用户：</strong>Local Dev Admin</div><div class="fx-detailline"><strong>当前：</strong>入口-美国:443<span>　域名已生效　配置编号 6170　未匹配连接 2,870</span></div><div class="fx-detailline"><strong>备用：</strong>入口-hkt:443<span>　域名配置待核对　未匹配连接 79</span></div><div class="fx-detailline">未匹配连接：收到的域名没有匹配当前分流配置，可能与域名拼写、DNS 指向或扫描有关。</div></td></tr>
+                    <tr><td><span class="fx-rule"><span class="fx-dot"></span>SNI preview Hong Kong</span></td><td class="fx-mono">hk.preview.example</td><td><span class="fx-resource">Media failover group ›</span></td><td class="fx-mono">entry-us.example<span class="fx-port">:443</span></td><td class="fx-mono">192.0.2.10<span class="fx-port">:443</span></td><td><span class="fx-tag">TCP</span></td><td><div class="fx-inline"><span class="fx-value">2.15 GB</span><button class="fx-link" type="button" data-traffic="Hong Kong">详细</button></div></td><td><span class="fx-link">未测</span></td><td><div class="fx-rowactions"><span class="fx-switch" aria-label="已启用"></span><button class="fx-textbutton" type="button">编辑</button><button class="fx-textbutton" type="button">更多⋯</button></div></td></tr>
+                  </tbody></table>
+                </div>
+              </section>
+            </div>
+            <div id="fx-ordinary-content" hidden></div>
+            <div class="fx-pagination"><span id="fx-page-count">共 1 个 SNI 组 · 2 条规则</span><span>‹　1　›</span></div>
+          </div>
+        </section>
+        <dialog id="fx-traffic-dialog" class="fx-dialog"><h2>累计流量详细</h2><div id="fx-traffic-name" class="fx-sub" style="margin-top:5px"></div><dl><dt>累计流量</dt><dd id="fx-traffic-total">9.27 GB</dd><dt>统计方式</dt><dd>管理员自定义规则</dd><dt>计量方向</dt><dd>仅出向</dd><dt>额度已用</dt><dd id="fx-traffic-used">9.13 GB</dd><dt>额度</dt><dd>不限</dd></dl><div class="fx-actions"><button id="fx-close-dialog" class="fx-button" type="button">关闭</button></div></dialog>
+      </main>
+    </div>
+  </div>
+  <script>
+    (function(){
+      const root=document.getElementById('sni-category-preview');
+      root.querySelectorAll('button').forEach(button=>button.classList.add('cursor-interaction'));
+      const categories={all:{name:'全部',count:16,incoming:'424 GB',outgoing:'472 GB',dailyIn:'33.01 GB',dailyOut:'43.55 GB',connections:'2,328',dailyConnections:'16,200'},local:{name:'端口转发',count:6,incoming:'129 GB',outgoing:'147 GB',dailyIn:'11.65 GB',dailyOut:'15.60 GB',connections:'783',dailyConnections:'5,325'},tunnel:{name:'隧道转发',count:4,incoming:'115 GB',outgoing:'132 GB',dailyIn:'9.40 GB',dailyOut:'12.10 GB',connections:'582',dailyConnections:'4,350'},chain:{name:'转发链',count:3,incoming:'90 GB',outgoing:'94 GB',dailyIn:'5.51 GB',dailyOut:'7.43 GB',connections:'495',dailyConnections:'3,225'},group:{name:'转发组',count:3,incoming:'90 GB',outgoing:'99 GB',dailyIn:'6.45 GB',dailyOut:'8.42 GB',connections:'468',dailyConnections:'3,300'},sni:{name:'sni规则组',count:2,incoming:'6.22 GB',outgoing:'5.20 GB',dailyIn:'51.14 MB',dailyOut:'1.71 GB',connections:'13,798',dailyConnections:'2,870'}};
+      const examples={local:[['Website TCP forward','HK entry 01','hk-entry.example:15201','192.0.2.41:5201','41.00 GB','19 ms'],['Local metrics UDP','SG relay 03','sg-relay.example:18125','10.64.0.125:8125','51.00 GB','74 ms']],tunnel:[['Media tunnel forward','Media tunnel','tunnel-entry.example:18443','10.20.0.20:443','55.00 GB','92 ms']],chain:[['Dev chain template','Entry-group chain','entry.example:18080','10.40.0.80:8080','67.00 GB','未测']],group:[['Media failover template','Media failover group','sg-relay.example:19350','10.71.0.35:1935','65.00 GB','未测']]};
+      const state={category:'sni',expanded:true};
+      const byId=id=>root.querySelector('#'+id);
+      function read(saved){if(!saved||saved.kind!=='sni-category-preview')return;if(categories[saved.category])state.category=saved.category;state.expanded=saved.expanded!==false;}
+      read(window.openai?.widgetState?.modelContent);
+      function save(){if(window.openai?.setWidgetState)window.openai.setWidgetState({modelContent:{kind:'sni-category-preview',category:state.category,expanded:state.expanded},privateContent:null}).catch(()=>{});}
+      function ordinaryTable(kind){const rows=examples[kind];return '<section class="fx-group"><div class="fx-grouphead"><h3>'+categories[kind].name+' <span class="fx-sub">'+categories[kind].count+' 条规则</span></h3></div><div class="fx-tablewrap"><table aria-label="'+categories[kind].name+'规则表格"><thead><tr><th>□ 规则</th><th>所属资源</th><th>转发入口</th><th>转发出口</th><th>协议</th><th>累计</th><th>延迟</th><th style="text-align:right">操作</th></tr></thead><tbody>'+rows.map(row=>'<tr><td><span class="fx-rule"><span class="fx-dot"></span>'+row[0]+'</span></td><td><span class="fx-resource">'+row[1]+' ›</span></td><td class="fx-mono">'+row[2]+'</td><td class="fx-mono">'+row[3]+'</td><td><span class="fx-tag">TCP</span></td><td><span class="fx-value">'+row[4]+'</span> <span class="fx-sub">详细</span></td><td>'+row[5]+'</td><td><div class="fx-rowactions"><span class="fx-switch"></span><span>编辑</span><span>更多⋯</span></div></td></tr>').join('')+'</tbody></table></div></section>';}
+      function render(){
+        const category=categories[state.category];
+        root.querySelectorAll('[data-category]').forEach(button=>button.setAttribute('aria-selected',String(button.dataset.category===state.category)));
+        byId('fx-category-content').setAttribute('aria-labelledby','fx-tab-'+state.category);
+        byId('fx-resource-filter').textContent=state.category==='sni'?'全部 SNI 资源⌄':'全部'+(state.category==='all'?'资源':category.name)+'⌄';
+        byId('fx-category-heading').textContent=category.name;
+        byId('fx-category-count').textContent='共 '+category.count+' 条规则'+(state.category==='sni'?' · 1 个组':'');
+        byId('fx-in-total').textContent=category.incoming;byId('fx-out-total').textContent=category.outgoing;byId('fx-connections').textContent=category.connections;
+        byId('fx-in-daily').textContent='24H '+category.dailyIn;byId('fx-out-daily').textContent='24H '+category.dailyOut;byId('fx-connections-daily').textContent='24H '+category.dailyConnections;
+        byId('fx-sni-content').hidden=state.category!=='sni';byId('fx-ordinary-content').hidden=state.category==='sni';
+        if(state.category!=='sni')byId('fx-ordinary-content').innerHTML=(state.category==='all'?['local','tunnel','chain','group']:[state.category]).map(ordinaryTable).join('');
+        byId('fx-resource-detail').hidden=!state.expanded;byId('fx-toggle-resource').setAttribute('aria-expanded',String(state.expanded));
+        byId('fx-page-count').textContent=state.category==='sni'?'共 1 个 SNI 组 · 2 条规则':'共 '+category.count+' 条普通规则';
+      }
+      root.querySelectorAll('[data-category]').forEach(button=>button.addEventListener('click',()=>{state.category=button.dataset.category;render();save();}));
+      byId('fx-toggle-resource').addEventListener('click',()=>{state.expanded=!state.expanded;render();save();});
+      byId('fx-toggle-group').addEventListener('click',()=>{const table=byId('fx-sni-table');table.hidden=!table.hidden;byId('fx-toggle-group').setAttribute('aria-expanded',String(!table.hidden));});
+      root.querySelectorAll('[data-traffic]').forEach(button=>button.addEventListener('click',()=>{const tokyo=button.dataset.traffic==='Tokyo';byId('fx-traffic-name').textContent='SNI preview '+button.dataset.traffic;byId('fx-traffic-total').textContent=tokyo?'9.27 GB':'2.15 GB';byId('fx-traffic-used').textContent=tokyo?'9.13 GB':'2.10 GB';byId('fx-traffic-dialog').showModal();}));
+      byId('fx-close-dialog').addEventListener('click',()=>byId('fx-traffic-dialog').close());
+      window.addEventListener('openai:set_globals',event=>{read(event.detail?.globals?.widgetState?.modelContent);render();});
+      render();
+    })();
+  </script>
+</div>

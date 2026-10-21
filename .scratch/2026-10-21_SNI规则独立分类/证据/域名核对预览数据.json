@@ -1,0 +1,8 @@
+{
+  "preview_only": true,
+  "groupId": 16,
+  "ruleId": 39,
+  "sharedEntryHostId": 3,
+  "missingEntryHostId": 4,
+  "domain": "missing-on-backup.preview.example"
+}

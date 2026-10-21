@@ -1,0 +1,7 @@
+{
+  "head": "f742d8eb905e665bcc72ffddfe3940cf43799912",
+  "branch": "main",
+  "status": " M .gitignore\n M .scratch/2026-10-08_合并上游v2.3.282/spec.md\n M .scratch/2026-10-17_合并上游v2.3.283/284接续记录.md\n M AGENTS.md\n M CONTEXT.md\n M docs/adr/0008-host-failover-groups-use-entry-health.md\n?? .scratch/2026-10-16_dmit6移出转发组仍被引用/排查记录.md\n?? .scratch/2026-10-16_dmit6移出转发组仍被引用/计划审查记录.md\n?? .scratch/2026-10-16_dmit6移出转发组仍被引用/远程只读证据.json\n?? .scratch/2026-10-16_两个SNI组只读检查/\n?? .scratch/2026-10-18_合并上游v2.3.284/task-3验收复核.md\n?? .scratch/2026-10-18_合并上游v2.3.284/证据/task-3验收复核/\n?? .scratch/2026-10-19_35212端口只读排查/\n?? .scratch/2026-10-19_上游合并编排技能/\n?? .scratch/2026-10-19_普通转发组按入口健康判断/\n?? .scratch/2026-10-20_两条香港SNI规则检测排查/\n?? .scratch/2026-10-20_合并上游v2.3.286/发布记录.md\n?? .scratch/2026-10-20_合并上游v2.3.286/证据/发布v3.5.0/\n?? .scratch/2026-10-20_通用需求编排技能/\n?? .scratch/2026-10-21_SNI规则独立分类/\n?? docs/superpowers/plans/2026-10-19-host-failover-entry-health.md\n",
+  "remotes": "origin\thttps://github.com/poouo/Forwardx.git (fetch)\norigin\thttps://github.com/poouo/Forwardx.git (push)\nsni-panel\thttps://github.com/owo10086/sni-panel.git (fetch)\nsni-panel\thttps://github.com/owo10086/sni-panel.git (push)\n",
+  "source_sha256": "813811bb61742f0cbfa9cf31d585fbba7e762fa2c592f9ad4dc446505e3c9465"
+}

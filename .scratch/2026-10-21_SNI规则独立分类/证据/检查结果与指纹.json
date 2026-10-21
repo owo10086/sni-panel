@@ -1,0 +1,201 @@
+{
+  "product_commit": "b26e9f846dc0c44f56df8a57842ad201d77c09bc",
+  "baseline": "f742d8eb905e665bcc72ffddfe3940cf43799912",
+  "recorded_exit_codes": {
+    "targeted_checks": 0,
+    "i18n": 0,
+    "typescript": 0,
+    "build": 0,
+    "full_server": 0,
+    "independent_requirement_review": 0,
+    "independent_commit_review": 0
+  },
+  "exit_code_source": "主执行进程实际完成返回；类型日志本身不含单独退出码",
+  "full_server_pass": 1308,
+  "targeted_counts_overlap": true,
+  "new_tests_run_separately": true,
+  "review_session": "01a15e7d-3fca-74c0-bf60-faf14fbb665f",
+  "review_conclusion": "无已发现阻塞",
+  "review_nonblocking_suggestion": "SNI-REVIEW-01：后续将新增检查接入固定脚本，当前未实施",
+  "preview_url": "http://127.0.0.1:13820/rules?tab=sni",
+  "browser_narrow_actual_width": 500,
+  "browser_requested_narrow_width": 390,
+  "human_acceptance": "未开始",
+  "real_agent_verification": false,
+  "logs": [
+    {
+      "file": "证据/分类显示-整合.log",
+      "bytes": 6374,
+      "sha256": "7654a886509cd89f05ad7ad0c51bfddda00c927038ead13ab9d8f1a24885cade",
+      "tap_summary": [
+        "# tests 21",
+        "# pass 21",
+        "# fail 0",
+        "# cancelled 0",
+        "# skipped 0",
+        "# todo 0"
+      ]
+    },
+    {
+      "file": "证据/分类交互与统计.log",
+      "bytes": 4930,
+      "sha256": "ba3e9299519fd5f41a988d1d996f26d71d64953af1fa083c1e164de18a17afe8",
+      "tap_summary": [
+        "# tests 16",
+        "# pass 16",
+        "# fail 0",
+        "# cancelled 0",
+        "# skipped 0",
+        "# todo 0"
+      ]
+    },
+    {
+      "file": "证据/旧用例归属更新.log",
+      "bytes": 5680,
+      "sha256": "08f38e7a0d4040123ef8562320b6dfaa5d929a9a3c5e79f098d11225150b6881",
+      "tap_summary": [
+        "# tests 19",
+        "# pass 19",
+        "# fail 0",
+        "# cancelled 0",
+        "# skipped 0",
+        "# todo 0"
+      ]
+    },
+    {
+      "file": "证据/界面与旧交互.log",
+      "bytes": 6252,
+      "sha256": "6ee91059e8ab06707d70c66474424ac0aada150216f6510797c3fc863f4e3711",
+      "tap_summary": [
+        "# tests 20",
+        "# pass 20",
+        "# fail 0",
+        "# cancelled 0",
+        "# skipped 0",
+        "# todo 0"
+      ]
+    },
+    {
+      "file": "证据/双语.log",
+      "bytes": 6490,
+      "sha256": "b61059f732e95751eca62b4b7026f1c915b5122ffbfea01694f684c4abf0c8ee",
+      "tap_summary": [
+        "# tests 19",
+        "# pass 19",
+        "# fail 0",
+        "# cancelled 0",
+        "# skipped 0",
+        "# todo 0"
+      ]
+    },
+    {
+      "file": "证据/类型-提交前.log",
+      "bytes": 164,
+      "sha256": "94ddc708a9a43d0a21d58941b7fa65fb22ae2f01d4f2c962dc1be134aad103b5"
+    },
+    {
+      "file": "证据/构建.log",
+      "bytes": 22408,
+      "sha256": "ee48df7e9012f8c144284fbef76deb9e9dbde58799955e6d1de7d1b07d6c6d4a"
+    },
+    {
+      "file": "证据/完整服务端-最终.log",
+      "bytes": 375545,
+      "sha256": "8de0f7400e93b540e0e1ede5f5ffeb1421f69e2bb8d7fa2819bccf4cb1ebfd13",
+      "tap_summary": [
+        "# tests 44",
+        "# pass 44",
+        "# fail 0",
+        "# cancelled 0",
+        "# skipped 0",
+        "# todo 0",
+        "# tests 95",
+        "# pass 95",
+        "# fail 0",
+        "# cancelled 0",
+        "# skipped 0",
+        "# todo 0",
+        "# tests 1169",
+        "# pass 1169",
+        "# fail 0",
+        "# cancelled 0",
+        "# skipped 0",
+        "# todo 0"
+      ]
+    },
+    {
+      "file": "审查/提交点评运行.log",
+      "bytes": 623049,
+      "sha256": "fcab53b13326161460adde7046b10849e2acc8f3ee5f7d3c175e07d30e2e37ed",
+      "tap_summary": [
+        "# tests 21",
+        "# pass 21",
+        "# fail 0",
+        "# cancelled 0",
+        "# skipped 0",
+        "# todo 0",
+        "# tests 16",
+        "# pass 16",
+        "# fail 0",
+        "# cancelled 0",
+        "# skipped 0",
+        "# todo 0",
+        "# tests 19",
+        "# pass 19",
+        "# fail 0",
+        "# cancelled 0",
+        "# skipped 0",
+        "# todo 0",
+        "# tests 20",
+        "# pass 20",
+        "# fail 0",
+        "# cancelled 0",
+        "# skipped 0",
+        "# todo 0",
+        "# tests 20",
+        "# pass 20",
+        "# fail 0",
+        "# cancelled 0",
+        "# skipped 0",
+        "# todo 0"
+      ]
+    },
+    {
+      "file": "审查/需求审查运行.log",
+      "bytes": 199,
+      "sha256": "2d8b902fb51c4fb0108c58a40b037f3ed52641f00cdae67901d7cbda9b4b8473"
+    },
+    {
+      "file": "审查/需求审查重试运行.log",
+      "bytes": 416295,
+      "sha256": "8643bfcfd83c5a1ceda6cb3d5ce3237ae93e3fbc7426572057efa51de6fc0711"
+    }
+  ],
+  "artifacts": [
+    {
+      "file": "证据/源需求-v1.0.md",
+      "sha256": "813811bb61742f0cbfa9cf31d585fbba7e762fa2c592f9ad4dc446505e3c9465",
+      "bytes": 5598
+    },
+    {
+      "file": "证据/SNI展开与域名异常.png",
+      "sha256": "d4db465de90ae4b8aba963c9cf466dc51342b9fd64b006a909259ce9a785e6b7",
+      "bytes": 1128565
+    },
+    {
+      "file": "证据/窄屏异常截图.png",
+      "sha256": "e141155a7164eb554f89580e52dd56cd1fac06094ca2cca00f9842b3eb5d0027",
+      "bytes": 367773
+    },
+    {
+      "file": "审查/提交点评.md",
+      "sha256": "fd6f8398c9eac58dfd3f2cd0de6b61c32fe7a2f842f342012e20c4146b5b9c8d",
+      "bytes": 10604
+    },
+    {
+      "file": "审查/需求审查.md",
+      "sha256": "f1deb87a4d182752b7c0ea57a9aaf856ee37e67980bc679217ac1b93e64e10f5",
+      "bytes": 9136
+    }
+  ]
+}
