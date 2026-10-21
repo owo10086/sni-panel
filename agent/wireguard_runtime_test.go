@@ -996,15 +996,19 @@ func TestWireGuardUDPProxyQueueDropsExpiredPackets(t *testing.T) {
 }
 
 func TestWireGuardUDPProxyQueueKeepsLastExpiredPacket(t *testing.T) {
+	now := time.Now()
 	packet := wireGuardUDPProxyPacket{
 		payload:  []byte("last"),
-		queuedAt: time.Now().Add(-wireGuardUDPProxyMaxQueueDelay),
+		queuedAt: now.Add(-wireGuardUDPProxyMaxQueueDelay),
 	}
-	if packet.superseded(time.Now(), 0) {
+	if packet.superseded(now, 0) {
 		t.Fatal("last queued UDP packet was discarded without a replacement")
 	}
-	if !packet.superseded(time.Now(), 1) {
+	if !packet.superseded(now, 1) {
 		t.Fatal("stale UDP packet was retained ahead of a newer packet")
+	}
+	if packet.superseded(now.Add(-time.Nanosecond), 1) {
+		t.Fatal("fresh UDP packet was discarded before the queue delay limit")
 	}
 }
 
@@ -1496,32 +1500,42 @@ func TestWireGuardRuntimeTCPAndUDPProxy(t *testing.T) {
 		t.Fatalf("unexpected udp reply %q", udpReply[:n])
 	}
 
-	// Stay below the real-time proxy queue limit. Queue saturation and dropping
-	// stale datagrams is covered separately and is intentional backpressure.
-	const burstPackets = wireGuardUDPProxyQueueSize / 2
+	// Preserve a real burst. The proxy intentionally replaces packets that wait
+	// at least 25ms when newer data exists, even below its queue capacity. Require
+	// the newest payload and validate every reply; exact expiry boundaries are
+	// covered by the queue tests above without depending on scheduler speed.
+	const burstPackets = 32
 	_ = udpClient.SetDeadline(time.Now().Add(15 * time.Second))
+	expected := make(map[string]bool, burstPackets)
 	for i := 0; i < burstPackets; i++ {
 		payload := []byte("burst-" + strconv.Itoa(i))
-		if _, err := udpClient.Write(payload); err != nil {
-			t.Fatalf("write UDP burst packet %d: %v", i, err)
+		expected[string(payload)] = true
+		if n, err := udpClient.Write(payload); err != nil || n != len(payload) {
+			t.Fatalf("write UDP burst packet %d: bytes=%d want=%d error=%v", i, n, len(payload), err)
 		}
 	}
 	seen := make(map[string]bool, burstPackets)
-	for i := 0; i < burstPackets; i++ {
+	lastPayload := "burst-" + strconv.Itoa(burstPackets-1)
+	for !seen[lastPayload] {
 		n, err := udpClient.Read(udpReply)
 		if err != nil {
-			t.Fatalf("read UDP burst packet %d: %v", i, err)
+			t.Fatalf("read UDP burst after %d/%d replies before newest payload: %v", len(seen), burstPackets, err)
 		}
 		payload := string(udpReply[:n])
+		if !expected[payload] {
+			t.Fatalf("unexpected UDP burst payload %q", payload)
+		}
 		if seen[payload] {
 			t.Fatalf("duplicate UDP burst payload %q", payload)
 		}
 		seen[payload] = true
 	}
+	var missing []int
 	for i := 0; i < burstPackets; i++ {
 		payload := "burst-" + strconv.Itoa(i)
 		if !seen[payload] {
-			t.Fatalf("missing UDP burst payload %q", payload)
+			missing = append(missing, i)
 		}
 	}
+	t.Logf("UDP burst newest payload received: replies=%d/%d missing-before-newest=%v", len(seen), burstPackets, missing)
 }
