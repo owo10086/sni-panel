@@ -367,7 +367,10 @@ func TestV3PoolReconnectAfterPhysicalFailure(t *testing.T) {
 func TestV3FallbackToHealthyExitStillWorks(t *testing.T) {
 	cfg := config{TransportVersion: "v3", V3Transport: "tls", TunnelID: 409, Key: "fallback-secret", ExitStrategy: "fallback"}
 	target, _ := v3TestListener(t, func(conn net.Conn) { _, _ = io.Copy(conn, conn) })
-	port, accepted := v3TestListener(t, func(conn net.Conn) { _ = handleExitSession(conn, cfg) })
+	// The listener must not read the client configuration while the test
+	// fills in discovered endpoints below. Keep its initial config immutable.
+	exitCfg := cfg
+	port, accepted := v3TestListener(t, func(conn net.Conn) { _ = handleExitSession(conn, exitCfg) })
 	// Reserve, then release a known unused loopback port for a refused endpoint.
 	unavailable, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
@@ -455,7 +458,10 @@ func TestV3PoolSkipsStaleSessions(t *testing.T) {
 func TestV3PoolReportsEndpointFailureToSelector(t *testing.T) {
 	cfg := config{TransportVersion: "v3", V3Transport: "ws", TunnelID: 412, Key: "health-secret", ExitStrategy: "fallback"}
 	target, _ := v3TestListener(t, func(conn net.Conn) { _, _ = io.Copy(conn, conn) })
-	port, accepted := v3TestListener(t, func(conn net.Conn) { _ = handleExitSession(conn, cfg) })
+	// The listener must not read the client configuration while the test
+	// fills in discovered endpoints below. Keep its initial config immutable.
+	exitCfg := cfg
+	port, accepted := v3TestListener(t, func(conn net.Conn) { _ = handleExitSession(conn, exitCfg) })
 	unavailable, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatal(err)
