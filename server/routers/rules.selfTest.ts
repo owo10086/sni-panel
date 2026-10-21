@@ -110,7 +110,7 @@ export const selfTestRulesRouter = router({
           for (const hostId of testHostIds) {
             pushAgentRefresh(hostId, "forward-chain-rule-selftest", { urgent: true });
           }
-          return { id: firstTestId, queued };
+          return { id: firstTestId, queued, batchId };
         }
         const selected = await db.getForwardGroupRuleForSelfTest(rule, group);
         runtimeRule = selected.rule;

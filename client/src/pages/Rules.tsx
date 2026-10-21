@@ -7,6 +7,8 @@ import { RuleUsageSummary } from "@/components/rules/RuleUsageSummary";
 import { RuleTableFrame, ruleTableColumnCount, splitRuleTableItems } from "@/components/rules/RuleTableFrame";
 import { RuleTrafficDetailsContent } from "@/components/rules/RuleTrafficDetails";
 import { RuleDailyTrafficDialog } from "@/components/rules/RuleDailyTrafficDialog";
+import { RuleLatencyButton } from "@/components/rules/RuleLatencyButton";
+import type { RuleLatencySnapshot } from "@/lib/ruleLatencyRunner";
 import { formatRuleTraffic } from "@/lib/ruleTrafficDisplay";
 import { NyanpassImportPreview } from "@/components/rules/NyanpassImportPreview";
 import { isAdminManagedRule } from "../../../shared/ruleLimits";
@@ -2167,6 +2169,8 @@ function RulesContent() {
   const isMobile = useIsMobile();
   const utils = trpc.useUtils();
   const [ruleProbeCacheRevision, setRuleProbeCacheRevision] = useState(0);
+  const [manualLatencyResults,setManualLatencyResults] = useState<Record<number,{configurationKey:string;snapshot:RuleLatencySnapshot}>>({});
+  const [manualLatencyEpochs,setManualLatencyEpochs] = useState<Record<number,number>>({});
   const invalidatedRuleProbeIdsRef = useRef(new Set<number>());
   const invalidateRuleProbeStatuses = useCallback((ruleIds: Iterable<number> | undefined) => {
     if (!ruleIds) return;
@@ -2177,6 +2181,8 @@ function RulesContent() {
     ids.forEach((id) => invalidatedRuleProbeIdsRef.current.add(id));
     clearRuleProbeCache(user?.id, ids);
     clearRuleStatusSnapshots(user?.id, ids);
+    setManualLatencyResults(previous => { const next={...previous}; ids.forEach(id => delete next[id]); return next; });
+    setManualLatencyEpochs(previous => { const next={...previous}; ids.forEach(id => {next[id]=(next[id] || 0)+1;}); return next; });
     setRuleProbeCacheRevision((revision) => revision + 1);
   }, [user?.id]);
   const [secondaryQueriesReady, setSecondaryQueriesReady] = useState(false);
@@ -4335,9 +4341,9 @@ function RulesContent() {
   const resetTrafficMutation = trpc.rules.resetTraffic.useMutation({
     onSuccess: async (_data, variables) => {
       invalidateRuleProbeStatuses(
-        variables.scope === "rule" && variables.ruleId
+        _data?.requestedRuleIds || (variables.scope === "rule" && variables.ruleId
           ? [Number(variables.ruleId)]
-          : variables.ruleIds,
+          : variables.ruleIds),
       );
       clearRuleTrafficStatCaches();
       setStableTotalTrafficSummaryRows([]);
@@ -7031,6 +7037,13 @@ function RulesContent() {
     const sorting = !!sortable || reserveSortColumn;
     const category = getRuleCategory(rule,forwardGroupById);
     const categoryLabel = {local:"本机转发",tunnel:"隧道转发",chain:"转发链",group:"转发组",all:"转发规则"}[category];
+    const group = forwardGroupById.get(Number(rule.forwardGroupId));
+    const tunnel = tunnelById.get(Number(rule.tunnelId));
+    const configurationKey = JSON.stringify([user?.id,rule.id,rule.hostId,rule.forwardGroupId,rule.tunnelId,rule.forwardType,rule.protocol,rule.sourcePort,rule.targetIp,rule.targetPort,rule.failoverTargets,rule.sni,rule.sniRuntime?.currentHostId,
+      rule.sniRuntime?.entries?.map((entry:any) => [entry.hostId,entry.port,entry.currentVersion]),rule.sniRuntime?.exit?.currentVersion,
+      group?.activeMemberId,group?.groupMode,group?.forwardType,group?.entryGroupId,group?.members?.map((member:any) => [member.id,member.hostId,member.tunnelId,member.priority,member.isEnabled]),
+      tunnel && [tunnel.mode,tunnel.entryHostId,tunnel.exitHostId,getTunnelHopIds(tunnel),tunnel.entryPort,tunnel.exitPort]]);
+    const savedLatency = manualLatencyResults[rule.id];
     return <Fragment key={rule.id}>
       <TableRow {...(sortable?.itemProps || {})} className={cn("group/sortable",!supported && "opacity-70",sortable?.isDragging && "opacity-55",sortable?.isDropTarget && "bg-primary/5")} title={!supported ? unsupportedProtocolTitle : undefined}>
         <TableCell className="sticky left-0 z-10 bg-card px-3 py-3">
@@ -7052,7 +7065,7 @@ function RulesContent() {
         <TableCell className="px-3 py-3">{renderTableTransferExit(rule)}</TableCell>
         <TableCell className="px-3 py-3"><Badge variant="secondary" className="text-[10px]">{formatForwardRuleProtocol(rule.protocol)}</Badge></TableCell>
         <TableCell className="px-3 py-3"><div className="flex items-center gap-2 whitespace-nowrap text-xs"><span className="tabular-nums">{totalTrafficByRule.has(rule.id) ? formatRuleTraffic(Number(totalTrafficByRule.get(rule.id)?.bytesIn || 0) + Number(totalTrafficByRule.get(rule.id)?.bytesOut || 0)) : "—"}</span><button type="button" className="text-muted-foreground underline underline-offset-4" onClick={() => setCumulativeDetailId(Number(rule.id))}>{translateText("详细")}</button></div></TableCell>
-        <TableCell className="px-3 py-3">{renderTableRuleLatency(rule)}</TableCell>
+        <TableCell className="px-3 py-3"><RuleLatencyButton key={`${user?.id}:${rule.id}:${manualLatencyEpochs[rule.id] || 0}`} ruleId={Number(rule.id)} configurationKey={configurationKey} summary={stableProbeByRule.get(Number(rule.id))} disabled={!supported || user?.role !== "admin" && isAdminManagedRule(rule)} saved={savedLatency?.configurationKey === configurationKey ? savedLatency.snapshot : undefined} onComplete={snapshot => setManualLatencyResults(previous => ({...previous,[rule.id]:{configurationKey,snapshot}}))} /></TableCell>
         <TableCell className="sticky right-0 z-10 bg-card px-3 py-3"><div className="flex items-center justify-end gap-1">{renderRuleEnabledSwitch(rule)}{renderDesktopRuleActions(rule)}</div></TableCell>
       </TableRow>
       {expanded && <TableRow id={`rule-resource-${rule.id}`} className="bg-muted/20 hover:bg-muted/20"><TableCell colSpan={ruleTableColumnCount(!!sniGroup,sorting)} className="p-0">
