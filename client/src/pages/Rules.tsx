@@ -8,7 +8,7 @@ import { RuleTableFrame, ruleTableColumnCount, splitRuleTableItems } from "@/com
 import { RuleTrafficDetailsContent } from "@/components/rules/RuleTrafficDetails";
 import { RuleDailyTrafficDialog } from "@/components/rules/RuleDailyTrafficDialog";
 import { RuleLatencyButton } from "@/components/rules/RuleLatencyButton";
-import type { RuleLatencySnapshot } from "@/lib/ruleLatencyRunner";
+import { RuleLatencyStore } from "@/lib/ruleLatencyStore";
 import { formatRuleTraffic } from "@/lib/ruleTrafficDisplay";
 import { NyanpassImportPreview } from "@/components/rules/NyanpassImportPreview";
 import { isAdminManagedRule } from "../../../shared/ruleLimits";
@@ -156,7 +156,7 @@ import {
 import { ruleLatencyProbeMethodForRule } from "@shared/latencyProbe";
 import { getSniRuleGroupKey, isSniEntryAgentVersionSupported, SNI_SPLITTER_MIN_AGENT_VERSION } from "@shared/sni";
 import { formatTrafficMultiplier } from "@shared/trafficMultiplier";
-import { Fragment, lazy, Suspense, useState, useMemo, useEffect, useCallback, useRef, type ReactNode } from "react";
+import { Fragment, lazy, Suspense, useState, useMemo, useEffect, useLayoutEffect, useCallback, useRef, type ReactNode } from "react";
 import { ContentTransition } from "@/components/ui/content-transition";
 import { useMotionEnabled } from "@/components/MotionPolicy";
 import { toast } from "@/lib/localizedToast";
@@ -2169,8 +2169,8 @@ function RulesContent() {
   const isMobile = useIsMobile();
   const utils = trpc.useUtils();
   const [ruleProbeCacheRevision, setRuleProbeCacheRevision] = useState(0);
-  const [manualLatencyResults,setManualLatencyResults] = useState<Record<number,{configurationKey:string;snapshot:RuleLatencySnapshot}>>({});
-  const [manualLatencyEpochs,setManualLatencyEpochs] = useState<Record<number,number>>({});
+  const latencyStore = useMemo(() => new RuleLatencyStore(),[user?.id]);
+  useEffect(() => () => latencyStore.dispose(),[latencyStore]);
   const invalidatedRuleProbeIdsRef = useRef(new Set<number>());
   const invalidateRuleProbeStatuses = useCallback((ruleIds: Iterable<number> | undefined) => {
     if (!ruleIds) return;
@@ -2181,10 +2181,9 @@ function RulesContent() {
     ids.forEach((id) => invalidatedRuleProbeIdsRef.current.add(id));
     clearRuleProbeCache(user?.id, ids);
     clearRuleStatusSnapshots(user?.id, ids);
-    setManualLatencyResults(previous => { const next={...previous}; ids.forEach(id => delete next[id]); return next; });
-    setManualLatencyEpochs(previous => { const next={...previous}; ids.forEach(id => {next[id]=(next[id] || 0)+1;}); return next; });
+    latencyStore.reset(ids);
     setRuleProbeCacheRevision((revision) => revision + 1);
-  }, [user?.id]);
+  }, [user?.id,latencyStore]);
   const [secondaryQueriesReady, setSecondaryQueriesReady] = useState(false);
   useEffect(() => {
     const timer = window.setTimeout(() => setSecondaryQueriesReady(true), 300);
@@ -2958,6 +2957,16 @@ function RulesContent() {
     groups: forwardGroups,
     isTunnelSupported: (tunnel: any) => isProtocolEnabled(getTunnelProtocolKey(tunnel)),
   }), [forwardGroups, getTunnelProtocolKey, hosts, isProtocolEnabled, tunnels]);
+  const latencyConfigurations = useMemo(() => new Map<number,string>((rules || []).map((rule:any) => {
+    const group=forwardGroupById.get(Number(rule.forwardGroupId));
+    const tunnel=tunnelById.get(Number(rule.tunnelId));
+    return [Number(rule.id),JSON.stringify([user?.id,rule.id,rule.hostId,rule.forwardGroupId,rule.tunnelId,rule.forwardType,rule.protocol,rule.sourcePort,rule.targetIp,rule.targetPort,rule.failoverTargets,rule.sni,rule.sniRuntime?.currentHostId,
+      rule.sniRuntime?.entries?.map((entry:any) => [entry.hostId,entry.port,entry.currentVersion]),rule.sniRuntime?.exit?.currentVersion,
+      group?.activeMemberId,group?.groupMode,group?.forwardType,group?.entryGroupId,group?.members?.map((member:any) => [member.id,member.hostId,member.tunnelId,member.priority,member.isEnabled]),
+      tunnel && [tunnel.mode,tunnel.entryHostId,tunnel.exitHostId,getTunnelHopIds(tunnel),tunnel.entryPort,tunnel.exitPort]])];
+  })),[rules,forwardGroupById,tunnelById,user?.id]);
+  // Track configurations for collapsed rows too; their active tests belong to the page.
+  useLayoutEffect(() => latencyStore.configure(latencyConfigurations),[latencyStore,latencyConfigurations]);
   const tunnelAvailabilityById = linkAvailabilityIndex.tunnelAvailabilityById;
   const groupAvailabilityById = linkAvailabilityIndex.groupAvailabilityById;
   const getRuleEntryHostIdForSort = useCallback((rule: any) => {
@@ -4389,6 +4398,7 @@ function RulesContent() {
       latestLatencyMs: number | null;
       latestLatencyIsTimeout: boolean;
       latestLatencyAt: Date | string | null;
+      latestLatencyStartedAt: Date | string | null;
     }>();
     dailyTrafficSummaryRows.forEach((t: any) => {
       const rid = Number(t.ruleId);
@@ -4403,6 +4413,7 @@ function RulesContent() {
           prev.latestLatencyMs = t.latestLatencyMs === null || t.latestLatencyMs === undefined ? null : Number(t.latestLatencyMs);
           prev.latestLatencyIsTimeout = !!t.latestLatencyIsTimeout;
           prev.latestLatencyAt = t.latestLatencyAt || null;
+          prev.latestLatencyStartedAt = t.latestLatencyStartedAt || null;
         }
       } else {
         m.set(rid, {
@@ -4412,6 +4423,7 @@ function RulesContent() {
           latestLatencyMs: t.latestLatencyMs === null || t.latestLatencyMs === undefined ? null : Number(t.latestLatencyMs),
           latestLatencyIsTimeout: !!t.latestLatencyIsTimeout,
           latestLatencyAt: t.latestLatencyAt || null,
+          latestLatencyStartedAt: t.latestLatencyStartedAt || null,
         });
       }
     });
@@ -7037,13 +7049,7 @@ function RulesContent() {
     const sorting = !!sortable || reserveSortColumn;
     const category = getRuleCategory(rule,forwardGroupById);
     const categoryLabel = {local:"本机转发",tunnel:"隧道转发",chain:"转发链",group:"转发组",all:"转发规则"}[category];
-    const group = forwardGroupById.get(Number(rule.forwardGroupId));
-    const tunnel = tunnelById.get(Number(rule.tunnelId));
-    const configurationKey = JSON.stringify([user?.id,rule.id,rule.hostId,rule.forwardGroupId,rule.tunnelId,rule.forwardType,rule.protocol,rule.sourcePort,rule.targetIp,rule.targetPort,rule.failoverTargets,rule.sni,rule.sniRuntime?.currentHostId,
-      rule.sniRuntime?.entries?.map((entry:any) => [entry.hostId,entry.port,entry.currentVersion]),rule.sniRuntime?.exit?.currentVersion,
-      group?.activeMemberId,group?.groupMode,group?.forwardType,group?.entryGroupId,group?.members?.map((member:any) => [member.id,member.hostId,member.tunnelId,member.priority,member.isEnabled]),
-      tunnel && [tunnel.mode,tunnel.entryHostId,tunnel.exitHostId,getTunnelHopIds(tunnel),tunnel.entryPort,tunnel.exitPort]]);
-    const savedLatency = manualLatencyResults[rule.id];
+    const configurationKey = latencyConfigurations.get(Number(rule.id)) || "";
     return <Fragment key={rule.id}>
       <TableRow {...(sortable?.itemProps || {})} className={cn("group/sortable",!supported && "opacity-70",sortable?.isDragging && "opacity-55",sortable?.isDropTarget && "bg-primary/5")} title={!supported ? unsupportedProtocolTitle : undefined}>
         <TableCell className="sticky left-0 z-10 bg-card px-3 py-3">
@@ -7065,7 +7071,7 @@ function RulesContent() {
         <TableCell className="px-3 py-3">{renderTableTransferExit(rule)}</TableCell>
         <TableCell className="px-3 py-3"><Badge variant="secondary" className="text-[10px]">{formatForwardRuleProtocol(rule.protocol)}</Badge></TableCell>
         <TableCell className="px-3 py-3"><div className="flex items-center gap-2 whitespace-nowrap text-xs"><span className="tabular-nums">{totalTrafficByRule.has(rule.id) ? formatRuleTraffic(Number(totalTrafficByRule.get(rule.id)?.bytesIn || 0) + Number(totalTrafficByRule.get(rule.id)?.bytesOut || 0)) : "—"}</span><button type="button" className="text-muted-foreground underline underline-offset-4" onClick={() => setCumulativeDetailId(Number(rule.id))}>{translateText("详细")}</button></div></TableCell>
-        <TableCell className="px-3 py-3"><RuleLatencyButton key={`${user?.id}:${rule.id}:${manualLatencyEpochs[rule.id] || 0}`} ruleId={Number(rule.id)} configurationKey={configurationKey} summary={stableProbeByRule.get(Number(rule.id))} disabled={!supported || user?.role !== "admin" && isAdminManagedRule(rule)} saved={savedLatency?.configurationKey === configurationKey ? savedLatency.snapshot : undefined} onComplete={snapshot => setManualLatencyResults(previous => ({...previous,[rule.id]:{configurationKey,snapshot}}))} /></TableCell>
+        <TableCell className="px-3 py-3"><RuleLatencyButton ruleId={Number(rule.id)} configurationKey={configurationKey} summary={stableProbeByRule.get(Number(rule.id))} disabled={!supported || user?.role !== "admin" && isAdminManagedRule(rule)} store={latencyStore} /></TableCell>
         <TableCell className="sticky right-0 z-10 bg-card px-3 py-3"><div className="flex items-center justify-end gap-1">{renderRuleEnabledSwitch(rule)}{renderDesktopRuleActions(rule)}</div></TableCell>
       </TableRow>
       {expanded && <TableRow id={`rule-resource-${rule.id}`} className="bg-muted/20 hover:bg-muted/20"><TableCell colSpan={ruleTableColumnCount(!!sniGroup,sorting)} className="p-0">

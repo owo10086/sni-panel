@@ -8,7 +8,7 @@ export type RuleLatencySnapshot = {
   message?:string;
   completedAt?:number;
 };
-type TestApi = {
+export type RuleLatencyApi = {
   start:()=>Promise<{id:number;batchId?:string}>;
   latest:()=>Promise<RuleLatencyResult | null | undefined>;
 };
@@ -21,7 +21,7 @@ export class RuleLatencyRunner {
   private publish(snapshot:RuleLatencySnapshot) { this.snapshot=snapshot; this.changed(snapshot); }
   reset() { this.generation++; this.publish({phase:"idle",result:null}); }
   dispose() { this.generation++; }
-  async start(api:TestApi) {
+  async start(api:RuleLatencyApi) {
     if (this.snapshot.phase === "testing") return false;
     const generation = ++this.generation;
     this.publish({phase:"testing",result:null});

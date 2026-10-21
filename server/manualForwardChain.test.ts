@@ -49,6 +49,34 @@ test("chain results preserve the newest generation and show durable partial prog
       assert.equal(latest.latencyMs, 14);
       assert.equal((await metrics.getTrafficSummaryByRule({ ruleIds: [19] }))[0].latestLatencyMs, 14,
         "the rule list must also keep the newest completed chain batch");
+      const {RuleLatencyStore}=await source("client/src/lib/ruleLatencyStore.ts");
+      const boundary=Date.now()-60_000;
+      const store=new RuleLatencyStore(undefined,() => boundary);
+      store.configure(new Map([[19,"old-target"]]));
+      const late=await createBatch("fc-config-old");
+      await runtime.executeRaw('UPDATE "forward_tests" SET "createdAt" = ? WHERE "batchId" = ?',
+        [Math.floor((boundary-60_000)/1000),"fc-config-old"]);
+      let release;
+      const pending=store.start(19,"old-target",{start:async () => ({id:late[0],batchId:"fc-config-old"}),latest:() => new Promise(resolve => {release=resolve;})});
+      await Promise.resolve(); await Promise.resolve();
+      store.configure(new Map([[19,"new-target"]]));
+      for (const id of late) await tests.completeForwardTestIfActive(id,{status:"success",latencyMs:400});
+      await chain.settleManualForwardChainBatch("fc-config-old");
+      release(await tests.getLatestForwardTest(19));
+      await pending;
+      const oldSummary=(await metrics.getTrafficSummaryByRule({ruleIds:[19]}))[0];
+      assert.ok(oldSummary.latestLatencyStartedAt,"summaries must retain the original batch start, not its completion time");
+      assert.ok(new Date(oldSummary.latestLatencyAt).getTime()>boundary);
+      assert.equal(store.acceptsSummary(19,"new-target",oldSummary),false);
+      const valid=await createBatch("fc-config-new");
+      for (const id of valid) await tests.completeForwardTestIfActive(id,{status:"success",latencyMs:8});
+      await chain.settleManualForwardChainBatch("fc-config-new");
+      const validSummary=(await metrics.getTrafficSummaryByRule({ruleIds:[19]}))[0];
+      assert.equal(validSummary.latestLatencyMs,16);
+      assert.equal(store.acceptsSummary(19,"new-target",validSummary),true);
+      const counterSummary=(await metrics.getTrafficCounterSummaryByRule({ruleIds:[19],includeLatency:true}))[0];
+      assert.equal(new Date(counterSummary.latestLatencyStartedAt).getTime(),new Date(validSummary.latestLatencyStartedAt).getTime());
+      store.dispose();
       const partial = await createBatch("fc-partial");
       await tests.completeForwardTestIfActive(partial[0], { status: "success", latencyMs: 9 });
       await runtime.closeDatabase();
@@ -60,9 +88,9 @@ test("chain results preserve the newest generation and show durable partial prog
       assert.equal(details[0].latencyMs, 9);
       assert.equal(details[0].pending, false);
       assert.equal(details[1].pending, true);
-      assert.equal((await tests.getLatestForwardTest(19, { includeActive: false })).batchId, "fc-current",
+      assert.equal((await tests.getLatestForwardTest(19, { includeActive: false })).batchId, "fc-config-new",
         "a partial sample must not be published as a completed batch");
-      assert.equal((await metrics.getTrafficSummaryByRule({ ruleIds: [19] }))[0].latestLatencyMs, 14,
+      assert.equal((await metrics.getTrafficSummaryByRule({ ruleIds: [19] }))[0].latestLatencyMs, 16,
         "an unfinished chain segment must not replace a complete chain result");
       await runtime.executeRaw('INSERT INTO users (id,username,password,name,role) VALUES (1,?,?,?,?)', ['admin','unused','Admin','admin']);
       await runtime.executeRaw('INSERT INTO hosts (id,name,ip,"userId","agentToken") VALUES (1,?, ?,1,?)', ['entry','127.0.0.1','probe-fixture-token']);

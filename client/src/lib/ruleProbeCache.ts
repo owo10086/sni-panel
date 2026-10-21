@@ -7,6 +7,7 @@ export type RuleProbeSummary = {
   latestLatencyMs?: number | null;
   latestLatencyIsTimeout?: boolean;
   latestLatencyAt?: Date | string | number | null;
+  latestLatencyStartedAt?: Date | string | number | null;
 };
 
 type InvalidationBoundary = {

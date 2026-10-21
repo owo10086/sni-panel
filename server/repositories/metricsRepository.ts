@@ -1952,6 +1952,7 @@ function withEmptyTrafficLatency(rows: TrafficSummaryRow[]) {
     latestLatencyMs: null as number | null,
     latestLatencyIsTimeout: false,
     latestLatencyAt: null as Date | null,
+    latestLatencyStartedAt: null as Date | null,
   }));
 }
 
@@ -2142,7 +2143,7 @@ export async function getTrafficCounterSummaryByRule(opts: {
     ruleIds: latencyRuleIds,
     includeLatency: true,
   }).catch(() => [] as any[]);
-  const latestByRuleId = new Map<number, { latestLatencyMs: number | null; latestLatencyIsTimeout: boolean; latestLatencyAt: Date | string | null }>();
+  const latestByRuleId = new Map<number, { latestLatencyMs: number | null; latestLatencyIsTimeout: boolean; latestLatencyAt: Date | string | null; latestLatencyStartedAt: Date | null }>();
   for (const row of latencyRows as any[]) {
     const ruleId = Number(row.ruleId || 0);
     if (ruleId <= 0) continue;
@@ -2154,6 +2155,7 @@ export async function getTrafficCounterSummaryByRule(opts: {
         latestLatencyMs: row.latestLatencyMs === null || row.latestLatencyMs === undefined ? null : Number(row.latestLatencyMs),
         latestLatencyIsTimeout: !!row.latestLatencyIsTimeout,
         latestLatencyAt: row.latestLatencyAt || null,
+        latestLatencyStartedAt: row.latestLatencyStartedAt || null,
       });
     }
   }
@@ -2172,7 +2174,7 @@ export async function getTrafficSummaryByRule(opts: {
   includeLatency?: boolean;
 } = {}) {
   const db = await getDb();
-  if (!db) return [] as Array<{ ruleId: number; hostId: number; bytesIn: number; bytesOut: number; connections: number; latestLatencyMs: number | null; latestLatencyIsTimeout: boolean; latestLatencyAt: Date | null }>;
+  if (!db) return [] as Array<{ ruleId: number; hostId: number; bytesIn: number; bytesOut: number; connections: number; latestLatencyMs: number | null; latestLatencyIsTimeout: boolean; latestLatencyAt: Date | null; latestLatencyStartedAt: Date | null }>;
   const requestedRuleIds = Array.from(new Set((opts.ruleIds || [])
     .map((id) => Number(id))
     .filter((id) => Number.isInteger(id) && id > 0)));
@@ -2343,7 +2345,9 @@ export async function getTrafficSummaryByRule(opts: {
               ft.${q("latencyMs")} AS ${q("latencyMs")},
               ft.${q("status")} AS ${q("status")},
               ft.${q("updatedAt")} AS ${q("updatedAt")},
-              ft.${q("createdAt")} AS ${q("createdAt")}
+              ft.${q("createdAt")} AS ${q("createdAt")},
+              COALESCE((SELECT MIN(batch.${q("createdAt")}) FROM ${q("forward_tests")} batch
+                WHERE batch.${q("ruleId")} = ft.${q("ruleId")} AND batch.${q("batchId")} = ft.${q("batchId")}), ft.${q("createdAt")}) AS ${q("startedAt")}
          FROM ${q("forward_tests")} ft
          INNER JOIN (
            SELECT ${q("ruleId")}, MAX(${q("id")}) AS ${q("id")}
@@ -2365,6 +2369,7 @@ export async function getTrafficSummaryByRule(opts: {
       latencyMs: status === "success" && row.latencyMs !== null && row.latencyMs !== undefined ? Number(row.latencyMs) : null,
       isTimeout: status !== "success",
       recordedAt: rowDate(row.updatedAt || row.createdAt),
+      startedAt: rowDate(row.startedAt),
       source: "forward_test",
     };
     if (shouldUseLatencyCandidate(latestByRule.get(ruleId), candidate)) {
@@ -2403,6 +2408,7 @@ export async function getTrafficSummaryByRule(opts: {
       latencyMs: status === "success" && row.latencyMs !== null && row.latencyMs !== undefined ? Number(row.latencyMs) : null,
       isTimeout: status !== "success",
       recordedAt: rowDate(row.updatedAt || row.createdAt),
+      startedAt: rowDate(row.createdAt),
       source: "forward_test",
     };
     if (shouldUseLatencyCandidate(latestByRule.get(ruleId), candidate)) {
@@ -2416,6 +2422,10 @@ export async function getTrafficSummaryByRule(opts: {
       latestLatencyMs: latest && latest.isTimeout ? null : latest?.latencyMs ?? null,
       latestLatencyIsTimeout: !!latest?.isTimeout,
       latestLatencyAt: latest?.recordedAt ?? null,
+      // Automatic samples do not record when their request began. Keep that
+      // provenance unknown so the UI cannot accept an old configuration by
+      // comparing only a late completion timestamp. Health selection is unchanged.
+      latestLatencyStartedAt: latest?.startedAt ?? null,
     };
   });
 }

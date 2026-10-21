@@ -5,6 +5,15 @@ import { trpc } from "@/lib/trpc";
 import { pollingInterval } from "@/lib/polling";
 import { formatRuleTraffic } from "@/lib/ruleTrafficDisplay";
 
+/** The server has already normalized hop accounting, but retains one row per host. */
+export function totalRuleDailyTraffic(rows:ReadonlyArray<{ruleId:number;bytesIn:number;bytesOut:number}> | undefined,ruleId:number) {
+  if (!rows) return undefined;
+  return rows.filter(row => Number(row.ruleId) === ruleId).reduce((total,row) => ({
+    bytesIn:total.bytesIn + (Number(row.bytesIn) || 0),
+    bytesOut:total.bytesOut + (Number(row.bytesOut) || 0),
+  }),{bytesIn:0,bytesOut:0});
+}
+
 export function RuleDailyTrafficContent({loading,error,hasRecords,totals}: {
   loading:boolean;error:boolean;hasRecords:boolean;totals?:{bytesIn:number;bytesOut:number};
 }) {
@@ -25,7 +34,7 @@ export function RuleDailyTrafficDialog({rule,onClose,onHistory}: {rule:{id:numbe
   const samples = trpc.rules.traffic.useQuery({ruleId:rule.id,limit:1},options);
   const latestAt = samples.data?.[0]?.recordedAt;
   const hasRecords = !!latestAt && new Date(latestAt).getTime() >= Date.now() - 24 * 3600_000;
-  const totals = summary.data?.find(row => Number(row.ruleId) === rule.id);
+  const totals = totalRuleDailyTraffic(summary.data,rule.id);
   return <Dialog open onOpenChange={open => !open && onClose()}>
     <DialogContent className="sm:max-w-md"><DialogHeader>
       <DialogTitle>{t("24小时流量")}</DialogTitle><DialogDescription>{rule.name} · {t("最近连续 24 小时")}</DialogDescription>
