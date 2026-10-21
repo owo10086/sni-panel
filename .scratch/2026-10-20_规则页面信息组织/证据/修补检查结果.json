@@ -1,0 +1,55 @@
+{
+  "productCommit": "e179e1cef38d481c8132b6bd71d1f05c11a867e7",
+  "scope": "最终产品提交的检查；双语在仅新增归属字段前完成，之后未改文案；本地检查不等于真实 Agent 或人工验收",
+  "checks": [
+    {
+      "name": "最终相关回归",
+      "log": "慢下发修补-相关检查.log",
+      "exitCode": 0,
+      "passedTests": 42,
+      "sha256": "1aec057767e57e488845086f96409cdb05e156c141079ef43e7450f16e7b1418"
+    },
+    {
+      "name": "最终完整服务端",
+      "log": "完整服务端检查-最终归属修补.log",
+      "exitCode": 0,
+      "passedTests": 1308,
+      "sha256": "42027b0d1a6660c6d8c599960be10da5e2a721b5c778e993272234e3d381894b"
+    },
+    {
+      "name": "双语（后续未改文案）",
+      "log": "双语检查-审查修补.log",
+      "exitCode": 0,
+      "passedTests": 19,
+      "sha256": "253485c5164af80f31379c645ee8032b8b6c929cb9e5327664dfc730c86f3656"
+    },
+    {
+      "name": "最终类型",
+      "log": "类型检查-慢下发修补.log",
+      "exitCode": 0,
+      "passedTests": null,
+      "sha256": "613138a39ad2db72f685020cd76f914979ca6aa41bdd4da342307ece8432af5e"
+    },
+    {
+      "name": "最终构建",
+      "log": "构建-慢下发修补.log",
+      "exitCode": 0,
+      "passedTests": null,
+      "sha256": "86fb5ea947e4998f0c9f11aa919735120a52e767a2543232fa5b7d08eea9ce89"
+    }
+  ],
+  "independentReviews": [
+    {
+      "report": "审查/提交补充复核.md",
+      "productCommit": "4531f32909db187cf218709a4ed1da8cbc398223",
+      "exitCode": 0,
+      "conclusion": "无已发现阻塞"
+    },
+    {
+      "report": "审查/最终补充复核.md",
+      "productCommit": "e179e1cef38d481c8132b6bd71d1f05c11a867e7",
+      "exitCode": 0,
+      "conclusion": "无已发现阻塞"
+    }
+  ]
+}
