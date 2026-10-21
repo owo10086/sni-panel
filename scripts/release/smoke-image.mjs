@@ -4,23 +4,25 @@ import { spawnSync, execFileSync } from 'node:child_process';
 import { setTimeout } from 'node:timers/promises';
 import { digest, transfer } from './protocol.mjs';
 const image = process.env.RELEASE_IMAGE;
-assert.match(image, /^ghcr\.io\/owo10086\/sni-panel@sha256:[a-f0-9]{64}$/);
+assert.match(image, /^(?:ghcr\.io\/owo10086\/sni-panel@)?sha256:[a-f0-9]{64}$/);
 const version = JSON.parse(fs.readFileSync('package.json')).version;
 const commit = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
 const run = args => execFileSync('docker', args, { encoding: 'utf8' }).trim();
-await transfer(() => run(['pull', image]));
+// Local development can inspect a content-addressed image ID without a push.
+// seal.mjs still requires the official GHCR repository digest for publication.
+if (!image.startsWith('sha256:')) await transfer(() => run(['pull', '--platform', 'linux/amd64', image]));
 const inspect = JSON.parse(run(['image', 'inspect', image]))[0];
 assert.equal(inspect.Architecture, 'amd64');
 assert.equal(inspect.Config.Labels['org.opencontainers.image.version'], version);
 assert.equal(inspect.Config.Labels['org.opencontainers.image.revision'], commit);
-run(['run', '--rm', '--entrypoint', 'node', image, '-e', `
+run(['run', '--platform', 'linux/amd64', '--rm', '--entrypoint', 'node', image, '-e', `
   const assert = require('node:assert/strict');
   const Database = require('better-sqlite3'); const db = new Database(':memory:');
   assert.equal(db.prepare('select 1').pluck().get(), 1); db.close();
   assert.equal(process.arch, 'x64'); assert.equal(process.version, 'v22.23.3');
   assert.equal(require('./package.json').version, '${version}');
 `]);
-const container = run(['run', '-d', '--tmpfs', '/data', '-e', 'DATABASE_TYPE=sqlite', image]);
+const container = run(['run', '--platform', 'linux/amd64', '-d', '--tmpfs', '/data', '-e', 'DATABASE_TYPE=sqlite', image]);
 try {
   let ready = false;
   for (let attempt = 0; attempt < 60; attempt++) {

@@ -62,3 +62,5 @@ test('network transfer gets exactly three attempts with 5 and 15 second delays',
   assert.equal(calls, 3); assert.deepEqual(delays, [5000, 15000]);
 });
 test('identity is retained in an immutable manifest', t => { const f = fixture(t); assert.ok(validateManifest(f.manifest, f.directory)); });
+
+test('a local image ID can never be sealed as an official release', t => { const f = fixture(t); assert.throws(() => createManifest(f.directory, { ...f.identity, image: 'sha256:' + 'b'.repeat(64) }, f.records)); });
