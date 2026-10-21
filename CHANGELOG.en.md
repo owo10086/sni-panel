@@ -4,6 +4,22 @@
 
 ## [Unreleased]
 
+## [3.5.1] - 2026-10-21
+
+### Fixes and improvements
+
+- Add a dedicated SNI rule group category for SNI rules on all supported resources. Exclude SNI from All and ordinary categories across lists, counts, pagination, maps and traffic totals. Keep the SNI category when selecting a resource, and preserve complete display groups during pagination and reordering.
+- Remove the separate SNI entry sidebar item and duplicate overview. Redirect old URLs and upgrade reminders to the new category. Administrators can see missing entry domains below the relevant group header, including while rules are collapsed; retain complete association checks and administrator permissions.
+- Improve SNI and ordinary rule tables. Click the resource to expand plain details, with a bold path heading followed by the user. Keep SNI domains and current/backup entry information, while ordinary rules retain their own resource and path display.
+- Show cumulative traffic with a Details action. Preserve accounting direction, rule quota usage and quota explanations in the details, with MB/GB labels. Put 24-hour traffic, link self-test, reset statistics and delete in the table's More menu.
+- Click either an untested label or an existing latency to test immediately and repeat later; link self-tests retain their dialog. Fix traffic aggregation across entries, lost test state after collapsing groups, and obsolete results appearing current after configuration changes, resets or delayed dispatch responses.
+
+### Versions and upgrade notes
+
+- Panel: `3.5.1`; Agent and ForwardX FXP runtime: `3.5.0`. Upgrading from 3.5.0 requires only the panel update. Older installations still need the matching Agent/FXP upgrades described for their versions.
+- This release changes page organization and test-result attribution while retaining billing, permissions, SNI and host failover entry health and DDNS policies. Domain configuration warnings add no health requirement; direct tunnels outside the existing check coverage receive no invented result.
+- Assets target Linux amd64. Native Android and iOS/iPadOS applications remain excluded. Automated checks and independent review are complete; real Agent business behavior and user acceptance require separate confirmation. Publishing does not imply production panel or host upgrades.
+
 ## [3.5.0] - 2026-10-20
 
 ### Features and improvements
