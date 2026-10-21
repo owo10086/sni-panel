@@ -408,14 +408,18 @@ func TestV3PoolSkipsStaleSessions(t *testing.T) {
 	target, _ := v3TestListener(t, func(conn net.Conn) { _, _ = io.Copy(conn, conn) })
 	port, _ := v3TestListener(t, func(conn net.Conn) { _ = handleExitSession(conn, cfg) })
 	pool := v3TestPool(t)
-	conn, sec := v3TestBusiness(t, pool, cfg, port, target)
-	v3TestEcho(t, sec, []byte("before-age"))
-	conn.Close()
-
+	// No streams have ever used this session: there can be no outstanding
+	// CLOSE or credit frame that races with aging the last successful write.
+	idleConn, idlePeer := net.Pipe()
+	t.Cleanup(func() { idlePeer.Close() })
+	stale := v3.NewSession(idleConn, v3.SessionOptions{Client: true, IdleTimeout: time.Hour})
 	key := v3PoolKey("127.0.0.1", port, cfg)
+	bucket := &v3PoolBucket{sessions: []*v3.Session{stale}, changed: make(chan struct{})}
 	pool.mu.Lock()
-	stale := pool.buckets[key].sessions[0]
+	pool.buckets[key] = bucket
+	pool.count++
 	pool.mu.Unlock()
+	go pool.releaseWhenClosed(key, bucket, stale)
 
 	// Age the recorded write beyond the stale threshold. The session still
 	// advertises slots, which is exactly the half-open case the pool must catch.
