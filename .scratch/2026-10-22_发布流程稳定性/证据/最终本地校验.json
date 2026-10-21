@@ -1,0 +1,611 @@
+{
+  "schema": "forwardx-local-validation-v1",
+  "commit": "77974c54ad99331c0daf152434048c794f8ea66d",
+  "components": {
+    "panel": "3.5.2",
+    "agent": "3.5.0",
+    "fxp": "3.5.0",
+    "gost": "3.2.6"
+  },
+  "image": "sha256:f0f45741a2cae256d5d03e9c73d0361f2b89caaf8e82125cd91f87b5ab37b703",
+  "published": false,
+  "officialManifestCreated": false,
+  "note": "Local Linux validation only. Official sealing still requires a verified GHCR digest.",
+  "checks": [
+    {
+      "schema": 1,
+      "group": "agent",
+      "commit": "77974c54ad99331c0daf152434048c794f8ea66d",
+      "sourceClean": true,
+      "environment": {
+        "platform": "linux",
+        "arch": "x64",
+        "node": "v22.23.3",
+        "pnpm": "10.28.1",
+        "go": "go version go1.23.12 linux/amd64",
+        "os": "PRETTY_NAME=\"Ubuntu 24.04.5 LTS\"\nNAME=\"Ubuntu\"\nVERSION_ID=\"24.04\"\nVERSION=\"24.04.5 LTS (Noble Numbat)\"\nVERSION_CODENAME=noble\nID=ubuntu\nID_LIKE=debian\nHOME_URL=\"https://www.ubuntu.com/\"\nSUPPORT_URL=\"https://help.ubuntu.com/\"\nBUG_REPORT_URL=\"https://bugs.launchpad.net/ubuntu/\"\nPRIVACY_POLICY_URL=\"https://www.ubuntu.com/legal/terms-and-policies/privacy-policy\"\nUBUNTU_CODENAME=noble\nLOGO=ubuntu-logo\n"
+      },
+      "baseline": {
+        "os": "ubuntu-24.04",
+        "node": "v22.23.3",
+        "pnpm": "10.28.1",
+        "go": "go1.23.12"
+      },
+      "status": "passed",
+      "commands": [
+        {
+          "args": [
+            "bash",
+            "scripts/release/verify-agent.sh"
+          ],
+          "status": 0,
+          "signal": null,
+          "elapsedMs": 34686
+        }
+      ]
+    },
+    {
+      "group": "bundle",
+      "status": "passed",
+      "commit": "77974c54ad99331c0daf152434048c794f8ea66d",
+      "image": "sha256:f0f45741a2cae256d5d03e9c73d0361f2b89caaf8e82125cd91f87b5ab37b703",
+      "package": "forwardx-panel-v3.5.2.tar.gz"
+    },
+    {
+      "schema": 1,
+      "group": "docs",
+      "commit": "77974c54ad99331c0daf152434048c794f8ea66d",
+      "sourceClean": true,
+      "environment": {
+        "platform": "linux",
+        "arch": "arm64",
+        "node": "v22.23.3",
+        "pnpm": "10.28.1",
+        "go": "go version go1.23.12 linux/arm64",
+        "os": "PRETTY_NAME=\"Ubuntu 24.04.5 LTS\"\nNAME=\"Ubuntu\"\nVERSION_ID=\"24.04\"\nVERSION=\"24.04.5 LTS (Noble Numbat)\"\nVERSION_CODENAME=noble\nID=ubuntu\nID_LIKE=debian\nHOME_URL=\"https://www.ubuntu.com/\"\nSUPPORT_URL=\"https://help.ubuntu.com/\"\nBUG_REPORT_URL=\"https://bugs.launchpad.net/ubuntu/\"\nPRIVACY_POLICY_URL=\"https://www.ubuntu.com/legal/terms-and-policies/privacy-policy\"\nUBUNTU_CODENAME=noble\nLOGO=ubuntu-logo\n"
+      },
+      "baseline": {
+        "os": "ubuntu-24.04",
+        "node": "v22.23.3",
+        "pnpm": "10.28.1",
+        "go": "go1.23.12"
+      },
+      "status": "passed",
+      "commands": [
+        {
+          "args": [
+            "pnpm",
+            "docs:build"
+          ],
+          "status": 0,
+          "signal": null,
+          "elapsedMs": 5319
+        },
+        {
+          "args": [
+            "node",
+            "scripts/release/verify-docs.mjs"
+          ],
+          "status": 0,
+          "signal": null,
+          "elapsedMs": 16
+        }
+      ]
+    },
+    {
+      "schema": 1,
+      "group": "functional",
+      "commit": "77974c54ad99331c0daf152434048c794f8ea66d",
+      "sourceClean": true,
+      "environment": {
+        "platform": "linux",
+        "arch": "arm64",
+        "node": "v22.23.3",
+        "pnpm": "10.28.1",
+        "go": "go version go1.23.12 linux/arm64",
+        "os": "PRETTY_NAME=\"Ubuntu 24.04.5 LTS\"\nNAME=\"Ubuntu\"\nVERSION_ID=\"24.04\"\nVERSION=\"24.04.5 LTS (Noble Numbat)\"\nVERSION_CODENAME=noble\nID=ubuntu\nID_LIKE=debian\nHOME_URL=\"https://www.ubuntu.com/\"\nSUPPORT_URL=\"https://help.ubuntu.com/\"\nBUG_REPORT_URL=\"https://bugs.launchpad.net/ubuntu/\"\nPRIVACY_POLICY_URL=\"https://www.ubuntu.com/legal/terms-and-policies/privacy-policy\"\nUBUNTU_CODENAME=noble\nLOGO=ubuntu-logo\n"
+      },
+      "baseline": {
+        "os": "ubuntu-24.04",
+        "node": "v22.23.3",
+        "pnpm": "10.28.1",
+        "go": "go1.23.12"
+      },
+      "status": "passed",
+      "commands": [
+        {
+          "args": [
+            "bash",
+            "-c",
+            "command -v jq >/dev/null || { echo \"Functional checks require jq; install jq before continuing\" >&2; exit 1; }"
+          ],
+          "status": 0,
+          "signal": null,
+          "elapsedMs": 1
+        },
+        {
+          "args": [
+            "pnpm",
+            "test:ui"
+          ],
+          "status": 0,
+          "signal": null,
+          "elapsedMs": 736
+        },
+        {
+          "args": [
+            "pnpm",
+            "test:login-ui"
+          ],
+          "status": 0,
+          "signal": null,
+          "elapsedMs": 503
+        },
+        {
+          "args": [
+            "pnpm",
+            "test:startup"
+          ],
+          "status": 0,
+          "signal": null,
+          "elapsedMs": 831
+        },
+        {
+          "args": [
+            "pnpm",
+            "test:auth-captcha"
+          ],
+          "status": 0,
+          "signal": null,
+          "elapsedMs": 2242
+        },
+        {
+          "args": [
+            "pnpm",
+            "test:billing-export"
+          ],
+          "status": 0,
+          "signal": null,
+          "elapsedMs": 1503
+        },
+        {
+          "args": [
+            "pnpm",
+            "test:host-addresses"
+          ],
+          "status": 0,
+          "signal": null,
+          "elapsedMs": 1786
+        },
+        {
+          "args": [
+            "pnpm",
+            "test:china-health"
+          ],
+          "status": 0,
+          "signal": null,
+          "elapsedMs": 1900
+        },
+        {
+          "args": [
+            "pnpm",
+            "test:observability"
+          ],
+          "status": 0,
+          "signal": null,
+          "elapsedMs": 5832
+        },
+        {
+          "args": [
+            "pnpm",
+            "test:support"
+          ],
+          "status": 0,
+          "signal": null,
+          "elapsedMs": 2791
+        },
+        {
+          "args": [
+            "pnpm",
+            "test:affiliates"
+          ],
+          "status": 0,
+          "signal": null,
+          "elapsedMs": 1490
+        },
+        {
+          "args": [
+            "pnpm",
+            "test:avatars"
+          ],
+          "status": 0,
+          "signal": null,
+          "elapsedMs": 771
+        },
+        {
+          "args": [
+            "pnpm",
+            "test:latency-history"
+          ],
+          "status": 0,
+          "signal": null,
+          "elapsedMs": 1507
+        },
+        {
+          "args": [
+            "pnpm",
+            "test:agent-proxy"
+          ],
+          "status": 0,
+          "signal": null,
+          "elapsedMs": 955
+        },
+        {
+          "args": [
+            "pnpm",
+            "test:deployment-docs"
+          ],
+          "status": 0,
+          "signal": null,
+          "elapsedMs": 793
+        },
+        {
+          "args": [
+            "pnpm",
+            "test:google-auth"
+          ],
+          "status": 0,
+          "signal": null,
+          "elapsedMs": 1701
+        },
+        {
+          "args": [
+            "pnpm",
+            "test:port-access-limits"
+          ],
+          "status": 0,
+          "signal": null,
+          "elapsedMs": 895
+        },
+        {
+          "args": [
+            "pnpm",
+            "test:plan-display"
+          ],
+          "status": 0,
+          "signal": null,
+          "elapsedMs": 935
+        },
+        {
+          "args": [
+            "pnpm",
+            "test:host-deletion"
+          ],
+          "status": 0,
+          "signal": null,
+          "elapsedMs": 62883
+        },
+        {
+          "args": [
+            "pnpm",
+            "test:host-notifications"
+          ],
+          "status": 0,
+          "signal": null,
+          "elapsedMs": 2789
+        },
+        {
+          "args": [
+            "pnpm",
+            "test:user-selection"
+          ],
+          "status": 0,
+          "signal": null,
+          "elapsedMs": 832
+        },
+        {
+          "args": [
+            "pnpm",
+            "test:operations"
+          ],
+          "status": 0,
+          "signal": null,
+          "elapsedMs": 2906
+        },
+        {
+          "args": [
+            "pnpm",
+            "test:payments"
+          ],
+          "status": 0,
+          "signal": null,
+          "elapsedMs": 6344
+        },
+        {
+          "args": [
+            "pnpm",
+            "pretest:server"
+          ],
+          "status": 0,
+          "signal": null,
+          "elapsedMs": 46347
+        },
+        {
+          "args": [
+            "pnpm",
+            "test:server"
+          ],
+          "status": 0,
+          "signal": null,
+          "elapsedMs": 118871
+        },
+        {
+          "args": [
+            "pnpm",
+            "test:ai"
+          ],
+          "status": 0,
+          "signal": null,
+          "elapsedMs": 41682
+        },
+        {
+          "args": [
+            "pnpm",
+            "test:selftest-dispatch"
+          ],
+          "status": 0,
+          "signal": null,
+          "elapsedMs": 1573
+        },
+        {
+          "args": [
+            "pnpm",
+            "test:sni-classification"
+          ],
+          "status": 0,
+          "signal": null,
+          "elapsedMs": 995
+        },
+        {
+          "args": [
+            "node",
+            "--import",
+            "tsx",
+            "--test",
+            "--test-name-pattern=port entry SNI|automatically enqueue",
+            "server/sniForwardGroup.test.ts"
+          ],
+          "status": 0,
+          "signal": null,
+          "elapsedMs": 6354
+        }
+      ]
+    },
+    {
+      "group": "image",
+      "status": "passed",
+      "commit": "77974c54ad99331c0daf152434048c794f8ea66d",
+      "image": "sha256:f0f45741a2cae256d5d03e9c73d0361f2b89caaf8e82125cd91f87b5ab37b703",
+      "package": "forwardx-panel-v3.5.2.tar.gz"
+    },
+    {
+      "schema": 1,
+      "group": "language",
+      "commit": "77974c54ad99331c0daf152434048c794f8ea66d",
+      "sourceClean": true,
+      "environment": {
+        "platform": "linux",
+        "arch": "arm64",
+        "node": "v22.23.3",
+        "pnpm": "10.28.1",
+        "go": "go version go1.23.12 linux/arm64",
+        "os": "PRETTY_NAME=\"Ubuntu 24.04.5 LTS\"\nNAME=\"Ubuntu\"\nVERSION_ID=\"24.04\"\nVERSION=\"24.04.5 LTS (Noble Numbat)\"\nVERSION_CODENAME=noble\nID=ubuntu\nID_LIKE=debian\nHOME_URL=\"https://www.ubuntu.com/\"\nSUPPORT_URL=\"https://help.ubuntu.com/\"\nBUG_REPORT_URL=\"https://bugs.launchpad.net/ubuntu/\"\nPRIVACY_POLICY_URL=\"https://www.ubuntu.com/legal/terms-and-policies/privacy-policy\"\nUBUNTU_CODENAME=noble\nLOGO=ubuntu-logo\n"
+      },
+      "baseline": {
+        "os": "ubuntu-24.04",
+        "node": "v22.23.3",
+        "pnpm": "10.28.1",
+        "go": "go1.23.12"
+      },
+      "status": "passed",
+      "commands": [
+        {
+          "args": [
+            "pnpm",
+            "test:i18n"
+          ],
+          "status": 0,
+          "signal": null,
+          "elapsedMs": 1073
+        }
+      ]
+    },
+    {
+      "schema": 1,
+      "group": "mysql",
+      "commit": "77974c54ad99331c0daf152434048c794f8ea66d",
+      "sourceClean": true,
+      "environment": {
+        "platform": "linux",
+        "arch": "arm64",
+        "node": "v22.23.3",
+        "pnpm": "10.28.1",
+        "go": "go version go1.23.12 linux/arm64",
+        "os": "PRETTY_NAME=\"Ubuntu 24.04.5 LTS\"\nNAME=\"Ubuntu\"\nVERSION_ID=\"24.04\"\nVERSION=\"24.04.5 LTS (Noble Numbat)\"\nVERSION_CODENAME=noble\nID=ubuntu\nID_LIKE=debian\nHOME_URL=\"https://www.ubuntu.com/\"\nSUPPORT_URL=\"https://help.ubuntu.com/\"\nBUG_REPORT_URL=\"https://bugs.launchpad.net/ubuntu/\"\nPRIVACY_POLICY_URL=\"https://www.ubuntu.com/legal/terms-and-policies/privacy-policy\"\nUBUNTU_CODENAME=noble\nLOGO=ubuntu-logo\n"
+      },
+      "baseline": {
+        "os": "ubuntu-24.04",
+        "node": "v22.23.3",
+        "pnpm": "10.28.1",
+        "go": "go1.23.12"
+      },
+      "status": "passed",
+      "commands": [
+        {
+          "args": [
+            "pnpm",
+            "test:database-upgrade"
+          ],
+          "status": 0,
+          "signal": null,
+          "elapsedMs": 1578
+        }
+      ]
+    },
+    {
+      "schema": 1,
+      "group": "performance",
+      "commit": "77974c54ad99331c0daf152434048c794f8ea66d",
+      "sourceClean": true,
+      "environment": {
+        "platform": "linux",
+        "arch": "arm64",
+        "node": "v22.23.3",
+        "pnpm": "10.28.1",
+        "go": "go version go1.23.12 linux/arm64",
+        "os": "PRETTY_NAME=\"Ubuntu 24.04.5 LTS\"\nNAME=\"Ubuntu\"\nVERSION_ID=\"24.04\"\nVERSION=\"24.04.5 LTS (Noble Numbat)\"\nVERSION_CODENAME=noble\nID=ubuntu\nID_LIKE=debian\nHOME_URL=\"https://www.ubuntu.com/\"\nSUPPORT_URL=\"https://help.ubuntu.com/\"\nBUG_REPORT_URL=\"https://bugs.launchpad.net/ubuntu/\"\nPRIVACY_POLICY_URL=\"https://www.ubuntu.com/legal/terms-and-policies/privacy-policy\"\nUBUNTU_CODENAME=noble\nLOGO=ubuntu-logo\n"
+      },
+      "baseline": {
+        "os": "ubuntu-24.04",
+        "node": "v22.23.3",
+        "pnpm": "10.28.1",
+        "go": "go1.23.12"
+      },
+      "status": "passed",
+      "commands": [
+        {
+          "args": [
+            "node",
+            "--import",
+            "tsx",
+            "--test",
+            "--test-concurrency=1",
+            "server/sniBatchEdit.performance.test.ts"
+          ],
+          "status": 0,
+          "signal": null,
+          "elapsedMs": 206667
+        }
+      ]
+    },
+    {
+      "schema": 1,
+      "group": "prepare",
+      "commit": "77974c54ad99331c0daf152434048c794f8ea66d",
+      "sourceClean": true,
+      "environment": {
+        "platform": "linux",
+        "arch": "arm64",
+        "node": "v22.23.3",
+        "pnpm": "10.28.1",
+        "go": "go version go1.23.12 linux/arm64",
+        "os": "PRETTY_NAME=\"Ubuntu 24.04.5 LTS\"\nNAME=\"Ubuntu\"\nVERSION_ID=\"24.04\"\nVERSION=\"24.04.5 LTS (Noble Numbat)\"\nVERSION_CODENAME=noble\nID=ubuntu\nID_LIKE=debian\nHOME_URL=\"https://www.ubuntu.com/\"\nSUPPORT_URL=\"https://help.ubuntu.com/\"\nBUG_REPORT_URL=\"https://bugs.launchpad.net/ubuntu/\"\nPRIVACY_POLICY_URL=\"https://www.ubuntu.com/legal/terms-and-policies/privacy-policy\"\nUBUNTU_CODENAME=noble\nLOGO=ubuntu-logo\n"
+      },
+      "baseline": {
+        "os": "ubuntu-24.04",
+        "node": "v22.23.3",
+        "pnpm": "10.28.1",
+        "go": "go1.23.12"
+      },
+      "status": "passed",
+      "commands": [
+        {
+          "args": [
+            "pnpm",
+            "check:versions"
+          ],
+          "status": 0,
+          "signal": null,
+          "elapsedMs": 154
+        },
+        {
+          "args": [
+            "pnpm",
+            "test:release-notes"
+          ],
+          "status": 0,
+          "signal": null,
+          "elapsedMs": 224
+        },
+        {
+          "args": [
+            "node",
+            "--test",
+            "scripts/release/protocol.test.mjs",
+            "scripts/release/cli.test.mjs"
+          ],
+          "status": 0,
+          "signal": null,
+          "elapsedMs": 21165
+        },
+        {
+          "args": [
+            "pnpm",
+            "exec",
+            "tsc",
+            "--noEmit"
+          ],
+          "status": 0,
+          "signal": null,
+          "elapsedMs": 19614
+        },
+        {
+          "args": [
+            "pnpm",
+            "build"
+          ],
+          "status": 0,
+          "signal": null,
+          "elapsedMs": 9190
+        }
+      ]
+    }
+  ],
+  "artifacts": [
+    {
+      "name": "forwardx-panel-v3.5.2.tar.gz",
+      "bytes": 52391390,
+      "sha256": "7cb33ee58e61d5fd3705f1c6da633e22496b269f5b0e4658f1b3c9bf11c433c1"
+    },
+    {
+      "name": "forwardx-agent-linux-amd64",
+      "bytes": 11059352,
+      "sha256": "015e47ca1f28b49f8ff3ad85e4934b6a47e524f740fb232365787050be590fb6"
+    },
+    {
+      "name": "forwardx-fxp-linux-amd64",
+      "bytes": 6848664,
+      "sha256": "ec768baf5ae51c8616eba6092f807d4338a7f44e52858b406a0c3267965a40fb"
+    },
+    {
+      "name": "forwardx-runtime-linux-amd64",
+      "bytes": 9673064,
+      "sha256": "a2aea24efb4597b5f57b35b8e1bbcc59f439b80723854d4371f6828b46682ffb"
+    },
+    {
+      "name": "SHA256SUMS",
+      "bytes": 368,
+      "sha256": "9477a6406296bf64c6f428176513431bbbf8f7038663d78a566205bee1ef5522"
+    },
+    {
+      "name": "THIRD_PARTY_NOTICES.md",
+      "bytes": 4041,
+      "sha256": "3fefc655e2b954efe4d1c11e6e5764cda51848b89aa7bb08b288ad3764181572"
+    },
+    {
+      "name": "forwardx-docs-v3.5.2.tar.gz",
+      "bytes": 2726149,
+      "sha256": "a24b3c1c02c4e898d762a7d1cc7bacd2f0a36d729593efb962c53adc55759993"
+    },
+    {
+      "name": "verification.tar.gz",
+      "bytes": 116203,
+      "sha256": "f518dc098c928796c2827e61c57c857cd54543f47ecaa67d7d91910915248a2b"
+    },
+    {
+      "name": "RELEASE_NOTES.md",
+      "bytes": 2666,
+      "sha256": "bbccfc9f360b1b9c6f3d147731c439c8a9768726409856d81d2136c1aa0600c1"
+    }
+  ]
+}

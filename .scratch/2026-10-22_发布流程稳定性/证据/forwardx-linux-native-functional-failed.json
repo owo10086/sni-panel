@@ -1,0 +1,239 @@
+{
+  "schema": 1,
+  "group": "functional",
+  "commit": "003bd3e53397fce65341ffbd40ac4c0b8d429261",
+  "sourceClean": true,
+  "environment": {
+    "platform": "linux",
+    "arch": "arm64",
+    "node": "v22.23.3",
+    "pnpm": "10.28.1",
+    "go": "go version go1.23.12 linux/arm64",
+    "os": "PRETTY_NAME=\"Ubuntu 24.04.5 LTS\"\nNAME=\"Ubuntu\"\nVERSION_ID=\"24.04\"\nVERSION=\"24.04.5 LTS (Noble Numbat)\"\nVERSION_CODENAME=noble\nID=ubuntu\nID_LIKE=debian\nHOME_URL=\"https://www.ubuntu.com/\"\nSUPPORT_URL=\"https://help.ubuntu.com/\"\nBUG_REPORT_URL=\"https://bugs.launchpad.net/ubuntu/\"\nPRIVACY_POLICY_URL=\"https://www.ubuntu.com/legal/terms-and-policies/privacy-policy\"\nUBUNTU_CODENAME=noble\nLOGO=ubuntu-logo\n"
+  },
+  "baseline": {
+    "os": "ubuntu-24.04",
+    "node": "v22.23.3",
+    "pnpm": "10.28.1",
+    "go": "go1.23.12"
+  },
+  "status": "failed",
+  "commands": [
+    {
+      "args": [
+        "pnpm",
+        "test:ui"
+      ],
+      "status": 0,
+      "signal": null,
+      "elapsedMs": 943
+    },
+    {
+      "args": [
+        "pnpm",
+        "test:login-ui"
+      ],
+      "status": 0,
+      "signal": null,
+      "elapsedMs": 543
+    },
+    {
+      "args": [
+        "pnpm",
+        "test:startup"
+      ],
+      "status": 0,
+      "signal": null,
+      "elapsedMs": 915
+    },
+    {
+      "args": [
+        "pnpm",
+        "test:auth-captcha"
+      ],
+      "status": 0,
+      "signal": null,
+      "elapsedMs": 2433
+    },
+    {
+      "args": [
+        "pnpm",
+        "test:billing-export"
+      ],
+      "status": 0,
+      "signal": null,
+      "elapsedMs": 1670
+    },
+    {
+      "args": [
+        "pnpm",
+        "test:host-addresses"
+      ],
+      "status": 0,
+      "signal": null,
+      "elapsedMs": 1873
+    },
+    {
+      "args": [
+        "pnpm",
+        "test:china-health"
+      ],
+      "status": 0,
+      "signal": null,
+      "elapsedMs": 2060
+    },
+    {
+      "args": [
+        "pnpm",
+        "test:observability"
+      ],
+      "status": 0,
+      "signal": null,
+      "elapsedMs": 5362
+    },
+    {
+      "args": [
+        "pnpm",
+        "test:support"
+      ],
+      "status": 0,
+      "signal": null,
+      "elapsedMs": 2775
+    },
+    {
+      "args": [
+        "pnpm",
+        "test:affiliates"
+      ],
+      "status": 0,
+      "signal": null,
+      "elapsedMs": 1659
+    },
+    {
+      "args": [
+        "pnpm",
+        "test:avatars"
+      ],
+      "status": 0,
+      "signal": null,
+      "elapsedMs": 821
+    },
+    {
+      "args": [
+        "pnpm",
+        "test:latency-history"
+      ],
+      "status": 0,
+      "signal": null,
+      "elapsedMs": 1625
+    },
+    {
+      "args": [
+        "pnpm",
+        "test:agent-proxy"
+      ],
+      "status": 0,
+      "signal": null,
+      "elapsedMs": 1000
+    },
+    {
+      "args": [
+        "pnpm",
+        "test:deployment-docs"
+      ],
+      "status": 0,
+      "signal": null,
+      "elapsedMs": 816
+    },
+    {
+      "args": [
+        "pnpm",
+        "test:google-auth"
+      ],
+      "status": 0,
+      "signal": null,
+      "elapsedMs": 1879
+    },
+    {
+      "args": [
+        "pnpm",
+        "test:port-access-limits"
+      ],
+      "status": 0,
+      "signal": null,
+      "elapsedMs": 977
+    },
+    {
+      "args": [
+        "pnpm",
+        "test:plan-display"
+      ],
+      "status": 0,
+      "signal": null,
+      "elapsedMs": 1001
+    },
+    {
+      "args": [
+        "pnpm",
+        "test:host-deletion"
+      ],
+      "status": 0,
+      "signal": null,
+      "elapsedMs": 80692
+    },
+    {
+      "args": [
+        "pnpm",
+        "test:host-notifications"
+      ],
+      "status": 0,
+      "signal": null,
+      "elapsedMs": 3679
+    },
+    {
+      "args": [
+        "pnpm",
+        "test:user-selection"
+      ],
+      "status": 0,
+      "signal": null,
+      "elapsedMs": 1505
+    },
+    {
+      "args": [
+        "pnpm",
+        "test:operations"
+      ],
+      "status": 0,
+      "signal": null,
+      "elapsedMs": 5561
+    },
+    {
+      "args": [
+        "pnpm",
+        "test:payments"
+      ],
+      "status": 0,
+      "signal": null,
+      "elapsedMs": 12264
+    },
+    {
+      "args": [
+        "pnpm",
+        "pretest:server"
+      ],
+      "status": 0,
+      "signal": null,
+      "elapsedMs": 61001
+    },
+    {
+      "args": [
+        "pnpm",
+        "test:server"
+      ],
+      "status": 1,
+      "signal": null,
+      "elapsedMs": 136181
+    }
+  ]
+}

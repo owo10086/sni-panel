@@ -1,0 +1,243 @@
+[
+  {
+    "file": "actionlint-final.log.gz",
+    "bytes": 20,
+    "sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+    "uncompressedBytes": 0
+  },
+  {
+    "file": "actionlint.log.gz",
+    "bytes": 158,
+    "sha256": "0537595cb349df159bddd144abd80db3195b7c725989dd715b493207c6b465eb",
+    "uncompressedBytes": 290
+  },
+  {
+    "file": "agent-build.log.gz",
+    "bytes": 329,
+    "sha256": "7764e2dd4d25474bc479704630d56176dfd90c82d74526390f8229084a302466",
+    "uncompressedBytes": 870
+  },
+  {
+    "file": "agent-final.log.gz",
+    "bytes": 2707,
+    "sha256": "f028fe3d29f9d4cd6696cbbb5e8f4e8653a8cde5e6b220f2dba35bd3b3738a9f",
+    "uncompressedBytes": 21949
+  },
+  {
+    "file": "dns-final.log.gz",
+    "bytes": 310,
+    "sha256": "6a8fe2bf75806e78e64fec635e4070d79cf96408c138c27578f94cea33061150",
+    "uncompressedBytes": 657
+  },
+  {
+    "file": "forwardx-linux-native-functional-failed.json",
+    "bytes": 4390,
+    "sha256": "635e1aedfb8665f8985269f3ce97d21ad4b0346b58a61e32b72a2eeb7c85d165"
+  },
+  {
+    "file": "fxp-1.log.gz",
+    "bytes": 65,
+    "sha256": "6bc1ef04c31ba73f262db1d6508df006fc0ba95bcabe23951b293722066f5dbd",
+    "uncompressedBytes": 51
+  },
+  {
+    "file": "fxp-4.log.gz",
+    "bytes": 65,
+    "sha256": "701cb2cb60b7d8063a0ebe59c118548483ee2c704390ed8bb295b036916c9dea",
+    "uncompressedBytes": 51
+  },
+  {
+    "file": "fxp-all.log.gz",
+    "bytes": 3093,
+    "sha256": "a80bb5814dae253d4360241ea0ba6dbd3b532d9c045c915d954d24cbb94ebaa9",
+    "uncompressedBytes": 33762
+  },
+  {
+    "file": "fxp-internal-race.log.gz",
+    "bytes": 77,
+    "sha256": "536f415fa6eb519fb3af05768ec671d4e06203efc26f6475343c31efc4db2845",
+    "uncompressedBytes": 63
+  },
+  {
+    "file": "fxp-target-race.log.gz",
+    "bytes": 65,
+    "sha256": "5ef76e490a5d279a37f83ff58247e55f2a32a465f35a53141d92f07f12fa508c",
+    "uncompressedBytes": 51
+  },
+  {
+    "file": "fxp-vet.log.gz",
+    "bytes": 20,
+    "sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+    "uncompressedBytes": 0
+  },
+  {
+    "file": "image-build-final.log.gz",
+    "bytes": 1448,
+    "sha256": "5839c0a5ddc3bdc4747d9d04f4348054bad05127af67e0929bc573d1338e11f2",
+    "uncompressedBytes": 3534
+  },
+  {
+    "file": "image-smoke-final.log.gz",
+    "bytes": 208,
+    "sha256": "dfae8a0bf665cc4a256c0a00cb1ef3c3cbc43d438ddfe174f8971c3918b48d18",
+    "uncompressedBytes": 317
+  },
+  {
+    "file": "linux-agent-final.log.gz",
+    "bytes": 82,
+    "sha256": "6efbdb5f2722d74cc4d3a1b8c39d310cc226a6228287404933b4044a4679b92c",
+    "uncompressedBytes": 134
+  },
+  {
+    "file": "linux-amd64-agent-final.log.gz",
+    "bytes": 2702,
+    "sha256": "6eff739f2cccf63c4c1c4aa1d7c66c64f805cfa0ab8c8e311d2bbe5c84783650",
+    "uncompressedBytes": 21757
+  },
+  {
+    "file": "linux-amd64-agent.log.gz",
+    "bytes": 2729,
+    "sha256": "138d129efdff5a87b1582c43f931746472110e6da4fe93e285a40c54f745e1b8",
+    "uncompressedBytes": 21647
+  },
+  {
+    "file": "linux-amd64-unified.log.gz",
+    "bytes": 96945,
+    "sha256": "4f0088d4059603cc36bc6765b5788d9e6964e3b37efc0318f3e2f646e81b1902",
+    "uncompressedBytes": 510447
+  },
+  {
+    "file": "linux-assemble-final.log.gz",
+    "bytes": 178,
+    "sha256": "dc03fd57b0adf92da5a65d8ec1a7eb5bcbbcc083465fd01a1456b545b3504488",
+    "uncompressedBytes": 228
+  },
+  {
+    "file": "linux-final.log.gz",
+    "bytes": 105807,
+    "sha256": "bec6896d38541194b2eef4b162d2a62ecf2e0d7b7fad1a1942db34f991b9337b",
+    "uncompressedBytes": 734582
+  },
+  {
+    "file": "linux-fxp-final.log.gz",
+    "bytes": 102,
+    "sha256": "1808dd6a939538fff6479e219f4306354ccf60af34482d30a6c578f8747ad224",
+    "uncompressedBytes": 338
+  },
+  {
+    "file": "linux-fxp.log.gz",
+    "bytes": 3836,
+    "sha256": "3349074b03fc5cdbe38f2158f4d691585bf890a53194a3ff97840495ed5589db",
+    "uncompressedBytes": 36784
+  },
+  {
+    "file": "linux-go-final.log.gz",
+    "bytes": 3350,
+    "sha256": "cfd300215618d4df85a9b6e31672cf1514d6690c18b6bbb4d30e340a69f8177b",
+    "uncompressedBytes": 35741
+  },
+  {
+    "file": "linux-image-final.log.gz",
+    "bytes": 1451,
+    "sha256": "812127e25d8e0801172786133ff4f00d007d8eaf0e5864a10bb50607e44e337f",
+    "uncompressedBytes": 3547
+  },
+  {
+    "file": "linux-jq-install.log.gz",
+    "bytes": 382,
+    "sha256": "91334f7665a36767fd4d1cb41f74989492088451dc336d07d2047b40a5a35244",
+    "uncompressedBytes": 1386
+  },
+  {
+    "file": "linux-mysql.log.gz",
+    "bytes": 2026,
+    "sha256": "c0f2b4df825664f797adfc126677a6499d5b9f41b640132eea24c4bb7786daac",
+    "uncompressedBytes": 7893
+  },
+  {
+    "file": "linux-native-server-failed.log.gz",
+    "bytes": 53097,
+    "sha256": "856611bd95c29e79805090d236dc233ffcaeccf379609f27c40db26f406f51bc",
+    "uncompressedBytes": 270650
+  },
+  {
+    "file": "linux-native-unified-final.log.gz",
+    "bytes": 54421,
+    "sha256": "b702454c51675f91703731b54906a070d2339d8be3db473283189c50f8cd8b3d",
+    "uncompressedBytes": 289582
+  },
+  {
+    "file": "performance.log.gz",
+    "bytes": 8203,
+    "sha256": "d578fed5f19bd6ed4083a99b942772bcce0589883ec6f545fcb78d749793213f",
+    "uncompressedBytes": 213067
+  },
+  {
+    "file": "release-final.log.gz",
+    "bytes": 755,
+    "sha256": "1689ba847a475f03142d8faf74deabfe178de4a87e2a9672c231c310b97075ec",
+    "uncompressedBytes": 2659
+  },
+  {
+    "file": "release-validation.log.gz",
+    "bytes": 964,
+    "sha256": "f437d246ccd747cb6becef695c1e4fa8c27e93acad59782bcf878624e0af172c",
+    "uncompressedBytes": 3567
+  },
+  {
+    "file": "sni-functional.log.gz",
+    "bytes": 2944,
+    "sha256": "ee2f5a4f4e50ac25ed5a47f33c751d8bd8fb77f5a94c74324f55d61549382bd5",
+    "uncompressedBytes": 13904
+  },
+  {
+    "file": "udp-diagnostic.log.gz",
+    "bytes": 1161,
+    "sha256": "fb7299f3d249a4a48c9e53ead53dbe05528657e26d891eaf3e60c24a6b7db10f",
+    "uncompressedBytes": 7273
+  },
+  {
+    "file": "unified-mac-2.log.gz",
+    "bytes": 88957,
+    "sha256": "35cafa83a972f5f9c4edf1e7d17752b9d2805f03d70aa50913a1700aed31966a",
+    "uncompressedBytes": 469297
+  },
+  {
+    "file": "unified-mac.log.gz",
+    "bytes": 22785,
+    "sha256": "a8825ee95296ed243f65d08faa435405369048c59b57b0dfaddafebed1264639",
+    "uncompressedBytes": 117496
+  },
+  {
+    "file": "yaml-final.log.gz",
+    "bytes": 106,
+    "sha256": "f92d686cb54646efa481ecf2bd0b56f8701c9719e68124020ac28d5db2d837f1",
+    "uncompressedBytes": 170
+  },
+  {
+    "file": "yaml.log.gz",
+    "bytes": 105,
+    "sha256": "b244964b528914a426eb19afd53234460f552ee932a12d1b77972a48deaed62f",
+    "uncompressedBytes": 168
+  },
+  {
+    "file": "批次耗时.csv",
+    "bytes": 16455,
+    "sha256": "75e28f5f078cf2117072213c22984cb38ebba08a8951794b5f7fb2fdda6e2341"
+  },
+  {
+    "file": "最终本地校验.json",
+    "bytes": 17064,
+    "sha256": "2e8a44afd6aad8703ac3d9e86a46b5eb75665597b528c6a7f633ce18c6cfc23b"
+  },
+  {
+    "file": "最终检查.tar.gz",
+    "bytes": 118732,
+    "sha256": "ddfb62e4895965ad3833c6710f45d3653a14b71e4f911fc540c5f9e426f24149"
+  },
+  {
+    "file": "最终镜像验收.txt",
+    "bytes": 227,
+    "sha256": "d4f4c4df94bc1378bf21d8bf135a706286bb19a61069b50e533d865f4089731b"
+  }
+]
