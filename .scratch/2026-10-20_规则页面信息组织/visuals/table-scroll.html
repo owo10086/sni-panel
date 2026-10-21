@@ -1,0 +1,207 @@
+<div id="fx-scroll-preview" class="viz-dotted-background" aria-label="紧凑组头、点击所属资源展开文字详情和更多菜单示意">
+  <style>
+    #fx-scroll-preview { color-scheme: light dark; --fx-bg: light-dark(#ffffff,#242f32); --fx-head: light-dark(#edf3f1,#2b3a3d); --fx-ink: light-dark(#243036,#e4eded); --fx-dim: light-dark(#60737b,#a5b6bd); --fx-line: light-dark(#dbe5e3,#415053); --fx-hover: light-dark(#e8f1ee,#34484b); --fx-green: light-dark(#087958,#6fdbb2); --fx-gold: light-dark(#9c6900,#eccc37); --fx-red: light-dark(#b82636,#ff8c99); --fx-shadow: light-dark(#cbd7d2,#172022); padding: 12px; font: 13px/1.6 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif; color: var(--fx-ink); position: relative; }
+    #fx-scroll-preview * { box-sizing: border-box; }
+    #fx-scroll-preview button { font: inherit; color: inherit; background: transparent; border: 0; padding: 4px 6px; border-radius: 5px; white-space: nowrap; }
+    #fx-scroll-preview button:hover { background: var(--fx-hover); }
+    #fx-scroll-preview button:disabled { opacity: .6; }
+    #fx-scroll-preview .fx-guide { display: grid; grid-template-columns: 164px minmax(0,1fr) 156px; gap: 6px; margin: 0 0 8px; font-size: 12px; }
+    #fx-scroll-preview .fx-guide span { text-align: center; color: var(--fx-dim); }
+    #fx-scroll-preview .fx-guide .fx-fixed-label { color: var(--fx-green); }
+    #fx-scroll-preview .fx-window { background: var(--fx-bg); border: 1px solid var(--fx-line); border-radius: 8px; overflow: hidden; }
+    #fx-scroll-preview .fx-scroll { overflow-x: auto; scrollbar-width: thin; scrollbar-color: var(--fx-dim) var(--fx-head); }
+    #fx-scroll-preview table { border-collapse: separate; border-spacing: 0; width: 1480px; table-layout: fixed; font-size: 12px; }
+    #fx-scroll-preview th, #fx-scroll-preview td { padding: 12px; border-bottom: 1px solid var(--fx-line); text-align: left; vertical-align: middle; white-space: nowrap; background: var(--fx-bg); }
+    #fx-scroll-preview th { background: var(--fx-head); font-weight: 400; color: var(--fx-dim); height: 46px; }
+    #fx-scroll-preview td { height: 80px; }
+    #fx-scroll-preview tr:last-child td { border-bottom: 0; }
+    #fx-scroll-preview .fx-left { position: sticky; left: 0; z-index: 2; box-shadow: 2px 0 5px -2px var(--fx-shadow); }
+    #fx-scroll-preview .fx-right { position: sticky; right: 0; z-index: 2; box-shadow: -2px 0 5px -2px var(--fx-shadow); }
+    #fx-scroll-preview .fx-identity { display: flex; align-items: center; gap: 9px; }
+    #fx-scroll-preview .fx-identity input { margin: 0; accent-color: var(--fx-green); }
+    #fx-scroll-preview .fx-dot { color: var(--fx-green); }
+    #fx-scroll-preview .fx-strong { font-weight: 500; }
+    #fx-scroll-preview .fx-mono { font-family: ui-monospace,SFMono-Regular,Menlo,monospace; }
+    #fx-scroll-preview .fx-dim { color: var(--fx-dim); }
+    #fx-scroll-preview .fx-number { font-variant-numeric: tabular-nums; }
+    #fx-scroll-preview .fx-detail { color: var(--fx-dim); text-decoration: underline; text-underline-offset: 3px; }
+    #fx-scroll-preview .fx-inline { display: flex; align-items: center; gap: 4px; }
+    #fx-scroll-preview .fx-toggle { display: inline-block; width: 27px; height: 16px; border-radius: 12px; background: var(--fx-ink); position: relative; flex-shrink: 0; }
+    #fx-scroll-preview .fx-toggle::after { content: ''; position: absolute; top: 2px; right: 2px; width: 12px; height: 12px; background: var(--fx-bg); border-radius: 50%; }
+    #fx-scroll-preview .fx-latency { color: var(--fx-gold); }
+    #fx-scroll-preview .fx-rating { font-size: 11px; padding: 1px 4px; border: 1px solid currentColor; border-radius: 5px; margin-left: 4px; }
+    #fx-scroll-preview .fx-quick { text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 4px; }
+    #fx-scroll-preview .fx-footer { display: flex; gap: 12px; align-items: center; padding: 10px 12px; border-top: 1px solid var(--fx-line); color: var(--fx-dim); font-size: 12px; }
+    #fx-scroll-preview .fx-footer label { display: flex; align-items: center; gap: 12px; flex: 1; }
+    #fx-scroll-preview .fx-footer input { min-width: 0; width: 100%; accent-color: var(--fx-green); }
+    #fx-scroll-preview .fx-marker { display: block; margin-top: 8px; font-size: 12px; color: var(--fx-dim); }
+    #fx-scroll-preview .fx-menu { position: absolute; z-index: 10; right: 20px; top: 104px; min-width: 162px; padding: 5px; border-radius: 7px; border: 1px solid var(--fx-line); background: var(--fx-bg); box-shadow: 0 8px 24px -8px var(--fx-shadow); }
+    #fx-scroll-preview .fx-menu button { display: block; width: 100%; text-align: left; padding: 8px 12px; }
+    #fx-scroll-preview .fx-danger { color: var(--fx-red); }
+    #fx-scroll-preview dialog { color: var(--fx-ink); background: var(--fx-bg); border: 1px solid var(--fx-line); border-radius: 10px; padding: 20px; width: min(390px,calc(100% - 30px)); font: inherit; }
+    #fx-scroll-preview dialog::backdrop { background: light-dark(#23363055,#0c171b88); }
+    #fx-scroll-preview .fx-dialog-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 15px; font-weight: 500; }
+    #fx-scroll-preview dl { display: grid; grid-template-columns: 1fr auto; gap: 9px 12px; font-size: 13px; margin: 0; }
+    #fx-scroll-preview dt { color: var(--fx-dim); }
+    #fx-scroll-preview dd { margin: 0; font-variant-numeric: tabular-nums; }
+    #fx-scroll-preview .fx-explain { color: var(--fx-dim); font-size: 12px; margin-top: 16px; }
+    #fx-scroll-preview .fx-dialog-action { display: block; margin: 16px 0 0 auto; border: 1px solid var(--fx-line); }
+    #fx-scroll-preview .fx-group-bar { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; padding: 13px 16px; border-bottom: 1px solid var(--fx-line); background: var(--fx-head); }
+    #fx-scroll-preview .fx-group-name { min-width: 0; flex: 1 1 240px; }
+    #fx-scroll-preview .fx-group-title { font-weight: 600; overflow-wrap: anywhere; }
+    #fx-scroll-preview .fx-group-meta { display: flex; flex-wrap: wrap; gap: 5px 12px; margin-top: 5px; font-size: 12px; color: var(--fx-dim); }
+    #fx-scroll-preview .fx-group-entries { min-width: 0; flex: 1.5 1 350px; font-size: 12px; }
+    #fx-scroll-preview .fx-entry-line { display: flex; flex-wrap: wrap; gap: 0 9px; margin-bottom: 3px; align-items: baseline; }
+    #fx-scroll-preview .fx-entry-line:last-child { margin-bottom: 0; }
+    #fx-scroll-preview .fx-entry-label { font-weight: 600; color: var(--fx-ink); }
+    #fx-scroll-preview .fx-entry-host { overflow-wrap: anywhere; }
+    #fx-scroll-preview .fx-resource { display: flex; align-items: center; gap: 5px; max-width: 100%; padding: 2px 0; color: var(--fx-green); text-align: left; }
+    #fx-scroll-preview .fx-resource-name { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 4px; }
+    #fx-scroll-preview td.fx-resource-cell { height: auto; padding: 0; white-space: normal; background: var(--fx-head); }
+    #fx-scroll-preview .fx-resource-content { position: sticky; left: 0; width: var(--fx-detail-width,680px); max-width: 100%; padding: 12px 16px; white-space: normal; overflow-wrap: anywhere; color: var(--fx-ink); font-size: 13px; display: grid; gap: 7px; }
+    #fx-scroll-preview .fx-resource-content p { margin: 0; }
+    #fx-scroll-preview .fx-resource-content strong { flex-shrink: 0; color: var(--fx-ink); font-weight: 600; }
+    #fx-scroll-preview .fx-detail-summary { display: flex; flex-wrap: wrap; align-items: baseline; gap: 5px 20px; }
+    #fx-scroll-preview .fx-detail-pair { display: inline-flex; align-items: baseline; gap: 2px; min-width: 0; max-width: 100%; }
+    #fx-scroll-preview .fx-detail-pair > span { min-width: 0; overflow-wrap: anywhere; }
+    #fx-scroll-preview .fx-detail-row { display: grid; grid-template-columns: 42px minmax(0,1fr); gap: 8px; align-items: baseline; }
+    #fx-scroll-preview .fx-entry-content { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; min-width: 0; }
+    #fx-scroll-preview .fx-detail-host { flex: 0 1 210px; width: 210px; max-width: 100%; overflow-wrap: anywhere; }
+    #fx-scroll-preview .fx-detail-state { color: var(--fx-green); white-space: nowrap; }
+    #fx-scroll-preview .fx-detail-meta { display: inline-flex; align-items: baseline; gap: 2px; white-space: nowrap; color: var(--fx-dim); font-size: 12px; }
+    #fx-scroll-preview .fx-detail-meta strong { color: var(--fx-dim); }
+    #fx-scroll-preview .fx-detail-note { display: grid; grid-template-columns: 42px minmax(0,1fr); gap: 8px; align-items: baseline; color: var(--fx-dim); font-size: 12px; }
+    @media (max-width: 420px) { #fx-scroll-preview .fx-detail-summary { gap: 5px 12px; } #fx-scroll-preview .fx-detail-host { flex-basis: 100%; width: 100%; } }
+    @media (max-width: 560px) { #fx-scroll-preview .fx-group-bar { flex-direction: column; gap: 8px; } #fx-scroll-preview .fx-group-name,#fx-scroll-preview .fx-group-entries { flex-basis: auto; } }
+    @media (max-width: 480px) { #fx-scroll-preview .fx-right { position: static; } #fx-scroll-preview .fx-guide { grid-template-columns: 164px 1fr; } #fx-scroll-preview .fx-guide span:last-child { display: none; } #fx-scroll-preview .fx-marker { overflow-wrap: anywhere; } }
+    @media (pointer: coarse) { #fx-scroll-preview button { min-height: 44px; } }
+  </style>
+  <div class="fx-window">
+    <section class="fx-group-bar" aria-label="组标题与右侧入口信息">
+      <div class="fx-group-name"><div class="fx-group-title">⌄ 入口直连-sni-故障转移 · SNI 分流</div><div class="fx-group-meta"><span class="fx-dot">● 全部生效</span><span>56 条规则</span><span>入口 443</span></div></div>
+      <div class="fx-group-entries">
+        <div class="fx-entry-line"><strong class="fx-entry-label">当前</strong><span class="fx-entry-host">入口-美国-电信联通:443</span><span class="fx-dot">已生效</span><span class="fx-dim fx-number">配置 6170</span><span class="fx-dim fx-number">未匹配 2,870</span></div>
+        <div class="fx-entry-line"><strong class="fx-entry-label">备用</strong><span class="fx-entry-host">入口-hkt:443</span><span class="fx-dot">已生效</span><span class="fx-dim fx-number">配置 6170</span><span class="fx-dim fx-number">未匹配 79</span></div>
+      </div>
+    </section>
+    <div class="fx-scroll" aria-label="可横向滚动的规则表格">
+      <table aria-label="两条 SNI 规则的展示示意">
+        <colgroup><col style="width:164px"><col style="width:200px"><col style="width:160px"><col style="width:270px"><col style="width:200px"><col style="width:70px"><col style="width:130px"><col style="width:130px"><col style="width:156px"></colgroup>
+        <thead><tr><th class="fx-left">勾选 · 状态 · 规则</th><th>SNI 域名</th><th>所属资源</th><th>转发入口</th><th>转发出口</th><th>协议</th><th>累计</th><th>延迟</th><th class="fx-right">开关 · 操作</th></tr></thead>
+        <tbody>
+          <tr>
+            <td class="fx-left"><div class="fx-identity"><input type="checkbox" aria-label="选择香港规则"><span class="fx-dot" aria-label="分流配置已生效">●</span><span class="fx-strong">tjsni2香港</span></div></td>
+            <td class="fx-mono">tjhka-k.sreson.com</td>
+            <td><button type="button" class="fx-resource cursor-interaction" data-resource="香港" aria-expanded="true" aria-controls="fx-resource-hk"><span class="fx-resource-name">入口直连-sni-故障转移</span><span data-resource-arrow>⌃</span></button></td>
+            <td class="fx-mono">zlurkou.diaonima.com:443</td><td class="fx-mono">hka.4441234.xyz:20022</td><td>TCP</td>
+            <td><span class="fx-number">9.27 GB</span> <button type="button" class="fx-detail cursor-interaction" data-detail="香港">详细</button></td>
+            <td><button type="button" class="fx-latency fx-number cursor-interaction" data-quick-test="香港" data-result="success" data-latency-ms="147" data-tooltip="点击重新测试" aria-label="147 毫秒，良好，点击立即重新测试香港规则">∿ 147ms<span class="fx-rating">良好</span></button></td>
+            <td class="fx-right"><div class="fx-inline"><span class="fx-toggle" role="img" aria-label="规则已开启"></span><button type="button" class="cursor-interaction" data-edit="香港">编辑</button><button type="button" class="cursor-interaction" aria-haspopup="menu" aria-expanded="false" data-more="香港">更多 ⋯</button></div></td>
+          </tr>
+          <tr id="fx-resource-hk" data-resource-row="香港"><td colspan="9" class="fx-resource-cell"><div class="fx-resource-content" aria-label="香港规则所属转发组的详情">
+            <p class="fx-detail-summary"><span class="fx-detail-pair"><strong>转发组：</strong><span>入口直连-sni-故障转移 · 主备 · SNI 分流</span></span><span class="fx-detail-pair"><strong>链路：</strong><span>转发组 · <span class="fx-mono">nftables</span></span></span><span class="fx-detail-pair"><strong>用户：</strong><span>admin@hello.example.com</span></span></p>
+            <p class="fx-detail-row"><strong>当前：</strong><span class="fx-entry-content"><span class="fx-detail-host">入口-美国-电信联通:443</span><span class="fx-detail-state">已生效</span><span class="fx-detail-meta"><strong>配置编号：</strong><span class="fx-number">6170</span></span><span class="fx-detail-meta"><strong>未匹配：</strong><span class="fx-number">2,870</span></span></span></p>
+            <p class="fx-detail-row"><strong>备用：</strong><span class="fx-entry-content"><span class="fx-detail-host">入口-hkt:443</span><span class="fx-detail-state">已生效</span><span class="fx-detail-meta"><strong>配置编号：</strong><span class="fx-number">6170</span></span><span class="fx-detail-meta"><strong>未匹配：</strong><span class="fx-number">79</span></span></span></p>
+            <p class="fx-detail-note"><strong>说明：</strong><span>未匹配连接表示收到的域名未匹配当前分流配置，可能与域名拼写、DNS 指向或扫描有关。</span></p>
+          </div></td></tr>
+          <tr>
+            <td class="fx-left"><div class="fx-identity"><input type="checkbox" aria-label="选择台湾规则"><span class="fx-dot" aria-label="分流配置已生效">●</span><span class="fx-strong">tjsni2台湾</span></div></td>
+            <td class="fx-mono">tjtwa-k.sreson.com</td>
+            <td><button type="button" class="fx-resource cursor-interaction" data-resource="台湾" aria-expanded="false" aria-controls="fx-resource-tw"><span class="fx-resource-name">入口直连-sni-故障转移</span><span data-resource-arrow>⌄</span></button></td>
+            <td class="fx-mono">zlurkou.diaonima.com:443</td><td class="fx-mono">twa.4441234.xyz:20022</td><td>TCP</td>
+            <td><span class="fx-number">270 MB</span> <button type="button" class="fx-detail cursor-interaction" data-detail="台湾">详细</button></td>
+            <td><button type="button" class="fx-quick cursor-interaction fx-dim" data-quick-test="台湾" data-tooltip="点击立即测试" aria-label="未测，点击立即测试台湾规则">未测</button></td>
+            <td class="fx-right"><div class="fx-inline"><span class="fx-toggle" role="img" aria-label="规则已开启"></span><button type="button" class="cursor-interaction" data-edit="台湾">编辑</button><button type="button" class="cursor-interaction" aria-haspopup="menu" aria-expanded="false" data-more="台湾">更多 ⋯</button></div></td>
+          </tr>
+          <tr id="fx-resource-tw" data-resource-row="台湾" hidden><td colspan="9" class="fx-resource-cell"><div class="fx-resource-content" aria-label="台湾规则所属转发组的详情">
+            <p class="fx-detail-summary"><span class="fx-detail-pair"><strong>转发组：</strong><span>入口直连-sni-故障转移 · 主备 · SNI 分流</span></span><span class="fx-detail-pair"><strong>链路：</strong><span>转发组 · <span class="fx-mono">nftables</span></span></span><span class="fx-detail-pair"><strong>用户：</strong><span>admin@hello.example.com</span></span></p>
+            <p class="fx-detail-row"><strong>当前：</strong><span class="fx-entry-content"><span class="fx-detail-host">入口-美国-电信联通:443</span><span class="fx-detail-state">已生效</span><span class="fx-detail-meta"><strong>配置编号：</strong><span class="fx-number">6170</span></span><span class="fx-detail-meta"><strong>未匹配：</strong><span class="fx-number">2,870</span></span></span></p>
+            <p class="fx-detail-row"><strong>备用：</strong><span class="fx-entry-content"><span class="fx-detail-host">入口-hkt:443</span><span class="fx-detail-state">已生效</span><span class="fx-detail-meta"><strong>配置编号：</strong><span class="fx-number">6170</span></span><span class="fx-detail-meta"><strong>未匹配：</strong><span class="fx-number">79</span></span></span></p>
+            <p class="fx-detail-note"><strong>说明：</strong><span>未匹配连接表示收到的域名未匹配当前分流配置，可能与域名拼写、DNS 指向或扫描有关。</span></p>
+          </div></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="fx-footer"><label>左右滚动 <input class="cursor-interaction" type="range" min="0" max="100" value="0" aria-label="左右滚动表格以查看所属资源或流量与延迟"></label></div>
+  </div>
+  <div class="fx-menu" role="menu" aria-label="更多操作" hidden><button type="button" class="cursor-interaction" role="menuitem" data-action="24小时流量">24小时流量</button><button type="button" class="cursor-interaction" role="menuitem" data-action="链路自测">链路自测</button><button type="button" class="cursor-interaction" role="menuitem" data-action="重置统计">重置统计</button><button type="button" class="cursor-interaction fx-danger" role="menuitem" data-action="删除">删除</button></div>
+  <dialog aria-label="流量详细信息"><div class="fx-dialog-head"><span data-dialog-title>流量详情</span><button type="button" class="cursor-interaction" data-close aria-label="关闭">×</button></div><div data-dialog-content></div></dialog>
+  <span class="fx-marker" aria-live="polite" data-feedback>布局示意 · 未测与已有延迟都可点击测试 · 结果仅为演示</span>
+  <script>
+    (() => {
+      const root = document.getElementById('fx-scroll-preview');
+      const scroller = root.querySelector('.fx-scroll');
+      const slider = root.querySelector('input[type="range"]');
+      const menu = root.querySelector('.fx-menu');
+      const dialog = root.querySelector('dialog');
+      const title = root.querySelector('[data-dialog-title]');
+      const content = root.querySelector('[data-dialog-content]');
+      const feedback = root.querySelector('[data-feedback]');
+      const quickButtons = Array.from(root.querySelectorAll('[data-quick-test]'));
+      let currentRule = '香港';
+      let resourceOpen = '香港';
+      function remember(extra = {}) {
+        const quick = Object.fromEntries(quickButtons.map(button => [button.dataset.quickTest,{ result: button.dataset.result || 'untested', latency: Number(button.dataset.latencyMs) || 0 }]));
+        if (window.openai?.setWidgetState) window.openai.setWidgetState({ modelContent: { preview: 'rules-layout-compact', ...extra }, privateContent: { version: 5, scroll: Number(slider.value), quick, resourceOpen } }).catch(() => {});
+      }
+      function applySaved() {
+        const saved = window.openai?.widgetState?.privateContent;
+        if (!saved || saved.version !== 5) return;
+        slider.value = Math.min(100,Math.max(0,Number(saved.scroll) || 0));
+        scroller.scrollLeft = Number(slider.value) / 100 * (scroller.scrollWidth - scroller.clientWidth);
+        quickButtons.forEach(button => { const result = saved.quick?.[button.dataset.quickTest]; if (result?.result === 'success' && Number.isFinite(result.latency)) showSuccess(button,result.latency); });
+        setResourceOpen(saved.resourceOpen === '香港' || saved.resourceOpen === '台湾' ? saved.resourceOpen : null);
+      }
+      function setResourceOpen(name) { resourceOpen = name; root.querySelectorAll('[data-resource-row]').forEach(row => { row.hidden = row.dataset.resourceRow !== name; }); root.querySelectorAll('[data-resource]').forEach(button => { const open = button.dataset.resource === name; button.setAttribute('aria-expanded',String(open)); button.querySelector('[data-resource-arrow]').textContent = open ? '⌃' : '⌄'; }); }
+      function hideMenu() { menu.hidden = true; root.querySelectorAll('[data-more]').forEach(button => button.setAttribute('aria-expanded','false')); }
+      function openDialog(heading, markup) { hideMenu(); title.textContent = heading; content.innerHTML = markup; dialog.showModal(); }
+      function showSuccess(button, latency) { button.disabled = false; button.dataset.result = 'success'; button.dataset.latencyMs = String(latency); delete button.dataset.testing; button.classList.remove('fx-dim','fx-quick'); button.classList.add('fx-latency','fx-number'); button.innerHTML = '∿ ' + latency + 'ms <span class="fx-rating">良好</span>'; button.dataset.tooltip = '点击重新测试'; button.setAttribute('aria-busy','false'); button.setAttribute('aria-label','演示测试完成，' + latency + ' 毫秒，良好，点击立即重新测试' + button.dataset.quickTest + '规则'); }
+      slider.addEventListener('input', () => { scroller.scrollLeft = Number(slider.value) / 100 * (scroller.scrollWidth - scroller.clientWidth); });
+      slider.addEventListener('change', () => remember());
+      root.querySelectorAll('[data-resource]').forEach(button => button.addEventListener('click', () => { setResourceOpen(resourceOpen === button.dataset.resource ? null : button.dataset.resource); remember({ resourceDetail: resourceOpen }); }));
+      scroller.addEventListener('scroll', () => { const distance = scroller.scrollWidth - scroller.clientWidth; slider.value = distance > 0 ? scroller.scrollLeft / distance * 100 : 0; }, { passive: true });
+      root.querySelectorAll('[data-detail]').forEach(button => button.addEventListener('click', () => {
+        currentRule = button.dataset.detail;
+        const total = currentRule === '香港' ? '9.27 GB' : '270 MB';
+        const used = currentRule === '香港' ? '9.13 GB' : '248.13 MB';
+        openDialog('流量详情 · tjsni2' + currentRule, '<dl><dt>累计总流量</dt><dd>' + total + '</dd><dt>规则类型</dt><dd>管理员自定义规则</dd><dt>额度计量</dt><dd>仅出向</dd><dt>额度已用</dt><dd>' + used + '</dd><dt>额度</dt><dd>不限</dd></dl><div class="fx-explain">累计总流量计算入向与出向；额度已用按本规则设置计算。</div>');
+        remember({ opened: 'traffic-detail' });
+      }));
+      root.querySelectorAll('[data-more]').forEach(button => button.addEventListener('click', () => { const opening = menu.hidden || currentRule !== button.dataset.more; hideMenu(); currentRule = button.dataset.more; menu.hidden = !opening; button.setAttribute('aria-expanded',String(opening)); menu.style.top = Math.min(button.getBoundingClientRect().bottom - root.getBoundingClientRect().top + 5, root.clientHeight - 195) + 'px'; remember({ opened: opening ? 'more' : null }); }));
+      root.querySelectorAll('[data-action]').forEach(button => button.addEventListener('click', () => {
+        const action = button.dataset.action;
+        if (action === '链路自测') openDialog('链路自测 · tjsni2' + currentRule, '<div>入口 → 业务目标</div><div class="fx-explain">点击下面的按钮开始自测。</div><button type="button" class="fx-dialog-action cursor-interaction" data-demo-self-test>链路测试</button>');
+        else if (action === '24小时流量') openDialog('24小时流量 · tjsni2' + currentRule, '<dl><dt>入向</dt><dd>' + (currentRule === '香港' ? '35.64 MB' : '104 KB') + '</dd><dt>出向</dt><dd>' + (currentRule === '香港' ? '1.51 GB' : '255 KB') + '</dd></dl><div class="fx-explain">查看最近 24 小时的流量与延迟记录。此处仅演示入口位置。</div>');
+        else openDialog(action + ' · tjsni2' + currentRule, '<div>' + (action === '删除' ? '删除前继续使用现有确认步骤。' : '重置前继续说明将清除的统计与检测记录。') + '</div><div class="fx-explain">仅演示，不执行实际操作。</div>');
+        remember({ opened: action });
+      }));
+      content.addEventListener('click', event => { const button = event.target.closest('[data-demo-self-test]'); if (!button) return; button.disabled = true; button.textContent = '测试中…'; setTimeout(() => { button.textContent = '147ms · 良好（演示）'; },1500); });
+      root.querySelectorAll('[data-edit]').forEach(button => button.addEventListener('click', () => openDialog('编辑 · tjsni2' + button.dataset.edit, '<div>保留现有编辑入口。</div><div class="fx-explain">仅演示按钮位置。</div>')));
+      quickButtons.forEach(button => button.addEventListener('click', () => {
+        if (button.dataset.testing === 'true') return;
+        const samples = [147,142,153];
+        const latency = samples[(samples.indexOf(Number(button.dataset.latencyMs)) + 1) % samples.length];
+        button.dataset.testing = 'true';
+        button.disabled = true;
+        button.setAttribute('aria-busy','true');
+        button.setAttribute('aria-label',button.dataset.quickTest + '规则测试中');
+        button.classList.remove('fx-latency');
+        button.classList.add('fx-dim');
+        button.textContent = '测试中…';
+        button.dataset.tooltip = '测试中';
+        feedback.textContent = '演示：' + button.dataset.quickTest + '规则立即开始测试，不弹窗';
+        remember({ quickTest: 'started', rule: button.dataset.quickTest });
+        setTimeout(() => { showSuccess(button,latency); feedback.textContent = '演示完成：' + latency + 'ms · 良好，可点击再次测试；没有实际连接规则'; remember({ quickTest: 'finished', rule: button.dataset.quickTest }); },1500);
+      }));
+      root.querySelector('[data-close]').addEventListener('click', () => dialog.close());
+      root.addEventListener('click', event => { if (!event.target.closest('[data-more]') && !event.target.closest('.fx-menu')) hideMenu(); });
+      root.addEventListener('keydown', event => { if (event.key === 'Escape') hideMenu(); });
+      window.addEventListener('openai:set_globals', applySaved);
+      const fitResourceText = () => root.style.setProperty('--fx-detail-width',scroller.clientWidth + 'px');
+      fitResourceText();
+      new ResizeObserver(fitResourceText).observe(scroller);
+      scroller.scrollLeft = scroller.scrollWidth - scroller.clientWidth;
+      applySaved();
+    })();
+  </script>
+</div>

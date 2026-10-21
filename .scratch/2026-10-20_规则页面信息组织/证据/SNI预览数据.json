@@ -1,0 +1,15 @@
+{
+  "scope": "isolated task preview only",
+  "inserted": [
+    {
+      "id": 37,
+      "name": "SNI preview Hong Kong",
+      "sni": "hk.preview.example"
+    },
+    {
+      "id": 38,
+      "name": "SNI preview Tokyo",
+      "sni": "jp.preview.example"
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "head": "4f1b289f32e1b08fce1bfbf0f3c042d33b6b19f8",
+  "branch": "main",
+  "remotes": [
+    "origin\thttps://github.com/poouo/Forwardx.git (fetch)",
+    "origin\thttps://github.com/poouo/Forwardx.git (push)",
+    "sni-panel\thttps://github.com/owo10086/sni-panel.git (fetch)",
+    "sni-panel\thttps://github.com/owo10086/sni-panel.git (push)"
+  ],
+  "existing_status": [
+    "M .gitignore",
+    " M .scratch/2026-10-08_合并上游v2.3.282/spec.md",
+    " M .scratch/2026-10-17_合并上游v2.3.283/284接续记录.md",
+    " M AGENTS.md",
+    " M CONTEXT.md",
+    " M docs/adr/0008-host-failover-groups-use-entry-health.md",
+    "?? .scratch/2026-10-16_dmit6移出转发组仍被引用/排查记录.md",
+    "?? .scratch/2026-10-16_dmit6移出转发组仍被引用/计划审查记录.md",
+    "?? .scratch/2026-10-16_dmit6移出转发组仍被引用/远程只读证据.json",
+    "?? .scratch/2026-10-16_两个SNI组只读检查/",
+    "?? .scratch/2026-10-18_合并上游v2.3.284/task-3验收复核.md",
+    "?? .scratch/2026-10-18_合并上游v2.3.284/证据/task-3验收复核/",
+    "?? .scratch/2026-10-19_35212端口只读排查/",
+    "?? .scratch/2026-10-19_上游合并编排技能/",
+    "?? .scratch/2026-10-19_普通转发组按入口健康判断/",
+    "?? .scratch/2026-10-20_两条香港SNI规则检测排查/",
+    "?? .scratch/2026-10-20_合并上游v2.3.286/发布记录.md",
+    "?? .scratch/2026-10-20_合并上游v2.3.286/证据/发布v3.5.0/",
+    "?? .scratch/2026-10-20_规则页面信息组织/",
+    "?? .scratch/2026-10-20_通用需求编排技能/",
+    "?? docs/superpowers/plans/2026-10-19-host-failover-entry-health.md"
+  ],
+  "product_changes_before_implementation": [],
+  "source_v1_0_sha256": "f7db355784c5284432a775c01d140d6ddb8d4b7c32d9d8722f5dac2c947f4749",
+  "visuals": {
+    ".scratch/2026-10-20_规则页面信息组织/visuals/table-scroll.html": "d51730ed8ca0a7f41581a8f6fe9b2dcef74a850a0dc0112fe65db4c4ab5473cd",
+    ".scratch/2026-10-20_规则页面信息组织/visuals/other-rules-preview.html": "00a7cd4cbf977e58037a77fb5d8bf58b3aae38c6b9584fc14a9f1d15708b38fc"
+  }
+}

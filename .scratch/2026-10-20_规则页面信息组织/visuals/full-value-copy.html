@@ -1,0 +1,62 @@
+<div id="fx-copy-preview" class="viz-dotted-background" aria-label="Q8：在列表中查看全文与复制完整内容">
+  <style>
+    #fx-copy-preview { color-scheme: light dark; --fx-bg: light-dark(#ffffff,#242f32); --fx-head: light-dark(#edf3f1,#2b3a3d); --fx-ink: light-dark(#243036,#e4eded); --fx-dim: light-dark(#60737b,#a5b6bd); --fx-line: light-dark(#dbe5e3,#415053); --fx-hover: light-dark(#e8f1ee,#34484b); --fx-green: light-dark(#087958,#6fdbb2); --fx-shadow: light-dark(#cbd7d2,#172022); padding: 12px; font: 14px/1.6 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif; color: var(--fx-ink); }
+    #fx-copy-preview * { box-sizing: border-box; }
+    #fx-copy-preview .fx-shell { background: var(--fx-bg); border: 1px solid var(--fx-line); border-radius: 8px; overflow: hidden; }
+    #fx-copy-preview .fx-head { padding: 12px 16px; background: var(--fx-head); color: var(--fx-dim); font-size: 12px; }
+    #fx-copy-preview .fx-row { display: grid; grid-template-columns: 82px minmax(0,1fr) 38px; align-items: center; gap: 12px; min-height: 57px; padding: 8px 16px; border-top: 1px solid var(--fx-line); }
+    #fx-copy-preview .fx-label { font-size: 12px; color: var(--fx-dim); }
+    #fx-copy-preview button { font: inherit; color: inherit; border: 0; background: transparent; padding: 4px; border-radius: 4px; }
+    #fx-copy-preview button:hover { background: var(--fx-hover); }
+    #fx-copy-preview .fx-value { min-width: 0; width: 100%; text-align: left; display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-family: ui-monospace,SFMono-Regular,Menlo,monospace; font-size: 12px; }
+    #fx-copy-preview .fx-selected { background: var(--fx-hover); }
+    #fx-copy-preview .fx-copy { width: 34px; height: 34px; font-size: 19px; color: var(--fx-dim); }
+    #fx-copy-preview .fx-popup-wrap { padding: 14px 16px 16px; background: var(--fx-head); border-top: 1px solid var(--fx-line); }
+    #fx-copy-preview .fx-popup { background: var(--fx-bg); border: 1px solid var(--fx-line); border-radius: 7px; padding: 14px; box-shadow: 0 6px 16px -9px var(--fx-shadow); }
+    #fx-copy-preview .fx-popup-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; color: var(--fx-dim); font-size: 12px; margin-bottom: 8px; }
+    #fx-copy-preview .fx-full { font-family: ui-monospace,SFMono-Regular,Menlo,monospace; font-size: 13px; overflow-wrap: anywhere; user-select: text; }
+    #fx-copy-preview .fx-bottom { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; }
+    #fx-copy-preview .fx-copy-full { border: 1px solid var(--fx-line); padding: 5px 10px; white-space: nowrap; font-size: 12px; }
+    #fx-copy-preview .fx-purpose { color: var(--fx-dim); font-size: 12px; }
+    #fx-copy-preview .fx-feedback { font-size: 12px; color: var(--fx-green); margin-top: 10px; overflow-wrap: anywhere; }
+    #fx-copy-preview .fx-manual { width: 100%; margin-top: 10px; padding: 8px; font: inherit; color: var(--fx-ink); background: var(--fx-bg); border: 1px solid var(--fx-line); border-radius: 4px; }
+    #fx-copy-preview .fx-marker { display: block; margin-top: 8px; color: var(--fx-dim); font-size: 12px; }
+    @media (max-width: 420px) { #fx-copy-preview .fx-row { grid-template-columns: 65px minmax(0,1fr) 34px; gap: 6px; padding: 8px 10px; } #fx-copy-preview .fx-bottom { align-items: flex-start; flex-wrap: wrap; } }
+    @media (pointer: coarse) { #fx-copy-preview button { min-height: 44px; } #fx-copy-preview .fx-copy { width: 38px; } }
+  </style>
+  <section class="fx-shell" aria-label="规则的地址与归属字段">
+    <div class="fx-head">字段 <span style="float:right">完整内容 · 复制</span></div>
+    <div class="fx-row fx-selected" data-row="sni"><span class="fx-label">SNI 域名</span><button type="button" class="fx-value cursor-interaction" data-view="sni" data-tooltip="hongkong-telecom-unicom.production.example.com" aria-label="查看完整 SNI 域名">hongkong-telecom-unicom.production.example.com</button><button type="button" class="fx-copy cursor-interaction" data-copy="sni" aria-label="复制完整 SNI 域名">⧉</button></div>
+    <div class="fx-row" data-row="entry"><span class="fx-label">转发入口</span><button type="button" class="fx-value cursor-interaction" data-view="entry" data-tooltip="hongkong-entry.production.example.com:443" aria-label="查看完整转发入口">hongkong-entry.production.example.com<span style="opacity:.65">:443</span></button><button type="button" class="fx-copy cursor-interaction" data-copy="entry" aria-label="复制完整入口地址和端口">⧉</button></div>
+    <div class="fx-row" data-row="exit"><span class="fx-label">转发出口</span><button type="button" class="fx-value cursor-interaction" data-view="exit" data-tooltip="hka.4441234.xyz:20022" aria-label="查看完整转发出口">hka.4441234.xyz<span style="opacity:.65">:20022</span></button><button type="button" class="fx-copy cursor-interaction" data-copy="exit" aria-label="复制完整出口地址和端口">⧉</button></div>
+    <div class="fx-row" data-row="user"><span class="fx-label">用户</span><button type="button" class="fx-value cursor-interaction" data-view="user" data-tooltip="admin@hello-operations.example.com" aria-label="查看完整用户名">admin@hello-operations.example.com</button><button type="button" class="fx-copy cursor-interaction" data-copy="user" aria-label="复制完整用户名">⧉</button></div>
+    <div class="fx-row" data-row="resource"><span class="fx-label">所属资源</span><button type="button" class="fx-value cursor-interaction" data-view="resource" data-tooltip="入口直连-sni-故障转移（电信联通）" aria-label="查看完整所属资源名称">入口直连-sni-故障转移（电信联通）</button><button type="button" class="fx-copy cursor-interaction" data-copy="resource" aria-label="复制完整所属资源名称">⧉</button></div>
+    <div class="fx-popup-wrap"><div class="fx-popup" role="region" aria-label="完整内容浮层">
+      <div class="fx-popup-head"><span data-popup-label>SNI 域名 · 完整内容</span><button type="button" class="cursor-interaction" data-close aria-label="关闭完整内容">×</button></div>
+      <div class="fx-full" data-full>hongkong-telecom-unicom.production.example.com</div>
+      <div class="fx-bottom"><span class="fx-purpose" data-purpose>复制域名，不附加端口</span><button type="button" class="fx-copy-full cursor-interaction" data-copy-current>⧉ 复制完整内容</button></div>
+      <div class="fx-feedback" role="status" hidden></div><textarea class="fx-manual" aria-label="完整复制内容，可选中后手动复制" rows="2" readonly hidden></textarea>
+    </div></div>
+  </section>
+  <span class="fx-marker">Q8 交互示意 · 长内容示例</span>
+  <script>
+    (() => {
+      const root = document.getElementById('fx-copy-preview');
+      const data = { sni: ['SNI 域名','hongkong-telecom-unicom.production.example.com','复制域名，不附加端口'], entry: ['转发入口','hongkong-entry.production.example.com:443','复制完整地址与端口'], exit: ['转发出口','hka.4441234.xyz:20022','复制完整地址与端口'], user: ['用户','admin@hello-operations.example.com','复制完整名称'], resource: ['所属资源','入口直连-sni-故障转移（电信联通）','复制完整名称'] };
+      const popup = root.querySelector('.fx-popup-wrap');
+      const full = root.querySelector('[data-full]');
+      const status = root.querySelector('.fx-feedback');
+      const manual = root.querySelector('textarea');
+      let current = 'sni';
+      function remember() { if (window.openai?.setWidgetState) window.openai.setWidgetState({ modelContent: { preview: 'full-value-copy', selectedField: current }, privateContent: { current, open: !popup.hidden } }).catch(() => {}); }
+      function show(key) { current = key; popup.hidden = false; root.querySelector('[data-popup-label]').textContent = data[key][0] + ' · 完整内容'; full.textContent = data[key][1]; root.querySelector('[data-purpose]').textContent = data[key][2]; status.hidden = true; manual.hidden = true; root.querySelectorAll('[data-row]').forEach(row => row.classList.toggle('fx-selected',row.dataset.row === key)); }
+      async function copy(key) { show(key); let copied = false; try { if (navigator.clipboard?.writeText) { await navigator.clipboard.writeText(data[key][1]); copied = true; } } catch {} status.hidden = false; status.textContent = copied ? '已复制：' + data[key][1] : '完整内容已选中，可手动复制'; if (!copied) { manual.hidden = false; manual.value = data[key][1]; manual.focus(); manual.select(); } remember(); }
+      root.querySelectorAll('[data-view]').forEach(button => button.addEventListener('click', () => { show(button.dataset.view); remember(); }));
+      root.querySelectorAll('[data-copy]').forEach(button => button.addEventListener('click', () => copy(button.dataset.copy)));
+      root.querySelector('[data-copy-current]').addEventListener('click', () => copy(current));
+      root.querySelector('[data-close]').addEventListener('click', () => { popup.hidden = true; root.querySelectorAll('[data-row]').forEach(row => row.classList.remove('fx-selected')); remember(); });
+      function applySaved() { const saved = window.openai?.widgetState?.privateContent; if (saved && data[saved.current]) { show(saved.current); popup.hidden = saved.open === false; } }
+      window.addEventListener('openai:set_globals',applySaved); applySaved();
+    })();
+  </script>
+</div>

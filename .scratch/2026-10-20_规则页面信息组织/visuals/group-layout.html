@@ -1,0 +1,26 @@
+<div id="fx-group-preview" class="viz-dotted-background" aria-label="入口信息移到组标题右侧的紧凑布局">
+  <style>
+    #fx-group-preview { color-scheme: light dark; --fx-bg: light-dark(#edf3f1,#2b3a3d); --fx-ink: light-dark(#243036,#e4eded); --fx-dim: light-dark(#60737b,#a5b6bd); --fx-line: light-dark(#dbe5e3,#415053); --fx-green: light-dark(#087958,#6fdbb2); padding: 12px; font: 13px/1.6 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif; color: var(--fx-ink); }
+    #fx-group-preview * { box-sizing: border-box; }
+    #fx-group-preview .fx-bar { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 13px 16px; border: 1px solid var(--fx-line); border-radius: 7px; background: var(--fx-bg); }
+    #fx-group-preview .fx-title { min-width: 0; flex: 1 1 240px; }
+    #fx-group-preview .fx-name { font-weight: 600; overflow-wrap: anywhere; }
+    #fx-group-preview .fx-meta { display: flex; flex-wrap: wrap; gap: 5px 12px; margin-top: 5px; font-size: 12px; color: var(--fx-dim); }
+    #fx-group-preview .fx-entries { min-width: 0; flex: 1.5 1 350px; font-size: 12px; }
+    #fx-group-preview .fx-entry { display: flex; flex-wrap: wrap; gap: 0 9px; margin-bottom: 3px; }
+    #fx-group-preview .fx-entry:last-child { margin-bottom: 0; }
+    #fx-group-preview .fx-entry > span:first-child { font-weight: 600; color: var(--fx-ink); }
+    #fx-group-preview .fx-host { overflow-wrap: anywhere; }
+    #fx-group-preview .fx-ok { color: var(--fx-green); }
+    #fx-group-preview .fx-dim { color: var(--fx-dim); }
+    #fx-group-preview .fx-num { white-space: nowrap; font-variant-numeric: tabular-nums; }
+    @media (max-width: 560px) { #fx-group-preview .fx-bar { flex-direction: column; gap: 8px; } #fx-group-preview .fx-title,#fx-group-preview .fx-entries { flex-basis: auto; } }
+  </style>
+  <section class="fx-bar" aria-label="组标题与右侧入口信息">
+    <div class="fx-title"><div class="fx-name">⌄ 入口直连-sni-故障转移 · SNI 分流</div><div class="fx-meta"><span class="fx-ok">● 全部生效</span><span>56 条规则</span><span>入口 443</span></div></div>
+    <div class="fx-entries">
+      <div class="fx-entry"><span class="fx-dim">当前</span><span class="fx-host">入口-美国-电信联通:443</span><span class="fx-ok">已生效</span><span class="fx-dim fx-num">配置 6170</span><span class="fx-dim fx-num">未匹配 2,870</span></div>
+      <div class="fx-entry"><span class="fx-dim">备用</span><span class="fx-host">入口-hkt:443</span><span class="fx-ok">已生效</span><span class="fx-dim fx-num">配置 6170</span><span class="fx-dim fx-num">未匹配 79</span></div>
+    </div>
+  </section>
+</div>
