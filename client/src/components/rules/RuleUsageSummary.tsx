@@ -9,7 +9,7 @@ function bytes(value: number) {
 }
 
 /** Uses the same logical-rule counters and cumulative calculation as enforcement. */
-export function RuleUsageSummary({ rule, totals }: { rule: any; totals?: { bytesIn: number; bytesOut: number } }) {
+export function RuleUsageSummary({ rule, totals, formatBytes = bytes }: { rule: any; totals?: { bytesIn: number; bytesOut: number }; formatBytes?: (value: number) => string }) {
   if (!isAdminManagedRule(rule)) return null;
   const initialized = rule.quotaUsedIn != null && rule.quotaUsedOut != null;
   const known = initialized || !!totals;
@@ -23,12 +23,12 @@ export function RuleUsageSummary({ rule, totals }: { rule: any; totals?: { bytes
       <span className="text-muted-foreground">{t("管理员自定义规则")}</span>
       <span>{mode}</span>
     </div>
-    <div className="break-words tabular-nums">{t("已用 {0} / 额度 {1}", [known ? bytes(used) : "—", limit ? bytes(limit) : t("不限")])}</div>
+    <div className="break-words tabular-nums">{t("已用 {0} / 额度 {1}", [known ? formatBytes(used) : "—", limit ? formatBytes(limit) : t("不限")])}</div>
     {limit > 0 && known && <>
       <div role="progressbar" aria-label={t("流量用量")} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(percent)} className="h-1 overflow-hidden rounded bg-muted">
         <div className={used >= limit ? "h-full bg-destructive" : "h-full bg-primary"} style={{ width: `${percent}%` }} />
       </div>
-      <div className="text-muted-foreground">{t("剩余 {0}", [bytes(Math.max(0, limit - used))])}</div>
+      <div className="text-muted-foreground">{t("剩余 {0}", [formatBytes(Math.max(0, limit - used))])}</div>
     </>}
     {rule.ruleLimitReason && <div className="text-destructive">{rule.ruleLimitReason === "expired" ? t("规则已到期") : t("规则流量额度已用尽")}</div>}
   </div>;

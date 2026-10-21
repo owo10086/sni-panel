@@ -4,6 +4,10 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import AnimatedStatValue from "@/components/AnimatedStatValue";
 import { RuleLimitsForm, newRuleLimitsForm, ruleLimitsPayload, type RuleLimitsFormValue } from "@/components/rules/RuleLimitsForm";
 import { RuleUsageSummary } from "@/components/rules/RuleUsageSummary";
+import { RuleTableFrame, ruleTableColumnCount, splitRuleTableItems } from "@/components/rules/RuleTableFrame";
+import { RuleTrafficDetailsContent } from "@/components/rules/RuleTrafficDetails";
+import { RuleDailyTrafficDialog } from "@/components/rules/RuleDailyTrafficDialog";
+import { formatRuleTraffic } from "@/lib/ruleTrafficDisplay";
 import { NyanpassImportPreview } from "@/components/rules/NyanpassImportPreview";
 import { isAdminManagedRule } from "../../../shared/ruleLimits";
 import { forwardGroupRouteMembers, forwardGroupSelfTestSource } from "../../../shared/forwardGroup";
@@ -42,6 +46,7 @@ import {
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { OptimisticSwitch, Switch } from "@/components/ui/switch";
@@ -2507,6 +2512,9 @@ function RulesContent() {
 
   const [trafficDetailRule, setTrafficDetailRule] = useState<{ id: number; name: string; isForwardChain?: boolean; probeMethod?: "tcping" | "ping" } | null>(null);
   const [selfTestRule, setSelfTestRule] = useState<{ id: number; name: string } | null>(null);
+  const [expandedResourceId, setExpandedResourceId] = useState<number | null>(null);
+  const [cumulativeDetailId, setCumulativeDetailId] = useState<number | null>(null);
+  const [dailyDetailRule, setDailyDetailRule] = useState<{id:number;name:string} | null>(null);
 
   useEffect(() => {
     prefetchReactGlobe();
@@ -6239,6 +6247,11 @@ function RulesContent() {
     );
   };
 
+  const renderTableAddressText = (text: string) => {
+    const endpoint = /^(.*)(:\d+)$/.exec(text);
+    return endpoint ? <>{endpoint[1]}<span className="text-muted-foreground">{endpoint[2]}</span></> : text;
+  };
+
   const renderTableTransferEntry = (rule: any) => {
     const { entryAddresses, entryTitle } = getRuleTransferDisplay(rule);
     return (
@@ -6253,7 +6266,7 @@ function RulesContent() {
             title={entry.copyable ? `${entryTitle}${entryAddresses.length > 1 ? ` (${entry.label})` : ""}` : entry.text}
           >
             {entryAddresses.length > 1 && <span className="shrink-0 text-[10px] text-muted-foreground">{entry.label}</span>}
-            <code className="min-w-0 truncate">{entry.text}</code>
+            <code className="min-w-0 truncate">{renderTableAddressText(entry.text)}</code>
             {entry.copyable && <Copy className="h-3 w-3 shrink-0 text-muted-foreground opacity-60 group-hover:opacity-100" />}
           </button>
         ))}
@@ -6266,7 +6279,7 @@ function RulesContent() {
     return (
       <div className="flex min-w-0 items-center gap-1.5 font-mono text-[11px] leading-5">
         <code className="min-w-0 truncate rounded border border-border/40 bg-muted/30 px-1.5 py-0.5" title={targetAddress}>
-          {targetAddress}
+          {renderTableAddressText(targetAddress)}
         </code>
         {failoverEnabled && (
           <Badge variant="outline" className="h-5 shrink-0 border-amber-500/30 px-1.5 text-[10px] text-amber-600">
@@ -6590,6 +6603,22 @@ function RulesContent() {
     );
   };
 
+  const renderDesktopRuleActions = (rule: any) => {
+    const readOnly = user?.role !== "admin" && isAdminManagedRule(rule);
+    const supported = isRuleSupported(rule);
+    return <>
+      {readOnly ? <span className="text-[11px] text-muted-foreground">{translateText("仅可查看")}</span> : <Button variant="ghost" size="sm" disabled={!canEditRuleConfig(rule)} onClick={() => openEdit(rule)}>{translateText("编辑")}</Button>}
+      <DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="sm" aria-label={translateText("更多操作")}>{translateText("更多")} ···</Button></DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onSelect={() => setDailyDetailRule({id:Number(rule.id),name:rule.name})}>{translateText("24小时流量")}</DropdownMenuItem>
+          <DropdownMenuItem disabled={readOnly || !supported} onSelect={() => setSelfTestRule({id:Number(rule.id),name:rule.name})}>{translateText("链路自测")}</DropdownMenuItem>
+          <DropdownMenuItem disabled={readOnly || !supported || resetTrafficMutation.isPending} onSelect={() => setResetTrafficTarget({scope:"rule",rule})}>{translateText("重置统计")}</DropdownMenuItem>
+          <DropdownMenuItem disabled={readOnly} variant="destructive" onSelect={() => setDeleteRule(rule)}>{translateText("删除")}</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </>;
+  };
+
   const handleViewModeChange = (nextViewMode: RuleViewMode) => {
     setViewMode(nextViewMode);
     storeRuleViewMode(nextViewMode);
@@ -6859,13 +6888,35 @@ function RulesContent() {
                 : translateText("域名尚未全部生效");
       return (
         <div key={`${endpoint.hostId}:${endpoint.port}`} className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-0.5">
-          <span className="min-w-0 break-words">{endpointLabel(endpoint, side)}</span>
+          <span className={cn("min-w-0 break-words",compact && "font-semibold")}>{endpointLabel(endpoint, side)}</span>
           <span className="text-muted-foreground">{stateText}</span>
-          <span className="text-muted-foreground">{translateText("版本")}{Number(endpoint.currentVersion || 0) || "-"}</span>
+          <span className="text-muted-foreground">{translateText(compact ? "配置编号" : "版本")} {Number(endpoint.currentVersion || 0) || "-"}</span>
           <span className="text-muted-foreground">{translateText("未匹配连接")}{Math.max(0, Number(endpoint.unmatchedConnections || 0)).toLocaleString()}</span>
         </div>
       );
     };
+    if (compact) {
+      const pendingEndpoints = [...meta.entryEndpoints,...meta.exitEndpoints].filter(endpoint => !endpoint.applied || !endpoint.observed);
+      const summary = meta.status === "running" && pendingEndpoints.length > 0
+        ? translateText("{0} 个分流器待同步",[pendingEndpoints.length]) : meta.statusText;
+      return <div className="border-y border-border/50 bg-muted/20 px-3 py-3">
+        <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-2">
+          <div className="flex min-w-0 flex-1 items-start gap-1">
+            <RuleBulkCheckbox {...bulkSelection.getCheckboxProps(group.rules)} label={translateText("选择 SNI 组内全部可选规则")} className="mt-1" />
+            {sortable && <SortableDragHandle dragHandleProps={sortable.handleProps} visible={sortable.isDragging} busy={ruleReorderPending} />}
+            <button type="button" aria-expanded={open} className="min-w-0 text-left" onClick={() => toggleSniRuleGroup(group)}>
+              <span className="flex items-center gap-1 font-semibold"><ChevronRight className={cn("h-4 w-4 shrink-0",open && "rotate-90")} /><span className="break-words">{getRuleResourceName(meta.representative)} · {translateText("SNI 分流")}</span></span>
+              <span className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground"><span className={cn("h-2 w-2 rounded-full",statusDotClass)} />{summary}<span>{group.rules.length} {translateText("条规则")}</span><span>{translateText("入口端口")} {meta.representative?.sourcePort || "—"}</span></span>
+            </button>
+          </div>
+          <div className="min-w-0 space-y-1 text-xs leading-5">
+            {meta.entryEndpoints.map(endpoint => renderEndpointRuntime(endpoint,"入口"))}
+            {meta.exitEndpoints.map(endpoint => renderEndpointRuntime(endpoint,"出口"))}
+          </div>
+        </div>
+        {(offlineText.length > 0 || unsupportedEntryText.length > 0 || configErrorText.length > 0) && <div className="mt-2 space-y-1 text-xs text-destructive">{[...offlineText,...unsupportedEntryText,...configErrorText].map(text => <p key={text}>{text}</p>)}</div>}
+      </div>;
+    }
     return (
       <div className={cn("group/sortable border-y border-border/50 bg-muted/20", compact ? "px-1" : "px-2")}>
         <div className="flex min-w-0 items-center">
@@ -6919,87 +6970,95 @@ function RulesContent() {
     );
   };
 
-  const renderRuleTableRow = (rule: any, sortable?: RuleSortableRenderState, reserveSortColumn = false) => {
+  const renderResourceDetails = (rule: any, sniGroup?: SniRuleDisplayGroup) => {
+    const group = forwardGroupById.get(Number(rule.forwardGroupId));
+    const tunnel = tunnelById.get(Number(rule.tunnelId));
+    const category = getRuleCategory(rule, forwardGroupById);
+    const label = group ? getForwardGroupRouteLabel(group) : tunnel ? translateText("隧道") : translateText("主机");
+    const members = group ? forwardGroupRouteMembers(group) : [];
+    const mode = group ? normalizeForwardGroupModeForRule(group) : null;
+    const meta = sniGroup ? getSniRuleGroupMeta(sniGroup) : null;
+    const endpoint = (entry: any, side: "入口" | "出口") => {
+      const host = hostById.get(Number(entry.hostId));
+      const role = meta?.isFailoverSni && side === "入口"
+        ? Number(entry.hostId) === meta.currentHostId ? translateText("当前") : translateText("备用")
+        : translateText(side);
+      const state = host && !host.isOnline ? translateText("主机离线")
+        : side === "入口" && isSniEntryAgentVersionUnsupported(host) ? translateText("Agent 版本不足")
+        : !entry.observed ? translateText("尚未观测到")
+        : entry.applied ? translateText("域名已生效") : translateText("域名尚未全部生效");
+      return <div key={`${side}:${entry.hostId}:${entry.port}`} className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+        <strong className="w-12 shrink-0 font-semibold">{role}：</strong>
+        <span>{getHostOptionName(host || {id:entry.hostId})}:{entry.port}</span>
+        <span>{state}</span>
+        <span className="text-muted-foreground">{translateText("配置编号")} {Number(entry.currentVersion) || "—"}</span>
+        <span className="text-muted-foreground">{translateText("未匹配连接")} {Math.max(0,Number(entry.unmatchedConnections) || 0).toLocaleString()}</span>
+        {entry.lastConfigError && <span className="text-destructive">{String(entry.lastConfigError)}</span>}
+      </div>;
+    };
+    return <div className="space-y-2 px-4 py-3 text-xs leading-5">
+      <div className="flex flex-wrap items-baseline gap-x-5 gap-y-1">
+        <span><strong className="font-semibold">{label}：</strong>{getRuleResourceName(rule)}
+          {group && mode === "failover" && <> · {translateText(group.groupType === "tunnel" ? "隧道型" : "主机型")} · {translateText("主备")}</>}
+          {sniGroup && <> · {translateText("SNI 分流")}</>}
+        </span>
+        <div className="flex min-w-0 flex-wrap items-baseline gap-1"><strong className="font-semibold">{translateText("链路")}：</strong>{renderRouteBadge(rule)}</div>
+        {user?.role === "admin" && <span className="break-all"><strong className="font-semibold">{translateText("用户")}：</strong>{getRuleOwnerName(rule)}</span>}
+      </div>
+      {meta ? <>
+        {meta.entryEndpoints.map(entry => endpoint(entry,"入口"))}
+        {meta.exitEndpoints.map(entry => endpoint(entry,"出口"))}
+        <p className="text-muted-foreground"><strong className="font-semibold">{translateText("说明")}：</strong>{translateText("未匹配连接表示收到的域名未匹配当前分流配置，可能与域名拼写、DNS 指向或扫描有关。")}</p>
+      </> : <>
+        {group && mode !== "chain" && members.map(member => <p key={member.id}>
+          <strong className="font-semibold">{translateText(mode === "failover" ? Number(member.id) === Number(group.activeMemberId) ? "当前" : "备用" : "入口")}：</strong>{getForwardGroupMemberLabel(member)}
+        </p>)}
+        <p className="break-words"><strong className="font-semibold">{translateText("转发路径")}：</strong>
+          {group && category === "chain" ? members.map(member => getForwardGroupMemberLabel(member)).join(" → ")
+            : tunnel ? getTunnelRouteText(tunnel,hosts)
+            : group ? getForwardGroupEntryAddresses(group).map(entry => entry.value).join(" / ") || "—"
+            : getRuleEntryHostName(rule)}
+          {" → "}{getRuleTransferDisplay(rule).targetAddress}
+        </p>
+      </>}
+    </div>;
+  };
+
+  const renderRuleTableRow = (rule: any, sortable?: RuleSortableRenderState, reserveSortColumn = false, sniGroup?: SniRuleDisplayGroup) => {
     const supported = isRuleSupported(rule);
     const protocolKey = getRuleProtocolKey(rule);
-    return (
-      <TableRow
-        key={rule.id}
-        {...(sortable?.itemProps || {})}
-        className={cn(
-          "group/sortable animate-in fade-in-0 duration-150",
-          !supported && "opacity-70",
-          sortable?.isDragging && "opacity-55",
-          sortable?.isDropTarget && "bg-primary/5",
-        )}
-        title={!supported ? unsupportedProtocolTitle : undefined}
-      >
-        <TableCell className="w-[44px] px-2 py-2 text-center"><RuleBulkCheckbox {...bulkSelection.getCheckboxProps([rule])} label={translateText("选择规则 {0}", [rule.name])} /></TableCell>
-        {(sortable || reserveSortColumn) && (
-          <TableCell className="w-[44px] px-2 py-2">
-            {sortable && (
-              <SortableDragHandle
-                dragHandleProps={sortable.handleProps}
-                visible={sortable.isDragging}
-                busy={ruleReorderPending}
-                className="mx-auto"
-              />
-            )}
-          </TableCell>
-        )}
-        <TableCell className="px-3 py-2">
-          <div className="flex items-center justify-center">
-            {supported ? renderStatusDot(rule) : <span className="h-2.5 w-2.5 rounded-full bg-destructive/60" />}
+    const expanded = expandedResourceId === Number(rule.id);
+    const sorting = !!sortable || reserveSortColumn;
+    const category = getRuleCategory(rule,forwardGroupById);
+    const categoryLabel = {local:"本机转发",tunnel:"隧道转发",chain:"转发链",group:"转发组",all:"转发规则"}[category];
+    return <Fragment key={rule.id}>
+      <TableRow {...(sortable?.itemProps || {})} className={cn("group/sortable",!supported && "opacity-70",sortable?.isDragging && "opacity-55",sortable?.isDropTarget && "bg-primary/5")} title={!supported ? unsupportedProtocolTitle : undefined}>
+        <TableCell className="sticky left-0 z-10 bg-card px-3 py-3">
+          <div className="flex min-w-0 items-center gap-2">
+            <RuleBulkCheckbox {...bulkSelection.getCheckboxProps([rule])} label={translateText("选择规则 {0}",[rule.name])} />
+            <span className="shrink-0">{supported ? renderStatusDot(rule) : <span className="block h-2.5 w-2.5 rounded-full bg-destructive/60" />}</span>
+            <span className="min-w-0 truncate font-medium" title={rule.name}>{rule.name}</span>
           </div>
+          {!sniGroup && <span className="ml-7 mt-1 block text-xs text-muted-foreground">{translateText(categoryLabel)}</span>}
+          {!supported && <span className="mt-1 block text-xs text-destructive">{protocolUnsupportedLabel(protocolKey)}{translateText(" 当前不支持")}</span>}
+          {(rule.protocolBlockReason || rule.resourceAccessAllowed === false) && <span className="mt-1 block text-xs text-destructive">{rule.protocolBlockReason || revokedResourceTitle}</span>}
         </TableCell>
-        <TableCell className="px-3 py-2">
-          <span className="block truncate font-medium" title={rule.name}>{rule.name}</span>
-          {!supported && (
-            <span className="mt-1 block text-[11px] text-destructive">
-              {protocolUnsupportedLabel(protocolKey)}{translateText(" 当前不支持")}</span>
-          )}
-          {(rule.protocolBlockReason || rule.resourceAccessAllowed === false) && (
-            <span className="mt-1 block text-[11px] leading-4 text-destructive">
-              {rule.protocolBlockReason || revokedResourceTitle}
-            </span>
-          )}
-        </TableCell>
-        <TableCell className="px-3 py-2">
-          {rule.sni ? (
-            <span className="block truncate font-mono text-xs" title={String(rule.sni)}>{rule.sni}</span>
-          ) : (
-            <span className="text-muted-foreground">—</span>
-          )}
-        </TableCell>
-        {user?.role === "admin" && (
-          <TableCell className="px-3 py-2">
-            <span className="block truncate text-sm text-muted-foreground" title={getRuleOwnerName(rule)}>
-              {getRuleOwnerName(rule)}
-            </span>
-          </TableCell>
-        )}
-        <TableCell className="px-3 py-2">
-          <span className="block truncate text-sm text-muted-foreground" title={getRuleResourceName(rule)}>
-            {getRuleResourceName(rule)}
-          </span>
-        </TableCell>
-        <TableCell className="px-3 py-2">{renderTableTransferEntry(rule)}</TableCell>
-        <TableCell className="px-3 py-2">{renderTableTransferExit(rule)}</TableCell>
-        <TableCell className="px-3 py-2">{renderRouteBadge(rule, true)}</TableCell>
-        <TableCell className="px-3 py-2 text-center">
-          <Badge variant="secondary" className="whitespace-nowrap text-[10px]">{formatForwardRuleProtocol(rule.protocol)}</Badge>
-        </TableCell>
-        <TableCell className="px-3 py-2">{renderTableRuleTotalTraffic(rule)}<RuleUsageSummary rule={rule} totals={totalTrafficByRule.get(rule.id)} /></TableCell>
-        <TableCell className="overflow-hidden px-3 py-2">{renderTableRuleDailyTraffic(rule)}</TableCell>
-        <TableCell className="overflow-hidden px-3 py-2">{renderTableRuleLatency(rule)}</TableCell>
-        <TableCell className="px-3 py-2">
-          <div className="flex justify-center">
-            {renderRuleEnabledSwitch(rule)}
-          </div>
-        </TableCell>
-        <TableCell className="px-3 py-2 text-right">{renderRuleActions(rule)}</TableCell>
+        {sorting && <TableCell className="px-2">{sortable && <SortableDragHandle dragHandleProps={sortable.handleProps} visible={sortable.isDragging} busy={ruleReorderPending} className="mx-auto" />}</TableCell>}
+        {sniGroup && <TableCell className="px-3 py-3"><span className="block truncate font-mono text-xs" title={String(rule.sni)}>{rule.sni}</span></TableCell>}
+        <TableCell className="px-3 py-3"><button type="button" className="flex max-w-full items-center gap-1 text-left text-xs text-primary underline decoration-dotted underline-offset-4" aria-expanded={expanded} aria-controls={`rule-resource-${rule.id}`} title={getRuleResourceName(rule)} onClick={() => setExpandedResourceId(expanded ? null : Number(rule.id))}>
+          <span className="truncate">{getRuleResourceName(rule)}</span><ChevronRight className={cn("h-3 w-3 shrink-0",expanded && "rotate-90")} />
+        </button></TableCell>
+        <TableCell className="px-3 py-3">{renderTableTransferEntry(rule)}</TableCell>
+        <TableCell className="px-3 py-3">{renderTableTransferExit(rule)}</TableCell>
+        <TableCell className="px-3 py-3"><Badge variant="secondary" className="text-[10px]">{formatForwardRuleProtocol(rule.protocol)}</Badge></TableCell>
+        <TableCell className="px-3 py-3"><div className="flex items-center gap-2 whitespace-nowrap text-xs"><span className="tabular-nums">{totalTrafficByRule.has(rule.id) ? formatRuleTraffic(Number(totalTrafficByRule.get(rule.id)?.bytesIn || 0) + Number(totalTrafficByRule.get(rule.id)?.bytesOut || 0)) : "—"}</span><button type="button" className="text-muted-foreground underline underline-offset-4" onClick={() => setCumulativeDetailId(Number(rule.id))}>{translateText("详细")}</button></div></TableCell>
+        <TableCell className="px-3 py-3">{renderTableRuleLatency(rule)}</TableCell>
+        <TableCell className="sticky right-0 z-10 bg-card px-3 py-3"><div className="flex items-center justify-end gap-1">{renderRuleEnabledSwitch(rule)}{renderDesktopRuleActions(rule)}</div></TableCell>
       </TableRow>
-    );
+      {expanded && <TableRow id={`rule-resource-${rule.id}`} className="bg-muted/20 hover:bg-muted/20"><TableCell colSpan={ruleTableColumnCount(!!sniGroup,sorting)} className="p-0">
+        <div className="sticky left-0 max-w-[100cqw]">{renderResourceDetails(rule,sniGroup)}</div>
+      </TableCell></TableRow>}
+    </Fragment>;
   };
 
   const renderRuleCard = (rule: any, sortable?: RuleSortableRenderState) => {
@@ -7221,41 +7280,21 @@ function RulesContent() {
     );
   };
 
-  const ruleTableColumnCount = (user?.role === "admin" ? 15 : 14) + (ruleSortingEnabled ? 1 : 0);
-  const renderSniRuleTableGroup = (group: SniRuleDisplayGroup, sortable?: RuleSortableRenderState) => {
-    const open = isSniRuleGroupOpen(group);
-    return (
-      <Fragment key={group.key}>
-        <TableRow
-          {...(sortable?.itemProps || {})}
-          className={cn(
-            "border-border/40 bg-muted/20 hover:bg-muted/35",
-            sortable?.isDragging && "opacity-55",
-            sortable?.isDropTarget && "bg-primary/5",
-          )}
-        >
-          <TableCell colSpan={ruleTableColumnCount} className="p-1">
-            {renderSniRuleGroupHeader(group, true, sortable)}
-          </TableCell>
-        </TableRow>
-        {open && group.rules.map((rule: any) => renderRuleTableRow(rule, undefined, ruleSortingEnabled))}
-      </Fragment>
-    );
-  };
-
-  const renderRuleTableItem = (item: RuleDisplayItem, sortable = false) => {
-    if (!sortable || !ruleSortableKeySet.has(item.key)) {
-      return item.kind === "sni-group"
-        ? renderSniRuleTableGroup(item.group)
-        : renderRuleTableRow(item.rule, undefined, ruleSortingEnabled);
-    }
-    return (
-      <SortableItem key={item.key} id={item.key} disabled={ruleSortable.disabled} itemKind="row">
-        {(sortableState) => item.kind === "sni-group"
-          ? renderSniRuleTableGroup(item.group, sortableState)
-          : renderRuleTableRow(item.rule, sortableState)}
-      </SortableItem>
-    );
+  const renderRuleDesktopItems = (items: RuleDisplayItem[], sorting = false) => {
+    const selection = <RuleBulkCheckbox {...bulkSelection.getCheckboxProps(pagedRules)} label={translateText("选择本页全部可选规则")} />;
+    const renderSni = (group: SniRuleDisplayGroup, sortable?: RuleSortableRenderState) => <div {...(sortable?.itemProps || {})} className={cn("group/sortable",sortable?.isDragging && "opacity-55")}>
+      {renderSniRuleGroupHeader(group,true,sortable)}
+      {isSniRuleGroupOpen(group) && <RuleTableFrame sni sorting={sorting} selection={selection}>{group.rules.map(rule => renderRuleTableRow(rule,undefined,sorting,group))}</RuleTableFrame>}
+    </div>;
+    return splitRuleTableItems(items).map(block => block[0].kind === "sni-group"
+      ? sorting && ruleSortableKeySet.has(block[0].key)
+        ? <SortableItem key={block[0].key} id={block[0].key} disabled={ruleSortable.disabled}>{state => renderSni((block[0] as Extract<RuleDisplayItem,{kind:"sni-group"}>).group,state)}</SortableItem>
+        : <Fragment key={block[0].key}>{renderSni(block[0].group)}</Fragment>
+      : <RuleTableFrame key={block[0].key} sni={false} sorting={sorting} selection={selection}>{block.map(item => item.kind === "rule" && (
+        sorting && ruleSortableKeySet.has(item.key)
+          ? <SortableItem key={item.key} id={item.key} disabled={ruleSortable.disabled} itemKind="row">{state => renderRuleTableRow(item.rule,state)}</SortableItem>
+          : renderRuleTableRow(item.rule,undefined,sorting)
+      ))}</RuleTableFrame>);
   };
 
   return (
@@ -7693,72 +7732,13 @@ function RulesContent() {
                 )}
               </RuleCardModeTransition>
               <Card className="hidden border-border/40 bg-card/60 backdrop-blur-md sm:block">
-                <CardContent className="p-0">
-                  <div className="overflow-x-auto">
-                    <Table className={cn(ruleSortingEnabled ? (user?.role === "admin" ? "min-w-[1998px]" : "min-w-[1888px]") : (user?.role === "admin" ? "min-w-[1954px]" : "min-w-[1844px]"), "table-fixed")}>
-                      <colgroup>
-                        <col className="w-[44px]" />
-                        {ruleSortingEnabled && <col className="w-[44px]" />}
-                        <col className="w-[56px]" />
-                        <col className="w-[110px]" />
-                        <col className="w-[190px]" />
-                        {user?.role === "admin" && <col className="w-[110px]" />}
-                        <col className="w-[100px]" />
-                        <col className="w-[285px]" />
-                        <col className="w-[190px]" />
-                        <col className="w-[170px]" />
-                        <col className="w-[96px]" />
-                        <col className="w-[120px]" />
-                        <col className="w-[120px]" />
-                        <col className="w-[120px]" />
-                        <col className="w-[70px]" />
-                        <col className="w-[154px]" />
-                      </colgroup>
-                      <TableHeader>
-                        <TableRow className="hover:bg-transparent">
-                          <TableHead className="w-[44px] px-2 text-center"><RuleBulkCheckbox {...bulkSelection.getCheckboxProps(pagedRules)} label={translateText("选择本页全部可选规则")} /></TableHead>
-                          {ruleSortingEnabled && <TableHead className="w-[44px] px-2" aria-label={translateText("排序")} />}
-                          <TableHead className="whitespace-nowrap text-center">{translateText("状态")}</TableHead>
-                          <TableHead>{translateText("规则")}</TableHead>
-                          <TableHead>{translateText("SNI 域名")}</TableHead>
-                          {user?.role === "admin" && <TableHead>{translateText("用户")}</TableHead>}
-                          <TableHead>{translateText("所属资源")}</TableHead>
-                          <TableHead>{translateText("转发入口")}</TableHead>
-                          <TableHead>{translateText("转发出口")}</TableHead>
-                          <TableHead>{translateText("链路")}</TableHead>
-                          <TableHead className="text-center">{translateText("协议")}</TableHead>
-                          {trafficMetricHeaderLabels.map((label) => (
-                            <TableHead key={label} className="whitespace-nowrap">{label}</TableHead>
-                          ))}
-                          <TableHead className="text-center">{translateText("开关")}</TableHead>
-                          <TableHead className="text-right">{translateText("操作")}</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      {shouldGroupRuleCards ? (
-                        <TableBody>
-                          {desktopRuleGroups.map((group) => {
-                            const collapsed = !!ruleGroupCollapsed[group.type];
-                            return (
-                              <Fragment key={group.type}>
-                                <TableRow className="border-border/40 bg-muted/35 hover:bg-muted/50">
-                                  <TableCell colSpan={user?.role === "admin" ? 15 : 14} className="p-1">
-                                    {renderRuleGroupHeader(group, true)}
-                                  </TableCell>
-                                </TableRow>
-                                {!collapsed && group.items.map((item) => renderRuleTableItem(item))}
-                              </Fragment>
-                            );
-                          })}
-                        </TableBody>
-                      ) : (
-                        <SortableReorderContext sortable={ruleSortable} ids={ruleSortableItems.map((item) => item.key)} strategy="vertical" restrictToList>
-                          <TableBody>
-                            {pagedRuleItems.map((item) => renderRuleTableItem(item, ruleSortingEnabled))}
-                          </TableBody>
-                        </SortableReorderContext>
-                      )}
-                    </Table>
-                  </div>
+                <CardContent className="space-y-1 p-0">
+                  {shouldGroupRuleCards ? desktopRuleGroups.map(group => <div key={group.type}>
+                    {renderRuleGroupHeader(group,true)}
+                    {!ruleGroupCollapsed[group.type] && renderRuleDesktopItems(group.items)}
+                  </div>) : <SortableReorderContext sortable={ruleSortable} ids={ruleSortableItems.map(item => item.key)} strategy="vertical" restrictToList>
+                    {renderRuleDesktopItems(pagedRuleItems,ruleSortingEnabled)}
+                  </SortableReorderContext>}
                 </CardContent>
               </Card>
             </>
@@ -7800,6 +7780,16 @@ function RulesContent() {
       )}
       </RuleContentTransition>
 
+      <Dialog open={cumulativeDetailId !== null} onOpenChange={open => !open && setCumulativeDetailId(null)}>
+        <DialogContent className="sm:max-w-md"><DialogHeader><DialogTitle>{translateText("流量详情")}</DialogTitle><DialogDescription>{(rules || []).find(rule => Number(rule.id) === cumulativeDetailId)?.name || "—"}</DialogDescription></DialogHeader>
+          {(() => { const rule = (rules || []).find(rule => Number(rule.id) === cumulativeDetailId); return rule ? <RuleTrafficDetailsContent rule={rule} totals={totalTrafficByRule.get(rule.id)} /> : <p className="text-sm text-muted-foreground">{translateText("规则不存在")}</p>; })()}
+        </DialogContent>
+      </Dialog>
+      {dailyDetailRule && <RuleDailyTrafficDialog key={dailyDetailRule.id} rule={dailyDetailRule} onClose={() => setDailyDetailRule(null)} onHistory={() => {
+        const rule = (rules || []).find(rule => Number(rule.id) === dailyDetailRule.id);
+        setTrafficDetailRule({...dailyDetailRule,isForwardChain:!!rule && getRuleCategory(rule,forwardGroupById) === "chain",probeMethod:ruleLatencyProbeMethodForRule(rule || {})});
+        setDailyDetailRule(null);
+      }} />}
       {trafficDetailRule && (
         <TcpingDetailDialog
           ruleId={trafficDetailRule.id}
