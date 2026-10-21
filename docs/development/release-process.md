@@ -4,7 +4,7 @@
 
 ## 固定环境与本机检查
 
-基线为 Ubuntu 24.04、Node 22.23.3、pnpm 10.28.1、Go 1.23.12。先运行 `pnpm install --frozen-lockfile`。Linux amd64 主机装好 Docker、iptables、iproute2、util-linux，并提供可用的 MySQL 8 服务后，设置 `FORWARDX_TEST_MYSQL_URL`，运行 `pnpm verify`。这会执行全部检查；缺少数据库或运行平台不符合时会报错，不以跳过代替通过。
+基线为 Ubuntu 24.04、Node 22.23.3、pnpm 10.28.1、Go 1.23.12。先运行 `pnpm install --frozen-lockfile`。Linux amd64 主机装好 Docker、jq、iptables、iproute2、util-linux，并提供可用的 MySQL 8 服务后，设置 `FORWARDX_TEST_MYSQL_URL`，运行 `pnpm verify`。这会执行全部检查；缺少数据库、jq 或运行平台不符合时会报错，不以跳过代替通过。
 
 单独排查可运行 `node scripts/verify.mjs prepare,language,functional,docs`、`node scripts/verify.mjs performance`、`node scripts/verify.mjs mysql` 或 `node scripts/verify.mjs agent`。先执行 prepare，保证依赖网页产物的检查不读旧文件。Mac 的测试通过只能作为开发依据，不能封存成 Linux 发布清单。
 

@@ -17,4 +17,10 @@ runs:
           agent/go.mod
           forwardx-fxp/go.sum
     - shell: bash
+      run: |
+        if ! command -v jq >/dev/null; then
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq jq
+        fi
+    - shell: bash
       run: pnpm install --frozen-lockfile
