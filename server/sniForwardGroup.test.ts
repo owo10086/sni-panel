@@ -827,6 +827,18 @@ test("port entry SNI uses each entry directly and confirms all resources before 
     const { mock } = await import("node:test");
     mock.timers.enable({ apis: ["Date"], now: Date.now() });
     beforeHeartbeat = () => mock.timers.tick(100);
+    // This process tests manual decisions. Keep automatically scheduled work
+    // pending until explicitly driven, including observation-window rechecks.
+    const { ForwardGroupEvaluationQueue, ForwardGroupHealthRecheckScheduler } = await import("./server/forwardGroupHealthRecheck.ts");
+    const scheduled = new Set();
+    mock.method(ForwardGroupEvaluationQueue.prototype, "enqueue", function(ids) {
+      for (const id of ids) scheduled.add(Number(id));
+      return scheduled.size;
+    });
+    mock.method(ForwardGroupHealthRecheckScheduler.prototype, "replace", function(id, dueAt) {
+      if (dueAt) scheduled.add(Number(id));
+      return Boolean(dueAt);
+    });
     const service = await import("./server/services/forwardGroupService.ts");
     const input = { name: "parallel", groupType: "host", forwardType: "gost", protocol: "tcp", isEnabled: true,
       autoFailback: true, failoverSeconds: 10, recoverSeconds: 10, ddnsAutoResolveEnabled: false };
@@ -931,23 +943,37 @@ test("port entry SNI uses each entry directly and confirms all resources before 
     // A concurrent save after health evaluation must invalidate that selection.
     // The trigger gives this race a deterministic database boundary, without a
     // production test hook or replacing the actual DNS provider request.
-    await runtime.executeRaw('CREATE TRIGGER change_sni_during_health AFTER UPDATE OF "lastCheckedAt" ON "forward_group_members" WHEN NEW."groupId" = ' + entryId + ' BEGIN UPDATE "forward_rules" SET "targetIp" = \'203.0.113.88\' WHERE "id" = ' + third.id + ' OR "forwardGroupRuleId" = ' + third.id + '; END');
-    const beforeConcurrentSave = requests.length;
-    await groups.runForwardGroupFailover(entryId, { manual: true, forceSync: true });
-    assert.equal(requests.length, beforeConcurrentSave, "a decision made before a concurrent save must not reach DNS");
-    await runtime.executeRaw('DROP TRIGGER change_sni_during_health');
-    await runtime.executeRaw('UPDATE "forward_rules" SET "targetIp" = ? WHERE "id" = ? OR "forwardGroupRuleId" = ?', ["203.0.113.30", third.id, third.id]);
-    // Sharing the listener through another entry group must have the same
-    // complete-confirmation and concurrent-save protection.
+    await runtime.executeRaw('CREATE TABLE dns_race_hits (phase TEXT, memberId INTEGER)');
+    let phase = "setup";
+    const repeat = Number(process.env.FORWARDX_DNS_RACE_REPEATS || 1);
+    assert.ok(Number.isInteger(repeat) && repeat > 0);
+    const race = async (name) => {
+      for (let iteration = 0; iteration < repeat; iteration++) {
+        await runtime.executeRaw('DELETE FROM dns_race_hits');
+        await runtime.executeRaw('CREATE TRIGGER change_sni_during_health AFTER UPDATE OF "lastCheckedAt" ON "forward_group_members" WHEN NEW."groupId" = ' + entryId + ' BEGIN INSERT INTO dns_race_hits VALUES (\'health\', NEW."id"); UPDATE "forward_rules" SET "targetIp" = \'203.0.113.88\' WHERE "id" = ' + third.id + ' OR "forwardGroupRuleId" = ' + third.id + '; END');
+        // Exercise work already queued before the manual check, and delayed
+        // work queued while a previous decision is still pending.
+        assert.ok(scheduled.has(entryId), "saving/heartbeats must enqueue the entry");
+        await Promise.resolve();
+        assert.deepEqual(await runtime.queryRaw('SELECT * FROM dns_race_hits'), [], "background work cannot consume the trigger before this decision");
+        assert.equal((await admin.getById({ id: third.id })).targetIp, "203.0.113.30");
+        const before = structuredClone(requests);
+        phase = name + "-" + iteration;
+        await groups.runForwardGroupFailover(entryId, { manual: true, forceSync: true });
+        const hits = await runtime.queryRaw('SELECT * FROM dns_race_hits');
+        assert.ok(hits.length > 0, phase + ": concurrent save must happen inside health evaluation");
+        assert.ok(hits.every(hit => hit.phase === "health"));
+        assert.equal((await admin.getById({ id: third.id })).targetIp, "203.0.113.88");
+        assert.deepEqual(requests, before, phase + ": old DNS decision must not send any HTTP payload");
+        await runtime.executeRaw('DROP TRIGGER change_sni_during_health');
+        await runtime.executeRaw('UPDATE "forward_rules" SET "targetIp" = ? WHERE "id" = ? OR "forwardGroupRuleId" = ?', ["203.0.113.30", third.id, third.id]);
+      }
+    };
+    await race("same-entry");
     const anotherEntryId = await service.createForwardGroupFromInput({ ...input, groupMode: "entry", domain: "another-entry.example.test",
       members: [1, 2].map(hostId => ({ memberType: "host", hostId, isEnabled: true })) }, 1);
     await runtime.executeRaw('UPDATE "forward_groups" SET "entryGroupId" = ? WHERE "id" = ?', [anotherEntryId, otherId]);
-    await runtime.executeRaw('CREATE TRIGGER change_other_group_during_health AFTER UPDATE OF "lastCheckedAt" ON "forward_group_members" WHEN NEW."groupId" = ' + entryId + ' BEGIN UPDATE "forward_rules" SET "targetIp" = \'203.0.113.88\' WHERE "id" = ' + third.id + ' OR "forwardGroupRuleId" = ' + third.id + '; END');
-    const beforeOtherGroupSave = requests.length;
-    await groups.runForwardGroupFailover(entryId, { manual: true, forceSync: true });
-    assert.equal(requests.length, beforeOtherGroupSave, "a shared listener's other entry group must invalidate an old DNS decision");
-    await runtime.executeRaw('DROP TRIGGER change_other_group_during_health');
-    await runtime.executeRaw('UPDATE "forward_rules" SET "targetIp" = ? WHERE "id" = ? OR "forwardGroupRuleId" = ?', ["203.0.113.30", third.id, third.id]);
+    await race("shared-listener-other-entry");
     await runtime.executeRaw('UPDATE "forward_groups" SET "entryGroupId" = ? WHERE "id" = ?', [entryId, otherId]);
     await service.updateForwardGroupFromInput(entryId, { ...entryInput, members: [{ memberType: "host", hostId: 2, isEnabled: true }] });
     await groups.runForwardGroupFailover(entryId, { manual: true, forceSync: true });
@@ -955,5 +981,66 @@ test("port entry SNI uses each entry directly and confirms all resources before 
     await service.updateForwardGroupFromInput(entryId, { ...entryInput, members: [{ memberType: "host", hostId: 2, isEnabled: false }] });
     await groups.runForwardGroupFailover(entryId, { manual: true, forceSync: true });
     assert.deepEqual(requests.at(-1).values, [], "disabled B cannot be resurrected as fallback");
+  `);
+});
+
+
+test("SNI heartbeats automatically enqueue the production evaluator and health events in flight get a second check", () => {
+  verifySniGroupDeletion(String.raw`
+    const { mock } = await import("node:test");
+    const { ForwardGroupEvaluationQueue, ForwardGroupHealthRecheckScheduler } = await import("./server/forwardGroupHealthRecheck.ts");
+    const arm = ForwardGroupEvaluationQueue.prototype.arm;
+    const flush = ForwardGroupEvaluationQueue.prototype.flush;
+    const timers = [];
+    const enqueued = Promise.withResolvers();
+    const started = Promise.withResolvers();
+    const release = Promise.withResolvers();
+    let completed = Promise.withResolvers();
+    let executions = 0;
+    // Keep the singleton's real evaluate callback (skipRuleSync), changing
+    // only its clock and exposing completion of the existing asynchronous work.
+    mock.method(ForwardGroupEvaluationQueue.prototype, "arm", function(delay) {
+      this.setTimer = callback => { const timer = { callback, unref() {} }; timers.push(timer); return timer; };
+      this.clearTimer = timer => { timer.cleared = true; };
+      if (!this.testClockInstalled) {
+        this.testClockInstalled = true;
+        const evaluate = this.evaluate;
+        this.evaluate = async ids => {
+          executions++;
+          if (executions === 1) { started.resolve(); await release.promise; }
+          return evaluate(ids);
+        };
+      }
+      const result = arm.call(this, delay);
+      enqueued.resolve();
+      return result;
+    });
+    mock.method(ForwardGroupEvaluationQueue.prototype, "flush", async function() {
+      try { await flush.call(this); completed.resolve(); } catch (error) { completed.reject(error); throw error; }
+    });
+    mock.method(ForwardGroupHealthRecheckScheduler.prototype, "replace", () => false);
+    await createRules("background", 1);
+    await runtime.executeRaw('CREATE TABLE background_health_hits (memberId INTEGER)');
+    await runtime.executeRaw('CREATE TRIGGER track_background_health AFTER UPDATE OF lastCheckedAt ON forward_group_members BEGIN INSERT INTO background_health_hits VALUES (NEW.id); END');
+    await heartbeat(1);
+    await enqueued.promise;
+    assert.equal(timers.length, 1, "real heartbeat must automatically arm the background queue");
+    assert.equal(executions, 0);
+    timers.shift().callback();
+    await started.promise;
+    // An explicit host health event arriving during the first evaluation must
+    // be retained; the queue must not depend on a later unrelated heartbeat.
+    await groups.scheduleForwardGroupsForHostHealthChange(1);
+    release.resolve();
+    await completed.promise;
+    const firstHits = await runtime.queryRaw('SELECT * FROM background_health_hits');
+    assert.ok(firstHits.length > 0, "the production evaluator must really update member health");
+    assert.equal(timers.length, 1, "an event in flight must schedule another pass");
+    completed = Promise.withResolvers();
+    timers.shift().callback();
+    await completed.promise;
+    assert.equal(executions, 2);
+    const secondHits = await runtime.queryRaw('SELECT * FROM background_health_hits');
+    assert.ok(secondHits.length > firstHits.length, "the second production check must also update health");
   `);
 });
