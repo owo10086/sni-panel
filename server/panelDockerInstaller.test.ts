@@ -5,7 +5,7 @@ import test from "node:test";
 
 const script = fs.readFileSync(path.join(process.cwd(), "scripts/install-panel-docker.sh"), "utf8");
 const dockerImageWorkflow = fs.readFileSync(
-  path.join(process.cwd(), ".github/workflows/docker-image.yml"),
+  path.join(process.cwd(), ".github/workflows/release-panel.yml"),
   "utf8",
 );
 
@@ -100,13 +100,11 @@ test("Docker install defaults to the repository-owned GHCR image", () => {
   assert.doesNotMatch(script, /ghcr\.io\/poouo\/forwardx/i);
 });
 
-test("Docker image merge expects one digest for every build matrix platform", () => {
-  const platformCount = [...dockerImageWorkflow.matchAll(/^\s+- platform: /gm)].length;
-  const expectedDigestCount = Number(
-    dockerImageWorkflow.match(/"\$\{#digest_files\[@\]\}" -ne (\d+)/)?.[1],
-  );
-
-  assert.equal(expectedDigestCount, platformCount);
+test("official Docker candidate targets amd64 and is checked by digest before sealing", () => {
+  const platforms = [...dockerImageWorkflow.matchAll(/^\s+platforms: (.+)$/gm)].map(match => match[1]);
+  assert.deepEqual(platforms, ["linux/amd64"]);
+  assert.match(dockerImageWorkflow, /push-by-digest=true/);
+  assertBefore(dockerImageWorkflow, "node scripts/release/smoke-image.mjs", "node scripts/release/seal.mjs");
 });
 
 test("Docker upgrade verifies both image metadata version sources before replacing the old container", () => {

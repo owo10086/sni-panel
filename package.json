@@ -1,6 +1,6 @@
 {
   "name": "forwardx",
-  "version": "3.5.1",
+  "version": "3.5.2",
   "description": "ForwardX 多主机端口转发与隧道管理面板",
   "license": "AGPL-3.0-only",
   "private": true,
@@ -61,7 +61,10 @@
     "test:observability": "node --import tsx --test server/observability.test.ts server/monitorRetention.test.ts",
     "test:startup": "node --import tsx --test client/src/lib/dashboardCache.test.ts client/src/lib/moduleResource.test.ts client/src/lib/siteFavicon.test.tsx client/src/components/PanelStartView.test.tsx client/src/components/RoutePage.test.tsx server/clientStatic.test.ts scripts/client-delivery-plugin.test.ts",
     "test:login-ui": "node --import tsx --test client/src/components/LoginLayout.test.tsx client/src/components/ui/ui-copy.test.tsx",
-    "test:database-upgrade": "node --import tsx --test server/mysqlSchemaMigration.test.ts server/historyMaintenance.test.ts server/databaseStartupRetention.test.ts server/mysqlLongTextSchema.test.ts server/historyCleanupIndexes.test.ts server/mysqlUpgrade.integration.test.ts"
+    "test:database-upgrade": "node --import tsx --test server/mysqlSchemaMigration.test.ts server/historyMaintenance.test.ts server/databaseStartupRetention.test.ts server/mysqlLongTextSchema.test.ts server/historyCleanupIndexes.test.ts server/mysqlUpgrade.integration.test.ts",
+    "verify": "node scripts/verify.mjs",
+    "test:sni-performance": "node --import tsx --test --test-concurrency=1 server/sniBatchEdit.performance.test.ts",
+    "test:sni-classification": "node --import tsx --test server/sniRuleCategory.test.ts client/src/lib/ruleCategory.test.ts client/src/components/rules/SniDomainWarnings.test.tsx client/src/lib/ruleLatencyStore.test.ts client/src/lib/ruleLatencyRunner.test.ts"
   },
   "dependencies": {
     "@cap.js/server": "^4.0.5",

@@ -1,160 +1,158 @@
-name: Release Panel
-
+name: Release panel, Agent, FXP, image and docs
 on:
-  workflow_dispatch:
   push:
-    tags:
-      - "v*.*.*"
-
+    tags: ['v*.*.*']
+  workflow_dispatch:
+    inputs:
+      resume_run:
+        description: 'Recover verified-candidate from this run ID; select the SAME immutable version tag above'
+        required: false
+        default: ''
+        type: string
 permissions:
+  actions: read
   contents: write
   packages: write
-
+  pages: write
+  id-token: write
+# Serialize all versions, so an interrupted old version cannot race a new latest.
 concurrency:
-  group: forwardx-release-panel-${{ github.ref_name }}
+  group: forwardx-official-release
   cancel-in-progress: false
-
 jobs:
-  release-panel:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10.28.1
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-          cache: pnpm
-
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: "1.23.x"
-
-      - name: Resolve release version
-        id: release
-        shell: bash
-        run: |
-          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
-            VERSION="$GITHUB_REF_NAME"
-          else
-            VERSION="v$(node -p "require('./package.json').version")"
-          fi
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "version_no_v=${VERSION#v}" >> "$GITHUB_OUTPUT"
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Check release versions and tag
-        env:
-          FORWARDX_RELEASE_TAG: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
-        run: |
-          pnpm check:versions
-          pnpm test:release-notes
-
-      - name: Type check
-        run: pnpm exec tsc --noEmit
-
-      # Startup integration tests exercise production static assets, so a
-      # clean checkout must build them before running the panel test suite.
-      - name: Build panel assets
-        run: pnpm build
-
-      - name: Run panel tests
-        run: pnpm test:server
-
-      - name: Run Agent tests and vet
-        shell: bash
-        run: |
-          (cd agent && go test ./... && go vet ./...)
-          (cd forwardx-fxp && go test ./... && go vet ./...)
-
-      - name: Prepare release notes
-        shell: bash
-        run: node scripts/extract-release-notes.mjs "${{ steps.release.outputs.version_no_v }}" > RELEASE_NOTES.md
-
-      - name: Build bundled Agent assets
-        run: bash scripts/build-agent-release.sh
-
-      - name: Verify bundled FXP behavior
-        env:
-          FORWARDX_FXP_RELEASE_BINARY: ${{ github.workspace }}/dist/agent/forwardx-fxp-linux-amd64
-        run: go test -run '^TestPublishedSniSplitterForwardsClientHelloWithECH$' -count=1 .
-        working-directory: forwardx-fxp
-
-      - name: Package panel runtime bundle
-        shell: bash
-        env:
-          VERSION_NO_V: ${{ steps.release.outputs.version_no_v }}
-        run: |
-          mkdir -p .release dist/panel
-          BUNDLE="forwardx-panel-v${VERSION_NO_V}.tar.gz"
-          tar -czf ".release/${BUNDLE}" \
-            dist \
-            client/dist \
-            drizzle \
-            patches \
-            package.json \
-            pnpm-lock.yaml \
-            pnpm-workspace.yaml \
-            scripts/install-panel-local.sh \
-            scripts/install-panel-docker.sh \
-            scripts/migrate-agent-legacy.sh
-          cp ".release/${BUNDLE}" "dist/panel/${BUNDLE}"
-          ls -lh "dist/panel/${BUNDLE}"
-
-      - name: Upload panel bundle artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: forwardx-panel-bundle
-          path: dist/panel/*.tar.gz
-
-      - name: Publish panel bundle to GitHub Release
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-          RELEASE_VERSION: ${{ steps.release.outputs.version }}
-        run: |
-          set -euo pipefail
-
-          shopt -s nullglob
-          files=(dist/panel/*.tar.gz)
-          if [ "${#files[@]}" -eq 0 ]; then
-            echo "::error::Panel release bundle was not generated"
-            exit 1
-          fi
-
-          if gh release view "$RELEASE_VERSION" >/dev/null 2>&1; then
-            gh release edit "$RELEASE_VERSION" --notes-file RELEASE_NOTES.md
-          else
-            gh release create "$RELEASE_VERSION" \
-              --target "$GITHUB_SHA" \
-              --notes-file RELEASE_NOTES.md
-          fi
-
-          attempt=1
-          delay=8
-          until gh release upload "$RELEASE_VERSION" "${files[@]}" --clobber; do
-            if [ "$attempt" -ge 5 ]; then
-              echo "::error::Panel bundle upload failed after ${attempt} attempts"
-              exit 1
-            fi
-            echo "Panel bundle upload failed, retrying in ${delay}s (attempt ${attempt}/5)..."
-            sleep "$delay"
-            attempt=$((attempt + 1))
-            delay=$((delay * 2))
-          done
-
-  docker-image:
-    needs: release-panel
-    uses: ./.github/workflows/docker-image.yml
+  verify:
+    if: ${{ !inputs.resume_run }}
+    uses: ./.github/workflows/verify.yml
     permissions:
       contents: read
-      packages: write
+  candidate:
+    needs: verify
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.23.3'
+      - name: Require version tag from the authorized repository
+        run: |
+          test "$GITHUB_REPOSITORY" = owo10086/sni-panel
+          test "$GITHUB_REF_TYPE" = tag
+          node scripts/check-versions.mjs
+      - uses: actions/download-artifact@v4
+        with:
+          name: verified-panel
+          path: .release/download
+      - uses: actions/download-artifact@v4
+        with:
+          name: verified-agent
+          path: .release/download
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: verification-*
+          merge-multiple: true
+          path: .release/evidence
+      - name: Assemble the verified outputs without rebuilding
+        run: |
+          tar -xzf .release/download/panel-output.tar.gz
+          tar -xzf .release/download/agent-output.tar.gz
+          for archive in .release/evidence/*.tar.gz; do tar -xzf "$archive"; done
+          node scripts/release/assemble.mjs
+          node scripts/release/prepare-image-context.mjs
+          echo "VERSION=$(node -p 'JSON.parse(require("fs").readFileSync("package.json")).version')" >> "$GITHUB_ENV"
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      - name: Build candidate only, without public version tags
+        id: image
+        uses: docker/build-push-action@v6
+        with:
+          context: .release/image-context
+          file: Dockerfile.release
+          platforms: linux/amd64
+          outputs: type=image,name=ghcr.io/owo10086/sni-panel,push-by-digest=true,name-canonical=true,push=true
+          build-args: |
+            FORWARDX_VERSION=${{ env.VERSION }}
+            FORWARDX_COMMIT=${{ github.sha }}
+          cache-from: type=gha,scope=forwardx-release
+          cache-to: type=gha,mode=max,scope=forwardx-release
+      - name: Validate the actual package, native dependencies and image startup by digest
+        env:
+          RELEASE_IMAGE: ghcr.io/owo10086/sni-panel@${{ steps.image.outputs.digest }}
+        run: |
+          node scripts/release/smoke-image.mjs
+          node scripts/release/seal.mjs
+      - name: Preserve immutable candidate for recovery
+        uses: actions/upload-artifact@v4
+        with:
+          name: verified-candidate
+          path: .release/candidate
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 90
+      - name: Archive candidate evidence even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: candidate-evidence-${{ github.run_attempt }}
+          path: .release/checks
+          include-hidden-files: true
+  publish:
+    needs: [verify, candidate]
+    if: ${{ always() && (needs.candidate.result == 'success' || inputs.resume_run != '') }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    environment:
+      name: github-pages
+      url: ${{ steps.pages.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.23.3'
+      - uses: actions/download-artifact@v4
+        with:
+          name: verified-candidate
+          path: .release/candidate
+          run-id: ${{ inputs.resume_run || github.run_id }}
+          github-token: ${{ github.token }}
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      - name: Draft, upload, download and verify all assets before promotion
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/release/publish.mjs
+      - name: Extract the documentation from the original verified candidate
+        run: |
+          mkdir -p .release/pages
+          node --input-type=module -e 'import fs from "node:fs"; import {execFileSync} from "node:child_process"; const m=JSON.parse(fs.readFileSync(".release/candidate/manifest.json")); execFileSync("tar", ["-xzf", `.release/candidate/forwardx-docs-v${m.version}.tar.gz`, "-C", ".release/pages"]);'
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .release/pages
+      - name: Publish the already verified documentation
+        id: pages
+        uses: actions/deploy-pages@v4
+      - name: Reconcile final versions and record publication complete
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DOCS_URL: ${{ steps.pages.outputs.page_url }}
+        run: node scripts/release/publish.mjs finish-docs
+      - name: Preserve resumable state
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-state-${{ github.run_attempt }}
+          path: .release/state.json
+          include-hidden-files: true
+          if-no-files-found: warn
+      - name: Report incomplete publication
+        if: failure()
+        run: echo '::error::Publication incomplete. Recover with resume_run using the original verified-candidate; do not move the tag or rebuild assets.'

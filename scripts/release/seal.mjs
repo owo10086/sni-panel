@@ -1,0 +1,16 @@
+import fs from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { createManifest, validateManifest } from './protocol.mjs';
+const directory = '.release/candidate';
+const version = JSON.parse(fs.readFileSync('package.json')).version;
+const versions = fs.readFileSync('shared/versions.ts', 'utf8');
+const agentVersion = versions.match(/AGENT_VERSION = "([^"]+)"/)[1];
+const commit = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
+const records = fs.readdirSync('.release/checks').filter(name => name.endsWith('.json')).map(name => JSON.parse(fs.readFileSync(`.release/checks/${name}`)));
+execFileSync('tar', ['-czf', `${directory}/verification.tar.gz`, '-C', '.release', 'checks']);
+const manifest = createManifest(directory, { commit, version, agentVersion, fxpVersion: agentVersion, image: process.env.RELEASE_IMAGE }, records);
+validateManifest(manifest, directory);
+const file = `${directory}/manifest.json`;
+if (fs.existsSync(file)) throw new Error('Candidate is already sealed; recover the original artifact instead');
+fs.writeFileSync(file, JSON.stringify(manifest, null, 2) + '\n', { flag: 'wx' });
+console.log(`Sealed v${version} at ${commit}: ${manifest.image}`);

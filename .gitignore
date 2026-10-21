@@ -76,3 +76,6 @@ ios/App/Podfile.lock
 # Validated TLS cache can contain the panel private key
 panel-ssl-runtime.json
 panel-ssl-runtime.json.*.tmp
+
+# Unified validation evidence and immutable release candidates
+.release/

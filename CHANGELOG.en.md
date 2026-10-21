@@ -4,6 +4,20 @@
 
 ## [Unreleased]
 
+## [3.5.2] - 2026-10-22
+
+### Fixes and improvements
+
+- Fix scheduling in the concurrent DNS and stale FXP session tests. Retain real configuration confirmation, observation windows and DNS publication guards; existing production forwarding and session health policies remain in effect.
+- Isolate the four SNI batch performance scenarios. Keep 20 batches per resource, seven rules per batch, at most six requests in flight and a strict five-second limit for every batch. Run three rounds and preserve per-batch diagnostics.
+- Share a fixed Linux toolchain and validation checklist between daily checks and releases. Include SNI categories, domain warnings and page latency state checks, and build web assets before tests that consume them.
+- Orchestrate panel, Agent, image and documentation delivery together. Reuse verified outputs from one commit, validate the actual package, image and draft attachments before promotion, and retain checksums and recoverable progress. Partial failures remain incomplete releases.
+
+### Versions and upgrade notes
+
+- Panel: `3.5.2`; Agent and ForwardX FXP runtime: `3.5.0`. This release changes tests and delivery workflows only. Upgrades from 3.5.0/3.5.1 require the panel update only.
+- Preserve the existing v3.5.1 tag. An incomplete publication is not a successful delivery. Native Android and iOS/iPadOS remain excluded. Record human acceptance, release checks, formal publication and production upgrades separately.
+
 ## [3.5.1] - 2026-10-21
 
 ### Fixes and improvements

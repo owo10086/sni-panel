@@ -59,7 +59,6 @@ if [ -z "$GO_HOME_ROOT" ]; then GO_HOME_ROOT="$ROOT_DIR/.cache/home"; fi
 if [ -z "$XDG_CACHE_ROOT" ]; then XDG_CACHE_ROOT="$ROOT_DIR/.cache"; fi
 mkdir -p "$GO_CACHE_ROOT" "$GO_HOME_ROOT" "$XDG_CACHE_ROOT"
 export GOCACHE="$GO_CACHE_ROOT"
-export HOME="$GO_HOME_ROOT"
 export XDG_CACHE_HOME="$XDG_CACHE_ROOT"
 
 build_one() {
@@ -97,7 +96,7 @@ download_gost_runtime() {
   tmp="$(mktemp -d)"
   url="https://github.com/go-gost/gost/releases/download/v${GOST_VERSION}/gost_${GOST_VERSION}_linux_${gost_arch}.tar.gz"
   rm -f "$OUT_DIR/$out"
-  curl -fsSL --retry 3 --retry-delay 2 --connect-timeout 15 --max-time 120 -o "$tmp/gost.tgz" "$url"
+  node "$ROOT_DIR/scripts/release/network-retry.mjs" curl -fsSL --connect-timeout 15 --max-time 120 -o "$tmp/gost.tgz" "$url"
   tar -xzf "$tmp/gost.tgz" -C "$tmp"
   gost_bin="$(find "$tmp" -type f -name gost | head -n1)"
   if [ -z "$gost_bin" ]; then
@@ -118,14 +117,7 @@ if [ ! -f "$NOTICE_FILE" ]; then
 fi
 cp "$NOTICE_FILE" "$OUT_DIR/THIRD_PARTY_NOTICES.md"
 
-artifacts=("$OUT_DIR"/forwardx-agent-linux-*)
-if compgen -G "$OUT_DIR/forwardx-fxp-linux-*" >/dev/null; then
-  artifacts+=("$OUT_DIR"/forwardx-fxp-linux-*)
-fi
-if compgen -G "$OUT_DIR/forwardx-runtime-linux-*" >/dev/null; then
-  artifacts+=("$OUT_DIR"/forwardx-runtime-linux-*)
-fi
-sha256sum "${artifacts[@]}" > "$OUT_DIR"/SHA256SUMS
+(cd "$OUT_DIR" && sha256sum forwardx-agent-linux-amd64 forwardx-fxp-linux-amd64 forwardx-runtime-linux-amd64 THIRD_PARTY_NOTICES.md > SHA256SUMS)
 
 echo "[agent] release artifacts:"
 ls -lh "$OUT_DIR"

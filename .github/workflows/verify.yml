@@ -1,0 +1,113 @@
+name: Shared validation
+on:
+  workflow_call:
+permissions:
+  contents: read
+jobs:
+  panel:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      VITEPRESS_BASE: ${{ vars.VITEPRESS_BASE || format('/{0}/', github.event.repository.name) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/validation-setup
+      - name: Versions, protocol fault exercises, types and production build
+        run: node scripts/verify.mjs prepare
+      - name: Languages
+        run: node scripts/verify.mjs language
+      - name: Functional checks including SNI categories and DNS stability
+        run: node scripts/verify.mjs functional
+      - name: Documentation build and commit identity
+        run: node scripts/verify.mjs docs
+      - name: Preserve validated build outputs
+        run: tar -czf .release/panel-output.tar.gz dist client/dist docs/.vitepress/dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: verified-panel
+          path: .release/panel-output.tar.gz
+          include-hidden-files: true
+          if-no-files-found: error
+      - name: Archive check evidence
+        if: always()
+        run: mkdir -p .release/checks && tar -czf .release/verification-panel.tar.gz .release/checks
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: verification-panel
+          path: .release/verification-panel.tar.gz
+          include-hidden-files: true
+  performance:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/validation-setup
+      - name: Four resources, three rounds, every batch below five seconds
+        run: node scripts/verify.mjs performance
+      - name: Archive check evidence
+        if: always()
+        run: mkdir -p .release/checks && tar -czf .release/verification-performance.tar.gz .release/checks
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: verification-performance
+          path: .release/verification-performance.tar.gz
+          include-hidden-files: true
+  mysql:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: forwardx-ci-only
+          MYSQL_ROOT_HOST: '%'
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -pforwardx-ci-only"
+          --health-interval=10s --health-timeout=5s --health-retries=12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/validation-setup
+      - name: Database upgrades
+        env:
+          FORWARDX_TEST_MYSQL_URL: mysql://root:forwardx-ci-only@127.0.0.1:3306
+          DATABASE_TYPE: mysql
+        run: node scripts/verify.mjs mysql
+      - name: Archive check evidence
+        if: always()
+        run: mkdir -p .release/checks && tar -czf .release/verification-mysql.tar.gz .release/checks
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: verification-mysql
+          path: .release/verification-mysql.tar.gz
+          include-hidden-files: true
+  agent:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/validation-setup
+      - name: Namespace fixture dependencies
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq iptables iproute2 util-linux
+      - name: Agent, FXP, race, stability and actual release binary checks
+        run: node scripts/verify.mjs agent
+      - name: Preserve the single verified binary build
+        run: tar -czf .release/agent-output.tar.gz dist/agent
+      - uses: actions/upload-artifact@v4
+        with:
+          name: verified-agent
+          path: .release/agent-output.tar.gz
+          include-hidden-files: true
+          if-no-files-found: error
+      - name: Archive check evidence
+        if: always()
+        run: mkdir -p .release/checks && tar -czf .release/verification-agent.tar.gz .release/checks
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: verification-agent
+          path: .release/verification-agent.tar.gz
+          include-hidden-files: true
