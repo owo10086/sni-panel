@@ -73,9 +73,13 @@ test("chain results preserve the newest generation and show durable partial prog
       await chain.settleManualForwardChainBatch("fc-config-new");
       const validSummary=(await metrics.getTrafficSummaryByRule({ruleIds:[19]}))[0];
       assert.equal(validSummary.latestLatencyMs,16);
+      assert.equal(validSummary.latestLatencyTestId,valid.at(-1));
+      assert.equal(validSummary.latestLatencyBatchId,"fc-config-new");
       assert.equal(store.acceptsSummary(19,"new-target",validSummary),true);
       const counterSummary=(await metrics.getTrafficCounterSummaryByRule({ruleIds:[19],includeLatency:true}))[0];
       assert.equal(new Date(counterSummary.latestLatencyStartedAt).getTime(),new Date(validSummary.latestLatencyStartedAt).getTime());
+      assert.equal(counterSummary.latestLatencyTestId,valid.at(-1));
+      assert.equal(counterSummary.latestLatencyBatchId,"fc-config-new");
       store.dispose();
       const partial = await createBatch("fc-partial");
       await tests.completeForwardTestIfActive(partial[0], { status: "success", latencyMs: 9 });

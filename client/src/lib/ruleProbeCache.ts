@@ -8,6 +8,8 @@ export type RuleProbeSummary = {
   latestLatencyIsTimeout?: boolean;
   latestLatencyAt?: Date | string | number | null;
   latestLatencyStartedAt?: Date | string | number | null;
+  latestLatencyTestId?: number | null;
+  latestLatencyBatchId?: string | null;
 };
 
 type InvalidationBoundary = {

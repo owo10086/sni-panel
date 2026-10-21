@@ -4399,6 +4399,8 @@ function RulesContent() {
       latestLatencyIsTimeout: boolean;
       latestLatencyAt: Date | string | null;
       latestLatencyStartedAt: Date | string | null;
+      latestLatencyTestId: number | null;
+      latestLatencyBatchId: string | null;
     }>();
     dailyTrafficSummaryRows.forEach((t: any) => {
       const rid = Number(t.ruleId);
@@ -4414,6 +4416,8 @@ function RulesContent() {
           prev.latestLatencyIsTimeout = !!t.latestLatencyIsTimeout;
           prev.latestLatencyAt = t.latestLatencyAt || null;
           prev.latestLatencyStartedAt = t.latestLatencyStartedAt || null;
+          prev.latestLatencyTestId = t.latestLatencyTestId || null;
+          prev.latestLatencyBatchId = t.latestLatencyBatchId || null;
         }
       } else {
         m.set(rid, {
@@ -4424,6 +4428,8 @@ function RulesContent() {
           latestLatencyIsTimeout: !!t.latestLatencyIsTimeout,
           latestLatencyAt: t.latestLatencyAt || null,
           latestLatencyStartedAt: t.latestLatencyStartedAt || null,
+          latestLatencyTestId: t.latestLatencyTestId || null,
+          latestLatencyBatchId: t.latestLatencyBatchId || null,
         });
       }
     });

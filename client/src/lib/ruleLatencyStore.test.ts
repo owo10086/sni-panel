@@ -49,3 +49,24 @@ test("a late old batch cannot reenter through refreshed summaries after a config
   assert.equal(store.acceptsSummary(7,"new-target",oldSummary),false);
   store.dispose();
 });
+
+test("a slow dispatch response retains its old configuration even if the server creates the batch after the change", async () => {
+  let now=Date.parse("2026-10-21T04:00:00Z");
+  const store=new RuleLatencyStore({pollMs:0,timeoutMs:500},() => now);
+  store.configure(new Map([[7,"target-a"]]));
+  let dispatch!: (value:any) => void;
+  const pending=store.start(7,"target-a",{start:() => new Promise(resolve => {dispatch=resolve;}),latest:async () => null});
+  now+=10_000;
+  store.configure(new Map([[7,"target-b"]]));
+  now+=10_000;
+  const lateSummary={latestLatencyMs:999,latestLatencyAt:new Date(now+10_000),latestLatencyStartedAt:new Date(now),latestLatencyTestId:13,latestLatencyBatchId:"fc-slow"};
+  assert.equal(store.acceptsSummary(7,"target-b",lateSummary),false,"an unresolved old dispatch cannot be identified by its later database creation time");
+  dispatch({id:11,batchId:"fc-slow"});
+  await pending;
+  assert.equal(store.acceptsSummary(7,"target-b",lateSummary),false);
+  store.configure(new Map([[7,"target-a"]]));
+  assert.equal(store.acceptsSummary(7,"target-a",lateSummary),false,"returning to the original text must not revive the previous configuration generation");
+  await store.start(7,"target-a",{start:async () => ({id:14,batchId:"fc-valid"}),latest:async () => ({id:16,batchId:"fc-valid",status:"success",latencyMs:147})});
+  assert.equal(store.acceptsSummary(7,"target-a",{...lateSummary,latestLatencyTestId:16,latestLatencyBatchId:"fc-valid"}),true);
+  store.dispose();
+});

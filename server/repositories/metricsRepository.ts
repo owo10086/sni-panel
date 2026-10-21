@@ -1953,6 +1953,8 @@ function withEmptyTrafficLatency(rows: TrafficSummaryRow[]) {
     latestLatencyIsTimeout: false,
     latestLatencyAt: null as Date | null,
     latestLatencyStartedAt: null as Date | null,
+    latestLatencyTestId: null as number | null,
+    latestLatencyBatchId: null as string | null,
   }));
 }
 
@@ -2143,7 +2145,7 @@ export async function getTrafficCounterSummaryByRule(opts: {
     ruleIds: latencyRuleIds,
     includeLatency: true,
   }).catch(() => [] as any[]);
-  const latestByRuleId = new Map<number, { latestLatencyMs: number | null; latestLatencyIsTimeout: boolean; latestLatencyAt: Date | string | null; latestLatencyStartedAt: Date | null }>();
+  const latestByRuleId = new Map<number, { latestLatencyMs: number | null; latestLatencyIsTimeout: boolean; latestLatencyAt: Date | string | null; latestLatencyStartedAt: Date | null; latestLatencyTestId: number | null; latestLatencyBatchId: string | null }>();
   for (const row of latencyRows as any[]) {
     const ruleId = Number(row.ruleId || 0);
     if (ruleId <= 0) continue;
@@ -2156,6 +2158,8 @@ export async function getTrafficCounterSummaryByRule(opts: {
         latestLatencyIsTimeout: !!row.latestLatencyIsTimeout,
         latestLatencyAt: row.latestLatencyAt || null,
         latestLatencyStartedAt: row.latestLatencyStartedAt || null,
+        latestLatencyTestId: row.latestLatencyTestId || null,
+        latestLatencyBatchId: row.latestLatencyBatchId || null,
       });
     }
   }
@@ -2174,7 +2178,7 @@ export async function getTrafficSummaryByRule(opts: {
   includeLatency?: boolean;
 } = {}) {
   const db = await getDb();
-  if (!db) return [] as Array<{ ruleId: number; hostId: number; bytesIn: number; bytesOut: number; connections: number; latestLatencyMs: number | null; latestLatencyIsTimeout: boolean; latestLatencyAt: Date | null; latestLatencyStartedAt: Date | null }>;
+  if (!db) return [] as Array<{ ruleId: number; hostId: number; bytesIn: number; bytesOut: number; connections: number; latestLatencyMs: number | null; latestLatencyIsTimeout: boolean; latestLatencyAt: Date | null; latestLatencyStartedAt: Date | null; latestLatencyTestId: number | null; latestLatencyBatchId: string | null }>;
   const requestedRuleIds = Array.from(new Set((opts.ruleIds || [])
     .map((id) => Number(id))
     .filter((id) => Number.isInteger(id) && id > 0)));
@@ -2342,6 +2346,8 @@ export async function getTrafficSummaryByRule(opts: {
   const latestChainTestRows = chainParentIds.length > 0
     ? await queryRaw<any>(
       `SELECT ft.${q("ruleId")} AS ${q("ruleId")},
+              ft.${q("id")} AS ${q("testId")},
+              ft.${q("batchId")} AS ${q("batchId")},
               ft.${q("latencyMs")} AS ${q("latencyMs")},
               ft.${q("status")} AS ${q("status")},
               ft.${q("updatedAt")} AS ${q("updatedAt")},
@@ -2370,6 +2376,8 @@ export async function getTrafficSummaryByRule(opts: {
       isTimeout: status !== "success",
       recordedAt: rowDate(row.updatedAt || row.createdAt),
       startedAt: rowDate(row.startedAt),
+      testId: Number(row.testId),
+      batchId: row.batchId || null,
       source: "forward_test",
     };
     if (shouldUseLatencyCandidate(latestByRule.get(ruleId), candidate)) {
@@ -2380,6 +2388,8 @@ export async function getTrafficSummaryByRule(opts: {
   const latestTunnelTestRows = tunnelRuleIdsForTests.length > 0
     ? await queryRaw<any>(
       `SELECT ft.${q("ruleId")} AS ${q("ruleId")},
+              ft.${q("id")} AS ${q("testId")},
+              ft.${q("batchId")} AS ${q("batchId")},
               ft.${q("latencyMs")} AS ${q("latencyMs")},
               ft.${q("status")} AS ${q("status")},
               ft.${q("updatedAt")} AS ${q("updatedAt")},
@@ -2409,6 +2419,8 @@ export async function getTrafficSummaryByRule(opts: {
       isTimeout: status !== "success",
       recordedAt: rowDate(row.updatedAt || row.createdAt),
       startedAt: rowDate(row.createdAt),
+      testId: Number(row.testId),
+      batchId: row.batchId || null,
       source: "forward_test",
     };
     if (shouldUseLatencyCandidate(latestByRule.get(ruleId), candidate)) {
@@ -2426,6 +2438,8 @@ export async function getTrafficSummaryByRule(opts: {
       // provenance unknown so the UI cannot accept an old configuration by
       // comparing only a late completion timestamp. Health selection is unchanged.
       latestLatencyStartedAt: latest?.startedAt ?? null,
+      latestLatencyTestId: latest?.testId ?? null,
+      latestLatencyBatchId: latest?.batchId ?? null,
     };
   });
 }
