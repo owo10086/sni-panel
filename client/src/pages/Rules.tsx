@@ -1,3 +1,4 @@
+import { SniDomainWarnings } from "@/components/rules/SniDomainWarnings";
 import { getFormatLocale } from "@/i18n";
 import { t as translateText } from "@/i18n";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -359,9 +360,9 @@ type RuleDisplayMode = RuleCardSize | "table" | "globe";
 type RulePageSize = 12 | 24 | 36 | 48;
 type RuleGroupType = keyof typeof desktopRuleTypeLabels;
 type RuleGroupCollapsedState = Partial<Record<RuleGroupType, boolean>>;
-type RuleCategory = "all" | "local" | "tunnel" | "chain" | "group";
+type RuleCategory = "all" | "local" | "tunnel" | "chain" | "group" | "sni";
 type RuleCategoryCounts = Record<RuleCategory, number>;
-type RuleTransferScopeType = Exclude<RuleCategory, "all">;
+type RuleTransferScopeType = Exclude<RuleCategory, "all" | "sni">;
 type RuleResourceFilter = "all" | `${RuleTransferScopeType}` | `${RuleTransferScopeType}:${number}`;
 type RuleBatchManageMode = "copy" | "edit" | "export" | "import";
 type BatchEditFormData = Pick<RuleFormData, "routeMode" | "forwardType" | "tunnelId" | "forwardGroupId" | "targetIp" | "targetPort">;
@@ -405,7 +406,7 @@ const SNI_RULE_GROUP_STATUS_CONFIG: Record<SniRuleGroupStatus, {
   },
 };
 
-const RULE_CATEGORIES = ["all", "local", "tunnel", "chain", "group"] as const;
+const RULE_CATEGORIES = ["all", "local", "tunnel", "chain", "group", "sni"] as const;
 const ruleTransferScopeLabels: Record<RuleTransferScopeType, string> = {
   local: translateText("端口转发"),
   tunnel: translateText("隧道"),
@@ -457,8 +458,8 @@ const RULE_SORT_CATEGORY_RANK = new Map<RuleTransferScopeType, number>(
   RULE_SORT_CATEGORY_ORDER.map((category, index) => [category, index]),
 );
 const RULE_PAGE_SIZE_OPTIONS: RulePageSize[] = [12, 24, 36, 48];
-const EMPTY_RULE_CATEGORY_COUNTS: RuleCategoryCounts = { all: 0, local: 0, tunnel: 0, chain: 0, group: 0 };
-const RULE_CATEGORY_COUNTS_CACHE_PREFIX = "forwardx.rules.categoryCounts.v2.";
+const EMPTY_RULE_CATEGORY_COUNTS: RuleCategoryCounts = { all: 0, local: 0, tunnel: 0, chain: 0, group: 0, sni: 0 };
+const RULE_CATEGORY_COUNTS_CACHE_PREFIX = "forwardx.rules.categoryCounts.v3.";
 const RULE_GLOBE_EARTH_IMAGE_URL = "/globe/earth-dark.jpg";
 const RULE_GLOBE_COUNTRIES_URL = "/globe/ne_110m_admin_0_countries.geojson";
 const RULE_GLOBE_PATH_SURFACE_ALTITUDE = 0.028;
@@ -483,6 +484,7 @@ function normalizeRuleCategoryCounts(value: unknown): RuleCategoryCounts {
     tunnel,
     chain,
     group,
+    sni: count("sni"),
   };
 }
 
@@ -630,7 +632,8 @@ function getRuleForwardGroupKind(rule: any, forwardGroupById: Map<number, any>):
   return mode === "chain" ? "chain" : "group";
 }
 
-function getRuleCategory(rule: any, forwardGroupById: Map<number, any>): Exclude<RuleCategory, "all"> {
+// This describes the actual link resource, independently of the SNI view tab.
+function getRuleCategory(rule: any, forwardGroupById: Map<number, any>): RuleTransferScopeType {
   const groupKind = getRuleForwardGroupKind(rule, forwardGroupById);
   if (groupKind) return groupKind;
   return rule.forwardType === "gost" && rule.tunnelId ? "tunnel" : "local";
@@ -665,6 +668,7 @@ type RuleFilterState = {
   filterUser: string;
   filterResource: RuleResourceFilter;
   ruleCategory: RuleCategory;
+  includeSniInAll?: boolean;
   searchQuery: string;
   isAdmin: boolean;
   userId?: number | null;
@@ -927,8 +931,13 @@ function isForwardRuleVisibleByFilters(rule: any, filters: RuleFilterState) {
       if (resourceId !== resourceFilter.id || (resourceType !== "tunnel" && !group)) return false;
     }
   }
-  if (filters.ruleCategory !== "all") {
+  if (filters.ruleCategory === "sni") {
+    if (!String(rule.sni || "").trim()) return false;
+  } else if (filters.ruleCategory !== "all") {
+    if (String(rule.sni || "").trim()) return false;
     if (getRuleCategory(rule, filters.forwardGroupById) !== filters.ruleCategory) return false;
+  } else if (!filters.includeSniInAll && String(rule.sni || "").trim()) {
+    return false;
   }
   if (!isRuleSearchMatch(rule, filters)) return false;
   return true;
@@ -2234,7 +2243,8 @@ function RulesContent() {
   const filterResourceStorageKey = ruleFilterStorageKey(RULE_FILTER_RESOURCE_STORAGE_KEY, user);
   const ruleCategoryStorageKey = ruleFilterStorageKey(RULE_CATEGORY_STORAGE_KEY, user);
   const [filterResource, setFilterResource] = useState<RuleResourceFilter>(() => (
-    normalizeRuleResourceFilter(getStoredString(filterResourceStorageKey, "all"))
+    new URLSearchParams(search).get("tab") === "sni"
+      ? "all" : normalizeRuleResourceFilter(getStoredString(filterResourceStorageKey, "all"))
   ));
   const [ruleResourceMenuOpen, setRuleResourceMenuOpen] = useState(false);
   const [ruleResourceMenuType, setRuleResourceMenuType] = useState<RuleTransferScopeType>(
@@ -2258,6 +2268,15 @@ function RulesContent() {
     defaultValue: "all",
     storageKey: ruleCategoryStorageKey,
   });
+  const previousUrlRuleTab = useRef(new URLSearchParams(search).get("tab"));
+  useEffect(() => {
+    const nextTab = new URLSearchParams(search).get("tab");
+    if (previousUrlRuleTab.current !== nextTab && nextTab === "sni") {
+      setFilterResource("all");
+      storeString(filterResourceStorageKey, "all");
+    }
+    previousUrlRuleTab.current = nextTab;
+  }, [search, filterResourceStorageKey]);
   const [viewMode, setViewMode] = useState<RuleViewMode>(() => getStoredRuleViewMode());
   const [ruleCardSize, setRuleCardSize] = useState<RuleCardSize>(() => getStoredRuleCardSize());
   const effectiveViewMode: RuleViewMode = isMobile ? "card" : viewMode;
@@ -2367,6 +2386,13 @@ function RulesContent() {
     staleTime: 10_000,
     refetchOnWindowFocus: false,
     placeholderData: (previousData) => previousData,
+  });
+  const sniDomainConfiguration = trpc.rules.sniEntryPortOverview.useQuery(undefined, {
+    enabled: user?.role === "admin" && ruleCategory === "sni",
+    staleTime: 10_000,
+    refetchInterval: ruleCategory === "sni" ? pollingInterval("normal") : false,
+    refetchOnWindowFocus: false,
+    retry: false,
   });
   const isRuleGlobeView = effectiveViewMode === "globe";
   const ruleMapQuery = trpc.rules.mapItems.useInfiniteQuery({
@@ -4024,6 +4050,7 @@ function RulesContent() {
       ...ruleFilters,
       filterResource: "all",
       ruleCategory: copyRuleCategory,
+      includeSniInAll: true,
       searchQuery: copyRuleSearch,
     };
     return transferSourceRules
@@ -4109,6 +4136,7 @@ function RulesContent() {
             <SelectItem value="tunnel">{translateText("隧道转发")}</SelectItem>
             <SelectItem value="chain">{translateText("转发链")}</SelectItem>
             <SelectItem value="group">{translateText("转发组")}</SelectItem>
+            <SelectItem value="sni">{translateText("sni规则组")}</SelectItem>
           </SelectContent>
         </Select>
         <div className="relative">
@@ -4277,6 +4305,7 @@ function RulesContent() {
     { value: "tunnel", label: desktopRuleTypeLabels.tunnel, icon: Network, badge: ruleCategoryCountsReady ? ruleCategoryCounts.tunnel : null },
     { value: "chain", label: desktopRuleTypeLabels.chain, icon: GitBranch, badge: ruleCategoryCountsReady ? ruleCategoryCounts.chain : null },
     { value: "group", label: desktopRuleTypeLabels.group, icon: Layers3, badge: ruleCategoryCountsReady ? ruleCategoryCounts.group : null },
+    { value: "sni", label: translateText("sni规则组"), icon: Globe, badge: ruleCategoryCountsReady ? ruleCategoryCounts.sni : null },
   ], [ruleCategoryCounts, ruleCategoryCountsReady]);
   const visibleRuleIdsForMetrics = useMemo(() => (
     Array.from(new Set(filteredRules.map((rule: any) => Number(rule.id)).filter((id: number) => Number.isInteger(id) && id > 0)))
@@ -5640,7 +5669,8 @@ function RulesContent() {
   };
 
   const openExportDialog = () => {
-    const preferredType = ruleCategory === "all" ? "local" : ruleCategory;
+    const preferredType = ruleCategory === "all" || ruleCategory === "sni"
+      ? parseRuleResourceFilter(filterResource).type || "local" : ruleCategory;
     setExportScopeType(preferredType as RuleTransferScopeType);
     setShowExportDialog(true);
   };
@@ -6666,10 +6696,10 @@ function RulesContent() {
   const displayMode: RuleDisplayMode = effectiveViewMode === "table" || effectiveViewMode === "globe" ? effectiveViewMode : effectiveRuleCardSize;
 
   const handleRuleCategoryChange = (value: string) => {
-    const next = (value === "local" || value === "tunnel" || value === "chain" || value === "group" ? value : "all") as RuleCategory;
+    const next = (RULE_CATEGORIES.includes(value as RuleCategory) ? value : "all") as RuleCategory;
     setRuleCategory(next);
     const selected = parseRuleResourceFilter(filterResource);
-    if (next === "all" && selected.type) {
+    if (next === "sni" || (next === "all" && selected.type)) {
       setFilterResource("all");
       storeString(filterResourceStorageKey, "all");
     } else if (next !== "all" && selected.type !== next) {
@@ -6694,9 +6724,9 @@ function RulesContent() {
     storeString(filterResourceStorageKey, next);
     if (parsed.type) {
       setRuleResourceMenuType(parsed.type);
-      setRuleCategory(parsed.type);
+      if (ruleCategory !== "sni") setRuleCategory(parsed.type);
     } else {
-      setRuleCategory("all");
+      if (ruleCategory !== "sni") setRuleCategory("all");
     }
     setRuleResourceMenuOpen(false);
   };
@@ -6877,6 +6907,7 @@ function RulesContent() {
     const open = isSniRuleGroupOpen(group);
     const meta = getSniRuleGroupMeta(group);
     const statusDotClass = SNI_RULE_GROUP_STATUS_CONFIG[meta.status].dotClass;
+    const domainWarnings = <SniDomainWarnings entries={sniDomainConfiguration.data?.entries} rules={group.rules} isAdmin={user?.role === "admin"} />;
     const endpointLabel = (endpoint: any, side: "入口" | "出口") => {
       const host = hostById.get(Number(endpoint.hostId || 0));
       const label = meta.isFailoverSni && side === "入口"
@@ -6938,6 +6969,7 @@ function RulesContent() {
             {meta.exitEndpoints.map(endpoint => renderEndpointRuntime(endpoint,"出口"))}
           </div>
         </div>
+        {domainWarnings}
         {(offlineText.length > 0 || unsupportedEntryText.length > 0 || configErrorText.length > 0) && <div className="mt-2 space-y-1 text-xs text-destructive">{[...offlineText,...unsupportedEntryText,...configErrorText].map(text => <p key={text}>{text}</p>)}</div>}
       </div>;
     }
@@ -6983,6 +7015,7 @@ function RulesContent() {
             <p className="text-muted-foreground">{meta.entryEndpoints.length > 0 ? translateText("入口与出口配置可能尚未同步。") : translateText("客户端使用的域名尚未配置在出口分流表中。")}</p>
           </div>}
         </div>
+        <div className="px-7">{domainWarnings}</div>
         {(offlineText.length > 0 || unsupportedEntryText.length > 0 || configErrorText.length > 0) && (
           <div className="space-y-1 border-t border-border/40 px-7 py-2 text-xs leading-5 text-destructive">
             {offlineText.map((text) => <p key={text}>{text}</p>)}
@@ -7539,6 +7572,7 @@ function RulesContent() {
             </Select>
           </div>
 
+          {user?.role === "admin" && ruleCategory === "sni" && sniDomainConfiguration.isError && <p role="status" className="text-xs text-destructive">{translateText("域名配置核对加载失败，请稍后刷新。")}</p>}
           <Tabs value={ruleCategory} onValueChange={handleRuleCategoryChange}>
             <SlidingTabsList items={ruleCategoryItems} activeValue={ruleCategory} onValueChange={handleRuleCategoryChange} ariaLabel={translateText("转发规则分类")} minItemWidthRem={8.5} />
           </Tabs>

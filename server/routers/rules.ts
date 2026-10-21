@@ -255,7 +255,7 @@ async function withRuleResourceAccess(
 }
 
 
-type RuleListCategory = "all" | "local" | "tunnel" | "chain" | "group";
+type RuleListCategory = "all" | "local" | "tunnel" | "chain" | "group" | "sni";
 type RuleResourceType = "local" | "tunnel" | "chain" | "group";
 type RuleListFilters = {
   userId?: number;
@@ -330,7 +330,7 @@ export const rulesRouter = router({
       entryHostId: z.number().int().positive().nullable().optional(),
       resourceType: z.enum(["local", "tunnel", "chain", "group"]).nullable().optional(),
       resourceId: z.number().int().positive().nullable().optional(),
-      category: z.enum(["all", "local", "tunnel", "chain", "group"]).default("all"),
+      category: z.enum(["all", "local", "tunnel", "chain", "group", "sni"]).default("all"),
       search: z.string().trim().max(200).optional().default(""),
     }))
     .query(async ({ input, ctx }) => {
@@ -347,7 +347,7 @@ export const rulesRouter = router({
       entryHostId: z.number().int().positive().nullable().optional(),
       resourceType: z.enum(["local", "tunnel", "chain", "group"]).nullable().optional(),
       resourceId: z.number().int().positive().nullable().optional(),
-      category: z.enum(["all", "local", "tunnel", "chain", "group"]).default("all"),
+      category: z.enum(["all", "local", "tunnel", "chain", "group", "sni"]).default("all"),
       search: z.string().trim().max(200).optional().default(""),
     }))
     .query(async ({ input, ctx }) => {
@@ -362,7 +362,7 @@ export const rulesRouter = router({
       entryHostId: z.number().int().positive().nullable().optional(),
       resourceType: z.enum(["local", "tunnel", "chain", "group"]).nullable().optional(),
       resourceId: z.number().int().positive().nullable().optional(),
-      category: z.enum(["all", "local", "tunnel", "chain", "group"]).default("all"),
+      category: z.enum(["all", "local", "tunnel", "chain", "group", "sni"]).default("all"),
       search: z.string().trim().max(200).optional().default(""),
     }))
     .query(async ({ input, ctx }) => {
@@ -404,7 +404,7 @@ export const rulesRouter = router({
     }),
   reorder: protectedProcedure
     .input(z.object({
-      category: z.enum(["local", "tunnel", "chain", "group"]),
+      category: z.enum(["local", "tunnel", "chain", "group", "sni"]),
       ids: z.array(z.number().int().positive()).min(1),
       startIndex: z.number().int().min(0).max(1_000_000).optional().default(0),
     }))

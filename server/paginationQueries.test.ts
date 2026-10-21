@@ -513,7 +513,7 @@ test("database-backed list queries page, search, scope, and hydrate only request
       assert.equal(rulePage.totalItems, 5);
       assert.equal(rulePage.scopeTotalItems, 5);
       assert.equal(rulePage.page, 3);
-      assert.deepEqual(rulePage.categoryCounts, { all: 5, local: 3, tunnel: 1, chain: 1, group: 0 });
+      assert.deepEqual(rulePage.categoryCounts, { all: 5, local: 3, tunnel: 1, chain: 1, group: 0, sni: 0 });
       assert.equal(rulePage.items.length, 1);
 
       const tunnelSearch = await rules.getForwardRulesPage({
@@ -523,7 +523,7 @@ test("database-backed list queries page, search, scope, and hydrate only request
         search: "Singapore Exit",
       });
       assert.deepEqual(tunnelSearch.items.map((item) => Number(item.id)), [101]);
-      assert.deepEqual(tunnelSearch.categoryCounts, { all: 1, local: 0, tunnel: 1, chain: 0, group: 0 }, "search still scopes category badges");
+      assert.deepEqual(tunnelSearch.categoryCounts, { all: 1, local: 0, tunnel: 1, chain: 0, group: 0, sni: 0 }, "search still scopes category badges");
 
       const tunnelCategorySearch = await rules.getForwardRulesPage({
         ...visibleRuleInput,
@@ -711,7 +711,7 @@ test("database-backed list queries page, search, scope, and hydrate only request
       const expectedEndpointIds = [101, 200, 201, 202, 203, 204, 205];
       assert.equal(endpointPage.totalItems, 7);
       assert.equal(endpointPage.activeItems, 7);
-      assert.deepEqual(endpointPage.categoryCounts, { all: 7, local: 0, tunnel: 7, chain: 0, group: 0 });
+      assert.deepEqual(endpointPage.categoryCounts, { all: 7, local: 0, tunnel: 7, chain: 0, group: 0, sni: 0 });
       assert.deepEqual(endpointPage.items.map(item => Number(item.id)), expectedEndpointIds);
       assert.ok(endpointPage.items.every(item => Number(item.userId) === 2), "search does not bypass ownership");
       const pagedEndpointIds = [];

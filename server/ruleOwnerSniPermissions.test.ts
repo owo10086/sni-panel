@@ -81,7 +81,7 @@ test("administrator-created SNI is read-only for its ordinary owner", () => {
 test("ordinary sorting cannot move managed rules omitted from the request or another page", () => {
   verifyRules(String.raw`
     const first = await owner.create(input({ sni: null, sourcePort: 18440, name: "自建一" }));
-    const managed = await admin.create(input({ userId: 2, sourcePort: 18441, name: "托管" }));
+    const managed = await admin.create(input({ userId: 2, sni: null, sourcePort: 18441, name: "托管" }));
     const last = await owner.create(input({ sni: null, sourcePort: 18442, name: "自建二" }));
     const list = () => owner.listPage({ category: "chain", page: 1, pageSize: 10 });
     const before = (await list()).items.map(rule => ({ id: rule.id, sortOrder: rule.sortOrder }));
@@ -140,7 +140,8 @@ test("editing shared SNI entry ports within the owner quota preserves both logic
     assert.equal((await admin.getById({ id: Number(second.id) })).sourcePort, 18444);
     await admin.update({ id: Number(second.id), sourcePort: 18443 });
     assert.equal((await admin.getById({ id: Number(second.id) })).sourcePort, 18443);
-    assert.equal((await owner.listPage({ category: "chain", page: 1, pageSize: 10 })).items.length, 2);
+    assert.equal((await owner.listPage({ category: "sni", page: 1, pageSize: 10 })).items.length, 2);
+    assert.equal((await owner.listPage({ category: "chain", page: 1, pageSize: 10 })).items.length, 0);
   `);
 });
 

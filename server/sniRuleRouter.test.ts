@@ -895,8 +895,8 @@ test("SNI rule queries expose entry and exit runtime status and require both end
       assert.deepEqual(bothEnds.sniRuntime.entries, [{ hostId: 1, port: 18443, observed: true, applied: true,
         currentVersion: 8, unmatchedConnections: 11, lastConfigError: "", observedAt: 3000 }]);
       assert.equal((await caller.list({ scope: "all" }))[0].sniRuntime.applied, true);
-      assert.equal((await caller.listPage({ scope: "all", category: "chain" })).items[0].sniRuntime.applied, true);
-      assert.equal((await caller.mapItems({ scope: "all", category: "chain" })).items[0].sniRuntime.applied, true);
+      assert.equal((await caller.listPage({ scope: "all", category: "sni" })).items[0].sniRuntime.applied, true);
+      assert.equal((await caller.mapItems({ scope: "all", category: "sni" })).items[0].sniRuntime.applied, true);
       await runtime.executeRaw('UPDATE "hosts" SET "agentVersion" = ? WHERE "id" = ?', ["2.2.194", 1]);
       const unsupportedEntryVersion = await caller.getById({ id: 900 });
       assert.equal(unsupportedEntryVersion.sniRuntime.applied, true);

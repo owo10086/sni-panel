@@ -38,7 +38,6 @@ const PlansPage = pageComponent("Plans");
 const PluginsPage = pageComponent("Plugins");
 const ProfilePage = pageComponent("Profile");
 const RulesPage = pageComponent("Rules");
-const SniEntryPortsPage = pageComponent("SniEntryPorts");
 const SettingsPage = pageComponent("Settings");
 const StorePage = pageComponent("Store");
 const SupportTicketsPage = pageComponent("SupportTickets");
@@ -116,7 +115,7 @@ function Router() {
       <Route path="/profile">{routeComponent(ProfilePage)}</Route>
       <Route path="/hosts">{() => <AdminRoute component={HostsPage} />}</Route>
       <Route path="/rules">{routeComponent(RulesPage)}</Route>
-      <Route path="/sni-entry-ports">{() => <AdminRoute component={SniEntryPortsPage} />}</Route>
+      <Route path="/sni-entry-ports"><Redirect to="/rules?tab=sni" replace /></Route>
       <Route path="/looking-glass" component={LookingGlassRoute} />
       <Route path="/forward-groups">{() => <AdminRoute component={ForwardGroupsPage} />}</Route>
       <Route path="/tunnels">{() => <AdminRoute component={TunnelsPage} />}</Route>

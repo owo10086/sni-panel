@@ -1,4 +1,4 @@
-type RuleSortCategory = "all" | "local" | "tunnel" | "chain" | "group";
+type RuleSortCategory = "all" | "local" | "tunnel" | "chain" | "group" | "sni";
 
 /** A type-only filter still shows the whole category; a resource ID does not. */
 export function isCompleteRuleSortScope(category: RuleSortCategory, resource: string): boolean {

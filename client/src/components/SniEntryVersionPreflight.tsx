@@ -73,7 +73,7 @@ export function SniEntryVersionPreflight({ enabled = true }: { enabled?: boolean
           ))}
         </div>
         <Button asChild variant="link" size="sm" className="h-auto justify-start gap-1 px-0 py-0 text-xs">
-          <Link href="/sni-entry-ports">{translateText("查看 SNI 入口")}<ArrowRight className="h-3.5 w-3.5" /></Link>
+          <Link href="/rules?tab=sni">{translateText("查看 sni规则组")}<ArrowRight className="h-3.5 w-3.5" /></Link>
         </Button>
       </AlertDescription>
     </Alert>

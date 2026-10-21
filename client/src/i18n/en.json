@@ -1,4 +1,10 @@
 {
+  "sni规则组": "SNI rule groups",
+  "查看 sni规则组": "View SNI rule groups",
+  "域名配置不一致": "Domain configuration differs",
+  "入口「{0}:{1}」的域名配置不完整，缺少：{2}": "Entry {0}:{1} has incomplete domain configuration. Missing: {2}",
+  "以上为面板规则配置核对，实际生效状态请查看分流器信息。": "This compares panel rule configuration. Check the splitter information for the applied state.",
+  "域名配置核对加载失败，请稍后刷新。": "Could not load the domain configuration check. Refresh to try again.",
   "确认解除 Google 绑定": "Confirm unlinking Google",
   "确定解除 Google 账户 {0} 的绑定？解绑后无法再用此 Google 账户登录，请使用当前账号和密码登录。": "Unlink Google account {0}? You will no longer be able to sign in with this Google account. Use your current username and password to sign in.",
   "当前密码错误": "Your current password is incorrect",

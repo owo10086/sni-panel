@@ -14,9 +14,10 @@ import { getForwardChainSniEntryRuleIds } from "./forwardChainSniEntryScope";
 
 // ==================== Forward Rule Queries ====================
 
-export type ForwardRuleSortCategory = "local" | "tunnel" | "chain" | "group";
+export type ForwardRuleSortCategory = "local" | "tunnel" | "chain" | "group" | "sni";
 
 function forwardRuleCategoryFromRow(row: any): ForwardRuleSortCategory {
+  if (normalizeSniValue(row?.sni)) return "sni";
   const groupMode = String(row?.groupMode || "").toLowerCase();
   if (groupMode === "port") return "local";
   if (groupMode === "chain") return "chain";
@@ -28,6 +29,7 @@ function forwardRuleCategoryFromRow(row: any): ForwardRuleSortCategory {
 function forwardRuleCategorySql(ruleAlias = "r", groupAlias = "g") {
   const q = quoteIdentifier;
   return `CASE
+    WHEN TRIM(COALESCE(${ruleAlias}.${q("sni")}, '')) <> '' THEN 'sni'
     WHEN ${groupAlias}.${q("groupMode")} = 'port' THEN 'local'
     WHEN ${groupAlias}.${q("groupMode")} = 'chain' THEN 'chain'
     WHEN ${ruleAlias}.${q("forwardGroupId")} IS NOT NULL AND ${ruleAlias}.${q("forwardGroupId")} <> 0 THEN 'group'
@@ -37,6 +39,7 @@ function forwardRuleCategorySql(ruleAlias = "r", groupAlias = "g") {
 }
 
 async function forwardRuleCategoryForPayload(rule: Partial<InsertForwardRule>): Promise<ForwardRuleSortCategory> {
+  if (normalizeSniValue(rule.sni)) return "sni";
   const groupId = Number((rule as any).forwardGroupId || 0);
   if (groupId > 0) {
     const q = quoteIdentifier;
@@ -85,7 +88,7 @@ export async function getForwardRules(userId?: number, hostId?: number) {
 }
 
 
-export type ForwardRuleListCategory = "all" | "local" | "tunnel" | "chain" | "group";
+export type ForwardRuleListCategory = "all" | ForwardRuleSortCategory;
 /**
  * A concrete link resource selected by the Rules page's two-level filter.
  * `local` refers to a saved port-forward group (groupMode=port), while
@@ -128,7 +131,7 @@ function ruleColumn(alias: string, column: string) {
   return alias + "." + quoteIdentifier(column);
 }
 
-function forwardRuleListCategorySql() {
+function forwardRuleResourceCategorySql() {
   const groupMode = ruleColumn("g", "groupMode");
   return [
     "CASE",
@@ -140,6 +143,11 @@ function forwardRuleListCategorySql() {
     "  ELSE 'local'",
     "END",
   ].join("\n");
+}
+
+function forwardRuleListCategorySql() {
+  return "CASE WHEN TRIM(COALESCE(" + ruleColumn("r", "sni") + ", '')) <> '' THEN 'sni' ELSE "
+    + forwardRuleResourceCategorySql() + " END";
 }
 
 function forwardRuleEntryHostSql() {
@@ -304,7 +312,7 @@ function buildForwardRuleSqlFilter(
       conditions.push("1 = 0");
     } else if (resourceId <= 0) {
       // A type-only selection is the first level of the two-level picker.
-      conditions.push(categorySql + " = ?");
+      conditions.push(forwardRuleResourceCategorySql() + " = ?");
       params.push(resourceType);
     } else {
       // Keep the resource predicate explicit instead of relying only on the
@@ -564,17 +572,26 @@ function buildForwardRuleSqlFilter(
     ];
     for (const [category, labels] of categoryLabels) {
       if (!labels.toLowerCase().includes(token)) continue;
-      tokenClauses.push(categorySql + " = ?");
+      tokenClauses.push(forwardRuleResourceCategorySql() + " = ?");
       tokenParams.push(category);
+    }
+    if ("sni规则组 sni".includes(token)) {
+      tokenClauses.push(categorySql + " = ?");
+      tokenParams.push("sni");
     }
 
     conditions.push("(" + tokenClauses.join(" OR ") + ")");
     params.push(...tokenParams);
   }
 
-  if (includeCategory && input.category !== "all") {
-    conditions.push(categorySql + " = ?");
-    params.push(input.category);
+  if (includeCategory) {
+    if (input.category === "all") {
+      conditions.push(categorySql + " <> ?");
+      params.push("sni");
+    } else {
+      conditions.push(categorySql + " = ?");
+      params.push(input.category);
+    }
   }
 
   return {
@@ -761,7 +778,7 @@ async function hydrateForwardRuleListIds(ids: number[]) {
 }
 
 function emptyForwardRuleCategoryCounts() {
-  return { all: 0, local: 0, tunnel: 0, chain: 0, group: 0 };
+  return { all: 0, local: 0, tunnel: 0, chain: 0, group: 0, sni: 0 };
 }
 
 type ForwardRuleDisplayRow = {
@@ -781,7 +798,7 @@ type ForwardRuleSortRow = ForwardRuleDisplayRow & {
 
 type ForwardRuleReorderSelectionRow = Pick<
   ForwardRuleSortRow,
-  "id" | "userId" | "tunnelId" | "forwardGroupId" | "groupMode"
+  "id" | "userId" | "tunnelId" | "forwardGroupId" | "groupMode" | "sni"
 >;
 
 type ForwardRuleReorderScopeRow = ForwardRuleSortRow & Pick<
@@ -1189,6 +1206,7 @@ export async function reorderForwardRules(category: ForwardRuleSortCategory, ids
         r.${q("userId")} AS ${q("userId")},
         r.${q("tunnelId")} AS ${q("tunnelId")},
         r.${q("forwardGroupId")} AS ${q("forwardGroupId")},
+        r.${q("sni")} AS ${q("sni")},
         g.${q("groupMode")} AS ${q("groupMode")}
        FROM ${q("forward_rules")} r
        LEFT JOIN ${q("forward_groups")} g ON g.${q("id")} = r.${q("forwardGroupId")}

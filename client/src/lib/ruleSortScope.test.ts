@@ -27,6 +27,13 @@ test("mixed categories are not sortable", () => {
   }
 });
 
+test("SNI sorting requires the entire SNI category across its different resource types", () => {
+  assert.equal(isCompleteRuleSortScope("sni", "all"), true);
+  for (const resource of ["local", "tunnel", "chain", "group", "group:123"]) {
+    assert.equal(isCompleteRuleSortScope("sni", resource), false);
+  }
+});
+
 test("rule list uses complete-scope validation and retains other safety gates", () => {
   const source = readFileSync(new URL("../pages/Rules.tsx", import.meta.url), "utf8");
   const gate = source.slice(source.indexOf("const ruleSortingEnabled ="), source.indexOf("const ruleSortableItems ="));
