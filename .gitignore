@@ -79,3 +79,6 @@ panel-ssl-runtime.json.*.tmp
 
 # Unified validation evidence and immutable release candidates
 .release/
+
+# pnpm may place its store on the workspace volume inside containers
+.pnpm-store/
