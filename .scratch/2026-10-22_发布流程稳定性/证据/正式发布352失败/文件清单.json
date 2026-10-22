@@ -1,0 +1,22 @@
+[
+  {
+    "name": "verification-panel.tar.gz",
+    "bytes": 99159,
+    "sha256": "b33ef35cf13474aeeaabf7577c112f8b3a0ac66ba5620d07bd44d4e29bcc2172"
+  },
+  {
+    "name": "发布运行.json",
+    "bytes": 9510,
+    "sha256": "cc9718cdf18ee56c4d225d93119106e37ff0f5431a642036ad63279d9231e888"
+  },
+  {
+    "name": "日常检查运行.json",
+    "bytes": 8988,
+    "sha256": "81aa0e9e719100b357576b5dcfbe73048258cc03ffded0a8b6dd304bcb78f219"
+  },
+  {
+    "name": "配额根因与修复验证.tar.gz",
+    "bytes": 6468,
+    "sha256": "fc95d627176624d73c97887782c45565c981bb23bc67474887b8f1200ff2a5a1"
+  }
+]

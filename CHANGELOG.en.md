@@ -4,6 +4,18 @@
 
 ## [Unreleased]
 
+## [3.5.3] - 2026-10-22
+
+### Fixes and improvements
+
+- Fix the member traffic quota fixture's assumption that query order identifies the reporting host. Give members distinct creation times, report real traffic by host identity, and verify both directional totals on the parent rule while retaining quota enforcement, real SQLite and HTTP checks.
+- Include the complete 3.5.2 release reliability changes: DNS and FXP fixture scheduling fixes, isolated performance checks for four batch scenarios, a fixed Linux toolchain, and shared validation with recoverable panel, Agent, image and documentation delivery. Retain the strict five-second limit per batch and all behavior assertions.
+
+### Versions and upgrade notes
+
+- Panel: `3.5.3`; Agent and ForwardX FXP runtime: `3.5.0`. Upgrades from 3.5.0/3.5.1 require only the panel update. Existing production forwarding, entry health and DDNS policies remain in effect.
+- Validation stopped v3.5.2 before formal publication. Preserve the v3.5.1 and v3.5.2 tags and failure evidence without moving tags or reusing failed outputs. Native Android and iOS/iPadOS remain excluded; production upgrades are a separate action.
+
 ## [3.5.2] - 2026-10-22
 
 ### Fixes and improvements
