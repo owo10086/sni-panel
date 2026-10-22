@@ -3502,6 +3502,10 @@ async function removeStaleForwardGroupChildRules(
 ) {
   const childRules = await getForwardGroupChildRules(groupId);
   for (const child of childRules as any[]) {
+    // Retired listeners still reach their hosts through the chain refresh and
+    // Agent stop acknowledgements. Do not reopen completed accounting on every
+    // sync; unfinished closeout must keep its existing retry path below.
+    if (dbBool(child.pendingDelete) && !dbBool(child.deleteSettlementPending)) continue;
     const childKey = `${Number(child.forwardGroupRuleId)}:${Number(child.forwardGroupMemberId)}:${Number(child.hostId)}`;
     if (
       !liveMemberIds.has(Number(child.forwardGroupMemberId))

@@ -1019,7 +1019,16 @@ async function markTemplateChildrenPendingDelete(
   for (const child of childRules as any[]) {
     if (isDatabaseTransactionActive()) {
       await db.markForwardRulePendingDelete(Number(child.id));
-      await afterDatabaseCommit(() => settleTrafficBillingForDeletedRule(child).then(() => undefined));
+      // Persist the financial obligation with retirement. Chain synchronization
+      // can then distinguish unfinished closeout from a settled Agent retiree.
+      await db.setForwardRuleDeleteSettlementPending(Number(child.id), true);
+      await afterDatabaseCommit(async () => {
+        await db.settleForwardRuleDelete(Number(child.id));
+        const user = await db.getUserById(Number(child.userId));
+        if (user && Number(user.balanceCents) < 0 && user.forwardAccessPauseReason === "traffic_billing_balance") {
+          await refreshUserForwardEndpoints(Number(child.userId), "traffic-billing-delete-balance-negative");
+        }
+      });
     } else {
       await settleTrafficBillingForDeletedRule(child);
     }

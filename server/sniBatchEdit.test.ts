@@ -536,3 +536,80 @@ for (const operation of ["toggle", "reorder", "delete"]) {
     `);
   });
 }
+
+for (const failedStage of ["settlement", "debt-pause"]) {
+  test("SNI chain migration durably retries financial closeout: " + failedStage, () => {
+    verifySniWrites(String.raw`
+      const rules = await import("./server/repositories/forwardRuleRepository.ts");
+      const groups = await import("./server/repositories/forwardGroupRepository.ts");
+      const billing = await import("./server/repositories/trafficBillingRepository.ts");
+      await addGroup(30, "entry", [1, 2]);
+      await addGroup(31, "entry", [5, 6]);
+      await addGroup(20, "chain", [3, 4], { entryGroupId: 30 });
+      await addGroup(21, "chain", [7, 8], { entryGroupId: 31 });
+      const moving = await create("financial-move", { forwardGroupId: 20 });
+      const [child] = (await rules.getForwardGroupChildRulesForTemplate(moving.id)).filter(row => !row.pendingDelete);
+      assert.ok(child);
+      await billing.setTrafficBillingEnabled(true);
+      await billing.upsertTrafficBillingConfig({ resourceType: "forward_group", resourceId: 20, enabled: true, requiresPermission: false, pricePerGbCents: 100, multiplier: 100 });
+      await runtime.executeRaw('UPDATE users SET balanceCents=1 WHERE id=1');
+      await insert("traffic_billing_rule_usage", { id: 91, userId: 1, ruleId: child.id, resourceType: "forward_group", resourceId: 20, totalBytes: 100000000, billedGb: 0, pendingMilliCents: 0, settled: 0 });
+      const failedStage = ${JSON.stringify(failedStage)};
+      await runtime.executeRaw(failedStage === "settlement"
+        ? "CREATE TRIGGER reject_migration_closeout BEFORE UPDATE OF settled ON traffic_billing_rule_usage WHEN OLD.id=91 BEGIN SELECT RAISE(ABORT,'migration-settlement-failure'); END"
+        : "CREATE TRIGGER reject_migration_closeout BEFORE UPDATE OF canAddRules ON users WHEN NEW.canAddRules=0 BEGIN SELECT RAISE(ABORT,'migration-debt-pause-failure'); END");
+      await assert.rejects(() => admin.update({ id: moving.id, forwardGroupId: 21 }));
+      assert.equal(Number((await rules.getForwardRuleById(moving.id)).forwardGroupId), 21, "configuration committed before financial retry");
+      const retired = await rules.getForwardRuleById(child.id);
+      assert.ok(retired.pendingDelete);
+      assert.ok(retired.deleteSettlementPending, "failed route closeout must leave a durable retry obligation");
+      await assert.rejects(() => groups.syncForwardGroupRules(20, { preserveRuntime: true }));
+      await runtime.executeRaw("DROP TRIGGER reject_migration_closeout");
+      await groups.syncForwardGroupRules(20, { preserveRuntime: true });
+      assert.equal(Boolean((await rules.getForwardRuleById(child.id)).deleteSettlementPending), false);
+      const [user] = await runtime.queryRaw('SELECT balanceCents,canAddRules,forwardAccessPauseReason FROM users WHERE id=1');
+      assert.equal(user.balanceCents, -8);
+      assert.equal(Boolean(user.canAddRules), false);
+      assert.equal(user.forwardAccessPauseReason, "traffic_billing_balance");
+      await groups.syncForwardGroupRules(20, { preserveRuntime: true });
+      const records = await runtime.queryRaw('SELECT amountCents FROM traffic_billing_records WHERE ruleId=?', [child.id]);
+      assert.deepEqual(records.map(row => row.amountCents), [9]);
+    `);
+  });
+}
+
+
+test("SNI migration financial closeout refreshes the indebted user's unrelated host", () => {
+  verifySniWrites(String.raw`
+    const { EventEmitter } = await import("node:events");
+    const { registerAgentEventClient } = await import("./server/agentEvents.ts");
+    const rules = await import("./server/repositories/forwardRuleRepository.ts");
+    const billing = await import("./server/repositories/trafficBillingRepository.ts");
+    await addGroup(20, "failover", [3, 4]);
+    const moving = await create("debt-refresh");
+    await admin.create({ hostId: 12, name: "unrelated", sourcePort: 12000, targetIp: "203.0.113.12", targetPort: 80, isEnabled: true });
+    const [child] = await rules.getForwardGroupChildRulesForTemplate(moving.id);
+    await billing.setTrafficBillingEnabled(true);
+    await billing.upsertTrafficBillingConfig({ resourceType: "forward_group", resourceId: 10, enabled: true, requiresPermission: false, pricePerGbCents: 100, multiplier: 100 });
+    await runtime.executeRaw('UPDATE users SET balanceCents=1 WHERE id=1');
+    await insert("traffic_billing_rule_usage", { id: 91, userId: 1, ruleId: child.id, resourceType: "forward_group", resourceId: 10, totalBytes: 100000000, billedGb: 0, pendingMilliCents: 0, settled: 0 });
+    class Response extends EventEmitter {
+      frames = [];
+      write(value) { this.frames.push(String(value)); return true; }
+      end() { this.emit("finish"); }
+    }
+    const response = new Response();
+    const stream = registerAgentEventClient(12, "token-12", response);
+    const { decryptPayload } = await import("./server/agentCrypto.ts");
+    // The earlier create already requested a refresh. Move past the existing
+    // coalescing window in this isolated process, without a wall-clock sleep.
+    const actualNow = Date.now;
+    Date.now = () => actualNow() + 5000;
+    try {
+      await admin.update({ id: moving.id, forwardGroupId: 20 });
+      const messages = response.frames.map(frame => decryptPayload(JSON.parse(frame.split("data: ")[1].trim()), "token-12"));
+      assert.ok(messages.some(message => message.type === "agent-refresh" && message.data.reason === "traffic-billing-delete-balance-negative"),
+        "debt suspension must refresh other hosts belonging to the same user");
+    } finally { stream.close(); }
+  `);
+});

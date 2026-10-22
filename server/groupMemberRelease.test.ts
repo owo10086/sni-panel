@@ -1190,6 +1190,107 @@ test('entry toggle follows existing SNI group then tunnel save order', () => {
 });
 
 
+test("chain sync leaves settled retirees intact while old hosts retry and acknowledge stopping", () => {
+  runGroupMemberReleaseCase(`
+    await seedEntryChain();
+    const rules = await import('./server/repositories/forwardRuleRepository.ts');
+    const [child] = await runtime.queryRaw('SELECT * FROM forward_rules WHERE forwardGroupRuleId=400 AND hostId=4 AND pendingDelete=0');
+    assert.ok(child);
+    await saveMembers(30,[5]);
+    const retired = await rules.getForwardRuleById(child.id);
+    assert.equal(Boolean(retired.pendingDelete),true);
+    assert.equal(Boolean(retired.deleteSettlementPending),false);
+    assert.equal(Boolean(retired.isRunning),true, 'stopping still needs Agent confirmation');
+    await runtime.executeRaw('CREATE TRIGGER reject_reopening_retiree BEFORE UPDATE OF deleteSettlementPending ON forward_rules WHEN OLD.id=' + child.id + " AND NEW.deleteSettlementPending=1 BEGIN SELECT RAISE(ABORT,'settled-retiree-reopened'); END");
+    const frames = captureAgentFrames([4]);
+    const beforeFrames = frames()[0][1].length;
+    for (let repeat=0;repeat<3;repeat++) await links.syncForwardGroupRules(40,{preserveRuntime:true});
+    assert.deepEqual(await rules.getForwardRuleById(child.id),retired,
+      'resync must not reopen accounting or invent a stop acknowledgement');
+    assert.ok(frames()[0][1].length>beforeFrames, 'the retired host still receives the chain refresh');
+
+    const express = (await import('express')).default;
+    const http = await import('node:http');
+    const { registerAgentHeartbeatRoute } = await import('./server/agentHeartbeatRoute.ts');
+    const { registerAgentStatusRoutes } = await import('./server/agentStatusRoutes.ts');
+    await runtime.executeRaw("UPDATE hosts SET agentToken='release-test-' || id");
+    const app=express(); app.use(express.json());
+    app.use((req,_res,next)=>{req.agentToken=String(req.headers.authorization||'').replace('Bearer ','');next();});
+    registerAgentHeartbeatRoute(app);
+    registerAgentStatusRoutes(app);
+    const server=http.createServer(app);
+    await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+    const heartbeat=async localRules=>{
+      const response=await fetch('http://127.0.0.1:'+server.address().port+'/api/agent/heartbeat',{
+        method:'POST',headers:{authorization:'Bearer release-test-4','content-type':'application/json'},
+        body:JSON.stringify({agentVersion:'3.3.0',agentBootId:'retiree-boot',agentProcessId:1004,forceReconcile:true,localState:{rules:localRules}}),
+      });
+      assert.equal(response.status,200); const result=await response.json(); assert.equal(result.success,true); return result;
+    };
+    try {
+      const local=[{ruleId:child.id,port:child.sourcePort,forwardType:child.forwardType,protocol:'tcp',ready:true}];
+      let heartbeatNow=Date.now(); Date.now=()=>heartbeatNow;
+      let removal;
+      for(let attempt=0;attempt<2;attempt++) {
+        // Unacknowledged work is retried after the existing 60-second window.
+        // Advance this isolated process's clock instead of sleeping or changing it.
+        if(attempt>0) heartbeatNow+=60_001;
+        const result=await heartbeat(local);
+        assert.ok(result.desiredState?.actions.some(action=>action.op==='remove'&&action.sourcePort===child.sourcePort),
+          'a still-running old listener must receive removal again: '+JSON.stringify({attempt,result}));
+        removal=result.desiredState.actions.find(action=>action.op==='remove'&&action.ruleId===child.id);
+        assert.ok(removal);
+        assert.ok(await rules.getForwardRuleById(child.id), 'no confirmation means no physical deletion');
+      }
+      const response=await fetch('http://127.0.0.1:'+server.address().port+'/api/agent/rule-status',{
+        method:'POST',headers:{authorization:'Bearer release-test-4','content-type':'application/json'},
+        body:JSON.stringify({...removal,isRunning:false}),
+      });
+      assert.equal(response.status,200);
+      const acknowledgement=await response.json();
+      assert.equal(acknowledgement.success,true); assert.ok(!acknowledgement.ignored);
+      assert.equal(await rules.getForwardRuleById(child.id),undefined,
+        'confirmed removal releases the settled retiree');
+    } finally { server.closeAllConnections(); await new Promise(resolve=>server.close(resolve)); }
+  `);
+});
+
+for (const failedStage of ["settlement", "debt-pause"]) {
+  test("chain sync retries unfinished retiree accounting without charging twice: " + failedStage, () => {
+    runGroupMemberReleaseCase(`
+      await seedEntryChain();
+      const settings=await import('./server/repositories/settingsRepository.ts');
+      const rules=await import('./server/repositories/forwardRuleRepository.ts');
+      await settings.setSetting('trafficBillingEnabled','true');
+      await runtime.executeRaw('UPDATE users SET balanceCents=1 WHERE id=1');
+      const [child]=await runtime.queryRaw('SELECT id FROM forward_rules WHERE forwardGroupRuleId=400 AND hostId=4 AND pendingDelete=0');
+      await insert('traffic_billing_configs',{id:90,resourceType:'forward_group',resourceId:40,enabled:1,pricePerGbCents:100,multiplier:100});
+      await insert('traffic_billing_rule_usage',{id:91,userId:1,ruleId:child.id,resourceType:'forward_group',resourceId:40,totalBytes:100000000,billedGb:0,pendingMilliCents:0,settled:0});
+      await runtime.executeRaw("` + failedStage + `"==='settlement'
+        ? "CREATE TRIGGER reject_chain_closeout BEFORE UPDATE OF settled ON traffic_billing_rule_usage WHEN OLD.id=91 BEGIN SELECT RAISE(ABORT,'chain-closeout-failure'); END"
+        : "CREATE TRIGGER reject_chain_closeout BEFORE UPDATE OF canAddRules ON users WHEN NEW.canAddRules=0 BEGIN SELECT RAISE(ABORT,'chain-debt-pause-failure'); END");
+      await assert.rejects(()=>saveMembers(30,[5]));
+      assert.equal(Boolean((await rules.getForwardRuleById(child.id)).deleteSettlementPending),true);
+      await assert.rejects(()=>links.syncForwardGroupRules(40,{preserveRuntime:true}),
+        'unfinished closeout must still be retried by chain sync');
+      assert.equal(Boolean((await rules.getForwardRuleById(child.id)).deleteSettlementPending),true);
+      await runtime.executeRaw('DROP TRIGGER reject_chain_closeout');
+      await links.syncForwardGroupRules(40,{preserveRuntime:true});
+      const retired=await rules.getForwardRuleById(child.id);
+      assert.equal(Boolean(retired.deleteSettlementPending),false);
+      assert.equal(Boolean(retired.isRunning),true);
+      const [user]=await runtime.queryRaw('SELECT balanceCents,canAddRules,forwardAccessPauseReason FROM users WHERE id=1');
+      assert.equal(user.balanceCents,-8); assert.equal(Boolean(user.canAddRules),false);
+      assert.equal(user.forwardAccessPauseReason,'traffic_billing_balance');
+      assert.equal((await runtime.queryRaw('SELECT id FROM traffic_billing_records WHERE ruleId=?',[child.id])).length,1);
+      await links.syncForwardGroupRules(40,{preserveRuntime:true});
+      assert.equal((await runtime.queryRaw('SELECT id FROM traffic_billing_records WHERE ruleId=?',[child.id])).length,1);
+      await rules.updateRuleRunningStatus(child.id,false);
+      assert.equal(await rules.getForwardRuleById(child.id),undefined);
+    `);
+  });
+}
+
 test("stopped member cleanup preserves failed settlement for later retry", () => {
   runGroupMemberReleaseCase(`
     await seedFailover();
