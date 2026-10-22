@@ -1,0 +1,17 @@
+[
+  {
+    "file": "修复验收日志.tar.gz",
+    "bytes": 16837,
+    "sha256": "2940875d03bd9bcdda086aced15e57210b11ff3735da0ac531e387b4eb26e2c4"
+  },
+  {
+    "file": "批次耗时.csv",
+    "bytes": 12952,
+    "sha256": "01abfb01cb514bd30331095f0c52bf6820030830622faef5f0e69ddc62369534"
+  },
+  {
+    "file": "最终类型与回归.tar.gz",
+    "bytes": 4901,
+    "sha256": "e7ac75cc36b5cb29b32595df5173019b691d091f15256611fb605ea9f80ea877"
+  }
+]

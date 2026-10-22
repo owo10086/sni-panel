@@ -4,6 +4,19 @@
 
 ## [Unreleased]
 
+## [3.5.4] - 2026-10-22
+
+### Fixes and improvements
+
+- Fix increasingly slow saves after repeated forwarding-chain migrations. Synchronization no longer reopens completed accounting for retired members. Cross-group moves persist financial obligations with retirement and clear them only after settlement and debt suspension succeed. Unfinished settlement, debt suspension, removal notifications and cleanup after stop acknowledgement retain their existing behavior.
+- Add real database and HTTP regression checks for settled retirees, removal retries at the existing interval, cleanup after an accepted stop acknowledgement, and accounting retries without duplicate charges. Keep the strict five-second limit for every batch in all four performance scenarios.
+- Include the unpublished 3.5.2/3.5.3 fixes: DNS, FXP and member quota fixtures, isolated performance checks, and shared validation with recoverable panel, Agent, image and documentation delivery.
+
+### Versions and upgrade notes
+
+- Panel: `3.5.4`; Agent and ForwardX FXP runtime: `3.5.0`. Upgrades from 3.5.0/3.5.1 require only the panel update. Existing entry health, complete SNI configuration confirmation, observation windows and DDNS policies remain in effect.
+- Pre-publication checks stopped v3.5.2 and v3.5.3. Preserve their tags and failure evidence. Native Android and iOS/iPadOS remain excluded; production upgrades are a separate action.
+
 ## [3.5.3] - 2026-10-22
 
 ### Fixes and improvements

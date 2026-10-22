@@ -1,0 +1,42 @@
+[
+  {
+    "file": "chain-profile.tar.gz",
+    "bytes": 141575,
+    "sha256": "7e0ebc1333b8ebe84905123d9f8630eaa47c4c5d963978661caa6b305bbf8d94"
+  },
+  {
+    "file": "ci-run-final.json",
+    "bytes": 8988,
+    "sha256": "c069e7c71eef662cb2742300aac129f22523be8f06b00e90f9d8218d7c77a2f7"
+  },
+  {
+    "file": "ci-run.json",
+    "bytes": 8758,
+    "sha256": "b04859a67e81d857dbc12118d5a44e93fc3800a4f3262a35f2be0e165c9d8d6c"
+  },
+  {
+    "file": "release-run.json",
+    "bytes": 9510,
+    "sha256": "b952e0ffe69ff4857423d0ead41529c0c0122c2c2927791c9b5133572798a4c5"
+  },
+  {
+    "file": "verification-agent.tar.gz",
+    "bytes": 3767,
+    "sha256": "959c5e9fda13258c66394cb2663eb4e60b8829826015242f01f889da8f357727"
+  },
+  {
+    "file": "verification-mysql.tar.gz",
+    "bytes": 2735,
+    "sha256": "7be6e493ef7765310fa672f6d972ca952576779426dd3b2afb92843f7a78fcac"
+  },
+  {
+    "file": "verification-panel.tar.gz",
+    "bytes": 103206,
+    "sha256": "e257bb3bc886bbd8e0bf9c69ed0c8e974c45c05cff724e0a8eebd7a3193f47c2"
+  },
+  {
+    "file": "verification-performance.tar.gz",
+    "bytes": 10376,
+    "sha256": "457c5839e21cc55db4d6ec386dbb412e15642506228716bf082a75566686fec2"
+  }
+]
