@@ -141,12 +141,23 @@ try {
   await runtime.executeRaw(`INSERT INTO forward_group_members (id,"groupId","memberType","hostId",priority,"isEnabled") VALUES (101,10,'host',1,0,1),(102,10,'host',2,1,1)`);
   await db.setUserForwardGroupPermissions(2, [10]);
   const template = await admin.create({ ...base, userId: 2, hostId: undefined, sourcePort: 24100, forwardGroupId: 10, rateLimitMbps: 10, trafficLimit: 1000, trafficMode: "max" });
-  const children = await db.getForwardGroupChildRulesForTemplate(template.id);
+  // A later-created member is returned first. Cross a timestamp boundary
+  // explicitly so the report must use host identity rather than row order.
+  const memberCreatedAt = Math.floor(Date.now() / 1000) - 2;
+  await runtime.executeRaw(`UPDATE forward_rules SET "createdAt" = ? + "hostId" WHERE "forwardGroupRuleId" = ?`, [memberCreatedAt, template.id]);
+  const children: ForwardRule[] = await db.getForwardGroupChildRulesForTemplate(template.id);
   assert.equal(children.length, 2);
+  assert.deepEqual(children.map(child => Number(child.hostId)), [2, 1]);
+  const hostOneChild = children.find(child => Number(child.hostId) === 1);
+  const hostTwoChild = children.find(child => Number(child.hostId) === 2);
+  assert.ok(hostOneChild); assert.ok(hostTwoChild);
   let gated = await applyRuleLimitsForRuntime(children);
   assert.ok(gated.every((child: any) => child.rateLimitMbps === 10 && child.isEnabled));
-  await recordTraffic([stat(600, 50, children[0].id, 1), stat(500, 60, children[1].id, 2)]);
+  await recordTraffic([stat(600, 50, hostOneChild.id, 1), stat(500, 60, hostTwoChild.id, 2)]);
   await reconcileRuleLimits([template.id]);
+  const aggregatedPolicy = await db.getForwardRuleById(template.id);
+  assert.equal(aggregatedPolicy!.quotaUsedIn, 1100);
+  assert.equal(aggregatedPolicy!.quotaUsedOut, 110);
   assert.equal((await db.getForwardRuleById(template.id))!.ruleLimitReason, "traffic_limit");
   gated = await applyRuleLimitsForRuntime(children);
   assert.ok(gated.every((child: any) => !child.isEnabled && child.ruleLimitReason === "traffic_limit"));
