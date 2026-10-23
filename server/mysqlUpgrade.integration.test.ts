@@ -163,3 +163,120 @@ test("real MySQL personal-group writes use committed groups after an older repea
     await admin.end();
   }
 });
+
+test("real MySQL personal-group transactions recover from cross-owner empty-range deadlocks", {
+  skip: !process.env.FORWARDX_TEST_MYSQL_URL,
+  timeout: 120_000,
+}, async () => {
+  const url = new URL(process.env.FORWARDX_TEST_MYSQL_URL!);
+  const database = `forwardx_groups_retry_test_${randomBytes(8).toString("hex")}`;
+  assert.match(database, /^forwardx_groups_retry_test_[a-f0-9]{16}$/);
+  const connection = { host: url.hostname, port: Number(url.port || 3306), user: decodeURIComponent(url.username), password: decodeURIComponent(url.password) };
+  const admin = await mysql.createConnection(connection);
+  process.env.DATABASE_TYPE = "mysql";
+  const runtime = await import("./dbRuntime");
+  const { ensureDatabaseSchema } = await import("./dbSchema");
+  const groups = await import("./repositories/ruleGroupRepository");
+  let created = false;
+  try {
+    await admin.query(`CREATE DATABASE \`${database}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
+    created = true;
+    await runtime.connectDatabase({ type: "mysql", mysql: { ...connection, database } });
+    const pool = runtime.getPool()!;
+    await ensureDatabaseSchema(pool);
+    for (const id of [1, 2]) {
+      await runtime.insertAndGetId("users", { id, username: `retry-owner-${id}`, password: "test-hash" });
+      await runtime.insertAndGetId("hosts", { id, userId: id, name: `retry-host-${id}`, ip: `192.0.2.${id}` });
+      await runtime.insertAndGetId("forward_rules", { id, userId: id, hostId: id, name: `retry-rule-${id}`, sourcePort: 18000 + id, targetIp: "198.51.100.10", targetPort: 443 });
+    }
+    const actorConnections = await Promise.all([pool.getConnection(), pool.getConnection()]);
+    try {
+      await Promise.all(actorConnections.map(actor => actor.query("SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ")));
+    } finally { for (const actor of actorConnections) actor.release(); }
+
+    const groupIds: number[] = [];
+    for (const phase of ["first-group", "first-membership"] as const) {
+      let readers = 0;
+      let release!: () => void;
+      const ready = new Promise<void>(resolve => { release = resolve; });
+      const attempts = [0, 0];
+      const committed: number[] = [];
+      await Promise.all([1, 2].map(userId => groups.withPersonalRuleGroupLock(userId, async () => {
+        attempts[userId - 1]++;
+        // Establish the real InnoDB empty-range conflict before either insert.
+        if (phase === "first-group") await runtime.queryRaw("SELECT id FROM rule_groups WHERE userId = ? FOR UPDATE", [userId]);
+        else await groups.getRulePersonalGroupIds(userId, [userId], { forWrite: true });
+        await runtime.executeRaw("UPDATE hosts SET sortOrder = sortOrder + 1 WHERE id = ?", [userId]);
+        await runtime.afterDatabaseCommit(() => { committed.push(userId); });
+        if (++readers === 2) release();
+        await ready;
+        if (phase === "first-group") groupIds[userId - 1] = (await groups.savePersonalRuleGroup(userId, `first-${userId}`)).id;
+        else await groups.moveRulesToPersonalGroups(userId, [userId], [groupIds[userId - 1]], "add");
+      })));
+      assert.ok(attempts[0] + attempts[1] >= 3, `${phase}: the fixture must force a real whole-transaction retry`);
+      assert.deepEqual(committed.sort(), [1, 2], "rolled-back attempts must discard their post-commit work");
+      for (const userId of [1, 2]) {
+        const data = await groups.getPersonalRuleGroups(userId);
+        assert.deepEqual(data.groups.map(group => [group.name, group.sortOrder, group.count]), [[`first-${userId}`, 0, phase === "first-group" ? 0 : 1]]);
+        const [host] = await runtime.queryRaw<{ sortOrder: number }>("SELECT sortOrder FROM hosts WHERE id = ?", [userId]);
+        assert.equal(Number(host.sortOrder), phase === "first-group" ? 1 : 2, "each complete transaction commits its earlier writes exactly once");
+      }
+    }
+    // Nested callers cannot retry only group work after InnoDB aborts the outer
+    // transaction: the original batch must fail and roll back all prior work.
+    let nestedAttempts = 0;
+    await assert.rejects(runtime.withDatabaseTransaction(async () => {
+      await runtime.executeRaw("UPDATE hosts SET sortOrder = 99 WHERE id = 1");
+      await groups.withPersonalRuleGroupLock(1, async () => {
+        nestedAttempts++;
+        throw Object.assign(new Error("nested-deadlock-fixture"), { code: "ER_LOCK_DEADLOCK", errno: 1213 });
+      });
+    }), { code: "ER_LOCK_DEADLOCK" });
+    assert.equal(nestedAttempts, 1, "only the owner of the complete transaction can retry");
+    const [unchanged] = await runtime.queryRaw<{ sortOrder: number }>("SELECT sortOrder FROM hosts WHERE id = 1");
+    assert.equal(Number(unchanged.sortOrder), 2);
+
+    // A deadlock after the new group's ID has been allocated must rerun creation,
+    // not try to edit the rolled-back ID retained in a previous callback closure.
+    await pool.query("CREATE TABLE retry_once (userId INT PRIMARY KEY) ENGINE=MEMORY");
+    await pool.query(`CREATE TRIGGER reject_first_membership BEFORE INSERT ON rule_group_members FOR EACH ROW BEGIN
+      IF (SELECT name FROM rule_groups WHERE id = NEW.groupId) = 'with-member' THEN
+        INSERT IGNORE INTO retry_once (userId) VALUES (NEW.userId);
+        IF ROW_COUNT() = 1 THEN SIGNAL SQLSTATE '40001' SET MYSQL_ERRNO = 1213, MESSAGE_TEXT = 'after-group-insert-deadlock'; END IF;
+      END IF;
+    END`);
+    const withMember = await groups.savePersonalRuleGroup(1, "with-member", undefined, { addRuleIds: [1], removeRuleIds: [] });
+    assert.deepEqual((await groups.getRulePersonalGroupIds(1, [1])).get(1), [groupIds[0], withMember.id]);
+    assert.equal((await groups.getPersonalRuleGroups(1)).groups.filter(group => group.name === "with-member").length, 1);
+    await pool.query("DROP TRIGGER reject_first_membership");
+
+    let failedAttempts = 0;
+    await assert.rejects(groups.withPersonalRuleGroupLock(1, async () => {
+      failedAttempts++;
+      await runtime.executeRaw("UPDATE hosts SET sortOrder = 99 WHERE id = 1");
+      throw Object.assign(new Error("persistent-deadlock-fixture"), { code: "ER_LOCK_DEADLOCK", errno: 1213 });
+    }), /persistent-deadlock-fixture/);
+    assert.equal(failedAttempts, 3, "persistent deadlocks must stop after three complete attempts");
+    const [afterFailure] = await runtime.queryRaw<{ sortOrder: number }>("SELECT sortOrder FROM hosts WHERE id = 1");
+    assert.equal(Number(afterFailure.sortOrder), 2);
+    let businessAttempts = 0;
+    await assert.rejects(groups.withPersonalRuleGroupLock(1, async () => {
+      businessAttempts++;
+      await groups.assertPersonalRuleGroups(1, [0], { forWrite: true });
+    }), { code: "NOT_FOUND" });
+    assert.equal(businessAttempts, 1, "business validation failures must never retry");
+    let committedAttempts = 0;
+    await assert.rejects(groups.withPersonalRuleGroupLock(1, async () => {
+      committedAttempts++;
+      await runtime.executeRaw("UPDATE hosts SET sortOrder = sortOrder + 1 WHERE id = 1");
+      await runtime.afterDatabaseCommit(() => { throw Object.assign(new Error("after-commit-deadlock-fixture"), { code: "ER_LOCK_DEADLOCK", errno: 1213 }); });
+    }), /after-commit-deadlock-fixture/);
+    assert.equal(committedAttempts, 1, "a post-commit failure must never rerun committed writes");
+    const [committedHost] = await runtime.queryRaw<{ sortOrder: number }>("SELECT sortOrder FROM hosts WHERE id = 1");
+    assert.equal(Number(committedHost.sortOrder), 3);
+  } finally {
+    await runtime.closeDatabase();
+    if (created) await admin.query(`DROP DATABASE \`${database}\``);
+    await admin.end();
+  }
+});

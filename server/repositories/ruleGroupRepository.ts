@@ -2,7 +2,7 @@ import { and, eq, inArray, sql } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { forwardGroupMembers, forwardRules, ruleGroups, ruleGroupMembers } from "../../drizzle/schema";
 import { MAX_PERSONAL_RULE_GROUPS, type PersonalRuleGroup } from "../../shared/ruleGroups";
-import { getDb, getDatabaseKind, insertAndGetId, queryRaw, withDatabaseTransaction } from "../dbRuntime";
+import { getDb, getDatabaseKind, insertAndGetId, isDatabaseTransactionActive, queryRaw, withDatabaseTransaction } from "../dbRuntime";
 import { sqlBool } from "./repositoryUtils";
 import { quoteIdentifier } from "../dbCompat";
 
@@ -10,15 +10,35 @@ import { quoteIdentifier } from "../dbCompat";
 // outer reference explicit inside correlated subqueries (not the inner id).
 const outerRuleId = () => sql.raw(`${quoteIdentifier("forward_rules")}.${quoteIdentifier("id")}`);
 
-export const withPersonalRuleGroupLock = <T>(userId: number, work: () => Promise<T>) => withDatabaseTransaction(async () => {
-  // Use the database's transaction lock, not a JS lock acquired inside an
-  // existing forwarding transaction (which can invert SQLite lock order).
-  // The owner row also serializes group writes across multiple panel instances.
-  const q = quoteIdentifier;
-  const rows = await queryRaw(`SELECT ${q("id")} FROM ${q("users")} WHERE ${q("id")} = ?${getDatabaseKind() === "sqlite" ? "" : " FOR UPDATE"}`, [userId]);
-  if (!rows.length) throw new TRPCError({ code: "NOT_FOUND", message: "用户不存在" });
-  return work();
-});
+export async function withPersonalRuleGroupLock<T>(userId: number, work: () => Promise<T>): Promise<T> {
+  const ownsTransaction = !isDatabaseTransactionActive();
+  for (let attempt = 0; ; attempt++) {
+    let retryDeadlock = false;
+    try {
+      return await withDatabaseTransaction(async () => {
+        try {
+          // Use the database's transaction lock, not a JS lock acquired inside an
+          // existing forwarding transaction (which can invert SQLite lock order).
+          // The owner row also serializes group writes across multiple panel instances.
+          const q = quoteIdentifier;
+          const rows = await queryRaw(`SELECT ${q("id")} FROM ${q("users")} WHERE ${q("id")} = ?${getDatabaseKind() === "sqlite" ? "" : " FOR UPDATE"}`, [userId]);
+          if (!rows.length) throw new TRPCError({ code: "NOT_FOUND", message: "用户不存在" });
+          return await work();
+        } catch (error) {
+          const mysqlError = error as { code?: string; errno?: number } | null;
+          retryDeadlock = ownsTransaction && getDatabaseKind() === "mysql"
+            && (mysqlError?.code === "ER_LOCK_DEADLOCK" || mysqlError?.errno === 1213);
+          throw error;
+        }
+      });
+    } catch (error) {
+      // InnoDB may deadlock two owners reading the same empty index gap. Wait
+      // for the whole transaction to roll back before trying its complete work
+      // again. Nested batches and failures after COMMIT must never retry here.
+      if (!retryDeadlock || attempt >= 2) throw error;
+    }
+  }
+}
 
 function visibleOwnRules(userId: number) {
   return and(eq(forwardRules.userId, userId),
@@ -88,21 +108,22 @@ export async function getPersonalRuleGroups(userId: number): Promise<{ groups: P
 export async function savePersonalRuleGroup(userId: number, name: string, id?: number, changes?: { addRuleIds: number[]; removeRuleIds: number[] }) {
   return withPersonalRuleGroupLock(userId, () => withDatabaseTransaction(async () => {
     const db = await database();
-    if (id) await assertPersonalRuleGroups(userId, [id], { forWrite: true });
+    let savedId = id;
+    if (savedId) await assertPersonalRuleGroups(userId, [savedId], { forWrite: true });
     const groups = await currentPersonalGroupWriteRead(db.select().from(ruleGroups).where(eq(ruleGroups.userId, userId)));
-    if (groups.some((group: any) => group.id !== id && group.name.toLocaleLowerCase() === name.toLocaleLowerCase())) {
+    if (groups.some((group: any) => group.id !== savedId && group.name.toLocaleLowerCase() === name.toLocaleLowerCase())) {
       throw new TRPCError({ code: "CONFLICT", message: "分组名称已存在" });
     }
-    if (id) await db.update(ruleGroups).set({ name }).where(and(eq(ruleGroups.userId, userId), eq(ruleGroups.id, id)));
+    if (savedId) await db.update(ruleGroups).set({ name }).where(and(eq(ruleGroups.userId, userId), eq(ruleGroups.id, savedId)));
     else {
       if (groups.length >= MAX_PERSONAL_RULE_GROUPS) throw new TRPCError({ code: "BAD_REQUEST", message: "最多创建 100 个分组" });
-      id = await insertAndGetId("rule_groups", { userId, name, sortOrder: groups.reduce((max: number, group: any) => Math.max(max, Number(group.sortOrder)), -1) + 1 });
+      savedId = await insertAndGetId("rule_groups", { userId, name, sortOrder: groups.reduce((max: number, group: any) => Math.max(max, Number(group.sortOrder)), -1) + 1 });
     }
     // Save the name and only the explicitly changed memberships atomically.
     // Never replace the full member list: the editor loads rules page by page.
-    if (changes?.addRuleIds.length) await moveRulesToPersonalGroups(userId, changes.addRuleIds, [id!], "add");
-    if (changes?.removeRuleIds.length) await moveRulesToPersonalGroups(userId, changes.removeRuleIds, [id!], "remove");
-    return { id: id! };
+    if (changes?.addRuleIds.length) await moveRulesToPersonalGroups(userId, changes.addRuleIds, [savedId!], "add");
+    if (changes?.removeRuleIds.length) await moveRulesToPersonalGroups(userId, changes.removeRuleIds, [savedId!], "remove");
+    return { id: savedId! };
   }));
 }
 
