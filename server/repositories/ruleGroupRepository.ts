@@ -33,19 +33,30 @@ async function database() {
   return db;
 }
 
-export async function assertPersonalRuleGroups(userId: number, ids: number[]) {
+// An outer forwarding transaction may already have a MySQL RR snapshot from
+// before the owner's lock. Write decisions must read the committed rows even
+// after acquiring that lock; a regular SELECT would keep using the old snapshot.
+function currentPersonalGroupWriteRead(query: any) {
+  return getDatabaseKind() === "sqlite" ? query : query.for("update");
+}
+
+type PersonalGroupReadOptions = { forWrite?: boolean };
+
+export async function assertPersonalRuleGroups(userId: number, ids: number[], options: PersonalGroupReadOptions = {}) {
   if (ids.length === 0) return;
   const db = await database();
-  const groups = await db.select({ id: ruleGroups.id }).from(ruleGroups).where(and(eq(ruleGroups.userId, userId), inArray(ruleGroups.id, ids)));
+  const query = db.select({ id: ruleGroups.id }).from(ruleGroups).where(and(eq(ruleGroups.userId, userId), inArray(ruleGroups.id, ids)));
+  const groups = await (options.forWrite ? currentPersonalGroupWriteRead(query) : query);
   if (groups.length !== new Set(ids).size) throw new TRPCError({ code: "NOT_FOUND", message: "分组不存在或无权访问" });
 }
 
-export async function getRulePersonalGroupIds(userId: number, ids: number[]) {
+export async function getRulePersonalGroupIds(userId: number, ids: number[], options: PersonalGroupReadOptions = {}) {
   if (ids.length === 0) return new Map<number, number[]>();
   const db = await database();
-  const rows = await db.select({ ruleId: ruleGroupMembers.ruleId, groupId: ruleGroupMembers.groupId }).from(ruleGroupMembers)
+  const query = db.select({ ruleId: ruleGroupMembers.ruleId, groupId: ruleGroupMembers.groupId }).from(ruleGroupMembers)
     .innerJoin(ruleGroups, and(eq(ruleGroups.id, ruleGroupMembers.groupId), eq(ruleGroups.userId, userId)))
     .where(and(eq(ruleGroupMembers.userId, userId), inArray(ruleGroupMembers.ruleId, ids))).orderBy(ruleGroups.sortOrder, ruleGroups.id);
+  const rows = await (options.forWrite ? currentPersonalGroupWriteRead(query) : query);
   const result = new Map<number, number[]>();
   for (const row of rows) result.set(Number(row.ruleId), [...(result.get(Number(row.ruleId)) || []), Number(row.groupId)]);
   return result;
@@ -54,7 +65,7 @@ export async function getRulePersonalGroupIds(userId: number, ids: number[]) {
 /** Call only inside the owner's group lock and a database transaction. */
 export async function replacePersonalRuleGroups(userId: number, ruleId: number, groupIds: number[]) {
   const db = await database();
-  await assertPersonalRuleGroups(userId, groupIds);
+  await assertPersonalRuleGroups(userId, groupIds, { forWrite: true });
   await db.delete(ruleGroupMembers).where(and(eq(ruleGroupMembers.userId, userId), eq(ruleGroupMembers.ruleId, ruleId)));
   if (groupIds.length) await db.insert(ruleGroupMembers).values([...new Set(groupIds)].map(groupId => ({ userId, ruleId, groupId })));
 }
@@ -77,8 +88,8 @@ export async function getPersonalRuleGroups(userId: number): Promise<{ groups: P
 export async function savePersonalRuleGroup(userId: number, name: string, id?: number, changes?: { addRuleIds: number[]; removeRuleIds: number[] }) {
   return withPersonalRuleGroupLock(userId, () => withDatabaseTransaction(async () => {
     const db = await database();
-    if (id) await assertPersonalRuleGroups(userId, [id]);
-    const groups = await db.select().from(ruleGroups).where(eq(ruleGroups.userId, userId));
+    if (id) await assertPersonalRuleGroups(userId, [id], { forWrite: true });
+    const groups = await currentPersonalGroupWriteRead(db.select().from(ruleGroups).where(eq(ruleGroups.userId, userId)));
     if (groups.some((group: any) => group.id !== id && group.name.toLocaleLowerCase() === name.toLocaleLowerCase())) {
       throw new TRPCError({ code: "CONFLICT", message: "分组名称已存在" });
     }
@@ -98,7 +109,7 @@ export async function savePersonalRuleGroup(userId: number, name: string, id?: n
 export async function deletePersonalRuleGroup(userId: number, id: number) {
   return withPersonalRuleGroupLock(userId, () => withDatabaseTransaction(async () => {
     const db = await database();
-    await assertPersonalRuleGroups(userId, [id]);
+    await assertPersonalRuleGroups(userId, [id], { forWrite: true });
     // Metadata only: never restart, disable or delete forwarding rules.
     await db.delete(ruleGroupMembers).where(and(eq(ruleGroupMembers.userId, userId), eq(ruleGroupMembers.groupId, id)));
     await db.delete(ruleGroups).where(and(eq(ruleGroups.userId, userId), eq(ruleGroups.id, id)));
@@ -109,7 +120,7 @@ export async function deletePersonalRuleGroup(userId: number, id: number) {
 export async function reorderPersonalRuleGroups(userId: number, ids: number[]) {
   return withPersonalRuleGroupLock(userId, () => withDatabaseTransaction(async () => {
     const db = await database();
-    const groups = await db.select({ id: ruleGroups.id }).from(ruleGroups).where(eq(ruleGroups.userId, userId));
+    const groups = await currentPersonalGroupWriteRead(db.select({ id: ruleGroups.id }).from(ruleGroups).where(eq(ruleGroups.userId, userId)));
     if (ids.length !== groups.length || new Set(ids).size !== ids.length || groups.some((group: any) => !ids.includes(Number(group.id)))) {
       throw new TRPCError({ code: "BAD_REQUEST", message: "分组列表已变化，请刷新后重试" });
     }
@@ -121,11 +132,11 @@ export async function reorderPersonalRuleGroups(userId: number, ids: number[]) {
 export async function moveRulesToPersonalGroups(userId: number, ids: number[], groupIds: number[], mode: "replace" | "add" | "remove") {
   return withPersonalRuleGroupLock(userId, () => withDatabaseTransaction(async () => {
     const db = await database();
-    await assertPersonalRuleGroups(userId, groupIds);
+    await assertPersonalRuleGroups(userId, groupIds, { forWrite: true });
     const uniqueIds = [...new Set(ids)];
-    const rows = await db.select({ id: forwardRules.id }).from(forwardRules).where(and(visibleOwnRules(userId), inArray(forwardRules.id, uniqueIds)));
+    const rows = await currentPersonalGroupWriteRead(db.select({ id: forwardRules.id }).from(forwardRules).where(and(visibleOwnRules(userId), inArray(forwardRules.id, uniqueIds))));
     if (rows.length !== uniqueIds.length) throw new TRPCError({ code: "FORBIDDEN", message: "只能移动自己的规则，且规则必须仍然存在" });
-    const current = await getRulePersonalGroupIds(userId, uniqueIds);
+    const current = await getRulePersonalGroupIds(userId, uniqueIds, { forWrite: true });
     const memberships: { userId: number; ruleId: number; groupId: number }[] = [];
     for (const ruleId of uniqueIds) {
       const before = current.get(ruleId) || [];
