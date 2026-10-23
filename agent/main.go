@@ -37,7 +37,7 @@ import (
 	"golang.org/x/time/rate"
 )
 
-var Version = "3.5.0"
+var Version = "3.6.0"
 var agentProcessStartedAt = time.Now()
 var agentBootID = readAgentBootID()
 var runtimeAgentToken atomic.Value
@@ -840,6 +840,7 @@ func (e agentHTTPStatusError) Error() string {
 }
 
 type heartbeatResp struct {
+	TrafficShutdownCheck      bool                     `json:"trafficShutdownCheck,omitempty"`
 	Actions                   []action                 `json:"actions"`
 	DesiredState              *desiredState            `json:"desiredState,omitempty"`
 	PortRuleManifestRevision  int64                    `json:"portRuleManifestRevision"`
@@ -2558,6 +2559,9 @@ type hostProbeServiceProbe struct {
 	TargetIP        string `json:"targetIp"`
 	TargetPort      int    `json:"targetPort"`
 	Method          string `json:"method"`
+	TargetURL       string `json:"targetUrl"`
+	TimeoutSeconds  int    `json:"timeoutSeconds"`
+	ExpectedStatus  int    `json:"expectedStatus"`
 	IntervalSeconds int    `json:"intervalSeconds"`
 }
 type forwardGroupProbe struct {
@@ -2826,6 +2830,13 @@ type guardRule struct {
 }
 
 func main() {
+	if len(os.Args) > 1 && os.Args[1] == "--plugin-bbr" {
+		if err := runBBRPlugin(os.Args[2:], os.Stdout); err != nil {
+			fmt.Fprintln(os.Stderr, "BBR 管理失败："+err.Error())
+			os.Exit(1)
+		}
+		return
+	}
 	configPath := flag.String("config", defaultConfigPath, "config file")
 	onceRegister := flag.Bool("register", false, "register and exit")
 	flag.Parse()
@@ -3939,6 +3950,7 @@ func heartbeat(cfg Config, forceReconcile ...bool) (heartbeatResult, error) {
 	if len(forceReconcile) > 0 && forceReconcile[0] {
 		payload["forceReconcile"] = true
 	}
+	payload["loadAverage"] = systemLoadAverage()
 	pluginVersions, pluginSyncSignatures := installedPluginInventory()
 	forwardTools, forwardToolsCheckedAt := forwardToolInventory()
 	payload["forwardTools"] = forwardTools
@@ -4017,6 +4029,7 @@ func heartbeat(cfg Config, forceReconcile ...bool) (heartbeatResult, error) {
 	}
 	syncPanelURLFromResponse(resp.PanelURL)
 	acceptPortRuleManifest(resp.PortRuleManifestRevision, resp.PortRuleManifestSignature, resp.PortRuleManifest)
+	handleTrafficShutdownCheck(cfg, resp.TrafficShutdownCheck)
 	if resp.AgentUpgrade != nil {
 		if handleLegacyPanelMigrationUpgrade(cfg, resp.AgentUpgrade) {
 			return heartbeatResult{NextInterval: cfg.Interval}, nil
@@ -4153,6 +4166,7 @@ func heartbeatKeepalive(cfg Config) (heartbeatResult, error) {
 	}
 	payload["mimicEnvironment"] = mimicEnvironment(false)
 	payload["ipv4Addresses"], payload["ipv6Addresses"] = publicAddressInventory()
+	payload["loadAverage"] = systemLoadAverage()
 	if compactAgentReports.Load() {
 		payload["m"] = []any{
 			cpuUsage(),
@@ -4233,6 +4247,7 @@ func heartbeatKeepalive(cfg Config) (heartbeatResult, error) {
 	}
 	syncPanelURLFromResponse(resp.PanelURL)
 	acceptPortRuleManifest(resp.PortRuleManifestRevision, resp.PortRuleManifestSignature, resp.PortRuleManifest)
+	handleTrafficShutdownCheck(cfg, resp.TrafficShutdownCheck)
 	if resp.RequestLocalState {
 		requestLocalRuntimeStateUpload()
 	}
@@ -14317,6 +14332,7 @@ func postHeartbeatAfterStart(client *http.Client, cfg Config, path string, paylo
 	if path == "/api/agent/heartbeat" {
 		if fields, ok := payload.(map[string]any); ok {
 			fields["portAccessLimitsSupported"] = true
+			fields["trafficShutdownSupported"] = trafficShutdownSupported()
 		}
 	}
 	err := postWithClient(client, cfg, path, payload, out)

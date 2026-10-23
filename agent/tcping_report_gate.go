@@ -15,6 +15,9 @@ import (
 
 const (
 	tcpingSteadyReportEvery = 5 * time.Minute
+	// Tunnel hops are combined across independent Agents in a six-minute
+	// window. Refresh well inside that window, even without health changes.
+	tcpingTunnelReportEvery = time.Minute
 	tcpingHealthReportEvery = time.Minute
 	tcpingReportStateTTL    = 30 * time.Minute
 	tcpingCounterCapacity   = 32768
@@ -250,6 +253,10 @@ func (gate *tcpingReportGate) plan(
 	addTCPingReportUnits(groups, "tunnel", tunnels, false)
 	addTCPingReportUnits(groups, "forwardGroup", forwardGroups, false)
 	signatures := tcpingReportUnitSignatures(groups)
+	tunnelUnits := map[string]bool{}
+	for _, report := range tunnels {
+		tunnelUnits[tcpingReportUnitKey("tunnel", report)] = true
+	}
 	healthUnits := map[string]bool{}
 	for _, reportGroup := range []struct {
 		kind    string
@@ -290,6 +297,9 @@ func (gate *tcpingReportGate) plan(
 			gate.states[key] = state
 		}
 		reportEvery := tcpingSteadyReportEvery
+		if tunnelUnits[key] {
+			reportEvery = tcpingTunnelReportEvery
+		}
 		if healthUnits[key] {
 			reportEvery = tcpingHealthReportEvery
 		}
