@@ -13,8 +13,12 @@ test("SNI and ordinary rule tables expose the correct fields without hidden empt
     assert.match(html, /所属资源/);
     assert.match(html, /转发入口/);
     assert.match(html, /转发出口/);
-    assert.doesNotMatch(html, />用户<|>链路<|>24H</);
-    assert.equal((html.match(/<col /g) || []).length, (html.match(/<th[ >]/g) || []).length);
+    assert.match(html, /所属分组/);
+    assert.match(html, />链路</);
+    assert.match(html, />24H</);
+    assert.match(html, /规则额度/);
+    assert.doesNotMatch(html, />用户</);
+    assert.equal((html.match(/<col(?=[\s/>])/g) || []).length, (html.match(/<th[ >]/g) || []).length);
   }
 });
 

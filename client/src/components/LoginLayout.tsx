@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
+import { useMotionEnabled } from "./MotionPolicy";
 import { Link } from "wouter";
 import { ArrowUpRight, Network, Server, ShieldCheck, Zap } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -20,7 +21,7 @@ export function LoginLayout({ siteTitle, logo, version, mode, subtitle, toolbar,
   const frameRef = useRef<HTMLDivElement>(null);
   const formPanelRef = useRef<HTMLElement>(null);
   const [frameHeight, setFrameHeight] = useState<number>();
-  const reduceMotion = useReducedMotion();
+  const reduceMotion = !useMotionEnabled();
   useEffect(() => {
     document.title = siteTitle;
   }, [siteTitle]);

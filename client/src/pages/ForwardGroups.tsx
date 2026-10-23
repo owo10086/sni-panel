@@ -1,4 +1,6 @@
 import { t as translateText } from "@/i18n";
+import { useMotionEnabled } from "@/components/MotionPolicy";
+import { HintSwitch } from "@/components/ui/hint-switch";
 import DashboardLayout from "@/components/DashboardLayout";
 import AnimatedStatValue from "@/components/AnimatedStatValue";
 import { ResourceTrafficSummary } from "@/components/ResourceTrafficSummary";
@@ -505,7 +507,8 @@ function ForwardGroupLatencyDialog({
   }, [rawChartData, counterStatistics]);
   const yMax = useMemo(() => getLatencyYAxisMax(Math.max(...chartData.filter((d) => !d.isTimeout).map((d) => d.chartLatency), 0), 120), [chartData]);
   const yTicks = useMemo(() => getLatencyYAxisTicks(yMax), [yMax]);
-  const shouldAnimateChart = open && chartData.length > 0 && !groupLatencyAnimatedKeys.has(groupId);
+  const motionEnabled = useMotionEnabled();
+  const shouldAnimateChart = motionEnabled && open && chartData.length > 0 && !groupLatencyAnimatedKeys.has(groupId);
   useEffect(() => {
     if (shouldAnimateChart) groupLatencyAnimatedKeys.add(groupId);
   }, [groupId, shouldAnimateChart]);
@@ -1105,6 +1108,7 @@ export function ForwardGroupsContent({
 
   const createMutation = trpc.forwardGroups.create.useMutation({
     onSuccess: () => {
+      utils.tunnels.sectionCounts.invalidate();
       utils.forwardGroups.options.invalidate();
       utils.forwardGroups.listPage.invalidate();
       utils.rules.list.invalidate();
@@ -1116,6 +1120,7 @@ export function ForwardGroupsContent({
 
   const updateMutation = trpc.forwardGroups.update.useMutation({
     onSuccess: async (result) => {
+      void utils.tunnels.sectionCounts.invalidate();
       const updatedGroup = result?.group;
       const cachedGroups = utils.forwardGroups.options.getData();
       if (updatedGroup && cachedGroups) {
@@ -1166,6 +1171,7 @@ export function ForwardGroupsContent({
 
   const deleteMutation = trpc.forwardGroups.delete.useMutation({
     onSuccess: () => {
+      utils.tunnels.sectionCounts.invalidate();
       utils.forwardGroups.options.invalidate();
       utils.forwardGroups.listPage.invalidate();
       utils.rules.list.invalidate();
@@ -1994,11 +2000,11 @@ export function ForwardGroupsContent({
           <Card className="hidden border-border/40 bg-card/60 sm:block">
           <CardContent className="p-0">
             <div className="overflow-x-auto">
-              <Table>
+              <Table floatingScrollbar>
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-[44px] px-2" aria-label={translateText("排序")} />
-                    <TableHead>{translateText("状态")}</TableHead>
+                    <TableHead className="w-px whitespace-nowrap">{translateText("状态")}</TableHead>
                     <TableHead>{translateText("名称")}</TableHead>
                     <TableHead>{translateText("成员/链路")}</TableHead>
                     <TableHead className="hidden md:table-cell">{activeGroupMode === "port" ? translateText("所属主机") : activeGroupMode === "exit" ? translateText("出口") : activeGroupMode === "entry" ? "DDNS" : translateText("入口")}</TableHead>
@@ -2029,8 +2035,8 @@ export function ForwardGroupsContent({
                           className="mx-auto"
                         />
                       </TableCell>
-                      <TableCell className="py-3">
-                        <div className="flex items-center gap-1.5">
+                      <TableCell className="w-px whitespace-nowrap py-3">
+                        <div className="flex w-max items-center gap-1.5 [&>*]:shrink-0">
                           {renderGroupEnabledSwitch(group)}
                           {groupStatusBadge(group)}
                         </div>
@@ -2048,7 +2054,7 @@ export function ForwardGroupsContent({
                         <div className="mt-1 line-clamp-1 text-xs text-muted-foreground">{normalizeGroupMode(group.groupMode) === "port" ? translateText("转发规则中直接选择") : normalizeGroupMode(group.groupMode) === "chain" ? translateText("规则使用时监听入口端口") : normalizeGroupMode(group.groupMode) === "exit" ? translateText("隧道出口组") : group.lastDdnsValue || translateText("未切换")}</div>
                       </TableCell>
                       <TableCell className="hidden py-3 md:table-cell">{normalizeGroupMode(group.groupMode) === "chain" ? renderChainLatencySummary(group) : isCollectionMode(normalizeGroupMode(group.groupMode)) ? (normalizeGroupMode(group.groupMode) === "entry" ? translateText("固定入口") : translateText("固定出口")) : group.trafficSummary?.ruleCount ?? "—"}</TableCell>
-                      <TableCell className="py-3"><ResourceTrafficSummary summary={group.trafficSummary} compact showRuleCount={normalizeGroupMode(group.groupMode) === "chain" || isCollectionMode(normalizeGroupMode(group.groupMode))} /></TableCell>
+                      <TableCell className="py-3"><ResourceTrafficSummary summary={group.trafficSummary} compact table showRuleCount={normalizeGroupMode(group.groupMode) === "chain" || isCollectionMode(normalizeGroupMode(group.groupMode))} /></TableCell>
                       <TableCell className="py-3 text-right">
                         <div className="flex justify-end gap-1">
                           {chainLatencyActions(group)}
@@ -2081,7 +2087,7 @@ export function ForwardGroupsContent({
         </Card>
           </>
         )}
-          <PersistentPagination pagination={groupPagination} itemName={paginationItemName} />
+          <PersistentPagination pagination={groupPagination} itemName={paginationItemName} className="mt-5" />
         </>
       ) : (
         <Card className="border-border/40 bg-card/60">
@@ -2290,19 +2296,13 @@ export function ForwardGroupsContent({
                       <span className="text-sm">{translateText("入口健康度检测")}</span>
                       <Switch checked={form.chinaHealthCheckEnabled} onCheckedChange={(chinaHealthCheckEnabled) => setForm({ ...form, chinaHealthCheckEnabled })} />
                     </label>
-                    <label
-                      className="flex min-h-10 items-center justify-between gap-3 rounded-md border border-border/60 px-3 py-2"
-                      title={telegramReady ? translateText("仅在自动切换时通过所选通知渠道发送告警。") : telegramSettingsLoaded ? translateText("请先在系统设置中配置并启用所选通知渠道。") : translateText("正在确认通知渠道配置。")}
-                    >
-                      <span className="min-w-0">
-                        <span className="block text-sm">{translateText("切换告警")}</span>
-                        <span className="block truncate text-[11px] text-muted-foreground">
-                          {telegramReady ? translateText("仅自动切换提醒") : telegramSettingsLoaded ? translateText("需先配置通知渠道") : translateText("正在确认配置")}
-                        </span>
-                      </span>
-                      <Switch
+                    <label className="flex min-h-10 items-center justify-between gap-3 rounded-md border border-border/60 px-3 py-2">
+                      <span className="text-sm">{translateText("切换告警")}</span>
+                      <HintSwitch
+                        aria-label={translateText("切换告警")}
+                        hint={telegramReady ? translateText("仅在自动切换时通过所选通知渠道发送告警。") : telegramSettingsLoaded ? translateText("请先在系统设置中配置并启用所选通知渠道。") : translateText("正在确认通知渠道配置。")}
                         checked={form.telegramSwitchNotifyEnabled}
-                        disabled={telegramSettingsLoaded && !telegramReady && !form.telegramSwitchNotifyEnabled}
+                        disabled={!telegramReady && !form.telegramSwitchNotifyEnabled}
                         onCheckedChange={(telegramSwitchNotifyEnabled) => {
                           if (telegramSwitchNotifyEnabled && telegramSettingsLoaded && !telegramReady) {
                             toast.error(translateText("请先在系统设置中配置并启用所选通知渠道"));
@@ -2449,26 +2449,26 @@ export function ForwardGroupsContent({
                 {advancedSettingsOpen && (
                   <div className="space-y-3 border-t border-border/50 px-3 pb-3 pt-2">
                     <div className="space-y-2">
-                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex items-center justify-between gap-2">
                         <Label className="text-sm">PROXY Protocol</Label>
                         <Select
                           value={String(form.proxyProtocolVersion)}
                           onValueChange={(value) => setForm({ ...form, proxyProtocolVersion: Number(value) === 2 ? 2 : 1 })}
                           disabled={!runtimeProxyProtocolSupported}
                         >
-                          <SelectTrigger className="h-8 w-full sm:w-28"><SelectValue /></SelectTrigger>
+                          <SelectTrigger className="h-8 w-20 shrink-0"><SelectValue /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="1">v1</SelectItem>
                             <SelectItem value="2">v2</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
-                      <div className="grid gap-2 sm:grid-cols-2">
-                        <label className="flex min-h-10 items-center justify-between gap-3 rounded-md border border-border/50 bg-background/55 px-2.5 py-2">
+                      <div className="grid min-w-0 grid-cols-2 gap-2 [&>*]:min-w-0">
+                        <label className="flex min-h-10 items-center justify-between gap-2 rounded-md border border-border/50 bg-background/55 px-2.5 py-2 [&>button]:shrink-0">
                           <span className="text-sm">{translateText("接收 PROXY")}</span>
                           <Switch checked={runtimeProxyProtocolSupported && form.proxyProtocolReceive} disabled={!runtimeProxyProtocolSupported} onCheckedChange={(checked) => setForm({ ...form, proxyProtocolReceive: checked })} />
                         </label>
-                        <label className="flex min-h-10 items-center justify-between gap-3 rounded-md border border-border/50 bg-background/55 px-2.5 py-2">
+                        <label className="flex min-h-10 items-center justify-between gap-2 rounded-md border border-border/50 bg-background/55 px-2.5 py-2 [&>button]:shrink-0">
                           <span className="text-sm">{translateText("发送 PROXY")}</span>
                           <Switch checked={runtimeProxyProtocolSupported && form.proxyProtocolSend} disabled={!runtimeProxyProtocolSupported} onCheckedChange={(checked) => setForm({ ...form, proxyProtocolSend: checked })} />
                         </label>
@@ -2617,7 +2617,7 @@ export function ForwardGroupsContent({
               <div className="space-y-3">
                 <div className="space-y-2">
                   <p className="text-xs text-muted-foreground">{translateText("单位：秒，范围 10-3600。")}</p>
-                  <div className="grid gap-3 sm:grid-cols-[minmax(0,130px)_minmax(0,130px)_minmax(0,1fr)]">
+                  <div className="grid min-w-0 grid-cols-2 gap-3 sm:grid-cols-[minmax(0,130px)_minmax(0,130px)_minmax(0,1fr)] [&>*]:min-w-0">
                     <div className="space-y-2">
                       <Label>{translateText("故障转移时间")}</Label>
                       <Input type="number" min={10} max={3600} value={form.failoverSeconds} onChange={(e) => setForm({ ...form, failoverSeconds: e.target.value })} placeholder="60" />
@@ -2626,13 +2626,13 @@ export function ForwardGroupsContent({
                       <Label>{translateText("恢复观察时间")}</Label>
                       <Input type="number" min={10} max={3600} value={form.recoverSeconds} onChange={(e) => setForm({ ...form, recoverSeconds: e.target.value })} placeholder="120" />
                     </div>
-                    <div className="flex items-end gap-2">
-                      <label className="flex h-10 min-w-[128px] flex-1 items-center justify-between gap-3 rounded-md border border-border/60 px-3">
-                        <span className="whitespace-nowrap text-sm">{translateText("恢复后切回")}</span>
+                    <div className="col-span-2 grid grid-cols-2 items-end gap-2 sm:col-span-1">
+                      <label className="flex min-h-10 min-w-0 items-center justify-between gap-2 rounded-md border border-border/60 px-3 py-2">
+                        <span className="min-w-0 text-sm">{translateText("恢复后切回")}</span>
                         <Switch checked={form.autoFailback} onCheckedChange={(autoFailback) => setForm({ ...form, autoFailback })} />
                       </label>
-                      <label className="flex h-10 min-w-[92px] flex-1 items-center justify-between gap-3 rounded-md border border-border/60 px-3">
-                        <span className="whitespace-nowrap text-sm">{translateText("启用")}</span>
+                      <label className="flex min-h-10 min-w-0 items-center justify-between gap-2 rounded-md border border-border/60 px-3 py-2">
+                        <span className="min-w-0 text-sm">{translateText("启用")}</span>
                         <Switch checked={form.isEnabled} onCheckedChange={(isEnabled) => setForm({ ...form, isEnabled })} />
                       </label>
                     </div>
@@ -2655,19 +2655,13 @@ export function ForwardGroupsContent({
                       <span className="text-sm">{translateText("入口健康度检测")}</span>
                       <Switch checked={form.chinaHealthCheckEnabled} onCheckedChange={(chinaHealthCheckEnabled) => setForm({ ...form, chinaHealthCheckEnabled })} />
                     </label>
-                    <label
-                      className="flex min-h-10 items-center justify-between gap-3 rounded-md border border-border/60 px-3 py-2"
-                      title={telegramReady ? translateText("仅在自动切换时通过所选通知渠道发送告警。") : telegramSettingsLoaded ? translateText("请先在系统设置中配置并启用所选通知渠道。") : translateText("正在确认通知渠道配置。")}
-                    >
-                      <span className="min-w-0">
-                        <span className="block text-sm">{translateText("切换告警")}</span>
-                        <span className="block truncate text-[11px] text-muted-foreground">
-                          {telegramReady ? translateText("仅自动切换提醒") : telegramSettingsLoaded ? translateText("需先配置通知渠道") : translateText("正在确认配置")}
-                        </span>
-                      </span>
-                      <Switch
+                    <label className="flex min-h-10 items-center justify-between gap-3 rounded-md border border-border/60 px-3 py-2">
+                      <span className="text-sm">{translateText("切换告警")}</span>
+                      <HintSwitch
+                        aria-label={translateText("切换告警")}
+                        hint={telegramReady ? translateText("仅在自动切换时通过所选通知渠道发送告警。") : telegramSettingsLoaded ? translateText("请先在系统设置中配置并启用所选通知渠道。") : translateText("正在确认通知渠道配置。")}
                         checked={form.telegramSwitchNotifyEnabled}
-                        disabled={telegramSettingsLoaded && !telegramReady && !form.telegramSwitchNotifyEnabled}
+                        disabled={!telegramReady && !form.telegramSwitchNotifyEnabled}
                         onCheckedChange={(telegramSwitchNotifyEnabled) => {
                           if (telegramSwitchNotifyEnabled && telegramSettingsLoaded && !telegramReady) {
                             toast.error(translateText("请先在系统设置中配置并启用所选通知渠道"));

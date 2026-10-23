@@ -6,6 +6,7 @@ import { Button } from "./button";
 import { Card, CardContent, CardFooter, CardHeader } from "./card";
 import { ContentTransition } from "./content-transition";
 import { RuleLimitsForm, newRuleLimitsForm } from "../rules/RuleLimitsForm";
+import { RuleCardControls } from "../rules/RuleCardControls";
 import { Input } from "./input";
 import { Textarea } from "./textarea";
 import { Progress } from "./progress";
@@ -18,6 +19,109 @@ import { ConfirmDialogProvider } from "./confirm-dialog";
 import { getLanguagePreference, initializeLanguage, setLanguagePreference } from "@/i18n";
 
 const css = readFileSync("client/src/styles/pearl.css", "utf8");
+
+test("rule card controls reserve identical space with and without sorting", () => {
+  const switchControl = <Switch checked aria-label="Toggle rule" />;
+  const handle = <button type="button" className="h-6 w-6" aria-label="Sort rule" />;
+  const sortable = renderToStaticMarkup(<RuleCardControls dragHandle={handle}>{switchControl}</RuleCardControls>);
+  const filtered = renderToStaticMarkup(<RuleCardControls>{switchControl}</RuleCardControls>);
+  for (const html of [sortable, filtered]) {
+    assert.match(html, /data-rule-card-controls="" class="flex h-6 shrink-0 items-center gap-1"/);
+    assert.match(html, /data-rule-card-drag-slot="" class="flex size-6 shrink-0 items-center justify-center"/);
+    assert.match(html, /role="switch"[^>]*aria-checked="true"/);
+  }
+  assert.equal(sortable.replace(/<button[^>]*aria-label="Sort rule"><\/button>/, ""), filtered);
+  const source = readFileSync("client/src/pages/Rules.tsx", "utf8");
+  const cards = source.slice(source.indexOf("const renderRuleCard ="), source.indexOf("const renderRuleCard =") + 8000);
+  assert.equal((cards.match(/<RuleCardControls dragHandle=/g) || []).length, 2);
+  assert.equal((cards.match(/disableEnterAnimation/g) || []).length, 2);
+});
+
+test("idle sortable items do not retain a different compositing layer from filtered cards", () => {
+  const source = readFileSync("client/src/components/SortableDragHandle.tsx", "utf8");
+  assert.match(source, /willChange: isDragging \|\| transform \? "transform" : undefined/);
+  assert.doesNotMatch(source, /willChange: "transform"/);
+});
+
+test("affiliate and operations pages fill the dashboard content width", () => {
+  for (const page of ["Affiliates", "Operations"]) {
+    const source = readFileSync(`client/src/pages/${page}.tsx`, "utf8");
+    const classes = source.match(/<DashboardLayout>\s*<div className="([^"]+)"/)?.[1];
+    assert.ok(classes, `${page} has a dashboard content wrapper`);
+    assert.match(classes, /\bw-full\b/);
+    assert.match(classes, /\bmin-w-0\b/);
+    assert.doesNotMatch(classes, /max-w-|mx-auto|\bcontainer\b/);
+  }
+  const placeholder = readFileSync("client/src/components/RoutePage.tsx", "utf8");
+  const classes = placeholder.match(/role="status"[^>]*className="([^"]+)"/)?.[1];
+  assert.ok(classes);
+  assert.match(classes, /\bw-full\b/);
+  assert.match(classes, /\bmin-w-0\b/);
+  assert.doesNotMatch(classes, /max-w-|mx-auto/);
+});
+
+test("host and rule card grids release animation clipping and preserve shadow overflow", () => {
+  const baseCss = readFileSync("client/src/index.css", "utf8");
+  for (const selector of [".rule-card-grid-static", ".host-card-grid-static", ".host-management-tabs"]) {
+    const block = baseCss.slice(baseCss.indexOf(`${selector} {`)).split("}")[0];
+    assert.match(block, /contain: layout;/);
+    assert.doesNotMatch(block, /contain:[^;]*paint|overflow:\s*(?:hidden|clip)/);
+  }
+  for (const selector of [".rule-card-grid-static", ".rule-card-grid-static > *", ".host-card-grid-static", ".host-card-grid-static > *", ".host-card-mode-content"]) {
+    const block = baseCss.slice(baseCss.indexOf(`${selector} {`)).split("}")[0];
+    assert.match(block, /animation:[^;]* backwards;/);
+    assert.doesNotMatch(block, /animation:[^;]*\b(?:both|forwards)\b/);
+  }
+});
+
+test("rule groups clip during disclosure but let expanded card shadows remain visible", () => {
+  const source = readFileSync("client/src/pages/Rules.tsx", "utf8");
+  const groupItems = source.slice(source.indexOf("function RuleGroupItems("), source.indexOf("function RuleContentTransition("));
+  assert.match(groupItems, /open && \(!motionEnabled \|\| expanded\) \? "overflow-visible" : "overflow-hidden"/);
+  assert.match(groupItems, /aria-hidden=\{!open\}/);
+  assert.match(groupItems, /inert=\{!open\}/);
+  assert.match(groupItems, /window\.clearTimeout\(timer\)/);
+});
+
+test("wrapped rule and forwarding group content leaves space before pagination", () => {
+  for (const file of ["Rules", "ForwardGroups"]) {
+    const source = readFileSync(`client/src/pages/${file}.tsx`, "utf8");
+    assert.match(source, /<PersistentPagination[^>]+className="mt-5"/);
+  }
+});
+
+test("link group table statuses reserve intrinsic width and never squeeze switches or wrap badges", () => {
+  const source = readFileSync("client/src/pages/ForwardGroups.tsx", "utf8");
+  assert.match(source, /<TableHead className="w-px whitespace-nowrap">\{translateText\("状态"\)\}/);
+  assert.match(source, /<TableCell className="w-px whitespace-nowrap py-3">\s*<div className="flex w-max items-center gap-1\.5 \[&>\*\]:shrink-0">\s*\{renderGroupEnabledSwitch\(group\)\}\s*\{groupStatusBadge\(group\)\}/);
+});
+
+test("shared dialogs scroll long forms within short viewports instead of clipping save actions", () => {
+  const source = readFileSync("client/src/components/ui/dialog.tsx", "utf8");
+  const content = source.match(/className=\{cn\("(dialog-panel[^"]+)"/)?.[1];
+  assert.ok(content);
+  assert.match(content, /overflow-y-auto/);
+  assert.match(content, /overflow-x-hidden/);
+  assert.doesNotMatch(content, /(?:^|\s)overflow-hidden(?:\s|$)/);
+  assert.ok(content.includes("max-h-[min(92svh,calc(100svh-1.5rem))]"));
+  assert.ok(content.includes("sm:max-h-[min(92svh,calc(100svh-3rem))]"));
+  assert.match(content, /overscroll-contain/);
+});
+
+test("dashboard background polling does not flash the online badge and the date uses themed colors", () => {
+  const source = readFileSync("client/src/pages/Home.tsx", "utf8");
+  assert.doesNotMatch(source, /dashboardRefreshing|isFetching|数据更新中/);
+  assert.match(source, /refetchInterval: pollingInterval\("normal"\)/);
+  assert.match(source, /refetchInterval: pollingInterval\("slow"\)/);
+  assert.match(source, /dashboardRefreshFailed \? "部分数据更新失败，保留上次结果" : "系统在线"/);
+  assert.match(source, /title=\{Number.isFinite\(dashboardUpdatedAt\)/);
+  const date = css.match(/\.pearl-page-header \.pearl-spec-plate\s*\{([^}]+)\}/)?.[1];
+  assert.ok(date);
+  assert.match(date, /background: color-mix\(in srgb, var\(--primary\) 4%, var\(--card\)\)/);
+  assert.match(date, /color: var\(--muted-foreground\)/);
+  assert.match(date, /border-radius: 999px/);
+  assert.match(date, /box-shadow: none/);
+});
 
 test("overlay scroll locks preserve sticky navigation by locking the document rather than body", () => {
   const baseCss = readFileSync("client/src/index.css", "utf8");
@@ -456,7 +560,7 @@ test("standalone card hover is opt-in, pointer-only, reduced-motion safe and dis
   assert.doesNotMatch(hover, /will-change|filter:|backdrop-filter/);
   const reduced = css.slice(css.indexOf("@media (prefers-reduced-motion: reduce)"));
   assert.match(reduced, /\.pearl-hover-card[^}]*transition: none !important/);
-  assert.match(reduced, /\.pearl-hover-card:hover \{ transform: none !important; \}/);
+  assert.match(reduced, /\.pearl-hover-card:hover \{ transform: none; \}/);
 });
 
 test("Content switches render real content immediately without initial fade or layout scaling", () => {

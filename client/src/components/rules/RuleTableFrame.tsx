@@ -1,6 +1,9 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { t } from "@/i18n";
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import ListSettings from "@/components/ListSettings";
+import ColumnResizeHandle from "@/components/ColumnResizeHandle";
+import { defaultRuleTableLayout, ruleTableColumns, type RuleTableLayout } from "@shared/ruleTableLayout";
 
 export function splitRuleTableItems<T extends {kind: string}>(items: T[]): T[][] {
   const blocks: T[][] = [];
@@ -12,34 +15,37 @@ export function splitRuleTableItems<T extends {kind: string}>(items: T[]): T[][]
   return blocks;
 }
 
-export function ruleTableColumnCount(sni: boolean, sorting = false) {
-  return 8 + Number(sni) + Number(sorting);
+export function ruleTableColumnCount(sni: boolean, _sorting = false, layout = defaultRuleTableLayout(), isAdmin = false) {
+  return ruleTableColumns(layout, isAdmin, false, sni).length + 1;
 }
 
 /** Each display block owns its header and widths; mixed lists retain their order. */
-export function RuleTableFrame({sni, sorting = false, selection, children}: {
+export function RuleTableFrame({sni, selection, children, layout = defaultRuleTableLayout(), isAdmin = false, onLayoutChange, onResetLayout}: {
   sni: boolean;
   sorting?: boolean;
   selection?: ReactNode;
   children: ReactNode;
+  layout?: RuleTableLayout;
+  isAdmin?: boolean;
+  onLayoutChange?: (layout: RuleTableLayout) => void;
+  onResetLayout?: () => void;
 }) {
-  const columns = [
-    {label:t("规则"),width:180},
-    ...(sorting ? [{label:t("排序"),width:44}] : []),
-    ...(sni ? [{label:t("SNI 域名"),width:190}] : []),
-    {label:t("所属资源"),width:185},
-    {label:t("转发入口"),width:235},
-    {label:t("转发出口"),width:220},
-    {label:t("协议"),width:70},
-    {label:t("累计"),width:145},
-    {label:t("延迟"),width:145},
-    {label:t("操作"),width:180},
-  ];
-  return <div className="[container-type:inline-size]"><Table className="table-fixed" style={{minWidth:columns.reduce((sum,column) => sum + column.width,0)}}>
-    <colgroup>{columns.map((column,index) => <col key={index} style={{width:column.width}} />)}</colgroup>
+  const columns = ruleTableColumns(layout, isAdmin, false, sni);
+  const allColumns = ruleTableColumns(layout, isAdmin, true, sni);
+  return <div className="[container-type:inline-size]"><Table floatingScrollbar className="table-fixed" style={{
+    ...Object.fromEntries(columns.map(column => [`--list-col-${column.id}`, `${column.width}px`])),
+    width: `max(100%, calc(${["44px", ...columns.map(column => `var(--list-col-${column.id})`)].join(" + ")}))`,
+  } as CSSProperties}>
+    <colgroup><col className="w-[44px]" />{columns.map(column => <col key={column.id} style={{width: column.id === columns.at(-1)?.id ? undefined : `var(--list-col-${column.id})`}} />)}</colgroup>
     <TableHeader><TableRow className="hover:bg-transparent">
-      {columns.map((column,index) => <TableHead key={index} className={index === 0 ? "sticky left-0 z-10 bg-card" : index === columns.length - 1 ? "sticky right-0 z-10 bg-card text-right" : "whitespace-nowrap"}>
-        {index === 0 ? <span className="flex items-center gap-2">{selection}{column.label}</span> : column.label}
+      <TableHead className="sticky left-0 z-20 w-[44px] bg-card px-2 text-center">
+        {onLayoutChange && onResetLayout && <ListSettings columns={allColumns} layout={layout} onChange={onLayoutChange} onReset={onResetLayout} />}
+      </TableHead>
+      {columns.map(column => <TableHead key={column.id} className={column.id === "name" ? "sticky left-[44px] z-10 bg-card px-3 pr-4" : column.id === "actions" ? "sticky right-0 z-10 bg-card px-3 pr-4 text-right" : "relative whitespace-nowrap px-3 pr-4"}>
+        <span className="flex items-center gap-2">{column.id === "name" && selection}<span className="truncate" title={t(column.label)}>{t(column.label)}</span></span>
+        {onLayoutChange && <ColumnResizeHandle column={column} onResize={width => onLayoutChange({...layout,widths:{...layout.widths,[column.id]:width}})} onReset={() => {
+          const widths={...layout.widths}; delete widths[column.id]; onLayoutChange({...layout,widths});
+        }} />}
       </TableHead>)}
     </TableRow></TableHeader>
     <TableBody>{children}</TableBody>

@@ -29,6 +29,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { OptimisticSwitch, Switch } from "@/components/ui/switch";
+import { HintSwitch } from "@/components/ui/hint-switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SlidingTabsList } from "@/components/ui/sliding-tabs";
 import DataSectionLoading from "@/components/DataSectionLoading";
@@ -48,7 +49,7 @@ import {
 } from "@shared/forwardTypes";
 import {
   SIDEBAR_MENU_KEYS,
-  SIDEBAR_MENU_LABELS,
+  getSidebarMenuLabel,
   normalizeSidebarMenuSettings,
   type SidebarMenuKey,
   type SidebarMenuSettings,
@@ -1854,8 +1855,8 @@ function BackupRestoreSection({ panelUrl }: { panelUrl: string }) {
               </div>
             ) : (
               <div className="grid gap-4">
-                <div className="grid gap-4 sm:grid-cols-[1fr_120px]">
-                  <div className="space-y-2">
+                <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_5.5rem] gap-3 sm:grid-cols-[minmax(0,1fr)_120px]">
+                  <div className="min-w-0 space-y-2">
                     <Label>{translateText("地址")}</Label>
                     <Input
                       value={databaseSwitchExternal.host}
@@ -2388,9 +2389,10 @@ function TelegramBotSettingsCard() {
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <p className="text-sm font-medium">{translateText("到期提醒")}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">{telegramReminderHint || translateText("到期前 3 天提醒。")}</p>
                   </div>
-                  <Switch
+                  <HintSwitch
+                    aria-label={translateText("到期提醒")}
+                    hint={telegramReminderHint || translateText("到期前 3 天提醒。")}
                     checked={telegramRemindersReady && telegramExpiryReminder}
                     disabled={!telegramRemindersReady}
                     onCheckedChange={setTelegramExpiryReminder}
@@ -2401,9 +2403,10 @@ function TelegramBotSettingsCard() {
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <p className="text-sm font-medium">{translateText("主机上线/离线通知")}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">{telegramReminderHint || translateText("仅发送给已绑定 Telegram 的管理员。")}</p>
                   </div>
-                  <Switch
+                  <HintSwitch
+                    aria-label={translateText("主机上线/离线通知")}
+                    hint={telegramReminderHint || translateText("仅发送给已绑定 Telegram 的管理员。")}
                     checked={telegramRemindersReady && telegramHostStatusNotify}
                     disabled={!telegramRemindersReady}
                     onCheckedChange={setTelegramHostStatusNotify}
@@ -2414,9 +2417,10 @@ function TelegramBotSettingsCard() {
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <p className="text-sm font-medium">{translateText("流量提醒")}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">{telegramReminderHint || translateText("低于阈值时提醒。")}</p>
                   </div>
-                  <Switch
+                  <HintSwitch
+                    aria-label={translateText("流量提醒")}
+                    hint={telegramReminderHint || translateText("低于阈值时提醒。")}
                     checked={telegramRemindersReady && telegramTrafficReminder}
                     disabled={!telegramRemindersReady}
                     onCheckedChange={setTelegramTrafficReminder}
@@ -2815,7 +2819,7 @@ function DeepSeekSettingsCard() {
                 )}
               </div>
 
-              <div className="grid gap-3 sm:max-w-[560px] sm:grid-cols-2">
+              <div className="grid min-w-0 grid-cols-2 gap-3 sm:max-w-[560px] [&>*]:min-w-0">
                 <div className="space-y-2">
                   <Label>{translateText("最大输出")}</Label>
                   <Input
@@ -3656,7 +3660,7 @@ function PersonalizationSettingsSection() {
               {backgroundEnabled && (
                 <div className="space-y-3">
                   <div className="grid gap-4 lg:grid-cols-2">
-                    <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_6rem] sm:items-center">
+                    <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_4rem] items-center gap-3 sm:grid-cols-[minmax(0,1fr)_6rem]">
                       <div className="space-y-2">
                         <Label>{translateText("背景不透明度")}</Label>
                         <input
@@ -3676,10 +3680,10 @@ function PersonalizationSettingsSection() {
                           updateBackground({ opacity: value / 100 });
                         }}
                         inputMode="numeric"
-                        className="sm:mt-6"
+                        className="mt-6"
                       />
                     </div>
-                    <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_6rem] sm:items-center">
+                    <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_4rem] items-center gap-3 sm:grid-cols-[minmax(0,1fr)_6rem]">
                       <div className="space-y-2">
                         <Label>{translateText("背景虚化程度")}</Label>
                         <input
@@ -3699,7 +3703,7 @@ function PersonalizationSettingsSection() {
                           updateBackground({ blur: value });
                         }}
                         inputMode="numeric"
-                        className="sm:mt-6"
+                        className="mt-6"
                       />
                     </div>
                   </div>
@@ -5526,18 +5530,18 @@ function SystemInfoSection() {
               <PanelLeft className="h-5 w-5 text-primary" />{translateText("左侧导航栏菜单展示设置")}</DialogTitle>
             <DialogDescription>{translateText("关闭后对应入口不再显示在左侧导航栏中，插件入口也在这里统一控制。")}</DialogDescription>
           </DialogHeader>
-          <div className="grid gap-2 sm:grid-cols-2">
+          <div className="grid min-w-0 grid-cols-2 gap-2 [&>*]:min-w-0">
             {SIDEBAR_MENU_KEYS.map((key) => (
               <div
                 key={key}
                 className="flex items-center justify-between gap-3 rounded-md border border-border/40 bg-background/60 px-3 py-2"
               >
                 <div className="min-w-0">
-                  <span className="text-sm">{translateText(SIDEBAR_MENU_LABELS[key])}</span>
+                  <span className="text-sm">{translateText(getSidebarMenuLabel(key, true))}</span>
                   {key === "affiliates" && <p className="mt-1 text-xs text-muted-foreground">{translateText("仅控制菜单显示，返佣总开关请在推广管理的设置中调整。")}</p>}
-                  {key === "tickets" && <p className="mt-1 text-xs text-muted-foreground">{translateText("仅控制用户侧菜单显示，工单功能和推送开关请在工单管理的设置中调整。")}</p>}
+                  {key === "tickets" && <p className="mt-1 text-xs text-muted-foreground">{translateText("仅控制菜单显示，工单功能和推送开关请在工单管理的设置中调整。")}</p>}
                 </div>
-                <Switch className="shrink-0" aria-label={translateText(SIDEBAR_MENU_LABELS[key])} checked={sidebarMenu[key]} onCheckedChange={(checked) => setSidebarMenuEnabled(key, checked)} />
+                <Switch className="shrink-0" aria-label={translateText(getSidebarMenuLabel(key, true))} checked={sidebarMenu[key]} onCheckedChange={(checked) => setSidebarMenuEnabled(key, checked)} />
               </div>
             ))}
           </div>

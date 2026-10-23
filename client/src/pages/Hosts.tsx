@@ -1,17 +1,25 @@
 import { getFormatLocale } from "@/i18n";
 import { t as translateText } from "@/i18n";
+import { HintSwitch } from "@/components/ui/hint-switch";
 import { useAuth } from "@/_core/hooks/useAuth";
 import AnimatedStatValue from "@/components/AnimatedStatValue";
 import AgentTokenManager, { type AgentTokenViewMode } from "@/components/AgentTokenManager";
 import AutoAnimateContainer from "@/components/AutoAnimateContainer";
 import DashboardLayout from "@/components/DashboardLayout";
+import ListSettings from "@/components/ListSettings";
+import ColumnResizeHandle from "@/components/ColumnResizeHandle";
+import { useHostTableLayout } from "@/hooks/useHostTableLayout";
+import type { HostTableColumnId } from "@shared/hostTableLayout";
 import DateTimePickerInput, {
   formatDateInputValue as formatDateTimeLocal,
   parseDateInputValue as parseDateTimeLocal,
 } from "@/components/DatePickerInput";
 import HostCard, { HostActionButtons } from "@/components/hosts/HostCard";
+import HostLoad from "@/components/hosts/HostLoad";
 import HostDeleteDialog from "@/components/hosts/HostDeleteDialog";
 import HostStatusNotificationSetting from "@/components/hosts/HostStatusNotificationSetting";
+import HostReminderSettings from "@/components/hosts/HostReminderSettings";
+import HostTrafficShutdownSetting from "@/components/hosts/HostTrafficShutdownSetting";
 import HostAddressSelectors from "@/components/hosts/HostAddressSelectors";
 import { normalizeHostDdnsIpVersion, type HostDdnsIpVersion } from "@shared/hostAddresses";
 import HostGroupManager, { compareHostGroupDisplayOrder, type HostGroupView, type HostGroupViewMode } from "@/components/hosts/HostGroupManager";
@@ -104,10 +112,9 @@ import {
   XCircle,
   ActivitySquare,
   FolderKanban,
-  Wifi,
 } from "lucide-react";
 import type { GlobeMethods } from "react-globe.gl";
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { toast } from "@/lib/localizedToast";
 const ReactGlobe = lazy(() => import("react-globe.gl")) as typeof import("react-globe.gl").default;
 const HostFlatMap = lazy(() => import("@/components/HostFlatMap"));
@@ -600,6 +607,8 @@ type HostFormData = {
   trafficMeasureMode: HostTrafficMeasureMode;
   trafficFailoverEnabled: boolean;
   trafficFailoverThresholdPercent: number;
+  trafficShutdownEnabled: boolean;
+  trafficShutdownThresholdPercent: number;
   billingCycleMonths: HostBillingCycleMonths;
   billingMonth: number;
   billingDay: number;
@@ -638,6 +647,8 @@ const defaultFormData: HostFormData = {
   trafficMeasureMode: "both",
   trafficFailoverEnabled: false,
   trafficFailoverThresholdPercent: 100,
+  trafficShutdownEnabled: false,
+  trafficShutdownThresholdPercent: 100,
   billingCycleMonths: 1,
   billingMonth: 1,
   billingDay: 1,
@@ -869,52 +880,6 @@ function HostListResourceRow({
         {tooltip || `${label}: --`}
       </TooltipContent>
     </Tooltip>
-  );
-}
-
-function HostListResourceBundle({
-  cpuValue,
-  cpuDetail,
-  memoryValue,
-  memoryDetail,
-  diskValue,
-  diskDetail,
-  isOnline,
-}: {
-  cpuValue: unknown;
-  cpuDetail?: string;
-  memoryValue: unknown;
-  memoryDetail?: string;
-  diskValue: unknown;
-  diskDetail?: string;
-  isOnline: boolean;
-}) {
-  return (
-    <TooltipProvider delayDuration={120}>
-      <div className="grid min-w-[300px] grid-cols-3 gap-1.5">
-        <HostListResourceRow
-          icon={Cpu}
-          label="CPU"
-          value={cpuValue}
-          detail={cpuDetail}
-          isOnline={isOnline}
-        />
-        <HostListResourceRow
-          icon={MemoryStick}
-          label="RAM"
-          value={memoryValue}
-          detail={memoryDetail}
-          isOnline={isOnline}
-        />
-        <HostListResourceRow
-          icon={HardDrive}
-          label="Disk"
-          value={diskValue}
-          detail={diskDetail}
-          isOnline={isOnline}
-        />
-      </div>
-    </TooltipProvider>
   );
 }
 
@@ -1325,6 +1290,7 @@ function HostGroupFilterBar({
 
 function HostsContent() {
   const { user } = useAuth();
+  const tableLayout = useHostTableLayout(user);
   const utils = trpc.useUtils();
   const pageVisible = usePageVisible();
   const [viewMode, setViewMode] = useState<HostViewMode>(() => getStoredHostViewMode());
@@ -1345,6 +1311,12 @@ function HostsContent() {
   const hostSearchQuery = manageSearchQueries.hosts;
   const hostPageRequest = usePersistentPageRequest("forwardx.hosts.page");
   const hostListRefreshInterval = visiblePollingInterval("slow", pageVisible);
+  const managementCountsQuery = trpc.hosts.managementCounts.useQuery(undefined, {
+    enabled: user?.role === "admin",
+    staleTime: 25_000,
+    refetchInterval: hostListRefreshInterval,
+    refetchOnWindowFocus: true,
+  });
   const hostPageQuery = trpc.hosts.listPage.useQuery({
     page: hostPageRequest.page,
     pageSize: 12,
@@ -1463,7 +1435,10 @@ function HostsContent() {
   const [tokenViewMode, setTokenViewMode] = useState<AgentTokenViewMode>(() => getStoredAgentTokenViewMode());
   const [serviceViewMode, setServiceViewMode] = useState<HostProbeServiceViewMode>(() => getStoredHostProbeServiceViewMode());
   const [hostGroupViewMode, setHostGroupViewMode] = useState<HostGroupViewMode>(() => getStoredHostGroupViewMode());
-  const hostManageTabItems = user?.role === "admin" ? HOST_MANAGE_TAB_ITEMS_ADMIN : HOST_MANAGE_TAB_ITEMS_USER;
+  const hostManageTabItems = (user?.role === "admin" ? HOST_MANAGE_TAB_ITEMS_ADMIN : HOST_MANAGE_TAB_ITEMS_USER).map(item => ({
+    ...item,
+    badge: user?.role === "admin" ? managementCountsQuery.data?.[item.value] ?? null : hostPageQuery.data?.scopeTotalItems ?? null,
+  }));
   const hostLiveRefreshInterval = visiblePollingInterval("live", pageVisible && activeManageTab === "hosts");
   // Sorted, because the ids travel as a query input: keeping the visual order here
   // would give every reorder a brand-new query key and refetch the whole summary.
@@ -1659,6 +1634,7 @@ function HostsContent() {
 
   const createMutation = trpc.hosts.create.useMutation({
     onSuccess: () => {
+      utils.hosts.managementCounts.invalidate();
       utils.hosts.list.invalidate();
       utils.hosts.options.invalidate();
       utils.hosts.listPage.invalidate();
@@ -1688,6 +1664,7 @@ function HostsContent() {
   const deleteMutation = trpc.hosts.delete.useMutation({
     onSettled: () => { void utils.hosts.deleteImpact.invalidate(); },
     onSuccess: () => {
+      utils.hosts.managementCounts.invalidate();
       setDeletingHostId(null);
       utils.hosts.list.invalidate();
       utils.hosts.options.invalidate();
@@ -1810,6 +1787,8 @@ function HostsContent() {
       trafficMeasureMode: normalizeHostTrafficMeasureMode(host.trafficMeasureMode),
       trafficFailoverEnabled: !!host.trafficFailoverEnabled,
       trafficFailoverThresholdPercent: Math.min(100, Math.max(1, Number(host.trafficFailoverThresholdPercent) || 100)),
+      trafficShutdownEnabled: !!host.trafficShutdownEnabled,
+      trafficShutdownThresholdPercent: Math.min(100, Math.max(1, Number(host.trafficShutdownThresholdPercent) || 100)),
       billingCycleMonths: normalizeHostBillingCycleMonths(host.billingCycleMonths),
       billingMonth: clampBillingMonth(host.billingMonth),
       billingDay: clampBillingDay(host.billingDay),
@@ -1909,6 +1888,10 @@ function HostsContent() {
       return;
     }
     const trafficAlertThresholdPercent = clampTrafficAlertThresholdPercent(form.trafficAlertThresholdPercent);
+    if (user?.role === "admin" && form.trafficShutdownEnabled && trafficLimitBytes <= 0) {
+      toast.error(translateText("开启流量关机需要设置大于 0 的套餐流量"));
+      return;
+    }
     const renewalReminderDays = clampRenewalReminderDays(form.renewalReminderDays);
     const canSaveTelegramReminder = telegramBotSettingsLoaded ? telegramBotReady : true;
     const trafficConfigPayload = user?.role === "admin"
@@ -1919,6 +1902,8 @@ function HostsContent() {
           trafficMeasureMode: form.trafficMeasureMode,
           trafficFailoverEnabled: form.trafficFailoverEnabled,
           trafficFailoverThresholdPercent: form.trafficFailoverThresholdPercent,
+          trafficShutdownEnabled: form.trafficShutdownEnabled,
+          trafficShutdownThresholdPercent: form.trafficShutdownThresholdPercent,
           billingCycleMonths: normalizeHostBillingCycleMonths(form.billingCycleMonths),
           billingMonth: clampBillingMonth(form.billingMonth),
           billingDay: clampBillingDay(form.billingDay),
@@ -2245,6 +2230,65 @@ function HostsContent() {
     }
   };
 
+  const renderHostTableCell = (host: any, column: HostTableColumnId) => {
+    const metric = hostLatestMetricById.get(host.id);
+    switch (column) {
+      case "name": {
+        const title = [
+          String(host.name || ""),
+          host.agentBootId ? `Boot ID: ${host.agentBootId}` : "",
+          host.agentProcessId ? `Agent PID: ${host.agentProcessId}` : "",
+          host.agentRecoveryStartedAt ? translateText("恢复开始: {0}", [formatHostDateTimeText(host.agentRecoveryStartedAt)]) : "",
+          host.agentRecoveryCompletedAt ? translateText("恢复完成: {0}", [formatHostDateTimeText(host.agentRecoveryCompletedAt)]) : "",
+          Number(host.agentRecoveryExpected || 0) > 0 ? translateText("恢复进度: {0}/{1}", [Number(host.agentRecoveryReady || 0), Number(host.agentRecoveryExpected || 0)]) : "",
+          host.mimicRuntimeStatus ? `Mimic: ${host.mimicRuntimeStatus}` : "",
+          host.mimicRuntimeMessage ? String(host.mimicRuntimeMessage) : "",
+        ].filter(Boolean).join("\n");
+        return <div className="flex min-w-0 items-center gap-2">
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-border/50 bg-muted/20 text-muted-foreground"><Server className="h-3.5 w-3.5" /></span>
+          <span className="min-w-0 truncate font-semibold" title={title}>{host.name}</span>
+        </div>;
+      }
+      case "status": return <HostListStatusBadge host={host} />;
+      case "region": return <div className="min-w-0 overflow-hidden text-xs"><HostRegionBadge host={host} compact /></div>;
+      case "address": return <span className="block truncate font-mono text-xs text-muted-foreground" title={hostPrimaryAddressText(host)}>{hostPrimaryAddressText(host)}</span>;
+      case "version": {
+        const timedOut = isAgentUpgradeTimedOut(host);
+        return <div className="flex min-w-0 flex-wrap items-center gap-1">
+          <span className="font-mono text-xs text-muted-foreground">{host.agentVersion ? `v${host.agentVersion}` : "—"}</span>
+          {host.agentUpgradeRequested ? <Badge variant="outline" className={cn("shrink-0 whitespace-nowrap px-1 py-0 text-[10px]", timedOut ? "border-destructive/30 text-destructive" : "border-primary/25 text-primary")}>{timedOut ? translateText("升级失败") : translateText("升级中")}</Badge>
+            : isAgentVersionBehind(host.agentVersion, latestAgentVersion) && <Badge variant="outline" className="shrink-0 whitespace-nowrap border-amber-500/30 px-1 py-0 text-[10px] text-amber-500">{translateText("新版本")}</Badge>}
+        </div>;
+      }
+      case "load": return <HostLoad metric={metric} showLabel={false} className="overflow-hidden" />;
+      case "uptime": {
+        const text = metric?.uptime == null ? "--" : formatUptime(metric.uptime);
+        return <span className="block truncate text-xs tabular-nums text-muted-foreground" title={formatHostUptimeTitle(metric?.uptime, text)}>{text}</span>;
+      }
+      case "expiry": {
+        const remaining = formatHostRemainingDays(host.purchasedAt, host.stoppedAt);
+        return <span className={cn("block truncate text-xs font-medium tabular-nums", hostRemainingClass(remaining))} title={formatHostExpiryTitle(host.stoppedAt, remaining)}>{remaining}</span>;
+      }
+      case "cpu": return <HostListResourceRow icon={Cpu} label="CPU" value={metric?.cpuUsage} detail={host.cpuInfo ? String(host.cpuInfo) : undefined} isOnline={!!host.isOnline} />;
+      case "memory": return <HostListResourceRow icon={MemoryStick} label="RAM" value={metric?.memoryUsage} detail={formatMetricSizeDetail(metric?.memoryUsed, host.memoryTotal)} isOnline={!!host.isOnline} />;
+      case "disk": return <HostListResourceRow icon={HardDrive} label="Disk" value={metric?.diskUsage} detail={formatMetricSizeDetail(metric?.diskUsed, metric?.diskTotal)} isOnline={!!host.isOnline} />;
+      case "total": {
+        const traffic = hostTrafficById.get(host.id);
+        const inText = formatBytes(Number(traffic?.bytesIn || 0)), outText = formatBytes(Number(traffic?.bytesOut || 0));
+        return <HostListFlowPair inValue={inText} outValue={outText} inTitle={translateText("累计入向：{0}", [inText])} outTitle={translateText("累计出向：{0}", [outText])} />;
+      }
+      case "network": return <HostListFlowPair inValue={formatOptionalBytesPerSecond(metric?.networkSpeedIn)} outValue={formatOptionalBytesPerSecond(metric?.networkSpeedOut)} inTitle={translateText("实时入向")} outTitle={translateText("实时出向")} />;
+      case "system": return <HostListFlowPair inValue={formatOptionalBytes(metric?.networkIn)} outValue={formatOptionalBytes(metric?.networkOut)} inTitle={systemNetworkTotalTitle(metric)} outTitle={systemNetworkTotalTitle(metric)} />;
+      case "actions": return <HostActionButtons
+        host={host} onEdit={openEdit} onDelete={setDeletingHostId} onUpgrade={requestAgentUpgrade}
+        onResetTraffic={user?.role === "admin" ? requestResetHostTraffic : undefined}
+        onCorrectTraffic={user?.role === "admin" ? requestCorrectHostTraffic : undefined}
+        onViewProbeLatency={setProbeLatencyHost}
+        resetTrafficPending={resetTrafficHostId === host.id && resetHostTrafficMutation.isPending}
+        canUpgrade={user?.role === "admin"} className="flex items-center justify-end gap-0.5" buttonClassName="h-8 w-8"
+      />;
+    }
+  };
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -2619,179 +2663,57 @@ function HostsContent() {
             )}
             <Card className="host-table-shell hidden overflow-hidden border-border/40 bg-card/60 backdrop-blur-md sm:block">
               <CardContent className="p-0">
-                <Table className="host-management-table w-full min-w-[1340px] table-fixed">
+                <TooltipProvider delayDuration={120}>
+                <Table floatingScrollbar className="host-management-table table-fixed" style={{
+                  ...Object.fromEntries(tableLayout.columns.map(column => [`--list-col-${column.id}`, `${column.width}px`])),
+                  width: `max(100%, calc(${["44px", ...tableLayout.columns.map(column => `var(--list-col-${column.id})`)].join(" + ")}))`,
+                } as CSSProperties}>
                   <colgroup>
-                    <col className="w-[320px]" />
-                    <col className="w-[128px]" />
-                    {/* The center columns divide only the width left after the pinned columns. */}
-                    <col style={{ width: "calc(25% + 5px)" }} />
-                    <col style={{ width: "calc(25% - 191px)" }} />
-                    <col style={{ width: "calc(25% - 191px)" }} />
-                    <col style={{ width: "calc(25% - 191px)" }} />
-                    <col className="w-[120px]" />
+                    <col className="w-[44px]" />
+                    {tableLayout.columns.map(column => <col key={column.id} style={{ width: column.id === tableLayout.columns.at(-1)?.id ? undefined : `var(--list-col-${column.id})` }} />)}
                   </colgroup>
                   <TableHeader>
                     <TableRow className="hover:bg-transparent">
-                      <TableHead className="host-table-frozen-cell host-table-frozen-left sticky left-0 z-30 w-[320px] min-w-[320px] max-w-[320px] border-r border-border/60 bg-card">{translateText("设备名称")}</TableHead>
-                      <TableHead className="w-[128px] whitespace-nowrap text-center">{translateText("运行信息")}</TableHead>
-                      <TableHead className="min-w-[204px] whitespace-nowrap">
-                        <span className="inline-flex items-center gap-1.5"><Gauge className="h-3.5 w-3.5" />{translateText("资源")}</span>
+                      <TableHead className="host-table-frozen-cell sticky left-0 z-30 w-[44px] bg-card px-2 text-center">
+                        <ListSettings columns={tableLayout.allColumns} layout={tableLayout.layout} onChange={tableLayout.setLayout} onReset={tableLayout.reset} />
                       </TableHead>
-                      <TableHead className="w-[128px] whitespace-nowrap px-3 text-center">
-                        <span className="inline-flex items-center gap-1.5"><ArrowRightLeft className="h-3.5 w-3.5" />{translateText("累计流量")}</span>
-                      </TableHead>
-                      <TableHead className="w-[128px] whitespace-nowrap px-3 text-center">
-                        <span className="inline-flex items-center gap-1.5"><Wifi className="h-3.5 w-3.5" />{translateText("实时网络")}</span>
-                      </TableHead>
-                      <TableHead className="w-[128px] whitespace-nowrap px-3 text-center">
-                        <span className="inline-flex items-center gap-1.5"><Activity className="h-3.5 w-3.5" />{translateText("系统累计")}</span>
-                      </TableHead>
-                      <TableHead className="host-table-frozen-cell host-table-frozen-right sticky right-0 z-30 w-[120px] min-w-[120px] max-w-[120px] border-l border-border/60 bg-card px-2 text-right">{translateText("操作")}</TableHead>
+                      {tableLayout.columns.map(column => <TableHead key={column.id} className={cn("relative overflow-hidden whitespace-nowrap px-3 pr-4", column.id === "actions" && "text-right")}>
+                        <span className="block truncate" title={translateText(column.label)}>{translateText(column.label)}</span>
+                        <ColumnResizeHandle column={column} onResize={width => tableLayout.setLayout({ ...tableLayout.layout, widths: { ...tableLayout.layout.widths, [column.id]: width } })} onReset={() => {
+                          const widths = { ...tableLayout.layout.widths };
+                          delete widths[column.id];
+                          tableLayout.setLayout({ ...tableLayout.layout, widths });
+                        }} />
+                      </TableHead>)}
                     </TableRow>
                   </TableHeader>
                   <SortableReorderContext sortable={hostSortable} ids={pagedHostIds} strategy="vertical" restrictToList>
                   <TableBody>
-                    {pagedHosts.map((host) => {
-                      const traffic = hostTrafficById.get(host.id);
-                      const latestMetric = hostLatestMetricById.get(host.id);
-                      const agentUpgradeTimedOut = isAgentUpgradeTimedOut(host);
-                      const agentNeedsUpdate = isAgentVersionBehind(host.agentVersion, latestAgentVersion);
-                      const remainingDays = formatHostRemainingDays(host.purchasedAt, host.stoppedAt);
-                      const primaryAddressText = hostPrimaryAddressText(host);
-                      const uptimeText = latestMetric?.uptime == null ? "--" : formatUptime(latestMetric.uptime);
-                      const uptimeTitle = formatHostUptimeTitle(latestMetric?.uptime, uptimeText);
-                      const expiryTitle = formatHostExpiryTitle(host.stoppedAt, remainingDays);
-                      const memoryDetail = formatMetricSizeDetail(latestMetric?.memoryUsed, host.memoryTotal);
-                      const diskDetail = formatMetricSizeDetail(latestMetric?.diskUsed, latestMetric?.diskTotal);
-                      const recoveryStartedText = formatHostDateTimeText(host.agentRecoveryStartedAt);
-                      const recoveryCompletedText = formatHostDateTimeText(host.agentRecoveryCompletedAt);
-                      const hostRuntimeTitle = [
-                        String(host.name || ""),
-                        host.agentBootId ? `Boot ID: ${host.agentBootId}` : "",
-                        host.agentProcessId ? `Agent PID: ${host.agentProcessId}` : "",
-                        recoveryStartedText ? translateText("恢复开始: {0}", [recoveryStartedText]) : "",
-                        recoveryCompletedText ? translateText("恢复完成: {0}", [recoveryCompletedText]) : "",
-                        Number(host.agentRecoveryExpected || 0) > 0 ? translateText("恢复进度: {0}/{1}", [Number(host.agentRecoveryReady || 0), Number(host.agentRecoveryExpected || 0)]) : "",
-                        host.mimicRuntimeStatus ? `Mimic: ${host.mimicRuntimeStatus}` : "",
-                        host.mimicRuntimeMessage ? String(host.mimicRuntimeMessage) : "",
-                      ].filter(Boolean).join("\n");
-                      return (
+                    {pagedHosts.map((host) => (
                       <SortableItem key={host.id} id={Number(host.id)} disabled={hostSortable.disabled} itemKind="row">
                         {({ itemProps, handleProps, isDragging, isDropTarget }) => (
                       <TableRow
                         {...itemProps}
                         className={cn(
-                          "group/sortable host-table-row align-middle hover:bg-transparent",
+                          "group/sortable host-table-row h-16 align-middle hover:bg-transparent",
                           isDragging && "opacity-55 ring-1 ring-primary/35",
                           isDropTarget && "ring-1 ring-primary/45",
                         )}
                       >
-                        <TableCell className="host-table-frozen-cell host-table-frozen-left sticky left-0 z-20 w-[320px] min-w-[320px] max-w-[320px] border-r border-border/60 bg-card px-3 py-2.5">
-                          <div className="flex min-w-0 items-center gap-2">
-                            {hostSortingEnabled && (
-                              <SortableDragHandle dragHandleProps={handleProps} visible={isDragging} busy={hostReorderPending} className="shrink-0" />
-                            )}
-                            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-border/50 bg-muted/20 text-muted-foreground">
-                              <Server className="h-3.5 w-3.5" />
-                            </span>
-                            <div className="min-w-0 flex-1 space-y-0.5">
-                              <div className="flex min-w-0 items-center gap-1.5">
-                                <HostListStatusBadge host={host} />
-                                <span className="min-w-0 truncate font-semibold" title={hostRuntimeTitle}>{host.name}</span>
-                              </div>
-                              <div className="flex min-w-0 items-center gap-1.5 overflow-hidden whitespace-nowrap text-[11px] text-muted-foreground">
-                                {host.agentVersion && (
-                                  <span className="shrink-0 rounded border border-border/50 bg-muted/35 px-1.5 py-0.5 font-mono text-[10px] leading-none text-muted-foreground">
-                                    v{host.agentVersion}
-                                  </span>
-                                )}
-                                {agentNeedsUpdate && (
-                                  <Badge variant="outline" className="h-4 shrink-0 border-amber-500/30 px-1 py-0 text-[9px] leading-none text-amber-500">{translateText("新版本")}</Badge>
-                                )}
-                                {host.agentUpgradeRequested && (
-                                  <Badge variant="outline" className={`h-4 shrink-0 px-1 py-0 text-[9px] leading-none ${agentUpgradeTimedOut ? "border-destructive/30 text-destructive" : "border-primary/25 text-primary"}`}>
-                                    {agentUpgradeTimedOut ? translateText("升级失败") : translateText("升级中")}
-                                  </Badge>
-                                )}
-                                <HostRegionBadge host={host} compact />
-                              </div>
-                              <div className="flex min-w-0 items-center gap-1.5 text-[11px] text-muted-foreground" title={primaryAddressText}>
-                                <RadioTower className="h-3 w-3 shrink-0" />
-                                <span className="min-w-0 truncate font-mono">{primaryAddressText}</span>
-                              </div>
-                            </div>
-                          </div>
+                        <TableCell className="host-table-frozen-cell sticky left-0 z-20 w-[44px] bg-card px-2 py-2">
+                          {hostSortingEnabled && <SortableDragHandle dragHandleProps={handleProps} visible={isDragging} busy={hostReorderPending} className="mx-auto" />}
                         </TableCell>
-                        <TableCell className="w-[128px] whitespace-nowrap py-2.5 text-center">
-                          <div className="flex flex-col items-center justify-center gap-1.5 text-center">
-                            <div className="flex items-center justify-center gap-1.5 text-[11px] font-medium tabular-nums text-muted-foreground" title={uptimeTitle}>
-                              <Clock className="h-3.5 w-3.5 shrink-0" />
-                              <span>{uptimeText}</span>
-                            </div>
-                            <div className="flex items-center justify-center gap-1.5 text-[11px] font-semibold tabular-nums" title={expiryTitle}>
-                              <CalendarDays className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                              <span className={hostRemainingClass(remainingDays)}>{remainingDays}</span>
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell className="px-3 py-2.5">
-                          <HostListResourceBundle
-                            cpuValue={latestMetric?.cpuUsage}
-                            cpuDetail={host.cpuInfo ? String(host.cpuInfo) : undefined}
-                            memoryValue={latestMetric?.memoryUsage}
-                            memoryDetail={memoryDetail}
-                            diskValue={latestMetric?.diskUsage}
-                            diskDetail={diskDetail}
-                            isOnline={!!host.isOnline}
-                          />
-                        </TableCell>
-                        <TableCell className="px-3 py-2.5">
-                          <HostListFlowPair
-                            inValue={formatBytes(Number(traffic?.bytesIn || 0))}
-                            outValue={formatBytes(Number(traffic?.bytesOut || 0))}
-                            inTitle={translateText("累计入向：{0}", [formatBytes(Number(traffic?.bytesIn || 0))])}
-                            outTitle={translateText("累计出向：{0}", [formatBytes(Number(traffic?.bytesOut || 0))])}
-                          />
-                        </TableCell>
-                        <TableCell className="px-3 py-2.5">
-                          <HostListFlowPair
-                            inValue={formatOptionalBytesPerSecond(latestMetric?.networkSpeedIn)}
-                            outValue={formatOptionalBytesPerSecond(latestMetric?.networkSpeedOut)}
-                            inTitle={translateText("实时入向")}
-                            outTitle={translateText("实时出向")}
-                          />
-                        </TableCell>
-                        <TableCell className="px-3 py-2.5">
-                          <HostListFlowPair
-                            inValue={formatOptionalBytes(latestMetric?.networkIn)}
-                            outValue={formatOptionalBytes(latestMetric?.networkOut)}
-                            inTitle={systemNetworkTotalTitle(latestMetric)}
-                            outTitle={systemNetworkTotalTitle(latestMetric)}
-                          />
-                        </TableCell>
-                        <TableCell className="host-table-frozen-cell host-table-frozen-right sticky right-0 z-20 w-[120px] min-w-[120px] max-w-[120px] border-l border-border/60 bg-card px-2 py-2.5 text-right">
-                          <HostActionButtons
-                            host={host}
-                            onEdit={openEdit}
-                            onDelete={setDeletingHostId}
-                            onUpgrade={requestAgentUpgrade}
-                            onResetTraffic={user?.role === "admin" ? requestResetHostTraffic : undefined}
-                            onCorrectTraffic={user?.role === "admin" ? requestCorrectHostTraffic : undefined}
-                            onViewProbeLatency={setProbeLatencyHost}
-                            resetTrafficPending={resetTrafficHostId === host.id && resetHostTrafficMutation.isPending}
-                            canUpgrade={user?.role === "admin"}
-                            className="flex items-center justify-end gap-0.5"
-                            buttonClassName="h-8 w-8"
-                          />
-                        </TableCell>
+                        {tableLayout.columns.map(column => <TableCell key={column.id} className={cn("overflow-hidden px-3 py-2", column.id === "actions" && "text-right")}>
+                          {renderHostTableCell(host, column.id)}
+                        </TableCell>)}
                       </TableRow>
                         )}
                       </SortableItem>
-                    );
-                    })}
+                    ))}
                   </TableBody>
                   </SortableReorderContext>
                 </Table>
+                </TooltipProvider>
               </CardContent>
             </Card>
           </>
@@ -3228,15 +3150,15 @@ function HostsContent() {
                   </div>
                   {user?.role === "admin" ? (
                     <>
-                      <div className="grid min-w-0 gap-2.5 px-1 md:grid-cols-2">
-                        <div className="space-y-1">
+                      <div className="grid min-w-0 grid-cols-2 gap-2.5 px-1">
+                        <div className="col-span-2 min-w-0 space-y-1 sm:col-span-1">
                           <Label className="text-sm">{translateText("机器购买时间")}</Label>
                           <DateTimePickerInput
                             value={form.purchasedAt}
                             onChange={(value) => setForm({ ...form, purchasedAt: value })}
                           />
                         </div>
-                        <div className="space-y-1">
+                        <div className="col-span-2 min-w-0 space-y-1 sm:col-span-1">
                           <Label className="text-sm">{translateText("机器停止时间")}</Label>
                           <DateTimePickerInput
                             value={form.stoppedAt}
@@ -3244,70 +3166,72 @@ function HostsContent() {
                             align="end"
                           />
                         </div>
-                        <div className="min-w-0 space-y-1">
-                          <Label className="text-sm">{translateText("账单周期")}</Label>
-                          <Select
-                            value={String(normalizeHostBillingCycleMonths(form.billingCycleMonths))}
-                            onValueChange={(value) => setForm({ ...form, billingCycleMonths: normalizeHostBillingCycleMonths(value) })}
-                          >
-                            <SelectTrigger className="h-8 min-w-0">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="1">{translateText("月付")}</SelectItem>
-                              <SelectItem value="3">{translateText("季付")}</SelectItem>
-                              <SelectItem value="6">{translateText("半年付")}</SelectItem>
-                              <SelectItem value="12">{translateText("年付")}</SelectItem>
-                              <SelectItem value="24">{translateText("两年付")}</SelectItem>
-                              <SelectItem value="36">{translateText("三年付")}</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="min-w-0 space-y-1">
-                          <Label className="text-sm">{translateText("账单月日")}</Label>
-                          <div className="grid min-w-0 grid-cols-2 gap-2">
+                        <div className="col-span-2 grid min-w-0 grid-cols-2 gap-2.5 md:grid-cols-[minmax(0,0.75fr)_minmax(0,1.25fr)_minmax(0,1fr)]">
+                          <div className="min-w-0 space-y-1">
+                            <Label className="text-sm">{translateText("账单周期")}</Label>
                             <Select
-                              value={String(clampBillingMonth(form.billingMonth))}
-                              onValueChange={(value) => setForm({ ...form, billingMonth: clampBillingMonth(Number(value)) })}
+                              value={String(normalizeHostBillingCycleMonths(form.billingCycleMonths))}
+                              onValueChange={(value) => setForm({ ...form, billingCycleMonths: normalizeHostBillingCycleMonths(value) })}
                             >
                               <SelectTrigger className="h-8 min-w-0">
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
-                                {Array.from({ length: 12 }, (_, index) => index + 1).map((month) => (
-                                  <SelectItem key={month} value={String(month)}>{month}{translateText(" 月")}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <Select
-                              value={String(clampBillingDay(form.billingDay))}
-                              onValueChange={(value) => setForm({ ...form, billingDay: clampBillingDay(Number(value)) })}
-                            >
-                              <SelectTrigger className="h-8 min-w-0">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {Array.from({ length: 31 }, (_, index) => index + 1).map((day) => (
-                                  <SelectItem key={day} value={String(day)}>{day}{translateText(" 日")}</SelectItem>
-                                ))}
+                                <SelectItem value="1">{translateText("月付")}</SelectItem>
+                                <SelectItem value="3">{translateText("季付")}</SelectItem>
+                                <SelectItem value="6">{translateText("半年付")}</SelectItem>
+                                <SelectItem value="12">{translateText("年付")}</SelectItem>
+                                <SelectItem value="24">{translateText("两年付")}</SelectItem>
+                                <SelectItem value="36">{translateText("三年付")}</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
-                        </div>
-                        <div className="min-w-0 space-y-1">
-                          <Label className="text-sm">{translateText("机器到期处理")}</Label>
-                          <Select
-                            value={normalizeHostExpiryAction(form.expiryHandling)}
-                            onValueChange={(value) => setForm({ ...form, expiryHandling: normalizeHostExpiryAction(value) })}
-                          >
-                            <SelectTrigger className="h-8 min-w-0">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="none">{translateText("不处理")}</SelectItem>
-                              <SelectItem value="extend_cycle">{translateText("周期顺延")}</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          <div className="col-span-2 row-start-2 min-w-0 space-y-1 md:col-span-1 md:row-start-auto">
+                            <Label className="text-sm">{translateText("账单月日")}</Label>
+                            <div className="grid min-w-0 grid-cols-2 gap-2">
+                              <Select
+                                value={String(clampBillingMonth(form.billingMonth))}
+                                onValueChange={(value) => setForm({ ...form, billingMonth: clampBillingMonth(Number(value)) })}
+                              >
+                                <SelectTrigger className="h-8 min-w-0">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {Array.from({ length: 12 }, (_, index) => index + 1).map((month) => (
+                                    <SelectItem key={month} value={String(month)}>{month}{translateText(" 月")}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <Select
+                                value={String(clampBillingDay(form.billingDay))}
+                                onValueChange={(value) => setForm({ ...form, billingDay: clampBillingDay(Number(value)) })}
+                              >
+                                <SelectTrigger className="h-8 min-w-0">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {Array.from({ length: 31 }, (_, index) => index + 1).map((day) => (
+                                    <SelectItem key={day} value={String(day)}>{day}{translateText(" 日")}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+                          <div className="min-w-0 space-y-1">
+                            <Label className="text-sm">{translateText("机器到期处理")}</Label>
+                            <Select
+                              value={normalizeHostExpiryAction(form.expiryHandling)}
+                              onValueChange={(value) => setForm({ ...form, expiryHandling: normalizeHostExpiryAction(value) })}
+                            >
+                              <SelectTrigger className="h-8 min-w-0">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="none">{translateText("不处理")}</SelectItem>
+                                <SelectItem value="extend_cycle">{translateText("周期顺延")}</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
                         </div>
                         <div className="min-w-0 space-y-1">
                           <Label className="text-sm">{translateText("套餐流量")}</Label>
@@ -3342,116 +3266,77 @@ function HostsContent() {
                           </Select>
                         </div>
                       </div>
-                      <div className="mt-2.5 flex min-h-9 flex-col gap-2 rounded-md bg-muted/35 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
-                        <div className="min-w-0 space-y-0.5">
-                          <Label className="text-sm font-medium">{translateText("流量故障转移")}</Label>
-                          <p className="text-xs text-muted-foreground">{translateText("达量后暂停组内使用，流量重置或关闭此项后恢复；不删除成员。")}</p>
-                          {editingId && displayHosts.find((host: any) => host.id === editingId)?.trafficFailoverExcluded && (
-                            <p className="text-xs text-amber-600 dark:text-amber-400">{translateText("当前已达到流量阈值，已暂停参与组调度（不影响主机在线状态）。")}</p>
-                          )}
-                        </div>
-                        <div className="flex shrink-0 items-center gap-2">
-                          <div className="flex h-8 w-20 overflow-hidden rounded-md border border-input bg-background">
-                            <Input className="h-8 rounded-none border-0 px-2 text-right" type="number" min={1} max={100} step={1}
-                              disabled={!form.trafficFailoverEnabled} value={form.trafficFailoverThresholdPercent}
-                              onChange={(e) => setForm({ ...form, trafficFailoverThresholdPercent: Math.min(100, Math.max(1, Number(e.target.value) || 1)) })} />
-                            <span className="flex h-8 shrink-0 items-center border-l border-border/60 bg-muted/50 px-1.5 text-sm text-muted-foreground">%</span>
+                      <div className="mt-2.5 grid min-w-0 grid-cols-2 gap-2.5">
+                        <div className="@container min-h-12 min-w-0 rounded-md bg-muted/35 px-3 py-2">
+                          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 @min-[16rem]:grid-cols-[minmax(0,1fr)_auto_auto]">
+                          <div className="min-w-0 space-y-0.5">
+                            <Label className="break-words text-sm font-medium">{translateText("流量故障转移")}</Label>
+                            {editingId && displayHosts.find((host: any) => host.id === editingId)?.trafficFailoverExcluded && (
+                              <p className="text-xs text-amber-600 dark:text-amber-400">{translateText("已达阈值，暂停组调度。")}</p>
+                            )}
                           </div>
-                          <Switch checked={form.trafficFailoverEnabled} onCheckedChange={(checked) => setForm({ ...form, trafficFailoverEnabled: checked })} />
-                        </div>
-                      </div>
-                      <HostStatusNotificationSetting checked={form.hostStatusNotifyEnabled} onChange={(checked) => setForm({ ...form, hostStatusNotifyEnabled: checked })} />
-                      <div className="mt-2.5 flex min-h-9 flex-col gap-2 rounded-md bg-muted/35 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
-                        <div className="min-w-0 space-y-0.5">
-                          <Label className="text-sm font-medium">{translateText("流量耗尽提醒")}</Label>
-                          <p className="text-xs text-muted-foreground">
-                            {telegramBotReady ? translateText("开启后通过所选通知渠道发送提醒。") : translateText("请先在系统设置中配置并启用所选通知渠道。")}
-                          </p>
-                        </div>
-                        <div className="flex shrink-0 items-center gap-2">
-                          <div className="flex h-8 w-20 overflow-hidden rounded-md border border-input bg-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
-                            <Input
-                              className="h-8 rounded-none border-0 px-2 text-right focus-visible:ring-0 focus-visible:ring-offset-0"
-                              type="number"
-                              min={1}
-                              max={99}
-                              step={1}
-                              value={form.trafficAlertThresholdPercent}
-                              onChange={(e) => setForm({ ...form, trafficAlertThresholdPercent: clampTrafficAlertThresholdPercent(Number(e.target.value)) })}
-                            />
-                            <span className="flex h-8 shrink-0 items-center border-l border-border/60 bg-muted/50 px-1.5 text-sm text-muted-foreground">%</span>
+                          <div className="col-span-2 row-start-2 min-w-0 @min-[16rem]:col-span-1 @min-[16rem]:col-start-2 @min-[16rem]:row-start-1">
+                            <div className="flex h-8 w-20 overflow-hidden rounded-md border border-input bg-background">
+                              <Input className="h-8 min-w-0 rounded-none border-0 px-2 text-right" type="number" min={1} max={100} step={1}
+                                disabled={!form.trafficFailoverEnabled} value={form.trafficFailoverThresholdPercent}
+                                onChange={(e) => setForm({ ...form, trafficFailoverThresholdPercent: Math.min(100, Math.max(1, Number(e.target.value) || 1)) })} />
+                              <span className="flex h-8 shrink-0 items-center border-l border-border/60 bg-muted/50 px-1.5 text-sm text-muted-foreground">%</span>
+                            </div>
                           </div>
-                          <Switch
-                            checked={telegramBotReady && form.telegramTrafficAlertEnabled}
-                            disabled={!telegramBotReady}
-                            onCheckedChange={(checked) => setForm({ ...form, telegramTrafficAlertEnabled: checked })}
-                          />
-                        </div>
-                      </div>
-                      <div className="mt-2.5 flex min-h-9 flex-col gap-2 rounded-md bg-muted/35 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
-                        <div className="min-w-0 space-y-0.5">
-                          <Label className="text-sm font-medium">{translateText("续费提醒")}</Label>
-                          <p className="text-xs text-muted-foreground">
-                            {telegramBotReady ? translateText("机器剩余日期不足指定天数时通过所选通知渠道提醒。") : translateText("请先在系统设置中配置并启用所选通知渠道。")}
-                          </p>
-                        </div>
-                        <div className="flex shrink-0 items-center gap-2">
-                          <div className="flex h-8 w-24 overflow-hidden rounded-md border border-input bg-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
-                            <Input
-                              className="h-8 rounded-none border-0 px-2 text-right focus-visible:ring-0 focus-visible:ring-offset-0"
-                              type="number"
-                              min={1}
-                              max={365}
-                              step={1}
-                              value={form.renewalReminderDays}
-                              onChange={(e) => setForm({ ...form, renewalReminderDays: clampRenewalReminderDays(Number(e.target.value)) })}
-                            />
-                            <span className="flex h-8 shrink-0 items-center border-l border-border/60 bg-muted/50 px-2 text-sm text-muted-foreground">{translateText("天")}</span>
+                          <div className="col-start-2 row-start-1 @min-[16rem]:col-start-3"><HintSwitch hint={translateText("达量暂停组调度，重置或关闭后恢复。")} checked={form.trafficFailoverEnabled} onCheckedChange={(checked) => setForm({ ...form, trafficFailoverEnabled: checked })} /></div>
                           </div>
-                          <Switch
-                            checked={telegramBotReady && form.telegramRenewalReminderEnabled}
-                            disabled={!telegramBotReady}
-                            onCheckedChange={(checked) => setForm({ ...form, telegramRenewalReminderEnabled: checked })}
-                          />
+                        </div>
+                        <HostStatusNotificationSetting checked={form.hostStatusNotifyEnabled} onChange={(checked) => setForm({ ...form, hostStatusNotifyEnabled: checked })} />
+                      </div>
+                      <HostReminderSettings channelReady={telegramBotReady}
+                        trafficEnabled={form.telegramTrafficAlertEnabled} trafficPercent={form.trafficAlertThresholdPercent}
+                        renewalEnabled={form.telegramRenewalReminderEnabled} renewalDays={form.renewalReminderDays}
+                        onTrafficEnabledChange={checked => setForm({ ...form, telegramTrafficAlertEnabled: checked })}
+                        onTrafficPercentChange={value => setForm({ ...form, trafficAlertThresholdPercent: clampTrafficAlertThresholdPercent(value) })}
+                        onRenewalEnabledChange={checked => setForm({ ...form, telegramRenewalReminderEnabled: checked })}
+                        onRenewalDaysChange={value => setForm({ ...form, renewalReminderDays: clampRenewalReminderDays(value) })} />
+                      <div className="mt-2.5 grid min-w-0 grid-cols-2 gap-2.5">
+                        <HostTrafficShutdownSetting enabled={form.trafficShutdownEnabled} percent={form.trafficShutdownThresholdPercent}
+                          triggered={!!editingId && !!displayHosts.find((host: any) => host.id === editingId)?.trafficShutdownTriggered}
+                          onEnabledChange={checked => setForm({ ...form, trafficShutdownEnabled: checked })}
+                          onPercentChange={value => setForm({ ...form, trafficShutdownThresholdPercent: value })} />
+                        <div className="@container min-h-12 min-w-0 rounded-md bg-muted/35 px-3 py-2">
+                          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 @min-[16rem]:grid-cols-[minmax(0,1fr)_auto_auto]">
+                          <div className="min-w-0">
+                            <Label className="break-words text-sm font-medium">{translateText("自动重置流量")}</Label>
+                          </div>
+                          <div className="col-span-2 row-start-2 min-w-0 @min-[16rem]:col-span-1 @min-[16rem]:col-start-2 @min-[16rem]:row-start-1">
+                            <Select
+                              value={String(clampMonthlyResetDay(form.trafficResetDay))}
+                              onValueChange={(value) => setForm({ ...form, trafficResetDay: clampMonthlyResetDay(Number(value)) })}
+                            >
+                              <SelectTrigger className="h-8 w-20">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {Array.from({ length: 31 }, (_, index) => index + 1).map((day) => (
+                                  <SelectItem key={day} value={String(day)}>{day}{translateText(" 号")}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="col-start-2 row-start-1 @min-[16rem]:col-start-3"><HintSwitch hint={translateText("无对应日期则月末重置。")} checked={form.trafficAutoReset} onCheckedChange={(checked) => setForm({ ...form, trafficAutoReset: checked })} /></div>
+                          </div>
                         </div>
                       </div>
-                      <div className="mt-2.5 flex min-h-9 flex-col gap-2 rounded-md bg-muted/35 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
-                        <div className="min-w-0">
-                          <Label className="text-sm font-medium">{translateText("自动重置流量")}</Label>
-                        </div>
-                        <div className="flex shrink-0 items-center gap-2">
-                          <Select
-                            value={String(clampMonthlyResetDay(form.trafficResetDay))}
-                            onValueChange={(value) => setForm({ ...form, trafficResetDay: clampMonthlyResetDay(Number(value)) })}
-                          >
-                            <SelectTrigger className="h-8 w-24">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {Array.from({ length: 31 }, (_, index) => index + 1).map((day) => (
-                                <SelectItem key={day} value={String(day)}>{day}{translateText(" 号")}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <Switch checked={form.trafficAutoReset} onCheckedChange={(checked) => setForm({ ...form, trafficAutoReset: checked })} />
-                        </div>
-                      </div>
-                      <p className="mt-1.5 px-3 text-xs text-muted-foreground">{translateText("当月没有该日期时按最后一天重置。")}</p>
                       <div className="mt-2.5 space-y-2 rounded-md bg-muted/35 px-3 py-2.5">
                         <div className="flex min-h-8 flex-wrap items-center justify-between gap-2">
                           <div className="flex min-w-0 items-center gap-2">
                             <RadioTower className="h-4 w-4 shrink-0 text-muted-foreground" />
                             <Label className="text-sm font-medium">{translateText("DDNS 服务")}</Label>
-                            {!ddnsProviderEnabled ? (
-                              <Badge variant="secondary" className="shrink-0 text-[11px]">{translateText("未配置服务商")}</Badge>
-                            ) : null}
                           </div>
                           <div className="ml-auto flex shrink-0 items-center gap-2">
                             <Select value={form.ddnsAddressMode} disabled={!ddnsProviderEnabled} onValueChange={value => setForm({ ...form, ddnsAddressMode: value === "all" ? "all" : "primary" })}>
                               <SelectTrigger className="h-8 w-auto min-w-[8rem] max-w-[11rem] gap-2 text-xs [&>span]:truncate" aria-label={translateText("DDNS 地址范围")}><SelectValue /></SelectTrigger>
                               <SelectContent><SelectItem value="primary">{translateText("仅记录主 IP")}</SelectItem><SelectItem value="all">{translateText("记录全部检测 IP")}</SelectItem></SelectContent>
                             </Select>
-                            <Switch
+                            <HintSwitch
+                              hint={ddnsProviderEnabled ? translateText("开启后，Agent 上报的对应 IP 发生变化时会自动更新到系统设置中的 DDNS 服务商。") : translateText("请先在系统设置内启用 DDNS 服务商")}
                               checked={form.ddnsEnabled}
                               disabled={!ddnsProviderEnabled && !form.ddnsEnabled}
                               onCheckedChange={(checked) => setForm({ ...form, ddnsEnabled: checked })}

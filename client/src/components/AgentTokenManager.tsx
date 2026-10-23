@@ -524,6 +524,7 @@ export default function AgentTokenManager({
 
   const createTokenMutation = trpc.agentTokens.create.useMutation({
     onSuccess: (data) => {
+      utils.hosts.managementCounts.invalidate();
       utils.agentTokens.list.invalidate();
       toast.success(translateText("安装 Token 已生成"));
       setNewToken(data.token);
@@ -535,6 +536,7 @@ export default function AgentTokenManager({
 
   const deleteTokenMutation = trpc.agentTokens.delete.useMutation({
     onSuccess: (data) => {
+      utils.hosts.managementCounts.invalidate();
       utils.agentTokens.list.invalidate();
       utils.hosts.list.invalidate();
       utils.hosts.options.invalidate();

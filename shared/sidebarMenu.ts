@@ -31,6 +31,21 @@ export const SIDEBAR_MENU_LABELS: Record<SidebarMenuKey, string> = {
   settings: "系统设置",
 };
 
+export function getSidebarMenuLabel(key: SidebarMenuKey, isAdmin = false): string {
+  return key === "affiliates" && isAdmin ? "推广管理" : SIDEBAR_MENU_LABELS[key];
+}
+
+export function isSidebarMenuVisible(
+  settings: SidebarMenuSettings,
+  key?: SidebarMenuKey,
+  viewer: { isAdmin?: boolean; hasAffiliateHistory?: boolean } = {},
+): boolean {
+  // Administrators keep management access, and users keep access to past commissions.
+  if ((key === "tickets" || key === "affiliates") && viewer.isAdmin) return true;
+  if (key === "affiliates" && viewer.hasAffiliateHistory) return true;
+  return !key || settings[key] !== false;
+}
+
 export const DEFAULT_SIDEBAR_MENU_SETTINGS: SidebarMenuSettings = SIDEBAR_MENU_KEYS.reduce((acc, key) => {
   acc[key] = key !== "plugins" && key !== "tickets" && key !== "affiliates";
   return acc;

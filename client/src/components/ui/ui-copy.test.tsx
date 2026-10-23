@@ -10,6 +10,23 @@ import { PersistentPagination, type PersistentPaginationState } from "../Persist
 import { RuleLimitsForm, newRuleLimitsForm } from "../rules/RuleLimitsForm";
 import { getLanguagePreference, initializeLanguage, setLanguagePreference } from "@/i18n";
 
+test("operations monitor is display-only and sits below the other dashboard sections", () => {
+  const page = readFileSync("client/src/pages/Operations.tsx", "utf8");
+  const filters = page.indexOf("<OperationsDateFilter ");
+  const summary = page.indexOf("<SummaryMetricCard ");
+  const monitor = page.indexOf("<OperationsMonitorPanel ");
+  assert.ok(filters >= 0 && filters < summary && summary < monitor);
+  assert.ok(monitor > page.indexOf('t("转发组事件")'));
+  const panel = readFileSync("client/src/components/OperationsMonitorPanel.tsx", "utf8");
+  assert.doesNotMatch(panel, /saveMonitor|saveResourceAlertSettings|资源告警设置/);
+  assert.match(panel, /IP 更换记录/);
+  const services = readFileSync("client/src/components/hosts/HostProbeServiceManager.tsx", "utf8");
+  assert.match(services, /<HostResourceAlertSettings /);
+  assert.doesNotMatch(services, /ChinaHealthStatus|lastAction|blockedAction/);
+  assert.equal((page.match(/<OperationsDateFilter\b/g) || []).length, 1);
+  assert.equal((page.match(/<OperationsMonitorPanel\b/g) || []).length, 1);
+});
+
 test("public homepage uses one local PNG or uploaded logo", () => {
   const page = readFileSync("client/src/pages/PublicHome.tsx", "utf8");
   const header = page.slice(page.indexOf("<header"), page.indexOf("</header>"));
@@ -23,21 +40,23 @@ test("sidebar menu toggles retain display controls and distinguish independent b
   const settings = readFileSync("client/src/pages/Settings.tsx", "utf8");
   const rows = settings.slice(settings.indexOf("{SIDEBAR_MENU_KEYS.map((key) => ("));
   const menu = rows.slice(0, rows.indexOf("</Dialog>"));
-  assert.match(menu, /<span className="text-sm">\{translateText\(SIDEBAR_MENU_LABELS\[key\]\)\}<\/span>/);
+  assert.match(menu, /<span className="text-sm">\{translateText\(getSidebarMenuLabel\(key, true\)\)\}<\/span>/);
   assert.match(menu, /checked=\{sidebarMenu\[key\]\}/);
   assert.match(menu, /setSidebarMenuEnabled\(key, checked\)/);
-  assert.match(menu, /仅控制用户侧菜单显示，工单功能和推送开关请在工单管理的设置中调整/);
+  assert.match(menu, /仅控制菜单显示，工单功能和推送开关请在工单管理的设置中调整/);
   assert.match(menu, /仅控制菜单显示，返佣总开关请在推广管理的设置中调整/);
   assert.doesNotMatch(menu, /supportTicketsEnabled|affiliateEnabled/);
 });
 
 test("ticket navigation belongs to management for both roles and keeps unread badges", () => {
   const layout = readFileSync("client/src/components/DashboardLayout.tsx", "utf8");
-  const primary = layout.slice(layout.indexOf("  const primaryMenuItems = ["), layout.indexOf("  const otherMenuItems:"));
+  const primary = layout.slice(layout.indexOf("  const primaryMenuItems = filterSidebarNavItems("), layout.indexOf("  const otherMenuItems:"));
+  assert.ok(primary.length > 0);
   assert.doesNotMatch(primary, /ticketMenuItems|\/tickets|sidebarMenuSettings\.tickets/);
   const management = layout.slice(layout.indexOf("  const managementMenuItems:"), layout.indexOf("  const allMenuItems ="));
   assert.equal((management.match(/\.\.\.ticketMenuItems/g) || []).length, 2);
-  assert.match(layout, /const ticketMenuItems: SidebarNavItem\[\] = isAdmin \|\| sidebarMenuSettings\.tickets/);
+  assert.match(layout, /const ticketMenuItems = filterSidebarNavItems\(/);
+  assert.doesNotMatch(layout, /isAdmin \|\| sidebarMenuSettings\.tickets/);
   assert.match(layout, /ticketStatus\?\.enabled === true/);
   assert.match(layout, /ticketSummary\.unread > 99/);
   assert.match(layout, /const allMenuItems = \[\.\.\.primaryMenuItems, \.\.\.managementMenuItems, \.\.\.otherMenuItems\]/);

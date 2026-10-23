@@ -1004,7 +1004,7 @@ function AdminAffiliates({ settingsOpen, onSettingsOpenChange }: {
                 setDirty(true);
               }} />
             </div>
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid min-w-0 grid-cols-2 gap-3 [&>*]:min-w-0">
               <div className="space-y-2">
                 <Label htmlFor="affiliate-rate">{t("默认返佣比例（%）")}</Label>
                 <Input
@@ -1223,7 +1223,7 @@ export default function AffiliatesPage({ admin = false }: { admin?: boolean }) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   return (
     <DashboardLayout>
-      <div className="mx-auto w-full min-w-0 max-w-7xl space-y-6">
+      <div className="w-full min-w-0 space-y-6">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <h1 className="text-2xl font-semibold tracking-tight">

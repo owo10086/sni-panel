@@ -3,6 +3,7 @@ import { mobileAuth } from "@/lib/mobileAuth";
 import { applyPersonalizationTheme, clearPersonalizationTheme } from "@/lib/personalizationTheme";
 import { useEffect, useLayoutEffect, useState } from "react";
 import { applySiteFavicon } from "@/lib/siteFavicon";
+import { saveSiteBranding } from "@/lib/siteBranding";
 
 const MOBILE_BACKGROUND_MEDIA = "(max-width: 767px), (pointer: coarse)";
 
@@ -35,6 +36,12 @@ export default function PersonalizationLayer() {
   const isVideoBackground = source === "url" && urlType === "video" && !!effectiveUrl;
   const showVideo = isVideoBackground && !reduceMobileBackground;
   const showImage = source !== "none" && !isVideoBackground && !!effectiveUrl;
+
+  useEffect(() => {
+    if (!data) return;
+    const branding = saveSiteBranding(data);
+    document.title = branding.siteTitle;
+  }, [data?.siteTitle, data?.siteLogoDataUrl, !!data]);
 
   useEffect(() => {
     if (typeof window === "undefined" || typeof window.matchMedia !== "function") return;
