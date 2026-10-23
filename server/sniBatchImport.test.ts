@@ -22,6 +22,10 @@ test("ordinary users can import ordinary rules in one batch with complete entry 
   verifyBatchImport("import-ordinary");
 });
 
+test("personal groups cover ordinary and SNI single/batch saves without changing ordinary all", () => {
+  verifyBatchImport("personal-groups");
+});
+
 test("batch imports preserve manual fixed ports and retry only ordinary file port conflicts", () => {
   verifyBatchImport("import-ports");
 });

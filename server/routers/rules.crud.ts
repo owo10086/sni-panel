@@ -1,6 +1,7 @@
 import { afterDatabaseCommit, isDatabaseTransactionActive, withDatabaseSavepoint, DatabaseSavepointRollbackError, withDeferredDatabaseCommitCallbacks } from "../dbRuntime";
 import { protectedProcedure, router } from "../_core/trpc";
 import { z } from "zod";
+import { TRPCError } from "@trpc/server";
 import { assertNoDirectSelfForwardLoop } from "../directForwardLoop";
 import { ruleLimitInputShape, ruleLimitPatch, hasRuleLimitInput, validateRuleLimitInput, validateRuleRateLimitTargets } from "./ruleLimitInput";
 import { assertRuleWritable, isAdminManagedRule } from "../../shared/ruleLimits";
@@ -53,6 +54,8 @@ import {
 import { assertSniEntryAgentVersions } from "../sniEntryPortOverview";
 
 import { resolveRuleOperationOwner } from "../ruleOperationOwner";
+import { personalRuleGroupIdsSchema } from "../../shared/ruleGroups";
+import { assertPersonalRuleGroups } from "../repositories/ruleGroupRepository";
 
 const targetHostSchema = z.string().min(1).max(253).refine(
   (v) => /^[a-zA-Z0-9]([a-zA-Z0-9\-_.]*[a-zA-Z0-9])?$|^[a-fA-F0-9:.]+$/.test(v.trim()),
@@ -1574,6 +1577,7 @@ export async function createDirectForwardRuleForActor(
 const createRuleInputSchema = z.object({
   ...ruleLimitInputShape,
   userId: z.number().int().positive().optional(),
+  personalGroupIds: personalRuleGroupIdsSchema.optional(),
   hostId: z.number().optional(),
   name: z.string().min(1).max(128),
   forwardType: forwardTypeSchema.default("iptables"),
@@ -1610,6 +1614,10 @@ async function createForwardRuleForContext(
   options: { batch?: boolean; entryReservations?: HostPortReservation[]; allocatedPorts?: Set<number> } = {},
 ) {
   return withSniRuleWrite(undefined, input, async () => {
+    if (input.personalGroupIds !== undefined) {
+      if (input.userId && input.userId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN", message: "只能设置自己的规则分组" });
+      await assertPersonalRuleGroups(ctx.user.id, input.personalGroupIds);
+    }
     validateRuleLimitInput(ctx.user.role, input);
     await validateRuleRateLimitTargets(input);
     if (ctx.user.role === "admin" && (hasRuleLimitInput(input) || (input.userId && input.userId !== ctx.user.id))) {
@@ -1772,6 +1780,7 @@ async function createForwardRuleForContext(
       await requireRuleProtocolEnabled({ forwardType, tunnelId: null });
       const createTemplateRule = () => db.createForwardRule({
         ...ruleLimitPatch(input),
+        personalGroupIds: input.personalGroupIds,
         hostId,
         name: input.name,
         forwardType,
@@ -2089,6 +2098,7 @@ export const crudRulesRouter = router({
     .input(z.object({
       ...ruleLimitInputShape,
       id: z.number(),
+      personalGroupIds: personalRuleGroupIdsSchema.optional(),
       hostId: z.number().optional(),
       name: z.string().min(1).max(128).optional(),
       forwardType: forwardTypeSchema.optional(),
@@ -2116,7 +2126,12 @@ export const crudRulesRouter = router({
       ...sniRuleLimitInputShape,
       isEnabled: z.boolean().optional(),
     }))
-    .use(async ({ input, next }) => {
+    .use(async ({ input, ctx, next }) => {
+      if (input.personalGroupIds !== undefined) {
+        const rule = await db.getForwardRuleById(input.id);
+        if (!rule || rule.userId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN", message: "只能设置自己的规则分组" });
+        await assertPersonalRuleGroups(ctx.user.id, input.personalGroupIds);
+      }
       const result = await next();
       if (result.ok && hasRuleLimitInput(input)) await reconcileRuleLimits([input.id], true);
       return result;
@@ -2480,6 +2495,7 @@ export const crudRulesRouter = router({
             failoverTargets: [],
           }, nextProtocol);
           const data: any = {
+            personalGroupIds: input.personalGroupIds,
             ...ruleLimitPatch(input),
             name: input.name ?? (rule as any).name,
             hostId: nextHostId,
@@ -2813,6 +2829,7 @@ export const crudRulesRouter = router({
         }
         const data: any = {
           name: input.name ?? (rule as any).name,
+          personalGroupIds: input.personalGroupIds,
           ...ruleLimitPatch(input),
           hostId,
           forwardType: nextForwardType,

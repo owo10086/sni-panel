@@ -109,6 +109,8 @@ test("pending rule cleanup never remains an active host delete blocker", () => {
     await ensureDatabaseSchema();
     await runtime.executeRaw('INSERT INTO "users" ("id", "password", "username", "name") VALUES (99, \'test\', \'customer-a\', \'Customer A\')');
     await runtime.executeRaw('INSERT INTO "forward_rules" ("id", "name", "sourcePort", "targetIp", "targetPort", "hostId", "userId", "forwardGroupId", "forwardGroupRuleId", "forwardGroupMemberId", "isForwardGroupTemplate", "isEnabled", "pendingDelete", "isRunning", "updatedAt") VALUES (10, \'test-rule\', 20000, \'192.0.2.1\', 80, 2, 99, NULL, NULL, NULL, 0, 1, 0, 1, 1)');
+    await runtime.insertAndGetId("rule_groups", { id: 123, userId: 99, name: "Cleanup group" });
+    await runtime.insertAndGetId("rule_group_members", { userId: 99, ruleId: 10, groupId: 123 });
 
     assert.deepEqual(await hostRepository.getHostRuleDeleteBlockers(2), {
       ruleCount: 1,
@@ -141,6 +143,8 @@ test("pending rule cleanup never remains an active host delete blocker", () => {
 
     assert.equal(await ruleRepository.purgeSettledPendingForwardRuleDeletes(), 1);
     assert.deepEqual(await runtime.queryRaw('SELECT "id" FROM "forward_rules" WHERE "id" = 10'), []);
+    assert.deepEqual(await runtime.queryRaw('SELECT "id" FROM "rule_group_members" WHERE "ruleId" = 10'), []);
+    assert.equal((await runtime.queryRaw('SELECT "id" FROM "rule_groups" WHERE "id" = 123')).length, 1);
     await runtime.closeDatabase();
   `;
 

@@ -57,7 +57,8 @@ test("exact-ID import rolls back entirely on an invalid row and preserves runtim
   import {importSeamlessSnapshot} from './server/seamlessMigrationImport.ts';
   await r.connectDatabase({type:'sqlite',sqlite:{path:process.env.SQLITE_PATH}}); await ensureDatabaseSchema();
   const before=await r.queryRaw('SELECT * FROM system_settings');
-  const base={version:1,exportedAt:Date.now(),tables:{users:[{id:3,username:'admin',role:'admin',password:'fixture'}],forward_rules:[{id:101,userId:3,hostId:7,name:'fixture',sourcePort:18001,targetIp:'127.0.0.1',targetPort:18002,forwardType:'realm',isRunning:1,isEnabled:1}]}};
+  const alert=JSON.stringify({enabled:true,notify:true,notifyUserId:7,cpu:90,memory:90,disk:90,durationSeconds:60,recoverySeconds:30});
+  const base={version:1,exportedAt:Date.now(),tables:{users:[{id:3,username:'admin',role:'admin',password:'fixture'},{id:7,username:'alert-recipient',role:'user',password:'fixture',telegramId:'recipient-7'}],hosts:[{id:7,userId:3,name:'alert-host',ip:'192.0.2.7',resourceAlertConfig:alert}],forward_rules:[{id:101,userId:3,hostId:7,name:'fixture',sourcePort:18001,targetIp:'127.0.0.1',targetPort:18002,forwardType:'realm',isRunning:1,isEnabled:1}]}};
   const bad=structuredClone(base); bad.tables.forward_rules.push({...bad.tables.forward_rules[0]});
   await assert.rejects(()=>importSeamlessSnapshot(bad,'http://new.test'), /整个事务已回滚/);
   assert.deepEqual(await r.queryRaw('SELECT * FROM users'),[]);
@@ -65,6 +66,8 @@ test("exact-ID import rolls back entirely on an invalid row and preserves runtim
   await importSeamlessSnapshot(base,'http://new.test');
   const rules=await r.queryRaw('SELECT * FROM forward_rules');
   assert.equal(rules[0].id,101); assert.equal(rules[0].isRunning,1); assert.equal(rules[0].sourcePort,18001);
+  assert.equal((await r.queryRaw('SELECT resourceAlertConfig FROM hosts WHERE id=7'))[0].resourceAlertConfig,alert);
+  assert.equal((await r.queryRaw('SELECT telegramId FROM users WHERE id=7'))[0].telegramId,'recipient-7');
   await assert.rejects(()=>importSeamlessSnapshot(base,'http://new.test'), /空业务目标/);
   await r.closeDatabase(); process.exit(0);
 `));

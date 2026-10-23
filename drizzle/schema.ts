@@ -6,6 +6,7 @@ import {
   boolean as mysqlBoolean,
   customType,
   int as mysqlInt,
+  double as mysqlDouble,
   longtext as mysqlLongText,
   mysqlTable,
   serial as mysqlSerial,
@@ -14,6 +15,7 @@ import {
 } from "drizzle-orm/mysql-core";
 import {
   integer as sqliteInteger,
+  real as sqliteReal,
   sqliteTable,
   text as sqliteText,
 } from "drizzle-orm/sqlite-core";
@@ -23,6 +25,7 @@ import {
   boolean as pgBoolean,
   customType as pgCustomType,
   integer as pgInteger,
+  doublePrecision as pgDouble,
   pgTable,
   text as pgText,
   varchar as pgVarchar,
@@ -84,6 +87,7 @@ const longtext = (name: string): any => (isSqliteDialect ? sqliteText(name) : is
 const varchar = (name: string, config: { length: number }): any =>
   isSqliteDialect ? sqliteText(name) : isPostgresqlDialect ? pgVarchar(name, config) : mysqlVarchar(name, config);
 const int = (name: string): any => (isSqliteDialect ? sqliteInteger(name) : isPostgresqlDialect ? pgInteger(name) : mysqlInt(name));
+const real = (name: string): any => (isSqliteDialect ? sqliteReal(name) : isPostgresqlDialect ? pgDouble(name) : mysqlDouble(name));
 const boolean = (name: string): any =>
   isSqliteDialect ? sqliteInteger(name, { mode: "boolean" }) : isPostgresqlDialect ? pgBoolean(name) : mysqlBoolean(name);
 const bigint = (name: string, config?: { mode?: "number" }): any =>
@@ -183,6 +187,9 @@ export const users = table("users", {
   lastAutoTrafficReset: epoch("lastAutoTrafficReset"),
   telegramId: text("telegramId").unique(),
   supportTicketNotificationSubscribed: boolean("supportTicketNotificationSubscribed").notNull().default(true),
+  animationsEnabled: boolean("animationsEnabled").notNull().default(true),
+  ruleTableLayout: text("ruleTableLayout"),
+  hostTableLayout: text("hostTableLayout"),
   discordId: varchar("discordId", { length: 32 }).unique(),
   discordUsername: text("discordUsername"),
   discordLinkedAt: epoch("discordLinkedAt"),
@@ -287,7 +294,11 @@ export const hosts = table("hosts", {
   trafficFailoverThresholdPercent: int("trafficFailoverThresholdPercent").notNull().default(100),
   // Derived from host_traffic_counters; never changes the configured membership.
   trafficFailoverExcluded: boolean("trafficFailoverExcluded").notNull().default(false),
+  trafficShutdownEnabled: boolean("trafficShutdownEnabled").notNull().default(false),
+  trafficShutdownThresholdPercent: int("trafficShutdownThresholdPercent").notNull().default(100),
+  trafficShutdownTriggered: boolean("trafficShutdownTriggered").notNull().default(false),
   hostStatusNotifyEnabled: boolean("hostStatusNotifyEnabled").notNull().default(true),
+  resourceAlertConfig: text("resourceAlertConfig"),
   telegramTrafficAlertEnabled: boolean("telegramTrafficAlertEnabled").notNull().default(false),
   trafficAlertThresholdPercent: int("trafficAlertThresholdPercent").notNull().default(20),
   telegramRenewalReminderEnabled: boolean("telegramRenewalReminderEnabled").notNull().default(false),
@@ -358,6 +369,21 @@ export const aiBotWorkflows = table("ai_bot_workflows", {
   payload: longtext("payload").notNull(),
   result: longtext("result"),
   updatedAt: bigint("updatedAt", { mode: "number" }).notNull(),
+});
+
+export const ruleGroups = table("rule_groups", {
+  id: serial("id"),
+  userId: int("userId").notNull(),
+  name: varchar("name", { length: 64 }).notNull(),
+  sortOrder: int("sortOrder").notNull().default(0),
+  createdAt: epoch("createdAt").notNull().default(nowDefault()),
+});
+
+export const ruleGroupMembers = table("rule_group_members", {
+  id: serial("id"),
+  userId: int("userId").notNull(),
+  ruleId: int("ruleId").notNull(),
+  groupId: int("groupId").notNull(),
 });
 
 export const forwardRules = table("forward_rules", {
@@ -624,6 +650,9 @@ export const hostMetrics = table("host_metrics", {
   id: serial("id"),
   hostId: int("hostId").notNull(),
   cpuUsage: int("cpuUsage"),
+  load1: real("load1"),
+  load5: real("load5"),
+  load15: real("load15"),
   memoryUsage: int("memoryUsage"),
   memoryUsed: bigint("memoryUsed", { mode: "number" }),
   swapUsage: int("swapUsage"),
@@ -788,6 +817,9 @@ export const hostProbeServices = table("host_probe_services", {
   method: varchar("method", { length: 16 }).notNull().default("tcping"),
   targetIp: text("targetIp").notNull(),
   targetPort: int("targetPort"),
+  targetUrl: text("targetUrl"),
+  timeoutSeconds: int("timeoutSeconds").notNull().default(5),
+  expectedStatus: int("expectedStatus").notNull().default(200),
   hostScope: varchar("hostScope", { length: 16 }).notNull().default("all"),
   hostIds: text("hostIds"),
   excludeHostIds: text("excludeHostIds"),

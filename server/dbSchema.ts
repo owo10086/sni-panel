@@ -5,7 +5,7 @@ import { seamlessBackgroundPaused } from "./seamlessMigrationState";
 import { getDatabaseKind, getPool, getPostgresPool, getSqlite } from "./dbRuntime";
 import { normalizeSidebarMenuSettings } from "../shared/sidebarMenu";
 
-export type ColumnType = "id" | "text" | "longtext" | "varchar" | "int" | "bigint" | "bool" | "epoch";
+export type ColumnType = "id" | "text" | "longtext" | "varchar" | "int" | "bigint" | "real" | "bool" | "epoch";
 
 export type ColumnDef = {
   name: string;
@@ -35,6 +35,8 @@ export const MIGRATION_TABLES = [
   "tunnel_hops",
   "forward_rule_tunnel_exits",
   "forward_rules",
+  "rule_groups",
+  "rule_group_members",
   "forward_groups",
   "forward_group_members",
   "forward_group_events",
@@ -256,6 +258,9 @@ const tables: TableDef[] = [
       c("discordLinkedAt", "epoch"), c("discordLastSeenAt", "epoch"),
       c("discordAnnouncementSubscribed", "bool", { notNull: true, default: false }),
       c("supportTicketNotificationSubscribed", "bool", { notNull: true, default: true }),
+      c("animationsEnabled", "bool", { notNull: true, default: true }),
+      c("ruleTableLayout", "text"),
+      c("hostTableLayout", "text"),
       c("discordBindCode", "varchar", { length: 64 }), c("discordBindCodeExpiresAt", "epoch"),
       c("discordLoginCode", "varchar", { length: 64 }), c("discordLoginCodeExpiresAt", "epoch"),
       c("telegramLinkedAt", "epoch"), c("telegramLastSeenAt", "epoch"), c("telegramAnnouncementSubscribed", "bool", { notNull: true, default: false }), c("telegramBindCode", "text"),
@@ -301,7 +306,10 @@ const tables: TableDef[] = [
       c("trafficLimit", "bigint", { notNull: true, default: 0 }), c("trafficMeasureMode", "varchar", { length: 16, notNull: true, default: "both" }),
       c("trafficFailoverEnabled", "bool", { notNull: true, default: false }), c("trafficFailoverThresholdPercent", "int", { notNull: true, default: 100 }),
       c("trafficFailoverExcluded", "bool", { notNull: true, default: false }),
+      c("trafficShutdownEnabled", "bool", { notNull: true, default: false }), c("trafficShutdownThresholdPercent", "int", { notNull: true, default: 100 }),
+      c("trafficShutdownTriggered", "bool", { notNull: true, default: false }),
       c("hostStatusNotifyEnabled", "bool", { notNull: true, default: true }),
+      c("resourceAlertConfig", "text"),
       c("telegramTrafficAlertEnabled", "bool", { notNull: true, default: false }), c("trafficAlertThresholdPercent", "int", { notNull: true, default: 20 }),
       c("telegramRenewalReminderEnabled", "bool", { notNull: true, default: false }), c("renewalReminderDays", "int", { notNull: true, default: 3 }),
       c("trafficAutoReset", "bool", { notNull: true, default: false }), c("trafficResetDay", "int", { notNull: true, default: 1 }),
@@ -344,6 +352,21 @@ const tables: TableDef[] = [
     ],
     unique: [["groupId", "hostId"]],
     indexes: [["groupId", "sortOrder"], ["hostId"]],
+  },
+  {
+    name: "rule_groups",
+    columns: [
+      c("id", "id"), c("userId", "int", { notNull: true }), c("name", "varchar", { length: 64, notNull: true }),
+      c("sortOrder", "int", { notNull: true, default: 0 }), c("createdAt", "epoch", { notNull: true, default: "now" }),
+    ],
+    unique: [["userId", "name"]],
+    indexes: [["userId", "sortOrder"]],
+  },
+  {
+    name: "rule_group_members",
+    columns: [c("id", "id"), c("userId", "int", { notNull: true }), c("ruleId", "int", { notNull: true }), c("groupId", "int", { notNull: true })],
+    unique: [["userId", "ruleId", "groupId"]],
+    indexes: [["userId", "groupId", "ruleId"], ["ruleId"]],
   },
   {
     name: "forward_rules",
@@ -475,7 +498,7 @@ const tables: TableDef[] = [
   { name: "tunnel_exit_nodes", columns: [c("id", "id"), c("tunnelId", "int", { notNull: true }), c("seq", "int", { notNull: true }), c("hostId", "int", { notNull: true }), c("listenPort", "int", { notNull: true }), c("mimicPort", "int", { notNull: true, default: 0 }), c("connectHost", "text"), c("isEnabled", "bool", { notNull: true, default: true }), c("createdAt", "epoch", { notNull: true, default: "now" }), c("updatedAt", "epoch", { notNull: true, default: "now" })], unique: [["tunnelId", "seq"]], indexes: [["tunnelId"], ["hostId"], ["hostId", "listenPort"]] },
   { name: "tunnel_hops", columns: [c("id", "id"), c("tunnelId", "int", { notNull: true }), c("seq", "int", { notNull: true }), c("hostId", "int", { notNull: true }), c("listenPort", "int", { notNull: true, default: 0 }), c("mimicPort", "int", { notNull: true, default: 0 }), c("connectHost", "text")], unique: [["tunnelId", "seq"]], indexes: [["tunnelId"], ["hostId"]] },
   { name: "forward_rule_tunnel_exits", columns: [c("id", "id"), c("ruleId", "int", { notNull: true }), c("tunnelId", "int", { notNull: true }), c("exitNodeId", "int", { notNull: true }), c("exitSeq", "int", { notNull: true }), c("exitHostId", "int", { notNull: true }), c("tunnelExitPort", "int", { notNull: true }), c("createdAt", "epoch", { notNull: true, default: "now" }), c("updatedAt", "epoch", { notNull: true, default: "now" })], unique: [["ruleId", "exitNodeId"], ["ruleId", "exitSeq"]], indexes: [["ruleId"], ["tunnelId"], ["exitHostId"], ["exitHostId", "tunnelExitPort"]] },
-  { name: "host_metrics", columns: [c("id", "id"), c("hostId", "int", { notNull: true }), c("cpuUsage", "int"), c("memoryUsage", "int"), c("memoryUsed", "bigint"), c("swapUsage", "int"), c("swapUsed", "bigint"), c("swapTotal", "bigint"), c("networkIn", "bigint"), c("networkOut", "bigint"), c("diskUsage", "int"), c("diskUsed", "bigint"), c("diskTotal", "bigint"), c("uptime", "bigint"), c("recordedAt", "epoch", { notNull: true, default: "now" })], indexes: [["hostId", "recordedAt"], ["recordedAt", "hostId"]] },
+  { name: "host_metrics", columns: [c("id", "id"), c("hostId", "int", { notNull: true }), c("cpuUsage", "int"), c("load1", "real"), c("load5", "real"), c("load15", "real"), c("memoryUsage", "int"), c("memoryUsed", "bigint"), c("swapUsage", "int"), c("swapUsed", "bigint"), c("swapTotal", "bigint"), c("networkIn", "bigint"), c("networkOut", "bigint"), c("diskUsage", "int"), c("diskUsed", "bigint"), c("diskTotal", "bigint"), c("uptime", "bigint"), c("recordedAt", "epoch", { notNull: true, default: "now" })], indexes: [["hostId", "recordedAt"], ["recordedAt", "hostId"]] },
   { name: "host_traffic_counters", columns: [c("id", "id"), c("hostId", "int", { notNull: true }), c("bytesIn", "bigint", { notNull: true, default: 0 }), c("bytesOut", "bigint", { notNull: true, default: 0 }), c("lastSystemIn", "bigint"), c("lastSystemOut", "bigint"), c("lastDeltaIn", "bigint", { notNull: true, default: 0 }), c("lastDeltaOut", "bigint", { notNull: true, default: 0 }), c("lastReportedAt", "epoch"), c("resetAt", "epoch"), c("createdAt", "epoch", { notNull: true, default: "now" }), c("updatedAt", "epoch", { notNull: true, default: "now" })], unique: [["hostId"]], indexes: [["updatedAt"], ["lastReportedAt"]] },
   { name: "user_traffic_counters", columns: [c("id", "id"), c("userId", "int", { notNull: true }), c("bytesIn", "bigint", { notNull: true, default: 0 }), c("bytesOut", "bigint", { notNull: true, default: 0 }), c("connections", "int", { notNull: true, default: 0 }), c("createdAt", "epoch", { notNull: true, default: "now" }), c("updatedAt", "epoch", { notNull: true, default: "now" })], unique: [["userId"]], indexes: [["updatedAt"]] },
   { name: "forward_rule_traffic_counters", columns: [c("id", "id"), c("ruleId", "int", { notNull: true }), c("hostId", "int", { notNull: true }), c("userId", "int", { notNull: true }), c("bytesIn", "bigint", { notNull: true, default: 0 }), c("bytesOut", "bigint", { notNull: true, default: 0 }), c("connections", "int", { notNull: true, default: 0 }), c("createdAt", "epoch", { notNull: true, default: "now" }), c("updatedAt", "epoch", { notNull: true, default: "now" })], unique: [["ruleId", "hostId"]], indexes: [["userId"], ["ruleId"], ["hostId"], ["updatedAt"]] },
@@ -484,7 +507,7 @@ const tables: TableDef[] = [
   { name: "agent_traffic_reports", columns: [c("id", "id"), c("hostId", "int", { notNull: true }), c("producerId", "varchar", { length: 128 }), c("reportId", "varchar", { length: 128, notNull: true }), c("receivedAt", "epoch", { notNull: true, default: "now" })], unique: [["hostId", "reportId"], ["hostId", "producerId"]], indexes: [["receivedAt"]] },
   { name: "tunnel_latency_stats", columns: [c("id", "id"), c("tunnelId", "int", { notNull: true }), c("seriesKey", "varchar", { length: 64 }), c("seriesLabel", "text"), c("latencyMs", "int"), c("isTimeout", "bool", { notNull: true, default: false }), c("probeCount", "int", { notNull: true, default: 1 }), c("probeSuccesses", "int", { notNull: true, default: 0 }), c("recordedAt", "epoch", { notNull: true, default: "now" })], indexes: [["tunnelId", "recordedAt"], ["tunnelId", "seriesKey", "recordedAt"], ["recordedAt", "tunnelId"]] },
   { name: "forward_group_latency_stats", columns: [c("id", "id"), c("groupId", "int", { notNull: true }), c("latencyMs", "int"), c("isTimeout", "bool", { notNull: true, default: false }), c("probeCount", "int", { notNull: true, default: 1 }), c("probeSuccesses", "int", { notNull: true, default: 0 }), c("recordedAt", "epoch", { notNull: true, default: "now" })], indexes: [["groupId", "recordedAt"], ["recordedAt", "groupId"]] },
-  { name: "host_probe_services", columns: [c("id", "id"), c("name", "text", { notNull: true }), c("method", "varchar", { length: 16, notNull: true, default: "tcping" }), c("targetIp", "text", { notNull: true }), c("targetPort", "int"), c("hostScope", "varchar", { length: 16, notNull: true, default: "all" }), c("hostIds", "text"), c("excludeHostIds", "text"), c("intervalSeconds", "int", { notNull: true, default: 30 }), c("isEnabled", "bool", { notNull: true, default: true }), c("sortOrder", "int", { notNull: true, default: 0 }), c("userId", "int", { notNull: true }), c("createdAt", "epoch", { notNull: true, default: "now" }), c("updatedAt", "epoch", { notNull: true, default: "now" })], indexes: [["userId", "sortOrder"], ["userId", "createdAt"], ["isEnabled"], ["hostScope"]] },
+  { name: "host_probe_services", columns: [c("id", "id"), c("name", "text", { notNull: true }), c("method", "varchar", { length: 16, notNull: true, default: "tcping" }), c("targetIp", "text", { notNull: true }), c("targetPort", "int"), c("targetUrl", "text"), c("timeoutSeconds", "int", { notNull: true, default: 5 }), c("expectedStatus", "int", { notNull: true, default: 200 }), c("hostScope", "varchar", { length: 16, notNull: true, default: "all" }), c("hostIds", "text"), c("excludeHostIds", "text"), c("intervalSeconds", "int", { notNull: true, default: 30 }), c("isEnabled", "bool", { notNull: true, default: true }), c("sortOrder", "int", { notNull: true, default: 0 }), c("userId", "int", { notNull: true }), c("createdAt", "epoch", { notNull: true, default: "now" }), c("updatedAt", "epoch", { notNull: true, default: "now" })], indexes: [["userId", "sortOrder"], ["userId", "createdAt"], ["isEnabled"], ["hostScope"]] },
   { name: "host_probe_service_stats", columns: [c("id", "id"), c("serviceId", "int", { notNull: true }), c("hostId", "int", { notNull: true }), c("latencyMs", "int"), c("isTimeout", "bool", { notNull: true, default: false }), c("probeCount", "int", { notNull: true, default: 1 }), c("probeSuccesses", "int", { notNull: true, default: 0 }), c("recordedAt", "epoch", { notNull: true, default: "now" })], indexes: [["serviceId", "recordedAt"], ["hostId", "recordedAt"], ["recordedAt", "serviceId"], ["serviceId", "hostId", "recordedAt"], ["serviceId", "id"], ["serviceId", "hostId", "id"]] },
   { name: "ip_geo_cache", columns: [c("id", "id"), c("address", "varchar", { length: 253, notNull: true }), c("resolvedAddress", "varchar", { length: 64, notNull: true }), c("geoCountryCode", "varchar", { length: 8, notNull: true }), c("geoCountryName", "text"), c("geoRegion", "text"), c("geoEmoji", "varchar", { length: 16 }), c("geoLatitudeMicro", "int"), c("geoLongitudeMicro", "int"), c("provider", "varchar", { length: 32, notNull: true, default: "ipapi.co" }), c("fetchedAt", "epoch", { notNull: true, default: "now" }), c("expiresAt", "epoch", { notNull: true })], unique: [["address"]], indexes: [["resolvedAddress"], ["expiresAt"]] },
   { name: "agent_tokens", columns: [c("id", "id"), c("token", "text", { notNull: true }), c("hostId", "int"), c("description", "text"), c("isUsed", "bool", { notNull: true, default: false }), c("sortOrder", "int", { notNull: true, default: 0 }), c("userId", "int", { notNull: true }), c("createdAt", "epoch", { notNull: true, default: "now" })], unique: [["token"]], indexes: [["userId"], ["userId", "sortOrder"]] },
@@ -585,7 +608,7 @@ function columnSql(kind: SchemaKind, column: ColumnDef, forAlter = false) {
     return `${name} INTEGER PRIMARY KEY AUTOINCREMENT`;
   }
   const type = kind === "sqlite"
-    ? (column.type === "varchar" || column.type === "text" || column.type === "longtext" ? "TEXT" : "INTEGER")
+    ? (column.type === "varchar" || column.type === "text" || column.type === "longtext" ? "TEXT" : column.type === "real" ? "REAL" : "INTEGER")
     : kind === "postgresql"
       ? ({
         text: "TEXT",
@@ -593,6 +616,7 @@ function columnSql(kind: SchemaKind, column: ColumnDef, forAlter = false) {
         varchar: `VARCHAR(${column.length || 191})`,
         int: "INTEGER",
         bigint: "BIGINT",
+        real: "DOUBLE PRECISION",
         bool: "BOOLEAN",
         epoch: "INTEGER",
       } as Record<ColumnType, string>)[column.type]
@@ -602,6 +626,7 @@ function columnSql(kind: SchemaKind, column: ColumnDef, forAlter = false) {
       varchar: `VARCHAR(${column.length || 191})`,
       int: "INT",
       bigint: "BIGINT",
+      real: "DOUBLE",
       bool: "BOOLEAN",
       epoch: "INT",
     } as Record<ColumnType, string>)[column.type];

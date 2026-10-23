@@ -427,6 +427,71 @@ test("incremental structured migration batches generated IDs and keeps valid rul
   }
 });
 
+test("incremental imports preserve resource-alert recipient identity and reject missing dependencies", () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "forwardx-alert-recipient-import-"));
+  const script = String.raw`
+    import assert from "node:assert/strict";
+    import * as runtime from "./server/dbRuntime.ts";
+    import { ensureDatabaseSchema } from "./server/dbSchema.ts";
+    import { importMigrationSnapshot } from "./server/migration.ts";
+    import { observeHostResources, getMonitorSettings } from "./server/operationsMonitor.ts";
+    import { setSetting } from "./server/repositories/settingsRepository.ts";
+    const calls = [];
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = async (url, options) => {
+      assert.match(String(url), /^https:\/\/api\.telegram\.org\/bot[^/]+\/sendMessage$/);
+      calls.push(JSON.parse(String(options.body)).chat_id);
+      return new Response(JSON.stringify({ ok: true, result: { message_id: calls.length } }), { status: 200 });
+    };
+    try {
+      await runtime.connectDatabase({ type: "sqlite", sqlite: { path: process.env.SQLITE_PATH } });
+      await ensureDatabaseSchema();
+      for (const [id, username, role, telegramId] of [[1, "owner", "admin", "owner-chat"], [7, "unrelated", "user", "wrong-chat"], [42, "intended", "user", "intended-chat"]]) {
+        await runtime.insertAndGetId("users", { id, username, role, password: "unused", telegramId });
+      }
+      const config = notifyUserId => JSON.stringify({ enabled: true, notify: true, notifyUserId, cpu: 90, memory: 0, disk: 0, durationSeconds: 60, recoverySeconds: 30 });
+      const result = await importMigrationSnapshot({ version: 1, exportedAt: Date.now(), tables: {
+        users: [{ id: 1, username: "owner", role: "admin", password: "unused" }, { id: 7, username: "intended", role: "user", password: "unused" }],
+        hosts: [
+          { id: 100, userId: 1, name: "mapped-alert", ip: "192.0.2.1", resourceAlertConfig: config(7) },
+          { id: 101, userId: 1, name: "owner-alert", ip: "192.0.2.2", resourceAlertConfig: config(null) },
+          { id: 102, userId: 1, name: "missing-recipient", ip: "192.0.2.3", resourceAlertConfig: config(999) },
+        ],
+      } });
+      assert.equal(result.mode, "incremental");
+      assert.equal(result.skipped.hosts, 1);
+      assert.equal(result.partial, true);
+      const [mapped] = await runtime.queryRaw("SELECT * FROM hosts WHERE name = 'mapped-alert'");
+      const [owner] = await runtime.queryRaw("SELECT * FROM hosts WHERE name = 'owner-alert'");
+      assert.equal(JSON.parse(mapped.resourceAlertConfig).notifyUserId, 42);
+      assert.equal(JSON.parse(owner.resourceAlertConfig).notifyUserId, null);
+      assert.equal((await runtime.queryRaw("SELECT id FROM hosts WHERE name = 'missing-recipient'")).length, 0);
+      assert.equal((await getMonitorSettings(Number(mapped.id))).notifyUserId, 42);
+      await setSetting("telegramBotToken", "fixture-token");
+      await setSetting("telegramBotEnabled", "true");
+      await setSetting("notificationChannel", "telegram");
+      const now = Math.floor(Date.now() / 1000);
+      for (const offset of [0, 30, 60]) await observeHostResources({ id: Number(mapped.id), name: mapped.name }, { cpu: 99 }, now + offset);
+      const deadline = Date.now() + 3000;
+      while (calls.length < 2 && Date.now() < deadline) await new Promise(resolve => setImmediate(resolve));
+      assert.deepEqual([...calls].sort(), ["intended-chat", "owner-chat"].sort());
+      assert.equal(calls.includes("wrong-chat"), false, "the old numeric ID belongs to a different bound account");
+    } finally {
+      globalThis.fetch = originalFetch;
+      await runtime.closeDatabase();
+    }
+  `;
+  try {
+    const result = spawnSync(process.execPath, ["--import", "tsx", "--input-type=module", "--eval", script], {
+      cwd: process.cwd(), encoding: "utf8", timeout: 30_000,
+      env: { ...process.env, DATABASE_TYPE: "sqlite", SQLITE_PATH: path.join(directory, "target.db"), DATABASE_CONFIG_PATH: path.join(directory, "database.json"), FORWARDX_LOG_DIR: path.join(directory, "logs") },
+    });
+    assert.equal(result.status, 0, result.error?.message || result.stderr + result.stdout);
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true });
+  }
+});
+
 test("migration runtime expectations include fresh hosts and previously running resources", () => {
   const result = buildMigrationRuntimeExpectations(snapshot({
     hosts: [

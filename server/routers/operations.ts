@@ -3,12 +3,15 @@ import { TRPCError } from "@trpc/server";
 import { adminProcedure, router } from "../_core/trpc";
 import { operationsRange, OPERATIONS_SOURCE_SORTS, CHINA_PROVINCES } from "../../shared/operations";
 import { getOperationsOverview, getOperationsSources, getOperationsSourceDetails, getOperationsProvinceDetails } from "../repositories/operationsRepository";
-import { setSetting } from "../repositories/settingsRepository";
+import { getSetting, setSetting } from "../repositories/settingsRepository";
+import { OPERATIONS_REPORT_CONFIG_KEY, OPERATIONS_REPORT_TIME_PATTERN, parseOperationsReportConfig } from "../../shared/operationsDailyReport";
+import { getNotificationSettings } from "../notificationSettings";
+import { getNotificationAdminRecipients } from "../notifications";
 import { resolveOperationsSourceGeo } from "../operationsSourceGeo";
 import { createQueryCache } from "../queryCache";
 import { getOperationsFinance, getOperationsFinanceLedger } from "../repositories/operationsFinanceRepository";
-import { monitorOverview, saveMonitorSettings } from "../operationsMonitor";
-import { operationsMonitorSchema } from "../../shared/operationsMonitor";
+import { monitorOverview } from "../operationsMonitor";
+import { operationsSummaries } from "../backgroundSummaryCache";
 
 const cache = createQueryCache(30);
 const dates = z.object({ from: z.string().length(10), to: z.string().length(10), userId: z.union([z.literal("self"), z.literal("all"), z.number().int().positive()]).default("self") });
@@ -22,11 +25,23 @@ function range(input: z.infer<typeof dates>) {
 let geoBusy = false;
 let geoLastRequest = 0;
 export const operationsRouter = router({
-  monitor: adminProcedure.input(z.object({ page: z.number().int().min(0).max(10000).default(0) }).default({})).query(({ input }) => cache.get(`monitor:${input.page}`, { ttlMs: 5000, staleMs: 0 }, () => monitorOverview(input.page))),
-  saveMonitor: adminProcedure.input(operationsMonitorSchema).mutation(async ({ input }) => { const value = await saveMonitorSettings(input); cache.clear(); return value; }),
+  reportSettings: adminProcedure.query(async () => {
+    const config = parseOperationsReportConfig(await getSetting(OPERATIONS_REPORT_CONFIG_KEY));
+    const notifications = await getNotificationSettings();
+    const recipients = await getNotificationAdminRecipients();
+    return { enabled: config.enabled, time: config.time, notificationReady: notifications.active, recipientCount: recipients.length };
+  }),
+  saveReportSettings: adminProcedure.input(z.object({ enabled: z.boolean(), time: z.string().regex(OPERATIONS_REPORT_TIME_PATTERN) })).mutation(async ({ input, ctx }) => {
+    const previous = parseOperationsReportConfig(await getSetting(OPERATIONS_REPORT_CONFIG_KEY));
+    const enabledAt = input.enabled && (!previous.enabled || previous.time !== input.time) ? Math.floor(Date.now() / 1000) : previous.enabledAt;
+    await setSetting(OPERATIONS_REPORT_CONFIG_KEY, JSON.stringify({ ...input, enabledAt }));
+    console.info(`[Operations] daily report ${input.enabled ? "enabled" : "disabled"} time=${input.time} admin=${ctx.user.id}`);
+    return { success: true };
+  }),
+  monitor: adminProcedure.input(z.object({ page: z.number().int().min(0).max(10000).default(0), ipPage: z.number().int().min(0).max(10000).default(0) }).default({})).query(({ input }) => cache.get(`monitor:${input.page}:${input.ipPage}`, { ttlMs: 5000, staleMs: 0 }, () => monitorOverview(input.page, input.ipPage))),
   finance: adminProcedure.input(dates).query(({input,ctx})=> {
     const {start,end} = range(input), userId = scopedUserId(input,ctx.user.id);
-    return cache.get(`finance:${start}:${end}:${userId ?? "all"}`,{ttlMs:15000,staleMs:0},()=>getOperationsFinance(start,end,userId));
+    return operationsSummaries.get(`${ctx.user.id}:finance:${start}:${end}:${userId ?? "all"}`,()=>getOperationsFinance(start,end,userId));
   }),
   financeLedger: adminProcedure.input(dates.extend({page:z.number().int().min(0).max(10000).default(0)})).query(({input,ctx})=> {
     const {start,end} = range(input), userId = scopedUserId(input,ctx.user.id);
@@ -35,7 +50,7 @@ export const operationsRouter = router({
   overview: adminProcedure.input(dates).query(({ input, ctx }) => {
     const { start, end } = range(input);
     const userId = scopedUserId(input, ctx.user.id);
-    return cache.get(`overview:${start}:${end}:${userId ?? "all"}`, { ttlMs: 15000, staleMs: 0 }, () => getOperationsOverview(start, end, userId));
+    return operationsSummaries.get(`${ctx.user.id}:overview:${start}:${end}:${userId ?? "all"}`, () => getOperationsOverview(start, end, userId));
   }),
   sources: adminProcedure.input(dates.extend({ page: z.number().int().min(0).max(10000).default(0), search: z.string().max(64).default(""), sort: z.enum(OPERATIONS_SOURCE_SORTS).default("traffic") })).query(({ input, ctx }) => {
     const { start, end } = range(input);
@@ -55,6 +70,7 @@ export const operationsRouter = router({
     console.info(`[Operations] source collection ${input.enabled ? "enabled" : "disabled"} admin=${ctx.user.id}`);
     // Cached query keys include dates; invalidating the small dashboard cache is cheap.
     cache.clear();
+    operationsSummaries.clear();
     return { success: true };
   }),
   resolveSources: adminProcedure.input(dates.extend({ consent: z.literal(true), after: z.string().max(64).default("") })).mutation(async ({ input, ctx }) => {
@@ -65,6 +81,7 @@ export const operationsRouter = router({
     try {
       const result = await resolveOperationsSourceGeo(start,end,userId,input.after,512);
       cache.clear();
+      operationsSummaries.clear();
       return result;
     } finally { geoBusy = false; }
   }),

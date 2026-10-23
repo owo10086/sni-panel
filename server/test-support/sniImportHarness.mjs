@@ -163,7 +163,39 @@ try {
     for (let index = 0; index < existingCount; index++) await admin.create(ruleInput("seed", index));
   } else {
     captureNotifications();
-    if (scenario === "import-benchmark") {
+    if (scenario === "personal-groups") {
+      const ownGroup = await admin.savePersonalGroup({ name: "All root rules" });
+      const otherGroup = await customer.savePersonalGroup({ name: "Private customer rules" });
+      const grouped = { personalGroupIds: [ownGroup.id] };
+      await assert.rejects(admin.create(ruleInput("foreign-owner", 0, { ...grouped, userId: 2 })), /自己的规则分组/);
+      const direct = await admin.create(ruleInput("direct", 0, { ...grouped, forwardGroupId: null, hostId: 1, sourcePort: 22001, sni: null }));
+      const ordinary = await admin.create(ruleInput("single-ordinary", 0, { ...grouped, sourcePort: 22002, sni: null }));
+      const sni = await admin.create(ruleInput("single-sni", 0, grouped));
+      const mixed = await admin.createBatch({ rules: [
+        ruleInput("mixed-ordinary", 0, { ...grouped, sourcePort: 22003, sni: null }),
+        ruleInput("mixed-sni", 0, grouped),
+      ] });
+      const sniBatch = await admin.createSniBatch({ rules: [ruleInput("batch-sni", 0, grouped), ruleInput("batch-sni", 1, grouped)] });
+      assert.ok([...mixed.results, ...sniBatch.results].every(result => result.status === "fulfilled"));
+      const ids = [direct.id, ordinary.id, sni.id, ...mixed.results.map(result => result.value.id), ...sniBatch.results.map(result => result.value.id)];
+      for (const id of ids) assert.deepEqual((await admin.getById({ id })).personalGroupIds, [ownGroup.id]);
+      const editor = await admin.personalGroupItems({ page: 1, pageSize: 100 });
+      assert.deepEqual(editor.items.map(rule => rule.id).sort((a, b) => a - b), [...ids].sort((a, b) => a - b));
+      assert.equal(editor.ruleTotalItems, 7);
+      const ordinaryPage = await admin.listPage({ category: "all", page: 1, pageSize: 100 });
+      assert.equal(ordinaryPage.items.length, 3);
+      assert.ok(ordinaryPage.items.every(rule => !rule.sni));
+      const rejected = await admin.createSniBatch({ rules: [ruleInput("private-denied", 0, { personalGroupIds: [otherGroup.id] })] });
+      assert.equal(rejected.results[0].status, "rejected");
+      assert.equal((await admin.personalGroupItems({ page: 1, pageSize: 100, search: "private-denied" })).items.length, 0);
+      const children = await db.getForwardGroupChildRulesForTemplate(sni.id);
+      await assert.rejects(admin.moveToPersonalGroups({ ids: [children[0].id], groupIds: [ownGroup.id], mode: "replace" }), /自己的规则/);
+      await admin.update({ id: sni.id, personalGroupIds: [] });
+      assert.deepEqual((await admin.getById({ id: sni.id })).personalGroupIds, []);
+      await admin.moveToPersonalGroups({ ids: [ordinary.id, sni.id], groupIds: [ownGroup.id], mode: "replace" });
+      assert.deepEqual((await admin.getById({ id: sni.id })).personalGroupIds, [ownGroup.id]);
+      assert.equal((await admin.personalGroupItems({ page: 1, pageSize: 100, personalGroupId: ownGroup.id })).ruleTotalItems, 7);
+    } else if (scenario === "import-benchmark") {
       const sample = process.env.RULE_IMPORT_SAMPLE || "ordinary";
       const makeInput = (prefix, index) => ruleInput(prefix, index, sample.startsWith("sni") || (sample === "mixed" && index % 2)
         ? {} : { sni: null, sourcePort: (prefix === "seed" ? 20000 : 21000) + index, protocol: ["tcp", "udp", "both"][index % 3] });

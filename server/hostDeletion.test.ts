@@ -365,6 +365,102 @@ test("disabled topology changes and historical tombstones release only obsolete 
   } finally { fs.rmSync(directory, { recursive: true, force: true }); }
 });
 
+test("host deletion removes only finalized rules' personal memberships and keeps rejected deletions migratable", () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "forwardx-host-delete-personal-groups-"));
+  const databasePath = path.join(directory, "source.db");
+  const script = String.raw`
+    import assert from "node:assert/strict";
+    import path from "node:path";
+    import { pathToFileURL } from "node:url";
+    const mod = (file) => import(pathToFileURL(path.join(process.cwd(), file)).href);
+    const runtime = await mod("server/dbRuntime.ts");
+    const schema = await mod("server/dbSchema.ts");
+    const hosts = await mod("server/repositories/hostRepository.ts");
+    const rules = await mod("server/repositories/forwardRuleRepository.ts");
+    const groups = await mod("server/repositories/ruleGroupRepository.ts");
+    const deletion = await mod("server/hostDeletion.ts");
+    try {
+      await runtime.connectDatabase({ type: "sqlite", sqlite: { path: process.env.SQLITE_PATH } });
+      await schema.ensureDatabaseSchema();
+      await runtime.insertAndGetId("users", { id: 1, username: "source-owner", password: "unused" });
+      for (let id = 1; id <= 7; id++) await runtime.insertAndGetId("hosts", {
+        id, userId: 1, name: "host-" + id, ip: "198.51.100." + id,
+        isOnline: true, lastHeartbeat: Math.floor(Date.now() / 1000),
+      });
+      const groupIds = [
+        (await groups.savePersonalRuleGroup(1, "Services")).id,
+        (await groups.savePersonalRuleGroup(1, "Favorites")).id,
+      ];
+      let port = 18000;
+      const createRule = (hostId, name) => rules.createForwardRule({
+        hostId, userId: 1, name, sourcePort: port++, targetIp: "203.0.113.50", targetPort: 443,
+        forwardType: "gost", protocol: "tcp", isEnabled: true, isRunning: true, personalGroupIds: groupIds,
+      });
+      const pendingRule = async (hostId, name) => {
+        const id = await createRule(hostId, name);
+        await rules.deleteForwardRule(id);
+        return id;
+      };
+      const memberships = async (id) => (await groups.getRulePersonalGroupIds(1, [id])).get(id) || [];
+      const explicit = await pendingRule(1, "explicit-delete");
+      const unreferenced = await pendingRule(2, "automatic-delete");
+      const survivor = await createRule(3, "surviving-rule");
+      const blocked = await pendingRule(4, "blocked-pending-rule");
+      await createRule(4, "live-reference");
+      const unsettled = await pendingRule(5, "unsettled-rule");
+      await rules.setForwardRuleDeleteSettlementPending(unsettled, true);
+      const running = await createRule(6, "awaiting-stop-acknowledgement");
+      await rules.markForwardRulePendingDelete(running);
+      const rolledBack = await pendingRule(7, "transaction-rollback");
+
+      await assert.rejects(() => hosts.deleteHost(4), /引用/);
+      assert.equal(await hosts.deleteHostIfUnreferenced(4), false);
+      await assert.rejects(() => hosts.deleteHost(5), /结算/);
+      await assert.rejects(() => hosts.deleteHostIfUnreferenced(5), /结算/);
+      await assert.rejects(() => deletion.deleteHostWithImpact(6), /清理/);
+      assert.equal((await rules.getForwardRuleById(running)).isRunning, true);
+      // Fail after any membership cleanup, so the assertion covers transaction rollback.
+      await runtime.executeRaw('CREATE TRIGGER reject_final_rule_delete BEFORE DELETE ON "forward_rules" WHEN OLD.id=' + rolledBack + ' BEGIN SELECT RAISE(ABORT,"injected-rule-delete-failure"); END');
+      await assert.rejects(() => hosts.deleteHost(7), /injected-rule-delete-failure/);
+      await runtime.executeRaw('DROP TRIGGER reject_final_rule_delete');
+      for (const [hostId, ruleId] of [[4, blocked], [5, unsettled], [6, running], [7, rolledBack]]) {
+        assert.ok(await hosts.getHostById(hostId), "rejected deletion retains its host");
+        assert.ok(await rules.getForwardRuleById(ruleId), "rejected deletion retains its rule");
+        assert.deepEqual(await memberships(ruleId), groupIds, "rejected deletion retains every personal membership");
+      }
+
+      await hosts.deleteHost(1);
+      assert.equal(await hosts.getHostById(1), undefined);
+      assert.equal(await rules.getForwardRuleById(explicit), undefined);
+      assert.deepEqual(await memberships(explicit), [], "explicit host deletion must remove all finalized rule memberships");
+      assert.equal(await hosts.deleteHostIfUnreferenced(2), true);
+      assert.equal(await hosts.getHostById(2), undefined);
+      assert.equal(await rules.getForwardRuleById(unreferenced), undefined);
+      assert.deepEqual(await memberships(unreferenced), [], "automatic host deletion uses the same final cleanup");
+      assert.deepEqual(await memberships(survivor), groupIds, "another host's rule keeps both memberships");
+      assert.deepEqual((await groups.getPersonalRuleGroups(1)).groups.map(group => group.id), groupIds, "host deletion keeps personal groups themselves");
+
+      const migration = await mod("server/migration.ts");
+      const snapshot = await migration.exportMigrationSnapshot(undefined, { dataScope: "essential", consistent: true });
+      await runtime.closeDatabase();
+      process.env.SQLITE_PATH = path.join(path.dirname(process.env.SQLITE_PATH), "target.db");
+      await runtime.connectDatabase({ type: "sqlite", sqlite: { path: process.env.SQLITE_PATH } });
+      await schema.ensureDatabaseSchema();
+      await runtime.insertAndGetId("users", { id: 1, username: "destination-existing-owner", password: "unused" });
+      const imported = await migration.importMigrationSnapshot(snapshot);
+      assert.equal(imported.skipped.rule_group_members || 0, 0, "the exported relationships must all have their rule dependencies");
+      assert.equal(imported.partial, false, imported.warnings.join("; "));
+    } finally { await runtime.closeDatabase(); }
+  `;
+  try {
+    const result = spawnSync(process.execPath, ["--import", "tsx", "--input-type=module", "--eval", script], {
+      cwd: process.cwd(), env: { ...process.env, DATABASE_TYPE: "sqlite", SQLITE_PATH: databasePath, DATABASE_CONFIG_PATH: path.join(directory, "database.json"), FORWARDX_LOG_DIR: path.join(directory, "logs") },
+      encoding: "utf8", timeout: 90_000,
+    });
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+  } finally { fs.rmSync(directory, { recursive: true, force: true }); }
+});
+
 test("deletion preview and mutation enforce host ownership and UI cannot force-delete actual dependencies", () => {
   const source = fs.readFileSync("server/routers/hosts.ts", "utf8");
   for (const name of ["prepareDelete", "deleteImpact", "delete"]) {

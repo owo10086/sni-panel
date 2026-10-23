@@ -10,6 +10,7 @@ import {
   hosts,
   hostTrafficCounters,
   InsertHost,
+  ruleGroupMembers,
   subscriptionPlanHosts,
   trafficBillingConfigs,
   trafficStats,
@@ -44,6 +45,23 @@ import {
 
 export { HOST_ONLINE_TTL_MS };
 
+/** Count only: do not load Token values, group members or probe history for tab badges. */
+export async function getHostManagementCounts() {
+  const q = quoteIdentifier;
+  const rows = await queryRaw<Record<string, unknown>>(`SELECT
+    (SELECT COUNT(*) FROM ${q("hosts")}) AS ${q("hosts")},
+    (SELECT COUNT(*) FROM ${q("host_groups")}) AS ${q("groups")},
+    (SELECT COUNT(*) FROM ${q("agent_tokens")}) AS ${q("tokens")},
+    (SELECT COUNT(*) FROM ${q("host_probe_services")}) AS ${q("services")}`);
+  const row = rows[0];
+  return {
+    hosts: Math.max(0, Number(row?.hosts) || 0),
+    groups: Math.max(0, Number(row?.groups) || 0),
+    tokens: Math.max(0, Number(row?.tokens) || 0),
+    services: Math.max(0, Number(row?.services) || 0),
+  };
+}
+
 export function isFreshHostHeartbeat(lastHeartbeat: unknown) {
   if (!lastHeartbeat) return false;
   const time = new Date(lastHeartbeat as any).getTime();
@@ -59,11 +77,15 @@ function withComputedOnline<T extends { id?: unknown; isOnline?: boolean; lastHe
   };
 }
 
-export async function getHosts(userId?: number) {
+export async function getHosts(userId?: number, allowedHostIds: number[] = []) {
   const db = await getDb();
   if (!db) return [];
   if (userId) {
-    const rows = await db.select().from(hosts).where(eq(hosts.userId, userId)).orderBy(asc(hosts.sortOrder), desc(hosts.createdAt), desc(hosts.id));
+    const ids = normalizeIds(allowedHostIds);
+    const rows = await db.select().from(hosts).where(or(
+      eq(hosts.userId, userId),
+      ...(ids.length ? [inArray(hosts.id, ids)] : []),
+    )).orderBy(asc(hosts.sortOrder), desc(hosts.createdAt), desc(hosts.id));
     return rows.map(withComputedOnline);
   }
   const rows = await db.select().from(hosts).orderBy(asc(hosts.sortOrder), desc(hosts.createdAt), desc(hosts.id));
@@ -653,7 +675,14 @@ async function deleteHostRowsUnlocked(id: number): Promise<void> {
     q("forward_rule_tunnel_exits") + "." + q("exitHostId") + "=?))",
     [boolValue(true), id, id],
   );
-  await db.delete(forwardRules).where(and(eq(forwardRules.hostId, id), eq(forwardRules.pendingDelete, true)));
+  const pendingHostRules = and(eq(forwardRules.hostId, id), eq(forwardRules.pendingDelete, true));
+  // Match the final rule deletion inside this transaction so no personal-group
+  // memberships survive their rules or disappear if the host cleanup rolls back.
+  await db.delete(ruleGroupMembers).where(inArray(
+    ruleGroupMembers.ruleId,
+    db.select({ id: forwardRules.id }).from(forwardRules).where(pendingHostRules),
+  ));
+  await db.delete(forwardRules).where(pendingHostRules);
   const associatedTokens = await db.select().from(agentTokens).where(eq(agentTokens.hostId, id));
   for (const token of associatedTokens) {
     const otherHosts = await db.select({ id: hosts.id }).from(hosts).where(and(
