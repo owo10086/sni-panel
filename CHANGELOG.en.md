@@ -4,6 +4,30 @@
 
 ## [Unreleased]
 
+## [3.6.0] - 2026-10-23
+
+### Features and improvements
+
+- Integrate upstream 2.3.287 and 2.3.288 web, server and runtime changes. Native Android/iOS/iPadOS changes and author donation UI remain excluded.
+- Add private personal rule groups with paginated selection, filtering and bulk assignment. Adopt upstream group columns, card badges and compact controls while preserving the dedicated SNI category, domains, complete display groups and current latency state.
+- Save host and rule column visibility, order and widths per account, with resizing, reset and floating horizontal scrollbars. SNI tables retain domain information.
+- Add HTTP/HTTPS URL probes and 1/5/15-minute load averages. Refresh valid multi-entry tunnel samples independently and improve history dates, trends and hop details. These features require the updated Agent.
+- Move resource alerts to per-host settings, falling back to legacy global configuration when unset. Notify administrators plus the selected user, or the host owner if no user is selected; existing enabled alerts may therefore start notifying owners. Migration remaps embedded recipient identities.
+- Add optional traffic-threshold shutdown, disabled by default and available only through explicit administrator configuration on supported Linux root Agents. Authorization occurs once per cycle and powers off the whole machine; final billing settlement or completed failover/DDNS switching is not guaranteed.
+- Add the optional BBR manager backed by the Agent's Go implementation. Installing or enabling the plugin does not change the kernel; explicit save/apply retains validation, backups, write verification and rollback.
+- Add an opt-in daily operations report for the previous Beijing calendar day, administrator delivery, per-destination deduplication and retries. Background summaries are isolated by account and filter; billing, balances and permissions continue using authoritative state.
+- Improve account animation preferences, startup branding and navigation, host/link category counts, narrow and low-height forms, tunnel cards and database readiness after switching.
+- Reduce V1 FXP allocations through in-place decryption and buffer reuse, and skip the initial payload read outside PROXY-compatible connections. Preserve local SNI routing, hot updates and traffic attribution.
+- Preserve SNI and host failover entry-health/DDNS decisions, billing lock order, confirmed runtime stopping, pending-settlement retries and obsolete replica cleanup when removing personal group membership.
+- When deleting a host, remove personal group memberships for retired rules before deleting those rules in the same transaction, preventing orphaned memberships from breaking migration imports. Rejected deletions and transaction rollback preserve the original data.
+- Read current personal group data under the existing write lock, preventing MySQL transaction snapshots from restoring stale memberships during concurrent group deletion and rule creation, import or bulk assignment.
+- Preserve always-visible administrator affiliate and support-ticket entries, and the affiliate entry for users with historical commission records, so menu settings cannot hide required access.
+
+### Versions and upgrade notes
+
+- Source versions for the panel, Agent and ForwardX FXP runtime are `3.6.0`. URL probes, load reporting, BBR, shutdown and reporting improvements require the matching Agent/FXP update; old binaries do not gain these capabilities automatically.
+- The unified release workflow validates panel packages, Agent, FXP, images and documentation from the same commit. Production upgrades are handled separately; automated checks, independent review and human acceptance remain separate states.
+
 ## [3.5.4] - 2026-10-22
 
 ### Fixes and improvements

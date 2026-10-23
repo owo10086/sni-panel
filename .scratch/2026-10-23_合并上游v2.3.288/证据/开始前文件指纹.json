@@ -1,0 +1,577 @@
+[
+  {
+    "path": ".gitignore",
+    "bytes": 1322,
+    "sha256": "e5e0020fac7df2ba9fe3f35277fe08ab92486ee875d92b0ab04f6bf893a894a3"
+  },
+  {
+    "path": ".scratch/2026-10-08_合并上游v2.3.282/spec.md",
+    "bytes": 41006,
+    "sha256": "5dce031749ce0d4e18b7ac1ae2f81cadb96555c1f913388a3850f444fd665bb3"
+  },
+  {
+    "path": ".scratch/2026-10-16_dmit6移出转发组仍被引用/排查记录.md",
+    "bytes": 7757,
+    "sha256": "1b0ddf5379c604c8ba357851b8edf49a3c078d12261931d51b06c61dfc8f81fc"
+  },
+  {
+    "path": ".scratch/2026-10-16_dmit6移出转发组仍被引用/计划审查记录.md",
+    "bytes": 4678,
+    "sha256": "ea67a24dab8521adba6e772357a8f9f6d48e472f61ec7a8a79958f9e8e384b7f"
+  },
+  {
+    "path": ".scratch/2026-10-16_dmit6移出转发组仍被引用/远程只读证据.json",
+    "bytes": 2563,
+    "sha256": "6861f4cc81f8f35ef053a1a0089b4ae1efb51e94b5e3ca6a55c32f08ceafbe2a"
+  },
+  {
+    "path": ".scratch/2026-10-16_两个SNI组只读检查/域名与日志核对.json",
+    "bytes": 9667,
+    "sha256": "1820aeb05f64a9f87bedc8cd2c0c49e6d2edc905ebec82a712199124e5be20a3"
+  },
+  {
+    "path": ".scratch/2026-10-16_两个SNI组只读检查/英国2对照复查.json",
+    "bytes": 5051,
+    "sha256": "b2f5c48fadf111fab93bddf44d7a4664902dba826e0642bf8b826ba8c0021680"
+  },
+  {
+    "path": ".scratch/2026-10-16_两个SNI组只读检查/规则一致性与最终上报.json",
+    "bytes": 2641,
+    "sha256": "07a32de97504d48b480855c3e07f4dacdaad51541b7c42df98273c1c77d92bc6"
+  },
+  {
+    "path": ".scratch/2026-10-16_两个SNI组只读检查/规则数据库快照.json",
+    "bytes": 143179,
+    "sha256": "a20caacf8366c3536685ac28a503138f33f15b0853c65cb4ec0e19731272122e"
+  },
+  {
+    "path": ".scratch/2026-10-16_两个SNI组只读检查/逐条连接检查.json",
+    "bytes": 71030,
+    "sha256": "79c787cebca83abbb96d03b6d891caf5d49be5fe4fd4d01e0c34ebd54ab71c6c"
+  },
+  {
+    "path": ".scratch/2026-10-17_合并上游v2.3.283/284接续记录.md",
+    "bytes": 3816,
+    "sha256": "17dea20a2c515812b9b6df48c2b92440a5a3d08c04deb89881fe5f1f8228fb14"
+  },
+  {
+    "path": ".scratch/2026-10-18_合并上游v2.3.284/task-3验收复核.md",
+    "bytes": 9825,
+    "sha256": "c19c7c19578be3a845acbb15a7845ceca4732ef861c206ee31ddec44e45cb59a"
+  },
+  {
+    "path": ".scratch/2026-10-18_合并上游v2.3.284/证据/task-3验收复核/复核身份与证据.json",
+    "bytes": 2300,
+    "sha256": "6a357c74f5145ae45cfd8076f2a8efd434722a841310f8b226b19626cf006d70"
+  },
+  {
+    "path": ".scratch/2026-10-18_合并上游v2.3.284/证据/task-3验收复核/复现方法.md",
+    "bytes": 6995,
+    "sha256": "62cf002e2f644c21ac023a688d71b22e44e08046cf10c7ec46e77faffe9268f7"
+  },
+  {
+    "path": ".scratch/2026-10-18_合并上游v2.3.284/证据/task-3验收复核/欠费收尾-保留标记结果.json",
+    "bytes": 738,
+    "sha256": "d250e79a51b7e0d5f726ad003ac4ca197c0a623e11a3cb0e6f23357fce345a7e"
+  },
+  {
+    "path": ".scratch/2026-10-18_合并上游v2.3.284/证据/task-3验收复核/欠费收尾-结果.json",
+    "bytes": 676,
+    "sha256": "5bff2ba406df5e87b2ef3db90d1837a8bf3c6cec1bd9076317a3fb827ee0b437"
+  },
+  {
+    "path": ".scratch/2026-10-19_35212端口只读排查/排查记录.md",
+    "bytes": 9372,
+    "sha256": "28a7c45462e3b16cfb902189882171ff9dc80a21d918237dc888e6b98af091e3"
+  },
+  {
+    "path": ".scratch/2026-10-19_上游合并编排技能/2026-10-20_技能更名.md",
+    "bytes": 626,
+    "sha256": "9b609b13bb57c3def10729a176932c17642bd245075c6980ef254310bdcd57da"
+  },
+  {
+    "path": ".scratch/2026-10-19_上游合并编排技能/2026-10-20_指令调整.md",
+    "bytes": 1995,
+    "sha256": "ac9a8fbff562ef6aa4552f5fbf7988c04873bb819b34f8f4ea89e6a5e6c0e223"
+  },
+  {
+    "path": ".scratch/2026-10-19_上游合并编排技能/sni-flow/SKILL.md",
+    "bytes": 15237,
+    "sha256": "c552b0cd56d2719ebb5892fbd959b6a49abf780ed3e93dca5991b1d4b3dad197"
+  },
+  {
+    "path": ".scratch/2026-10-19_上游合并编排技能/sni-flow/agents/openai.yaml",
+    "bytes": 394,
+    "sha256": "65549c1ba5b78c3c23f42cd5f6645dacfc260419b3a11683b8584f4437ebf8a5"
+  },
+  {
+    "path": ".scratch/2026-10-19_上游合并编排技能/sni-flow/references/codex-review.md",
+    "bytes": 5390,
+    "sha256": "5f45d74c9c3c243d4e87e66f8c93fdb991675795afde5997ed3d4c1bb09c4c29"
+  },
+  {
+    "path": ".scratch/2026-10-19_上游合并编排技能/技能复核.md",
+    "bytes": 3517,
+    "sha256": "e172c37dd1e1a921428193c5f0ae96c2d1512e1dc68b7d2aa1b66fea2dcc059d"
+  },
+  {
+    "path": ".scratch/2026-10-19_上游合并编排技能/技能复核提示词.md",
+    "bytes": 1029,
+    "sha256": "f0ecd4cc377cb30302b69cbf5b7b721ebf134f6739156ffe4ba6fc5fb7225173"
+  },
+  {
+    "path": ".scratch/2026-10-19_上游合并编排技能/技能审查.md",
+    "bytes": 3136,
+    "sha256": "c2f2126dd3cee899bfd48fedba3fd3a592f0764c4f1f9b601b3b78dd70418666"
+  },
+  {
+    "path": ".scratch/2026-10-19_上游合并编排技能/技能审查处理.md",
+    "bytes": 2052,
+    "sha256": "0b38d5959f023a72c4fca2f8d4b3029578b3947daa6caa302146bec85d82c7af"
+  },
+  {
+    "path": ".scratch/2026-10-19_上游合并编排技能/技能检查提示词.md",
+    "bytes": 2321,
+    "sha256": "3f68fa44d70d2bbafcc2a87274ac43a55e6281d815107d54b1ba0616006400ac"
+  },
+  {
+    "path": ".scratch/2026-10-19_普通转发组按入口健康判断/Codex-CLI代码核查.md",
+    "bytes": 20480,
+    "sha256": "355b47889a8ac408b7e15cd6760ece75fcab09812aeb28388ab69390fcb44cff"
+  },
+  {
+    "path": ".scratch/2026-10-19_普通转发组按入口健康判断/修补独立复核.md",
+    "bytes": 5524,
+    "sha256": "227d60103feea9373cae327df49fb2de024175acbc94078e2ec8e5c6263e9f00"
+  },
+  {
+    "path": ".scratch/2026-10-19_普通转发组按入口健康判断/发布记录.md",
+    "bytes": 7024,
+    "sha256": "15b98e96b51dba5f5980c3d3bdd75999a9980adf43266b038907f778e940f917"
+  },
+  {
+    "path": ".scratch/2026-10-19_普通转发组按入口健康判断/复审问题修补与验证.md",
+    "bytes": 5068,
+    "sha256": "2ba1fb45b5e4c454548c0c12d4c5dd579e1acabb2045b82522155847d4d1a752"
+  },
+  {
+    "path": ".scratch/2026-10-19_普通转发组按入口健康判断/实施与验证记录.md",
+    "bytes": 6077,
+    "sha256": "f6b05568da7237c6a1bf74f5ea40828192018e6331c099b409805ab6acc017dd"
+  },
+  {
+    "path": ".scratch/2026-10-19_普通转发组按入口健康判断/本次修复复审.md",
+    "bytes": 10390,
+    "sha256": "3a5ae2ffd47a34f52d895b431aec5fdb7d382e3b9ad21375e99c04cc2319dc47"
+  },
+  {
+    "path": ".scratch/2026-10-19_普通转发组按入口健康判断/独立审查记录.md",
+    "bytes": 3931,
+    "sha256": "919885473e083d04141810fe9ec581c7e39e60662d3f6af759afb3add8d95712"
+  },
+  {
+    "path": ".scratch/2026-10-19_普通转发组按入口健康判断/讨论记录.md",
+    "bytes": 8300,
+    "sha256": "45aca94576b7b2f477cfd6bad9a2358a948c5c696c3eb995751bd5cd326a3884"
+  },
+  {
+    "path": ".scratch/2026-10-19_普通转发组按入口健康判断/证据/修复复审/复审验证摘要.json",
+    "bytes": 1417,
+    "sha256": "f1b1a4ec8fc41648585371687b13ab29e8fa157ce30f6320c881ada4204b7644"
+  },
+  {
+    "path": ".scratch/2026-10-19_普通转发组按入口健康判断/证据/发布v3.4.1/ci-final.json",
+    "bytes": 4197,
+    "sha256": "fe9a03a9167f3aaa1502d57eea027b40c984dccf8503802db128b3794eb03652"
+  },
+  {
+    "path": ".scratch/2026-10-19_普通转发组按入口健康判断/证据/发布v3.4.1/release-notes.md",
+    "bytes": 3227,
+    "sha256": "6a8c1335b2dfe798cfecb45c6610b4f95b08e320713f65f3dad7a49c12f5283a"
+  },
+  {
+    "path": ".scratch/2026-10-19_普通转发组按入口健康判断/证据/发布v3.4.1/公开文档核对.json",
+    "bytes": 544,
+    "sha256": "44a4e6401e325799f453de83cd445c8fd79fb76cdb06738a198a30cd2c84e943"
+  },
+  {
+    "path": ".scratch/2026-10-19_普通转发组按入口健康判断/证据/发布v3.4.1/公开版本.json",
+    "bytes": 16862,
+    "sha256": "20c8a0a849cc07e51bd28fcda4dd53b3500a33ab7f12879004e5bede33eeedfd"
+  },
+  {
+    "path": ".scratch/2026-10-19_普通转发组按入口健康判断/证据/发布v3.4.1/公开资产核对.json",
+    "bytes": 3306,
+    "sha256": "a521ccd825d43e293b76164ac5a78ff558de1c6869d9da3af80a52853e8a82c5"
+  },
+  {
+    "path": ".scratch/2026-10-19_普通转发组按入口健康判断/证据/发布v3.4.1/公开镜像核对.json",
+    "bytes": 323,
+    "sha256": "3198bd3a24eed6ef5caf4cb812c764549bdf279d2f06c07d54c4fb9ad5860638"
+  },
+  {
+    "path": ".scratch/2026-10-19_普通转发组按入口健康判断/证据/发布v3.4.1/发布摘要.json",
+    "bytes": 3037,
+    "sha256": "b3a4db1c853152e0afa22d419de5f8d1a918cefdf190a0909c599932c99ab671"
+  },
+  {
+    "path": ".scratch/2026-10-19_普通转发组按入口健康判断/证据/发布v3.4.1/最新正式版本.json",
+    "bytes": 1266,
+    "sha256": "8f1b26c999635dd8bbf4d26d597bb4125c83f6ec61596388ca5ec5031e88200f"
+  },
+  {
+    "path": ".scratch/2026-10-19_普通转发组按入口健康判断/证据/发布v3.4.1/正式产物元数据.json",
+    "bytes": 897,
+    "sha256": "60352bc16c65c29dd0a116c977cddc3bab025646bfe650b530915fdd3d18a0dd"
+  },
+  {
+    "path": ".scratch/2026-10-19_普通转发组按入口健康判断/证据/发布v3.4.1/正式构建产物核对.json",
+    "bytes": 414,
+    "sha256": "c7deb2b127d12af0263e9b8d3c83a6ea41e9336be89d30c85c7791efaa206d66"
+  },
+  {
+    "path": ".scratch/2026-10-19_普通转发组按入口健康判断/证据/复审修补/修补验证摘要.json",
+    "bytes": 1205,
+    "sha256": "ed80cec5bab1e51e8ecdd4a90356e69c2fa0b425792d96faffce142ba7ba10b3"
+  },
+  {
+    "path": ".scratch/2026-10-19_普通转发组按入口健康判断/证据/验证摘要.json",
+    "bytes": 1340,
+    "sha256": "3f436f32fe800b51b40740a672976f121701de8db0e72f66c732ca8063a53ddd"
+  },
+  {
+    "path": ".scratch/2026-10-20_两条香港SNI规则检测排查/GCP间歇失败对照.json",
+    "bytes": 6893,
+    "sha256": "c2c4a4ec857d13a03a9f628dd7588f70891a8f732cec2d1eaed4ad4f9dffc67a"
+  },
+  {
+    "path": ".scratch/2026-10-20_两条香港SNI规则检测排查/最终线路复查.json",
+    "bytes": 6705,
+    "sha256": "eae89f3c3a1e4cb2f35c74f3653d954ab585840a34e68d28831e6ccbbdf8fe67"
+  },
+  {
+    "path": ".scratch/2026-10-20_两条香港SNI规则检测排查/规则与历史检测.json",
+    "bytes": 11910,
+    "sha256": "25a52f0d2d5c1c38b7e5f44ae0627f043ab1b25f22910446c63991215be92df0"
+  },
+  {
+    "path": ".scratch/2026-10-20_两条香港SNI规则检测排查/面板侧连接检查.json",
+    "bytes": 4405,
+    "sha256": "334d861aabde5c70ed1060bd95ccc5d978e65adae70f337d46521e5b75fa61f8"
+  },
+  {
+    "path": ".scratch/2026-10-20_合并上游v2.3.286/发布记录.md",
+    "bytes": 4318,
+    "sha256": "1a111617563dd64b586be9734695f1be435704510c7921f7af2b7c1342f9740d"
+  },
+  {
+    "path": ".scratch/2026-10-20_合并上游v2.3.286/证据/发布v3.5.0/agent-最新状态.json",
+    "bytes": 18350,
+    "sha256": "2dd0f24c190001b7977815a27fa976eaf9021a9afc114c1a67e7083f9d29c7fe"
+  },
+  {
+    "path": ".scratch/2026-10-20_合并上游v2.3.286/证据/发布v3.5.0/ci-最新状态.json",
+    "bytes": 22971,
+    "sha256": "a62a28a819c90e40be95308bca8d8bc3b980afed762a9c998ed98bc808a83367"
+  },
+  {
+    "path": ".scratch/2026-10-20_合并上游v2.3.286/证据/发布v3.5.0/docs-最新状态.json",
+    "bytes": 20477,
+    "sha256": "10bd63966f6ee8f2b35e094193f92f22b83c2bb9db5b1ad1fb5ec68c8efaa21a"
+  },
+  {
+    "path": ".scratch/2026-10-20_合并上游v2.3.286/证据/发布v3.5.0/panel-最新状态.json",
+    "bytes": 31633,
+    "sha256": "77a878e46317e0ce4844453693c15ae14847a3dffa56931eeb88bea703e18c37"
+  },
+  {
+    "path": ".scratch/2026-10-20_合并上游v2.3.286/证据/发布v3.5.0/release-notes.md",
+    "bytes": 5699,
+    "sha256": "cbb36ca63c7daf5e51efeff4920a73a0b0b4a93a0619aabf9789325893f4cc3f"
+  },
+  {
+    "path": ".scratch/2026-10-20_合并上游v2.3.286/证据/发布v3.5.0/公开文档-build-info.json",
+    "bytes": 211,
+    "sha256": "f125587f2f66175fe8109df03f46f8935336fa1174f5a3bf8022e2708d00ffe5"
+  },
+  {
+    "path": ".scratch/2026-10-20_合并上游v2.3.286/证据/发布v3.5.0/公开文档-guide-hosts.txt",
+    "bytes": 57408,
+    "sha256": "ced6afd3bb7bb94814fefe3be403685f6028e2627a631ab9669de5ee944333c2"
+  },
+  {
+    "path": ".scratch/2026-10-20_合并上游v2.3.286/证据/发布v3.5.0/公开文档-guide-observability-mcp.txt",
+    "bytes": 48193,
+    "sha256": "65cb8a27499e51702d10c9a8808cec16cb4e08ee96cddf82ca26d6e4539ca8eb"
+  },
+  {
+    "path": ".scratch/2026-10-20_合并上游v2.3.286/证据/发布v3.5.0/公开文档-guide-releases.txt",
+    "bytes": 44094,
+    "sha256": "56115efade4938fb0de4692a15b21446840a9daa9de5c2fcc73cc8ab1ba966b3"
+  },
+  {
+    "path": ".scratch/2026-10-20_合并上游v2.3.286/证据/发布v3.5.0/公开文档核对.json",
+    "bytes": 444,
+    "sha256": "eb2fc1b40bd0863d15ea8f7760716a66950e4f6d5869bbcc178bf42962fed353"
+  },
+  {
+    "path": ".scratch/2026-10-20_合并上游v2.3.286/证据/发布v3.5.0/公开版本.json",
+    "bytes": 19692,
+    "sha256": "fb441aa7f38d5a9b43d2023643282550d89129bb2c4aad6939cdb97d39315290"
+  },
+  {
+    "path": ".scratch/2026-10-20_合并上游v2.3.286/证据/发布v3.5.0/公开镜像核对.json",
+    "bytes": 11579,
+    "sha256": "c043a9b9752cc80d3a61d3a524efde52397b25ce5bff278f7e257c2ef1c7d74e"
+  },
+  {
+    "path": ".scratch/2026-10-20_合并上游v2.3.286/证据/发布v3.5.0/公开附件核对.json",
+    "bytes": 2678,
+    "sha256": "13798a29f716755b3a1056081c0a4828a006d9693841ddfe47af79b554f356a7"
+  },
+  {
+    "path": ".scratch/2026-10-20_合并上游v2.3.286/证据/发布v3.5.0/发布提交.json",
+    "bytes": 248,
+    "sha256": "ec24fbce14dfeafaf822e6f6d9b1223d66ba5425f5ac8d83edc385e08c664462"
+  },
+  {
+    "path": ".scratch/2026-10-20_合并上游v2.3.286/证据/发布v3.5.0/发布摘要.json",
+    "bytes": 1136,
+    "sha256": "4b4172b6fe885217b6c7e9475806ed24729b350cec6865655d2478aaacfeb50b"
+  },
+  {
+    "path": ".scratch/2026-10-20_合并上游v2.3.286/证据/发布v3.5.0/流程初始状态.json",
+    "bytes": 1227,
+    "sha256": "9690914a72dcc1dc70662be98c91044c9df7228c56b3daf7a5c9b110db4b9e33"
+  },
+  {
+    "path": ".scratch/2026-10-20_合并上游v2.3.286/证据/发布v3.5.0/程序构建差异说明.json",
+    "bytes": 555,
+    "sha256": "efe5dad2885c2f79fda0ae4e597880c04fec611c3bb8e4d6d29d07da1c08a544"
+  },
+  {
+    "path": ".scratch/2026-10-20_合并上游v2.3.286/证据/发布v3.5.0/证据索引.json",
+    "bytes": 5411,
+    "sha256": "69f765989d769619defaff7e9d51a522e1bbe9d8b03fc5bd79c6e69f1c3a7a03"
+  },
+  {
+    "path": ".scratch/2026-10-20_合并上游v2.3.286/证据/发布v3.5.0/镜像清单.json",
+    "bytes": 857,
+    "sha256": "d76c484e7fbb0bdd327a78a7a1edbe0ba58504dcd1a8c98cc71fcb5636d68ae0"
+  },
+  {
+    "path": ".scratch/2026-10-20_通用需求编排技能/dev-flow/SKILL.md",
+    "bytes": 13795,
+    "sha256": "69478a27f3f331ffb4594282f4f0890d286181412b66c325d857e9e4b3ad6f94"
+  },
+  {
+    "path": ".scratch/2026-10-20_通用需求编排技能/dev-flow/agents/openai.yaml",
+    "bytes": 430,
+    "sha256": "314d8986e3757aa20e27da972fac7320a2f3b7786a1b452de6d34cc7ad7da369"
+  },
+  {
+    "path": ".scratch/2026-10-20_通用需求编排技能/dev-flow/references/codex-review.md",
+    "bytes": 3596,
+    "sha256": "638ad26b76169f98eea3b89ed1ab9804520882c85f90d3155e7aa23a01d74eb9"
+  },
+  {
+    "path": ".scratch/2026-10-20_通用需求编排技能/创建与安装记录.md",
+    "bytes": 2014,
+    "sha256": "3aa974e6988661e00b8277860471fc8119dddef1a175b3c95a879753c5544a0c"
+  },
+  {
+    "path": ".scratch/2026-10-21_SNI规则独立分类/preview-6bo40jiy/.setup-complete",
+    "bytes": 25,
+    "sha256": "cac1207f28103b7a39770fa5fcd7be79b6bf386c39c3d48d86dc34cb2502c85f"
+  },
+  {
+    "path": ".scratch/2026-10-21_SNI规则独立分类/preview-6bo40jiy/database.json",
+    "bytes": 184,
+    "sha256": "98270de8a9cbd84d7d74e8e5fb4a10472d1ec3da62d8553d82eaa5331b556b36"
+  },
+  {
+    "path": ".scratch/2026-10-21_SNI规则独立分类/preview-6bo40jiy/jwt.secret",
+    "bytes": 64,
+    "sha256": "14e1c7ea15f7e26ba2d8a151c2ce3931694f1a22ddf8f585118a780c7ef32919"
+  },
+  {
+    "path": ".scratch/2026-10-21_SNI规则独立分类/preview-6bo40jiy/logs/panel.jsonl",
+    "bytes": 3838,
+    "sha256": "74b765e7daf9451386fec0ed2e7abc436f49eb77d7bbafabe693117e60b28a26"
+  },
+  {
+    "path": ".scratch/2026-10-21_SNI规则独立分类/发布记录.md",
+    "bytes": 6298,
+    "sha256": "d67eeffd42081be553093986c6b0965ccfa59e50e8fc46571d1519c161f845c0"
+  },
+  {
+    "path": ".scratch/2026-10-21_SNI规则独立分类/证据/发布v3.5.1/Agent-取消状态.json",
+    "bytes": 2344,
+    "sha256": "55242c9d2aaabebc83f02d21263a8eb7ba36c860ac7cd4d80c030ee0e9477adb"
+  },
+  {
+    "path": ".scratch/2026-10-21_SNI规则独立分类/证据/发布v3.5.1/agent-恢复最新状态.json",
+    "bytes": 3490,
+    "sha256": "d94757e8dd328ee8e7856cc1e02f0284fe7d22b5d4be3245e58f581378a362a5"
+  },
+  {
+    "path": ".scratch/2026-10-21_SNI规则独立分类/证据/发布v3.5.1/ci-恢复最新状态.json",
+    "bytes": 7394,
+    "sha256": "c1d2f9a439e53d9f4362205ba359fa36630f3201f183850c71bd4a5f4fa8893c"
+  },
+  {
+    "path": ".scratch/2026-10-21_SNI规则独立分类/证据/发布v3.5.1/panel-恢复最新状态.json",
+    "bytes": 6606,
+    "sha256": "42c2878bdd242076e5deb57c369b03477de91df8ea542efd6384aa9e404d6f16"
+  },
+  {
+    "path": ".scratch/2026-10-21_SNI规则独立分类/证据/发布v3.5.1/入口SNI确认-同时运行结果.json",
+    "bytes": 570,
+    "sha256": "891352e7537c2009d2cf3c689e60d746466375945008d65fae7b723f58b333c9"
+  },
+  {
+    "path": ".scratch/2026-10-21_SNI规则独立分类/证据/发布v3.5.1/入口SNI确认-重复结果.json",
+    "bytes": 714,
+    "sha256": "fe3dcff505b94baa95574f3780473e2b539e193601300a5955710dba3e85c3ff"
+  },
+  {
+    "path": ".scratch/2026-10-21_SNI规则独立分类/证据/发布v3.5.1/公开文档-build-info.json",
+    "bytes": 211,
+    "sha256": "0d67d5d261861ad764d4a0a75fe2717dc65344b1fd88dec5b7261c959e34111d"
+  },
+  {
+    "path": ".scratch/2026-10-21_SNI规则独立分类/证据/发布v3.5.1/公开文档-guide-releases.txt",
+    "bytes": 45792,
+    "sha256": "33403f04194e1d221c2621749b0394fafabb3ff095bdd17e02951eab4206f147"
+  },
+  {
+    "path": ".scratch/2026-10-21_SNI规则独立分类/证据/发布v3.5.1/公开文档-guide-rules.txt",
+    "bytes": 56849,
+    "sha256": "daa587316d44c2ccd93364695f23c49352159367cac9cf60bf2bcde982cce448"
+  },
+  {
+    "path": ".scratch/2026-10-21_SNI规则独立分类/证据/发布v3.5.1/公开文档-guide-sni-routing.txt",
+    "bytes": 70861,
+    "sha256": "1f77ad2156215af2576d346af1dc5b92c2bc6bf48274d4f52b4293f05786a202"
+  },
+  {
+    "path": ".scratch/2026-10-21_SNI规则独立分类/证据/发布v3.5.1/公开文档-rules.html",
+    "bytes": 56849,
+    "sha256": "daa587316d44c2ccd93364695f23c49352159367cac9cf60bf2bcde982cce448"
+  },
+  {
+    "path": ".scratch/2026-10-21_SNI规则独立分类/证据/发布v3.5.1/公开文档-sni-routing.html",
+    "bytes": 70861,
+    "sha256": "1f77ad2156215af2576d346af1dc5b92c2bc6bf48274d4f52b4293f05786a202"
+  },
+  {
+    "path": ".scratch/2026-10-21_SNI规则独立分类/证据/发布v3.5.1/公开文档-恢复核对.json",
+    "bytes": 211,
+    "sha256": "0d67d5d261861ad764d4a0a75fe2717dc65344b1fd88dec5b7261c959e34111d"
+  },
+  {
+    "path": ".scratch/2026-10-21_SNI规则独立分类/证据/发布v3.5.1/公开文档核对.json",
+    "bytes": 438,
+    "sha256": "a5cac247b3b8ae277ccf3a379b2ab7329bc64b06f27fa5f456493cd6a5e82378"
+  },
+  {
+    "path": ".scratch/2026-10-21_SNI规则独立分类/证据/发布v3.5.1/公开版本.json",
+    "bytes": 133,
+    "sha256": "010563d2cfb8f1e87f700936ce59ee3a33364da46e3db41b0049227918ece74d"
+  },
+  {
+    "path": ".scratch/2026-10-21_SNI规则独立分类/证据/发布v3.5.1/原有修改保护核对.json",
+    "bytes": 475,
+    "sha256": "4afb5b75cfbad24697e5e6d639d6c40f8ceed6835848fd7b548219a777caf313"
+  },
+  {
+    "path": ".scratch/2026-10-21_SNI规则独立分类/证据/发布v3.5.1/双语发布说明.md",
+    "bytes": 4243,
+    "sha256": "850cda69bb3d3c48456027c96dc2daae7f20ec247ffed10cefb08e8599b20250"
+  },
+  {
+    "path": ".scratch/2026-10-21_SNI规则独立分类/证据/发布v3.5.1/发布前依据.json",
+    "bytes": 1175,
+    "sha256": "f6fc9e86c3b044fdc733effcf4c200736734e457bfe80704c78455b15335fe2c"
+  },
+  {
+    "path": ".scratch/2026-10-21_SNI规则独立分类/证据/发布v3.5.1/发布提交.json",
+    "bytes": 378,
+    "sha256": "7686d53f65841a30f2a9e6cdec880cc63eb6447ceb6ff4d57f4d4b069eecf854"
+  },
+  {
+    "path": ".scratch/2026-10-21_SNI规则独立分类/证据/发布v3.5.1/总检查-进度.json",
+    "bytes": 4728,
+    "sha256": "4b179c58431a755a913a1c174e07ff1809714fffd4675a743435a6672c9fefdf"
+  },
+  {
+    "path": ".scratch/2026-10-21_SNI规则独立分类/证据/发布v3.5.1/恢复后最终流程状态.json",
+    "bytes": 888,
+    "sha256": "ab198c74c9a1e5b853dda110cc4eb6bf94f3e99639975adc4e51290a6f783632"
+  },
+  {
+    "path": ".scratch/2026-10-21_SNI规则独立分类/证据/发布v3.5.1/文档流程-进度.json",
+    "bytes": 3198,
+    "sha256": "87d557e0cdb5c723730e2fbdb6ed96d1f65356de08e3d696e38a643d74d33c7f"
+  },
+  {
+    "path": ".scratch/2026-10-21_SNI规则独立分类/证据/发布v3.5.1/流程-最新.json",
+    "bytes": 1293,
+    "sha256": "e201b844e95ae6115eb0a110cbfb5e975c9e545542921979a73d348b65b1cde7"
+  },
+  {
+    "path": ".scratch/2026-10-21_SNI规则独立分类/证据/发布v3.5.1/流程-重跑中.json",
+    "bytes": 871,
+    "sha256": "048532b5e6c391b29674eb3329e31720be5485a7c3f4e53425e6db14028d1b77"
+  },
+  {
+    "path": ".scratch/2026-10-21_SNI规则独立分类/证据/发布v3.5.1/流程-首次.json",
+    "bytes": 1283,
+    "sha256": "79f4bada68adf322336576ada2c4cf9b284e4be1f4456f313a102c40afe1a08d"
+  },
+  {
+    "path": ".scratch/2026-10-21_SNI规则独立分类/证据/发布v3.5.1/面板-最新状态.json",
+    "bytes": 4208,
+    "sha256": "1ab496b74463d2162bffae975a4773d6c13cc6c8e24a56e1e1049048beaa17f6"
+  },
+  {
+    "path": ".scratch/2026-10-21_SNI规则独立分类/证据/发布v3.5.1/面板失败-jobs.json",
+    "bytes": 7941,
+    "sha256": "2c397a7105e75fde766fbca58b2ef59d353800c06f55f23bc4c71cacfc12d238"
+  },
+  {
+    "path": ".scratch/2026-10-21_SNI规则独立分类/证据/发布v3.5.1/面板流程-公开.json",
+    "bytes": 13453,
+    "sha256": "701690cfb01cf6c66dc75a727849195d8a53719dc39e2eedfded2bfdc0ec0a47"
+  },
+  {
+    "path": ".scratch/2026-10-21_SNI规则独立分类/证据/发布v3.5.1/面板流程-进度.json",
+    "bytes": 3686,
+    "sha256": "4b9c27e353cf4486377919551b8169f06fbb00d567f10bccc4298ee108e2e4f1"
+  },
+  {
+    "path": ".scratch/2026-10-21_SNI规则独立分类/证据/启动预览.sh",
+    "bytes": 787,
+    "sha256": "837fb1f1c7d896f666652b0739908375f5a9d22d213870abe2e184892ca4512f"
+  },
+  {
+    "path": "AGENTS.md",
+    "bytes": 3502,
+    "sha256": "549ded3d2ac8dabddddd96704f245cff5bf966abadb275c01bad3c0114dc2b4c"
+  },
+  {
+    "path": "CONTEXT.md",
+    "bytes": 6431,
+    "sha256": "2234c994830d419bc0ba89a371e61448dfc83119eceda989e5dc995c0e697837"
+  },
+  {
+    "path": "docs/adr/0008-host-failover-groups-use-entry-health.md",
+    "bytes": 6665,
+    "sha256": "6f7d395d7303fc01046f933f3a6c8549aea2f90969b0f4b52d813c4936b3ff92"
+  },
+  {
+    "path": "docs/superpowers/plans/2026-10-19-host-failover-entry-health.md",
+    "bytes": 4724,
+    "sha256": "f94144825bf11a13ea7a022850ae8f9248dfc8928854dfeb5f9aba0829c7995e"
+  }
+]
