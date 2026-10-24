@@ -1,3 +1,4 @@
+import { MYSQL_COMPATIBILITY_FLAGS } from "./mysqlCompatibility";
 import fs from "fs";
 import path from "path";
 import { AsyncLocalStorage } from "node:async_hooks";
@@ -517,6 +518,7 @@ function mysqlConnectionOptions(config: MysqlConfig): ConnectionOptions {
     connectTimeout: pool.connectTimeoutMillis,
     timezone: "+00:00",
     dateStrings: false,
+    flags: MYSQL_COMPATIBILITY_FLAGS,
     ssl: config.ssl ? {} : undefined,
   };
 }

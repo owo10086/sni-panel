@@ -1,3 +1,4 @@
+import { MYSQL_COMPATIBILITY_FLAGS } from "./mysqlCompatibility";
 import crypto from "crypto";
 import fs from "fs";
 import path from "path";
@@ -340,6 +341,7 @@ function mysqlPoolOptions(config: DatabaseConfig & { type: "mysql" }): PoolOptio
     connectTimeout: pool.connectTimeoutMillis,
     timezone: "+00:00",
     dateStrings: false,
+    flags: MYSQL_COMPATIBILITY_FLAGS,
     ssl: mysqlConfig.ssl ? {} : undefined,
   };
 }

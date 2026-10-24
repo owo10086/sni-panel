@@ -1,3 +1,4 @@
+import { MYSQL_COMPATIBILITY_FLAGS } from "./mysqlCompatibility";
 import fs from "fs";
 import path from "path";
 import Database from "better-sqlite3";
@@ -307,6 +308,7 @@ async function openDatabase(
       connectTimeout: 10_000,
       supportBigNumbers: true,
       bigNumberStrings: true,
+      flags: MYSQL_COMPATIBILITY_FLAGS,
     });
     const db: LegacyMigrationDatabase = {
       kind: "mysql",

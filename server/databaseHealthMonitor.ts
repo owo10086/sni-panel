@@ -1,3 +1,4 @@
+import { MYSQL_COMPATIBILITY_FLAGS } from "./mysqlCompatibility";
 import mysql from "mysql2/promise";
 import pg from "pg";
 import { databaseHealth } from "./databaseHealthState";
@@ -13,7 +14,7 @@ export async function probeDatabase(config: DatabaseConfig) {
     return;
   }
   if (config.type === "mysql") {
-    const connection = await mysql.createConnection({ ...config.mysql, ssl: config.mysql.ssl ? {} : undefined, connectTimeout: 3000 });
+    const connection = await mysql.createConnection({ ...config.mysql, flags: MYSQL_COMPATIBILITY_FLAGS, ssl: config.mysql.ssl ? {} : undefined, connectTimeout: 3000 });
     try { await connection.query({ sql: "SELECT 1", timeout: 3000 }); } finally { connection.destroy(); }
     return;
   }
