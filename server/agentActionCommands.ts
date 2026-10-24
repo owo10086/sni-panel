@@ -300,6 +300,137 @@ function nftOptional(command: string) {
   return `${command} 2>/dev/null; true`;
 }
 
+// Docker leaves the FORWARD hook with a default-DROP base chain that only
+// jumps into its own chains. An ACCEPT in the ForwardX table cannot override
+// that verdict, so the traffic of a native nftables rule must be allowed inside
+// the chain Docker documents for administrators: DOCKER-USER. Each allowance is
+// owned by one rule, original port, protocol and direction through its comment
+// (fwx-docker-<rule>-<port>-<proto>-<in|out>); the Agent verifies the same
+// specifications, so keep these in step with agent/docker_forward_compat.go.
+const dockerCompatChain = "DOCKER-USER";
+const dockerCompatLabel = "[docker-compat]";
+
+interface DockerCompatSpec {
+  proto: "tcp" | "udp";
+  direction: "in" | "out";
+  comment: string;
+  args: string;
+}
+
+function dockerCompatTarget(rule: any) {
+  const targetIp = cleanAddress(rule?.targetIp);
+  const targetPort = Number(rule?.targetPort);
+  const sourcePort = Number(rule?.sourcePort);
+  const valid = isIP(targetIp) === 4
+    && Number.isInteger(targetPort) && targetPort > 0 && targetPort <= 65535
+    && Number.isInteger(sourcePort) && sourcePort > 0 && sourcePort <= 65535;
+  return valid ? { targetIp, targetPort, sourcePort } : null;
+}
+
+function dockerCompatSpecs(rule: any): DockerCompatSpec[] {
+  const target = dockerCompatTarget(rule);
+  if (!target) return [];
+  const ruleId = Number(rule.id) || 0;
+  const specs: DockerCompatSpec[] = [];
+  for (const proto of forwardRuleProtocols(rule.protocol)) {
+    const inComment = `fwx-docker-${ruleId}-${target.sourcePort}-${proto}-in`;
+    const outComment = `fwx-docker-${ruleId}-${target.sourcePort}-${proto}-out`;
+    specs.push({
+      proto,
+      direction: "in",
+      comment: inComment,
+      args: `-p ${proto} -d ${target.targetIp} --dport ${target.targetPort} -m conntrack --ctorigdstport ${target.sourcePort} -m comment --comment ${inComment} -j ACCEPT`,
+    }, {
+      proto,
+      direction: "out",
+      comment: outComment,
+      args: `-p ${proto} -s ${target.targetIp} --sport ${target.targetPort} -m conntrack --ctorigdstport ${target.sourcePort} --ctdir REPLY --ctstate ESTABLISHED,RELATED -m comment --comment ${outComment} -j ACCEPT`,
+    });
+  }
+  return specs;
+}
+
+// The kernel evaluates every iptables front end that has tables loaded, and
+// they do not share rules: `iptables-legacy` can show ACCEPT while the nft
+// front end drops. Each candidate is therefore inspected on its own and only a
+// front end whose FORWARD really drops by default and jumps to DOCKER-USER is
+// touched. Legacy tables are read only when they are already loaded, because
+// listing them would otherwise load the kernel module on nft-only hosts.
+const dockerCompatShellPrelude = [
+  "fwx_dc_bins() {",
+  '  fwx_dc_list=""',
+  "  for fwx_dc_cand in iptables-nft iptables-legacy; do",
+  '    command -v "$fwx_dc_cand" >/dev/null 2>&1 || continue',
+  '    if [ "$fwx_dc_cand" = iptables-legacy ] && ! grep -qx filter /proc/net/ip_tables_names 2>/dev/null; then continue; fi',
+  '    fwx_dc_list="$fwx_dc_list $fwx_dc_cand"',
+  "  done",
+  '  if [ -z "$fwx_dc_list" ] && command -v iptables >/dev/null 2>&1; then fwx_dc_list=iptables; fi',
+  "  printf '%s' \"$fwx_dc_list\"",
+  "}",
+  "fwx_dc_active() {",
+  '  fwx_dc_fwd=$("$1" -w 5 -S FORWARD 2>/dev/null) || return 1',
+  "  printf '%s\\n' \"$fwx_dc_fwd\" | grep -qx -e '-P FORWARD DROP' || return 1",
+  `  printf '%s\\n' "$fwx_dc_fwd" | grep -Eq -e '^-A FORWARD( .*)? -j ${dockerCompatChain}$'`,
+  "}",
+  "fwx_dc_ensure() {",
+  "  fwx_dc_front=$1; shift",
+  `  "$fwx_dc_front" -w 5 -C ${dockerCompatChain} "$@" >/dev/null 2>&1 && return 0`,
+  // Stay behind the administrator's own rules, and in front of the unconditional
+  // RETURN Docker versions put at the end of the chain.
+  `  fwx_dc_pos=$("$fwx_dc_front" -w 5 -S ${dockerCompatChain} 2>/dev/null | awk '/^-A ${dockerCompatChain} / {n++; last=$0} END {if (n > 0 && last == "-A ${dockerCompatChain} -j RETURN") print n}')`,
+  `  if [ -n "$fwx_dc_pos" ]; then "$fwx_dc_front" -w 5 -I ${dockerCompatChain} "$fwx_dc_pos" "$@" || return 1; else "$fwx_dc_front" -w 5 -A ${dockerCompatChain} "$@" || return 1; fi`,
+  `  "$fwx_dc_front" -w 5 -C ${dockerCompatChain} "$@" >/dev/null 2>&1`,
+  "}",
+];
+
+export function buildDockerForwardCompatCmds(rule: any): string[] {
+  const specs = dockerCompatSpecs(rule);
+  if (specs.length === 0) return [];
+  const ruleId = Number(rule.id) || 0;
+  const body = specs.map((spec) =>
+    `    fwx_dc_ensure "$fwx_dc_b" ${spec.args} || { echo "${dockerCompatLabel} $fwx_dc_b: cannot install ${dockerCompatChain} allowance for rule ${ruleId} port ${rule.sourcePort}/${spec.proto} (${spec.direction}); Docker's default-DROP FORWARD would block it" >&2; fwx_dc_failed=1; }`);
+  return [[
+    ...dockerCompatShellPrelude,
+    "fwx_dc_failed=0",
+    "for fwx_dc_b in $(fwx_dc_bins); do",
+    '  fwx_dc_active "$fwx_dc_b" || continue',
+    ...body,
+    "done",
+    '[ "$fwx_dc_failed" = 0 ]',
+  ].join("\n")];
+}
+
+export function buildDockerForwardCompatCleanupCmds(selector: { ruleId?: number; port?: number; protocol?: string }): string[] {
+  const ruleId = Number(selector.ruleId) || 0;
+  const port = Number(selector.port) || 0;
+  const validPort = Number.isInteger(port) && port > 0 && port <= 65535;
+  // A rule id owns every port and protocol it ever used; a bare port only owns
+  // the protocols being removed, so the other protocol's allowance survives.
+  const protocols = forwardRuleProtocols(selector.protocol, "both").join("|");
+  const owned: string[] = [];
+  if (ruleId > 0) owned.push(`${ruleId}-[0-9]+-(tcp|udp)`);
+  if (validPort) owned.push(`[0-9]+-${port}-(${protocols})`);
+  if (owned.length === 0) return [];
+  const pattern = `--comment "?fwx-docker-(${owned.join("|")})-(in|out)"?( |$)`;
+  const label = `rule ${ruleId || "-"} port ${port || "-"}`;
+  return [[
+    ...dockerCompatShellPrelude,
+    "fwx_dc_failed=0",
+    "for fwx_dc_b in $(fwx_dc_bins); do",
+    `  "$fwx_dc_b" -w 5 -S ${dockerCompatChain} >/dev/null 2>&1 || continue`,
+    "  fwx_dc_round=0",
+    "  while :; do",
+    `    fwx_dc_hits=$("$fwx_dc_b" -w 5 -S ${dockerCompatChain} 2>/dev/null | awk -v pat='${pattern}' '/^-A ${dockerCompatChain} / {n++; if ($0 ~ pat) hit[++c]=n} END {for (i=c; i>=1; i--) print hit[i]}')`,
+    '    [ -n "$fwx_dc_hits" ] || break',
+    `    if [ "$fwx_dc_round" -ge 5 ]; then echo "${dockerCompatLabel} $fwx_dc_b: could not remove ForwardX allowance from ${dockerCompatChain} (${label})" >&2; fwx_dc_failed=1; break; fi`,
+    "    fwx_dc_round=$((fwx_dc_round + 1))",
+    `    for fwx_dc_n in $fwx_dc_hits; do "$fwx_dc_b" -w 5 -D ${dockerCompatChain} "$fwx_dc_n" 2>/dev/null || :; done`,
+    "  done",
+    "done",
+    '[ "$fwx_dc_failed" = 0 ]',
+  ].join("\n")];
+}
+
 function nftCounterRuleWithFallback(counterRule: string, alternateCounterRule: string, commentedRule: string, bareRule: string, label: string) {
   return `${counterRule} || { echo "[nftables] counter rule failed, fallback=${label}"; ${alternateCounterRule} || { echo "[nftables] alternate counter rule failed, fallback=${label}:comment"; ${commentedRule} || { echo "[nftables] commented rule failed, fallback=${label}:bare"; ${bareRule}; }; }; }`;
 }
@@ -397,6 +528,7 @@ export function buildNftCleanupCmds(rule: any, options: { removeStateFiles?: boo
     nftDeleteCommentedRulesCmd(nftTrafficPreroutingChain, comment),
     nftDeleteCommentedRulesCmd(nftTrafficPostroutingChain, comment),
     nftDeleteCommentedRulesCmd(nftTrafficForwardChain, comment),
+    ...buildDockerForwardCompatCleanupCmds({ ruleId, port: Number(rule.sourcePort), protocol: rule.protocol }),
   ];
   // Tunnel/orphan snapshots can legitimately omit a rule ID. Never target a
   // synthetic in_0/out_0 chain in that case; comment/port cleanup above is
@@ -513,6 +645,8 @@ export function buildNftForwardCmds(rule: any, options: { includeCounters?: bool
     ));
     cmds.push(`nft add rule inet ${nftTable} forward meta l4proto ${proto} ${family} daddr ${targetIp} ${proto} dport ${rule.targetPort} ${originalPortMatch} accept comment ${nftCommentLiteral(comment)} || { echo "[nftables] forward selector failed, fallback=fwx-rule-${ruleId}"; ${targetOnlyInAccept}; }`);
   }
+  // Docker's default-DROP FORWARD chain ignores the ACCEPT rules above.
+  cmds.push(...buildDockerForwardCompatCmds(rule));
   return cmds;
 }
 
@@ -536,6 +670,7 @@ export function buildManagedPortCleanupCmds(port: number, targetIpOrProtocol?: s
   return [
     ...buildIptablesForwardPortCleanupCmds(port, protocol),
     ...buildNftPortCleanupCmds(port, protocol),
+    ...buildDockerForwardCompatCleanupCmds({ port, protocol }),
     ...buildSNISplitterSourceRestrictionCleanupCmds(port),
     ...legacyServiceCleanup,
     ...protocols.map((proto) => removeManagedServiceCmd(`forwardx-socat-${proto}-${port}`)),

@@ -1428,6 +1428,9 @@ type kernelForwardSnapshot struct {
 	iptablesNatRule         map[string]string
 	iptablesMangleLoaded    bool
 	iptablesForwardxMarkers map[int]bool
+	env                     *kernelForwardEnv
+	dockerFrontEnds         []string
+	dockerFronts            map[string]*dockerCompatFrontState
 }
 
 func newKernelForwardSnapshot() *kernelForwardSnapshot {
@@ -1466,6 +1469,15 @@ func (s *kernelForwardSnapshot) desiredActionConsistent(a action) bool {
 
 func (s *kernelForwardSnapshot) actionApplyReady(a action) bool {
 	return s.kernelRuleApplyPresent(a.ForwardType, a.RuleID, a.SourcePort, a.TargetIP, a.TargetPort, a.Protocol)
+}
+
+// actionNotReadyReason names what a failed apply is still missing so the panel
+// shows a cause instead of a generic mismatch.
+func (s *kernelForwardSnapshot) actionNotReadyReason(a action) string {
+	if strings.TrimSpace(a.Op) == "apply" && strings.TrimSpace(a.ForwardType) == "nftables" && a.SourcePort > 0 {
+		return s.nftForwardRuleNotReadyReason(a.RuleID, a.SourcePort, a.TargetIP, a.TargetPort, a.Protocol)
+	}
+	return ""
 }
 
 var accessLimitRejectPattern = regexp.MustCompile(`(?i)(iptables|ip6tables) -A (FWX_LIMIT_[A-Za-z0-9_]+) -p tcp -m connlimit --connlimit-above ([0-9]+) --connlimit-mask ([0-9]+) -j REJECT --reject-with tcp-reset`)
@@ -1870,19 +1882,14 @@ func (s *kernelForwardSnapshot) iptablesNatPreroutingText(binary string) string 
 }
 
 func (s *kernelForwardSnapshot) nftForwardRulePresent(ruleID int, sourcePort int, targetIP string, targetPort int, protocol string) bool {
-	text := s.nftTableText()
-	if text == "" {
-		return false
-	}
-	for _, proto := range runtimeProtocols(protocol) {
-		if !nftDnatLinePresent(text, ruleID, proto, sourcePort, targetIP, targetPort) {
-			return false
-		}
-	}
-	return true
+	return s.nftForwardRuleNotReadyReason(ruleID, sourcePort, targetIP, targetPort, protocol) == ""
 }
 
 func (s *kernelForwardSnapshot) nftForwardRuleResiduePresent(ruleID int, sourcePort int, protocol string) bool {
+	return s.nftTableResiduePresent(ruleID, sourcePort, protocol) || s.dockerCompatResidue(ruleID, sourcePort, protocol)
+}
+
+func (s *kernelForwardSnapshot) nftTableResiduePresent(ruleID int, sourcePort int, protocol string) bool {
 	text := s.nftTableText()
 	if text == "" {
 		return false
@@ -5290,7 +5297,7 @@ func handleActionJobWithRuntimeSnapshot(cfg Config, a action, releaseRuntimeGate
 			if a.UnitExtra != "" && a.ServiceNameExtra != "" {
 				ok = writeUnitAndRestart(a.ServiceNameExtra, a.UnitExtra, managedServiceActionSignature(a, a.ServiceNameExtra, a.UnitExtra)) && ok
 			}
-			commandsOK := runShellBatch(a.Commands)
+			commandsOK := runKernelForwardActionCommands(a, a.Commands, actionMessage)
 			ok = commandsOK && ok
 			if !commandsOK && actionUsesSNISplitter(a) {
 				cleanup.ok = false
@@ -5352,7 +5359,7 @@ func handleActionJobWithRuntimeSnapshot(cfg Config, a action, releaseRuntimeGate
 			for _, name := range managedServiceNamesForAction(a) {
 				cleanupManagedService(name)
 			}
-			ok = runShellBatch(a.Commands) && ok
+			ok = runKernelForwardActionCommands(a, a.Commands, actionMessage) && ok
 			if shouldReportActionStatus(a) && !actionRequiresKernelForwardConsistency(a) {
 				removeState(a.SourcePort)
 			}
@@ -5361,10 +5368,14 @@ func handleActionJobWithRuntimeSnapshot(cfg Config, a action, releaseRuntimeGate
 			releaseRuntimeGate()
 		}
 	}
-	if ok && !skippedStaleRemove && actionRequiresKernelForwardConsistency(a) && !newKernelForwardSnapshot().desiredActionConsistent(a) {
+	kernelSnapshot := newKernelForwardSnapshot()
+	if ok && !skippedStaleRemove && actionRequiresKernelForwardConsistency(a) && !kernelSnapshot.desiredActionConsistent(a) {
 		ok = false
 		message := fmt.Sprintf("kernel firewall state mismatch after %s", strings.TrimSpace(a.Op))
-		actionMessage.set(message)
+		if reason := kernelSnapshot.actionNotReadyReason(a); reason != "" {
+			message += ": " + reason
+		}
+		actionMessage.set("%s", message)
 		if shouldLogAgentReport(fmt.Sprintf("kernel-forward-mismatch:%d:%d:%s:%s", a.RuleID, a.SourcePort, a.ForwardType, a.Op), agentReportLogInterval) {
 			logf("%s %s", message, actionLogSummary(a))
 		}
@@ -5397,6 +5408,21 @@ func handleActionJobWithRuntimeSnapshot(cfg Config, a action, releaseRuntimeGate
 	running := ok && a.Op == "apply"
 	reportActionStatus(cfg, a, running, actionMessage.get())
 	invalidateLocalRuntimeReadinessCache()
+	return ok
+}
+
+// runKernelForwardActionCommands runs the shell commands of an action. Kernel
+// forwarding failures (for example a firewall allowance that could not be
+// installed) must reach the panel as a readable reason instead of only the
+// Agent log, so these actions keep the command output of a failed batch.
+func runKernelForwardActionCommands(a action, commands []string, message *actionMessage) bool {
+	if !actionRequiresKernelForwardConsistency(a) {
+		return runShellBatch(commands)
+	}
+	ok, failure := runShellBatchWithOutput(commands)
+	if !ok && failure != "" {
+		message.set("%s", failure)
+	}
 	return ok
 }
 
