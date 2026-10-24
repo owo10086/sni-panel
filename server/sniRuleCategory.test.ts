@@ -87,8 +87,11 @@ test("SNI category isolates every resource, pages whole groups, and scopes count
       const other = caller(2, 'user');
       assert.deepEqual((await other.listPage({ ...input, scope: 'all', userId: 1 })).items.map(r => r.id), [201]);
       await assert.rejects(() => other.sniEntryPortOverview(), error => error.code === 'FORBIDDEN');
-      await runtime.executeRaw('UPDATE forward_rules SET adminManaged=1 WHERE id=201');
-      assert.equal((await other.listPage(input)).hasAdminManagedRules,true);
+      // Exercise the normal backend write boundary so cached pages are invalidated.
+      await rules.updateForwardRule(201, { adminManaged: true });
+      const managedPage = await other.listPage(input);
+      assert.equal(managedPage.hasAdminManagedRules,true);
+      assert.equal(managedPage.items[0].adminManaged,true);
       await assert.rejects(() => other.reorder({category:'sni',ids:[201]}), /仅可查看/);
 
       const before = await runtime.queryRaw('SELECT id, sortOrder FROM forward_rules WHERE id IN (1,2,3,4,201) ORDER BY id');
