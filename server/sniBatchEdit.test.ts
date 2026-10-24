@@ -537,16 +537,18 @@ for (const operation of ["toggle", "reorder", "delete"]) {
   });
 }
 
+for (const groupMode of ["chain", "failover"]) {
 for (const failedStage of ["settlement", "debt-pause"]) {
-  test("SNI chain migration durably retries financial closeout: " + failedStage, () => {
+  test("SNI " + groupMode + " migration durably retries financial closeout: " + failedStage, () => {
     verifySniWrites(String.raw`
       const rules = await import("./server/repositories/forwardRuleRepository.ts");
       const groups = await import("./server/repositories/forwardGroupRepository.ts");
       const billing = await import("./server/repositories/trafficBillingRepository.ts");
       await addGroup(30, "entry", [1, 2]);
       await addGroup(31, "entry", [5, 6]);
-      await addGroup(20, "chain", [3, 4], { entryGroupId: 30 });
-      await addGroup(21, "chain", [7, 8], { entryGroupId: 31 });
+      const groupMode = ${JSON.stringify(groupMode)};
+      await addGroup(20, groupMode, [3, 4], groupMode === "chain" ? { entryGroupId: 30 } : {});
+      await addGroup(21, groupMode, [7, 8], groupMode === "chain" ? { entryGroupId: 31 } : {});
       const moving = await create("financial-move", { forwardGroupId: 20 });
       const [child] = (await rules.getForwardGroupChildRulesForTemplate(moving.id)).filter(row => !row.pendingDelete);
       assert.ok(child);
@@ -567,15 +569,20 @@ for (const failedStage of ["settlement", "debt-pause"]) {
       await runtime.executeRaw("DROP TRIGGER reject_migration_closeout");
       await groups.syncForwardGroupRules(20, { preserveRuntime: true });
       assert.equal(Boolean((await rules.getForwardRuleById(child.id)).deleteSettlementPending), false);
+      const settled = await rules.getForwardRuleById(child.id);
+      assert.equal(Boolean(settled.isRunning), true, "retired listeners still require an Agent stop acknowledgement");
+      await runtime.executeRaw('CREATE TRIGGER reject_reopening_retiree BEFORE UPDATE OF deleteSettlementPending ON forward_rules WHEN OLD.id=' + child.id + " AND NEW.deleteSettlementPending=1 BEGIN SELECT RAISE(ABORT,'settled-retiree-reopened'); END");
       const [user] = await runtime.queryRaw('SELECT balanceCents,canAddRules,forwardAccessPauseReason FROM users WHERE id=1');
       assert.equal(user.balanceCents, -8);
       assert.equal(Boolean(user.canAddRules), false);
       assert.equal(user.forwardAccessPauseReason, "traffic_billing_balance");
       await groups.syncForwardGroupRules(20, { preserveRuntime: true });
+      assert.deepEqual(await rules.getForwardRuleById(child.id), settled, "resync must preserve completed closeout and the unacknowledged tombstone");
       const records = await runtime.queryRaw('SELECT amountCents FROM traffic_billing_records WHERE ruleId=?', [child.id]);
       assert.deepEqual(records.map(row => row.amountCents), [9]);
     `);
   });
+}
 }
 
 

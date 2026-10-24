@@ -3796,6 +3796,9 @@ async function syncForwardGroupRulesUnlocked(groupId: number, options: SyncForwa
     ]));
     const childRules = await getForwardGroupChildRules(groupId);
     for (const child of childRules as any[]) {
+      // Keep settled tombstones for Agent stop acknowledgement without
+      // reopening their accounting on each sync; unfinished closeout retries.
+      if (dbBool(child.pendingDelete) && !dbBool(child.deleteSettlementPending)) continue;
       if (!liveMemberIds.has(Number(child.forwardGroupMemberId)) || !liveTemplateIds.has(Number(child.forwardGroupRuleId))
         || expectedHosts.get(Number(child.forwardGroupMemberId)) !== Number(child.hostId)
         || expectedTunnels.get(Number(child.forwardGroupMemberId)) !== Number(child.tunnelId || 0)) {
