@@ -26,7 +26,7 @@ const otherTargetTag = "bcc33507"; // 203.0.113.11:443
 class FakeIptables {
   readonly directory = fs.mkdtempSync(path.join(os.tmpdir(), "forwardx-fake-iptables-"));
 
-  constructor(private readonly binaries: string[], options: { forward?: string[]; dockerUser?: string[]; failWrites?: boolean; failDeletes?: boolean } = {}) {
+  constructor(private readonly binaries: string[], options: { forward?: string[]; dockerUser?: string[]; failWrites?: boolean; failDeletes?: boolean; restoreWithoutWait?: boolean } = {}) {
     fs.mkdirSync(path.join(this.directory, "bin"));
     this.write("forward", options.forward ?? ["-P FORWARD DROP", "-A FORWARD -j DOCKER-USER", "-A FORWARD -j DOCKER-FORWARD"]);
     this.write("chain", options.dockerUser ?? []);
@@ -36,9 +36,10 @@ class FakeIptables {
       `state=${JSON.stringify(this.directory)}`,
       'echo "$(basename "$0") $*" >> "$state/log"',
       "[ \"$1\" = -w ] && shift 2",
-      'op=$1; chain=$2; shift 2',
+      'op=$1; chain=${2-}; if [ $# -ge 2 ]; then shift 2; else shift $#; fi',
       `if [ -f "$state/fail" ] && { [ "$op" = -I ] || [ "$op" = -A ]; }; then exit 4; fi`,
       'case "$op $chain" in',
+      '  "-S ") echo "-P FORWARD ACCEPT"; echo "-N DOCKER-USER" ;;',
       '  "-S FORWARD") cat "$state/forward" ;;',
       '  "-S DOCKER-USER") echo "-N DOCKER-USER"; cat "$state/chain" ;;',
       '  "-C DOCKER-USER") grep -qxF -- "-A DOCKER-USER $*" "$state/chain" ;;',
@@ -54,6 +55,8 @@ class FakeIptables {
       `state=${JSON.stringify(this.directory)}`,
       'echo "$(basename "$0") $*" >> "$state/log"',
       'if [ -f "$state/faildelete" ]; then cat >/dev/null; exit 5; fi',
+      // Old iptables-restore (before 1.6.2) rejects --wait.
+      ...(options.restoreWithoutWait ? ['case " $* " in *" --wait "*) cat >/dev/null; echo "iptables-restore: unrecognized option --wait" >&2; exit 2 ;; esac'] : []),
       "while IFS= read -r line; do",
       '  case "$line" in',
       '    "-D DOCKER-USER "*) rule="-A DOCKER-USER ${line#-D DOCKER-USER }"; awk -v rule="$rule" \'!done && $0 == rule {done=1; next} {print}\' "$state/chain" > "$state/chain.new" && mv "$state/chain.new" "$state/chain" ;;',
@@ -250,6 +253,15 @@ test("deletion is by rule specification in one transaction, never by position", 
   });
 });
 
+test("deletion still works with an iptables-restore that predates --wait", () => {
+  withFake(["iptables-nft"], { restoreWithoutWait: true }, (fake) => {
+    assert.equal(fake.run(buildDockerForwardCompatCmds(rule)).ok, true);
+    const cleanup = fake.run(buildDockerForwardCompatCleanupCmds({ ruleId: 42, port: 22022, protocol: "both" }));
+    assert.equal(cleanup.ok, true, cleanup.output);
+    assert.deepEqual(fake.chain, []);
+  });
+});
+
 test("cleanup reports allowances it cannot remove", () => {
   const owned = [allowance("tcp", "in")];
   withFake(["iptables-nft"], { dockerUser: owned, failDeletes: true }, (fake) => {
@@ -299,4 +311,39 @@ test("rebuilding a native nft rule converges its allowances in place, while remo
   assert.doesNotMatch(removal[0], /fwx_dc_ensure "\$fwx_dc_b"/);
   assert.match(buildManagedPortCleanupCmds(22022, "tcp").join("\n"), /fwx-docker-/);
   assert.doesNotMatch(buildNftForwardCmds({ ...rule, targetIp: "2001:db8::10" }).join("\n"), /fwx_dc_ensure "\$fwx_dc_b"/);
+});
+
+test("moving a rule to a target that needs no allowance retires the allowances of the old IPv4 target", () => {
+  withFake(["iptables-nft"], {}, (fake) => {
+    assert.equal(fake.run(buildNftForwardCmds(rule).filter((command) => command.includes('fwx_dc_ensure "$fwx_dc_b"'))).ok, true);
+    assert.equal(fake.chain.length, 4);
+    const rebuilt = buildNftForwardCmds({ ...rule, targetIp: "2001:db8::10" }).filter((command) => command.includes("fwx_dc_prune"));
+    assert.equal(rebuilt.length, 1);
+    const result = fake.run(rebuilt);
+    assert.equal(result.ok, true, result.output);
+    assert.deepEqual(fake.chain, [], "no allowance for the former target stays open");
+  });
+});
+
+test("an unreadable DOCKER-USER chain fails the removal instead of reading as 'nothing to remove'", () => {
+  withFake(["iptables-nft"], { dockerUser: [allowance("tcp", "in")] }, (fake) => {
+    // A front end that errors for a reason other than a missing chain, e.g. a held xtables lock.
+    fs.writeFileSync(path.join(fake.directory, "bin", "iptables-nft"), [
+      "#!/bin/sh", 'echo "Another app is currently holding the xtables lock." >&2', "exit 4", "",
+    ].join("\n"), { mode: 0o755 });
+    const result = fake.run(buildDockerForwardCompatCleanupCmds({ ruleId: 42, port: 22022, protocol: "tcp" }));
+    assert.equal(result.ok, false);
+    assert.match(result.output, /\[docker-compat\] iptables-nft: could not remove/);
+  });
+  // iptables-nft words a missing chain differently from legacy; only the table listing tells.
+  for (const wording of ["iptables: No chain/target/match by that name.", "iptables v1.8.9 (nf_tables): chain `DOCKER-USER' in table `filter' is incompatible, use 'nft' tool."]) {
+    withFake(["iptables-nft"], {}, (fake) => {
+      fs.writeFileSync(path.join(fake.directory, "bin", "iptables-nft"), [
+        "#!/bin/sh",
+        '[ "$3" = -S ] && [ -z "$4" ] && { echo "-P FORWARD ACCEPT"; exit 0; }',
+        `echo ${JSON.stringify(wording)} >&2`, "exit 1", "",
+      ].join("\n"), { mode: 0o755 });
+      assert.equal(fake.run(buildDockerForwardCompatCleanupCmds({ ruleId: 42, port: 22022, protocol: "tcp" })).ok, true, `a missing chain holds nothing of ours (${wording})`);
+    });
+  }
 });

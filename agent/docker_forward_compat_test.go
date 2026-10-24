@@ -57,6 +57,9 @@ type fakeFront struct {
 	dockerUser string
 	forwardErr error
 	userErr    error
+	// tableErr fails listing the whole table; noChain lists it without DOCKER-USER.
+	tableErr error
+	noChain  bool
 }
 
 func dockerFront(rules ...string) fakeFront {
@@ -91,6 +94,14 @@ func (f fakeFirewall) snapshot(nft string) *kernelForwardSnapshot {
 				return []byte(front.forward), front.forwardErr
 			case "-w 5 -S DOCKER-USER":
 				return []byte(front.dockerUser), front.userErr
+			case "-w 5 -S":
+				if front.tableErr != nil {
+					return nil, front.tableErr
+				}
+				if front.noChain {
+					return []byte("-P FORWARD DROP\n"), nil
+				}
+				return []byte("-P FORWARD DROP\n-N DOCKER-USER\n"), nil
 			}
 			return nil, errors.New("unexpected iptables call")
 		},
@@ -371,6 +382,7 @@ type statefulFront struct {
 	rules      []string
 	failDelete bool
 	listErr    error
+	noChain    bool // the table lists fine and has no DOCKER-USER
 	restores   int
 }
 
@@ -380,11 +392,20 @@ func (f *statefulFront) snapshot() *kernelForwardSnapshot {
 		readFile:   func(string) ([]byte, error) { return nil, errors.New("absent") },
 		hasCommand: func(name string) bool { return name == "iptables-nft" },
 		runIptables: func(binary string, args ...string) ([]byte, error) {
-			if strings.Join(args, " ") == "-w 5 -S DOCKER-USER" {
+			switch strings.Join(args, " ") {
+			case "-w 5 -S DOCKER-USER":
 				if f.listErr != nil {
 					return nil, f.listErr
 				}
 				return []byte("-N DOCKER-USER\n" + strings.Join(f.rules, "\n") + "\n"), nil
+			case "-w 5 -S":
+				if f.noChain {
+					return []byte("-P FORWARD ACCEPT\n"), nil
+				}
+				if f.listErr != nil {
+					return nil, f.listErr
+				}
+				return []byte("-P FORWARD ACCEPT\n-N DOCKER-USER\n"), nil
 			}
 			return nil, errors.New("unexpected iptables call")
 		},
@@ -466,9 +487,14 @@ func TestLocalCleanupRemovesOnlyOwnedAllowances(t *testing.T) {
 	t.Run("hosts without the chain are left alone", func(t *testing.T) {
 		s := newKernelForwardSnapshot()
 		s.env = &kernelForwardEnv{
-			readFile:    func(string) ([]byte, error) { return nil, errors.New("absent") },
-			hasCommand:  func(name string) bool { return name == "iptables-nft" },
-			runIptables: func(string, ...string) ([]byte, error) { return nil, errors.New("No chain/target/match by that name") },
+			readFile:   func(string) ([]byte, error) { return nil, errors.New("absent") },
+			hasCommand: func(name string) bool { return name == "iptables-nft" },
+			runIptables: func(binary string, args ...string) ([]byte, error) {
+				if strings.Join(args, " ") == "-w 5 -S" {
+					return []byte("-P FORWARD ACCEPT\n"), nil // the table lists fine, without the chain
+				}
+				return nil, errors.New("No chain/target/match by that name")
+			},
 		}
 		if !s.cleanupDockerCompatAllowances(42, 22022, []string{"tcp"}) {
 			t.Fatal("a host without DOCKER-USER has nothing to remove and nothing to fail")
@@ -507,9 +533,12 @@ func TestLocalCleanupTellsMissingChainsFromFailures(t *testing.T) {
 	owned := allAllowances(42, 22022, "tcp")
 
 	t.Run("a missing chain is nothing to remove", func(t *testing.T) {
-		front := &statefulFront{rules: owned, listErr: errors.New("iptables: No chain/target/match by that name.")}
-		if !front.snapshot().cleanupDockerCompatAllowances(42, 0, nil) {
-			t.Fatal("a host without DOCKER-USER has nothing to fail")
+		// The wording differs per iptables version and front end; the table not listing the chain is what counts.
+		for _, wording := range []string{"iptables: No chain/target/match by that name.", "iptables v1.8.9 (nf_tables): chain `DOCKER-USER' in table `filter' is incompatible, use 'nft' tool."} {
+			front := &statefulFront{rules: owned, listErr: errors.New(wording), noChain: true}
+			if !front.snapshot().cleanupDockerCompatAllowances(42, 0, nil) {
+				t.Fatalf("a host without DOCKER-USER has nothing to fail (%s)", wording)
+			}
 		}
 	})
 
@@ -538,11 +567,14 @@ func TestRemovalCannotBeConfirmedWhileTheChainIsUnreadable(t *testing.T) {
 	host := dockerHost()
 	front := host.fronts["iptables-nft"]
 	front.userErr = errors.New("Another app is currently holding the xtables lock")
+	front.tableErr = front.userErr
 	host.fronts["iptables-nft"] = front
 	if !host.snapshot("").nftForwardRuleResiduePresent(42, 22022, "tcp") {
 		t.Fatal("a removal must not be declared done when the Docker chain cannot be read")
 	}
-	front.userErr = errors.New("iptables: No chain/target/match by that name.")
+	front.userErr = errors.New("iptables v1.8.9 (nf_tables): chain `DOCKER-USER' in table `filter' is incompatible, use 'nft' tool.")
+	front.tableErr = nil
+	front.noChain = true
 	host.fronts["iptables-nft"] = front
 	if host.snapshot("").nftForwardRuleResiduePresent(42, 22022, "tcp") {
 		t.Fatal("a chain that does not exist holds no residue")

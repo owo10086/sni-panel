@@ -61,6 +61,10 @@ func TestNftDockerAgentOperation(t *testing.T) {
 		if input.State == nil {
 			t.Fatal("sync requires a desired state")
 		}
+		// A real Agent knows the panel's running rules before it applies a desired state.
+		if len(input.RunningRules) > 0 {
+			rememberDesiredRunningRules(input.RunningRules)
+		}
 		go actionWorker()
 		for _, done := range syncDesiredState(Config{}, input.State) {
 			select {

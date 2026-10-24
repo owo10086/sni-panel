@@ -24,7 +24,8 @@ const LISTENER_TEXT = {
 export function SelfTestEvidenceNote({ result }: { result?: SelfTestResult | null }) {
   if (!result) return null;
   const evidence = result.evidence ?? selfTestEvidence(result);
-  const listener = evidence.probe === "entry-listener";
+  // Older or cached evidence may lack the probe kind; the stored result tells it too.
+  const listener = (evidence.probe ?? selfTestEvidence(result).probe) === "entry-listener";
   if (evidence.target === "pending") return null;
   const failed = evidence.target === "unreachable";
   const reachable = evidence.target === "reachable";

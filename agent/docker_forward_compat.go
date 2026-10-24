@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/sha1"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"net"
 	"os"
@@ -42,9 +41,10 @@ type kernelForwardEnv struct {
 }
 
 type dockerCompatFrontState struct {
-	active   bool
-	rules    []string
-	rulesErr error
+	active       bool
+	rules        []string
+	rulesErr     error
+	rulesMissing bool // the listing failed because the chain does not exist
 }
 
 func (s *kernelForwardSnapshot) readHostFile(path string) ([]byte, error) {
@@ -78,26 +78,18 @@ func (s *kernelForwardSnapshot) runHostRestore(binary string, input string) erro
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), dockerCompatCommandWait)
 	defer cancel()
-	command := exec.CommandContext(ctx, binary+"-restore", "--noflush", "--wait", "5")
-	command.Stdin = strings.NewReader(input)
-	if output, err := command.CombinedOutput(); err != nil {
-		return fmt.Errorf("%s-restore: %w: %s", binary, err, strings.TrimSpace(string(output)))
+	// iptables-restore only learned --wait in 1.6.2; older versions take the plain form.
+	var failure error
+	for _, args := range [][]string{{"--noflush", "--wait", "5"}, {"--noflush"}} {
+		command := exec.CommandContext(ctx, binary+"-restore", args...)
+		command.Stdin = strings.NewReader(input)
+		output, err := command.CombinedOutput()
+		if err == nil {
+			return nil
+		}
+		failure = fmt.Errorf("%s-restore: %w: %s", binary, err, strings.TrimSpace(string(output)))
 	}
-	return nil
-}
-
-// dockerChainMissing tells "DOCKER-USER does not exist" from every other
-// listing failure. Only the first means there is nothing of ours to find.
-func dockerChainMissing(err error) bool {
-	if err == nil {
-		return false
-	}
-	text := strings.ToLower(err.Error())
-	var exit *exec.ExitError
-	if errors.As(err, &exit) {
-		text += " " + strings.ToLower(string(exit.Stderr))
-	}
-	return strings.Contains(text, "no chain/target/match by that name") || strings.Contains(text, "does not exist")
+	return failure
 }
 
 // dockerCompatFrontEnds lists the iptables front ends whose tables the kernel
@@ -170,7 +162,7 @@ func (s *kernelForwardSnapshot) dockerCompatFront(binary string) *dockerCompatFr
 		return state
 	}
 	state.active = true
-	state.rules, _, state.rulesErr = s.dockerCompatListing(binary)
+	state.rules, state.rulesMissing, state.rulesErr = s.dockerCompatListing(binary)
 	return state
 }
 
@@ -369,7 +361,19 @@ func nftStaleProtocolReason(text string, ruleID int, protocol string) string {
 func (s *kernelForwardSnapshot) dockerCompatListing(binary string) (lines []string, missing bool, err error) {
 	raw, err := s.runHostIptables(binary, "-w", "5", "-S", dockerCompatChain)
 	if err != nil {
-		return nil, dockerChainMissing(err), err
+		// iptables words a missing chain differently per version and front end, so ask the
+		// table: it lists fine without the chain only when the chain does not exist. A held
+		// xtables lock or any other failure is not "missing".
+		table, tableErr := s.runHostIptables(binary, "-w", "5", "-S")
+		if tableErr != nil {
+			return nil, false, err
+		}
+		for _, line := range strings.Split(string(table), "\n") {
+			if kernelNormalizeLine(line) == "-N "+dockerCompatChain {
+				return nil, false, err
+			}
+		}
+		return nil, true, err
 	}
 	for _, rawLine := range strings.Split(string(raw), "\n") {
 		if line := kernelNormalizeLine(rawLine); strings.HasPrefix(line, "-A "+dockerCompatChain+" ") {
@@ -386,11 +390,15 @@ func (s *kernelForwardSnapshot) dockerCompatListing(binary string) (lines []stri
 func (s *kernelForwardSnapshot) dockerCompatResidue(ruleID int, sourcePort int, protocol string) bool {
 	protocols := runtimeProtocols(protocol)
 	for _, binary := range s.dockerCompatFrontEnds() {
-		lines, missing, err := s.dockerCompatListing(binary)
-		if err != nil {
-			if !missing && s.dockerCompatFront(binary).active {
+		var lines []string
+		var err error
+		if state := s.dockerCompatFront(binary); state.active {
+			// The front end sends traffic through DOCKER-USER, so its chain was listed already.
+			lines, err = state.rules, state.rulesErr
+			if err != nil && !state.rulesMissing {
 				return true
 			}
+		} else if lines, _, err = s.dockerCompatListing(binary); err != nil {
 			continue
 		}
 		for _, line := range lines {

@@ -393,7 +393,12 @@ const dockerCompatShellPrelude = [
   // $1 front end, $2 owner pattern, $3 comments to keep (space padded). Removes every owned
   // allowance that is not in the keep list; an absent chain means there is nothing to remove.
   "fwx_dc_prune() {",
-  `  "$1" -w 5 -S ${dockerCompatChain} >/dev/null 2>&1 || return 0`,
+  // Only a chain that does not exist means there is nothing to remove, and iptables words that
+  // differently per version and front end ("No chain/target/match", "is incompatible, use 'nft'
+  // tool"). So ask the table: if it lists fine and has no such chain there is nothing to remove,
+  // while a held xtables lock or any other failure leaves the allowances unconfirmed.
+  `  fwx_dc_table=$("$1" -w 5 -S 2>/dev/null) || return 1`,
+  `  printf '%s\\n' "$fwx_dc_table" | grep -qx -e '-N ${dockerCompatChain}' || return 0`,
   "  fwx_dc_round=0",
   "  while :; do",
   `    fwx_dc_del=$("$1" -w 5 -S ${dockerCompatChain} 2>/dev/null | awk -v pat="$2" -v keep="$3" '/^-A ${dockerCompatChain} / && $0 ~ pat {c=""; if (match($0, /fwx-docker-[0-9A-Za-z_-]+/)) c=substr($0, RSTART, RLENGTH); if (index(keep, " " c " ") == 0) {sub(/^-A /, "-D "); print}}')`,
@@ -401,7 +406,8 @@ const dockerCompatShellPrelude = [
   '    [ "$fwx_dc_round" -lt 5 ] || return 1',
   "    fwx_dc_round=$((fwx_dc_round + 1))",
   '    command -v "$1-restore" >/dev/null 2>&1 || return 1',
-  `    printf '*filter\\n%s\\nCOMMIT\\n' "$fwx_dc_del" | "$1-restore" --noflush --wait 5 >/dev/null 2>&1 || :`,
+  // iptables-restore only learned --wait in 1.6.2; older versions take the plain form.
+  `    printf '*filter\\n%s\\nCOMMIT\\n' "$fwx_dc_del" | "$1-restore" --noflush --wait 5 >/dev/null 2>&1 || printf '*filter\\n%s\\nCOMMIT\\n' "$fwx_dc_del" | "$1-restore" --noflush >/dev/null 2>&1 || :`,
   "  done",
   "}",
 ];
@@ -673,8 +679,12 @@ export function buildNftForwardCmds(rule: any, options: { includeCounters?: bool
     ));
     cmds.push(`nft add rule inet ${nftTable} forward meta l4proto ${proto} ${family} daddr ${targetIp} ${proto} dport ${rule.targetPort} ${originalPortMatch} accept comment ${nftCommentLiteral(comment)} || { echo "[nftables] forward selector failed, fallback=fwx-rule-${ruleId}"; ${targetOnlyInAccept}; }`);
   }
-  // Docker's default-DROP FORWARD chain ignores the ACCEPT rules above.
-  cmds.push(...buildDockerForwardCompatCmds(rule));
+  // Docker's default-DROP FORWARD chain ignores the ACCEPT rules above. A target that
+  // needs no allowance (IPv6, unresolved) must still retire the ones an earlier IPv4 target left.
+  const allowances = buildDockerForwardCompatCmds(rule);
+  cmds.push(...(allowances.length > 0
+    ? allowances
+    : buildDockerForwardCompatCleanupCmds({ ruleId, port: Number(rule.sourcePort), protocol: rule.protocol })));
   return cmds;
 }
 

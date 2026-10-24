@@ -249,6 +249,7 @@ class Panel {
     const result = await response.json();
     // A desired state without rule actions only says "nothing to change"; the Agent keeps the last one with work.
     if (result.desiredState?.actions?.some((action) => action.ruleId > 0 || action.forwardType === "port-access-limit-sync")) this.lastDesiredState = result.desiredState;
+    if (Array.isArray(result.runningRules)) this.lastRunningRules = result.runningRules;
     return result;
   }
 
@@ -307,7 +308,8 @@ async function converge(panel, lab, previous, options) {
   const heartbeat = await panel.heartbeat(previous, options);
   assert.ok(panel.lastDesiredState, "the panel has issued no desired state");
   const state = ruleActions({ desiredState: panel.lastDesiredState });
-  const output = lab.agent("sync", { state });
+  // A real Agent also holds the panel's running rules when it applies a desired state.
+  const output = lab.agent("sync", { state, runningRules: panel.lastRunningRules || [] });
   await panel.report(output);
   return { heartbeat, output };
 }
