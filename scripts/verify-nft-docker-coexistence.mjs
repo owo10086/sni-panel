@@ -11,6 +11,7 @@
 // commands under test are produced and executed by the shipped code.
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
+import { mock } from "node:test";
 import fs from "node:fs";
 import http from "node:http";
 import os from "node:os";
@@ -190,6 +191,8 @@ class Panel {
     this.schema = await import(moduleUrl("server/dbSchema.ts"));
     const heartbeat = await import(moduleUrl("server/agentHeartbeatRoute.ts"));
     const statusRoutes = await import(moduleUrl("server/agentStatusRoutes.ts"));
+    this.groups = await import(moduleUrl("server/repositories/forwardGroupRepository.ts"));
+    this.settings = await import(moduleUrl("server/repositories/settingsRepository.ts"));
     await this.runtime.connectDatabase({ type: "sqlite", sqlite: { path: path.join(directory, "panel.db") } });
     await this.schema.ensureDatabaseSchema();
     this.hostId = 100 + panelSequence;
@@ -238,13 +241,14 @@ class Panel {
       body.localState = agentOutput.localState;
     }
     if (extra?.dnsChanged) body.dnsChanged = extra.dnsChanged;
+    if (extra?.portAccessLimitsSupported) body.portAccessLimitsSupported = true;
     const response = await fetch(`${this.baseUrl}/api/agent/heartbeat`, {
       method: "POST", headers: { authorization: `Bearer ${this.token}`, "content-type": "application/json", connection: "close" }, body: JSON.stringify(body),
     });
     assert.equal(response.status, 200);
     const result = await response.json();
     // A desired state without rule actions only says "nothing to change"; the Agent keeps the last one with work.
-    if (result.desiredState?.actions?.some((action) => action.ruleId > 0)) this.lastDesiredState = result.desiredState;
+    if (result.desiredState?.actions?.some((action) => action.ruleId > 0 || action.forwardType === "port-access-limit-sync")) this.lastDesiredState = result.desiredState;
     return result;
   }
 
@@ -290,7 +294,8 @@ function ruleState(agentOutput, ruleId) {
 
 /** The rule actions of a heartbeat; shared runtime housekeeping is not under test. */
 function ruleActions(heartbeat) {
-  return { ...heartbeat.desiredState, actions: heartbeat.desiredState.actions.filter((action) => action.ruleId > 0) };
+  const wanted = (action) => action.ruleId > 0 || action.forwardType === "port-access-limit-sync";
+  return { ...heartbeat.desiredState, actions: heartbeat.desiredState.actions.filter(wanted) };
 }
 
 /**
@@ -312,6 +317,26 @@ async function retry(panel, lab) {
   const output = lab.agent("apply", { state: ruleActions({ desiredState: panel.lastDesiredState }) });
   await panel.report(output);
   return output;
+}
+
+/** A host failover group whose preferred member is the lab host and whose standby is a plain database row. */
+async function seedFailoverGroup(panel) {
+  const seconds = () => Math.floor(Date.now() / 1000);
+  const standbyHostId = panel.hostId + 1000;
+  const groupId = 900 + panelSequence;
+  const memberA = groupId * 10 + 1;
+  const memberB = groupId * 10 + 2;
+  await panel.insert("hosts", ["id", "name", "ip", "ipv4", "userId", "isOnline", "lastHeartbeat"], [standbyHostId, "standby", "198.51.100.77", "198.51.100.77", 1, 1, seconds()]);
+  await panel.runtime.executeRaw('UPDATE "hosts" SET "ip" = ?, "ipv4" = ? WHERE "id" = ?', ["198.51.100.10", "198.51.100.10", panel.hostId]);
+  await panel.insert("forward_groups", ["id", "name", "groupType", "groupMode", "domain", "targetIp", "userId", "isEnabled", "failoverSeconds", "recoverSeconds", "autoFailback"],
+    [groupId, "lab group", "host", "failover", "lab.example.test", "0.0.0.0", 1, 1, 10, 20, 1]);
+  await panel.insert("forward_group_members", ["id", "groupId", "memberType", "hostId", "priority", "isEnabled"], [memberA, groupId, "host", panel.hostId, 1, 1]);
+  await panel.insert("forward_group_members", ["id", "groupId", "memberType", "hostId", "priority", "isEnabled"], [memberB, groupId, "host", standbyHostId, 2, 1]);
+  const child = { id: 2001, name: "business", sourcePort: 35211, targetIp: "10.201.2.2", targetPort: 10042, forwardGroupId: groupId, forwardGroupRuleId: 2000, forwardGroupMemberId: memberA };
+  await panel.addRule({ ...child, id: 2000, forwardGroupRuleId: null, forwardGroupMemberId: null, isForwardGroupTemplate: 1 });
+  await panel.addRule(child);
+  await panel.addRule({ ...child, id: 2002, hostId: standbyHostId, forwardGroupMemberId: memberB, isRunning: 1 });
+  return { groupId, memberA, memberB, child };
 }
 
 const isRunning = async (panel, id) => Boolean(Number((await panel.rule(id)).isRunning));
@@ -636,6 +661,116 @@ const scenarios = {
     assert.match(lab.viaEntry("tcp", HK.sourcePort), /^FAIL/);
     assert.match(lab.viaEntry("udp", HK.sourcePort), /^FAIL/);
     assert.equal(lab.sh("nft list ruleset 2>&1", { allowFailure: true }).out.includes("fwx-rule-1607"), false);
+  },
+
+  async "a real local readiness failure drives host failover and DDNS, a failing business target does not"({ lab, panel }) {
+    lab.installDockerFilter();
+    // The group's DDNS provider is a local stand-in: no real DNS service is ever contacted.
+    const updates = [];
+    const provider = http.createServer((request, response) => {
+      let body = "";
+      request.on("data", (chunk) => { body += chunk; });
+      request.on("end", () => { updates.push(JSON.parse(body)); response.writeHead(204); response.end(); });
+    });
+    await new Promise((resolve) => provider.listen(0, "127.0.0.1", resolve));
+    mock.timers.enable({ apis: ["Date"], now: Math.floor(Date.now() / 1000) * 1000 });
+    try {
+      await panel.settings.setSettings({ ddnsEnabled: "true", ddnsProvider: "webhook", ddnsWebhookUrl: `http://127.0.0.1:${provider.address().port}/ddns`, ddnsWebhookMethod: "POST" });
+      const seconds = () => Math.floor(Date.now() / 1000);
+      const { groupId, memberA, memberB, child } = await seedFailoverGroup(panel);
+
+      const evaluate = () => panel.groups.runForwardGroupFailover(groupId, { skipRuleSync: true });
+      const active = async () => (await panel.groups.getForwardGroupById(groupId)).activeMemberId;
+      const advance = async (value) => {
+        mock.timers.tick(value * 1000);
+        await panel.runtime.executeRaw('UPDATE "hosts" SET "lastHeartbeat" = ?', [seconds()]);
+      };
+      const heartbeatWith = (output) => panel.heartbeat(output);
+
+      let { output } = await converge(panel, lab);
+      assert.equal(await isRunning(panel, 2001), true);
+      await evaluate();
+      assert.equal(await active(), memberA, "the preferred entry serves while it is ready");
+      assert.equal(updates.at(-1)?.values?.[0], "198.51.100.10", "the provider is told about the serving entry");
+
+      // The business target fails, but the entry's own forwarding is complete.
+      lab.sh("pkill -f /work/echo.py", { allowFailure: true });
+      assert.match(lab.viaEntry("tcp", child.sourcePort), /^FAIL/);
+      output = lab.agent("state");
+      await heartbeatWith(output);
+      await advance(60);
+      await evaluate();
+      assert.equal(await active(), memberA, "a failing business target never moves the group");
+      const updatesAfterTargetFailure = updates.length;
+      for (const port of [10042, 10043]) run("docker", ["exec", "-d", lab.name, "ip", "netns", "exec", "fxt", "python3", "/work/echo.py", "10.201.2.2", String(port)]);
+
+      // The entry's own forwarding breaks: Docker's allowance disappears while DNAT stays.
+      lab.sh("iptables -F DOCKER-USER");
+      output = lab.agent("state");
+      assert.deepEqual(readyOf(output, 2001), [false]);
+      await heartbeatWith(output);
+      assert.equal(await isRunning(panel, 2001), false, "the Agent's real report reaches the panel");
+      await evaluate();
+      assert.equal(await active(), memberA, "the configured failure wait is honoured");
+      await advance(9);
+      await evaluate();
+      assert.equal(await active(), memberA, "still inside the failure wait");
+      await advance(2);
+      await evaluate();
+      assert.equal(await active(), memberB, "after the wait the standby entry takes over");
+      assert.equal(updates.length, updatesAfterTargetFailure + 1);
+      assert.deepEqual(updates.at(-1).values, ["198.51.100.77"], "the provider receives the standby entry");
+
+      // Repair through the Agent's normal retry flow, then observe the recovery window.
+      ({ output } = await converge(panel, lab, output, { restart: true }));
+      assert.deepEqual(readyOf(output, 2001), [true]);
+      assert.equal(await isRunning(panel, 2001), true);
+      assert.equal(lab.viaEntry("tcp", child.sourcePort), OK);
+      await evaluate();
+      await advance(19);
+      await evaluate();
+      assert.equal(await active(), memberB, "recovery waits for the whole observation window");
+      await advance(2);
+      await evaluate();
+      assert.equal(await active(), memberA, "priority failback follows the recovery window");
+      assert.deepEqual(updates.at(-1).values, ["198.51.100.10"], "the provider receives the recovered preferred entry");
+    } finally {
+      mock.timers.reset();
+      await new Promise((resolve) => provider.close(resolve));
+    }
+  },
+
+  async "a failed install on a group member leaves a readable reason on the panel"({ lab, panel }) {
+    lab.installDockerFilter();
+    const { child } = await seedFailoverGroup(panel);
+    const real = lab.sh("command -v iptables-nft").out.trim();
+    lab.writeFile("/usr/local/sbin/iptables-nft", [
+      "#!/bin/sh",
+      'case " $* " in *" DOCKER-USER "*) case "$*" in *" -I "*|*" -A "*) echo "iptables: Permission denied" >&2; exit 4 ;; esac ;; esac',
+      `exec ${real} "$@"`, "",
+    ].join("\n"));
+    await converge(panel, lab);
+    const row = await panel.rule(child.id);
+    assert.equal(Boolean(Number(row.isRunning)), false);
+    const diagnostic = JSON.parse(row.runtimeDiagnostic);
+    assert.match(diagnostic.message, /\[docker-compat\] iptables-nft: cannot install DOCKER-USER allowance for rule 2001/);
+  },
+
+  async "existing access limits still apply to forwarded connections beside the allowance"({ lab, panel }) {
+    lab.installDockerFilter();
+    await panel.runtime.executeRaw('UPDATE "users" SET "maxIPs" = 1 WHERE "id" = 1');
+    await panel.addRule(HK);
+    await converge(panel, lab);
+    // The panel adds the limit once it knows the Agent's local state.
+    await converge(panel, lab, lab.agent("state"), { portAccessLimitsSupported: true });
+    assert.match(lab.sh("iptables -t mangle -S").out, /connlimit/, "the user's connection limit is installed");
+    assert.equal(lab.viaEntry("tcp", HK.sourcePort), OK, "a first connection is forwarded");
+    // Hold one connection open, as a busy client would: the limit must refuse the next one.
+    lab.sh(`(ip netns exec fxc python3 -c "import socket,time; s=socket.create_connection(('10.201.1.1',${HK.sourcePort}),timeout=2); time.sleep(6)" >/dev/null 2>&1 &) ; sleep 1`);
+    assert.match(lab.viaEntry("tcp", HK.sourcePort), /^FAIL/, "the connection limit still refuses the extra connection");
+    assert.equal(lab.viaEntry("udp", HK.sourcePort), OK, "UDP is outside the TCP connection limit");
+    lab.sh("sleep 6");
+    assert.equal(lab.viaEntry("tcp", HK.sourcePort), OK, "closing the held connection frees the limit");
   },
 
   async "a port handed from one rule to another leaves nothing of the old rule open"({ lab, panel }) {

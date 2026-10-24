@@ -215,6 +215,11 @@ test("compatibility commands only read FORWARD and only edit DOCKER-USER", () =>
   assert.doesNotMatch(text, /flush ruleset|-j DROP|-j REJECT/);
 });
 
+test("allowances add no counters, so traffic attribution stays with the ForwardX table", () => {
+  const text = buildDockerForwardCompatCmds(rule).join("\n");
+  assert.doesNotMatch(text, /counter|-j LOG|-j MARK|-j CONNMARK|--set-mark/);
+});
+
 test("native nft forwarding installs and removes the allowances with the rule", () => {
   const apply = buildNftForwardCmds(rule).join("\n");
   assert.match(apply, /fwx-docker-42-22022-tcp-in/);
