@@ -13,6 +13,7 @@
 - Add metered inventory by account and logical rule limits per account. Disabled rules occupy a slot; deleting the last root releases it. Count each SNI domain and exclude generated replicas.
 - Add short display caches, request coalescing and bounded queues, preserving live authorization, inventory, payments and entry decisions with write, background cleanup and database-switch invalidation.
 - Avoid reopening completed financial closeout for retired failover replicas and reduce repeated writes for unchanged chain replicas, retaining retries, Agent refreshes, and running/stop acknowledgements.
+- Show yellow for current port-occupancy warnings and red with the cause for confirmed bind failures. Successful probes, running reports and cached green status no longer mask current diagnostics; cleared port errors are not restored from history.
 - Support prepared statements on MySQL 8.0.24, retaining parameter binding and upgrade protections.
 - Fix reply source addresses and session isolation for Linux UDP traffic on multiple entry IPs.
 - Show Beijing calendar-day and cumulative traffic on link resources, retaining the rolling 24-hour rule window. Improve top-five/top-ten rankings, metered names and rich descriptions, narrow cards, text and payment controls.
@@ -20,7 +21,7 @@
 ### Versions and upgrade notes
 
 - Source versions for the panel, Agent and ForwardX FXP runtime are `3.7.0`. The UDP fix requires the matching Agent/FXP update. Native application versions and author donation UI remain excluded.
-- This round delivers local implementation, validation and commits only. No version tag, remote release or production deployment has been performed.
+- The unified release workflow verifies panel packages, Agent, FXP, images and documentation from the same commit, including asset checksums. Production upgrades are handled separately.
 
 ## [3.6.0] - 2026-10-23
 
