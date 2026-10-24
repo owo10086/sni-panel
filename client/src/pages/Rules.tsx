@@ -202,6 +202,7 @@ import {
 import { getTunnelExitNames, getTunnelHopIds, getTunnelRouteText, tunnelHopHostName } from "@/lib/tunnelDisplay";
 import {
   preferLastKnownForwardRuleVisualStatus,
+  resolveForwardRulePortVisualStatus,
   resolveForwardRuleVisualStatus,
 } from "@/lib/forwardRuleStatus";
 import { buildLinkAvailabilityIndex } from "@/lib/linkAvailability";
@@ -4854,7 +4855,7 @@ function RulesContent() {
   const getForwardGroupConfigStatus = useCallback((group: any): "available" | "degraded" | "pending" | "unavailable" | "disabled" => (
     groupAvailabilityById.get(Number(group?.id || 0))?.status || "unavailable"
   ), [groupAvailabilityById]);
-  const resolveRuleVisualStatus = useCallback((rule: any): ReturnType<typeof resolveForwardRuleVisualStatus> => {
+  const resolveRuleRuntimeVisualStatus = useCallback((rule: any): ReturnType<typeof resolveForwardRuleVisualStatus> => {
     if (rule.ruleLimitReason) return { state: "disabled", title: rule.ruleLimitReason === "expired" ? translateText("规则已到期") : translateText("规则流量额度已用尽") };
     const latest = stableProbeByRule.get(Number(rule.id));
     const sni = String(rule?.sni || "").trim();
@@ -4967,6 +4968,9 @@ function RulesContent() {
       latestLatencyAt: latest?.latestLatencyAt,
     });
   }, [forwardGroupById, forwardGroupsError, forwardGroupsFetched, getForwardGroupConfigStatus, hostById, stableProbeByRule]);
+  const resolveRuleVisualStatus = useCallback((rule: any) => (
+    resolveForwardRulePortVisualStatus(resolveRuleRuntimeVisualStatus(rule), rule)
+  ), [resolveRuleRuntimeVisualStatus]);
   const ruleVisualStatuses = useMemo(() => {
     const statuses = new Map<number, {
       current: ReturnType<typeof resolveForwardRuleVisualStatus>;
@@ -4999,7 +5003,7 @@ function RulesContent() {
   );
   useEffect(() => {
     if (!user?.id || ruleVisualStatuses.size === 0) return;
-    const snapshots = new Map<number, { state: ReturnType<typeof resolveForwardRuleVisualStatus>["state"]; title: string }>();
+    const snapshots = new Map<number, ReturnType<typeof resolveForwardRuleVisualStatus>>();
     ruleVisualStatuses.forEach(({ current, lastKnown, invalidated }, ruleId) => {
       // Do not repopulate a just-cleared snapshot from React Query's previous
       // rule object. The invalidation is released only after a new probe has
@@ -5009,8 +5013,8 @@ function RulesContent() {
       // and the next Agent report. Keep a confirmed previous state until a
       // concrete result arrives; first-time pending rules are still cached.
       if (current.state === "pending" && lastKnown) return;
-      if (lastKnown && lastKnown.state === current.state && lastKnown.title === current.title) return;
-      snapshots.set(ruleId, { state: current.state, title: current.title });
+      if (lastKnown && lastKnown.state === current.state && lastKnown.title === current.title && lastKnown.source === current.source) return;
+      snapshots.set(ruleId, { ...current });
     });
     if (snapshots.size > 0) writeRuleStatusSnapshots(user.id, snapshots);
   }, [ruleVisualStatuses, user?.id]);
@@ -6212,7 +6216,7 @@ function RulesContent() {
     if (visual.state === "error") {
       return <span title={visual.title} className="h-2.5 w-2.5 rounded-full bg-destructive/70 shadow-sm shadow-destructive/40" />;
     }
-    if (visual.state === "pending") {
+    if (visual.state === "pending" || visual.state === "warning") {
       return <span title={visual.title} className="h-2.5 w-2.5 rounded-full bg-amber-400 shadow-sm shadow-amber-400/50" />;
     }
     return <span title={visual.title} className="h-2.5 w-2.5 rounded-full bg-muted-foreground/30" />;

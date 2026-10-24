@@ -2,7 +2,13 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { LINK_PROBE_FRESH_MS } from "@shared/linkProbePolicy";
 import {
+  clearRuleStatusSnapshots,
+  readRuleStatusSnapshot,
+  writeRuleStatusSnapshot,
+} from "./ruleStatusCache";
+import {
   preferLastKnownForwardRuleVisualStatus,
+  resolveForwardRulePortVisualStatus,
   resolveForwardRuleVisualStatus,
 } from "./forwardRuleStatus";
 
@@ -15,6 +21,103 @@ const base = {
   runningCount: 1,
   expectedCount: 3,
 };
+
+test("an occupied entry port overrides a confirmed running rule and a successful probe", () => {
+  const running = resolveForwardRuleVisualStatus({
+    ...base,
+    runtimeStatus: "running",
+    latestLatencyMs: 88,
+    latestLatencyAt: now - 30_000,
+  }, now);
+  const result = resolveForwardRulePortVisualStatus(running, {
+    portOccupancyWarnings: [{ status: "occupied" }],
+  });
+  assert.deepEqual(result, { state: "warning", title: "端口存在占用，请检查监听进程" });
+});
+
+test("a port bind failure overrides a running report, a successful probe and an occupancy warning", () => {
+  const running = resolveForwardRuleVisualStatus({
+    ...base,
+    runtimeStatus: "running",
+    latestLatencyMs: 88,
+    latestLatencyAt: now - 30_000,
+  }, now);
+  const result = resolveForwardRulePortVisualStatus(running, {
+    portOccupancyWarnings: [{ status: "occupied" }],
+    portBindFailure: "端口 35211 已被占用",
+  });
+  assert.deepEqual(result, { state: "error", title: "端口 35211 已被占用", source: "port" });
+});
+
+test("port diagnostics preserve disabled rules and cannot downgrade explicit errors to warnings", () => {
+  const disabled = resolveForwardRuleVisualStatus({ ...base, ruleEnabled: false }, now);
+  assert.deepEqual(resolveForwardRulePortVisualStatus(disabled, {
+    portOccupancyWarnings: [{ status: "occupied" }],
+    portBindFailure: "端口 35211 已被占用",
+  }), disabled);
+  const failed = resolveForwardRuleVisualStatus({
+    ...base,
+    latestLatencyIsTimeout: true,
+    latestLatencyAt: now - 30_000,
+  }, now);
+  assert.deepEqual(resolveForwardRulePortVisualStatus(failed, {
+    portOccupancyWarnings: [{ status: "occupied" }],
+  }), failed);
+});
+
+test("current port diagnostics override a cached green status while Agent reports are pending", () => {
+  const pending = resolveForwardRuleVisualStatus(base, now);
+  const cached = { state: "running" as const, title: "上次运行正常" };
+  const warning = resolveForwardRulePortVisualStatus(pending, {
+    portOccupancyWarnings: [{ status: "occupied" }],
+  });
+  assert.equal(preferLastKnownForwardRuleVisualStatus(warning, cached).state, "warning");
+  const failed = resolveForwardRulePortVisualStatus(pending, {
+    portBindFailure: "端口 35211 已被占用",
+  });
+  assert.equal(preferLastKnownForwardRuleVisualStatus(failed, cached).state, "error");
+});
+
+test("a persisted occupancy warning is cleared when current diagnostics no longer report occupancy", () => {
+  const userId = "port-warning-recovery";
+  const warning = resolveForwardRulePortVisualStatus(resolveForwardRuleVisualStatus(base, now), {
+    portOccupancyWarnings: [{ status: "occupied" }],
+  });
+  try {
+    assert.equal(writeRuleStatusSnapshot(userId, 1, { ...warning, updatedAt: now }), true);
+    const cached = readRuleStatusSnapshot(userId, 1);
+    assert.equal(cached?.state, "warning");
+    const pending = resolveForwardRulePortVisualStatus(resolveForwardRuleVisualStatus(base, now), {
+      portOccupancyWarnings: [],
+      portBindFailure: null,
+    });
+    assert.equal(preferLastKnownForwardRuleVisualStatus(pending, cached).state, "pending");
+    const running = resolveForwardRulePortVisualStatus(resolveForwardRuleVisualStatus({
+      ...base,
+      runtimeStatus: "running",
+    }, now), { portOccupancyWarnings: [] });
+    assert.equal(preferLastKnownForwardRuleVisualStatus(running, cached).state, "running");
+  } finally {
+    clearRuleStatusSnapshots(userId);
+  }
+});
+
+test("a cleared port bind failure is not restored from the persisted error cache", () => {
+  const userId = "port-bind-failure-recovery";
+  const pending = resolveForwardRuleVisualStatus(base, now);
+  const failed = resolveForwardRulePortVisualStatus(pending, {
+    portBindFailure: "端口 35211 已被占用",
+  });
+  try {
+    assert.equal(writeRuleStatusSnapshot(userId, 1, { ...failed, updatedAt: now }), true);
+    const cached = readRuleStatusSnapshot(userId, 1);
+    assert.equal(cached?.state, "error");
+    const recovered = resolveForwardRulePortVisualStatus(pending, { portBindFailure: null });
+    assert.deepEqual(preferLastKnownForwardRuleVisualStatus(recovered, cached), pending);
+  } finally {
+    clearRuleStatusSnapshots(userId);
+  }
+});
 
 test("recent successful reachability overrides incomplete child status", () => {
   const result = resolveForwardRuleVisualStatus({

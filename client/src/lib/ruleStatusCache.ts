@@ -10,18 +10,20 @@
 export const RULE_STATUS_CACHE_VERSION = 1;
 export const RULE_STATUS_CACHE_STORAGE_PREFIX = "forwardx.rules.visualStatus.v1.";
 
-export type RuleVisualStatusState = "disabled" | "running" | "pending" | "error";
+export type RuleVisualStatusState = "disabled" | "running" | "pending" | "warning" | "error";
 
 export type RuleVisualStatusSnapshot = {
   state: RuleVisualStatusState;
   title: string;
   updatedAt: number;
+  source?: "port";
 };
 
 export type RuleVisualStatusSnapshotInput = {
   state: RuleVisualStatusState;
   title?: unknown;
   updatedAt?: unknown;
+  source?: "port";
 };
 
 type StoredRuleStatusCache = {
@@ -33,6 +35,7 @@ const VALID_STATES = new Set<RuleVisualStatusState>([
   "disabled",
   "running",
   "pending",
+  "warning",
   "error",
 ]);
 const MAX_TITLE_LENGTH = 512;
@@ -81,7 +84,9 @@ export function normalizeRuleStatusSnapshot(value: unknown, fallbackUpdatedAt = 
   const updatedAt = normalizeTimestamp(source.updatedAt, fallbackUpdatedAt);
   if (!updatedAt) return null;
   const title = String(source.title ?? "").slice(0, MAX_TITLE_LENGTH);
-  return { state, title, updatedAt };
+  const snapshot: RuleVisualStatusSnapshot = { state, title, updatedAt };
+  if (source.source === "port") snapshot.source = "port";
+  return snapshot;
 }
 
 function storageForClient(): Storage | null {

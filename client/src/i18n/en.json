@@ -856,6 +856,7 @@
   "等待 Agent 返回结果...": "Waiting for Agent to return results...",
   "等待 Agent 确认托管监听（{0} / {1}）": "Waiting for Agent to confirm the hosting bug.{0} / {1}）",
   "等待 Agent 上报运行状态": "Waiting for Agent to report active status",
+  "端口存在占用，请检查监听进程": "Port is occupied; check the listening process",
   "等待 GitHub Actions 构建发布资产": "Waiting for GitHub Actions to build released assets",
   "等待 Telegram 确认": "Waiting for Telegram to confirm",
   "等待{0}": "Waiting for {0}",

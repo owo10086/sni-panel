@@ -4,26 +4,47 @@ import {
   LINK_PROBE_MAX_FUTURE_SKEW_MS,
 } from "@shared/linkProbePolicy";
 
-export type ForwardRuleVisualState = "disabled" | "running" | "pending" | "error";
+export type ForwardRuleVisualState = "disabled" | "running" | "pending" | "warning" | "error";
 
 export type ForwardGroupConfigStatus = "available" | "pending" | "unavailable" | "error" | "disabled";
 
 export type ForwardRuleVisualStatus = {
   state: ForwardRuleVisualState;
   title: string;
+  source?: "port";
 };
+
+/** Apply current port diagnostics before considering a last-known status. */
+export function resolveForwardRulePortVisualStatus(
+  current: ForwardRuleVisualStatus,
+  input: {
+    portOccupancyWarnings?: ReadonlyArray<{ status: string }> | null;
+    portBindFailure?: string | null;
+  },
+): ForwardRuleVisualStatus {
+  if (current.state === "disabled") return current;
+  const failure = String(input.portBindFailure || "").trim();
+  if (failure) return { state: "error", title: failure, source: "port" };
+  if (current.state === "error") return current;
+  if (input.portOccupancyWarnings?.some((notice) => notice.status === "occupied")) {
+    return { state: "warning", title: translateText("端口存在占用，请检查监听进程") };
+  }
+  return current;
+}
 
 /**
  * Keep the last confirmed colour while a new status snapshot is still
- * pending. Explicit disabled/error/running results remain authoritative;
+ * pending. Explicit disabled/error/running/warning results remain authoritative;
  * this helper only bridges the transient pending state seen while queries
- * reconnect after the rules page is revisited.
+ * reconnect after the rules page is revisited. Port warnings and bind failures
+ * require current diagnostics and are never restored from the cache alone.
  */
 export function preferLastKnownForwardRuleVisualStatus(
   current: ForwardRuleVisualStatus,
-  lastKnown?: { state?: ForwardRuleVisualState; title?: string | null } | null,
+  lastKnown?: { state?: ForwardRuleVisualState; title?: string | null; source?: "port" } | null,
 ): ForwardRuleVisualStatus {
   if (current.state !== "pending" || !lastKnown || lastKnown.state === "pending") return current;
+  if (lastKnown.source === "port") return current;
   if (lastKnown.state !== "running" && lastKnown.state !== "error" && lastKnown.state !== "disabled") return current;
   const title = String(lastKnown.title || "").trim();
   return {
