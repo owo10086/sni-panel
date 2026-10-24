@@ -4,6 +4,24 @@
 
 ## [Unreleased]
 
+## [3.7.0] - 2026-10-24
+
+### Features and improvements
+
+- Integrate fixed upstream 2.3.289 web, server and Agent changes, retaining local SNI categories, shared ports, personal groups, entry health, DDNS, quotas and financial closeout.
+- Add subscription sales inventory. Purchases, assignments, redemptions and pending orders reserve stock; renewals do not reserve again. Unpaid closure releases stock, while expiry of sold subscriptions does not. Zero means unlimited and historical sales are not backfilled.
+- Add metered inventory by account and logical rule limits per account. Disabled rules occupy a slot; deleting the last root releases it. Count each SNI domain and exclude generated replicas.
+- Add short display caches, request coalescing and bounded queues, preserving live authorization, inventory, payments and entry decisions with write, background cleanup and database-switch invalidation.
+- Avoid reopening completed financial closeout for retired failover replicas and reduce repeated writes for unchanged chain replicas, retaining retries, Agent refreshes, and running/stop acknowledgements.
+- Support prepared statements on MySQL 8.0.24, retaining parameter binding and upgrade protections.
+- Fix reply source addresses and session isolation for Linux UDP traffic on multiple entry IPs.
+- Show Beijing calendar-day and cumulative traffic on link resources, retaining the rolling 24-hour rule window. Improve top-five/top-ten rankings, metered names and rich descriptions, narrow cards, text and payment controls.
+
+### Versions and upgrade notes
+
+- Source versions for the panel, Agent and ForwardX FXP runtime are `3.7.0`. The UDP fix requires the matching Agent/FXP update. Native application versions and author donation UI remain excluded.
+- This round delivers local implementation, validation and commits only. No version tag, remote release or production deployment has been performed.
+
 ## [3.6.0] - 2026-10-23
 
 ### Features and improvements
