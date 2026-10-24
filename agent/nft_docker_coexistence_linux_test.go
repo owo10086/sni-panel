@@ -18,8 +18,14 @@ import (
 //	FORWARDX_NFT_DOCKER_OP=sync   apply a desired state and collect action status
 //	FORWARDX_NFT_DOCKER_OP=apply  run every action unconditionally, as a manual or heartbeat retry does
 //	FORWARDX_NFT_DOCKER_OP=state  collect the local runtime state sent in heartbeats
+//	FORWARDX_NFT_DOCKER_OP=dns    run the Agent's DNS watch against the container's own /etc/hosts
+//	FORWARDX_NFT_DOCKER_OP=reconcile  let the Agent drop local rules the panel no longer lists
 type nftDockerInput struct {
-	State *desiredState `json:"state"`
+	State        *desiredState  `json:"state"`
+	RunningRules []runningRule  `json:"runningRules"`
+	Watch        []dnsWatchItem `json:"dnsWatch"`
+	HostsBefore  string         `json:"hostsBefore"`
+	HostsAfter   string         `json:"hostsAfter"`
 }
 
 type nftDockerOutput struct {
@@ -27,6 +33,7 @@ type nftDockerOutput struct {
 	LocalState localRuntimeStatePayload `json:"localState"`
 	Signature  string                   `json:"localStateSignature"`
 	Applied    []bool                   `json:"applied,omitempty"`
+	DNSChanged []dnsChangeReport        `json:"dnsChanged,omitempty"`
 }
 
 func TestNftDockerAgentOperation(t *testing.T) {
@@ -48,6 +55,7 @@ func TestNftDockerAgentOperation(t *testing.T) {
 		}
 	}
 	var applied []bool
+	var dnsChanged []dnsChangeReport
 	switch op {
 	case "sync":
 		if input.State == nil {
@@ -71,6 +79,25 @@ func TestNftDockerAgentOperation(t *testing.T) {
 			}
 			applied = append(applied, handleAction(Config{}, a))
 		}
+	case "dns":
+		// The scan, confirmation count and quiet period are the Agent's own; only the
+		// clock is advanced explicitly and the resolver is the container's /etc/hosts.
+		start := time.Now()
+		if err := os.WriteFile("/etc/hosts", []byte(input.HostsBefore), 0644); err != nil {
+			t.Fatal(err)
+		}
+		updateDNSWatchWithLookupAt(input.Watch, lookupDNSWatchIPs, start)
+		if err := os.WriteFile("/etc/hosts", []byte(input.HostsAfter), 0644); err != nil {
+			t.Fatal(err)
+		}
+		// Go's resolver re-reads the hosts file at most every five seconds.
+		time.Sleep(5500 * time.Millisecond)
+		for _, elapsed := range []time.Duration{time.Second, 6 * time.Second, 12 * time.Second} {
+			updateDNSWatchWithLookupAt(input.Watch, lookupDNSWatchIPs, start.Add(elapsed))
+		}
+		dnsChanged = takePendingDNSChanges()
+	case "reconcile":
+		syncRunningRuleState(input.RunningRules, nil)
 	case "state":
 	default:
 		t.Fatalf("unknown operation %q", op)
@@ -78,7 +105,7 @@ func TestNftDockerAgentOperation(t *testing.T) {
 	invalidateLocalRuntimeReadinessCache()
 	forceSendLocalRuntimeState = true
 	signature, local := localRuntimeStateForHeartbeat()
-	output := nftDockerOutput{Signature: signature, Applied: applied}
+	output := nftDockerOutput{Signature: signature, Applied: applied, DNSChanged: dnsChanged}
 	for _, report := range takeActionStatusReports(100000) {
 		output.Reports = append(output.Reports, report.payload)
 	}

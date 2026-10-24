@@ -5759,7 +5759,7 @@ func cleanupKernelForwardPortBeforeApply(a action) {
 				_ = runShell(command)
 			}
 		case "nftables":
-			_ = runShell(nftRuleCleanupCmd(localRuleID))
+			cleanupNftRuleState(localRuleID)
 		}
 	}
 	reassignedRule := a.RuleID > 0 && localRuleID > 0 && localRuleID != a.RuleID
@@ -5770,7 +5770,7 @@ func cleanupKernelForwardPortBeforeApply(a action) {
 		}
 	}
 	if changedFromKernelForward && a.ForwardType != "nftables" {
-		_ = runShell(nftPortCleanupCmd(port, cleanupProtocol))
+		cleanupNftPortState(port, cleanupProtocol)
 	}
 	switch a.ForwardType {
 	case "iptables":
@@ -5778,7 +5778,7 @@ func cleanupKernelForwardPortBeforeApply(a action) {
 			_ = runShell(iptablesAgentDeleteDnatRulesForPort(binary, port, cleanupProtocol))
 		}
 	case "nftables":
-		_ = runShell(nftPortCleanupCmd(port, cleanupProtocol))
+		cleanupNftPortState(port, cleanupProtocol)
 	}
 }
 
@@ -6785,7 +6785,7 @@ func cleanupStaleRuntimeBeforeApply(cfg Config, a action, actionMessage *actionM
 		stopFailoverProxyRuntime(localRuleID, a.SourcePort)
 	}
 	if localForwardType == "nftables" && localRuleID > 0 {
-		_ = runShell(nftRuleCleanupCmd(localRuleID))
+		cleanupNftRuleState(localRuleID)
 	}
 	for _, cmd := range managedPortCleanupCmdsForApply(port, sharedNginxRuntimePort) {
 		_ = runShell(cmd)
@@ -8332,7 +8332,7 @@ func reconcileRemovePort(port string) {
 		stopFailoverProxy(ruleID, atoi(port))
 	}
 	if forwardType == "nftables" && ruleID > 0 {
-		_ = runShell(nftRuleCleanupCmd(ruleID))
+		cleanupNftRuleState(ruleID)
 	}
 	for _, cmd := range managedPortCleanupCmds(port) {
 		_ = runShell(cmd)
@@ -13319,7 +13319,7 @@ func prepareProtocolGuardPort(rule guardRule) {
 	if backendType != "nginx" || backendPort == rule.ListenPort {
 		_ = runShell(managedNginxCleanupShell(port))
 	}
-	_ = runShell(nftPortCleanupCmd(port, "both"))
+	cleanupNftPortState(port, "both")
 	for _, binary := range iptablesAgentBinaries() {
 		_ = runShell(iptablesAgentDeleteDnatRulesForPort(binary, port, "both"))
 	}

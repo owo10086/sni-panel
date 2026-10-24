@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -307,4 +308,163 @@ func TestNftReadinessChecksTheActiveDockerFilter(t *testing.T) {
 			t.Fatal("the single front end's Docker DROP was ignored")
 		}
 	})
+}
+
+func TestNftReadinessNeedsLeftoversOfRetiredStateGone(t *testing.T) {
+	tcpOnly := nftTableFor(42, 22022, "tcp")
+
+	t.Run("a dropped protocol's allowance and DNAT keep the rule unconverged", func(t *testing.T) {
+		both := allAllowances(42, 22022, "tcp", "udp")
+		s := dockerHost(both...).snapshot(tcpOnly)
+		if s.nftForwardRulePresent(42, 22022, labTarget, 443, "tcp") {
+			t.Fatal("a stale UDP allowance left a retired path open but the rule reported ready")
+		}
+		if reason := s.nftForwardRuleNotReadyReason(42, 22022, labTarget, 443, "tcp"); !strings.Contains(reason, "stale") {
+			t.Fatalf("reason %q should call the leftover stale", reason)
+		}
+		staleDnat := nftTableFor(42, 22022, "tcp", "udp")
+		if dockerHost(allAllowances(42, 22022, "tcp")...).snapshot(staleDnat).nftForwardRulePresent(42, 22022, labTarget, 443, "tcp") {
+			t.Fatal("a stale UDP DNAT of the same rule was ignored")
+		}
+	})
+
+	t.Run("the previous target's allowance is stale", func(t *testing.T) {
+		previous := strings.ReplaceAll(strings.Join(allAllowances(42, 22022, "tcp"), "\n"), labTarget, "203.0.113.11")
+		rules := append(allAllowances(42, 22022, "tcp"), strings.Split(previous, "\n")...)
+		if dockerHost(rules...).snapshot(tcpOnly).nftForwardRulePresent(42, 22022, labTarget, 443, "tcp") {
+			t.Fatal("an allowance for the old target survived next to the new one")
+		}
+	})
+
+	t.Run("neighbours are never mistaken for leftovers", func(t *testing.T) {
+		rules := append(allAllowances(42, 22022, "tcp"), allAllowances(43, 22023, "tcp", "udp")...)
+		// A UDP rule on the very same port is a different owner of a different protocol.
+		rules = append(rules, allAllowances(44, 22022, "udp")...)
+		neighbourTable := strings.Replace(tcpOnly, "\t}\n\tchain postrouting", "\t\tudp dport 22022 counter dnat ip to "+labTarget+":443 comment \"fwx-rule-44-in\"\n\t}\n\tchain postrouting", 1)
+		neighbourTable = strings.Replace(neighbourTable, "\t}\n}\n", "\t\tmeta l4proto udp ip daddr "+labTarget+" udp dport 443 ct original proto-dst 22022 accept comment \"fwx-rule-44\"\n\t}\n}\n", 1)
+		if !dockerHost(rules...).snapshot(neighbourTable).nftForwardRulePresent(42, 22022, labTarget, 443, "tcp") {
+			t.Fatal("another rule's state on the same port and on other ports must not count against this rule")
+		}
+		// Rule 4 shares a numeric prefix with rule 42 and must not be confused with it.
+		prefix := nftTableFor(4, 22024, "udp")
+		if nftStaleProtocolReason(prefix+nftTableFor(42, 22022, "tcp"), 4, "tcp") == "" {
+			t.Fatal("rule 4's own UDP leftovers must be detected")
+		}
+		if nftStaleProtocolReason(nftTableFor(42, 22022, "udp"), 4, "tcp") != "" {
+			t.Fatal("rule 42's lines were attributed to rule 4")
+		}
+	})
+
+	t.Run("another rule's allowance on this rule's port and protocol is a conflicting owner", func(t *testing.T) {
+		rules := append(allAllowances(42, 22022, "tcp"), allAllowances(99, 22022, "tcp")...)
+		if dockerHost(rules...).snapshot(tcpOnly).nftForwardRulePresent(42, 22022, labTarget, 443, "tcp") {
+			t.Fatal("a previous owner's allowance on the same port and protocol must be cleaned first")
+		}
+	})
+}
+
+// statefulFront is an ordered DOCKER-USER chain that honours -S and -D <position>.
+type statefulFront struct {
+	rules      []string
+	failDelete bool
+}
+
+func (f *statefulFront) snapshot() *kernelForwardSnapshot {
+	s := newKernelForwardSnapshot()
+	s.env = &kernelForwardEnv{
+		readFile:   func(string) ([]byte, error) { return nil, errors.New("absent") },
+		hasCommand: func(name string) bool { return name == "iptables-nft" },
+		runIptables: func(binary string, args ...string) ([]byte, error) {
+			switch strings.Join(args[:len(args)-1], " ") {
+			case "-w 5 -S":
+				return []byte("-N DOCKER-USER\n" + strings.Join(f.rules, "\n") + "\n"), nil
+			case "-w 5 -D DOCKER-USER":
+				if f.failDelete {
+					return nil, errors.New("denied")
+				}
+				position, _ := strconv.Atoi(args[len(args)-1])
+				f.rules = append(append([]string{}, f.rules[:position-1]...), f.rules[position:]...)
+				return nil, nil
+			}
+			return nil, errors.New("unexpected iptables call")
+		},
+	}
+	return s
+}
+
+func TestLocalCleanupRemovesOnlyOwnedAllowances(t *testing.T) {
+	admin := "-A DOCKER-USER -s 198.51.100.7/32 -j DROP"
+	build := func() *statefulFront {
+		rules := []string{admin}
+		rules = append(rules, allAllowances(42, 22022, "tcp", "udp")...)
+		rules = append(rules, allAllowances(420, 22023, "tcp", "udp")...)
+		rules = append(rules, allAllowances(7, 22024, "udp")...)
+		return &statefulFront{rules: rules}
+	}
+
+	t.Run("by rule id every protocol of that rule goes", func(t *testing.T) {
+		front := build()
+		if !front.snapshot().cleanupDockerCompatAllowances(42, 0, nil) {
+			t.Fatal("cleanup reported failure")
+		}
+		if len(front.rules) != 1+4+2 || front.rules[0] != admin {
+			t.Fatalf("rules after cleanup: %v", front.rules)
+		}
+		for _, rule := range front.rules {
+			if strings.Contains(rule, "fwx-docker-42-") {
+				t.Fatalf("rule 42 allowance survived: %s", rule)
+			}
+		}
+	})
+
+	t.Run("by port only the named protocol goes", func(t *testing.T) {
+		front := build()
+		if !front.snapshot().cleanupDockerCompatAllowances(0, 22022, []string{"tcp"}) {
+			t.Fatal("cleanup reported failure")
+		}
+		remaining := strings.Join(front.rules, "\n")
+		if strings.Contains(remaining, "fwx-docker-42-22022-tcp") || !strings.Contains(remaining, "fwx-docker-42-22022-udp-in") {
+			t.Fatalf("port cleanup must be protocol scoped:\n%s", remaining)
+		}
+	})
+
+	t.Run("a prefix of another rule id is not a match", func(t *testing.T) {
+		front := build()
+		front.snapshot().cleanupDockerCompatAllowances(4, 0, nil)
+		if len(front.rules) != len(build().rules) {
+			t.Fatal("rule 4 must not remove rule 42, 420 or 7")
+		}
+	})
+
+	t.Run("a failed removal is reported", func(t *testing.T) {
+		front := build()
+		front.failDelete = true
+		if front.snapshot().cleanupDockerCompatAllowances(42, 0, nil) {
+			t.Fatal("an allowance that could not be removed was reported removed")
+		}
+	})
+
+	t.Run("hosts without the chain are left alone", func(t *testing.T) {
+		s := newKernelForwardSnapshot()
+		s.env = &kernelForwardEnv{
+			readFile:    func(string) ([]byte, error) { return nil, errors.New("absent") },
+			hasCommand:  func(name string) bool { return name == "iptables-nft" },
+			runIptables: func(string, ...string) ([]byte, error) { return nil, errors.New("No chain/target/match by that name") },
+		}
+		if !s.cleanupDockerCompatAllowances(42, 22022, []string{"tcp"}) {
+			t.Fatal("a host without DOCKER-USER has nothing to remove and nothing to fail")
+		}
+	})
+}
+
+func TestRemovalIsNotDoneWhileAnAllowanceRemains(t *testing.T) {
+	host := dockerHost(allAllowances(42, 22022, "tcp")...)
+	s := host.snapshot("")
+	if !s.nftForwardRuleResiduePresent(42, 22022, "tcp") {
+		t.Fatal("a rule whose Docker allowance is still installed is not removed")
+	}
+	clean := dockerHost(allAllowances(43, 22023, "tcp")...).snapshot("")
+	if clean.nftForwardRuleResiduePresent(42, 22022, "tcp") {
+		t.Fatal("another rule's allowance is not this rule's residue")
+	}
 }

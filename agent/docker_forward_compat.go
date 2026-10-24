@@ -253,6 +253,79 @@ func (s *kernelForwardSnapshot) dockerCompatMissingReason(ruleID int, sourcePort
 	return ""
 }
 
+// dockerCompatStaleReason reports an allowance that the current specification
+// does not call for: one of this rule's allowances for another target, port or
+// protocol, or another rule's allowance for the very port and protocol this
+// rule now owns. Such leftovers keep a retired path open, so the rule has not
+// converged yet.
+func (s *kernelForwardSnapshot) dockerCompatStaleReason(ruleID int, sourcePort int, targetIP string, targetPort int, protocol string) string {
+	wanted := dockerCompatSpecsFor(ruleID, sourcePort, targetIP, targetPort, protocol)
+	protocols := runtimeProtocols(protocol)
+	for _, binary := range s.dockerCompatFrontEnds() {
+		state := s.dockerCompatFront(binary)
+		if !state.active || state.rulesErr != nil {
+			continue
+		}
+		for _, line := range state.rules {
+			commentRule, commentPort, commentProto, ok := dockerCompatLineOwner(line)
+			if !ok {
+				continue
+			}
+			ownedByRule := ruleID > 0 && commentRule == ruleID
+			conflictingOwner := sourcePort > 0 && commentPort == sourcePort && commentRule != ruleID && containsString(protocols, commentProto)
+			if !ownedByRule && !conflictingOwner {
+				continue
+			}
+			matched := false
+			for _, spec := range wanted {
+				if spec.matches(line) {
+					matched = true
+					break
+				}
+			}
+			if !matched {
+				return fmt.Sprintf("%s: a stale %s allowance remains: %s", binary, dockerCompatChain, line)
+			}
+		}
+	}
+	return ""
+}
+
+// nftLineOwnedByRule tells whether a rule line carries the comment of the
+// given rule: fwx-rule-<id>, fwx-rule-<id>-in|out or a fallback fwx-rule-<id>:…
+func nftLineOwnedByRule(line string, ruleID int) bool {
+	if ruleID <= 0 {
+		return false
+	}
+	for _, suffix := range []string{`"`, `-`, `:`} {
+		if strings.Contains(line, fmt.Sprintf(`comment "fwx-rule-%d%s`, ruleID, suffix)) {
+			return true
+		}
+	}
+	return false
+}
+
+// nftStaleProtocolReason reports ForwardX state of this rule for a protocol it
+// no longer asks for.
+func nftStaleProtocolReason(text string, ruleID int, protocol string) string {
+	if ruleID <= 0 {
+		return ""
+	}
+	for _, proto := range []string{"tcp", "udp"} {
+		if containsString(runtimeProtocols(protocol), proto) {
+			continue
+		}
+		for _, chain := range []string{"prerouting", "forward"} {
+			for _, line := range nftChainLines(text, chain) {
+				if nftLineOwnedByRule(line, ruleID) && (strings.Contains(line, " "+proto+" dport ") || strings.Contains(line, " "+proto+" sport ")) {
+					return fmt.Sprintf("a stale %s rule of rule %d remains in the %s chain", proto, ruleID, chain)
+				}
+			}
+		}
+	}
+	return ""
+}
+
 // dockerCompatResidue reports whether any front end still holds an allowance
 // owned by the rule or the port.
 func (s *kernelForwardSnapshot) dockerCompatResidue(ruleID int, sourcePort int, protocol string) bool {
@@ -271,9 +344,11 @@ func (s *kernelForwardSnapshot) dockerCompatResidue(ruleID int, sourcePort int, 
 	return false
 }
 
-func dockerCompatLineOwnedBy(line string, ruleID int, sourcePort int, protocols []string) bool {
+// dockerCompatLineOwner extracts rule, port and protocol from the comment of an
+// allowance ForwardX installed; other DOCKER-USER rules have no such comment.
+func dockerCompatLineOwner(line string) (ruleID int, sourcePort int, proto string, ok bool) {
 	if !strings.HasPrefix(line, "-A "+dockerCompatChain+" ") {
-		return false
+		return 0, 0, "", false
 	}
 	for _, field := range strings.Fields(line) {
 		comment := strings.Trim(field, `"`)
@@ -281,19 +356,25 @@ func dockerCompatLineOwnedBy(line string, ruleID int, sourcePort int, protocols 
 			continue
 		}
 		parts := strings.Split(strings.TrimPrefix(comment, "fwx-docker-"), "-")
-		if len(parts) != 4 {
+		if len(parts) != 4 || (parts[2] != "tcp" && parts[2] != "udp") {
 			continue
 		}
-		commentRule, _ := strconv.Atoi(parts[0])
-		commentPort, _ := strconv.Atoi(parts[1])
-		if ruleID > 0 && commentRule == ruleID {
-			return true
-		}
-		if sourcePort > 0 && commentPort == sourcePort && containsString(protocols, parts[2]) {
-			return true
+		ruleID, ruleErr := strconv.Atoi(parts[0])
+		sourcePort, portErr := strconv.Atoi(parts[1])
+		if ruleErr == nil && portErr == nil {
+			return ruleID, sourcePort, parts[2], true
 		}
 	}
-	return false
+	return 0, 0, "", false
+}
+
+func dockerCompatLineOwnedBy(line string, ruleID int, sourcePort int, protocols []string) bool {
+	commentRule, commentPort, commentProto, ok := dockerCompatLineOwner(line)
+	if !ok {
+		return false
+	}
+	return (ruleID > 0 && commentRule == ruleID) ||
+		(sourcePort > 0 && commentPort == sourcePort && containsString(protocols, commentProto))
 }
 
 // nftChainLines returns the rule lines of one chain in `nft -a list table`.
@@ -352,7 +433,13 @@ func (s *kernelForwardSnapshot) nftForwardRuleNotReadyReason(ruleID int, sourceP
 			return fmt.Sprintf("the %s return accept for %s:%d is missing", proto, target.String(), targetPort)
 		}
 	}
-	return s.dockerCompatMissingReason(ruleID, sourcePort, target.String(), targetPort, protocol)
+	if reason := nftStaleProtocolReason(text, ruleID, protocol); reason != "" {
+		return reason
+	}
+	if reason := s.dockerCompatMissingReason(ruleID, sourcePort, target.String(), targetPort, protocol); reason != "" {
+		return reason
+	}
+	return s.dockerCompatStaleReason(ruleID, sourcePort, target.String(), targetPort, protocol)
 }
 
 func nftMasqueradePresent(text string, ruleID int, targetIP string, targetPort int, protocol string) bool {
@@ -390,4 +477,68 @@ func nftForwardAcceptPresent(text string, addressKey string, portKey string, pro
 		}
 	}
 	return false
+}
+
+// cleanupDockerCompatAllowances removes the DOCKER-USER allowances owned by a
+// rule id (any port and protocol it ever used) and by a port for the given
+// protocols. The panel's removal commands do the same in shell; the Agent needs
+// its own pass for the local cleanups it starts without a panel command, such
+// as reconciling a rule the panel no longer lists. It returns false when an
+// owned allowance could not be removed.
+func cleanupDockerCompatAllowances(ruleID int, sourcePort int, protocols []string) bool {
+	return newKernelForwardSnapshot().cleanupDockerCompatAllowances(ruleID, sourcePort, protocols)
+}
+
+func (s *kernelForwardSnapshot) cleanupDockerCompatAllowances(ruleID int, sourcePort int, protocols []string) bool {
+	if ruleID <= 0 && sourcePort <= 0 {
+		return true
+	}
+	ok := true
+	for _, binary := range s.dockerCompatFrontEnds() {
+		for round := 0; ; round++ {
+			listing, err := s.runHostIptables(binary, "-w", "5", "-S", dockerCompatChain)
+			if err != nil {
+				break // no such chain (no Docker) or an unusable front end: nothing of ours can be there
+			}
+			positions := []int{}
+			position := 0
+			for _, rawLine := range strings.Split(string(listing), "\n") {
+				line := kernelNormalizeLine(rawLine)
+				if !strings.HasPrefix(line, "-A "+dockerCompatChain+" ") {
+					continue
+				}
+				position++
+				if dockerCompatLineOwnedBy(line, ruleID, sourcePort, protocols) {
+					positions = append(positions, position)
+				}
+			}
+			if len(positions) == 0 {
+				break
+			}
+			if round >= 5 {
+				logf("docker-compat: could not remove %d allowance(s) of rule=%d port=%d from %s via %s", len(positions), ruleID, sourcePort, dockerCompatChain, binary)
+				ok = false
+				break
+			}
+			// Highest position first so earlier positions stay valid.
+			for index := len(positions) - 1; index >= 0; index-- {
+				_, _ = s.runHostIptables(binary, "-w", "5", "-D", dockerCompatChain, strconv.Itoa(positions[index]))
+			}
+		}
+	}
+	return ok
+}
+
+// cleanupNftRuleState removes the kernel state a nftables rule owns: its
+// ForwardX table entries and its Docker allowances.
+func cleanupNftRuleState(ruleID int) {
+	_ = runShell(nftRuleCleanupCmd(ruleID))
+	cleanupDockerCompatAllowances(ruleID, 0, nil)
+}
+
+// cleanupNftPortState removes nftables DNAT for a port and the Docker
+// allowances of that port for the given protocol.
+func cleanupNftPortState(port string, protocol string) {
+	_ = runShell(nftPortCleanupCmd(port, protocol))
+	cleanupDockerCompatAllowances(0, atoi(port), runtimeProtocols(protocol))
 }

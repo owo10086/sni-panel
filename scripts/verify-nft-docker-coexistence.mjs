@@ -16,6 +16,8 @@ import http from "node:http";
 import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
+import dns from "node:dns";
+import module from "node:module";
 import express from "express";
 
 process.env.DATABASE_TYPE = "sqlite";
@@ -44,19 +46,20 @@ function buildAgentTestBinary(directory) {
 
 const ECHO_PY = `
 import socket, sys, threading
-port = int(sys.argv[1])
+ip, port = sys.argv[1], int(sys.argv[2])
+reply = ("forwarded:" + ip + ":" + str(port) + ":").encode()
 def tcp():
     s = socket.socket(); s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    s.bind(("0.0.0.0", port)); s.listen(16)
+    s.bind((ip, port)); s.listen(16)
     while True:
         c, _ = s.accept()
         def handle(c=c):
-            data = c.recv(64); c.sendall(b"forwarded:" + data); c.close()
+            data = c.recv(64); c.sendall(reply + data); c.close()
         threading.Thread(target=handle, daemon=True).start()
 threading.Thread(target=tcp, daemon=True).start()
-u = socket.socket(socket.AF_INET, socket.SOCK_DGRAM); u.bind(("0.0.0.0", port))
+u = socket.socket(socket.AF_INET, socket.SOCK_DGRAM); u.bind((ip, port))
 while True:
-    data, peer = u.recvfrom(64); u.sendto(b"forwarded:" + data, peer)
+    data, peer = u.recvfrom(64); u.sendto(reply + data, peer)
 `;
 
 const PROBE_PY = `
@@ -98,10 +101,13 @@ class Lab {
       ip addr add 10.201.2.1/24 dev t1; ip link set t1 up
       ip netns exec fxt ip link set lo up
       ip netns exec fxt ip addr add 10.201.2.2/24 dev t0; ip netns exec fxt ip link set t0 up
+      ip netns exec fxt ip addr add 10.201.2.3/24 dev t0
       # The target has no route back to the client: only source translation lets replies return.
     `);
-    for (const port of [10042, 10043]) {
-      run("docker", ["exec", "-d", this.name, "ip", "netns", "exec", "fxt", "python3", "/work/echo.py", String(port)]);
+    for (const ip of ["10.201.2.2", "10.201.2.3"]) {
+      for (const port of [10042, 10043]) {
+        run("docker", ["exec", "-d", this.name, "ip", "netns", "exec", "fxt", "python3", "/work/echo.py", ip, String(port)]);
+      }
     }
     return this;
   }
@@ -161,6 +167,19 @@ class Lab {
 // ---------------------------------------------------------------- panel ----
 let panelSequence = 0;
 
+/**
+ * The panel resolves target domains with dns/promises. The lab replaces only that
+ * resolver with a table, so no real DNS server is ever asked.
+ */
+const labDns = new Map();
+dns.promises.resolve4 = async (name) => {
+  const addresses = labDns.get(String(name).toLowerCase());
+  if (!addresses) throw Object.assign(new Error(`ENOTFOUND ${name}`), { code: "ENOTFOUND" });
+  return [...addresses];
+};
+dns.promises.resolve6 = async (name) => { throw Object.assign(new Error(`ENODATA ${name}`), { code: "ENODATA" }); };
+module.syncBuiltinESMExports();
+
 class Panel {
   async start(directory) {
     // The heartbeat route keeps per-host caches for the life of the process.
@@ -208,7 +227,7 @@ class Panel {
   }
 
   /** One real heartbeat, optionally carrying the Agent's real local runtime state. */
-  async heartbeat(agentOutput, { restart = false } = {}) {
+  async heartbeat(agentOutput, { restart = false, ...extra } = {}) {
     if (restart) this.restarts = (this.restarts || 0) + 1;
     const body = {
       agentVersion: agentVersion(), agentBootId: `${this.bootId}-${this.restarts || 0}`, agentProcessId: 100 + (this.restarts || 0),
@@ -218,8 +237,9 @@ class Panel {
       body.localStateSignature = agentOutput.localStateSignature;
       body.localState = agentOutput.localState;
     }
+    if (extra?.dnsChanged) body.dnsChanged = extra.dnsChanged;
     const response = await fetch(`${this.baseUrl}/api/agent/heartbeat`, {
-      method: "POST", headers: { authorization: `Bearer ${this.token}`, "content-type": "application/json" }, body: JSON.stringify(body),
+      method: "POST", headers: { authorization: `Bearer ${this.token}`, "content-type": "application/json", connection: "close" }, body: JSON.stringify(body),
     });
     assert.equal(response.status, 200);
     const result = await response.json();
@@ -232,7 +252,7 @@ class Panel {
   async report(agentOutput) {
     if (!agentOutput.reports?.length) return;
     const response = await fetch(`${this.baseUrl}/api/agent/rule-status-batch`, {
-      method: "POST", headers: { authorization: `Bearer ${this.token}`, "content-type": "application/json" },
+      method: "POST", headers: { authorization: `Bearer ${this.token}`, "content-type": "application/json", connection: "close" },
       body: JSON.stringify({ statuses: agentOutput.reports }),
     });
     assert.equal(response.status, 200);
@@ -261,7 +281,8 @@ function agentVersion() {
 
 // ------------------------------------------------------------ scenarios ----
 const HK = { id: 1607, name: "hk", sourcePort: 35211, targetIp: "10.201.2.2", targetPort: 10042 };
-const OK = "OK forwarded:ping";
+const reply = (ip, port) => `OK forwarded:${ip}:${port}:ping`;
+const OK = reply("10.201.2.2", 10042);
 
 function ruleState(agentOutput, ruleId) {
   return agentOutput.localState.rules.filter((rule) => rule.ruleId === ruleId);
@@ -466,6 +487,171 @@ const scenarios = {
     assert.ok(output.reports.find((item) => item.ruleId === HK.id)?.isRunning, "an unsupported structure is neither modified nor reported as failed");
     assert.deepEqual(managedAllowances(lab), []);
     assert.equal(lab.sh("iptables -S ufw-before-forward").out.includes("fwx-"), false);
+  },
+
+  async "changing the target address and port moves the allowance with the rule"({ lab, panel }) {
+    lab.installDockerFilter();
+    await panel.addRule(HK);
+    await converge(panel, lab);
+    assert.equal(lab.viaEntry("tcp", HK.sourcePort), reply("10.201.2.2", 10042));
+    await panel.update(HK.id, { targetIp: "10.201.2.3", targetPort: 10043 });
+    const { output } = await converge(panel, lab, lab.agent("state"));
+    assert.deepEqual(readyOf(lab.agent("state"), HK.id), [true]);
+    assert.equal(lab.viaEntry("tcp", HK.sourcePort), reply("10.201.2.3", 10043));
+    assert.equal(lab.viaEntry("udp", HK.sourcePort), reply("10.201.2.3", 10043));
+    const allowances = managedAllowances(lab);
+    assert.equal(allowances.length, 4);
+    assert.ok(allowances.every((line) => line.includes("10.201.2.3/32") && /--[ds]port 10043/.test(line)), `only the new target stays open:\n${allowances.join("\n")}`);
+    assert.equal(await isRunning(panel, HK.id), true);
+  },
+
+  async "a domain target that resolves elsewhere moves forwarding and allowance together"({ lab, panel }) {
+    lab.installDockerFilter();
+    labDns.set("target.lab.test", ["10.201.2.2"]);
+    await panel.addRule({ ...HK, targetIp: "target.lab.test" });
+    let heartbeat = await panel.heartbeat();
+    assert.ok(heartbeat.dnsWatch.some((item) => item.host === "target.lab.test" && item.scope === "forward-rule-target"), "the panel asks the Agent to watch the name");
+    let { output } = await converge(panel, lab);
+    assert.equal(lab.viaEntry("udp", HK.sourcePort), reply("10.201.2.2", 10042));
+
+    // The name now points at another address: the Agent notices it with its own watcher.
+    labDns.set("target.lab.test", ["10.201.2.3"]);
+    const detected = lab.agent("dns", {
+      dnsWatch: heartbeat.dnsWatch,
+      hostsBefore: "127.0.0.1 localhost\n10.201.2.2 target.lab.test\n",
+      // Go caches the hosts file by modification time and size; a different length keeps the lab deterministic.
+      hostsAfter: "127.0.0.1 localhost\n10.201.2.3 target.lab.test\n# re-pointed\n",
+    });
+    assert.deepEqual(detected.dnsChanged.map((change) => [change.host, change.new]), [["target.lab.test", ["10.201.2.3"]]]);
+    ({ output } = await converge(panel, lab, lab.agent("state"), { dnsChanged: detected.dnsChanged }));
+    assert.equal(lab.viaEntry("tcp", HK.sourcePort), reply("10.201.2.3", 10042));
+    assert.equal(lab.viaEntry("udp", HK.sourcePort), reply("10.201.2.3", 10042));
+    const allowances = managedAllowances(lab);
+    assert.equal(allowances.length, 4);
+    assert.ok(allowances.every((line) => line.includes("10.201.2.3/32")), allowances.join("\n"));
+    assert.deepEqual(readyOf(lab.agent("state"), HK.id), [true]);
+    labDns.delete("target.lab.test");
+  },
+
+  async "narrowing and widening the protocol keeps the allowances in step"({ lab, panel }) {
+    lab.installDockerFilter();
+    await panel.addRule(HK);
+    let { output } = await converge(panel, lab);
+    const step = async (protocol, expectTcp, expectUdp) => {
+      await panel.update(HK.id, { protocol });
+      ({ output } = await converge(panel, lab, lab.agent("state")));
+      if (process.env.LAB_DEBUG) console.log(protocol, lab.sh("nft list table inet forwardx; iptables -S DOCKER-USER").out);
+      assert.equal(lab.viaEntry("tcp", HK.sourcePort) === OK, expectTcp, `${protocol}: tcp`);
+      assert.equal(lab.viaEntry("udp", HK.sourcePort) === OK, expectUdp, `${protocol}: udp`);
+      const lines = managedAllowances(lab);
+      assert.equal(lines.length, (Number(expectTcp) + Number(expectUdp)) * 2, `${protocol}: allowances\n${lines.join("\n")}`);
+      assert.equal(lines.some((line) => line.includes("-p tcp")), expectTcp);
+      assert.equal(lines.some((line) => line.includes("-p udp")), expectUdp);
+      assert.deepEqual(readyOf(lab.agent("state"), HK.id), [true], `${protocol}: ready`);
+    };
+    await step("tcp", true, false);
+    await step("udp", false, true);
+    await step("both", true, true);
+  },
+
+  async "one port used by a TCP rule and a UDP rule stays independent"({ lab, panel }) {
+    lab.installDockerFilter();
+    const tcpRule = { id: 1701, name: "tcp", sourcePort: 35311, protocol: "tcp", targetIp: "10.201.2.2", targetPort: 10042 };
+    const udpRule = { id: 1702, name: "udp", sourcePort: 35311, protocol: "udp", targetIp: "10.201.2.3", targetPort: 10043 };
+    await panel.addRule(tcpRule);
+    await panel.addRule(udpRule);
+    await converge(panel, lab);
+    assert.equal(lab.viaEntry("tcp", 35311), reply("10.201.2.2", 10042));
+    assert.equal(lab.viaEntry("udp", 35311), reply("10.201.2.3", 10043));
+    await panel.update(tcpRule.id, { isEnabled: 0 });
+    await converge(panel, lab, lab.agent("state"));
+    assert.match(lab.viaEntry("tcp", 35311), /^FAIL/, "the disabled TCP rule is closed");
+    assert.equal(lab.viaEntry("udp", 35311), reply("10.201.2.3", 10043), "the UDP rule on the same port keeps working");
+    const lines = managedAllowances(lab);
+    assert.equal(lines.length, 2);
+    assert.ok(lines.every((line) => line.includes("fwx-docker-1702-35311-udp-")), lines.join("\n"));
+  },
+
+  async "switching the native backend back and forth keeps Docker's DROP from blocking the new one"({ lab, panel }) {
+    lab.installDockerFilter();
+    await panel.addRule(HK);
+    let { output } = await converge(panel, lab);
+    const filterRules = () => lab.sh("iptables -S FORWARD").out;
+    await panel.update(HK.id, { forwardType: "iptables" });
+    ({ output } = await converge(panel, lab, lab.agent("state")));
+    assert.equal(lab.viaEntry("tcp", HK.sourcePort), OK, "the iptables backend works beside Docker's DROP");
+    assert.equal(lab.viaEntry("udp", HK.sourcePort), OK);
+    assert.deepEqual(managedAllowances(lab), [], "the nftables backend's allowances are gone");
+    assert.equal(lab.sh("nft list chain inet forwardx prerouting 2>&1", { allowFailure: true }).out.includes("dnat"), false, "the nftables DNAT is gone");
+    assert.match(filterRules(), /-P FORWARD DROP/);
+
+    await panel.update(HK.id, { forwardType: "nftables" });
+    ({ output } = await converge(panel, lab, lab.agent("state")));
+    assert.equal(lab.viaEntry("tcp", HK.sourcePort), OK, "the nftables backend works again");
+    assert.equal(lab.viaEntry("udp", HK.sourcePort), OK);
+    assert.equal(managedAllowances(lab).length, 4);
+    assert.equal(lab.sh("iptables -t nat -S PREROUTING").out.includes("DNAT"), false, "the iptables DNAT is gone");
+    assert.equal(filterRules().includes("10.201.2.2"), false, "the iptables FORWARD accepts are gone");
+    assert.match(filterRules(), /-P FORWARD DROP/);
+    assert.deepEqual(readyOf(lab.agent("state"), HK.id), [true]);
+  },
+
+  async "a failed update is never reported as applied and a later retry recovers"({ lab, panel }) {
+    lab.installDockerFilter();
+    await panel.addRule(HK);
+    await converge(panel, lab);
+    const real = lab.sh("command -v iptables-nft").out.trim();
+    lab.writeFile("/usr/local/sbin/iptables-nft", [
+      "#!/bin/sh",
+      'case " $* " in *" DOCKER-USER "*) case "$*" in *" -I "*|*" -A "*) echo "iptables: Permission denied" >&2; exit 4 ;; esac ;; esac',
+      `exec ${real} "$@"`, "",
+    ].join("\n"));
+    await panel.update(HK.id, { targetIp: "10.201.2.3", targetPort: 10043 });
+    const { output } = await converge(panel, lab, lab.agent("state"));
+    const report = output.reports.find((item) => item.ruleId === HK.id);
+    assert.equal(report?.isRunning, false);
+    assert.match(report.message, /\[docker-compat\]/);
+    assert.equal(await isRunning(panel, HK.id), false, "the panel does not show the failed update as applied");
+    assert.deepEqual(readyOf(lab.agent("state"), HK.id), [false]);
+    assert.match(lab.viaEntry("tcp", HK.sourcePort), /^FAIL/);
+
+    lab.sh("rm -f /usr/local/sbin/iptables-nft");
+    const recovered = await retry(panel, lab);
+    assert.deepEqual(recovered.applied, [true]);
+    assert.equal(lab.viaEntry("tcp", HK.sourcePort), reply("10.201.2.3", 10043));
+    assert.equal(lab.viaEntry("udp", HK.sourcePort), reply("10.201.2.3", 10043));
+    assert.equal(await isRunning(panel, HK.id), true);
+  },
+
+  async "the Agent's own reconcile closes a rule the panel no longer lists"({ lab, panel }) {
+    lab.installDockerFilter();
+    await panel.addRule(HK);
+    await converge(panel, lab);
+    assert.equal(managedAllowances(lab).length, 4);
+    await panel.runtime.executeRaw('DELETE FROM "forward_rules" WHERE "id" = ?', [HK.id]);
+    const heartbeat = await panel.heartbeat(lab.agent("state"));
+    // No removal action is executed: the Agent notices by itself that the rule is gone.
+    lab.agent("reconcile", { runningRules: heartbeat.runningRules || [] });
+    assert.deepEqual(managedAllowances(lab), [], "no allowance outlives the rule");
+    assert.match(lab.viaEntry("tcp", HK.sourcePort), /^FAIL/);
+    assert.match(lab.viaEntry("udp", HK.sourcePort), /^FAIL/);
+    assert.equal(lab.sh("nft list ruleset 2>&1", { allowFailure: true }).out.includes("fwx-rule-1607"), false);
+  },
+
+  async "a port handed from one rule to another leaves nothing of the old rule open"({ lab, panel }) {
+    lab.installDockerFilter();
+    await panel.addRule(HK);
+    await converge(panel, lab);
+    // The old rule is replaced by a TCP-only rule that reuses its port in the same panel cycle.
+    await panel.runtime.executeRaw('DELETE FROM "forward_rules" WHERE "id" = ?', [HK.id]);
+    const successor = { id: 1800, name: "successor", sourcePort: HK.sourcePort, protocol: "tcp", targetIp: "10.201.2.3", targetPort: 10043 };
+    await panel.addRule(successor);
+    await converge(panel, lab, lab.agent("state"));
+    assert.equal(lab.viaEntry("tcp", HK.sourcePort), reply("10.201.2.3", 10043));
+    assert.match(lab.viaEntry("udp", HK.sourcePort), /^FAIL/, "the previous rule's UDP path is closed");
+    const lines = managedAllowances(lab);
+    assert.equal(lines.length, 2, lines.join("\n"));
+    assert.ok(lines.every((line) => line.includes("fwx-docker-1800-")), lines.join("\n"));
   },
 
   async "disabling and deleting rules removes only their own allowances"({ lab, panel }) {
