@@ -9,6 +9,7 @@ import { randomUUID } from "node:crypto";
 import { linkProbeMethodForRule } from "@shared/latencyProbe";
 import { ruleLatencySeriesQueryCache as selfTestQueryCache } from "../ruleLatencyQueryCache";
 import { latencyHistoryQueryCache } from "../ruleLatencyQueryCache";
+import { withSelfTestEvidence } from "../../shared/selfTestEvidence";
 import { latencyChartBucketSeconds } from "../../shared/latencyHistory";
 import { latencyHistoryWindowInput, resolveLatencyHistoryWindow } from "../latencyHistoryWindow";
 
@@ -184,6 +185,6 @@ export const selfTestRulesRouter = router({
         return null;
       }
       const t = await db.getLatestForwardTest(input.ruleId, { includeActive: input.includeActive });
-      return t || null;
+      return t ? withSelfTestEvidence(t) : null;
     })
 });

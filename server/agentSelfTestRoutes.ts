@@ -147,6 +147,12 @@ async function loadFreshTunnelAutoDetails(tunnel: any, latestLatency: any) {
   });
 }
 
+// A self-test connects from one host to a target and reports only that: the
+// Agent's result says whether the target was reached and how fast. No result
+// here proves a request from outside went through the entry's business port, so
+// forwardOk is never set; listenOk is set only by the entry-port probe, the one
+// test that connects to the entry listener. shared/selfTestEvidence.ts is the
+// reader-side counterpart for rows written before this contract.
 export function registerAgentSelfTestRoutes(agentRouter: Router) {
 agentRouter.post("/api/agent/selftest-result", async (req: Request, res: Response) => {
   try {
@@ -180,8 +186,8 @@ agentRouter.post("/api/agent/selftest-result", async (req: Request, res: Respons
       // Commit the individual report before locking the batch. Otherwise two
       // reporters can each hold one row and deadlock while finalizing all rows.
       const accepted = await db.completeForwardTestIfActive(testId, {
-        status: success ? "success" : "failed", listenOk: true, targetReachable: success,
-        forwardOk: success, latencyMs: success ? cleanLatency : null, message: cleanMessage,
+        status: success ? "success" : "failed", listenOk: false, targetReachable: success,
+        forwardOk: false, latencyMs: success ? cleanLatency : null, message: cleanMessage,
       });
       if (durableBatchId.startsWith("tp-")) await settleManualTunnelProbeBatch(durableBatchId);
       else await settleManualForwardChainBatch(durableBatchId);
@@ -203,9 +209,9 @@ agentRouter.post("/api/agent/selftest-result", async (req: Request, res: Respons
     if (!deferTunnelRuleCompletion) {
       const accepted = await db.completeForwardTestIfActive(testId, {
         status: success ? "success" : "failed",
-        listenOk: true,
+        listenOk: false,
         targetReachable: !!targetReachable,
-        forwardOk: success,
+        forwardOk: false,
         latencyMs: cleanLatency,
         message: cleanMessage,
       });
@@ -401,9 +407,9 @@ agentRouter.post("/api/agent/selftest-result", async (req: Request, res: Respons
       });
       const accepted = await db.completeForwardTestIfActive(testId, {
         status: overallSuccess ? "success" : overallTimedOut ? "timeout" : "failed",
-        listenOk: true,
+        listenOk: false,
         targetReachable: success,
-        forwardOk: overallSuccess,
+        forwardOk: false,
         latencyMs: totalLatency,
         message: structuredMessage,
       });
@@ -435,7 +441,7 @@ agentRouter.post("/api/agent/selftest-result", async (req: Request, res: Respons
         status: success ? "success" : "failed",
         listenOk: success,
         targetReachable: success,
-        forwardOk: success,
+        forwardOk: false,
         latencyMs: success ? cleanLatency : null,
         message: messageParts.join("; "),
       });
@@ -476,9 +482,9 @@ agentRouter.post("/api/agent/selftest-result", async (req: Request, res: Respons
           });
           await db.updateForwardTestResult(testId, {
             status: aggregate.success ? "success" : "failed",
-            listenOk: aggregate.success,
+            listenOk: false,
             targetReachable: aggregate.success,
-            forwardOk: aggregate.success,
+            forwardOk: false,
             latencyMs: aggregate.success ? aggregate.latencyMs : null,
             message: aggregateMessage,
           });
@@ -503,9 +509,9 @@ agentRouter.post("/api/agent/selftest-result", async (req: Request, res: Respons
       if (cleanMessage && !success) messageParts.push(cleanMessage);
       await db.updateForwardTestResult(testId, {
         status: success ? "success" : "failed",
-        listenOk: success,
+        listenOk: false,
         targetReachable: success,
-        forwardOk: success,
+        forwardOk: false,
         latencyMs: success ? cleanLatency : null,
         message: messageParts.join("; "),
       });

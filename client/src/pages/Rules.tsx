@@ -10,6 +10,7 @@ import { RuleTableFrame, splitRuleTableItems } from "@/components/rules/RuleTabl
 import { RuleTrafficDetailsContent } from "@/components/rules/RuleTrafficDetails";
 import { RuleDailyTrafficDialog } from "@/components/rules/RuleDailyTrafficDialog";
 import { RuleLatencyButton } from "@/components/rules/RuleLatencyButton";
+import { SelfTestEvidenceNote } from "@/components/rules/SelfTestEvidenceNote";
 import { RuleLatencyStore } from "@/lib/ruleLatencyStore";
 import { formatRuleTraffic } from "@/lib/ruleTrafficDisplay";
 import { RuleGroupBar, RuleGroupMultiSelect, RuleGroupBulkEditor } from "@/components/rules/PersonalRuleGroups";
@@ -9510,6 +9511,7 @@ function SelfTestDialog({
           mobileStacked
           wrapDesktopRows
         />
+        {!isTesting && <SelfTestEvidenceNote result={latest as any} />}
 
         <DialogFooter className="gap-2">
           <Button

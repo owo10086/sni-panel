@@ -5326,5 +5326,11 @@
   "当日流量": "Today's Traffic",
   "当日流量按北京时间 00:00 起统计。": "Today's traffic is counted from 00:00 China Standard Time. ",
   "## 按量计费介绍\n\n在这里介绍适用场景与服务特色。\n\n### 服务亮点\n- **线路特色**：填写节点或线路介绍\n- **计费方式**：填写流量单价与倍率说明\n- **售后支持**：填写联系方式或服务时间\n\n> 使用前请确认计费方式和使用规则，实际费用以系统配置为准。": "## About this metered plan\n\nIntroduce the intended use and service highlights here.\n\n### Service highlights\n- **Network**: Describe the nodes or routes\n- **Billing**: Describe traffic rates and multipliers\n- **Support**: Add contact details or service hours\n\n> Review billing and usage rules before use. Actual charges follow the system configuration.",
-  "留空使用资源名称": "Leave blank to use the resource name"
+  "留空使用资源名称": "Leave blank to use the resource name",
+  "检测来源到目标": "Probe source to target",
+  "目标连接成功": "Target connection succeeded",
+  "目标连接失败": "Target connection failed",
+  "目标连接状态未知": "Target connection result unknown",
+  "外部经入口的转发路径": "Forwarding path from outside through the entry",
+  "本检测只从检测来源直接连接目标，没有经入口业务端口发起请求，不能据此判断外部访问能否到达目标。": "This test connects to the target directly from the probe source and sends no request through the entry's business port, so it says nothing about whether outside access can reach the target."
 }

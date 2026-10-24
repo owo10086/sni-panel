@@ -34,7 +34,7 @@ export async function settleManualForwardChainBatch(batchId: string) {
     // summary, matching getLatestForwardTest's existing result contract.
     await updateForwardTestResult(Number(rows[rows.length - 1].id), {
       status: aggregate.success ? "success" : "failed", latencyMs: aggregate.latencyMs,
-      listenOk: aggregate.success, forwardOk: aggregate.success, targetReachable: aggregate.success,
+      listenOk: false, forwardOk: false, targetReachable: aggregate.success,
       message: structuredLinkTestMessage({ kind: "forward-chain-hop-summary", groupId: Number(meta.groupId),
         message: aggregate.message, details: aggregate.details, totalLatencyMs: aggregate.latencyMs }),
     });

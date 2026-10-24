@@ -6,6 +6,7 @@ import { createQueryCache } from "../queryCache";
 import { displayQueries } from "../displayQueryCache";
 import { latencyHistoryQueryCache } from "../ruleLatencyQueryCache";
 import { latencyChartBucketSeconds } from "../../shared/latencyHistory";
+import { withSelfTestEvidence } from "../../shared/selfTestEvidence";
 import { latencyHistoryWindowInput, resolveLatencyHistoryWindow } from "../latencyHistoryWindow";
 import {
   createForwardGroupFromInput,
@@ -273,7 +274,8 @@ export const forwardGroupsRouter = router({
     .query(async ({ input, ctx }) => {
       const group = await assertForwardGroupAccess(input.groupId, ctx.user, { allowNull: true, silentUnauthorized: true });
       if (!group) return null;
-      return await db.getLatestForwardGroupTest(input.groupId, { includeActive: input.includeActive }) || null;
+      const latest = await db.getLatestForwardGroupTest(input.groupId, { includeActive: input.includeActive });
+      return latest ? withSelfTestEvidence(latest) : null;
     }),
 
   test: protectedProcedure
