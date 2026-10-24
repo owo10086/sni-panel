@@ -55,11 +55,15 @@ jobs:
           path: .release/verification-performance.tar.gz
           include-hidden-files: true
   mysql:
+    strategy:
+      fail-fast: false
+      matrix:
+        mysql: ["8.0.24", "8.0"]
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     services:
       mysql:
-        image: mysql:8.0
+        image: mysql:${{ matrix.mysql }}
         env:
           MYSQL_ROOT_PASSWORD: forwardx-ci-only
           MYSQL_ROOT_HOST: '%'
@@ -77,12 +81,12 @@ jobs:
         run: node scripts/verify.mjs mysql
       - name: Archive check evidence
         if: always()
-        run: mkdir -p .release/checks && tar -czf .release/verification-mysql.tar.gz .release/checks
+        run: mkdir -p .release/checks && tar -czf .release/verification-mysql-${{ matrix.mysql }}.tar.gz .release/checks
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: verification-mysql
-          path: .release/verification-mysql.tar.gz
+          name: verification-mysql-${{ matrix.mysql }}
+          path: .release/verification-mysql-${{ matrix.mysql }}.tar.gz
           include-hidden-files: true
   agent:
     runs-on: ubuntu-24.04

@@ -13,7 +13,7 @@ export const groups = {
   mysql: [['pnpm', 'test:database-upgrade']],
   agent: [['bash', 'scripts/release/verify-agent.sh']],
 };
-const scripts = ['ui', 'login-ui', 'startup', 'auth-captcha', 'billing-export', 'host-addresses', 'china-health', 'observability', 'support', 'affiliates', 'avatars', 'latency-history', 'agent-proxy', 'deployment-docs', 'google-auth', 'port-access-limits', 'plan-display', 'host-deletion', 'host-notifications', 'user-selection', 'operations', 'payments', 'list-settings', 'url-probe', 'motion', 'host-load', 'performance', 'plugin-bbr', 'rule-groups', 'server', 'ai', 'selftest-dispatch', 'sni-classification'];
+const scripts = ['ui', 'login-ui', 'startup', 'auth-captcha', 'billing-export', 'host-addresses', 'china-health', 'observability', 'support', 'affiliates', 'avatars', 'latency-history', 'agent-proxy', 'deployment-docs', 'google-auth', 'port-access-limits', 'plan-display', 'product-stock', 'host-deletion', 'host-notifications', 'user-selection', 'operations', 'payments', 'list-settings', 'url-probe', 'motion', 'host-load', 'performance', 'plugin-bbr', 'rule-groups', 'server', 'ai', 'selftest-dispatch', 'sni-classification'];
 groups.functional = scripts.flatMap(name => name === 'server' ? [['pnpm', 'pretest:server'], ['pnpm', 'test:server']] : [['pnpm', `test:${name}`]]);
 // These two shell integration checks otherwise report SKIP when jq is absent.
 groups.functional.unshift(['bash', '-c', 'command -v jq >/dev/null || { echo "Functional checks require jq; install jq before continuing" >&2; exit 1; }']);
