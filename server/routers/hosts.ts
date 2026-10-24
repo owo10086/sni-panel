@@ -16,6 +16,7 @@ import { refreshHostAddressRuntime } from "../hostAddressRuntime";
 import { scheduleHostDdnsUpdate } from "../hostDdns";
 import { clearTunnelRuntimeStatusForHost } from "../tunnelRuntimeStatus";
 import { createQueryCache } from "../queryCache";
+import { displayQueries } from "../displayQueryCache";
 import { latencyHistoryQueryCache } from "../ruleLatencyQueryCache";
 import { latencyHistoryWindowInput, resolveLatencyHistoryWindow } from "../latencyHistoryWindow";
 import { getHostAvailability } from "../repositories/hostAvailabilityRepository";
@@ -620,8 +621,8 @@ export const hostsRouter = router({
         for (const hostId of newlyWatched) pushAgentRefresh(hostId, "public-metrics-watch");
         const visibleHostIds = new Set(hostIds);
         const [metricRows, trafficRows] = await Promise.all([
-          db.getLatestHostMetricRows(hostIds),
-          db.getHostTrafficSummary(hostIds),
+          displayQueries.metrics("hosts.metrics", hostIds, () => db.getLatestHostMetricRows(hostIds)),
+          displayQueries.metrics("hosts.traffic", hostIds, () => db.getHostTrafficSummary(hostIds)),
         ]);
         const groups = ((await db.getHostGroups()) as any[])
           .filter((group) => !!group?.isEnabled)
@@ -671,8 +672,8 @@ export const hostsRouter = router({
         if (!rawHost) throw new TRPCError({ code: "NOT_FOUND", message: "主机不存在" });
         const host = compactPublicMonitorHost(rawHost);
         const [metricRows, trafficRows, allServices] = await Promise.all([
-          db.getLatestHostMetricRows([host.id]),
-          db.getHostTrafficSummary([host.id]),
+          displayQueries.metrics("hosts.metrics", [host.id], () => db.getLatestHostMetricRows([host.id])),
+          displayQueries.metrics("hosts.traffic", [host.id], () => db.getHostTrafficSummary([host.id])),
           db.getHostProbeServices(),
         ]);
         const services = (allServices as any[])
@@ -739,12 +740,10 @@ export const hostsRouter = router({
           scheduleOrphanedAgentHostCleanup();
         }
         const scope = await visibleHostQueryScope(ctx.user);
+        const pageQuery = { ...input, ...scope, orderByGroups: ctx.user.role === "admin" };
         const [pageData, groups] = await Promise.all([
-          db.getHostsPage({
-            ...input,
-            ...scope,
-            orderByGroups: ctx.user.role === "admin",
-          }),
+          displayQueries.get(ctx.user, "hosts.page", pageQuery,
+            () => db.getHostsPage(pageQuery), { ttlMs: 2000, staleMs: 0 }),
           ctx.user.role === "admin" ? db.getHostGroups() : Promise.resolve([]),
         ]);
         const items = await clearCompletedHostAgentUpgradeRequests(pageData.items as any[]);
@@ -841,7 +840,9 @@ export const hostsRouter = router({
       const requestedIds = Array.from(new Set((input?.hostIds || []).map(Number).filter((id) => id > 0)));
       if (requestedIds.length === 0) return [];
       const scope = await visibleHostQueryScope(ctx.user);
-      const hosts = await db.getHostStatusRows({ ...scope, hostIds: requestedIds });
+      const query = { ...scope, hostIds: requestedIds.sort((a, b) => a - b) };
+      const hosts = await displayQueries.get(ctx.user, "hosts.status", query,
+        () => db.getHostStatusRows(query));
       return hosts
         .map(compactHostStatus)
         .filter((host: ReturnType<typeof compactHostStatus>) => host.id > 0);
@@ -851,11 +852,9 @@ export const hostsRouter = router({
         search: z.string().trim().max(200).optional().default(""),
         groupId: z.number().int().positive().nullable().optional(),
       }).optional())
-      .query(async ({ input, ctx }) => hostQueryCache.get(
-      `summary:${ctx.user.id}:${input?.groupId || "all"}:${input?.search || ""}`,
-      { ttlMs: 2_000, staleMs: 10_000 },
-      async () => {
+      .query(async ({ input, ctx }) => {
         const scope = await visibleHostQueryScope(ctx.user);
+        return displayQueries.get(ctx.user, "hosts.summary", { ...input, ...scope }, async () => {
         const summaryScope = await db.getHostSummaryScope({
           ...scope,
           search: input?.search || "",
@@ -884,8 +883,8 @@ export const hostsRouter = router({
           totalTrafficOut,
           totalTraffic: totalTrafficIn + totalTrafficOut,
         };
-      },
-    )),
+        });
+      }),
     probeServices: protectedProcedure.query(async ({ ctx }) => {
       const isAdmin = ctx.user.role === "admin";
       const services = await db.getHostProbeServices(isAdmin ? undefined : ctx.user.id);
@@ -1388,7 +1387,7 @@ export const hostsRouter = router({
           .filter((id) => Number.isInteger(id) && id > 0)));
         if (hostIds.length === 0) return [];
         for (const hostId of hostIds) await requireHostAccess(ctx, hostId);
-        const rows = await db.getLatestHostMetricRows(hostIds);
+        const rows = await displayQueries.metrics("hosts.metrics", hostIds, () => db.getLatestHostMetricRows(hostIds));
         return (rows as any[]).map(compactHostMetricSummary).filter((row) => row.hostId > 0);
       }),
     traffic: protectedProcedure
@@ -1406,10 +1405,10 @@ export const hostsRouter = router({
         if (ctx.user.role !== "admin" && hostIds.length === 0) return [];
         if (ctx.user.role !== "admin" || hostIds.length > 0) {
           for (const hostId of hostIds) await requireHostAccess(ctx, hostId);
-          const rows = await db.getHostTrafficSummary(hostIds);
+          const rows = await displayQueries.metrics("hosts.traffic", hostIds, () => db.getHostTrafficSummary(hostIds));
           return (rows as any[]).map(compactHostTrafficSummary).filter((row) => row.hostId > 0);
         }
-        const rows = await db.getHostTrafficSummary();
+        const rows = await displayQueries.metrics("hosts.traffic", undefined, () => db.getHostTrafficSummary());
         return (rows as any[]).map(compactHostTrafficSummary).filter((row) => row.hostId > 0);
       }),
     resetTraffic: adminProcedure
