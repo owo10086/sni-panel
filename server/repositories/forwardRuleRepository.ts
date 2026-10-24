@@ -1324,7 +1324,9 @@ export async function updateForwardRule(id: number, input: Partial<InsertForward
   if (!db) return;
   const { personalGroupIds, ...data } = input;
   const audit = shouldAuditConfigPatch(data as any);
-  const before = audit ? await getForwardRuleById(id).catch(() => undefined) : undefined;
+  const changesDisplay = audit || ["isRunning", "isEnabled", "runtimeDiagnostic", "protocolBlockReason", "ruleLimitReason", "disabledByUser", "disabledByGroup", "disabledByTunnel"]
+    .some(key => Object.hasOwn(data, key));
+  const before = changesDisplay ? await getForwardRuleById(id).catch(() => undefined) : undefined;
   const save = async () => (await getDb())!.update(forwardRules).set({ ...data, updatedAt: nowDate() }).where(eq(forwardRules.id, id));
   const stockKeys = ["userId", "hostId", "tunnelId", "forwardGroupId", "forwardGroupRuleId", "forwardGroupMemberId", "pendingDelete"] as const;
   const changesStock = stockKeys.some((key) => Object.hasOwn(data, key));
@@ -1348,11 +1350,11 @@ export async function updateForwardRule(id: number, input: Partial<InsertForward
       await replacePersonalRuleGroups(Number(owner.userId), id, personalGroupIds);
     }));
   } else await write();
-  if (audit && before) {
+  if (before) {
     const after = await getForwardRuleById(id).catch(() => undefined);
     await invalidateRuleDashboardSummaries(before);
     await invalidateRuleDashboardSummaries(after);
-    await recordConfigAuditEvent({ resourceType: "forward_rule", resourceId: id, hostId: Number((after as any)?.hostId || (before as any)?.hostId || 0), action: "update", before, after });
+    if (audit) await recordConfigAuditEvent({ resourceType: "forward_rule", resourceId: id, hostId: Number((after as any)?.hostId || (before as any)?.hostId || 0), action: "update", before, after });
   }
 }
 
@@ -1599,6 +1601,7 @@ export async function toggleForwardRule(id: number, isEnabled: boolean) {
     ...(isEnabled ? { isRunning: false, protocolBlockReason: null } : {}),
     updatedAt: nowDate(),
   } as any).where(eq(forwardRules.id, id));
+  await invalidateRuleDashboardSummaries(before);
   if (before) {
     const after = await getForwardRuleById(id).catch(() => undefined);
     await recordConfigAuditEvent({ resourceType: "forward_rule", resourceId: id, hostId: Number((after as any)?.hostId || (before as any).hostId || 0), action: "update", before, after });
@@ -1614,6 +1617,9 @@ export async function updateRuleRunningStatus(id: number, isRunning: boolean, ru
     return;
   }
   await db.update(forwardRules).set({ isRunning, ...(runtimeDiagnostic !== undefined ? {runtimeDiagnostic} : {}), updatedAt: nowDate() }).where(eq(forwardRules.id, id));
+  if (rule && (!!rule.isRunning !== isRunning || (runtimeDiagnostic !== undefined && rule.runtimeDiagnostic !== runtimeDiagnostic))) {
+    await invalidateRuleDashboardSummaries(rule);
+  }
 }
 
 export async function markForwardRulesNotRunning(ids: number[]) {
@@ -1623,7 +1629,9 @@ export async function markForwardRulesNotRunning(ids: number[]) {
     .map((id) => Number(id))
     .filter((id) => Number.isInteger(id) && id > 0)));
   if (ruleIds.length === 0) return 0;
+  const changed = await db.select().from(forwardRules).where(and(inArray(forwardRules.id, ruleIds), eq(forwardRules.isRunning, true)));
   await db.update(forwardRules).set({ isRunning: false, updatedAt: nowDate() }).where(inArray(forwardRules.id, ruleIds));
+  for (const rule of changed) await invalidateRuleDashboardSummaries(rule);
   return ruleIds.length;
 }
 
@@ -1634,16 +1642,19 @@ export async function markForwardRulesRunning(ids: number[]) {
     .map((id) => Number(id))
     .filter((id) => Number.isInteger(id) && id > 0)));
   if (ruleIds.length === 0) return 0;
+  const changed = await db.select().from(forwardRules).where(and(inArray(forwardRules.id, ruleIds), eq(forwardRules.isRunning, false), eq(forwardRules.pendingDelete, false)));
   await db.update(forwardRules).set({ isRunning: true, updatedAt: nowDate() }).where(and(
     inArray(forwardRules.id, ruleIds),
     eq(forwardRules.pendingDelete, false),
   ));
+  for (const rule of changed) await invalidateRuleDashboardSummaries(rule);
   return ruleIds.length;
 }
 
 export async function disableForwardRuleByProtocolBlock(id: number, reason: string) {
   const db = await getDb();
   if (!db) return;
+  const before = await getForwardRuleById(id);
   const message = String(reason || "Protocol blocked").slice(0, 300);
   await db.update(forwardRules).set({
     isEnabled: false,
@@ -1651,6 +1662,7 @@ export async function disableForwardRuleByProtocolBlock(id: number, reason: stri
     protocolBlockReason: message,
     updatedAt: nowDate(),
   } as any).where(eq(forwardRules.id, id));
+  await invalidateRuleDashboardSummaries(before);
 }
 
 export async function disableForwardRulesOutsideHostPortRange(
@@ -1680,5 +1692,6 @@ export async function disableForwardRulesOutsideHostPortRange(
      WHERE ${quoteIdentifier("id")} IN ${inList(ids).sql}`,
     [boolValue(false), boolValue(false), message, now, ...ids],
   );
+  for (const rule of affected) await invalidateRuleDashboardSummaries(rule);
   return affected.length;
 }

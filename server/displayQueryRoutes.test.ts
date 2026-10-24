@@ -3,6 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
+import express from "express";
 
 test("cached display routes keep ownership, live permission checks and write invalidation", async () => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), "forwardx-display-cache-"));
@@ -12,6 +13,7 @@ test("cached display routes keep ownership, live permission checks and write inv
   process.env.JWT_SECRET = "display-cache-isolated-test-secret-never-used-for-login";
   process.env.FORWARDX_LOG_DIR = path.join(directory, "logs");
   const runtime = await import("./dbRuntime");
+  let statusServer: import("node:http").Server | undefined;
   try {
     await runtime.connectDatabase({ type: "sqlite", sqlite: { path: process.env.SQLITE_PATH } });
     await (await import("./dbSchema")).ensureDatabaseSchema();
@@ -59,10 +61,34 @@ test("cached display routes keep ownership, live permission checks and write inv
     assert.equal((await a.rules.listPage(query)).items[0].resourceAccessAllowed, false);
     await (await import("./repositories/forwardRuleRepository")).updateForwardRule(1, { name: "Background update" });
     assert.equal((await a.rules.listPage(query)).items[0].name, "Background update", "repository writes outside HTTP must invalidate display results");
+    const ruleRepository = await import("./repositories/forwardRuleRepository");
+    await ruleRepository.updateForwardRule(1, { protocol: "tcp", isEnabled: true, isRunning: true });
+    assert.equal((await a.rules.listPage(query)).items[0].isRunning, true);
+    await runtime.executeRaw("UPDATE hosts SET agentToken = 'display-cache-test-agent' WHERE id = 1");
+    const statusApp = express();
+    statusApp.use(express.json());
+    statusApp.use((req, _res, next) => { (req as any).agentToken = "display-cache-test-agent"; next(); });
+    (await import("./agentStatusRoutes")).registerAgentStatusRoutes(statusApp);
+    statusServer = await new Promise<import("node:http").Server>((resolve) => {
+      const server = statusApp.listen(0, "127.0.0.1", () => resolve(server));
+    });
+    const address = statusServer.address() as import("node:net").AddressInfo;
+    const report = await fetch(`http://127.0.0.1:${address.port}/api/agent/rule-status`, {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ ruleId: 1, sourcePort: 10001, protocol: "tcp", targetPort: 443, isRunning: false, message: "runtime process exited" }),
+    });
+    assert.equal(report.status, 200);
+    assert.deepEqual(await report.json(), { success: true });
+    assert.equal((await a.rules.listPage(query)).items[0].isRunning, false, "accepted Agent failures must immediately replace cached running state");
+    await ruleRepository.markForwardRulesRunning([1]);
+    assert.equal((await a.rules.listPage(query)).items[0].isRunning, true);
+    await ruleRepository.markForwardRulesNotRunning([1]);
+    assert.equal((await a.rules.listPage(query)).items[0].isRunning, false);
     assert.ok(displayQueries.stats().entries > 0);
     await runtime.closeDatabase();
     assert.equal(displayQueries.stats().entries, 0, "DB switching cannot reuse numeric IDs from the old DB");
   } finally {
+    if (statusServer) await new Promise<void>((resolve, reject) => statusServer!.close(error => error ? reject(error) : resolve()));
     await runtime.closeDatabase();
     fs.rmSync(directory, { recursive: true, force: true });
   }
