@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { randomBytes } from "node:crypto";
 import test from "node:test";
-import mysql from "mysql2/promise";
+import mysql, { type RowDataPacket } from "mysql2/promise";
+import { MYSQL_COMPATIBILITY_FLAGS } from "./mysqlCompatibility";
 
 // Opt-in only. Never migrate or clear the database named in the supplied URL:
 // all work happens in a unique test database created and dropped by this test.
@@ -22,9 +23,27 @@ test("real MySQL upgrades legacy fields without altering business data and clean
   try {
     await admin.query(`CREATE DATABASE \`${database}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
     created = true;
+    await runtime.testMysqlConnection({ ...connection, database });
     await runtime.connectDatabase({ type: "mysql", mysql: { ...connection, database } });
     const pool = runtime.getPool()!;
+    // Exercise the binary prepared protocol before schema initialization. A
+    // text-protocol SELECT/ping alone misses the MySQL 8.0.24 cursor-flag bug.
+    const probes = await Promise.all([pool.getConnection(), pool.getConnection()]);
+    try {
+      for (const probe of probes) {
+        for (const value of ["sidebarMenu", "中文 ' ? \\ ; --", ""]) {
+          const [rows] = await probe.execute<RowDataPacket[]>({ sql: "SELECT ? AS value", timeout: 5000 }, [value]);
+          assert.equal(rows[0].value, value, "prepared parameters must remain bound and round-trip unchanged");
+        }
+      }
+    } finally {
+      for (const probe of probes) probe.destroy();
+    }
     await ensureDatabaseSchema(pool);
+    const [empty] = await pool.execute<RowDataPacket[]>({
+      sql: "SELECT value FROM system_settings WHERE `key` = ?", timeout: 5000,
+    }, ["forwardx-test-missing-setting"]);
+    assert.equal(empty.length, 0, "empty prepared results must also complete");
     await pool.query("INSERT INTO users (id, username, password, role, balanceCents) VALUES (1, 'upgrade-admin', 'test-hash', 'admin', 12345)");
     await pool.query("INSERT INTO hosts (id, name, ip, userId) VALUES (1, 'existing-host', '192.0.2.10', 1)");
     await pool.query("INSERT INTO forward_rules (id, name, hostId, userId, sourcePort, targetIp, targetPort, forwardType) VALUES (1, 'existing-gost-rule', 1, 1, 10000, '198.51.100.10', 25565, 'gost')");
@@ -274,6 +293,71 @@ test("real MySQL personal-group transactions recover from cross-owner empty-rang
     assert.equal(committedAttempts, 1, "a post-commit failure must never rerun committed writes");
     const [committedHost] = await runtime.queryRaw<{ sortOrder: number }>("SELECT sortOrder FROM hosts WHERE id = 1");
     assert.equal(Number(committedHost.sortOrder), 3);
+  } finally {
+    await runtime.closeDatabase();
+    if (created) await admin.query(`DROP DATABASE \`${database}\``);
+    await admin.end();
+  }
+});
+
+test("real MySQL inventory enforces current capacity after stale snapshots and serializes competing buyers", {
+  skip: !process.env.FORWARDX_TEST_MYSQL_URL, timeout: 120_000,
+}, async () => {
+  const url = new URL(process.env.FORWARDX_TEST_MYSQL_URL!);
+  const database = `forwardx_stock_test_${randomBytes(8).toString("hex")}`;
+  const connection = { host: url.hostname, port: Number(url.port || 3306), user: decodeURIComponent(url.username), password: decodeURIComponent(url.password), flags: MYSQL_COMPATIBILITY_FLAGS };
+  const admin = await mysql.createConnection(connection);
+  process.env.DATABASE_TYPE = "mysql";
+  const runtime = await import("./dbRuntime");
+  const billing = await import("./repositories/billingRepository");
+  const rules = await import("./repositories/forwardRuleRepository");
+  const stock = await import("./repositories/productStockRepository");
+  let created = false;
+  try {
+    await admin.query(`CREATE DATABASE \`${database}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
+    created = true;
+    await runtime.connectDatabase({ type: "mysql", mysql: { ...connection, database } });
+    await (await import("./dbSchema")).ensureDatabaseSchema(runtime.getPool()!);
+    const actors = await Promise.all([runtime.getPool()!.getConnection(), runtime.getPool()!.getConnection()]);
+    try { await Promise.all(actors.map(actor => actor.query("SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ"))); }
+    finally { actors.forEach(actor => actor.release()); }
+    for (const id of [1, 2]) await runtime.insertAndGetId("users", { id, username: `stock-${id}`, password: "fixture", balanceCents: 1000 });
+    await runtime.insertAndGetId("hosts", { id: 1, name: "stock-host", ip: "192.0.2.1", userId: 1 });
+    await (await import("./repositories/settingsRepository")).setSetting("trafficBillingEnabled", "true");
+    const configId = await runtime.insertAndGetId("traffic_billing_configs", { resourceType: "host", resourceId: 1, enabled: true, stockLimit: 1, maxRulesPerUser: 2 });
+    const createRule = (userId: number, port: number) => rules.createForwardRule({ hostId: 1, userId, name: "stock", forwardType: "realm", protocol: "tcp", sourcePort: port, targetIp: "198.51.100.1", targetPort: 443, isEnabled: false });
+    const compete = async (userIds: number[]) => {
+      let readers = 0;
+      let release!: () => void;
+      const ready = new Promise<void>(resolve => { release = resolve; });
+      return Promise.allSettled(userIds.map((userId, index) => runtime.withDatabaseTransaction(async () => {
+        // Both actors establish RR snapshots before either product lock is held.
+        await runtime.queryRaw("SELECT id FROM forward_rules");
+        if (++readers === userIds.length) release();
+        await ready;
+        return createRule(userId, 20000 + index);
+      })));
+    };
+    const buyers = await compete([1, 2]);
+    assert.equal(buyers.filter(result => result.status === "fulfilled").length, 1);
+    const rejected = buyers.find(result => result.status === "rejected");
+    assert.match(String(rejected?.reason), /库存/);
+    assert.equal((await stock.getTrafficStockUsage()).get(configId), 1);
+    const winner = buyers.find(result => result.status === "fulfilled")!;
+    const owner = Number((await rules.getForwardRuleById(winner.value))!.userId);
+    await runtime.executeRaw("UPDATE traffic_billing_configs SET stockLimit = 0 WHERE id = ?", [configId]);
+    const sameOwner = await compete([owner, owner]);
+    assert.equal(sameOwner.filter(result => result.status === "fulfilled").length, 1);
+    assert.match(String(sameOwner.find(result => result.status === "rejected")?.reason), /单用户规则上限/);
+    assert.equal((await stock.getTrafficRuleUsageForUser(owner)).get(configId), 2);
+    const planId = await runtime.insertAndGetId("subscription_plans", { name: "limited", stockLimit: 1 });
+    const orders = await Promise.allSettled([1, 2].map(userId => billing.createPaymentOrder({ outTradeNo: `stock-${userId}`, userId, provider: "stripe", paymentType: "stripe", subject: "stock", amountCents: 100, planId, orderType: "plan" })));
+    assert.equal(orders.filter(result => result.status === "fulfilled").length, 1);
+    assert.match(String(orders.find(result => result.status === "rejected")?.reason), /库存/);
+    assert.equal(Number((await billing.getSubscriptionPlanById(planId))!.stockUsed), 1);
+    const pending = orders.find(result => result.status === "fulfilled")!.value!;
+    await Promise.all([billing.updatePaymentOrder(pending.outTradeNo, { status: "cancelled" }), billing.updatePaymentOrder(pending.outTradeNo, { status: "expired" })]);
+    assert.equal(Number((await billing.getSubscriptionPlanById(planId))!.stockUsed), 0);
   } finally {
     await runtime.closeDatabase();
     if (created) await admin.query(`DROP DATABASE \`${database}\``);

@@ -145,6 +145,34 @@ test("editing shared SNI entry ports within the owner quota preserves both logic
   `);
 });
 
+test("metered SNI inventory counts domain roots while sharing one owner port", () => {
+  verifyRules(String.raw`
+    await (await import("./server/repositories/settingsRepository.ts")).setSetting("trafficBillingEnabled", "true");
+    await runtime.executeRaw('UPDATE users SET maxRules=3, manualMaxRules=3, maxPorts=1, manualMaxPorts=1, balanceCents=1000 WHERE id IN (2,3)');
+    await insert("user_forward_group_permissions", ["userId", "forwardGroupId"], [3,10]);
+    await insert("traffic_billing_configs", ["id", "resourceType", "resourceId", "enabled", "stockLimit", "maxRulesPerUser"], [1,"forward_group",10,1,1,2]);
+    const stock = await import("./server/repositories/productStockRepository.ts");
+    const first = await admin.create(input({ userId: 2 }));
+    const second = await admin.create(input({ userId: 2, sni: "web.example.com" }));
+    assert.equal((await stock.getTrafficStockUsage()).get(1), 1);
+    assert.equal((await stock.getTrafficRuleUsageForUser(2)).get(1), 2, "member copies do not consume logical rule capacity");
+    assert.equal((await owner.listPage({ category: "sni", page: 1, pageSize: 10 })).items.length, 2);
+    await assert.rejects(() => admin.create(input({ userId: 2, sni: "third.example.com" })), /单用户规则上限/);
+    await admin.toggle({ id: Number(first.id), isEnabled: false });
+    assert.equal((await stock.getTrafficStockUsage()).get(1), 1, "disabled domains still reserve inventory");
+    await assert.rejects(() => admin.create(input({ userId: 3, sni: "other.example.com", sourcePort: 18444 })), /库存/);
+    await runtime.executeRaw('UPDATE traffic_billing_configs SET maxRulesPerUser=0 WHERE id=1');
+    await runtime.executeRaw('UPDATE users SET maxRules=2, manualMaxRules=2 WHERE id=2');
+    await assert.rejects(() => admin.create(input({ userId: 2, sni: "quota.example.com" })), /最大规则数量/);
+    await runtime.executeRaw('UPDATE users SET maxRules=3, manualMaxRules=3 WHERE id=2');
+    await assert.rejects(() => admin.create(input({ userId: 2, sni: "port.example.com", sourcePort: 18444 })), /最大端口数量/);
+    await admin.deleteBatch({ ids: [Number(first.id), Number(second.id)] });
+    assert.equal((await stock.getTrafficStockUsage()).get(1), undefined);
+    await admin.create(input({ userId: 3, sni: "new-owner.example.com", sourcePort: 18444 }));
+    assert.equal((await stock.getTrafficStockUsage()).get(1), 1);
+  `);
+});
+
 test("clearing SNI expiry cannot allocate a stale tunnel exit over its shared splitter", () => {
   verifyRules(String.raw`
     await insert("tunnels", ["id","name","entryHostId","exitHostId","mode","listenPort","userId","isEnabled"], [30,"旧出口端口",1,2,"tls",21000,1,1]);

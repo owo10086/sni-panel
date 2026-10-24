@@ -12,6 +12,8 @@ import { recordConfigAuditEvent, shouldAuditConfigPatch } from "../configAudit";
 import { withKeyedTaskLock, withTrafficBillingUserLock } from "../keyedTaskLock";
 import { getForwardChainSniEntryRuleIds } from "./forwardChainSniEntryScope";
 import { dashboardSummaries } from "../backgroundSummaryCache";
+import { displayQueries } from "../displayQueryCache";
+import { assertRuleStock } from "./productStockRepository";
 import { replacePersonalRuleGroups, withPersonalRuleGroupLock } from "./ruleGroupRepository";
 
 async function invalidateRuleDashboardSummaries(rule: any) {
@@ -21,7 +23,11 @@ async function invalidateRuleDashboardSummaries(rule: any) {
     const parent = await getForwardRuleById(Number(rule.forwardGroupRuleId));
     if (parent?.isForwardGroupTemplate && parent.forwardGroupId === rule.forwardGroupId) ids.push(Number(parent.userId));
   }
-  await afterDatabaseCommit(() => dashboardSummaries.clear(ids.filter(id => id > 0)));
+  await afterDatabaseCommit(() => {
+    const userIds = ids.filter(id => id > 0);
+    dashboardSummaries.clear(userIds);
+    for (const id of userIds) displayQueries.invalidate({ id, role: "user" });
+  });
 }
 
 // ==================== Forward Rule Queries ====================
@@ -1214,13 +1220,14 @@ export async function createForwardRule(rule: InsertForwardRule & { personalGrou
   if (payload.sortOrder === undefined && !payload.forwardGroupRuleId && !payload.forwardGroupMemberId) {
     payload.sortOrder = await nextForwardRuleSortOrder(Number(payload.userId || 0), await forwardRuleCategoryForPayload(payload));
   }
+  const insert = async () => { await assertRuleStock(payload); return insertAndGetId("forward_rules", payload); };
   const id = personalGroupIds !== undefined && !payload.forwardGroupRuleId && !payload.forwardGroupMemberId
     ? await withPersonalRuleGroupLock(Number(payload.userId), () => withDatabaseTransaction(async () => {
-      const id = await insertAndGetId("forward_rules", payload);
+      const id = await insert();
       await replacePersonalRuleGroups(Number(payload.userId), id, personalGroupIds);
       return id;
     }))
-    : await insertAndGetId("forward_rules", payload);
+    : await withDatabaseTransaction(insert);
   const created = await getForwardRuleById(id).catch(() => undefined);
   await invalidateRuleDashboardSummaries(created);
   await recordConfigAuditEvent({ resourceType: "forward_rule", resourceId: id, hostId: Number((created as any)?.hostId || 0), action: "create", after: created });
@@ -1318,7 +1325,21 @@ export async function updateForwardRule(id: number, input: Partial<InsertForward
   const { personalGroupIds, ...data } = input;
   const audit = shouldAuditConfigPatch(data as any);
   const before = audit ? await getForwardRuleById(id).catch(() => undefined) : undefined;
-  const write = async () => (await getDb())!.update(forwardRules).set({ ...data, updatedAt: nowDate() }).where(eq(forwardRules.id, id));
+  const save = async () => (await getDb())!.update(forwardRules).set({ ...data, updatedAt: nowDate() }).where(eq(forwardRules.id, id));
+  const stockKeys = ["userId", "hostId", "tunnelId", "forwardGroupId", "forwardGroupRuleId", "forwardGroupMemberId", "pendingDelete"] as const;
+  const changesStock = stockKeys.some((key) => Object.hasOwn(data, key));
+  const write = async () => changesStock ? withDatabaseTransaction(async () => {
+    const expected = await getForwardRuleById(id);
+    if (!expected) return;
+    // Acquire product locks before rule locks, consistently with creates.
+    await assertRuleStock({ ...expected, ...data }, expected);
+    const q = quoteIdentifier;
+    const [current] = await queryRaw<any>(`SELECT * FROM ${q("forward_rules")} WHERE ${q("id")} = ?${getDatabaseKind() === "sqlite" ? "" : " FOR UPDATE"}`, [id]);
+    // A stale MySQL snapshot must not turn a concurrent resource move into
+    // an unchecked overwrite. No writes have happened yet; safely retry.
+    if (!current || stockKeys.some(key => Number(current[key] || 0) !== Number((expected as any)[key] || 0))) throw new Error("规则已变更，请刷新后重试");
+    return save();
+  }) : save();
   if (personalGroupIds !== undefined) {
     const owner = before || await getForwardRuleById(id);
     if (!owner) throw new Error("规则不存在");
