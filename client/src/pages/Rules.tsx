@@ -698,12 +698,10 @@ function RuleGroupItems({
   open,
   className,
   children,
-  layout,
 }: {
   open: boolean;
   className: string;
   children: ReactNode;
-  layout?: boolean;
 }) {
   const motionEnabled = useMotionEnabled();
   const [expanded, setExpanded] = useState(open);
@@ -724,9 +722,11 @@ function RuleGroupItems({
       inert={!open}
       className={`pearl-disclosure-grid grid transition-[grid-template-rows,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${open ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}
     >
-      <AutoAnimateContainer layout={layout} className={cn("min-h-0", open && (!motionEnabled || expanded) ? "overflow-visible" : "overflow-hidden", className)}>
+      {/* The disclosure already animates its height. Do not also scale/FLIP
+          the cards inside it: that gives grouped text a different rasterization. */}
+      <div className={cn("min-h-0", open && (!motionEnabled || expanded) ? "overflow-visible" : "overflow-hidden", className)}>
         {children}
-      </AutoAnimateContainer>
+      </div>
     </div>
   );
 }
@@ -7363,7 +7363,7 @@ function RulesContent() {
       )}
     >
       {renderSniRuleGroupHeader(group, false, sortable)}
-      <RuleGroupItems open={isSniRuleGroupOpen(group)} layout={false} className={sortableRuleCardGridClass}>
+      <RuleGroupItems open={isSniRuleGroupOpen(group)} className={sortableRuleCardGridClass}>
         {group.rules.map((rule: any) => renderRuleCard(rule))}
       </RuleGroupItems>
     </section>
@@ -7795,7 +7795,7 @@ function RulesContent() {
                     return (
                       <section key={group.type} className="space-y-2">
                         {renderRuleGroupHeader(group)}
-                        <RuleGroupItems open={!collapsed} layout={false} className={groupedRuleCardGridClass}>
+                        <RuleGroupItems open={!collapsed} className={groupedRuleCardGridClass}>
                           {group.items.map((item) => renderRuleCardItem(item))}
                         </RuleGroupItems>
                       </section>
@@ -7820,7 +7820,7 @@ function RulesContent() {
                       return (
                         <section key={group.type} className="space-y-2">
                           {renderRuleGroupHeader(group)}
-                          <RuleGroupItems open={!collapsed} layout={false} className={groupedRuleMobileGridClass}>
+                          <RuleGroupItems open={!collapsed} className={groupedRuleMobileGridClass}>
                             {group.items.map((item) => renderRuleCardItem(item))}
                           </RuleGroupItems>
                         </section>
