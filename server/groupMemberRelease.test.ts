@@ -1190,6 +1190,41 @@ test('entry toggle follows existing SNI group then tunnel save order', () => {
 });
 
 
+for (const sni of [false, true]) {
+  test("unchanged stopped chain children still request Agent reconciliation, SNI=" + sni, () => {
+    runGroupMemberReleaseCase(`
+      await seedEntryChain(${sni});
+      const rules=await import('./server/repositories/forwardRuleRepository.ts');
+      const children=(await rules.getForwardGroupChildRules(40)).filter(rule=>!rule.pendingDelete);
+      assert.ok(children.length>0);
+      assert.ok(children.every(rule=>!rule.isRunning));
+      await rules.updateRuleRunningStatus(Number(children[0].id),false,'injected-listener-failure');
+      const frames=captureAgentFrames([1,2,4,5]);
+      const beforeFrames=new Map(frames().map(([id,values])=>[id,values.length]));
+      const actualNow=Date.now;
+      Date.now=()=>actualNow()+5000;
+      try {
+        await links.syncForwardGroupRules(40,{preserveRuntime:true});
+        assert.ok((await rules.getForwardGroupChildRules(40)).filter(rule=>!rule.pendingDelete).every(rule=>!rule.isRunning),
+          'an unchanged save does not acknowledge running or a complete SNI configuration');
+        assert.ok(frames().every(([id,values])=>values.length>beforeFrames.get(id)),
+          'unchanged stopped children still refresh every configured Agent');
+        assert.equal((await rules.getForwardRuleById(Number(children[0].id))).runtimeDiagnostic,'injected-listener-failure',
+          'requesting reconciliation does not clear an unconfirmed runtime failure');
+        await rules.updateForwardRule(400,{targetPort:9443});
+        await links.syncForwardGroupRules(40,{preserveRuntime:true});
+        const exit=(await rules.getForwardGroupChildRules(40)).find(rule=>!rule.pendingDelete&&Number(rule.hostId)===2);
+        assert.equal(Number(exit.targetPort),9443,'a real configuration change still reaches the last chain child');
+        assert.equal(Boolean(exit.isRunning),false);
+        await rules.updateRuleRunningStatus(Number(exit.id),true);
+        await links.syncForwardGroupRules(40,{preserveRuntime:false});
+        assert.equal(Boolean((await rules.getForwardRuleById(Number(exit.id))).isRunning),false,
+          'an explicit runtime reset still marks the running child unconfirmed');
+      } finally { Date.now=actualNow; }
+    `);
+  });
+}
+
 test("chain sync leaves settled retirees intact while old hosts retry and acknowledge stopping", () => {
   runGroupMemberReleaseCase(`
     await seedEntryChain();

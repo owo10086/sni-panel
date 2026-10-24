@@ -3497,7 +3497,11 @@ async function ensureChainRuleForTemplate(
       await syncPreservedChildRuleMetadata(existing, payload);
       return Number(existing.id);
     }
-    await updateForwardRule(Number(existing.id), payload);
+    // Stopped children still need the refresh below. Avoid rewriting unchanged
+    // siblings, which otherwise repeats audit/cache reads for every saved root.
+    if (Object.entries(payload).some(([key, value]) => existing[key] !== value)) {
+      await updateForwardRule(Number(existing.id), payload);
+    }
     if (!options.deferRefresh) {
       await refreshRuleEndpoints({ ...existing, ...payload, id: existing.id }, "forward-chain-child-updated");
     }
