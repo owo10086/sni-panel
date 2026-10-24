@@ -250,6 +250,25 @@ test("ownership changes and soft-delete recovery also enforce user capacity", as
   await assert.rejects(() => rules.updateForwardRule(second, { pendingDelete: false }), /单用户规则上限/);
 });
 
+test("managed updates do not occupy stock and conversion back to a root rechecks capacity", async () => {
+  const configId = await config("host", 1, 1, 1);
+  const root = await rule();
+  const child = await rule({ forwardGroupRuleId: root, forwardGroupMemberId: 1 });
+  await rules.updateForwardRule(child, { userId: 3, forwardGroupRuleId: root, hostId: 1, targetPort: 81 });
+  assert.equal((await stock.getTrafficStockUsage()).get(configId), 1);
+  assert.equal((await stock.getTrafficRuleUsageForUser(3)).get(configId), undefined);
+  await assert.rejects(() => rules.updateForwardRule(child, { forwardGroupRuleId: null, forwardGroupMemberId: null }), /库存/);
+  await assert.rejects(() => rules.updateForwardRule(child, { userId: 2, forwardGroupRuleId: null, forwardGroupMemberId: null }), /单用户规则上限/);
+  assert.equal((await rules.getForwardRuleById(child))?.userId, 3, "failed conversion rolls back ownership too");
+  await rules.deleteForwardRule(root);
+  await rules.updateForwardRule(child, { forwardGroupRuleId: null, forwardGroupMemberId: null });
+  assert.equal((await stock.getTrafficRuleUsageForUser(3)).get(configId), 1);
+  await rules.updateForwardRule(child, { forwardGroupMemberId: 1 });
+  assert.equal((await stock.getTrafficStockUsage()).get(configId), undefined, "becoming a managed child releases its logical slot");
+  await rules.updateForwardRule(child, { forwardGroupMemberId: null });
+  assert.equal((await stock.getTrafficStockUsage()).get(configId), 1);
+});
+
 test("group > tunnel > host stock precedence matches billing and only counts the logical root", async () => {
   const host = await config();
   const tunnel = await config("tunnel", 1);

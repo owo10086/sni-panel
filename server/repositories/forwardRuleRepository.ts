@@ -1329,7 +1329,11 @@ export async function updateForwardRule(id: number, input: Partial<InsertForward
   const before = changesDisplay ? await getForwardRuleById(id).catch(() => undefined) : undefined;
   const save = async () => (await getDb())!.update(forwardRules).set({ ...data, updatedAt: nowDate() }).where(eq(forwardRules.id, id));
   const stockKeys = ["userId", "hostId", "tunnelId", "forwardGroupId", "forwardGroupRuleId", "forwardGroupMemberId", "pendingDelete"] as const;
-  const changesStock = stockKeys.some((key) => Object.hasOwn(data, key));
+  // The patch itself must guarantee a non-root result. An earlier read of a
+  // child is insufficient because a concurrent save could convert it to a root.
+  const explicitlyManaged = [data.forwardGroupRuleId, data.forwardGroupMemberId]
+    .some(value => Number.isSafeInteger(value) && Number(value) > 0);
+  const changesStock = !explicitlyManaged && stockKeys.some((key) => Object.hasOwn(data, key));
   const write = async () => changesStock ? withDatabaseTransaction(async () => {
     const expected = await getForwardRuleById(id);
     if (!expected) return;
