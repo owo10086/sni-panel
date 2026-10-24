@@ -3,7 +3,6 @@ package main
 import (
 	"errors"
 	"fmt"
-	"strconv"
 	"strings"
 	"testing"
 )
@@ -35,8 +34,11 @@ func nftTableFor(ruleID int, sourcePort int, protocols ...string) string {
 	return out.String()
 }
 
+// First eight hex digits of sha1("203.0.113.10:443"), computed independently of the code under test.
+const labTargetDigest = "3b5b6cf2"
+
 func dockerAllowance(ruleID int, sourcePort int, proto string, direction string) string {
-	comment := fmt.Sprintf("fwx-docker-%d-%d-%s-%s", ruleID, sourcePort, proto, direction)
+	comment := fmt.Sprintf("fwx-docker-%d-%d-%s-%s-%s", ruleID, sourcePort, proto, direction, labTargetDigest)
 	if direction == "in" {
 		return fmt.Sprintf("-A DOCKER-USER -d %s/32 -p %s -m %s --dport 443 -m conntrack --ctorigdstport %d -m comment --comment %s -j ACCEPT", labTarget, proto, proto, sourcePort, comment)
 	}
@@ -363,10 +365,13 @@ func TestNftReadinessNeedsLeftoversOfRetiredStateGone(t *testing.T) {
 	})
 }
 
-// statefulFront is an ordered DOCKER-USER chain that honours -S and -D <position>.
+// statefulFront is an ordered DOCKER-USER chain that honours -S and the
+// specification-based deletions fed to <front>-restore.
 type statefulFront struct {
 	rules      []string
 	failDelete bool
+	listErr    error
+	restores   int
 }
 
 func (f *statefulFront) snapshot() *kernelForwardSnapshot {
@@ -375,18 +380,32 @@ func (f *statefulFront) snapshot() *kernelForwardSnapshot {
 		readFile:   func(string) ([]byte, error) { return nil, errors.New("absent") },
 		hasCommand: func(name string) bool { return name == "iptables-nft" },
 		runIptables: func(binary string, args ...string) ([]byte, error) {
-			switch strings.Join(args[:len(args)-1], " ") {
-			case "-w 5 -S":
-				return []byte("-N DOCKER-USER\n" + strings.Join(f.rules, "\n") + "\n"), nil
-			case "-w 5 -D DOCKER-USER":
-				if f.failDelete {
-					return nil, errors.New("denied")
+			if strings.Join(args, " ") == "-w 5 -S DOCKER-USER" {
+				if f.listErr != nil {
+					return nil, f.listErr
 				}
-				position, _ := strconv.Atoi(args[len(args)-1])
-				f.rules = append(append([]string{}, f.rules[:position-1]...), f.rules[position:]...)
-				return nil, nil
+				return []byte("-N DOCKER-USER\n" + strings.Join(f.rules, "\n") + "\n"), nil
 			}
 			return nil, errors.New("unexpected iptables call")
+		},
+		runRestore: func(binary string, input string) error {
+			f.restores++
+			if f.failDelete {
+				return errors.New("denied")
+			}
+			for _, line := range strings.Split(input, "\n") {
+				if !strings.HasPrefix(line, "-D "+dockerCompatChain+" ") {
+					continue
+				}
+				wanted := "-A " + strings.TrimPrefix(line, "-D ")
+				for index, rule := range f.rules {
+					if rule == wanted {
+						f.rules = append(append([]string{}, f.rules[:index]...), f.rules[index+1:]...)
+						break
+					}
+				}
+			}
+			return nil
 		},
 	}
 	return s
@@ -466,5 +485,66 @@ func TestRemovalIsNotDoneWhileAnAllowanceRemains(t *testing.T) {
 	clean := dockerHost(allAllowances(43, 22023, "tcp")...).snapshot("")
 	if clean.nftForwardRuleResiduePresent(42, 22022, "tcp") {
 		t.Fatal("another rule's allowance is not this rule's residue")
+	}
+}
+
+func TestForwardAcceptNeedsTheExactPort(t *testing.T) {
+	table := nftTableFor(42, 22022, "tcp")
+	// Only a neighbouring rule's accepts for port 4430 remain; rule 42 forwards to 443.
+	neighbour := strings.NewReplacer("dport 443 ", "dport 4430 ", "sport 443 ", "sport 4430 ").Replace(table)
+	if nftForwardAcceptPresent(neighbour, "daddr", "dport", "tcp", labTarget, 443) {
+		t.Fatal("dport 4430 was taken for dport 443")
+	}
+	if nftForwardAcceptPresent(neighbour, "saddr", "sport", "tcp", labTarget, 443) {
+		t.Fatal("sport 4430 was taken for sport 443")
+	}
+	if !nftForwardAcceptPresent(table, "daddr", "dport", "tcp", labTarget, 443) || !nftForwardAcceptPresent(table, "saddr", "sport", "tcp", labTarget, 443) {
+		t.Fatal("the real accepts must be found")
+	}
+}
+
+func TestLocalCleanupTellsMissingChainsFromFailures(t *testing.T) {
+	owned := allAllowances(42, 22022, "tcp")
+
+	t.Run("a missing chain is nothing to remove", func(t *testing.T) {
+		front := &statefulFront{rules: owned, listErr: errors.New("iptables: No chain/target/match by that name.")}
+		if !front.snapshot().cleanupDockerCompatAllowances(42, 0, nil) {
+			t.Fatal("a host without DOCKER-USER has nothing to fail")
+		}
+	})
+
+	t.Run("any other listing failure leaves the cleanup unconfirmed", func(t *testing.T) {
+		front := &statefulFront{rules: owned, listErr: errors.New("Another app is currently holding the xtables lock")}
+		if front.snapshot().cleanupDockerCompatAllowances(42, 0, nil) {
+			t.Fatal("a lock timeout was treated as 'no such chain'")
+		}
+		if front.restores != 0 {
+			t.Fatal("nothing can be deleted without a listing")
+		}
+	})
+
+	t.Run("deletion is one specification-based transaction", func(t *testing.T) {
+		front := &statefulFront{rules: append(owned, allAllowances(7, 22030, "udp")...)}
+		if !front.snapshot().cleanupDockerCompatAllowances(42, 0, nil) {
+			t.Fatal("cleanup failed")
+		}
+		if front.restores != 1 || len(front.rules) != 2 {
+			t.Fatalf("restores=%d rules=%v", front.restores, front.rules)
+		}
+	})
+}
+
+func TestRemovalCannotBeConfirmedWhileTheChainIsUnreadable(t *testing.T) {
+	host := dockerHost()
+	front := host.fronts["iptables-nft"]
+	front.userErr = errors.New("Another app is currently holding the xtables lock")
+	host.fronts["iptables-nft"] = front
+	if !host.snapshot("").nftForwardRuleResiduePresent(42, 22022, "tcp") {
+		t.Fatal("a removal must not be declared done when the Docker chain cannot be read")
+	}
+	front.userErr = errors.New("iptables: No chain/target/match by that name.")
+	host.fronts["iptables-nft"] = front
+	if host.snapshot("").nftForwardRuleResiduePresent(42, 22022, "tcp") {
+		t.Fatal("a chain that does not exist holds no residue")
 	}
 }

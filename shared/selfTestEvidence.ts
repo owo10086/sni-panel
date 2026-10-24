@@ -11,7 +11,9 @@
 export type SelfTestTargetEvidence = "reachable" | "unreachable" | "pending" | "unknown";
 
 export interface SelfTestEvidence {
-  /** Whether the probe source reached the target. */
+  /** What the probe connected to: the rule's target, or the entry's own listening port. */
+  probe: "target" | "entry-listener";
+  /** Whether the probe source reached what it connected to. */
   target: SelfTestTargetEvidence;
   /** Whether a request from outside went through the entry's business port. */
   externalPath: "unverified";
@@ -46,7 +48,7 @@ export function selfTestEvidence(row: SelfTestRowLike): SelfTestEvidence {
   else if (truthy(row.targetReachable)) target = "reachable";
   else if (status === "failed") target = "unreachable";
   else target = "unknown";
-  return { target, externalPath: "unverified" };
+  return { probe: selfTestKind(row) === "forward-via-tunnel-entry" ? "entry-listener" : "target", target, externalPath: "unverified" };
 }
 
 /**

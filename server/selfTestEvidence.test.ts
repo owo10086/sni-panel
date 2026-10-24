@@ -59,7 +59,7 @@ test("target self-tests keep their result and never claim a verified external pa
       const seen = await caller.latestTest({ ruleId: 100, includeActive: false });
       assert.equal(seen.status, "success");
       assert.equal(seen.latencyMs, 147);
-      assert.deepEqual(seen.evidence, { target: "reachable", externalPath: "unverified" });
+      assert.deepEqual(seen.evidence, { probe: "target", target: "reachable", externalPath: "unverified" });
       assert.equal(seen.forwardOk, false);
 
       // A newer or hostile reporter cannot assert the external path either.
@@ -72,7 +72,7 @@ test("target self-tests keep their result and never claim a verified external pa
       const failed = await caller.latestTest({ ruleId: 100, includeActive: false });
       assert.equal(failed.id, failedId);
       assert.equal(failed.status, "failed");
-      assert.deepEqual(failed.evidence, { target: "unreachable", externalPath: "unverified" });
+      assert.deepEqual(failed.evidence, { probe: "target", target: "unreachable", externalPath: "unverified" });
 
       // Records stored before this contract carried unconditional success flags.
       const legacyId = Number((await runtime.executeRaw(
@@ -83,7 +83,7 @@ test("target self-tests keep their result and never claim a verified external pa
       assert.equal(legacy.forwardOk, false, "an old success flag is not evidence of a forwarding path");
       assert.equal(legacy.listenOk, false);
       assert.equal(legacy.latencyMs, 147);
-      assert.deepEqual(legacy.evidence, { target: "reachable", externalPath: "unverified" });
+      assert.deepEqual(legacy.evidence, { probe: "target", target: "reachable", externalPath: "unverified" });
 
       // The same reader contract applies to a forward-chain group's own result.
       await insert("forward_groups", { id: 10, name: "chain", groupMode: "chain", groupType: "host", userId: 1, isEnabled: 1, targetIp: "203.0.113.10" });

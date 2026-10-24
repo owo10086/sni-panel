@@ -39,6 +39,13 @@ test("old records that stored unconditional success flags are reinterpreted by t
   assert.equal(legacy.status, "success", "the target result keeps its status");
 });
 
+test("an entry-port probe is a listener probe, not a target probe", () => {
+  const meta = JSON.stringify({ kind: "forward-via-tunnel-entry", tunnelId: 3 });
+  assert.equal(selfTestEvidence(row({ requestMessage: meta })).probe, "entry-listener");
+  assert.equal(selfTestEvidence(row({})).probe, "target");
+  assert.equal(selfTestEvidence(row({ requestMessage: JSON.stringify({ kind: "forward-group" }) })).probe, "target");
+});
+
 test("an entry-port probe keeps the listener result it really measured", () => {
   const meta = JSON.stringify({ kind: "forward-via-tunnel-entry", tunnelId: 3, entryIp: "198.51.100.5", entrySourcePort: 443 });
   const entry = withSelfTestEvidence(row({ requestMessage: meta, listenOk: true }));

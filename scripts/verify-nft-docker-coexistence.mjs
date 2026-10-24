@@ -394,8 +394,13 @@ const scenarios = {
     lab.sh("rm -f /var/lib/forwardx-agent/desired_state_records.json");
     await converge(panel, lab, undefined, { restart: true }); // intact kernel state is adopted, not rebuilt
     assert.equal(managedAllowances(lab).length, 4);
+    // Rule handles identify the very kernel objects: an unchanged rule must keep them, i.e. never be deleted and re-added.
+    const handles = () => lab.sh("nft -a list chain ip filter DOCKER-USER 2>/dev/null | grep accept | grep -o 'handle [0-9]*'").out.trim();
+    const before = handles();
+    assert.equal(before.split("\n").length, 4);
     for (let attempt = 0; attempt < 3; attempt += 1) {
       const output = await retry(panel, lab);
+      assert.equal(handles(), before, "re-applying an unchanged rule leaves its allowances untouched");
       assert.deepEqual(output.applied, [true], "a retry re-runs and succeeds");
       assert.equal(managedAllowances(lab).length, 4, "re-applying never stacks copies");
       assert.equal(lab.sh("nft list chain inet forwardx prerouting").out.split("\n").filter((line) => line.includes("dnat ip to")).length, 2, "nor does it stack DNAT rules");

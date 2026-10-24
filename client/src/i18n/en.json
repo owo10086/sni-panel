@@ -5332,5 +5332,10 @@
   "目标连接失败": "Target connection failed",
   "目标连接状态未知": "Target connection result unknown",
   "外部经入口的转发路径": "Forwarding path from outside through the entry",
-  "本检测只从检测来源直接连接目标，没有经入口业务端口发起请求，不能据此判断外部访问能否到达目标。": "This test connects to the target directly from the probe source and sends no request through the entry's business port, so it says nothing about whether outside access can reach the target."
+  "本检测只从检测来源直接连接目标，没有经入口业务端口发起请求，不能据此判断外部访问能否到达目标。": "This test connects to the target directly from the probe source and sends no request through the entry's business port, so it says nothing about whether outside access can reach the target.",
+  "检测来源到入口监听端口": "Probe source to entry listening port",
+  "入口监听端口连接成功": "Entry listening port connection succeeded",
+  "入口监听端口连接失败": "Entry listening port connection failed",
+  "入口监听端口连接状态未知": "Entry listening port connection result unknown",
+  "本检测只连接入口自身的监听端口，不能据此判断外部访问能否经入口到达最终目标。": "This test only connects to the entry's own listening port, so it says nothing about whether outside access can reach the final target through the entry."
 }

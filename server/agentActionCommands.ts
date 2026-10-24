@@ -1,4 +1,5 @@
 import { forwardRuleProtocols, normalizeForwardRuleProtocol } from "@shared/forwardTypes";
+import { createHash } from "crypto";
 import { isIP } from "net";
 
 type IptablesBinary = "iptables" | "ip6tables";
@@ -305,8 +306,9 @@ function nftOptional(command: string) {
 // that verdict, so the traffic of a native nftables rule must be allowed inside
 // the chain Docker documents for administrators: DOCKER-USER. Each allowance is
 // owned by one rule, original port, protocol and direction through its comment
-// (fwx-docker-<rule>-<port>-<proto>-<in|out>); the Agent verifies the same
-// specifications, so keep these in step with agent/docker_forward_compat.go.
+// fwx-docker-<rule>-<port>-<proto>-<in|out>-<tag>, where <tag> digests the
+// target. The Agent verifies the same specifications and cleans by the same
+// owner fields, so keep these in step with agent/docker_forward_compat.go.
 const dockerCompatChain = "DOCKER-USER";
 const dockerCompatLabel = "[docker-compat]";
 
@@ -331,10 +333,13 @@ function dockerCompatSpecs(rule: any): DockerCompatSpec[] {
   const target = dockerCompatTarget(rule);
   if (!target) return [];
   const ruleId = Number(rule.id) || 0;
+  // A different target yields different comments, so a changed rule is converged
+  // in place: the new allowances appear first and the previous ones are pruned.
+  const tag = createHash("sha1").update(`${target.targetIp}:${target.targetPort}`).digest("hex").slice(0, 8);
   const specs: DockerCompatSpec[] = [];
   for (const proto of forwardRuleProtocols(rule.protocol)) {
-    const inComment = `fwx-docker-${ruleId}-${target.sourcePort}-${proto}-in`;
-    const outComment = `fwx-docker-${ruleId}-${target.sourcePort}-${proto}-out`;
+    const inComment = `fwx-docker-${ruleId}-${target.sourcePort}-${proto}-in-${tag}`;
+    const outComment = `fwx-docker-${ruleId}-${target.sourcePort}-${proto}-out-${tag}`;
     specs.push({
       proto,
       direction: "in",
@@ -354,8 +359,12 @@ function dockerCompatSpecs(rule: any): DockerCompatSpec[] {
 // they do not share rules: `iptables-legacy` can show ACCEPT while the nft
 // front end drops. Each candidate is therefore inspected on its own and only a
 // front end whose FORWARD really drops by default and jumps to DOCKER-USER is
-// touched. Legacy tables are read only when they are already loaded, because
-// listing them would otherwise load the kernel module on nft-only hosts.
+// given allowances. Legacy tables are read only when they are already loaded,
+// because listing them would otherwise load the kernel module on nft-only hosts.
+//
+// Deletions go through `<front>-restore --noflush` by rule specification, not by
+// position: Docker or an administrator may edit the chain at any moment, which
+// would make an index point at somebody else's rule.
 const dockerCompatShellPrelude = [
   "fwx_dc_bins() {",
   '  fwx_dc_list=""',
@@ -381,20 +390,54 @@ const dockerCompatShellPrelude = [
   `  if [ -n "$fwx_dc_pos" ]; then "$fwx_dc_front" -w 5 -I ${dockerCompatChain} "$fwx_dc_pos" "$@" || return 1; else "$fwx_dc_front" -w 5 -A ${dockerCompatChain} "$@" || return 1; fi`,
   `  "$fwx_dc_front" -w 5 -C ${dockerCompatChain} "$@" >/dev/null 2>&1`,
   "}",
+  // $1 front end, $2 owner pattern, $3 comments to keep (space padded). Removes every owned
+  // allowance that is not in the keep list; an absent chain means there is nothing to remove.
+  "fwx_dc_prune() {",
+  `  "$1" -w 5 -S ${dockerCompatChain} >/dev/null 2>&1 || return 0`,
+  "  fwx_dc_round=0",
+  "  while :; do",
+  `    fwx_dc_del=$("$1" -w 5 -S ${dockerCompatChain} 2>/dev/null | awk -v pat="$2" -v keep="$3" '/^-A ${dockerCompatChain} / && $0 ~ pat {c=""; if (match($0, /fwx-docker-[0-9A-Za-z_-]+/)) c=substr($0, RSTART, RLENGTH); if (index(keep, " " c " ") == 0) {sub(/^-A /, "-D "); print}}')`,
+  '    [ -n "$fwx_dc_del" ] || return 0',
+  '    [ "$fwx_dc_round" -lt 5 ] || return 1',
+  "    fwx_dc_round=$((fwx_dc_round + 1))",
+  '    command -v "$1-restore" >/dev/null 2>&1 || return 1',
+  `    printf '*filter\\n%s\\nCOMMIT\\n' "$fwx_dc_del" | "$1-restore" --noflush --wait 5 >/dev/null 2>&1 || :`,
+  "  done",
+  "}",
 ];
+
+// Which allowances a rule id, or a bare port with protocols, owns.
+function dockerCompatOwnerPattern(ruleId: number, port: number, protocols: string[]) {
+  const validPort = Number.isInteger(port) && port > 0 && port <= 65535;
+  const owned: string[] = [];
+  // A rule id owns every port and protocol it ever used; a bare port only owns
+  // the protocols being removed, so the other protocol's allowance survives.
+  if (ruleId > 0) owned.push(`${ruleId}-[0-9]+-(tcp|udp)`);
+  if (validPort) owned.push(`[0-9]+-${port}-(${protocols.join("|")})`);
+  if (owned.length === 0) return "";
+  return `--comment "?fwx-docker-(${owned.join("|")})-(in|out)-[0-9a-f]+"?( |$)`;
+}
 
 export function buildDockerForwardCompatCmds(rule: any): string[] {
   const specs = dockerCompatSpecs(rule);
   if (specs.length === 0) return [];
   const ruleId = Number(rule.id) || 0;
-  const body = specs.map((spec) =>
+  const pattern = dockerCompatOwnerPattern(ruleId, Number(rule.sourcePort), forwardRuleProtocols(rule.protocol));
+  const keep = ` ${specs.map((spec) => spec.comment).join(" ")} `;
+  const label = `rule ${ruleId} port ${rule.sourcePort}`;
+  const ensure = specs.map((spec) =>
     `    fwx_dc_ensure "$fwx_dc_b" ${spec.args} || { echo "${dockerCompatLabel} $fwx_dc_b: cannot install ${dockerCompatChain} allowance for rule ${ruleId} port ${rule.sourcePort}/${spec.proto} (${spec.direction}); Docker's default-DROP FORWARD would block it" >&2; fwx_dc_failed=1; }`);
   return [[
     ...dockerCompatShellPrelude,
     "fwx_dc_failed=0",
+    `fwx_dc_keep='${keep}'`,
     "for fwx_dc_b in $(fwx_dc_bins); do",
-    '  fwx_dc_active "$fwx_dc_b" || continue',
-    ...body,
+    '  if fwx_dc_active "$fwx_dc_b"; then',
+    ...ensure,
+    "  fi",
+    // Old targets, dropped protocols and a previous owner of this port are pruned only
+    // after the replacements exist, so a re-applied rule keeps forwarding throughout.
+    `  fwx_dc_prune "$fwx_dc_b" '${pattern}' "$fwx_dc_keep" || { echo "${dockerCompatLabel} $fwx_dc_b: could not remove ForwardX allowance from ${dockerCompatChain} (${label})" >&2; fwx_dc_failed=1; }`,
     "done",
     '[ "$fwx_dc_failed" = 0 ]',
   ].join("\n")];
@@ -403,34 +446,18 @@ export function buildDockerForwardCompatCmds(rule: any): string[] {
 export function buildDockerForwardCompatCleanupCmds(selector: { ruleId?: number; port?: number; protocol?: string }): string[] {
   const ruleId = Number(selector.ruleId) || 0;
   const port = Number(selector.port) || 0;
-  const validPort = Number.isInteger(port) && port > 0 && port <= 65535;
-  // A rule id owns every port and protocol it ever used; a bare port only owns
-  // the protocols being removed, so the other protocol's allowance survives.
-  const protocols = forwardRuleProtocols(selector.protocol, "both").join("|");
-  const owned: string[] = [];
-  if (ruleId > 0) owned.push(`${ruleId}-[0-9]+-(tcp|udp)`);
-  if (validPort) owned.push(`[0-9]+-${port}-(${protocols})`);
-  if (owned.length === 0) return [];
-  const pattern = `--comment "?fwx-docker-(${owned.join("|")})-(in|out)"?( |$)`;
+  const pattern = dockerCompatOwnerPattern(ruleId, port, forwardRuleProtocols(selector.protocol, "both"));
+  if (!pattern) return [];
   const label = `rule ${ruleId || "-"} port ${port || "-"}`;
   return [[
     ...dockerCompatShellPrelude,
     "fwx_dc_failed=0",
     "for fwx_dc_b in $(fwx_dc_bins); do",
-    `  "$fwx_dc_b" -w 5 -S ${dockerCompatChain} >/dev/null 2>&1 || continue`,
-    "  fwx_dc_round=0",
-    "  while :; do",
-    `    fwx_dc_hits=$("$fwx_dc_b" -w 5 -S ${dockerCompatChain} 2>/dev/null | awk -v pat='${pattern}' '/^-A ${dockerCompatChain} / {n++; if ($0 ~ pat) hit[++c]=n} END {for (i=c; i>=1; i--) print hit[i]}')`,
-    '    [ -n "$fwx_dc_hits" ] || break',
-    `    if [ "$fwx_dc_round" -ge 5 ]; then echo "${dockerCompatLabel} $fwx_dc_b: could not remove ForwardX allowance from ${dockerCompatChain} (${label})" >&2; fwx_dc_failed=1; break; fi`,
-    "    fwx_dc_round=$((fwx_dc_round + 1))",
-    `    for fwx_dc_n in $fwx_dc_hits; do "$fwx_dc_b" -w 5 -D ${dockerCompatChain} "$fwx_dc_n" 2>/dev/null || :; done`,
-    "  done",
+    `  fwx_dc_prune "$fwx_dc_b" '${pattern}' ' ' || { echo "${dockerCompatLabel} $fwx_dc_b: could not remove ForwardX allowance from ${dockerCompatChain} (${label})" >&2; fwx_dc_failed=1; }`,
     "done",
     '[ "$fwx_dc_failed" = 0 ]',
   ].join("\n")];
 }
-
 function nftCounterRuleWithFallback(counterRule: string, alternateCounterRule: string, commentedRule: string, bareRule: string, label: string) {
   return `${counterRule} || { echo "[nftables] counter rule failed, fallback=${label}"; ${alternateCounterRule} || { echo "[nftables] alternate counter rule failed, fallback=${label}:comment"; ${commentedRule} || { echo "[nftables] commented rule failed, fallback=${label}:bare"; ${bareRule}; }; }; }`;
 }
@@ -515,7 +542,7 @@ function nftDeleteCommentedRulesCmd(chain: string, comment: string) {
   return `if nft list table inet ${nftTable} >/dev/null 2>&1; then for h in $(nft -a list chain inet ${nftTable} ${chain} 2>/dev/null | awk -v exact='comment "${comment}"' -v colon='comment "${comment}:' -v dash='comment "${comment}-' 'index($0, exact) || index($0, colon) || index($0, dash) {print $NF}'); do nft delete rule inet ${nftTable} ${chain} handle "$h" 2>/dev/null; true; done; fi; true`;
 }
 
-export function buildNftCleanupCmds(rule: any, options: { removeStateFiles?: boolean; cleanupConntrack?: boolean } = {}): string[] {
+export function buildNftCleanupCmds(rule: any, options: { removeStateFiles?: boolean; cleanupConntrack?: boolean; dockerAllowances?: boolean } = {}): string[] {
   const ruleId = Number(rule.id) || 0;
   const comment = nftComment(rule);
   const cmds = [
@@ -528,7 +555,8 @@ export function buildNftCleanupCmds(rule: any, options: { removeStateFiles?: boo
     nftDeleteCommentedRulesCmd(nftTrafficPreroutingChain, comment),
     nftDeleteCommentedRulesCmd(nftTrafficPostroutingChain, comment),
     nftDeleteCommentedRulesCmd(nftTrafficForwardChain, comment),
-    ...buildDockerForwardCompatCleanupCmds({ ruleId, port: Number(rule.sourcePort), protocol: rule.protocol }),
+    // A rebuild keeps the Docker allowances and converges them in place afterwards.
+    ...(options.dockerAllowances === false ? [] : buildDockerForwardCompatCleanupCmds({ ruleId, port: Number(rule.sourcePort), protocol: rule.protocol })),
   ];
   // Tunnel/orphan snapshots can legitimately omit a rule ID. Never target a
   // synthetic in_0/out_0 chain in that case; comment/port cleanup above is
@@ -595,7 +623,7 @@ export function buildNftForwardCmds(rule: any, options: { includeCounters?: bool
     nftOptional(`nft add chain inet ${nftTable} postrouting '{ type nat hook postrouting priority srcnat; policy accept; }'`),
     nftOptional(`nft add chain inet ${nftTable} forward '{ type filter hook forward priority filter; policy accept; }'`),
     `if nft list chain inet ${nftTable} prerouting >/dev/null 2>&1 && nft list chain inet ${nftTable} postrouting >/dev/null 2>&1 && nft list chain inet ${nftTable} forward >/dev/null 2>&1; then :; else echo "[nftables] forwarding chains are unavailable"; exit 1; fi`,
-    ...buildNftCleanupCmds(rule),
+    ...buildNftCleanupCmds(rule, { dockerAllowances: false }),
     nftOptional(`nft add table inet ${nftTable}`),
     nftOptional(`nft add chain inet ${nftTable} prerouting '{ type nat hook prerouting priority dstnat; policy accept; }'`),
     nftOptional(`nft add chain inet ${nftTable} postrouting '{ type nat hook postrouting priority srcnat; policy accept; }'`),

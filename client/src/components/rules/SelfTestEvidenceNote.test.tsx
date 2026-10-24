@@ -36,3 +36,13 @@ test("nothing is claimed while a test is still running or when there is no resul
   assert.equal(html(null), "");
   assert.equal(html(undefined), "");
 });
+
+test("an entry-port probe is described as a listener check, not as a target connection", () => {
+  const meta = JSON.stringify({ kind: "forward-via-tunnel-entry", tunnelId: 3, entryIp: "198.51.100.5", entrySourcePort: 443 });
+  const ok = html({ id: 8, status: "success", targetReachable: true, listenOk: true, requestMessage: meta });
+  assert.match(ok, /入口监听端口连接成功/);
+  assert.match(ok, /未验证/);
+  assert.doesNotMatch(ok, /没有经入口业务端口发起请求/, "this probe does connect to the entry's listening port");
+  const failed = html({ id: 9, status: "failed", targetReachable: false, listenOk: false, requestMessage: meta });
+  assert.match(failed, /入口监听端口连接失败/);
+});

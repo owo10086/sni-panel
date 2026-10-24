@@ -1,9 +1,14 @@
 package main
 
 import (
+	"context"
+	"crypto/sha1"
+	"encoding/hex"
+	"errors"
 	"fmt"
 	"net"
 	"os"
+	"os/exec"
 	"strconv"
 	"strings"
 	"time"
@@ -15,13 +20,16 @@ import (
 // cannot override, so the panel installs scoped allowances in DOCKER-USER
 // (see buildDockerForwardCompatCmds in server/agentActionCommands.ts). The
 // checks below read the same kernel state back; the comment naming scheme
-// fwx-docker-<rule>-<port>-<proto>-<in|out> is the contract between the two.
+// fwx-docker-<rule>-<port>-<proto>-<in|out>-<tag> is the contract between the
+// two, where <tag> is the first eight hex digits of sha1("<target ip>:<port>").
 
 const (
-	dockerCompatChain       = "DOCKER-USER"
-	kernelIPv4ForwardPath   = "/proc/sys/net/ipv4/ip_forward"
-	kernelLegacyTablesPath  = "/proc/net/ip_tables_names"
-	dockerCompatCommandWait = 5 * time.Second
+	dockerCompatChain      = "DOCKER-USER"
+	kernelIPv4ForwardPath  = "/proc/sys/net/ipv4/ip_forward"
+	kernelLegacyTablesPath = "/proc/net/ip_tables_names"
+	// Longer than iptables' own "-w 5" lock wait, so a busy xtables lock surfaces as
+	// iptables' error instead of a killed process that looks like a missing chain.
+	dockerCompatCommandWait = 8 * time.Second
 )
 
 // kernelForwardEnv replaces the host probes of a snapshot. A nil env reads the
@@ -30,6 +38,7 @@ type kernelForwardEnv struct {
 	readFile    func(path string) ([]byte, error)
 	hasCommand  func(name string) bool
 	runIptables func(binary string, args ...string) ([]byte, error)
+	runRestore  func(binary string, input string) error
 }
 
 type dockerCompatFrontState struct {
@@ -57,6 +66,38 @@ func (s *kernelForwardSnapshot) runHostIptables(binary string, args ...string) (
 		return s.env.runIptables(binary, args...)
 	}
 	return commandOutputWithTimeout(dockerCompatCommandWait, binary, args...)
+}
+
+// runHostRestore applies a `*filter ... COMMIT` transaction with the front end's
+// matching -restore binary. Deleting by rule specification inside one
+// transaction cannot hit a rule that moved because the chain was edited
+// concurrently, which deleting by position can.
+func (s *kernelForwardSnapshot) runHostRestore(binary string, input string) error {
+	if s != nil && s.env != nil && s.env.runRestore != nil {
+		return s.env.runRestore(binary, input)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), dockerCompatCommandWait)
+	defer cancel()
+	command := exec.CommandContext(ctx, binary+"-restore", "--noflush", "--wait", "5")
+	command.Stdin = strings.NewReader(input)
+	if output, err := command.CombinedOutput(); err != nil {
+		return fmt.Errorf("%s-restore: %w: %s", binary, err, strings.TrimSpace(string(output)))
+	}
+	return nil
+}
+
+// dockerChainMissing tells "DOCKER-USER does not exist" from every other
+// listing failure. Only the first means there is nothing of ours to find.
+func dockerChainMissing(err error) bool {
+	if err == nil {
+		return false
+	}
+	text := strings.ToLower(err.Error())
+	var exit *exec.ExitError
+	if errors.As(err, &exit) {
+		text += " " + strings.ToLower(string(exit.Stderr))
+	}
+	return strings.Contains(text, "no chain/target/match by that name") || strings.Contains(text, "does not exist")
 }
 
 // dockerCompatFrontEnds lists the iptables front ends whose tables the kernel
@@ -129,16 +170,7 @@ func (s *kernelForwardSnapshot) dockerCompatFront(binary string) *dockerCompatFr
 		return state
 	}
 	state.active = true
-	rules, err := s.runHostIptables(binary, "-w", "5", "-S", dockerCompatChain)
-	if err != nil {
-		state.rulesErr = err
-		return state
-	}
-	for _, rawLine := range strings.Split(string(rules), "\n") {
-		if line := kernelNormalizeLine(rawLine); strings.HasPrefix(line, "-A "+dockerCompatChain+" ") {
-			state.rules = append(state.rules, line)
-		}
-	}
+	state.rules, _, state.rulesErr = s.dockerCompatListing(binary)
 	return state
 }
 
@@ -151,18 +183,24 @@ type dockerCompatSpec struct {
 	sourcePort int
 }
 
+func dockerCompatTargetTag(targetIP string, targetPort int) string {
+	digest := sha1.Sum([]byte(fmt.Sprintf("%s:%d", targetIP, targetPort)))
+	return hex.EncodeToString(digest[:])[:8]
+}
+
 func dockerCompatSpecsFor(ruleID int, sourcePort int, targetIP string, targetPort int, protocol string) []dockerCompatSpec {
 	target := net.ParseIP(kernelCleanAddress(targetIP))
 	if target == nil || target.To4() == nil || targetPort <= 0 || sourcePort <= 0 {
 		return nil
 	}
 	specs := []dockerCompatSpec{}
+	tag := dockerCompatTargetTag(target.String(), targetPort)
 	for _, proto := range runtimeProtocols(protocol) {
 		for _, direction := range []string{"in", "out"} {
 			specs = append(specs, dockerCompatSpec{
 				proto:      proto,
 				direction:  direction,
-				comment:    fmt.Sprintf("fwx-docker-%d-%d-%s-%s", ruleID, sourcePort, proto, direction),
+				comment:    fmt.Sprintf("fwx-docker-%d-%d-%s-%s-%s", ruleID, sourcePort, proto, direction, tag),
 				targetIP:   target.String(),
 				targetPort: targetPort,
 				sourcePort: sourcePort,
@@ -326,17 +364,37 @@ func nftStaleProtocolReason(text string, ruleID int, protocol string) string {
 	return ""
 }
 
-// dockerCompatResidue reports whether any front end still holds an allowance
-// owned by the rule or the port.
+// dockerCompatListing lists DOCKER-USER of one front end. missing is true when
+// the chain does not exist; any other error means the chain could not be read.
+func (s *kernelForwardSnapshot) dockerCompatListing(binary string) (lines []string, missing bool, err error) {
+	raw, err := s.runHostIptables(binary, "-w", "5", "-S", dockerCompatChain)
+	if err != nil {
+		return nil, dockerChainMissing(err), err
+	}
+	for _, rawLine := range strings.Split(string(raw), "\n") {
+		if line := kernelNormalizeLine(rawLine); strings.HasPrefix(line, "-A "+dockerCompatChain+" ") {
+			lines = append(lines, line)
+		}
+	}
+	return lines, false, nil
+}
+
+// dockerCompatResidue reports whether a removal is still incomplete: some front
+// end holds an allowance owned by the rule or the port, or the Docker chain of a
+// front end that sends traffic through it cannot be read, so removal cannot be
+// confirmed.
 func (s *kernelForwardSnapshot) dockerCompatResidue(ruleID int, sourcePort int, protocol string) bool {
 	protocols := runtimeProtocols(protocol)
 	for _, binary := range s.dockerCompatFrontEnds() {
-		rules, err := s.runHostIptables(binary, "-w", "5", "-S", dockerCompatChain)
+		lines, missing, err := s.dockerCompatListing(binary)
 		if err != nil {
+			if !missing && s.dockerCompatFront(binary).active {
+				return true
+			}
 			continue
 		}
-		for _, rawLine := range strings.Split(string(rules), "\n") {
-			if dockerCompatLineOwnedBy(kernelNormalizeLine(rawLine), ruleID, sourcePort, protocols) {
+		for _, line := range lines {
+			if dockerCompatLineOwnedBy(line, ruleID, sourcePort, protocols) {
 				return true
 			}
 		}
@@ -356,7 +414,7 @@ func dockerCompatLineOwner(line string) (ruleID int, sourcePort int, proto strin
 			continue
 		}
 		parts := strings.Split(strings.TrimPrefix(comment, "fwx-docker-"), "-")
-		if len(parts) != 4 || (parts[2] != "tcp" && parts[2] != "udp") {
+		if len(parts) != 5 || (parts[2] != "tcp" && parts[2] != "udp") {
 			continue
 		}
 		ruleID, ruleErr := strconv.Atoi(parts[0])
@@ -470,9 +528,20 @@ func nftMasqueradePresent(text string, ruleID int, targetIP string, targetPort i
 
 func nftForwardAcceptPresent(text string, addressKey string, portKey string, proto string, targetIP string, targetPort int) bool {
 	for _, line := range nftChainLines(text, "forward") {
-		if strings.Contains(line, " accept") &&
-			strings.Contains(line, "ip "+addressKey+" "+targetIP+" ") &&
-			strings.Contains(line, fmt.Sprintf("%s %s %d", proto, portKey, targetPort)) {
+		fields := strings.Fields(line)
+		accepts, addressMatches, portMatches := false, false, false
+		for index, field := range fields {
+			switch {
+			case field == "accept":
+				accepts = true
+			case field == "ip" && index+2 < len(fields) && fields[index+1] == addressKey && fields[index+2] == targetIP:
+				addressMatches = true
+			case field == proto && index+2 < len(fields) && fields[index+1] == portKey && fields[index+2] == strconv.Itoa(targetPort):
+				// The port must be a whole token: "443" must not match "4430".
+				portMatches = true
+			}
+		}
+		if accepts && addressMatches && portMatches {
 			return true
 		}
 	}
@@ -484,7 +553,7 @@ func nftForwardAcceptPresent(text string, addressKey string, portKey string, pro
 // protocols. The panel's removal commands do the same in shell; the Agent needs
 // its own pass for the local cleanups it starts without a panel command, such
 // as reconciling a rule the panel no longer lists. It returns false when an
-// owned allowance could not be removed.
+// owned allowance could not be removed or a chain could not be read.
 func cleanupDockerCompatAllowances(ruleID int, sourcePort int, protocols []string) bool {
 	return newKernelForwardSnapshot().cleanupDockerCompatAllowances(ruleID, sourcePort, protocols)
 }
@@ -496,33 +565,30 @@ func (s *kernelForwardSnapshot) cleanupDockerCompatAllowances(ruleID int, source
 	ok := true
 	for _, binary := range s.dockerCompatFrontEnds() {
 		for round := 0; ; round++ {
-			listing, err := s.runHostIptables(binary, "-w", "5", "-S", dockerCompatChain)
+			lines, missing, err := s.dockerCompatListing(binary)
 			if err != nil {
-				break // no such chain (no Docker) or an unusable front end: nothing of ours can be there
-			}
-			positions := []int{}
-			position := 0
-			for _, rawLine := range strings.Split(string(listing), "\n") {
-				line := kernelNormalizeLine(rawLine)
-				if !strings.HasPrefix(line, "-A "+dockerCompatChain+" ") {
-					continue
+				if !missing {
+					logf("docker-compat: cannot read %s via %s, removal of rule=%d port=%d is unconfirmed: %v", dockerCompatChain, binary, ruleID, sourcePort, err)
+					ok = false
 				}
-				position++
+				break
+			}
+			deletions := []string{}
+			for _, line := range lines {
 				if dockerCompatLineOwnedBy(line, ruleID, sourcePort, protocols) {
-					positions = append(positions, position)
+					deletions = append(deletions, "-D "+strings.TrimPrefix(line, "-A "))
 				}
 			}
-			if len(positions) == 0 {
+			if len(deletions) == 0 {
 				break
 			}
 			if round >= 5 {
-				logf("docker-compat: could not remove %d allowance(s) of rule=%d port=%d from %s via %s", len(positions), ruleID, sourcePort, dockerCompatChain, binary)
+				logf("docker-compat: could not remove %d allowance(s) of rule=%d port=%d from %s via %s", len(deletions), ruleID, sourcePort, dockerCompatChain, binary)
 				ok = false
 				break
 			}
-			// Highest position first so earlier positions stay valid.
-			for index := len(positions) - 1; index >= 0; index-- {
-				_, _ = s.runHostIptables(binary, "-w", "5", "-D", dockerCompatChain, strconv.Itoa(positions[index]))
+			if err := s.runHostRestore(binary, "*filter\n"+strings.Join(deletions, "\n")+"\nCOMMIT\n"); err != nil {
+				logf("docker-compat: removal transaction failed via %s: %v", binary, err)
 			}
 		}
 	}
@@ -530,7 +596,8 @@ func (s *kernelForwardSnapshot) cleanupDockerCompatAllowances(ruleID int, source
 }
 
 // cleanupNftRuleState removes the kernel state a nftables rule owns: its
-// ForwardX table entries and its Docker allowances.
+// ForwardX table entries and, unless the rule is being rebuilt in place, its
+// Docker allowances.
 func cleanupNftRuleState(ruleID int) {
 	_ = runShell(nftRuleCleanupCmd(ruleID))
 	cleanupDockerCompatAllowances(ruleID, 0, nil)

@@ -5759,7 +5759,13 @@ func cleanupKernelForwardPortBeforeApply(a action) {
 				_ = runShell(command)
 			}
 		case "nftables":
-			cleanupNftRuleState(localRuleID)
+			if a.ForwardType == "nftables" {
+				// Rebuilt in place: the apply commands converge the Docker allowances
+				// without ever removing the ones that are still wanted.
+				_ = runShell(nftRuleCleanupCmd(localRuleID))
+			} else {
+				cleanupNftRuleState(localRuleID)
+			}
 		}
 	}
 	reassignedRule := a.RuleID > 0 && localRuleID > 0 && localRuleID != a.RuleID
@@ -5778,7 +5784,7 @@ func cleanupKernelForwardPortBeforeApply(a action) {
 			_ = runShell(iptablesAgentDeleteDnatRulesForPort(binary, port, cleanupProtocol))
 		}
 	case "nftables":
-		cleanupNftPortState(port, cleanupProtocol)
+		_ = runShell(nftPortCleanupCmd(port, cleanupProtocol))
 	}
 }
 
