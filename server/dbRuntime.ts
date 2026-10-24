@@ -1,4 +1,5 @@
 import { MYSQL_COMPATIBILITY_FLAGS } from "./mysqlCompatibility";
+import { displayQueries } from "./displayQueryCache";
 import fs from "fs";
 import path from "path";
 import { AsyncLocalStorage } from "node:async_hooks";
@@ -684,6 +685,7 @@ export async function closeDatabase() {
   // Drop both cached values and in-flight registrations before changing it.
   dashboardSummaries.clear();
   operationsSummaries.clear();
+  displayQueries.invalidate();
   if (_pool) {
     await _pool.end().catch(() => undefined);
   }
