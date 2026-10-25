@@ -4,6 +4,25 @@
 
 ## [Unreleased]
 
+## [3.8.0] - 2026-10-25
+
+### Fixes and improvements
+
+- Fix native nftables forwarding timing out on every connection on entries that run Docker. Docker's default-DROP `FORWARD` chain overrides ForwardX's own accepts, so DNAT existed and rules showed running while outside connections failed. The panel now installs scoped allowances for each IPv4 rule in the `DOCKER-USER` chain of every `iptables-nft`/`iptables-legacy` front end whose FORWARD drops by default and jumps to DOCKER-USER, limited by rule, original port, protocol, translated target and return direction. They sit behind administrator rules so explicit denies keep precedence; the FORWARD policy is not changed and nobody else's rules are deleted.
+- Re-applying converges in place: wanted allowances are ensured first, then leftovers from an old target, a dropped protocol or a previous owner are removed, and unchanged rules are never deleted and re-added. Deletion goes through `-restore` by rule specification in one transaction, not by position. Disabling, deleting, changing target/protocol/DNS resolution, switching the forwarding backend and the Agent's local fallback cleanup all clear the allowances too.
+- The Agent's native nftables readiness no longer looks at DNAT alone: it also verifies IP forwarding, source translation, forward and return accepts and the Docker allowance, and treats leftovers of an old target or a dropped protocol as not converged. Action completion, adoption of earlier actions and local state reports share this verdict, so an old success record after an Agent restart cannot hide a missing piece. It describes local prerequisites only and does not depend on whether the business target is up.
+- Install and cleanup failures are no longer swallowed: failure output of kernel forwarding actions reaches the action status message, and failover group members store it as a runtime diagnostic.
+- Self-tests only prove that the probe source reaches the target: `listenOk`/`forwardOk` are no longer written as successes unconditionally, query results carry an evidence summary, and older records and older Agent reports are read by their evidence. The probe dialog now shows "target connection succeeded/failed" separately from "forwarding path from outside through the entry: unverified".
+- Host failover groups keep selecting entries by their own running state: a missing local forwarding prerequisite follows the existing failure wait, recovery observation and priority handling, while a failing business target still does not trigger a group switch or block DDNS. SNI keeps its full-split confirmation.
+- Add the isolated Docker network acceptance `pnpm verify:nft-docker`, which replays the panel's real heartbeat through the real Agent and checks TCP/UDP round trips; the decision is recorded in ADR-0009.
+
+### Versions and upgrade notes
+
+- Source versions for the panel, Agent and ForwardX FXP runtime are `3.8.0`.
+- Panel only: newly issued commands, which older Agents also run as shell, install the DOCKER-USER allowances and forwarding recovers, but an older Agent's readiness still looks at DNAT only. Agent only: on a Docker host whose panel is still older, rules are honestly reported as not ready with the reason. The full behaviour needs the panel and Agent updated together.
+- Only IPv4 and the "FORWARD default DROP + jump to DOCKER-USER" iptables structure are handled; ufw, custom firewalls and Docker's native nftables backend are neither judged nor modified, and IPv6 keeps its earlier meaning. An allowance ends evaluation of DOCKER-USER, so managed traffic no longer passes the Docker isolation chains behind it.
+- Fixing the entry does not make the business targets themselves recover. The unified release workflow verifies panel packages, Agent, FXP, images and documentation from the same commit; production upgrades are handled separately.
+
 ## [3.7.0] - 2026-10-24
 
 ### Features and improvements
