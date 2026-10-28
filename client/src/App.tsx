@@ -13,6 +13,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import MotionPolicy from "./components/MotionPolicy";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import PersonalizationLayer from "./components/PersonalizationLayer";
+import RuleTaskNotifications from "./components/RuleTaskNotifications";
 import Live2DWidgetHost from "./components/plugins/Live2DWidgetHost";
 import DashboardLayout from "./components/DashboardLayout";
 import RoutePage, { RoutePagePlaceholder } from "./components/RoutePage";
@@ -216,6 +217,7 @@ function App() {
                   <PersonalizationLayer />
                   <Live2DWidgetHost />
                   <Toaster />
+                  <RuleTaskNotifications />
                   <SetupGate />
                 </SeamlessMigrationGate>
               </DatabaseHealthGate>

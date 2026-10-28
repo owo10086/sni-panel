@@ -1,13 +1,13 @@
 import { t } from "@/i18n";
 import type { ForwardRuleProtocol } from "@shared/forwardTypes";
 import {
-  parseRuleTransferFile, RULE_TRANSFER_FILE_KIND, RULE_TRANSFER_FILE_VERSION,
+  parseRuleTransferFile, parseRuleTransferText, RULE_TRANSFER_FILE_KIND, RULE_TRANSFER_FILE_VERSION,
   RULE_TRANSFER_MAX_FILE_SIZE, RULE_TRANSFER_MAX_IMPORT_COUNT,
   type RuleTransferFile, type RuleTransferFileRule, type RuleBulkImportRule,
 } from "./ruleTransfer";
 import {isBatchPortConflictError} from "./batchOperations";
 
-export type CompatibleRuleFile = Omit<RuleTransferFile, "rules"> & { importSource?: "nyanpass"; rules: RuleBulkImportRule[] };
+export type CompatibleRuleFile = Omit<RuleTransferFile, "rules"> & { importSource?: "nyanpass" | "text"; rules: RuleBulkImportRule[] };
 export type CompatibleRuleParseResult = {ok:true;file:CompatibleRuleFile} | {ok:false;error:string};
 const allowedFields = new Set(["name","listen_port","dest","dest_policy","accept_proxy_protocol","proxy_protocol","speed_limit","ip_limit","connection_limit","tls"]);
 const strategies = {random:"random",round:"round_robin",ip_hash:"ip_hash",failover:"fallback"} as const;
@@ -64,6 +64,11 @@ export function parseCompatibleRuleTransferText(text: string): CompatibleRulePar
   if (new TextEncoder().encode(text).byteLength>RULE_TRANSFER_MAX_FILE_SIZE) return {ok:false,error:t("规则文件不能超过 5 MiB")};
   const source = text.replace(/^\uFEFF/,"");
   if (!source.trim()) return {ok:false,error:t("文件中没有可导入的规则")};
+  const trimmed = source.trim();
+  if (!/^[\[{"]/.test(trimmed) || /^\[[^\]\r\n]+\]\s*[:：]/.test(trimmed)) {
+    const parsed = parseRuleTransferText(source);
+    return parsed.ok ? { ok: true, file: { ...parsed.file, importSource: "text" } } : parsed;
+  }
   try {
     let raw: unknown;
     let sourceLines: Array<{ sourceLine: string; sourceLineNumber: number }> | undefined;
@@ -112,11 +117,11 @@ export function validateNyanpassImportTarget(rules: RuleTransferFileRule[], opti
   return null;
 }
 
-export async function createImportedRule<T>(port:number, experimental:boolean, create:(sourcePort:number)=>Promise<T>):Promise<T> {
+export async function createImportedRule<T>(port:number, preservePort:boolean, create:(sourcePort:number)=>Promise<T>):Promise<T> {
   try {return await create(port);} catch(error) {
     // A migration must not silently change externally published entry ports.
     // Keep the existing fallback behavior only for native/manual imports.
-    if (experimental || port<=0 || !isBatchPortConflictError(error)) throw error;
+    if (preservePort || port<=0 || !isBatchPortConflictError(error)) throw error;
     return create(0);
   }
 }

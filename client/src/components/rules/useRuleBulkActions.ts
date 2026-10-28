@@ -2,7 +2,7 @@ import { t as translateText } from "@/i18n";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
-import { batchOperationErrorMessage, chunkBatchItems, runBatchOperations } from "@/lib/batchOperations";
+import { batchOperationErrorMessage } from "@/lib/batchOperations";
 import {
   summarizeRuleBulkDeleteResult, summarizeRuleBulkResult,
   type RuleBulkEditInput, type RuleBulkOutcome, type RuleBulkRule,
@@ -62,13 +62,11 @@ export function useRuleBulkActions<T extends RuleBulkRule>({ selection, editRule
         title: translateText("删除转发规则"), description: translateText("确认删除选中的 {0} 条转发规则？", [ids.length]),
         confirmText: translateText("删除"), tone: "destructive",
       }))) return;
-      const results = await runBatchOperations(chunkBatchItems(ids, 500), 2, deleteRules);
-      const outcomes = results.flatMap((result): RuleBulkOutcome[] => result.status === "rejected"
-        ? result.item.map((ruleId) => ({ ruleId, outcome: "failed", error: batchOperationErrorMessage(result.reason) }))
-        : [
-          ...result.value.deletedIds.map((ruleId): RuleBulkOutcome => ({ ruleId, outcome: "updated" })),
-          ...result.value.failures.map((failure): RuleBulkOutcome => ({ ruleId: failure.id, outcome: "failed", error: failure.error })),
-        ]);
+      const result = await deleteRules(ids);
+      const outcomes: RuleBulkOutcome[] = [
+        ...result.deletedIds.map((ruleId): RuleBulkOutcome => ({ ruleId, outcome: "updated" })),
+        ...result.failures.map((failure): RuleBulkOutcome => ({ ruleId: failure.id, outcome: "failed", error: failure.error })),
+      ];
       await finish(outcomes, scopeKey, true);
     } catch (error) {
       toast.error(translateText("批量删除失败：{0}", [batchOperationErrorMessage(error)]));
