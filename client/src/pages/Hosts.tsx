@@ -78,6 +78,9 @@ import { normalizeForwardProtocolSettings } from "@shared/forwardTypes";
 import { useUrlTab } from "@/hooks/useUrlTab";
 import { pollingInterval, visiblePollingInterval } from "@/lib/polling";
 import { trpc } from "@/lib/trpc";
+import { queryInChunks } from "@/lib/batchOperations";
+import { useQuery } from "@tanstack/react-query";
+import { getQueryKey } from "@trpc/react-query";
 import { cn } from "@/lib/utils";
 import {
   Activity,
@@ -1309,7 +1312,7 @@ function HostsContent() {
   });
   const [bulkUpgradeDialogOpen, setBulkUpgradeDialogOpen] = useState(false);
   const hostSearchQuery = manageSearchQueries.hosts;
-  const hostPageRequest = usePersistentPageRequest("forwardx.hosts.page");
+  const hostPageRequest = usePersistentPageRequest("forwardx.hosts.page", 20);
   const hostListRefreshInterval = visiblePollingInterval("slow", pageVisible);
   const managementCountsQuery = trpc.hosts.managementCounts.useQuery(undefined, {
     enabled: user?.role === "admin",
@@ -1319,7 +1322,7 @@ function HostsContent() {
   });
   const hostPageQuery = trpc.hosts.listPage.useQuery({
     page: hostPageRequest.page,
-    pageSize: 12,
+    pageSize: hostPageRequest.pageSize,
     search: hostSearchQuery,
     groupId: selectedHostGroupId === "all" ? null : Number(selectedHostGroupId),
   }, {
@@ -1449,7 +1452,9 @@ function HostsContent() {
       .sort((a: number, b: number) => a - b),
     [hostPageQuery.data?.items],
   );
-  const { data: hostStatusRows = [] } = trpc.hosts.statusSummary.useQuery({ hostIds: currentPageHostIds }, {
+  const { data: hostStatusRows = [] } = useQuery({
+    queryKey: getQueryKey(trpc.hosts.statusSummary, { hostIds: currentPageHostIds }, "query"),
+    queryFn: () => queryInChunks(currentPageHostIds, 100, (hostIds) => utils.client.hosts.statusSummary.query({ hostIds })),
     enabled: !isHostMapView && !needsFullHostList && !!hostLiveRefreshInterval && currentPageHostIds.length > 0,
     refetchInterval: hostLiveRefreshInterval,
     refetchOnWindowFocus: false,
@@ -1981,8 +1986,7 @@ function HostsContent() {
     bulkUpgradeCandidateQuery.data?.offlineItems ?? hostPageQuery.data?.offlineUpgradeableItems ?? 0,
   );
   const hostPagination = useServerPagination<any>(usesFullHostDisplay ? [] : filteredDisplayHosts, Number(hostPageQuery.data?.totalItems || 0), hostPageRequest, {
-    pageSize: 12,
-    isReady: !hostPageQuery.isLoading && !!hostPageQuery.data,
+    isReady: !!hostPageQuery.data && !hostPageQuery.isLoading && !hostPageQuery.isPlaceholderData,
   });
   const pagedHosts = hostPagination.items;
   const pagedHostIds = useMemo(
@@ -2078,26 +2082,36 @@ function HostsContent() {
     if (!hostLiveRefreshInterval || !pagedMetricHostIds.length) return;
     const hostIds = pagedMetricHostIds;
     if (hostIds.length === 0) return;
-    watchMetricsMutation.mutate({ hostIds });
+    const watchMetrics = () => {
+      void queryInChunks(hostIds, 200, async (chunk) => {
+        await watchMetricsMutation.mutateAsync({ hostIds: chunk });
+        return [];
+      }).catch(() => {});
+    };
+    watchMetrics();
     const timer = window.setInterval(() => {
-      watchMetricsMutation.mutate({ hostIds });
+      watchMetrics();
     }, hostLiveRefreshInterval);
     return () => window.clearInterval(timer);
   }, [hostLiveRefreshInterval, pagedHostIdKey]); // eslint-disable-line react-hooks/exhaustive-deps
   const { data: probeServices = [] } = trpc.hosts.probeServices.useQuery(undefined, { refetchInterval: pollingInterval("slow") });
-  const { data: hostTrafficRows = [] } = trpc.hosts.trafficSummary.useQuery(
-    { hostIds: pagedMetricHostIds },
-    { enabled: !!hostLiveRefreshInterval && pagedMetricHostIds.length > 0, refetchInterval: hostLiveRefreshInterval }
-  );
+  const { data: hostTrafficRows = [] } = useQuery({
+    queryKey: getQueryKey(trpc.hosts.trafficSummary, { hostIds: pagedMetricHostIds }, "query"),
+    queryFn: () => queryInChunks(pagedMetricHostIds, 500, (hostIds) => utils.client.hosts.trafficSummary.query({ hostIds })),
+    enabled: !!hostLiveRefreshInterval && pagedMetricHostIds.length > 0,
+    refetchInterval: hostLiveRefreshInterval,
+  });
   const hostTrafficById = useMemo(() => {
     const map = new Map<number, any>();
     for (const row of hostTrafficRows as any[]) map.set(Number(row.hostId), row);
     return map;
   }, [hostTrafficRows]);
-  const { data: hostLatestMetricRows = [] } = trpc.hosts.latestMetricsSummary.useQuery(
-    { hostIds: pagedMetricHostIds },
-    { enabled: !!hostLiveRefreshInterval && pagedMetricHostIds.length > 0, refetchInterval: hostLiveRefreshInterval }
-  );
+  const { data: hostLatestMetricRows = [] } = useQuery({
+    queryKey: getQueryKey(trpc.hosts.latestMetricsSummary, { hostIds: pagedMetricHostIds }, "query"),
+    queryFn: () => queryInChunks(pagedMetricHostIds, 500, (hostIds) => utils.client.hosts.latestMetricsSummary.query({ hostIds })),
+    enabled: !!hostLiveRefreshInterval && pagedMetricHostIds.length > 0,
+    refetchInterval: hostLiveRefreshInterval,
+  });
   const hostLatestMetricById = useMemo(() => {
     const map = new Map<number, any>();
     for (const row of hostLatestMetricRows as any[]) map.set(Number(row.hostId), row);
