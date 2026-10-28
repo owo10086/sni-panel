@@ -363,8 +363,9 @@ export async function listAffiliateRows(
     | "affiliate_withdrawals"
     | "affiliate_ledger"
     | "affiliate_referrals",
-  input: { userId?: number; page: number; status?: string },
+  input: { userId?: number; page: number; pageSize?: number; status?: string },
 ) {
+  const pageSize = input.pageSize ?? 20;
   const column = table === "affiliate_referrals" ? "affiliateUserId" : "userId";
   const conditions: string[] = [];
   const params: unknown[] = [];
@@ -394,9 +395,10 @@ export async function listAffiliateRows(
         affiliateUserId: number;
         codeId: number;
       }
-  >(`SELECT * FROM ${q(table)}${where} ORDER BY id DESC LIMIT 20 OFFSET ?`, [
+  >(`SELECT * FROM ${q(table)}${where} ORDER BY id DESC LIMIT ? OFFSET ?`, [
     ...params,
-    (input.page - 1) * 20,
+    pageSize,
+    (input.page - 1) * pageSize,
   ]);
   return { items, total: Number(count.total) };
 }
@@ -580,7 +582,7 @@ export async function updateAffiliateAccount(
     );
   });
 }
-export async function affiliateAdminOverview(page: number, search = "") {
+export async function affiliateAdminOverview(page: number, search = "", pageSize = 20) {
   await settleAffiliateCommissions();
   const [totals] = await queryRaw<{
     pendingCents: number;
@@ -600,8 +602,8 @@ export async function affiliateAdminOverview(page: number, search = "") {
   const accounts = await queryRaw<
     Account & { username: string | null; name: string | null; invites: number }
   >(
-    `SELECT a.*, u.username, u.name, (SELECT COUNT(*) FROM ${q("affiliate_referrals")} r WHERE r.${q("affiliateUserId")} = a.${q("userId")}) AS invites ${from}${where} ORDER BY a.id DESC LIMIT 20 OFFSET ?`,
-    [...params, (page - 1) * 20],
+    `SELECT a.*, u.username, u.name, (SELECT COUNT(*) FROM ${q("affiliate_referrals")} r WHERE r.${q("affiliateUserId")} = a.${q("userId")}) AS invites ${from}${where} ORDER BY a.id DESC LIMIT ? OFFSET ?`,
+    [...params, pageSize, (page - 1) * pageSize],
   );
   return {
     config: await affiliateConfig(),

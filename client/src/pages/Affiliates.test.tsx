@@ -5,6 +5,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { Wallet } from "lucide-react";
 import { AffiliateStats } from "./Affiliates";
 import { AFFILIATE_STATUS_LABELS } from "@shared/affiliate";
+import { setupAffiliatePage } from "@/test/affiliatePaginationHarness";
 import {
   getLanguagePreference,
   initializeLanguage,
@@ -121,4 +122,25 @@ test("affiliate settings live in the admin header dialog, including the independ
   const settings = fs.readFileSync("client/src/pages/Settings.tsx", "utf8");
   assert.match(settings, /仅控制菜单显示，返佣总开关请在推广管理的设置中调整/, "local menu-only settings must explain that the business switch is separate");
   assert.doesNotMatch(settings, /affiliateEnabled/);
+});
+
+test("saving affiliate settings updates the exact current overview query cache including pageSize", () => {
+  const page = setupAffiliatePage(true);
+  page.render();
+  page.selectSize(200, "overview");
+  const search = page.elements(element => element.type === "Input" && element.props.maxLength === 100)[0];
+  search.props.onChange({ target: { value: "alice" } }); page.render(); page.flushTimers();
+  page.pagination("overview").setPage(3); page.render();
+  const settings = page.elements(element => element.type === "Button" && element.props.className === "shrink-0")[0];
+  settings.props.onClick(); page.render();
+  const rate = page.elements(element => element.props.id === "affiliate-rate")[0];
+  rate.props.onChange({ target: { value: "25" } }); page.render();
+  const save = page.elements(element => element.type === "Button" && element.props.children === "保存设置")[0];
+  assert.equal(save.props.disabled, false);
+  const currentQuery = page.lastRequest("adminOverview");
+  save.props.onClick();
+  assert.equal(page.cacheUpdates.length, 1);
+  assert.deepEqual({ ...page.cacheUpdates[0].input }, { ...currentQuery });
+  assert.equal(page.cacheUpdates[0].input.pageSize, 200);
+  assert.equal(page.cacheUpdates[0].data.config.rateBps, 2500);
 });
