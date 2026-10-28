@@ -820,6 +820,9 @@ const scenarios = {
 };
 
 // ----------------------------------------------------------------- main ----
+export { Lab, buildAgentTestBinary, ECHO_PY, PROBE_PY };
+
+if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
 const selected = process.argv.slice(2);
 const names = selected.length ? selected : Object.keys(scenarios);
 const directory = fs.mkdtempSync(path.join(os.tmpdir(), "forwardx-nft-docker-"));
@@ -845,3 +848,4 @@ for (const name of names) {
 }
 fs.rmSync(directory, { recursive: true, force: true });
 process.exit(failed ? 1 : 0);
+}
