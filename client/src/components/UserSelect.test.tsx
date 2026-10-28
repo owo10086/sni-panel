@@ -18,11 +18,11 @@ test("user options distinguish duplicate names with remarks, username, email and
   assert.equal(userOptionDetail({ id: 1, username: "mail@example.test", email: "mail@example.test" }), "#1");
 });
 
-test("visible rule owner lookup is bounded, deduplicated and includes the selected creation owner", () => {
+test("visible rule owner lookup includes every owner, deduplicated and including the selected creation owner", () => {
   assert.deepEqual(ruleOwnerOptionIds([{ userId: 4 }, { userId: 4 }, { userId: null }, { userId: -1 }, { userId: 2 }], 10), [2, 4, 10]);
   const ids = ruleOwnerOptionIds(Array.from({ length: 1000 }, (_, index) => ({ userId: index + 1 })), 2000);
-  assert.equal(ids.length, 100);
-  assert.ok(ids.includes(2000));
+  assert.equal(ids.length, 1001);
+  assert.deepEqual(ids, [...Array.from({ length: 1000 }, (_, index) => index + 1), 2000]);
 });
 
 test("rules open in the current user's scope instead of restoring a stored owner filter", () => {

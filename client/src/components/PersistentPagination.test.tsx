@@ -75,11 +75,7 @@ test("new pagination visibility uses 20 while fixed-size lists keep their origin
     const source = readFileSync(`client/src/pages/${file}.tsx`, "utf8");
     assert.match(source, /limit: 100,/);
   }
-  for (const file of ["Rules"]) {
-    const source = readFileSync(`client/src/pages/${file}.tsx`, "utf8");
-    assert.doesNotMatch(source, /usePersistentPageRequest\([^\n]+, (20|50)\)/);
-  }
-  assert.match(readFileSync("client/src/pages/Rules.tsx", "utf8"), /RULE_PAGE_SIZE_OPTIONS/);
+  assert.doesNotMatch(readFileSync("client/src/pages/Rules.tsx", "utf8"), /RULE_PAGE_SIZE_OPTIONS/);
 });
 
 test("chunk queries make one call at the cap, two one above, none for empty, and preserve every result", async () => {
