@@ -1,5 +1,6 @@
+import { SERVICE_BUSY_MESSAGE } from "./requestWorkPool";
 import type { Express, ErrorRequestHandler, RequestHandler } from "express";
-import { databaseHealth } from "./databaseHealthState";
+import { databaseHealth, isDatabaseBusyError } from "./databaseHealthState";
 import { DATABASE_UNAVAILABLE_MESSAGE } from "../shared/databaseHealth";
 
 export function registerDatabaseHealthRoutes(app: Express) {
@@ -18,6 +19,12 @@ export const databaseUnavailableApiGuard: RequestHandler = (req, res, next) => {
 };
 
 export const databaseRequestErrorHandler: ErrorRequestHandler = (error, _req, res, next) => {
+  if (isDatabaseBusyError(error)) {
+    if (res.headersSent) { res.destroy(); return; }
+    res.setHeader("Retry-After", "5");
+    res.status(503).json({ error: SERVICE_BUSY_MESSAGE, code: "SERVICE_UNAVAILABLE" });
+    return;
+  }
   if (!databaseHealth.unavailable(error)) return next(error);
   if (res.headersSent) { res.destroy(); return; }
   res.setHeader("Retry-After", "15");

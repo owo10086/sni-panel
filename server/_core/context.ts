@@ -16,11 +16,12 @@ import {
   type SessionKind,
 } from "../session";
 import { DEV_ADMIN_USERNAME, isDevPanelMode } from "../devPanel";
-import { getActiveAuthSession, revokeAuthSession, touchAuthSession } from "../repositories/sessionRepository";
+import { getAuthSessionIdentity, revokeAuthSession, touchAuthSession } from "../repositories/sessionRepository";
 import { withKeyedTaskLock } from "../keyedTaskLock";
 import { TRPCError } from "@trpc/server";
-import { databaseHealth, describeDatabaseError } from "../databaseHealthState";
+import { databaseHealth, describeDatabaseError, isDatabaseBusyError } from "../databaseHealthState";
 import { DATABASE_UNAVAILABLE_MESSAGE } from "../../shared/databaseHealth";
+import { createRequestWorkPool, SERVICE_BUSY_MESSAGE } from "../requestWorkPool";
 
 export interface AuthSession {
   kind: SessionKind;
@@ -42,9 +43,15 @@ type TokenSource = "cookie" | "bearer";
 
 const MULTI_DEVICE_LOGIN_SETTING_CACHE_MS = 30 * 1000;
 let allowMultiDeviceLoginCache: { value: boolean; loadedAt: number } = { value: false, loadedAt: 0 };
+let multiDeviceLoginLoad: Promise<boolean> | undefined;
+// Absorb short UI bursts in application memory, without putting every request
+// into the driver's queue. Hold admission through lease refresh and touch too,
+// so slow writes cannot grow a second unbounded authentication queue.
+const authReads = createRequestWorkPool({ concurrency: 8, maxQueued: 256, queueTimeoutMs: 2000 });
 
 export function updateMultiDeviceLoginSettingCache(value: boolean) {
   allowMultiDeviceLoginCache = { value, loadedAt: Date.now() };
+  multiDeviceLoginLoad = undefined;
 }
 
 function getRequestToken(req: Request): { token: string; source: TokenSource | null } {
@@ -81,9 +88,17 @@ async function allowMultiDeviceLogin() {
   if (now - allowMultiDeviceLoginCache.loadedAt < MULTI_DEVICE_LOGIN_SETTING_CACHE_MS) {
     return allowMultiDeviceLoginCache.value;
   }
-  const value = (await db.getSetting("allowMultiDeviceLogin")) === "true";
-  allowMultiDeviceLoginCache = { value, loadedAt: now };
-  return value;
+  if (!multiDeviceLoginLoad) {
+    const currentCache = allowMultiDeviceLoginCache;
+    const pending = db.getSetting("allowMultiDeviceLogin").then((setting) => {
+      if (allowMultiDeviceLoginCache === currentCache) {
+        allowMultiDeviceLoginCache = { value: setting === "true", loadedAt: Date.now() };
+      }
+      return allowMultiDeviceLoginCache.value;
+    }).finally(() => { if (multiDeviceLoginLoad === pending) multiDeviceLoginLoad = undefined; });
+    multiDeviceLoginLoad = pending;
+  }
+  return multiDeviceLoginLoad;
 }
 
 async function claimSessionLease(user: User, sessionKind: SessionKind, sid: string) {
@@ -109,73 +124,86 @@ type ResolveSessionResult =
   | { user: null; authSession: null; failureReason: "session_replaced" | "account_disabled" | null };
 
 async function resolveSessionFromToken(req: Request, res: Response, token: string, source: TokenSource): Promise<ResolveSessionResult> {
+  if (!ENV.cookieSecret) return { user: null, authSession: null, failureReason: null };
+  let payload: unknown;
   try {
-    if (!ENV.cookieSecret) return { user: null, authSession: null, failureReason: null };
-    const payload = jwt.verify(token, ENV.cookieSecret);
-    const normalized = normalizeSessionPayload(req, payload);
-    if (!normalized) return { user: null, authSession: null, failureReason: null };
-    if (!normalized.sid) {
-      if (source === "cookie") clearSessionCookie(res, req);
-      return { user: null, authSession: null, failureReason: "session_replaced" };
-    }
+    payload = jwt.verify(token, ENV.cookieSecret);
+  } catch {
+    // Only cryptographically invalid/expired tokens may be discarded here.
+    if (source === "cookie") clearSessionCookie(res, req);
+    return { user: null, authSession: null, failureReason: null };
+  }
+  try {
+    return await authReads.run<ResolveSessionResult>(async () => {
+      const normalized = normalizeSessionPayload(req, payload);
+      if (!normalized) return { user: null, authSession: null, failureReason: null };
+      if (!normalized.sid) {
+        if (source === "cookie") clearSessionCookie(res, req);
+        return { user: null, authSession: null, failureReason: "session_replaced" };
+      }
 
-    const found = await db.getUserById(normalized.userId);
-    if (!found) return { user: null, authSession: null, failureReason: null };
+      const identity = await getAuthSessionIdentity(normalized.userId, normalized.sid, normalized.kind);
+      const found = identity?.user;
+      if (!found) return { user: null, authSession: null, failureReason: null };
 
-    // Account state is checked while resolving the token, before any public
-    // procedure can inspect ctx.user. This invalidates an otherwise-active
-    // cookie immediately after an administrator disables the account.
-    if ((found as any).accountEnabled === false) {
-      clearSessionCookie(res, req);
-      return { user: null, authSession: null, failureReason: "account_disabled" };
-    }
+      // Account state is checked while resolving the token, before any public
+      // procedure can inspect ctx.user. This invalidates an otherwise-active
+      // cookie immediately after an administrator disables the account.
+      if ((found as any).accountEnabled === false) {
+        clearSessionCookie(res, req);
+        return { user: null, authSession: null, failureReason: "account_disabled" };
+      }
 
-    const sessionKind = normalized.kind;
-    const activeSession = await getActiveAuthSession(found.id, normalized.sid, sessionKind);
-    if (!activeSession) {
-      if (source === "cookie") clearSessionCookie(res, req);
-      return {
-        user: null,
-        authSession: null,
-        failureReason: "session_replaced",
-      };
-    }
-    if (!(await allowMultiDeviceLogin()) && !(await claimSessionLease(found, sessionKind, normalized.sid))) {
-      await revokeAuthSession(found.id, normalized.sid, sessionKind, "lease_replaced").catch((error) => {
-        console.warn(`[Auth] conflicting session cleanup failed userId=${found.id} kind=${sessionKind}: ${error instanceof Error ? error.message : String(error)}`);
+      const sessionKind = normalized.kind;
+      const activeSession = identity?.session;
+      if (!activeSession) {
+        if (source === "cookie") clearSessionCookie(res, req);
+        return {
+          user: null,
+          authSession: null,
+          failureReason: "session_replaced",
+        };
+      }
+      if (!(await allowMultiDeviceLogin()) && !(await claimSessionLease(found, sessionKind, normalized.sid))) {
+        await revokeAuthSession(found.id, normalized.sid, sessionKind, "lease_replaced").catch((error) => {
+          console.warn(`[Auth] conflicting session cleanup failed userId=${found.id} kind=${sessionKind}: ${error instanceof Error ? error.message : String(error)}`);
+        });
+        if (source === "cookie") clearSessionCookie(res, req);
+        return {
+          user: null,
+          authSession: null,
+          failureReason: "session_replaced",
+        };
+      }
+      await touchAuthSession(found.id, normalized.sid, sessionKind, activeSession).catch((error) => {
+        console.warn(`[Auth] session touch failed userId=${found.id} kind=${sessionKind}: ${error instanceof Error ? error.message : String(error)}`);
       });
-      if (source === "cookie") clearSessionCookie(res, req);
-      return {
-        user: null,
-        authSession: null,
-        failureReason: "session_replaced",
-      };
-    }
-    await touchAuthSession(found.id, normalized.sid, sessionKind, activeSession).catch((error) => {
-      console.warn(`[Auth] session touch failed userId=${found.id} kind=${sessionKind}: ${error instanceof Error ? error.message : String(error)}`);
-    });
 
-    return {
-      user: found,
-      authSession: {
-        kind: sessionKind,
-        sid: normalized.sid,
-        token,
-        legacy: false,
-        source,
-      },
-    };
+      return {
+        user: found,
+        authSession: {
+          kind: sessionKind,
+          sid: normalized.sid,
+          token,
+          legacy: false,
+          source,
+        },
+      };
+    });
   } catch (error) {
+    if (error instanceof TRPCError) throw error;
+    if (isDatabaseBusyError(error)) {
+      throw new TRPCError({ code: "SERVICE_UNAVAILABLE", message: SERVICE_BUSY_MESSAGE, cause: error });
+    }
     if (describeDatabaseError(error) || databaseHealth.snapshot().state === "unavailable") {
       databaseHealth.unavailable(error);
       // A DB outage is not evidence that a cookie is invalid. Keep the session
       // for recovery, but never bypass account/session checks or grant access.
       throw new TRPCError({ code: "SERVICE_UNAVAILABLE", message: DATABASE_UNAVAILABLE_MESSAGE });
     }
-    if (source === "cookie") {
-      clearSessionCookie(res, req);
-    }
-    return { user: null, authSession: null, failureReason: null };
+    // Unknown database/service errors are not an authentication decision either.
+    // Fail closed, but keep credentials so recovery needs no fresh login.
+    throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "登录验证暂时失败，请稍后重试", cause: error });
   }
 }
 
