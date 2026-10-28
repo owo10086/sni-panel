@@ -1,0 +1,46 @@
+{
+  "baseCommit": "cbe7ad7c324f8a9e91644b2be425c119ad4d139d",
+  "reviewedSourceSha256": "ea1a19eb2795364fef8d4ad9244741045d564dd1254d457af256e50b63e03dbf",
+  "additionalExistingTests": {
+    "passed": 28,
+    "failed": 0
+  },
+  "restartDuringFailureComparison": {
+    "failoverSeconds": 10,
+    "failureObservedBeforeRestartSeconds": 9,
+    "resumeAfterAdditionalSeconds": 1,
+    "currentActiveMember": 101,
+    "originalActiveMember": 102,
+    "expectedActiveMember": 102
+  },
+  "repositoryCodeModifiedByReview": false,
+  "productionChanged": false,
+  "currentReproductionDirectory": "/private/tmp/host-entry-review-failure-restart-urx96luj",
+  "baselineReproductionDirectory": "/private/tmp/host-entry-review-original-uyd__eoi",
+  "moveBackComparison": {
+    "interface": "rulesRouter.update",
+    "flow": "group10 -> group20 -> group10",
+    "retiredBackupChild": 1002,
+    "liveBackupChild": 1006,
+    "liveBackupRunning": true,
+    "current": {
+      "activeMemberId": 101,
+      "lastStatus": "down"
+    },
+    "original": {
+      "activeMemberId": 102,
+      "lastStatus": "healthy"
+    }
+  },
+  "moveBackReproductionDirectory": "/private/tmp/host-entry-review-move-back-hs6ph3o0",
+  "unfixedFindings": [
+    {
+      "priority": "P2",
+      "issue": "故障中重启重新开始观察计时"
+    },
+    {
+      "priority": "P2",
+      "issue": "移回原组后退役副本遮挡当前运行副本"
+    }
+  ]
+}

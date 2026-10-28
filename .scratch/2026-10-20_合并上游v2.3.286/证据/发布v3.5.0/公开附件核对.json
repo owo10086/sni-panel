@@ -1,0 +1,65 @@
+{
+  "url": "https://github.com/owo10086/sni-panel/releases/tag/v3.5.0",
+  "commit": "4f1b289f32e1b08fce1bfbf0f3c042d33b6b19f8",
+  "publishedAt": "2026-10-20T05:46:16Z",
+  "latest": true,
+  "assets": [
+    {
+      "name": "forwardx-agent-linux-amd64",
+      "size": 11059352,
+      "sha256": "1f15212f5d44b400dfe3fe86a31e20bd8fbe879329eb7a9403773676ccb15ec3",
+      "githubDigest": "sha256:1f15212f5d44b400dfe3fe86a31e20bd8fbe879329eb7a9403773676ccb15ec3"
+    },
+    {
+      "name": "forwardx-fxp-linux-amd64",
+      "size": 6848664,
+      "sha256": "300618078370e09eca7bb900c591160f3a89f3dd96a9f4df85bc6a229b93d44c",
+      "githubDigest": "sha256:300618078370e09eca7bb900c591160f3a89f3dd96a9f4df85bc6a229b93d44c"
+    },
+    {
+      "name": "forwardx-panel-v3.5.0.tar.gz",
+      "size": 52360130,
+      "sha256": "9097bae08dc9662ba27265240eedfe43a98179501dc5abe7f0a9d582d29062b2",
+      "githubDigest": "sha256:9097bae08dc9662ba27265240eedfe43a98179501dc5abe7f0a9d582d29062b2"
+    },
+    {
+      "name": "forwardx-runtime-linux-amd64",
+      "size": 9673064,
+      "sha256": "a2aea24efb4597b5f57b35b8e1bbcc59f439b80723854d4371f6828b46682ffb",
+      "githubDigest": "sha256:a2aea24efb4597b5f57b35b8e1bbcc59f439b80723854d4371f6828b46682ffb"
+    },
+    {
+      "name": "SHA256SUMS",
+      "size": 426,
+      "sha256": "0369a9ca0e17ca79fbfc1ea36c37076ae416820117460c1a92d4ec69f45b1a27",
+      "githubDigest": "sha256:0369a9ca0e17ca79fbfc1ea36c37076ae416820117460c1a92d4ec69f45b1a27"
+    },
+    {
+      "name": "THIRD_PARTY_NOTICES.md",
+      "size": 4041,
+      "sha256": "3fefc655e2b954efe4d1c11e6e5764cda51848b89aa7bb08b288ad3764181572",
+      "githubDigest": "sha256:3fefc655e2b954efe4d1c11e6e5764cda51848b89aa7bb08b288ad3764181572"
+    }
+  ],
+  "bundlePackageVersion": "3.5.0",
+  "bundledChecksumsVerified": true,
+  "standaloneChecksumsVerified": true,
+  "binarySourceCommitVerified": true,
+  "binaryComparisons": {
+    "forwardx-agent-linux-amd64": {
+      "standaloneSha256": "1f15212f5d44b400dfe3fe86a31e20bd8fbe879329eb7a9403773676ccb15ec3",
+      "bundledSha256": "16e7cde1acd16c3426a1037f454ccba84fde6bc28371c04988354fba28a2265c",
+      "identical": false
+    },
+    "forwardx-fxp-linux-amd64": {
+      "standaloneSha256": "300618078370e09eca7bb900c591160f3a89f3dd96a9f4df85bc6a229b93d44c",
+      "bundledSha256": "5df3d95b29f7babb03c678e1a4b8126a7d688fc7d04d4368b01504e56889366b",
+      "identical": false
+    },
+    "forwardx-runtime-linux-amd64": {
+      "standaloneSha256": "a2aea24efb4597b5f57b35b8e1bbcc59f439b80723854d4371f6828b46682ffb",
+      "bundledSha256": "a2aea24efb4597b5f57b35b8e1bbcc59f439b80723854d4371f6828b46682ffb",
+      "identical": true
+    }
+  }
+}

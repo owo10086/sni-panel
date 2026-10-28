@@ -1,0 +1,22 @@
+{
+  "forwardx-agent-linux-amd64": {
+    "sourceCommit": "4f1b289f32e1b08fce1bfbf0f3c042d33b6b19f8",
+    "standaloneModified": [
+      "build\tvcs.modified=false"
+    ],
+    "bundledModified": [
+      "build\tvcs.modified=true"
+    ],
+    "otherBuildMetadataIdentical": true
+  },
+  "forwardx-fxp-linux-amd64": {
+    "sourceCommit": "4f1b289f32e1b08fce1bfbf0f3c042d33b6b19f8",
+    "standaloneModified": [
+      "build\tvcs.modified=false"
+    ],
+    "bundledModified": [
+      "build\tvcs.modified=true"
+    ],
+    "otherBuildMetadataIdentical": true
+  }
+}

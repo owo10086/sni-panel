@@ -1,0 +1,74 @@
+{
+  "date": "2026-10-18",
+  "base": "7adf15055096894b28dd058a2babad2616675a0e",
+  "target": "c8e5c77622e5acce920f1e8ef856d920f29cfc44",
+  "testSource": "/private/tmp/forwardx-task3-review-9enfa703",
+  "sourceMethod": "git archive; no worktree created",
+  "files": [
+    {
+      "file": "服务端-允许本地监听.log",
+      "size": 336440,
+      "sha256": "ae8e351a40ad37bdbf106a3ee258b7f5d25e6a317db5bc09b4c693a954b866c4"
+    },
+    {
+      "file": "服务端-首次环境限制.log",
+      "size": 18892,
+      "sha256": "31b711352bf047f84f747dcc8d0725ddc91bde458018ef01bf1f9dd7f153ce90"
+    },
+    {
+      "file": "主机删除.log",
+      "size": 24013,
+      "sha256": "14fd161577791c23d9a5f320a00ff9418c5f20ee8bc2cb19e14b53073e9f10e0"
+    },
+    {
+      "file": "网页.log",
+      "size": 12241,
+      "sha256": "c3e6404c127febcedfeca8a22573bf349e39350f0917618d692d53fc81e770c6"
+    },
+    {
+      "file": "双语.log",
+      "size": 6484,
+      "sha256": "1ca6fd039cd9691ba429302278cf29075599e844b6a0491db1b749559c0c3299"
+    },
+    {
+      "file": "类型.log",
+      "size": 164,
+      "sha256": "5f27b26ce04366b88dd02ae75883b4c0e1817f5858444f6707ec2b3cfb2bb807"
+    },
+    {
+      "file": "构建.log",
+      "size": 1955,
+      "sha256": "97588daa6bb648c57ef5c67c64d2ce952bb60f562d2a12cff8cb606a2a570eef"
+    },
+    {
+      "file": "文档构建.log",
+      "size": 1012,
+      "sha256": "0a732f151297c434205cedecfbbbfcf26125d69007805c09731dba7d64d440c0"
+    },
+    {
+      "file": "欠费收尾-结果.json",
+      "size": 676,
+      "sha256": "5bff2ba406df5e87b2ef3db90d1837a8bf3c6cec1bd9076317a3fb827ee0b437"
+    },
+    {
+      "file": "欠费收尾-复现.log",
+      "size": 1142,
+      "sha256": "46a645f702a82ecfd20b4c542440c6cb20c523ff26b519f4035f70b42e903bab"
+    },
+    {
+      "file": "欠费收尾-保留标记结果.json",
+      "size": 738,
+      "sha256": "d250e79a51b7e0d5f726ad003ac4ca197c0a623e11a3cb0e6f23357fce345a7e"
+    },
+    {
+      "file": "欠费收尾-保留标记复现.log",
+      "size": 1204,
+      "sha256": "cd396983ed770006e0024acee3d81e1a9f323070cc0e685f10f0bfce1b3d6d43"
+    },
+    {
+      "file": "转发链每日历史-复现.log",
+      "size": 878,
+      "sha256": "8fa62319c3ad0f5e03d071e52f09ca82adbfc565e2a6c340880eb4e94c0709c8"
+    }
+  ]
+}

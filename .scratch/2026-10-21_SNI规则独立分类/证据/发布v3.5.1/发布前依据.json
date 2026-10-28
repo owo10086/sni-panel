@@ -1,0 +1,34 @@
+{
+  "baseline": "c35e4d6e71be0f34d8dbf5b38c71837215c5fe4f",
+  "remote_main_before": "4f1b289f32e1b08fce1bfbf0f3c042d33b6b19f8",
+  "new_version": "3.5.1",
+  "agent_fxp_version": "3.5.0",
+  "remote": "sni-panel",
+  "destination": "https://github.com/owo10086/sni-panel.git",
+  "unrelated_files": [
+    {
+      "file": ".gitignore",
+      "sha256": "829792bf976c7c8dadd71eb1f7372a1d3bd0fa9dd04964b74124625f7e3cdebc"
+    },
+    {
+      "file": ".scratch/2026-10-08_合并上游v2.3.282/spec.md",
+      "sha256": "5dce031749ce0d4e18b7ac1ae2f81cadb96555c1f913388a3850f444fd665bb3"
+    },
+    {
+      "file": ".scratch/2026-10-17_合并上游v2.3.283/284接续记录.md",
+      "sha256": "17dea20a2c515812b9b6df48c2b92440a5a3d08c04deb89881fe5f1f8228fb14"
+    },
+    {
+      "file": "AGENTS.md",
+      "sha256": "549ded3d2ac8dabddddd96704f245cff5bf966abadb275c01bad3c0114dc2b4c"
+    },
+    {
+      "file": "CONTEXT.md",
+      "sha256": "2234c994830d419bc0ba89a371e61448dfc83119eceda989e5dc995c0e697837"
+    },
+    {
+      "file": "docs/adr/0008-host-failover-groups-use-entry-health.md",
+      "sha256": "6f7d395d7303fc01046f933f3a6c8549aea2f90969b0f4b52d813c4936b3ff92"
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "recordedAt": "2026-10-19T10:38:55.438838+00:00",
+  "baseCommit": "cbe7ad7c324f8a9e91644b2be425c119ad4d139d",
+  "scope": {
+    "groupType": "host",
+    "groupMode": "failover"
+  },
+  "regressions": {
+    "passed": 64,
+    "failed": 0
+  },
+  "productionChanged": false,
+  "humanAccepted": false,
+  "sha256": {
+    "server/repositories/forwardGroupRepository.ts": "ea1a19eb2795364fef8d4ad9244741045d564dd1254d457af256e50b63e03dbf",
+    "server/forwardGroupFailover.test.ts": "5079f18bf679f18006b4610bc6ea0b4b4dc88068319ac30b0fd341a2b3259699",
+    "server/forwardGroupLiveness.test.ts": "f7924868c144667e65731c59e24692973459859faa6daa7e1e99210d822c4cdc",
+    "server/sniForwardGroupHealth.test.ts": "5e1ff38a425971d6095a9fa5b7176120fba08a28090b0dff078ae3a5b6121fa3",
+    "server/test-support/sniForwardGroupHealthHarness.mjs": "43c3eaaa355d15a72a7cba9a0fee789b74126bed190fe59cacd0960089f334bb",
+    "AGENTS.md": "dec59ff610d734c376edc00306917993c13f7327bd5b3d1d6f8eba2ac03c9a6a",
+    "docs/adr/0006-sni-group-ddns-uses-confirmed-entry-health.md": "27ef1202c21c6a96c8087aa8c4063449a8ff09088a76932b12c582e69d44ee50",
+    "docs/adr/0008-host-failover-groups-use-entry-health.md": "799b2835a19cb92e0111b12a506e32300240f9ac39ac03093ac37cc7be2ac242",
+    "dist/index.js": "b36263c5593484e618f09521854cbc6d1f8317d6a892b5b62892d3067f676fab"
+  }
+}

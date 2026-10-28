@@ -1,0 +1,8 @@
+{
+  "image": "ghcr.io/owo10086/sni-panel:v3.4.1",
+  "versionDigest": "sha256:ca2494250c995196dca3cc9208be82745a4aaf4a073f862a781ed03411ec6ae9",
+  "latestDigest": "sha256:ca2494250c995196dca3cc9208be82745a4aaf4a073f862a781ed03411ec6ae9",
+  "platform": "linux/amd64",
+  "versionLabel": "3.4.1",
+  "runtimeVersion": "3.4.1"
+}

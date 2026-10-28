@@ -1,0 +1,42 @@
+{
+  "recordedAt": "2026-10-19T14:00:03.819875+00:00",
+  "baseCommit": "cbe7ad7c324f8a9e91644b2be425c119ad4d139d",
+  "scope": {
+    "groupType": "host",
+    "groupMode": "failover"
+  },
+  "regressions": {
+    "passed": 98,
+    "failed": 0,
+    "suites": [
+      {
+        "log": "05-最终主备在线回归.log",
+        "passed": 13,
+        "failed": 0
+      },
+      {
+        "log": "06-完整SNI健康回归.log",
+        "passed": 29,
+        "failed": 0
+      },
+      {
+        "log": "07-其余范围回归.log",
+        "passed": 56,
+        "failed": 0
+      }
+    ]
+  },
+  "typecheckExitCode": 0,
+  "buildExitCode": 0,
+  "independentReviewTask": "6f5be73b-a54f-454b-a112-bc60160fbf47",
+  "independentReviewStatus": "completed",
+  "productionChanged": false,
+  "humanAccepted": false,
+  "sha256": {
+    "server/repositories/forwardGroupRepository.ts": "ecfdcea15ba74cd288f11c2fbac8001cc7803e3ad139bd3357ed223c61a4a432",
+    "server/forwardGroupFailover.test.ts": "de2f9baf1546a39bc61adcacd64dcc11417cb671dbc545e3f8fdceff61f316a0",
+    "dist/index.js": "d42122ec86786ff28d3fcd14f77c3d774d77a4cb19f1826a701a12537eee16a0"
+  },
+  "independentReviewFindings": [],
+  "independentTargetedPassed": 7
+}

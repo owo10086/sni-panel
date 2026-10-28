@@ -1,0 +1,16 @@
+{
+  "url": "https://owo10086.github.io/sni-panel/",
+  "build": {
+    "version": "3.5.0",
+    "commit": "4f1b289f32e1b08fce1bfbf0f3c042d33b6b19f8",
+    "sourceDirty": false,
+    "sourceSha256": "ed1913c69bbaeceb3cd06c5c44c4003867c660519e0ef5a981f3b96b15fbe336",
+    "builtAt": "2026-10-20T05:37:16.937Z"
+  },
+  "pagesVerified": [
+    "build-info.json",
+    "guide/releases.html",
+    "guide/hosts.html",
+    "guide/observability-mcp.html"
+  ]
+}

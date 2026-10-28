@@ -1,0 +1,741 @@
+{
+  "run": {
+    "id": 39375824982,
+    "name": "Release Panel",
+    "node_id": "WFR_kwLOUXf21c8AAAAJKvtoVg",
+    "head_branch": "v3.5.0",
+    "head_sha": "4f1b289f32e1b08fce1bfbf0f3c042d33b6b19f8",
+    "path": ".github/workflows/release-panel.yml",
+    "display_title": "准备3.5.0版本及上游286双语发布说明",
+    "run_number": 20,
+    "event": "push",
+    "status": "completed",
+    "conclusion": "success",
+    "workflow_id": 356231132,
+    "check_suite_id": 106700877411,
+    "check_suite_node_id": "CS_kwDOUXf21c8AAAAY194uYw",
+    "url": "https://api.github.com/repos/owo10086/sni-panel/actions/runs/39375824982",
+    "html_url": "https://github.com/owo10086/sni-panel/actions/runs/39375824982",
+    "pull_requests": [],
+    "created_at": "2026-10-20T05:36:46Z",
+    "updated_at": "2026-10-20T05:50:59Z",
+    "actor": {
+      "login": "owo10086",
+      "id": 135562245,
+      "node_id": "U_kgDOCBSEBQ",
+      "avatar_url": "https://avatars.githubusercontent.com/u/135562245?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/owo10086",
+      "html_url": "https://github.com/owo10086",
+      "followers_url": "https://api.github.com/users/owo10086/followers",
+      "following_url": "https://api.github.com/users/owo10086/following{/other_user}",
+      "gists_url": "https://api.github.com/users/owo10086/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/owo10086/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/owo10086/subscriptions",
+      "organizations_url": "https://api.github.com/users/owo10086/orgs",
+      "repos_url": "https://api.github.com/users/owo10086/repos",
+      "events_url": "https://api.github.com/users/owo10086/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/owo10086/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "run_attempt": 1,
+    "referenced_workflows": [
+      {
+        "path": "owo10086/sni-panel/.github/workflows/docker-image.yml@4f1b289f32e1b08fce1bfbf0f3c042d33b6b19f8",
+        "sha": "4f1b289f32e1b08fce1bfbf0f3c042d33b6b19f8",
+        "ref": "refs/tags/v3.5.0"
+      }
+    ],
+    "run_started_at": "2026-10-20T05:36:46Z",
+    "triggering_actor": {
+      "login": "owo10086",
+      "id": 135562245,
+      "node_id": "U_kgDOCBSEBQ",
+      "avatar_url": "https://avatars.githubusercontent.com/u/135562245?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/owo10086",
+      "html_url": "https://github.com/owo10086",
+      "followers_url": "https://api.github.com/users/owo10086/followers",
+      "following_url": "https://api.github.com/users/owo10086/following{/other_user}",
+      "gists_url": "https://api.github.com/users/owo10086/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/owo10086/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/owo10086/subscriptions",
+      "organizations_url": "https://api.github.com/users/owo10086/orgs",
+      "repos_url": "https://api.github.com/users/owo10086/repos",
+      "events_url": "https://api.github.com/users/owo10086/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/owo10086/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "jobs_url": "https://api.github.com/repos/owo10086/sni-panel/actions/runs/39375824982/jobs",
+    "logs_url": "https://api.github.com/repos/owo10086/sni-panel/actions/runs/39375824982/logs",
+    "check_suite_url": "https://api.github.com/repos/owo10086/sni-panel/check-suites/106700877411",
+    "artifacts_url": "https://api.github.com/repos/owo10086/sni-panel/actions/runs/39375824982/artifacts",
+    "cancel_url": "https://api.github.com/repos/owo10086/sni-panel/actions/runs/39375824982/cancel",
+    "rerun_url": "https://api.github.com/repos/owo10086/sni-panel/actions/runs/39375824982/rerun",
+    "previous_attempt_url": null,
+    "workflow_url": "https://api.github.com/repos/owo10086/sni-panel/actions/workflows/356231132",
+    "head_commit": {
+      "id": "4f1b289f32e1b08fce1bfbf0f3c042d33b6b19f8",
+      "tree_id": "f7f8c9aa90d7a0482b8d3d138d219d861011b78f",
+      "message": "准备3.5.0版本及上游286双语发布说明",
+      "timestamp": "2026-10-20T05:36:30Z",
+      "author": {
+        "name": "macmini",
+        "email": "macmini@1deMacBook-Pro.local"
+      },
+      "committer": {
+        "name": "macmini",
+        "email": "macmini@1deMacBook-Pro.local"
+      }
+    },
+    "repository": {
+      "id": 1366816469,
+      "node_id": "R_kgDOUXf21Q",
+      "name": "sni-panel",
+      "full_name": "owo10086/sni-panel",
+      "private": false,
+      "owner": {
+        "login": "owo10086",
+        "id": 135562245,
+        "node_id": "U_kgDOCBSEBQ",
+        "avatar_url": "https://avatars.githubusercontent.com/u/135562245?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/owo10086",
+        "html_url": "https://github.com/owo10086",
+        "followers_url": "https://api.github.com/users/owo10086/followers",
+        "following_url": "https://api.github.com/users/owo10086/following{/other_user}",
+        "gists_url": "https://api.github.com/users/owo10086/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/owo10086/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/owo10086/subscriptions",
+        "organizations_url": "https://api.github.com/users/owo10086/orgs",
+        "repos_url": "https://api.github.com/users/owo10086/repos",
+        "events_url": "https://api.github.com/users/owo10086/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/owo10086/received_events",
+        "type": "User",
+        "user_view_type": "public",
+        "site_admin": false
+      },
+      "html_url": "https://github.com/owo10086/sni-panel",
+      "description": null,
+      "fork": false,
+      "url": "https://api.github.com/repos/owo10086/sni-panel",
+      "forks_url": "https://api.github.com/repos/owo10086/sni-panel/forks",
+      "keys_url": "https://api.github.com/repos/owo10086/sni-panel/keys{/key_id}",
+      "collaborators_url": "https://api.github.com/repos/owo10086/sni-panel/collaborators{/collaborator}",
+      "teams_url": "https://api.github.com/repos/owo10086/sni-panel/teams",
+      "hooks_url": "https://api.github.com/repos/owo10086/sni-panel/hooks",
+      "issue_events_url": "https://api.github.com/repos/owo10086/sni-panel/issues/events{/number}",
+      "events_url": "https://api.github.com/repos/owo10086/sni-panel/events",
+      "assignees_url": "https://api.github.com/repos/owo10086/sni-panel/assignees{/user}",
+      "branches_url": "https://api.github.com/repos/owo10086/sni-panel/branches{/branch}",
+      "tags_url": "https://api.github.com/repos/owo10086/sni-panel/tags",
+      "blobs_url": "https://api.github.com/repos/owo10086/sni-panel/git/blobs{/sha}",
+      "git_tags_url": "https://api.github.com/repos/owo10086/sni-panel/git/tags{/sha}",
+      "git_refs_url": "https://api.github.com/repos/owo10086/sni-panel/git/refs{/sha}",
+      "trees_url": "https://api.github.com/repos/owo10086/sni-panel/git/trees{/sha}",
+      "statuses_url": "https://api.github.com/repos/owo10086/sni-panel/statuses/{sha}",
+      "languages_url": "https://api.github.com/repos/owo10086/sni-panel/languages",
+      "stargazers_url": "https://api.github.com/repos/owo10086/sni-panel/stargazers",
+      "contributors_url": "https://api.github.com/repos/owo10086/sni-panel/contributors",
+      "subscribers_url": "https://api.github.com/repos/owo10086/sni-panel/subscribers",
+      "subscription_url": "https://api.github.com/repos/owo10086/sni-panel/subscription",
+      "commits_url": "https://api.github.com/repos/owo10086/sni-panel/commits{/sha}",
+      "git_commits_url": "https://api.github.com/repos/owo10086/sni-panel/git/commits{/sha}",
+      "comments_url": "https://api.github.com/repos/owo10086/sni-panel/comments{/number}",
+      "issue_comment_url": "https://api.github.com/repos/owo10086/sni-panel/issues/comments{/number}",
+      "contents_url": "https://api.github.com/repos/owo10086/sni-panel/contents/{+path}",
+      "compare_url": "https://api.github.com/repos/owo10086/sni-panel/compare/{base}...{head}",
+      "merges_url": "https://api.github.com/repos/owo10086/sni-panel/merges",
+      "archive_url": "https://api.github.com/repos/owo10086/sni-panel/{archive_format}{/ref}",
+      "downloads_url": "https://api.github.com/repos/owo10086/sni-panel/downloads",
+      "issues_url": "https://api.github.com/repos/owo10086/sni-panel/issues{/number}",
+      "pulls_url": "https://api.github.com/repos/owo10086/sni-panel/pulls{/number}",
+      "milestones_url": "https://api.github.com/repos/owo10086/sni-panel/milestones{/number}",
+      "notifications_url": "https://api.github.com/repos/owo10086/sni-panel/notifications{?since,all,participating}",
+      "labels_url": "https://api.github.com/repos/owo10086/sni-panel/labels{/name}",
+      "releases_url": "https://api.github.com/repos/owo10086/sni-panel/releases{/id}",
+      "deployments_url": "https://api.github.com/repos/owo10086/sni-panel/deployments"
+    },
+    "head_repository": {
+      "id": 1366816469,
+      "node_id": "R_kgDOUXf21Q",
+      "name": "sni-panel",
+      "full_name": "owo10086/sni-panel",
+      "private": false,
+      "owner": {
+        "login": "owo10086",
+        "id": 135562245,
+        "node_id": "U_kgDOCBSEBQ",
+        "avatar_url": "https://avatars.githubusercontent.com/u/135562245?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/owo10086",
+        "html_url": "https://github.com/owo10086",
+        "followers_url": "https://api.github.com/users/owo10086/followers",
+        "following_url": "https://api.github.com/users/owo10086/following{/other_user}",
+        "gists_url": "https://api.github.com/users/owo10086/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/owo10086/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/owo10086/subscriptions",
+        "organizations_url": "https://api.github.com/users/owo10086/orgs",
+        "repos_url": "https://api.github.com/users/owo10086/repos",
+        "events_url": "https://api.github.com/users/owo10086/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/owo10086/received_events",
+        "type": "User",
+        "user_view_type": "public",
+        "site_admin": false
+      },
+      "html_url": "https://github.com/owo10086/sni-panel",
+      "description": null,
+      "fork": false,
+      "url": "https://api.github.com/repos/owo10086/sni-panel",
+      "forks_url": "https://api.github.com/repos/owo10086/sni-panel/forks",
+      "keys_url": "https://api.github.com/repos/owo10086/sni-panel/keys{/key_id}",
+      "collaborators_url": "https://api.github.com/repos/owo10086/sni-panel/collaborators{/collaborator}",
+      "teams_url": "https://api.github.com/repos/owo10086/sni-panel/teams",
+      "hooks_url": "https://api.github.com/repos/owo10086/sni-panel/hooks",
+      "issue_events_url": "https://api.github.com/repos/owo10086/sni-panel/issues/events{/number}",
+      "events_url": "https://api.github.com/repos/owo10086/sni-panel/events",
+      "assignees_url": "https://api.github.com/repos/owo10086/sni-panel/assignees{/user}",
+      "branches_url": "https://api.github.com/repos/owo10086/sni-panel/branches{/branch}",
+      "tags_url": "https://api.github.com/repos/owo10086/sni-panel/tags",
+      "blobs_url": "https://api.github.com/repos/owo10086/sni-panel/git/blobs{/sha}",
+      "git_tags_url": "https://api.github.com/repos/owo10086/sni-panel/git/tags{/sha}",
+      "git_refs_url": "https://api.github.com/repos/owo10086/sni-panel/git/refs{/sha}",
+      "trees_url": "https://api.github.com/repos/owo10086/sni-panel/git/trees{/sha}",
+      "statuses_url": "https://api.github.com/repos/owo10086/sni-panel/statuses/{sha}",
+      "languages_url": "https://api.github.com/repos/owo10086/sni-panel/languages",
+      "stargazers_url": "https://api.github.com/repos/owo10086/sni-panel/stargazers",
+      "contributors_url": "https://api.github.com/repos/owo10086/sni-panel/contributors",
+      "subscribers_url": "https://api.github.com/repos/owo10086/sni-panel/subscribers",
+      "subscription_url": "https://api.github.com/repos/owo10086/sni-panel/subscription",
+      "commits_url": "https://api.github.com/repos/owo10086/sni-panel/commits{/sha}",
+      "git_commits_url": "https://api.github.com/repos/owo10086/sni-panel/git/commits{/sha}",
+      "comments_url": "https://api.github.com/repos/owo10086/sni-panel/comments{/number}",
+      "issue_comment_url": "https://api.github.com/repos/owo10086/sni-panel/issues/comments{/number}",
+      "contents_url": "https://api.github.com/repos/owo10086/sni-panel/contents/{+path}",
+      "compare_url": "https://api.github.com/repos/owo10086/sni-panel/compare/{base}...{head}",
+      "merges_url": "https://api.github.com/repos/owo10086/sni-panel/merges",
+      "archive_url": "https://api.github.com/repos/owo10086/sni-panel/{archive_format}{/ref}",
+      "downloads_url": "https://api.github.com/repos/owo10086/sni-panel/downloads",
+      "issues_url": "https://api.github.com/repos/owo10086/sni-panel/issues{/number}",
+      "pulls_url": "https://api.github.com/repos/owo10086/sni-panel/pulls{/number}",
+      "milestones_url": "https://api.github.com/repos/owo10086/sni-panel/milestones{/number}",
+      "notifications_url": "https://api.github.com/repos/owo10086/sni-panel/notifications{?since,all,participating}",
+      "labels_url": "https://api.github.com/repos/owo10086/sni-panel/labels{/name}",
+      "releases_url": "https://api.github.com/repos/owo10086/sni-panel/releases{/id}",
+      "deployments_url": "https://api.github.com/repos/owo10086/sni-panel/deployments"
+    }
+  },
+  "jobs": {
+    "total_count": 4,
+    "jobs": [
+      {
+        "id": 118473612814,
+        "run_id": 39375824982,
+        "workflow_name": "Release Panel",
+        "head_branch": "v3.5.0",
+        "run_url": "https://api.github.com/repos/owo10086/sni-panel/actions/runs/39375824982",
+        "run_attempt": 1,
+        "node_id": "CR_kwDOUXf21c8AAAAblZPeDg",
+        "head_sha": "4f1b289f32e1b08fce1bfbf0f3c042d33b6b19f8",
+        "url": "https://api.github.com/repos/owo10086/sni-panel/actions/jobs/118473612814",
+        "html_url": "https://github.com/owo10086/sni-panel/actions/runs/39375824982/job/118473612814",
+        "status": "completed",
+        "conclusion": "success",
+        "created_at": "2026-10-20T05:36:47Z",
+        "started_at": "2026-10-20T05:36:50Z",
+        "completed_at": "2026-10-20T05:46:26Z",
+        "name": "release-panel",
+        "steps": [
+          {
+            "name": "Set up job",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 1,
+            "started_at": "2026-10-20T05:36:50Z",
+            "completed_at": "2026-10-20T05:36:53Z"
+          },
+          {
+            "name": "Checkout",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 2,
+            "started_at": "2026-10-20T05:36:53Z",
+            "completed_at": "2026-10-20T05:36:56Z"
+          },
+          {
+            "name": "Setup pnpm",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 3,
+            "started_at": "2026-10-20T05:36:56Z",
+            "completed_at": "2026-10-20T05:36:57Z"
+          },
+          {
+            "name": "Setup Node",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 4,
+            "started_at": "2026-10-20T05:36:57Z",
+            "completed_at": "2026-10-20T05:36:58Z"
+          },
+          {
+            "name": "Setup Go",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 5,
+            "started_at": "2026-10-20T05:36:58Z",
+            "completed_at": "2026-10-20T05:37:05Z"
+          },
+          {
+            "name": "Resolve release version",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 6,
+            "started_at": "2026-10-20T05:37:05Z",
+            "completed_at": "2026-10-20T05:37:06Z"
+          },
+          {
+            "name": "Install dependencies",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 7,
+            "started_at": "2026-10-20T05:37:06Z",
+            "completed_at": "2026-10-20T05:37:12Z"
+          },
+          {
+            "name": "Check release versions and tag",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 8,
+            "started_at": "2026-10-20T05:37:12Z",
+            "completed_at": "2026-10-20T05:37:12Z"
+          },
+          {
+            "name": "Type check",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 9,
+            "started_at": "2026-10-20T05:37:12Z",
+            "completed_at": "2026-10-20T05:37:33Z"
+          },
+          {
+            "name": "Build panel assets",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 10,
+            "started_at": "2026-10-20T05:37:33Z",
+            "completed_at": "2026-10-20T05:37:48Z"
+          },
+          {
+            "name": "Run panel tests",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 11,
+            "started_at": "2026-10-20T05:37:48Z",
+            "completed_at": "2026-10-20T05:45:35Z"
+          },
+          {
+            "name": "Run Agent tests and vet",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 12,
+            "started_at": "2026-10-20T05:45:35Z",
+            "completed_at": "2026-10-20T05:45:59Z"
+          },
+          {
+            "name": "Prepare release notes",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 13,
+            "started_at": "2026-10-20T05:45:59Z",
+            "completed_at": "2026-10-20T05:45:59Z"
+          },
+          {
+            "name": "Build bundled Agent assets",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 14,
+            "started_at": "2026-10-20T05:45:59Z",
+            "completed_at": "2026-10-20T05:46:10Z"
+          },
+          {
+            "name": "Verify bundled FXP behavior",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 15,
+            "started_at": "2026-10-20T05:46:10Z",
+            "completed_at": "2026-10-20T05:46:11Z"
+          },
+          {
+            "name": "Package panel runtime bundle",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 16,
+            "started_at": "2026-10-20T05:46:11Z",
+            "completed_at": "2026-10-20T05:46:13Z"
+          },
+          {
+            "name": "Upload panel bundle artifact",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 17,
+            "started_at": "2026-10-20T05:46:13Z",
+            "completed_at": "2026-10-20T05:46:15Z"
+          },
+          {
+            "name": "Publish panel bundle to GitHub Release",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 18,
+            "started_at": "2026-10-20T05:46:15Z",
+            "completed_at": "2026-10-20T05:46:19Z"
+          },
+          {
+            "name": "Post Setup Go",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 33,
+            "started_at": "2026-10-20T05:46:19Z",
+            "completed_at": "2026-10-20T05:46:19Z"
+          },
+          {
+            "name": "Post Setup Node",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 34,
+            "started_at": "2026-10-20T05:46:19Z",
+            "completed_at": "2026-10-20T05:46:23Z"
+          },
+          {
+            "name": "Post Setup pnpm",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 35,
+            "started_at": "2026-10-20T05:46:23Z",
+            "completed_at": "2026-10-20T05:46:23Z"
+          },
+          {
+            "name": "Post Checkout",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 36,
+            "started_at": "2026-10-20T05:46:23Z",
+            "completed_at": "2026-10-20T05:46:23Z"
+          },
+          {
+            "name": "Complete job",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 37,
+            "started_at": "2026-10-20T05:46:23Z",
+            "completed_at": "2026-10-20T05:46:23Z"
+          }
+        ],
+        "check_run_url": "https://api.github.com/repos/owo10086/sni-panel/check-runs/118473612814",
+        "labels": [
+          "ubuntu-latest"
+        ],
+        "runner_id": 1000001392,
+        "runner_name": "GitHub Actions 1000001392",
+        "runner_group_id": 0,
+        "runner_group_name": "GitHub Actions"
+      },
+      {
+        "id": 118476296409,
+        "run_id": 39375824982,
+        "workflow_name": "Release Panel",
+        "head_branch": "v3.5.0",
+        "run_url": "https://api.github.com/repos/owo10086/sni-panel/actions/runs/39375824982",
+        "run_attempt": 1,
+        "node_id": "CR_kwDOUXf21c8AAAAblbzQ2Q",
+        "head_sha": "4f1b289f32e1b08fce1bfbf0f3c042d33b6b19f8",
+        "url": "https://api.github.com/repos/owo10086/sni-panel/actions/jobs/118476296409",
+        "html_url": "https://github.com/owo10086/sni-panel/actions/runs/39375824982/job/118476296409",
+        "status": "completed",
+        "conclusion": "success",
+        "created_at": "2026-10-20T05:46:26Z",
+        "started_at": "2026-10-20T05:46:29Z",
+        "completed_at": "2026-10-20T05:46:35Z",
+        "name": "docker-image / prepare",
+        "steps": [
+          {
+            "name": "Set up job",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 1,
+            "started_at": "2026-10-20T05:46:29Z",
+            "completed_at": "2026-10-20T05:46:30Z"
+          },
+          {
+            "name": "Checkout",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 2,
+            "started_at": "2026-10-20T05:46:30Z",
+            "completed_at": "2026-10-20T05:46:33Z"
+          },
+          {
+            "name": "Read package version",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 3,
+            "started_at": "2026-10-20T05:46:33Z",
+            "completed_at": "2026-10-20T05:46:33Z"
+          },
+          {
+            "name": "Post Checkout",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 6,
+            "started_at": "2026-10-20T05:46:33Z",
+            "completed_at": "2026-10-20T05:46:33Z"
+          },
+          {
+            "name": "Complete job",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 7,
+            "started_at": "2026-10-20T05:46:33Z",
+            "completed_at": "2026-10-20T05:46:33Z"
+          }
+        ],
+        "check_run_url": "https://api.github.com/repos/owo10086/sni-panel/check-runs/118476296409",
+        "labels": [
+          "ubuntu-24.04"
+        ],
+        "runner_id": 1000001394,
+        "runner_name": "GitHub Actions 1000001394",
+        "runner_group_id": 0,
+        "runner_group_name": "GitHub Actions"
+      },
+      {
+        "id": 118476336370,
+        "run_id": 39375824982,
+        "workflow_name": "Release Panel",
+        "head_branch": "v3.5.0",
+        "run_url": "https://api.github.com/repos/owo10086/sni-panel/actions/runs/39375824982",
+        "run_attempt": 1,
+        "node_id": "CR_kwDOUXf21c8AAAAblb1s8g",
+        "head_sha": "4f1b289f32e1b08fce1bfbf0f3c042d33b6b19f8",
+        "url": "https://api.github.com/repos/owo10086/sni-panel/actions/jobs/118476336370",
+        "html_url": "https://github.com/owo10086/sni-panel/actions/runs/39375824982/job/118476336370",
+        "status": "completed",
+        "conclusion": "success",
+        "created_at": "2026-10-20T05:46:35Z",
+        "started_at": "2026-10-20T05:46:38Z",
+        "completed_at": "2026-10-20T05:50:32Z",
+        "name": "docker-image / Build linux/amd64",
+        "steps": [
+          {
+            "name": "Set up job",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 1,
+            "started_at": "2026-10-20T05:46:38Z",
+            "completed_at": "2026-10-20T05:46:40Z"
+          },
+          {
+            "name": "Checkout",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 2,
+            "started_at": "2026-10-20T05:46:40Z",
+            "completed_at": "2026-10-20T05:46:42Z"
+          },
+          {
+            "name": "Set up Docker Buildx",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 3,
+            "started_at": "2026-10-20T05:46:42Z",
+            "completed_at": "2026-10-20T05:46:46Z"
+          },
+          {
+            "name": "Log in to GHCR",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 4,
+            "started_at": "2026-10-20T05:46:46Z",
+            "completed_at": "2026-10-20T05:46:47Z"
+          },
+          {
+            "name": "Build and push by digest",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 5,
+            "started_at": "2026-10-20T05:46:47Z",
+            "completed_at": "2026-10-20T05:49:59Z"
+          },
+          {
+            "name": "Verify native runtime",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 6,
+            "started_at": "2026-10-20T05:49:59Z",
+            "completed_at": "2026-10-20T05:50:13Z"
+          },
+          {
+            "name": "Export digest",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 7,
+            "started_at": "2026-10-20T05:50:13Z",
+            "completed_at": "2026-10-20T05:50:13Z"
+          },
+          {
+            "name": "Upload digest",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 8,
+            "started_at": "2026-10-20T05:50:13Z",
+            "completed_at": "2026-10-20T05:50:14Z"
+          },
+          {
+            "name": "Post Build and push by digest",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 13,
+            "started_at": "2026-10-20T05:50:14Z",
+            "completed_at": "2026-10-20T05:50:15Z"
+          },
+          {
+            "name": "Post Log in to GHCR",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 14,
+            "started_at": "2026-10-20T05:50:15Z",
+            "completed_at": "2026-10-20T05:50:16Z"
+          },
+          {
+            "name": "Post Set up Docker Buildx",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 15,
+            "started_at": "2026-10-20T05:50:16Z",
+            "completed_at": "2026-10-20T05:50:30Z"
+          },
+          {
+            "name": "Post Checkout",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 16,
+            "started_at": "2026-10-20T05:50:30Z",
+            "completed_at": "2026-10-20T05:50:31Z"
+          },
+          {
+            "name": "Complete job",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 17,
+            "started_at": "2026-10-20T05:50:31Z",
+            "completed_at": "2026-10-20T05:50:31Z"
+          }
+        ],
+        "check_run_url": "https://api.github.com/repos/owo10086/sni-panel/check-runs/118476336370",
+        "labels": [
+          "ubuntu-24.04"
+        ],
+        "runner_id": 1000001395,
+        "runner_name": "GitHub Actions 1000001395",
+        "runner_group_id": 0,
+        "runner_group_name": "GitHub Actions"
+      },
+      {
+        "id": 118477430267,
+        "run_id": 39375824982,
+        "workflow_name": "Release Panel",
+        "head_branch": "v3.5.0",
+        "run_url": "https://api.github.com/repos/owo10086/sni-panel/actions/runs/39375824982",
+        "run_attempt": 1,
+        "node_id": "CR_kwDOUXf21c8AAAAblc4d-w",
+        "head_sha": "4f1b289f32e1b08fce1bfbf0f3c042d33b6b19f8",
+        "url": "https://api.github.com/repos/owo10086/sni-panel/actions/jobs/118477430267",
+        "html_url": "https://github.com/owo10086/sni-panel/actions/runs/39375824982/job/118477430267",
+        "status": "completed",
+        "conclusion": "success",
+        "created_at": "2026-10-20T05:50:32Z",
+        "started_at": "2026-10-20T05:50:35Z",
+        "completed_at": "2026-10-20T05:50:58Z",
+        "name": "docker-image / merge",
+        "steps": [
+          {
+            "name": "Set up job",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 1,
+            "started_at": "2026-10-20T05:50:36Z",
+            "completed_at": "2026-10-20T05:50:38Z"
+          },
+          {
+            "name": "Set up Docker Buildx",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 2,
+            "started_at": "2026-10-20T05:50:38Z",
+            "completed_at": "2026-10-20T05:50:49Z"
+          },
+          {
+            "name": "Log in to GHCR",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 3,
+            "started_at": "2026-10-20T05:50:49Z",
+            "completed_at": "2026-10-20T05:50:49Z"
+          },
+          {
+            "name": "Download digests",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 4,
+            "started_at": "2026-10-20T05:50:49Z",
+            "completed_at": "2026-10-20T05:50:50Z"
+          },
+          {
+            "name": "Create and verify image manifest",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 5,
+            "started_at": "2026-10-20T05:50:50Z",
+            "completed_at": "2026-10-20T05:50:55Z"
+          },
+          {
+            "name": "Post Log in to GHCR",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 9,
+            "started_at": "2026-10-20T05:50:55Z",
+            "completed_at": "2026-10-20T05:50:55Z"
+          },
+          {
+            "name": "Post Set up Docker Buildx",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 10,
+            "started_at": "2026-10-20T05:50:55Z",
+            "completed_at": "2026-10-20T05:50:56Z"
+          },
+          {
+            "name": "Complete job",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 11,
+            "started_at": "2026-10-20T05:50:56Z",
+            "completed_at": "2026-10-20T05:50:56Z"
+          }
+        ],
+        "check_run_url": "https://api.github.com/repos/owo10086/sni-panel/check-runs/118477430267",
+        "labels": [
+          "ubuntu-24.04"
+        ],
+        "runner_id": 1000001396,
+        "runner_name": "GitHub Actions 1000001396",
+        "runner_group_id": 0,
+        "runner_group_name": "GitHub Actions"
+      }
+    ]
+  }
+}

@@ -1,0 +1,87 @@
+{
+  "tag": "v3.4.1",
+  "releaseCommit": "51167e4a95aa8b9e7810443a50b80462ef8b4e96",
+  "fixCommit": "3bd3ce8",
+  "remote": "sni-panel",
+  "repository": "owo10086/sni-panel",
+  "atomicPush": true,
+  "versions": {
+    "panel": "3.4.1",
+    "agent": "3.4.0",
+    "fxp": "3.4.0"
+  },
+  "localRegressions": 98,
+  "localTypecheck": true,
+  "localBuild": true,
+  "localDocsBuild": true,
+  "releaseNotesTests": 5,
+  "productionDeploymentPerformed": false,
+  "humanAccepted": false,
+  "state": "completed",
+  "recordedAt": "2026-10-19T15:17:24.966631+00:00",
+  "attempts": [
+    {
+      "workflow": "Release Panel",
+      "attempt": 1,
+      "panelTests": "success",
+      "failure": "TestWireGuardIdentityReplacementFailureRestoresPreviousRuntime: replacement error=<nil>, want restored previous runtime",
+      "sameCommitOtherWorkflowAgentTests": "success"
+    },
+    {
+      "workflow": "Release Panel",
+      "attempt": 2,
+      "state": "failed-at-release-create-recovered",
+      "tests": "success",
+      "package": "success",
+      "artifactUpload": "success",
+      "failure": "HTTP 403: Resource not accessible by integration",
+      "recovery": "Published the same verified workflow artifact using authorized CLI account",
+      "artifactId": 12196745219
+    }
+  ],
+  "ciFirstAttemptFailure": "Real FXP fixtures require isolated Linux container, but FORWARDX_TEST_FXP_BINARY was enabled on runner host",
+  "ciEnvironmentFixCommit": "563b1c691827f7ca13d3e8a687663b65f99f6b53",
+  "tagUnchangedAfterCiFix": true,
+  "isolatedRealFxpLocal": {
+    "v1": "passed",
+    "v2": "passed",
+    "network": "none",
+    "artifactMount": "readonly"
+  },
+  "publishedAt": "2026-10-19T14:59:32Z",
+  "releaseUrl": "https://github.com/owo10086/sni-panel/releases/tag/v3.4.1",
+  "publicAssetsVerified": 6,
+  "serverMatchesValidatedLocalBuild": true,
+  "dockerWorkflowId": 39273987147,
+  "correctedCiWorkflowId": 39272921376,
+  "panelWorkflowCompletion": "tests and package passed; release-create HTTP403; published verified workflow artifact using authorized CLI account",
+  "docker": "success",
+  "image": "ghcr.io/owo10086/sni-panel:v3.4.1",
+  "imageDigest": "sha256:ca2494250c995196dca3cc9208be82745a4aaf4a073f862a781ed03411ec6ae9",
+  "latestDigestMatches": true,
+  "publicImageVerified": true,
+  "correctedCi": {
+    "id": 39272921376,
+    "status": "completed",
+    "conclusion": "success",
+    "headSha": "563b1c691827f7ca13d3e8a687663b65f99f6b53",
+    "completedAt": "2026-10-19T15:13:25Z",
+    "url": "https://github.com/owo10086/sni-panel/actions/runs/39272921376",
+    "realFxpV1": "passed",
+    "realFxpV2": "passed",
+    "isolatedTcpPortLimitsIPv4": "passed",
+    "isolatedTcpPortLimitsIPv6": "passed"
+  },
+  "formalPanelTests": {
+    "passed": 1292,
+    "failed": 0,
+    "skipped": 0,
+    "overlapsLocalRegressions": true
+  },
+  "docs": "success",
+  "publicDocsVerified": true,
+  "publicReleaseIsLatest": true,
+  "publicReleaseIsDraft": false,
+  "publicReleaseIsPrerelease": false,
+  "mainCommit": "563b1c691827f7ca13d3e8a687663b65f99f6b53"
+}
