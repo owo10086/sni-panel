@@ -656,8 +656,8 @@ export default function Plans() {
   const [billingCreateRequestKey, setBillingCreateRequestKey] = useState(0);
   const [statusUpdatingPlanId, setStatusUpdatingPlanId] = useState<number | null>(null);
 
-  const planPageRequest = usePersistentPageRequest("forwardx.plans.page");
-  const planPageInput = { page: planPageRequest.page, pageSize: 12 } as const;
+  const planPageRequest = usePersistentPageRequest("forwardx.plans.page", 20);
+  const planPageInput = { page: planPageRequest.page, pageSize: planPageRequest.pageSize } as const;
   const planPageQuery = trpc.plans.listPage.useQuery(planPageInput, {
     enabled: activeTab === "plans",
     staleTime: 10_000,
@@ -670,18 +670,20 @@ export default function Plans() {
     plans,
     Number(planPageQuery.data?.totalItems || 0),
     planPageRequest,
-    { pageSize: 12, isReady: !isLoading && !!planPageQuery.data },
+    { isReady: !!planPageQuery.data && !isLoading && !planPageQuery.isPlaceholderData },
   );
   const planOrder = useOptimisticSortableOrder({ items: plans, getId: (plan: any) => Number(plan.id) });
   const reorderPlans = trpc.plans.reorder.useMutation({
     onError: (error) => toast.error(error.message || translateText("保存失败")),
   });
-  const planSortDisabled = planPageQuery.isPlaceholderData || reorderPlans.isPending || plans.length < 2;
+  const planSortLimitExceeded = plans.length > 100;
+  const planSortDisabled = planPageQuery.isPlaceholderData || reorderPlans.isPending || plans.length < 2 || planSortLimitExceeded;
   const planSortable = useSortableReorder({
     items: planOrder.items,
     getId: (plan: any) => Number(plan.id),
     disabled: planSortDisabled,
     onReorder: (nextPlans) => {
+      if (planSortDisabled) return;
       const requestId = planOrder.begin(nextPlans);
       reorderPlans.mutate({
         ids: nextPlans.map((plan: any) => Number(plan.id)),
@@ -1075,6 +1077,9 @@ export default function Plans() {
                 </div>
               </CardHeader>
               <CardContent>
+                {planSortLimitExceeded && (
+                  <p className="mb-3 text-sm text-muted-foreground">{translateText("当前页超过 100 个套餐，请切换到更小的每页条数后再排序")}</p>
+                )}
                 {isLoading ? (
                   <DataSectionLoading label={translateText("正在加载套餐数据")} />
                 ) : (

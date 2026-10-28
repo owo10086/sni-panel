@@ -352,10 +352,10 @@ function UsersContent() {
     refetchInterval: pollingInterval("slow"),
     placeholderData: (previousData) => previousData,
   });
-  const subscriptionPageRequest = usePersistentPageRequest("forwardx.users.subscriptions.page");
+  const subscriptionPageRequest = usePersistentPageRequest("forwardx.users.subscriptions.page", 20);
   const subscriptionPageQuery = trpc.plans.subscriptionsPage.useQuery({
     page: subscriptionPageRequest.page,
-    pageSize: 12,
+    pageSize: subscriptionPageRequest.pageSize,
   }, { enabled: currentUser?.role === "admin" && manageType === "subscriptions", placeholderData: (previousData) => previousData });
   const allSubscriptions = subscriptionPageQuery.data?.items || [];
   const subscriptionsLoading = subscriptionPageQuery.isLoading;
@@ -425,8 +425,8 @@ function UsersContent() {
     }
   }, [currentUser, setLocation]);
 
-  const userPageRequest = usePersistentPageRequest("forwardx.users.page");
-  const userPageInput = { page: userPageRequest.page, pageSize: 12 } as const;
+  const userPageRequest = usePersistentPageRequest("forwardx.users.page", 20);
+  const userPageInput = { page: userPageRequest.page, pageSize: userPageRequest.pageSize } as const;
   const userPageQuery = trpc.users.listPage.useQuery(userPageInput, {
     enabled: currentUser?.role === "admin" && manageType === "accounts",
     placeholderData: (previousData) => previousData,
@@ -721,13 +721,11 @@ function UsersContent() {
     },
   ], [activeSubscriptionCount, summaryLoading]);
   const userPagination = useServerPagination(users || [], Number(userPageQuery.data?.totalItems || 0), userPageRequest, {
-    pageSize: 12,
-    isReady: !isLoading && !!userPageQuery.data,
+    isReady: !!userPageQuery.data && !isLoading && !userPageQuery.isPlaceholderData,
   });
   const pagedUsers = userPagination.items;
   const subscriptionPagination = useServerPagination(visibleSubscriptions, Number(subscriptionPageQuery.data?.totalItems || 0), subscriptionPageRequest, {
-    pageSize: 12,
-    isReady: !subscriptionsLoading && !!subscriptionPageQuery.data,
+    isReady: !!subscriptionPageQuery.data && !subscriptionsLoading && !subscriptionPageQuery.isPlaceholderData,
   });
   const pagedSubscriptions = subscriptionPagination.items;
 
