@@ -6,8 +6,8 @@ import {
 import { assertGroupMemberMutationHeld, withGroupMemberMutation } from "../groupMemberMutation";
 import { gateForwardRulesForRuntime } from "../linkAccessView";
 import { getDirectSniReadyPorts } from "../sniDirectRuntime";
-import { getSniRuntimeGroupStatus, isFailoverSniRuleApplied, sniRuntimeConfirmationBoundary, invalidateSniRuntimeConfirmation, registerSniRuntimeAdjustment, sniRuntimeConfigurationIdentity, type SniRuntimeRuleReport } from "../sniRuntimeObservability";
-import { forwardGroupRuleConfiguration, recordForwardGroupRuleAdjustment, forwardGroupRuleAdjustment, finishForwardGroupRuleAdjustment, recordForwardGroupSniAdjustment, forwardGroupSniAdjustment, finishForwardGroupSniAdjustment, forwardGroupRuleRuntimeFailureAt, forwardGroupHostRuntimeInterruptionAt } from "../forwardGroupAdjustments";
+import { getSniRuntimeGroupStatus, isFailoverSniRuleApplied, sniRuntimeConfirmationBoundary, invalidateSniRuntimeConfirmation, registerSniRuntimeAdjustment, sniRuntimeConfigurationIdentity, failoverSniRuntimeRuleReport as sniReportForChild, type SniRuntimeRuleReport } from "../sniRuntimeObservability";
+import { forwardGroupRuleConfiguration, recordForwardGroupRuleAdjustment, forwardGroupRuleAdjustment, forwardGroupRuleAdjustmentConfirmation, finishForwardGroupRuleAdjustment, recordForwardGroupSniAdjustment, forwardGroupSniAdjustment, finishForwardGroupSniAdjustment, forwardGroupRuleRuntimeFailureAt, forwardGroupHostRuntimeInterruptionAt } from "../forwardGroupAdjustments";
 import { createForwardGroupRetirement, listForwardGroupRetirements, getProtectedForwardGroupRuleIds, commitForwardGroupRetirementSwitch, markForwardGroupRetirementsDue, finishForwardGroupRetirement, forwardGroupRetirementDeadline } from "../forwardGroupRetirement";
 import { randomUUID } from "node:crypto";
 import { evaluateSniMemberHealthWindows, isSniChinaHealthDecisionFinal, recordSniChinaHealthDecision, sniMemberHealthSummary, sniMemberAdjustmentAllowed, type SniMemberHealthObservation } from "../forwardGroupSniHealth";
@@ -522,9 +522,15 @@ export async function primeForwardGroupHostLivenessDeadlines() {
 }
 
 const retirementRechecks = new ForwardGroupHealthRecheckScheduler(
-  groupId => withForwardGroupSyncLocks([groupId], () => retireForwardGroupRules(groupId)), Date.now, setTimeout, clearTimeout,
+  groupId => withForwardGroupRetirementLock(groupId, () => retireForwardGroupRules(groupId)), Date.now, setTimeout, clearTimeout,
   error => console.warn("[ForwardGroup] retirement recheck failed", error),
 );
+
+function withForwardGroupRetirementLock<T>(groupId: number, work: () => Promise<T>) {
+  // Billing follows the configuration commit and must run after the group lock
+  // is released; administrator writes acquire billing before the same group.
+  return withDeferredDatabaseCommitCallbacks(() => withForwardGroupSyncLocks([groupId], work));
+}
 
 async function scheduleForwardGroupRetirement(groupId: number) {
   const batches = await listForwardGroupRetirements(groupId);
@@ -537,8 +543,21 @@ async function retireForwardGroupRules(groupId: number, options: { force?: boole
   try {
     const batches = await markForwardGroupRetirementsDue({ groupId, force: options.force, hostId: options.hostId });
     for (const batch of batches) {
-      for (const ruleId of batch.ruleIds) await removeManagedRule(ruleId, { deferRefresh: options.deferRefresh });
-      await finishForwardGroupRetirement(batch.id);
+      await withDatabaseTransaction(async () => {
+        const rules: NonNullable<Awaited<ReturnType<typeof getForwardRuleById>>>[] = [];
+        for (const ruleId of batch.ruleIds) {
+          const rule = await markManagedRuleForRemoval(ruleId);
+          if (rule) rules.push(rule);
+        }
+        await afterDatabaseCommit(async () => {
+          try {
+            for (const rule of rules) await settleManagedRuleRemoval(rule);
+            await finishForwardGroupRetirement(batch.id);
+          } finally {
+            await scheduleForwardGroupRetirement(groupId);
+          }
+        });
+      });
     }
   } finally {
     await afterDatabaseCommit(() => scheduleForwardGroupRetirement(groupId));
@@ -547,7 +566,7 @@ async function retireForwardGroupRules(groupId: number, options: { force?: boole
 
 export async function resumeForwardGroupRetirements() {
   const groupIds = [...new Set((await listForwardGroupRetirements()).map(batch => batch.groupId))];
-  for (const groupId of groupIds) await withForwardGroupSyncLocks([groupId], async () => {
+  for (const groupId of groupIds) await withForwardGroupRetirementLock(groupId, async () => {
     const group = await getForwardGroupById(groupId);
     await retireForwardGroupRules(groupId, { force: !group || !dbBool(group.isEnabled) || !usesHostFailoverEntryHealth(group) });
   });
@@ -3016,6 +3035,11 @@ async function setTunnelsEnabledByGroup(groupId: number, groupMode: "entry" | "e
 }
 
 export async function setForwardGroupEnabled(groupId: number, isEnabled: boolean, options: { skipSync?: boolean } = {}): Promise<{ success: boolean; affectedRules: number; affectedTunnels: number }> {
+  if (isDatabaseTransactionActive()) return setForwardGroupEnabledUnlocked(groupId, isEnabled, options);
+  return withDeferredDatabaseCommitCallbacks(() => setForwardGroupEnabledUnlocked(groupId, isEnabled, options));
+}
+
+async function setForwardGroupEnabledUnlocked(groupId: number, isEnabled: boolean, options: { skipSync?: boolean }): Promise<{ success: boolean; affectedRules: number; affectedTunnels: number }> {
   const group = await getForwardGroupById(groupId) as any;
   if (!group) throw new Error("转发资源不存在");
   const mode = groupModeOf(group);
@@ -3587,22 +3611,29 @@ async function removeManagedRule(
   ruleId: number,
   options: Pick<SyncForwardGroupRulesOptions, "deferRefresh"> = {},
 ) {
-  const rule = await getForwardRuleById(ruleId);
-  if (!rule) return;
   // Save removal and its retry obligation together. Never wait for billing
   // while holding the member-save transaction; acknowledge stopping separately.
   await withDatabaseTransaction(async () => {
-    await markForwardRulePendingDelete(Number(rule.id));
-    await setForwardRuleDeleteSettlementPending(Number(rule.id), true);
-    await afterDatabaseCommit(async () => {
-      const errors: unknown[] = [];
-      try { await settleForwardRuleDelete(Number(rule.id)); }
-      catch (error) { errors.push(error); }
-      try { await refreshRuleEndpoints(rule, "forward-group-child-deleted"); }
-      catch (error) { errors.push(error); }
-      if (errors.length) throw new AggregateError(errors, "配置已保存，旧规则清理部分失败");
-    });
+    const rule = await markManagedRuleForRemoval(ruleId);
+    if (rule) await afterDatabaseCommit(() => settleManagedRuleRemoval(rule));
   });
+}
+
+async function markManagedRuleForRemoval(ruleId: number) {
+  const rule = await getForwardRuleById(ruleId);
+  if (!rule) return undefined;
+  await markForwardRulePendingDelete(Number(rule.id));
+  await setForwardRuleDeleteSettlementPending(Number(rule.id), true);
+  return rule;
+}
+
+async function settleManagedRuleRemoval(rule: any) {
+  const errors: unknown[] = [];
+  try { await settleForwardRuleDelete(Number(rule.id)); }
+  catch (error) { errors.push(error); }
+  try { await refreshRuleEndpoints(rule, "forward-group-child-deleted"); }
+  catch (error) { errors.push(error); }
+  if (errors.length) throw new AggregateError(errors, "配置已保存，旧规则清理部分失败");
 }
 
 export async function repairForwardGroupTemplateHostReferences(
@@ -4132,15 +4163,6 @@ export async function withForwardGroupSyncTransaction<T>(
   return withForwardGroupsSyncTransaction([groupId], work, options);
 }
 
-function sniReportForChild(rule: any): SniRuntimeRuleReport {
-  const rate = Math.max(0, Math.floor(Number(rule.rateLimitMbps) || 0)) * 125_000;
-  return { ruleId: Number(rule.id), port: Number(rule.sourcePort), sni: rule.sni,
-    targetIp: rule.targetIp, targetPort: Number(rule.targetPort), limitIn: rate, limitOut: rate,
-    maxConnections: Math.min(1_000_000, Math.max(0, Math.floor(Number(rule.maxConnections) || 0))),
-    maxIPs: 0, accessScope: `u${Number(rule.userId) || 0}_h${Number(rule.hostId)}`,
-    protocol: "tcp", forwardType: "forwardx", sourceAllowIps: [] };
-}
-
 async function forwardGroupAdjustmentSnapshot(groupIds: number[]) {
   const groups = [];
   for (const id of groupIds) {
@@ -4554,7 +4576,7 @@ async function replaceForwardGroupMembersUnlocked(
 }
 
 export async function deleteForwardGroup(id: number) {
-  return withForwardGroupSyncLocks([id], async () => {
+  return withDeferredDatabaseCommitCallbacks(() => withForwardGroupSyncLocks([id], async () => {
   await retireForwardGroupRules(id, { force: true });
   const db = await getDb();
   const dependents = await db.select({ id: forwardGroups.id }).from(forwardGroups).where(and(
@@ -4582,7 +4604,7 @@ export async function deleteForwardGroup(id: number) {
   await db.delete(forwardGroupMembers).where(eq(forwardGroupMembers.groupId, id));
   await db.delete(userForwardGroupPermissions).where(eq(userForwardGroupPermissions.forwardGroupId, id));
   await db.delete(forwardGroups).where(eq(forwardGroups.id, id));
-  });
+  }));
 }
 
 async function cancelForwardGroupManualTakeover(groupId: number) {
@@ -4922,10 +4944,12 @@ async function evaluateSniMemberHealth(member: any, group: any, templates: any[]
     // Only host failover groups select by entry health. Entry groups keep
     // their existing ordinary destination checks when sharing this evaluator.
     if (entryHealthOnly) {
-      const adjustment = forwardGroupRuleAdjustment(child);
+      const confirmation = running ? forwardGroupRuleAdjustmentConfirmation(child) : undefined;
+      const adjustment = forwardGroupRuleAdjustment(child) || confirmation;
       const attributable = adjustment && !String(child.runtimeDiagnostic || "").trim() && boundary <= adjustment.startedAt
         && sniMemberAdjustmentAllowed(Number(member.id), `rule:${template.id}:${Number(child?.id || 0)}`, adjustment.startedAt, forwardGroupRecoverDelayMs(group));
       ordinaryObservations.push({ key: `rule:${template.id}:${Number(child?.id || 0)}`, healthy: running,
+        confirmedAt: confirmation?.confirmedAt,
         ...(attributable ? { adjustmentStartedAt: adjustment.startedAt, adjustmentDeadlineAt: adjustment.deadlineAt } : {}),
         interruptedAt: Math.max(forwardGroupRuleRuntimeFailureAt(Number(child?.id)), boundary),
         message: running ? "普通转发规则已运行" : "普通转发规则尚未运行" });
@@ -5818,6 +5842,7 @@ async function syncSingleForwardGroupDdns(
       recordType,
       values: [value],
       ttl: Number(ddnsSettings.ttl || 600),
+      ...(usesHostFailoverEntryHealth(group) ? { expectedProvider: ddnsSettings.provider } : {}),
     });
     return await withForwardGroupSyncLocks([Number(group.id)], async () => {
       if (!(await selectionIsCurrent())) {
@@ -6085,7 +6110,7 @@ async function runForwardGroupFailoverByIds(groupIds: number[], options: Forward
   for (const groupId of ids) {
     try {
       await withKeyedTaskLock(`forward-group-failover:${groupId}`, async () => {
-        await withForwardGroupSyncLocks([groupId], () => retireForwardGroupRules(groupId));
+        await withForwardGroupRetirementLock(groupId, () => retireForwardGroupRules(groupId));
         const group = await getForwardGroupById(groupId);
         if (!group) return;
         const context: ForwardGroupFailoverContext = {

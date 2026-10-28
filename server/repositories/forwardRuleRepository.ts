@@ -15,7 +15,7 @@ import { dashboardSummaries } from "../backgroundSummaryCache";
 import { displayQueries } from "../displayQueryCache";
 import { assertRuleStock } from "./productStockRepository";
 import { replacePersonalRuleGroups, withPersonalRuleGroupLock } from "./ruleGroupRepository";
-import { recordForwardGroupRuleRuntimeFailure } from "../forwardGroupAdjustments";
+import { recordForwardGroupOrdinaryRuntimeReport } from "../forwardGroupAdjustments";
 
 async function invalidateRuleDashboardSummaries(rule: any) {
   if (!rule) return;
@@ -1622,9 +1622,7 @@ export async function updateRuleRunningStatus(id: number, isRunning: boolean, ru
     return;
   }
   await db.update(forwardRules).set({ isRunning, ...(runtimeDiagnostic !== undefined ? {runtimeDiagnostic} : {}), updatedAt: nowDate() }).where(eq(forwardRules.id, id));
-  if (rule && !isRunning && String(runtimeDiagnostic || "").trim()) {
-    await afterDatabaseCommit(() => recordForwardGroupRuleRuntimeFailure(rule));
-  }
+  if (rule) await afterDatabaseCommit(() => recordForwardGroupOrdinaryRuntimeReport(rule, isRunning, runtimeDiagnostic));
   if (rule && (!!rule.isRunning !== isRunning || (runtimeDiagnostic !== undefined && rule.runtimeDiagnostic !== runtimeDiagnostic))) {
     await invalidateRuleDashboardSummaries(rule);
   }
@@ -1639,6 +1637,9 @@ export async function markForwardRulesNotRunning(ids: number[]) {
   if (ruleIds.length === 0) return 0;
   const changed = await db.select().from(forwardRules).where(and(inArray(forwardRules.id, ruleIds), eq(forwardRules.isRunning, true)));
   await db.update(forwardRules).set({ isRunning: false, updatedAt: nowDate() }).where(inArray(forwardRules.id, ruleIds));
+  await afterDatabaseCommit(() => {
+    for (const rule of changed) recordForwardGroupOrdinaryRuntimeReport(rule, false);
+  });
   for (const rule of changed) await invalidateRuleDashboardSummaries(rule);
   return ruleIds.length;
 }
@@ -1655,6 +1656,9 @@ export async function markForwardRulesRunning(ids: number[]) {
     inArray(forwardRules.id, ruleIds),
     eq(forwardRules.pendingDelete, false),
   ));
+  await afterDatabaseCommit(() => {
+    for (const rule of changed) recordForwardGroupOrdinaryRuntimeReport(rule, true);
+  });
   for (const rule of changed) await invalidateRuleDashboardSummaries(rule);
   return ruleIds.length;
 }

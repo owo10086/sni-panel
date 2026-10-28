@@ -408,18 +408,26 @@ export function getSniRuntimeGroupStatus(hostIdValue: unknown, splitterPortValue
 
 // Readiness follows the actual route contents so a delayed running-status write
 // cannot confirm an older destination or limit after a newer save.
-export function isFailoverSniRuleApplied(rule: {
+type FailoverSniRule = {
   id: unknown; hostId: unknown; userId: unknown; sourcePort: unknown; sni?: unknown;
   targetIp: unknown; targetPort: unknown; rateLimitMbps?: unknown; maxConnections?: unknown;
-}) {
+};
+
+export function failoverSniRuntimeRuleReport(rule: Partial<FailoverSniRule>): SniRuntimeRuleReport {
   const rate = Number(rule.rateLimitMbps);
   const bytesPerSecond = Number.isFinite(rate) && rate > 0 ? Math.floor(rate) * 125_000 : 0;
-  return isSniRouteApplied(rule, {
+  return {
+    ruleId: Number(rule.id), port: Number(rule.sourcePort),
     sni: rule.sni, targetIp: rule.targetIp, targetPort: rule.targetPort,
     limitIn: bytesPerSecond, limitOut: bytesPerSecond,
     maxConnections: Math.min(1_000_000, Math.max(0, Math.floor(Number(rule.maxConnections) || 0))),
     maxIPs: 0, accessScope: `u${Number(rule.userId) || 0}_h${Number(rule.hostId)}`,
-  });
+    protocol: "tcp", forwardType: "forwardx", sourceAllowIps: [],
+  };
+}
+
+export function isFailoverSniRuleApplied(rule: FailoverSniRule) {
+  return isSniRouteApplied(rule, failoverSniRuntimeRuleReport(rule));
 }
 
 export function isSniRouteApplied(rule: { id: unknown; hostId: unknown; sourcePort: unknown }, expected: SniRuntimeRuleReport) {

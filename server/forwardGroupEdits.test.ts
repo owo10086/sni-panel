@@ -12,6 +12,7 @@ for (const [scenario, description] of [
   ["edit-rule", "ordinary rule edits restore entry eligibility immediately after confirmation"],
   ["delete-rule", "deleting an ordinary rule preserves the remaining entry qualification"],
   ["delete-billing-concurrency", "ordinary template deletion does not hold a database transaction while waiting for traffic billing"],
+  ["retirement-billing-concurrency", "ordinary retirement does not hold the group lock while waiting for traffic billing"],
   ["domain", "editing only the ordinary group domain publishes the ready entry immediately"],
   ["new-member", "a newly added ordinary backup can take over immediately after confirmation"],
   ["edit-timeout", "ordinary deployment timeout becomes a real failure at the original failure deadline"],
@@ -22,6 +23,10 @@ for (const [scenario, description] of [
   ["explicit-failure", "explicit ordinary apply failure still requires recovery after an administrator adjustment"],
   ["unrelated-failure", "domain-only edits do not excuse unrelated ordinary runtime failure"],
   ["reused-adjustment", "a completed administrator adjustment cannot excuse later ordinary runtime failure"],
+  ["confirmed-adjustment-drift", "ordinary heartbeat confirmation ends adjustment before the next health sweep"],
+  ["confirmed-adjustment-status-drift", "ordinary status confirmation ends adjustment before the next health sweep"],
+  ["transient-adjustment-drift", "ordinary confirmed listener loss and recovery before one sweep still require recovery observation"],
+  ["confirmed-adjustment-delayed-sweep", "ordinary confirmation before the deployment deadline remains immediate when the health sweep runs later"],
   ["remove-current", "removing a ready current ordinary entry switches immediately and retains it for one TTL"],
   ["disable-current", "disabling the current ordinary entry uses the same handover and TTL"],
   ["remove-redeploy", "removing the current ordinary entry keeps forwarding until replacement reconfirms"],
@@ -45,6 +50,7 @@ for (const [scenario, description] of [
   ["tcp-handover", "real TCP connections through expected local listeners reach the backend before switch and through the old DNS TTL"],
   ["renamed-retirement", "publishing only a renamed domain does not claim the retiring old DNS identity switched"],
   ["stale-retirement", "a provider response that fails current qualification cannot start ordinary retirement TTL"],
+  ["provider-retirement", "a queued DDNS request cannot start old provider retirement TTL after publishing through another provider"],
 ]) test(description, () => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), "forwardx-ordinary-edits-"));
   try {

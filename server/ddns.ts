@@ -47,6 +47,7 @@ export type DdnsRecordInput = {
 
 export type DdnsRecordValuesInput = Omit<DdnsRecordInput, "value"> & {
   values: string[];
+  expectedProvider?: DdnsSettings["provider"];
 };
 
 export function maskSecret(value: string | null | undefined) {
@@ -931,6 +932,9 @@ export async function updateDdnsRecordValues(input: DdnsRecordValuesInput) {
   const settings = await getDdnsSettings();
   if (!settings.enabled || settings.provider === "disabled") {
     throw new Error("DDNS 未启用");
+  }
+  if (input.expectedProvider !== undefined && input.expectedProvider !== settings.provider) {
+    throw new Error("DDNS 服务商已变更，等待按当前设置重新发布");
   }
   const normalizedInput = {
     ...input,

@@ -2,6 +2,7 @@ import { setBoundedMapValue } from "./boundedCache";
 
 type Adjustment = { childId: number; configuration: string; startedAt: number; deadlineAt: number };
 const adjustments = new Map<string, Adjustment>();
+const confirmedAdjustments = new Map<string, Adjustment & { confirmedAt: number }>();
 const sniAdjustments = new Map<number, Omit<Adjustment, "childId">>();
 const runtimeFailures = new Map<number, number>();
 const hostRuntimeInterruptions = new Map<number, number>();
@@ -24,6 +25,7 @@ export function forwardGroupRuleConfiguration(rule: any) {
 export function recordForwardGroupRuleAdjustment(rule: any, failoverMs: number, now = Date.now()) {
   const key = keyFor(Number(rule.forwardGroupMemberId), Number(rule.forwardGroupRuleId));
   const previous = adjustments.get(key);
+  confirmedAdjustments.delete(key);
   setBoundedMapValue(adjustments, key, {
     childId: Number(rule.id), configuration: forwardGroupRuleConfiguration(rule),
     startedAt: previous?.startedAt ?? now, deadlineAt: previous?.deadlineAt ?? now + failoverMs,
@@ -38,7 +40,16 @@ export function forwardGroupRuleAdjustment(rule: any) {
 }
 
 export function finishForwardGroupRuleAdjustment(rule: any) {
-  adjustments.delete(keyFor(Number(rule.forwardGroupMemberId), Number(rule.forwardGroupRuleId)));
+  const key = keyFor(Number(rule.forwardGroupMemberId), Number(rule.forwardGroupRuleId));
+  adjustments.delete(key);
+  confirmedAdjustments.delete(key);
+}
+
+export function forwardGroupRuleAdjustmentConfirmation(rule: any) {
+  if (!rule) return undefined;
+  const confirmation = confirmedAdjustments.get(keyFor(Number(rule.forwardGroupMemberId), Number(rule.forwardGroupRuleId)));
+  return confirmation?.childId === Number(rule.id) && confirmation.configuration === forwardGroupRuleConfiguration(rule)
+    ? confirmation : undefined;
 }
 
 export function recordForwardGroupRuleRuntimeFailure(rule: any, at = Date.now()) {
@@ -49,6 +60,25 @@ export function recordForwardGroupRuleRuntimeFailure(rule: any, at = Date.now())
 
 export function forwardGroupRuleRuntimeFailureAt(ruleId: number) {
   return runtimeFailures.get(ruleId) || 0;
+}
+
+export function recordForwardGroupOrdinaryRuntimeReport(rule: any, running: boolean, diagnostic?: string | null) {
+  if (!Number(rule?.forwardGroupMemberId) || !Number(rule?.forwardGroupRuleId)
+    || String(rule.sni || "").trim() || rule.pendingDelete) return;
+  const adjustment = forwardGroupRuleAdjustment(rule);
+  if (running) {
+    if (adjustment) {
+      finishForwardGroupRuleAdjustment(rule);
+      // A fast report can precede the first health evaluation. Preserve its
+      // successful attribution for that healthy evaluation only; a subsequent
+      // stopped report below cancels it and records a real interruption.
+      setBoundedMapValue(confirmedAdjustments,
+        keyFor(Number(rule.forwardGroupMemberId), Number(rule.forwardGroupRuleId)), { ...adjustment, confirmedAt: Date.now() }, 50_000);
+    }
+  } else {
+    confirmedAdjustments.delete(keyFor(Number(rule.forwardGroupMemberId), Number(rule.forwardGroupRuleId)));
+    if (String(diagnostic || "").trim() || !adjustment) recordForwardGroupRuleRuntimeFailure(rule);
+  }
 }
 
 // Ordinary host failover rules retain their existing running-report protocol.

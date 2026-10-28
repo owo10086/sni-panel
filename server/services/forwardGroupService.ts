@@ -11,6 +11,7 @@ import { normalizeForwardRuleProtocol, type ForwardRuleProtocol } from "../../sh
 import { normalizeExitGroupStrategy, type ExitGroupStrategy } from "../../shared/exitStrategy";
 import { MAX_FORWARD_GROUP_MEMBERS } from "../../shared/forwardGroup";
 import { portForwardToolPreflight, missingPortForwardToolMessage } from "../portForwardToolPreflight";
+import { isDatabaseTransactionActive, withDeferredDatabaseCommitCallbacks } from "../dbRuntime";
 
 export type ForwardGroupMode = "port" | "failover" | "chain" | "entry" | "exit";
 export type ForwardGroupType = "host" | "tunnel";
@@ -291,20 +292,25 @@ async function updateForwardGroupFromInputUnlocked(id: number, input: ForwardGro
   const shouldResetChinaHealth = !normalized.data.chinaHealthCheckEnabled
     || !!existing?.chinaHealthCheckEnabled !== !!normalized.data.chinaHealthCheckEnabled
     || String(existing?.chinaHealthCheckTarget || "") !== String(normalized.data.chinaHealthCheckTarget || "");
-  const persistConfiguration = async (options: { deferRefresh?: boolean } = {}) => db.withForwardGroupSyncLocks([id], async () => {
-    await db.updateForwardGroup(id, {
-      ...normalized.data,
-      isEnabled: enabledChanged ? !!existing.isEnabled : desiredEnabled,
-    } as any, { skipSync: true });
-    if (membersChanged) {
-      await db.replaceForwardGroupMembers(id, normalized.members as any, {
-        skipSync: true,
-        deferRefresh: options.deferRefresh,
-        previousGroup: existing,
-      });
-    }
-    if (shouldResetChinaHealth) await db.resetForwardGroupChinaHealth(id);
-  });
+  const persistConfiguration = async (options: { deferRefresh?: boolean } = {}) => {
+    const save = () => db.withForwardGroupSyncLocks([id], async () => {
+      await db.updateForwardGroup(id, {
+        ...normalized.data,
+        isEnabled: enabledChanged ? !!existing.isEnabled : desiredEnabled,
+      } as any, { skipSync: true });
+      if (membersChanged) {
+        await db.replaceForwardGroupMembers(id, normalized.members as any, {
+          skipSync: true,
+          deferRefresh: options.deferRefresh,
+          previousGroup: existing,
+        });
+      }
+      if (shouldResetChinaHealth) await db.resetForwardGroupChinaHealth(id);
+    });
+    // Member-change transactions own their callback scope and flush adjustment
+    // evidence before failover. Independent saves only defer past this lock.
+    return isDatabaseTransactionActive() ? save() : withDeferredDatabaseCommitCallbacks(save);
+  };
   const hasSniRules = (await db.getForwardGroupTemplateRules(id) as any[]).some(rule => String(rule.sni || "").trim());
   if (hasSniRules && String(existing.groupMode) === "failover"
     && (normalized.data.groupMode !== "failover" || normalized.data.groupType !== "host")) {
@@ -367,19 +373,19 @@ async function updateForwardGroupFromInputUnlocked(id: number, input: ForwardGro
     if (normalized.data.groupMode !== "failover" || normalized.data.groupType !== "host") {
       throw new Error("承载 SNI 分流规则的转发组必须保持主机型转发组");
     }
-    await db.withForwardGroupSyncTransaction(id, async () => {
+    await withDeferredDatabaseCommitCallbacks(() => db.withForwardGroupSyncTransaction(id, async () => {
       await persistConfiguration({ deferRefresh: true });
       if (enabledChanged) await db.setForwardGroupEnabled(id, desiredEnabled, { skipSync: true });
-    }, { preserveRuntime: true });
+    }, { preserveRuntime: true }));
     await db.runForwardGroupFailover(id, { forcePriority: memberPriorityChanged });
     return db.getForwardGroupById(id);
   }
   if ((normalized.data.groupMode === "chain" || normalized.data.groupMode === "port") && !enabledChanged) {
-    await db.withForwardGroupSyncTransaction(
+    await withDeferredDatabaseCommitCallbacks(() => db.withForwardGroupSyncTransaction(
       id,
       () => persistConfiguration({ deferRefresh: true }),
       { preserveRuntime: true },
-    );
+    ));
     if (normalized.data.groupMode === "port" && rateLimitChanged) {
       await db.refreshForwardGroupRuntime(id, "forward-group-rate-limit-updated");
     }

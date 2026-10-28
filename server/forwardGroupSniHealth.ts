@@ -92,7 +92,8 @@ export function evaluateSniMemberHealthWindows(input: {
     const adjustment = observation.adjustmentStartedAt !== undefined && (!window.hadFailure || recoveryAlreadyCompleted)
       && interruptedAt <= window.interruptedAt;
     if (adjustment && recoveryAlreadyCompleted) window.hadFailure = false;
-    const adjusting = adjustment && input.now < (observation.adjustmentDeadlineAt ?? 0);
+    const adjusting = adjustment && (input.now < (observation.adjustmentDeadlineAt ?? 0)
+      || (observation.healthy && !!observation.confirmedAt && observation.confirmedAt < (observation.adjustmentDeadlineAt ?? 0)));
     if (adjustment && !adjusting) {
       window.hadFailure = true;
       window.failureAt = observation.adjustmentStartedAt!;

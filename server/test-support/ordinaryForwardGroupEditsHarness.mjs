@@ -210,6 +210,49 @@ try {
       await Promise.allSettled([billing, deletion]);
     }
   }
+  if (scenario === "retirement-billing-concurrency") {
+    await removeCurrent();
+    await expectDns(2);
+    await settle();
+    const taskLocks = await import("../keyedTaskLock.ts");
+    const billingKey = taskLocks.trafficBillingUserLockKey(1);
+    const groupSyncKey = "forward-group-sync:" + groupId;
+    let releaseBilling;
+    let billingReady;
+    const released = new Promise(resolve => { releaseBilling = resolve; });
+    const started = new Promise(resolve => { billingReady = resolve; });
+    const billing = taskLocks.withKeyedTaskLock(billingKey, async () => {
+      billingReady();
+      await released;
+    });
+    await started;
+    let save;
+    try {
+      // Trigger just the fixed retirement timer. No heartbeat or sweep starts
+      // another group operation while its lock position is being observed.
+      mock.timers.tick(62_000);
+      for (let attempt = 0; attempt < 200 && taskLocks.keyedTaskDepth(billingKey) < 2; attempt++) {
+        await new Promise(resolve => realSetTimeout(resolve, 5));
+      }
+      assert.equal(taskLocks.keyedTaskDepth(billingKey), 2, "expired retirement must reach the held traffic billing lock");
+      const savedName = "name saved while retirement waits for billing";
+      save = groups.updateFields({ id: groupId, name: savedName });
+      let currentName;
+      for (let attempt = 0; attempt < 200; attempt++) {
+        currentName = (await runtime.queryRaw('SELECT "name" FROM "forward_groups" WHERE "id" = ?', [groupId]))[0]?.name;
+        if (currentName === savedName || taskLocks.keyedTaskDepth(groupSyncKey) >= 2) break;
+        await new Promise(resolve => realSetTimeout(resolve, 5));
+      }
+      assert.ok(currentName === savedName || taskLocks.keyedTaskDepth(groupSyncKey) >= 2,
+        "the edit must either commit or reach a known occupied group lock position");
+      assert.equal(currentName, savedName, "retirement must release the group lock before waiting for traffic billing so a later edit can commit");
+    } finally {
+      releaseBilling();
+      await Promise.allSettled([billing, ...(save ? [save] : [])]);
+      await settle();
+    }
+    await expectOldConfiguration(false, "retirement completes once its billing lock becomes available");
+  }
   if (scenario === "domain") {
     await groups.updateFields({ id: groupId, domain: "renamed.example.test" });
     assert.equal(requests.at(-1).domain, "renamed.example.test");
@@ -291,6 +334,71 @@ try {
     await order([2, 1]);
     await expectDns(1);
     await advance(25, { renew: [1, 2] });
+    await expectDns(2);
+  }
+  if (["confirmed-adjustment-drift", "confirmed-adjustment-status-drift", "transient-adjustment-drift"].includes(scenario)) {
+    await createRule(18101);
+    await confirm(1);
+    reports.set(2, runningReports(await heartbeat(2)));
+    const confirmedRule = reports.get(2).find(report => report.port === 18101);
+    assert.ok(confirmedRule, "the newly deployed ordinary rule must have an Agent identity");
+    if (scenario === "confirmed-adjustment-status-drift") await ruleStatus(2, true, undefined, confirmedRule);
+    else await heartbeat(2);
+    // Do not advance the 250 ms health queue between the first running report
+    // and the next report: runtime confirmation itself must end the adjustment.
+    await heartbeat(2, reports.get(2).filter(report => report.ruleId !== confirmedRule.ruleId));
+    if (scenario !== "transient-adjustment-drift") await groups.runFailover();
+    await heartbeat(2);
+    await order([2, 1]);
+    await expectDns(1);
+    await advance(25, { renew: [1, 2] });
+    await expectDns(2);
+  }
+  if (scenario === "provider-retirement") {
+    const taskLocks = await import("../keyedTaskLock.ts");
+    const failoverKey = "forward-group-failover:" + groupId;
+    let releaseFailover;
+    let failoverReady;
+    const released = new Promise(resolve => { releaseFailover = resolve; });
+    const started = new Promise(resolve => { failoverReady = resolve; });
+    const heldFailover = taskLocks.withKeyedTaskLock(failoverKey, async () => {
+      failoverReady();
+      await released;
+    });
+    await started;
+    await setSettings({ ddnsProvider: "cloudflare" });
+    const startedAt = Date.now();
+    const removal = removeCurrent().then(() => null, error => error);
+    try {
+      for (let attempt = 0; attempt < 200 && taskLocks.keyedTaskDepth(failoverKey) < 2; attempt++) {
+        await new Promise(resolve => realSetTimeout(resolve, 5));
+      }
+      assert.equal(taskLocks.keyedTaskDepth(failoverKey), 2, "saved removal must queue with its original provider snapshot");
+      await configureDdns();
+    } finally {
+      releaseFailover();
+      await heldFailover;
+    }
+    const error = await removal;
+    if (error) assert.match(error.message, /配置已保存/, "a changed provider may reject publication after the member edit commits");
+    await groups.runFailover();
+    await expectDns(2);
+    await tickUntil(startedAt + 62_000, { renew: [2] });
+    await expectOldConfiguration(true, "webhook success cannot start the retiring Cloudflare identity's TTL");
+    await tickUntil(startedAt + 302_000, { renew: [2] });
+    await groups.runFailover();
+    await expectOldConfiguration(false, "an unchanged old provider identity uses its original five-minute fallback");
+  }
+  if (scenario === "confirmed-adjustment-delayed-sweep") {
+    const startedAt = Date.now();
+    await createRule(18101);
+    await confirm(1);
+    await advance(15, { renew: [1] });
+    await confirm(2);
+    assert.ok(Date.now() < startedAt + 17_000, "the Agent confirms running before the deployment failure deadline");
+    mock.timers.tick(2000);
+    assert.ok(Date.now() >= startedAt + 17_000, "the queued health evaluation runs after the original deadline");
+    await order([2, 1]);
     await expectDns(2);
   }
   if (["remove-current", "disable-current", "remove-redeploy", "fallback", "ddns-failure", "old-ttl", "late-switch", "retirement-prepare"].includes(scenario)) {
