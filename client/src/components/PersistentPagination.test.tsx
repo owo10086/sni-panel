@@ -26,26 +26,22 @@ test("page-size tiers fall back for missing, invalid and unsupported storage val
   assert.equal(normalizePageRequest({pageSize: 1}).pageSize, 1);
 });
 
-test("page-size state persists independently and legacy Rules never accesses its pageSize key", () => {
+test("page-size state and page persist independently when switching lists and remounting", () => {
   const harness = createPaginationHarness(new Map([
-    ["forwardx.rules.pageSize", "24"], ["forwardx.rules.page", "2"],
+    ["hosts.pageSize", "20"], ["hosts.page", "2"],
     ["billing.page", "3"], ["billing.pageSize", "50"],
   ]));
   const { usePersistentPageRequest, useServerPagination } = harness.load("client/src/components/PersistentPagination.tsx");
-  let key = "forwardx.rules.page";
-  let defaultSize: 20 | undefined;
+  let key = "hosts.page";
   const render = () => harness.render(() => {
-    const request = usePersistentPageRequest(key, defaultSize);
-    return { request, pagination: useServerPagination([], 1000, request, {pageSize: 24}) };
+    const request = usePersistentPageRequest(key, 20);
+    return { request, pagination: useServerPagination([], 1000, request) };
   });
   let result = render();
-  assert.equal(result.pagination.pageSize, 24);
-  assert.equal(result.pagination.setPageSize, undefined);
+  assert.equal(result.request.page, 2);
+  assert.equal(result.pagination.pageSize, 20);
   result.pagination.nextPage(); render();
-  assert.equal(harness.storage.get("forwardx.rules.pageSize"), "24");
-  assert.ok(!harness.reads.includes("forwardx.rules.pageSize"));
-  assert.ok(!harness.writes.includes("forwardx.rules.pageSize"));
-  key = "billing.page"; defaultSize = 20;
+  key = "billing.page";
   result = render();
   assert.equal(result.request.page, 3);
   assert.equal(result.pagination.pageSize, 50);
@@ -57,20 +53,20 @@ test("page-size state persists independently and legacy Rules never accesses its
   assert.equal(result.request.page, 4);
   assert.equal(result.request.pageSize, 100);
   assert.equal(harness.storage.get("billing.pageSize"), "100");
-  assert.equal(harness.storage.get("forwardx.rules.page"), "3");
+  key = "hosts.page";
+  result = render();
+  assert.equal(result.request.page, 3);
+  assert.equal(result.pagination.pageSize, 20);
+  assert.equal(harness.storage.get("billing.page"), "4");
 });
 
-test("new pagination visibility uses 20 while fixed-size lists keep their original rule", () => {
+test("pagination is hidden through 20 records and always offers page size above 20", () => {
   for (const totalItems of [0, 20]) assert.equal(renderToStaticMarkup(<PersistentPagination pagination={{...state, totalItems}} />), "");
   const html = renderToStaticMarkup(<PersistentPagination pagination={{...state, totalItems: 21}} />);
   assert.match(html, /共 21 条/);
   assert.match(html, /role="combobox"/);
   assert.match(html, /100 条\/页/);
   assert.match(html, /w-full justify-end sm:w-auto/);
-  assert.equal(renderToStaticMarkup(<PersistentPagination pagination={{...state, setPageSize: undefined}} />), "");
-  const legacy = renderToStaticMarkup(<PersistentPagination pagination={{...state, totalItems: 101, setPageSize: undefined}} />);
-  assert.match(legacy, /共 101 条/);
-  assert.doesNotMatch(legacy, /combobox/);
   for (const file of ["Hosts", "Tunnels", "Rules"]) {
     const source = readFileSync(`client/src/pages/${file}.tsx`, "utf8");
     assert.match(source, /limit: 100,/);
