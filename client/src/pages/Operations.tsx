@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { t, getFormatLocale } from "@/i18n";
 import { trpc } from "@/lib/trpc";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -23,7 +23,8 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { AlertCircle, ArrowDownToLine, ArrowUpFromLine, Globe2, RefreshCw, Server } from "lucide-react";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { operationsDate, OPERATIONS_SOURCE_PAGE_SIZE, type OperationsSourceSort } from "@shared/operations";
+import { operationsDate, type OperationsSourceSort } from "@shared/operations";
+import { usePersistentPageRequest, useServerPagination } from "@/components/PersistentPagination";
 import { toast } from "@/lib/localizedToast";
 
 function time(value: unknown) { return new Date(Number(value) * 1000).toLocaleString(getFormatLocale(), { timeZone: "Asia/Shanghai" }); }
@@ -43,22 +44,30 @@ export default function OperationsPage() {
   const [dates, setDates] = useState({ from: today, to: today });
   const [geoCursor, setGeoCursor] = useState("");
   useEffect(() => { setGeoCursor(""); }, [dates, userScope]);
-  const [search, setSearch] = useState(""), [query, setQuery] = useState(""), [page, setPage] = useState(0);
+  const [search, setSearch] = useState(""), [query, setQuery] = useState("");
+  const sourcePageRequest = usePersistentPageRequest("forwardx.operations.sources.page", 20);
   const [confirm, setConfirm] = useState<"collect" | "geo" | null>(null), [selectedIp, setSelectedIp] = useState("");
-  useEffect(() => { const id = setTimeout(() => { setQuery(search.trim()); setPage(0); }, 350); return () => clearTimeout(id); }, [search]);
+  useEffect(() => { const id = setTimeout(() => { setQuery(search.trim()); }, 350); return () => clearTimeout(id); }, [search]);
   const scopeUserId: "self" | "all" | number = userScope === "self" || userScope === "all" ? userScope : Number(userScope);
   const scopedDates = { ...dates, userId: scopeUserId };
   const provinceDetails = trpc.operations.provinceDetails.useQuery({...scopedDates,province:province || "",search:query},{...refreshOptions,enabled:!!province,staleTime:15000});
   const pinnedDetails = trpc.operations.provinceDetails.useQuery({...scopedDates,province:pinnedProvince || "",search:query},{...refreshOptions,enabled:!!pinnedProvince,staleTime:15000});
   useEffect(()=> {setActiveProvince(null);setProvince(null);setPinnedProvince(null);},[dates,userScope,query]);
   const overview = trpc.operations.overview.useQuery(scopedDates, refreshOptions);
-  const sources = trpc.operations.sources.useQuery({ ...scopedDates, page, search: query, sort }, refreshOptions);
+  const sourceFilterKey = JSON.stringify([dates.from, dates.to, scopeUserId, query, sort]);
+  const previousSourceFilter = useRef(sourceFilterKey);
+  const sourceFiltersChanged = previousSourceFilter.current !== sourceFilterKey;
+  useEffect(() => {
+    if (!sourceFiltersChanged) return;
+    previousSourceFilter.current = sourceFilterKey;
+    sourcePageRequest.setPage(1);
+  }, [sourceFilterKey, sourceFiltersChanged, sourcePageRequest.setPage]);
+  const sources = trpc.operations.sources.useQuery({ ...scopedDates, page: sourcePageRequest.page - 1, pageSize: sourcePageRequest.pageSize, search: query, sort }, refreshOptions);
+  const sourcePagination = useServerPagination(sources.data?.ips ?? [], Number(sources.data?.totals?.ips ?? 0), sourcePageRequest, {
+    isReady: !!sources.data && !sources.isLoading && !sources.isPlaceholderData && !sourceFiltersChanged,
+  });
   const details = trpc.operations.sourceDetails.useQuery({ ...scopedDates, ip: selectedIp }, { ...refreshOptions, enabled: !!selectedIp });
   useEffect(() => { setSelectedIp(""); }, [dates]);
-  useEffect(() => {
-    const lastPage = Math.max(0, Math.ceil(Number(sources.data?.totals?.ips || 0) / OPERATIONS_SOURCE_PAGE_SIZE) - 1);
-    if (sources.data && page > lastPage) setPage(lastPage);
-  }, [sources.data, page]);
   const utils = trpc.useUtils();
   const refresh = () => { void utils.operations.invalidate(); };
   const collection = trpc.operations.setSourceCollection.useMutation({ onSuccess: refresh, onError: error => toast.error(error.message) });
@@ -84,13 +93,13 @@ export default function OperationsPage() {
     </div>
     {(import.meta as any).env?.VITE_FORWARDX_DEV_PANEL === "1" && <p className="rounded-lg border border-primary/20 bg-primary/5 px-4 py-2 text-sm text-muted-foreground">{t("本地演示数据，不代表真实流量或 IP 位置。")}</p>}
     <OperationsDateFilter from={from} to={to} minimum={minimum} today={today} onFromChange={setFrom} onToChange={setTo}
-      onApply={() => { setDates({ from, to }); setPage(0); }}
-      onToday={() => { const value = operationsDate(); setFrom(value); setTo(value); setDates({ from: value, to: value }); setPage(0); }}
-      onMonth={() => { setFrom(minimum); setTo(today); setDates({ from: minimum, to: today }); setPage(0); }}>
+      onApply={() => { setDates({ from, to }); }}
+      onToday={() => { const value = operationsDate(); setFrom(value); setTo(value); setDates({ from: value, to: value }); }}
+      onMonth={() => { setFrom(minimum); setTo(today); setDates({ from: minimum, to: today }); }}>
       <div className="min-w-0 space-y-2 lg:w-56"><Label htmlFor="operations-user" className="block leading-5">{t("用户")}</Label>
         <UserSelect id="operations-user" className="h-8" value={userScope} excludeUserId={user?.id}
           specialOptions={[{ value: "all", label: t("所有用户") }, { value: "self", label: t("管理员") }]}
-          onValueChange={value => { setUserScope(value); setPage(0); setSelectedIp(""); setConfirm(null); setGeoCursor(""); }} />
+          onValueChange={value => { setUserScope(value); setSelectedIp(""); setConfirm(null); setGeoCursor(""); }} />
       </div>
     </OperationsDateFilter>
     {(overview.error || sources.error) && <div role="alert" className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"><AlertCircle className="size-4 shrink-0" />{overview.error?.message || sources.error?.message}</div>}
@@ -110,7 +119,7 @@ export default function OperationsPage() {
         <div className="flex flex-wrap gap-2"><Input className="min-w-36 flex-1" placeholder={t("搜索来源 IP")} value={search} onChange={event => setSearch(event.target.value)} /><Button variant="outline" disabled={resolve.isPending} onClick={() => setConfirm("geo")}>{resolve.isPending ? t("定位中") : t("补全本地定位")}</Button></div>
         {sources.data?.location.remaining && <p className="text-xs text-muted-foreground">{t("来源较多，已分批定位；刷新或补全可继续处理剩余 IP。")}</p>}
         {!enabled && <p className="rounded-lg bg-muted p-3 text-sm text-muted-foreground">{t("来源采集未开启；已有历史仍可查询。开启后需新版 Agent 上报。")}</p>}
-        <OperationsSourceList rows={sources.data?.ips || []} total={Number(sources.data?.totals?.ips || 0)} page={page} sort={sort} loading={sources.isFetching} onPageChange={setPage} onSortChange={value => { setSort(value); setPage(0); }} onSelectIp={setSelectedIp} />
+        <OperationsSourceList rows={sources.data?.ips || []} total={Number(sources.data?.totals?.ips || 0)} pagination={sourcePagination} sort={sort} loading={sources.isFetching} onSortChange={value => { setSort(value); }} onSelectIp={setSelectedIp} />
         <p className="text-xs text-muted-foreground">{t("* 表示部分流量缺失，非完整会话流量。来源定位使用内置 IPv4 / IPv6 库，不消耗接口额度。")}</p>
       </div>
     </CardContent></Card>

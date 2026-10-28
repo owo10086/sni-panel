@@ -3,6 +3,7 @@ import fs from "node:fs";
 import test from "node:test";
 import OperationsDateFilter from "./OperationsDateFilter";
 import OperationsSourceList from "./OperationsSourceList";
+import type { PersistentPaginationState } from "./PersistentPagination";
 import DatePickerInput from "./DatePickerInput";
 import { operationsMoney, operationsLedgerLabel } from "./OperationsFinanceSummary";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -50,18 +51,23 @@ test("built-in calendar disables dates and navigation outside the operations ran
   assert.match(html, /aria-label="[^"]+"/);
 });
 
-test("source list has bounded height, sortable rankings and ten-row page navigation in both languages", async () => {
+test("source list uses shared pagination and correct size 20/50 rankings in both languages", async () => {
   const previous = getLanguagePreference();
   try {
     for (const language of ["zh-CN", "en"] as const) {
       setLanguagePreference(language); await initializeLanguage();
-      const html = renderToStaticMarkup(<OperationsSourceList rows={Array.from({length:10}, (_, i) => ({ip:`192.0.2.${i+1}`,rules:1,bytesIn:100,bytesOut:200,knownSamples:1,unknownSamples:0}))} total={84} page={1} sort="traffic" loading={false} onPageChange={() => {}} onSortChange={() => {}} onSelectIp={() => {}} />);
+      for (const pageSize of [20,50]) {
+      const pagination: PersistentPaginationState<never> = {currentPage:2,totalPages:pageSize === 20 ? 5 : 2,totalItems:84,pageSize,startItem:pageSize+1,endItem:Math.min(84,pageSize*2),items:[],setPage() {},setPageSize() {},nextPage() {},previousPage() {}};
+      const html = renderToStaticMarkup(<OperationsSourceList rows={Array.from({length:Math.min(pageSize,84-pageSize)}, (_, i) => ({ip:`192.0.2.${i+1}`,rules:1,bytesIn:100,bytesOut:200,knownSamples:1,unknownSamples:0}))} total={84} pagination={pagination} sort="traffic" loading={false} onSortChange={() => {}} onSelectIp={() => {}} />);
       assert.equal((html.match(/<tbody>/g) || []).length, 1);
-      assert.equal((html.match(/<tr/g) || []).length, 11);
+      assert.equal((html.match(/<tr/g) || []).length, pageSize === 20 ? 21 : 35);
+      assert.match(html, new RegExp(`tabular-nums text-muted-foreground">${pageSize+1}</td>`));
       assert.match(html, /max-h-\[28rem\]/);
       assert.match(html, /overflow-auto/);
-      assert.match(html, language === "en" ? /Page 2 of 9/ : /第 2 页，共 9 页/);
+      assert.match(html, new RegExp(language === "en" ? `Page 2 of ${pagination.totalPages}` : `第 2 页，共 ${pagination.totalPages} 页`));
+      assert.match(html, new RegExp(language === "en" ? `${pageSize} / page` : `${pageSize} 条/页`));
       assert.equal(/\p{Script=Han}/u.test(html), language === "zh-CN");
+      }
     }
   } finally { setLanguagePreference(previous); await initializeLanguage(); }
 });

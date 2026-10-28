@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { SlidingTabsList } from "@/components/ui/sliding-tabs";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
+import { PersistentPagination, usePersistentPageRequest, useServerPagination } from "@/components/PersistentPagination";
 import { Activity, ShieldCheck, RefreshCw } from "lucide-react";
 
 const metricNames: Record<string, string> = { cpu: "CPU", memory: "内存", disk: "磁盘" };
@@ -15,15 +16,20 @@ const actionNames: Record<string, string> = { pending: "换 IP 请求处理中",
 const time = (value: unknown) => new Date(Number(value) * 1000).toLocaleString(getFormatLocale(), { timeZone: "Asia/Shanghai" });
 
 export default function OperationsMonitorPanel({ interval }: { interval: number | false }) {
-  const [page, setPage] = useState(0), [ipPage, setIpPage] = useState(0);
+  const alertPageRequest = usePersistentPageRequest("forwardx.operations.alertEvents.page", 20);
+  const ipPageRequest = usePersistentPageRequest("forwardx.operations.ipEvents.page", 20);
   const [tab, setTab] = useState("resources");
   const confirm = useConfirmDialog();
-  const report = trpc.operations.monitor.useQuery({ page, ipPage }, { refetchInterval: interval, refetchIntervalInBackground: false, refetchOnWindowFocus: false });
+  const report = trpc.operations.monitor.useQuery({ page: alertPageRequest.page - 1, pageSize: alertPageRequest.pageSize, ipPage: ipPageRequest.page - 1, ipPageSize: ipPageRequest.pageSize }, { refetchInterval: interval, refetchIntervalInBackground: false, refetchOnWindowFocus: false });
+  // Both lists share this query: neither may clamp against its placeholder totals.
+  const isReady = !!report.data && !report.isLoading && !report.isPlaceholderData;
+  const alertPagination = useServerPagination(report.data?.events ?? [], report.data?.total ?? 0, alertPageRequest, { isReady });
+  const ipPagination = useServerPagination(report.data?.ipEvents ?? [], report.data?.ipTotal ?? 0, ipPageRequest, { isReady });
   const acknowledge = trpc.hosts.acknowledgeProbeHealthAction.useMutation({ onSuccess: () => { void report.refetch(); toast.success(t("已记录商家结果核对")); }, onError: error => toast.error(error.message) });
   const acknowledgeAction = async (serviceId: number) => {
     if (await confirm({ title: t("核对商家换 IP 结果"), description: t("请先在商家确认上次请求已结束。此操作只解除未知结果保护，不会重发上次请求；当前故障仍不会重复换 IP。"), confirmText: t("已核对，解除保护") })) acknowledge.mutate({ serviceId });
   };
-  const pagination = (current: number, total: number, onChange: (page: number) => void) => <div className="flex items-center justify-end gap-2 text-xs"><span>{t("共 {0} 条", [total])}</span><Button size="sm" variant="outline" disabled={current === 0 || report.isFetching} onClick={() => onChange(current - 1)}>{t("上一页")}</Button><Button size="sm" variant="outline" disabled={(current + 1) * 20 >= total || report.isFetching} onClick={() => onChange(current + 1)}>{t("下一页")}</Button></div>;
+
   return <Card><CardHeader><CardTitle className="flex items-center gap-2 text-base"><Activity className="size-4 text-emerald-500" />{t("状态与告警记录")}</CardTitle></CardHeader><CardContent className="space-y-4">
     {report.error && <p role="alert" className="text-sm text-destructive">{report.error.message}</p>}
     <Tabs value={tab} onValueChange={setTab}>
@@ -34,7 +40,7 @@ export default function OperationsMonitorPanel({ interval }: { interval: number 
           <div className="overflow-x-auto"><table className="w-full text-left text-xs"><thead><tr className="border-b text-muted-foreground"><th className="py-2">{t("主机")}</th><th>CPU</th><th>{t("内存")}</th><th>{t("磁盘")}</th><th>{t("采样状态")}</th></tr></thead><tbody>{report.data.resources.map(row => <tr key={row.hostId} className="border-b last:border-0"><td className="max-w-48 truncate py-2">{row.hostName}</td>{[row.cpu, row.memory, row.disk].map((value, index) => <td key={index} className={row.stale ? "text-muted-foreground" : ""}>{value == null ? "—" : `${Number(value).toFixed(1)}%`}</td>)}<td className={row.stale ? "text-amber-500" : "text-muted-foreground"}>{row.stale ? t("采样已过期") : t("最近采样")}</td></tr>)}</tbody></table></div>
           {report.data.active.map(row => <div key={row.id} className="rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-sm">{row.hostName} · {t(metricNames[row.metric] || row.metric)} · {row.stale ? t("采样中断，待确认") : row.phase === "recovering" ? t("恢复观察中") : t("持续超限")} · {t("峰值")} {row.peak}%</div>)}
           <div><p className="text-sm font-medium">{t("最近 30 天告警事件")}</p>{report.data.events.map(row => <div key={row.id} className="flex flex-wrap justify-between gap-2 border-b py-2 text-xs last:border-0"><span>{row.hostName} · {t(metricNames[row.metric] || row.metric)} · <span className={row.type === "triggered" ? "text-amber-500" : "text-emerald-500"}>{row.type === "triggered" ? t("持续超限") : t("已恢复")}</span> {row.value}%</span><span className="text-muted-foreground">{time(row.createdAt)}</span></div>)}{!report.data.events.length && <p className="py-3 text-xs text-muted-foreground">{t("暂无数据")}</p>}</div>
-          {pagination(page, report.data.total, setPage)}
+          <PersistentPagination pagination={alertPagination} />
         </TabsContent>
         <TabsContent value="health" className="space-y-3">
           {report.data.health.map(row => <div key={row.serviceId} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3 text-sm"><div className="min-w-0"><p className="truncate">{row.hostName} · {row.name}</p><p className="mt-1 text-xs text-muted-foreground">{row.state?.lastSeen ? time(row.state.lastSeen) : "—"}</p></div><span className={row.state?.phase === "unhealthy" ? "text-amber-500" : "text-muted-foreground"}>{!row.isEnabled ? t("已关闭") : row.state?.stale ? t("采样已过期") : t(healthNames[row.state?.phase || "unknown"] || "待检测")}</span>{row.blockedAction && <Button size="sm" variant="outline" disabled={acknowledge.isPending || Date.now() / 1000 - row.blockedAction.createdAt < 150} onClick={() => acknowledgeAction(row.serviceId)}>{t("已核对商家结果")}</Button>}</div>)}
@@ -44,7 +50,7 @@ export default function OperationsMonitorPanel({ interval }: { interval: number 
           <p className="text-xs text-muted-foreground">{t("最近 30 天 IP 更换记录")}</p>
           {report.data.ipEvents.map(row => <div key={row.id} className="flex flex-wrap justify-between gap-2 border-b py-2 text-xs last:border-0"><div className="min-w-0"><p className="truncate">{row.hostName || "—"} · {row.serviceName || `#${row.serviceId}`}</p><p className="mt-1 text-muted-foreground">{t(actionNames[row.status] || "未知")}{row.newIp ? ` · ${row.newIp}` : ""}</p></div><span className="text-muted-foreground">{time(row.createdAt)}</span></div>)}
           {!report.data.ipEvents.length && <p className="py-3 text-xs text-muted-foreground">{t("暂无数据")}</p>}
-          {pagination(ipPage, report.data.ipTotal, setIpPage)}
+          <PersistentPagination pagination={ipPagination} />
         </TabsContent>
       </>}
     </Tabs>

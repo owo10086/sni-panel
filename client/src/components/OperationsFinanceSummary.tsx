@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef } from "react";
 import { Link } from "wouter";
 import { t, getFormatLocale } from "@/i18n";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { PersistentPagination, usePersistentPageRequest, useServerPagination } from "@/components/PersistentPagination";
 import { operationsRefreshOptions } from "@/lib/operationsRefresh";
 import OperationsFinanceCharts from "./OperationsFinanceCharts";
 import { SummaryMetricCard } from "./SummaryMetricCard";
@@ -19,11 +20,21 @@ export function operationsLedgerLabel(kind:string,type:string) {
   return kind === "payment" ? t(type === "plan" ? "在线套餐支付" : "在线充值订单") : t(balanceLabels[type] || "其他余额变动");
 }
 export default function OperationsFinanceSummary({from,to,userId,refreshInterval}: {from:string;to:string;userId:"self"|"all"|number;refreshInterval:number|false}) {
-  const [page,setPage] = useState(0);
-  useEffect(()=>setPage(0),[from,to,userId]);
+  const pageRequest = usePersistentPageRequest("forwardx.operations.financeLedger.page", 20);
+  const filterKey = JSON.stringify([from, to, userId]);
+  const previousFilter = useRef(filterKey);
+  const filtersChanged = previousFilter.current !== filterKey;
+  useEffect(() => {
+    if (!filtersChanged) return;
+    previousFilter.current = filterKey;
+    pageRequest.setPage(1);
+  }, [filterKey, filtersChanged, pageRequest.setPage]);
   const options = operationsRefreshOptions(refreshInterval);
   const summary = trpc.operations.finance.useQuery({from,to,userId},options);
-  const ledger = trpc.operations.financeLedger.useQuery({from,to,userId,page},options);
+  const ledger = trpc.operations.financeLedger.useQuery({from,to,userId,page:pageRequest.page - 1,pageSize:pageRequest.pageSize},options);
+  const pagination = useServerPagination(ledger.data?.rows ?? [], ledger.data?.total ?? 0, pageRequest, {
+    isReady: !!ledger.data && !ledger.isLoading && !ledger.isPlaceholderData && !filtersChanged,
+  });
   const data = summary.data;
   const receiptTotals = new Map<string,{cents:number;count:number;plans:number;topups:number}>();
   for (const row of data?.receipts || []) {
@@ -42,7 +53,6 @@ export default function OperationsFinanceSummary({from,to,userId,refreshInterval
     {title:t("管理员 / 兑换入账"),value:summary.isLoading ? "—" : operationsMoney(credits),hint:t("不计入在线实收"),icon:Gift,tone:"amber" as const},
     {title:t("新增套餐记录"),value:summary.isLoading ? "—" : String(newSubscriptions),hint:t("当前生效 {0} 个",[data?.activeSubscriptions || 0]),icon:PackagePlus,tone:"violet" as const},
   ];
-  const currentPage = ledger.data?.page ?? page, pages = Math.max(1,Math.ceil((ledger.data?.total || 0)/10));
   return <Card>
     <CardHeader><div className="flex flex-wrap items-center justify-between gap-3"><CardTitle className="text-base">{t("账务汇总")}</CardTitle><Link href="/billing" className="text-xs text-primary hover:underline">{t("查看完整账单")}</Link></div>
       <p className="text-xs leading-relaxed text-muted-foreground">{t("在线实收与余额消费分别统计，不相加；测试订单不计入。当前生效套餐为实时状态。")}</p>
@@ -55,7 +65,7 @@ export default function OperationsFinanceSummary({from,to,userId,refreshInterval
         <div className="max-h-96 overflow-auto rounded-lg border"><table className="w-full min-w-[620px] text-xs"><thead className="sticky top-0 bg-card"><tr>{[t("时间"),t("用户"),t("类型"),t("状态"),t("金额")].map(label=><th key={label} className="px-3 py-2.5 text-left font-medium last:text-right">{label}</th>)}</tr></thead><tbody>
           {ledger.isLoading ? <tr><td colSpan={5} className="p-5 text-center text-muted-foreground">{t("加载中")}</td></tr> : ledger.data?.rows.length ? ledger.data.rows.map(row=><tr key={`${row.kind}:${row.id}`} className="border-t"><td className="whitespace-nowrap px-3 py-2.5 tabular-nums">{new Date(row.eventAt*1000).toLocaleString(getFormatLocale(),{timeZone:"Asia/Shanghai"})}</td><td className="max-w-40 truncate px-3 py-2.5" title={row.username || `#${row.userId}`}>{row.username || `#${row.userId}`}</td><td className="px-3 py-2.5" title={row.title || undefined}>{operationsLedgerLabel(row.kind,row.type)}</td><td className="whitespace-nowrap px-3 py-2.5">{t(statusLabels[row.status] || "未知")}</td><td className="whitespace-nowrap px-3 py-2.5 text-right tabular-nums">{row.kind === "balance" && row.amountCents>0 ? "+" : ""}{operationsMoney(row.amountCents,row.currency)}</td></tr>) : <tr><td colSpan={5} className="p-5 text-center text-muted-foreground">{ledger.isError ? "—" : t("暂无数据")}</td></tr>}
         </tbody></table></div>
-        <div className="flex items-center justify-between gap-3 text-xs"><span className="text-muted-foreground">{t("第 {0} 页，共 {1} 页",[currentPage+1,pages])}</span><div className="flex gap-2"><Button size="sm" variant="outline" disabled={ledger.isFetching || currentPage===0} onClick={()=>setPage(currentPage-1)}>{t("上一页")}</Button><Button size="sm" variant="outline" disabled={ledger.isFetching || currentPage+1>=pages} onClick={()=>setPage(currentPage+1)}>{t("下一页")}</Button></div></div>
+        <PersistentPagination pagination={pagination} />
       </div>
     </CardContent>
   </Card>;
