@@ -80,7 +80,7 @@
     "test:security-boundaries": "node --import tsx --test server/cookieSecret.test.ts server/requestBodyParser.test.ts server/agentActionCommands.test.ts server/logFileStore.integration.test.ts",
     "test:ai-models": "node --import tsx --test server/ai/models.test.ts server/ai/settings.test.ts client/src/components/AiModelSelect.test.tsx",
     "test:rule-batch": "node --import tsx --test client/src/lib/ruleBatchFlow.test.ts client/src/components/rules/PersonalRuleGroups.test.tsx server/rulesBatchOperations.test.ts server/ruleOperationOwner.test.ts server/forwardGroupToggle.test.ts",
-    "test:web-browser": "node --import tsx --test client/src/components/AiModelSelect.browser.test.ts client/src/components/rules/PersonalRuleGroups.browser.test.ts client/src/components/PlanBillingViews.browser.test.ts client/src/components/AgentTokenManager.browser.test.ts client/src/pages/RulesTasks.browser.test.ts",
+    "test:web-browser": "node --import tsx --test client/src/components/AiModelSelect.browser.test.ts client/src/components/rules/PersonalRuleGroups.browser.test.ts client/src/components/PlanBillingViews.browser.test.ts client/src/components/AgentTokenManager.browser.test.ts client/src/pages/RulesTasks.browser.test.ts client/src/_core/hooks/useAuth.browser.test.ts client/src/components/ResourceRuntimeViews.browser.test.ts",
     "test:rule-tasks": "node --import tsx --test server/ruleTaskQueue.test.ts server/ruleTaskRoutes.test.ts client/src/lib/ruleTaskTracker.test.ts client/src/components/RuleTaskNotifications.test.tsx"
   },
   "dependencies": {

@@ -3,9 +3,60 @@ import test from "node:test";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import { handoffManualTestResult, hasQuerySnapshotAfter } from "@/lib/manualTestCache";
-import { getLinkTestDetailEndpointIds, getLinkTestTotalLatency, LinkTestProbeView, parseLinkTestMessage } from "./LinkTestLatencySummary";
+import { getLanguagePreference, initializeLanguage, setLanguagePreference } from "@/i18n";
+import { formatLinkTestRoute, getLinkTestDetailEndpointIds, getLinkTestTotalLatency, LinkTestProbeView, parseLinkTestMessage } from "./LinkTestLatencySummary";
 
 const plannedSegments = [{ from: "入口节点", to: "出口节点" }];
+
+test("generated target labels follow the UI language while custom host names stay intact", async () => {
+  const previous = getLanguagePreference();
+  const target = {
+    fromHostId: 1, toHostId: null, success: true, latencyMs: 8,
+    hopLabel: "出口 -> 目标 example.com:443",
+    routeLabel: "我的出口 -> 目标 example.com:443",
+  };
+  try {
+    setLanguagePreference("en"); await initializeLanguage();
+    assert.equal(formatLinkTestRoute(target), "我的出口 -> Target example.com:443");
+    assert.equal(formatLinkTestRoute({ ...target, toHostId: 2 }), target.routeLabel,
+      "an actual destination host name is not rewritten");
+    assert.equal(formatLinkTestRoute({ ...target, hopLabel: "custom path" }), target.routeLabel,
+      "custom route labels are not mistaken for generated target endpoints");
+    const html = renderToStaticMarkup(<LinkTestProbeView
+      parsed={parseLinkTestMessage(JSON.stringify({ kind: "forward-via-tunnel", details: [target] }))}
+      isSuccess isTesting={false} />);
+    assert.match(html, /Target example.com:443/);
+    assert.match(html, /我的出口/);
+    assert.doesNotMatch(html, /目标 example.com:443/);
+    const sameName = renderToStaticMarkup(<LinkTestProbeView
+      parsed={parseLinkTestMessage(JSON.stringify({ kind: "forward-via-tunnel", details: [
+        { fromHostId: 2, toHostId: 1, routeLabel: "目标 example.com:443 -> 我的出口", success: true, latencyMs: 2 },
+        target,
+      ] }))} isSuccess isTesting={false} />);
+    assert.match(sameName, /title="目标 example.com:443"/, "a source host may have the same text as a generated target");
+    assert.match(sameName, /title="Target example.com:443"/);
+    const targetMeta = { label: "业务目标", address: "example.com:443" };
+    for (const grouped of [false, true]) {
+      const groupKey = grouped ? "target-path" : undefined;
+      const aliased = renderToStaticMarkup(<LinkTestProbeView
+        parsed={parseLinkTestMessage(JSON.stringify({ kind: "forward-via-tunnel", details: [{ ...target, groupKey }] }))}
+        isSuccess isTesting={false} nodeMeta={{ "example.com:443": targetMeta }}
+        plannedSegments={grouped ? [{ from: "我的出口", to: "业务目标", fromHostId: 1, toMeta: targetMeta, groupKey }] : undefined} />);
+      assert.match(aliased, /业务目标/, `target alias survives, grouped=${grouped}`);
+      assert.match(aliased, /8 ms/, `the result stays attached to its target, grouped=${grouped}`);
+      assert.doesNotMatch(aliased, /等待探测|未收到结果/);
+    }
+    const customTarget = renderToStaticMarkup(<LinkTestProbeView
+      parsed={parseLinkTestMessage(JSON.stringify({ kind: "forward-via-tunnel", details: [target] }))}
+      isSuccess isTesting={false} nodeMeta={{ "example.com:443": { ...targetMeta, label: "目标 example.com:443" } }} />);
+    assert.match(customTarget, /title="目标 example.com:443 \/ example.com:443"/,
+      "an explicitly supplied target name is preserved even when it matches the generated label");
+    setLanguagePreference("zh-CN"); await initializeLanguage();
+    assert.equal(formatLinkTestRoute(target), target.routeLabel);
+  } finally {
+    setLanguagePreference(previous); await initializeLanguage();
+  }
+});
 
 test("alternative paths render independent edges and honor the path-aware server total", () => {
   const parsed = parseLinkTestMessage(JSON.stringify({ kind: "tunnel-hop-summary", totalLatencyMs: 30, details: [
