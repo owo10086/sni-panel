@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import QRCode from "qrcode";
 import DashboardLayout from "@/components/DashboardLayout";
+import { PersistentPagination, usePersistentPageRequest, useServerPagination } from "@/components/PersistentPagination";
 import { trpc } from "@/lib/trpc";
 import { t, getFormatLocale } from "@/i18n";
 import { toast } from "@/lib/localizedToast";
@@ -69,38 +70,6 @@ const kinds: Record<Kind, string> = {
   ledger: "佣金流水",
   referrals: "邀请记录",
 };
-function Pager({
-  page,
-  total,
-  change,
-}: {
-  page: number;
-  total: number;
-  change: (n: number) => void;
-}) {
-  return (
-    <div className="flex flex-wrap items-center justify-end gap-2 pt-4 text-sm">
-      <span>{t("共 {0} 条", [total])}</span>
-      <Button
-        variant="outline"
-        size="sm"
-        disabled={page <= 1}
-        onClick={() => change(page - 1)}
-      >
-        {t("上一页")}
-      </Button>
-      <span>{page}</span>
-      <Button
-        variant="outline"
-        size="sm"
-        disabled={page * 20 >= total}
-        onClick={() => change(page + 1)}
-      >
-        {t("下一页")}
-      </Button>
-    </div>
-  );
-}
 const AFFILIATE_STAT_TONES = {
   emerald: "bg-gradient-to-br from-emerald-500 to-emerald-600",
   amber: "bg-gradient-to-br from-amber-500 to-amber-600",
@@ -141,7 +110,7 @@ export function AffiliateStats({
 }
 function Records({ admin = false }: { admin?: boolean }) {
   const [kind, setKind] = useState<Kind>("commissions");
-  const [page, setPage] = useState(1);
+  const pageRequest = usePersistentPageRequest(`forwardx.affiliates.${admin ? "admin" : "user"}.${kind}.page`, 20);
   const [status, setStatus] = useState("all");
   const [filterUser, setFilterUser] = useState("");
   const [action, setAction] = useState<{
@@ -152,7 +121,8 @@ function Records({ admin = false }: { admin?: boolean }) {
   const utils = trpc.useUtils();
   const input = {
     kind,
-    page,
+    page: pageRequest.page,
+    pageSize: pageRequest.pageSize,
     status: status as "all",
     ...(admin && /^[1-9]\d*$/.test(filterUser)
       ? { userId: Number(filterUser) }
@@ -163,6 +133,9 @@ function Records({ admin = false }: { admin?: boolean }) {
     enabled: admin,
   });
   const query = admin ? adminQuery : userQuery;
+  const pagination = useServerPagination(query.data?.items ?? [], query.data?.total ?? 0, pageRequest, {
+    isReady: !!query.data && !query.isLoading && !query.isPlaceholderData,
+  });
   const success = () => {
     setAction(null);
     setNote("");
@@ -202,7 +175,6 @@ function Records({ admin = false }: { admin?: boolean }) {
             value={kind}
             onValueChange={(v) => {
               setKind(v as Kind);
-              setPage(1);
               setStatus("all");
             }}
           >
@@ -225,7 +197,7 @@ function Records({ admin = false }: { admin?: boolean }) {
               value={status}
               onValueChange={(v) => {
                 setStatus(v);
-                setPage(1);
+                pageRequest.setPage(1);
               }}
             >
               <SelectTrigger className="w-full sm:w-40" aria-label={t("状态")}>
@@ -250,7 +222,7 @@ function Records({ admin = false }: { admin?: boolean }) {
               aria-label={t("推广用户 ID")}
               onChange={(e) => {
                 setFilterUser(e.target.value);
-                setPage(1);
+                pageRequest.setPage(1);
               }}
             />
           )}
@@ -442,7 +414,7 @@ function Records({ admin = false }: { admin?: boolean }) {
             </table>
           </div>
         )}
-        <Pager page={page} total={query.data?.total || 0} change={setPage} />
+        <PersistentPagination pagination={pagination} className="mt-5" />
         <Dialog
           open={!!action}
           onOpenChange={(v) => {
@@ -857,19 +829,25 @@ function AdminAffiliates({ settingsOpen, onSettingsOpenChange }: {
   settingsOpen: boolean;
   onSettingsOpenChange: (open: boolean) => void;
 }) {
-  const [page, setPage] = useState(1);
+  const pageRequest = usePersistentPageRequest("forwardx.affiliates.admin.overview.page", 20);
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
   useEffect(() => {
+    if (search === debounced) return;
     const timer = setTimeout(() => {
       setDebounced(search);
-      setPage(1);
+      pageRequest.setPage(1);
     }, 300);
     return () => clearTimeout(timer);
-  }, [search]);
-  const query = trpc.affiliates.adminOverview.useQuery({
-    page,
+  }, [search, debounced, pageRequest.setPage]);
+  const overviewInput = {
+    page: pageRequest.page,
+    pageSize: pageRequest.pageSize,
     search: debounced,
+  };
+  const query = trpc.affiliates.adminOverview.useQuery(overviewInput);
+  const pagination = useServerPagination(query.data?.accounts ?? [], query.data?.total ?? 0, pageRequest, {
+    isReady: !!query.data && !query.isLoading && !query.isPlaceholderData,
   });
   const utils = trpc.useUtils();
   const data = query.data;
@@ -893,7 +871,7 @@ function AdminAffiliates({ settingsOpen, onSettingsOpenChange }: {
   const save = trpc.affiliates.saveConfig.useMutation({
     onSuccess: (_, saved) => {
       const { enabled: savedEnabled, ...savedConfig } = saved;
-      utils.affiliates.adminOverview.setData({ page, search: debounced }, (old) =>
+      utils.affiliates.adminOverview.setData(overviewInput, (old) =>
         old ? { ...old, config: savedConfig, enabled: savedEnabled } : old,
       );
       setDirty(false);
@@ -1153,7 +1131,7 @@ function AdminAffiliates({ settingsOpen, onSettingsOpenChange }: {
               </tbody>
             </table>
           </div>
-          <Pager page={page} total={data?.total || 0} change={setPage} />
+          <PersistentPagination pagination={pagination} className="mt-5" />
         </CardContent>
       </Card>
       <Records admin />

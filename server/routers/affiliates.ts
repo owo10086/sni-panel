@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { MAX_PAGE_SIZE } from "../../shared/pagination";
 import {
   adminProcedure,
   protectedProcedure,
@@ -18,6 +19,7 @@ const requestKey = z.string().uuid();
 const list = z.object({
   kind: z.enum(["commissions", "withdrawals", "ledger", "referrals"]),
   page: z.number().int().min(1).max(1_000_000).default(1),
+  pageSize: z.number().int().min(1).max(MAX_PAGE_SIZE).default(20),
   status: z
     .enum(["all", "pending", "available", "cancelled", "paid", "rejected"])
     .default("all"),
@@ -90,11 +92,12 @@ export const affiliatesRouter = router({
     .input(
       z.object({
         page: z.number().int().min(1).max(1_000_000).default(1),
+        pageSize: z.number().int().min(1).max(MAX_PAGE_SIZE).default(20),
         search: z.string().trim().max(100).default(""),
       }),
     )
     .query(({ input }) =>
-      affiliates.affiliateAdminOverview(input.page, input.search),
+      affiliates.affiliateAdminOverview(input.page, input.search, input.pageSize),
     ),
   adminList: adminProcedure
     .input(list)

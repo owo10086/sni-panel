@@ -42,7 +42,7 @@
     "test:host-deletion": "node --import tsx --test server/hostDeletion.test.ts server/groupMemberRelease.test.ts server/forwardGroupTemplateHosts.test.ts server/forwardRuleErrorNotifier.test.ts client/src/lib/hostDependencyLinks.test.ts",
     "test:port-access-limits": "node --import tsx --test server/portAccessLimits.test.ts server/portAccessLimitRefresh.test.ts",
     "test:plan-display": "node --import tsx --test client/src/components/PlanDetails.test.tsx client/src/components/PlanManagementSettings.test.tsx client/src/components/ProductSorting.test.tsx server/planDescription.test.ts server/productOrder.test.ts",
-    "test:affiliates": "node --import tsx --test server/affiliates.test.ts client/src/pages/Affiliates.test.tsx",
+    "test:affiliates": "node --import tsx --test server/affiliates.test.ts server/affiliatePagination.test.ts client/src/pages/Affiliates.test.tsx client/src/pages/AffiliatesPagination.test.tsx",
     "test:avatars": "node --import tsx --test shared/avatar.test.ts server/avatars.test.ts client/src/components/AvatarPicker.test.tsx",
     "test:latency-history": "node --import tsx --test server/latencyHistory.test.ts server/hostAvailability.test.ts client/src/components/hosts/HostAvailabilityHistory.test.tsx client/src/components/LatencyHistoryDays.test.tsx server/historyCleanupIndexes.test.ts server/latencySeries.test.ts server/probeCounter.test.ts client/src/lib/latencyChart.test.ts server/devHistoryTrendData.test.ts client/src/lib/historyDayTrend.test.ts",
     "test:agent-proxy": "node --import tsx --test server/managementProxy.test.ts server/agentInstallScripts.test.ts server/panelDockerInstaller.test.ts server/panelInstallerAccelerator.test.ts",
