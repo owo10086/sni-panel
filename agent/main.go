@@ -37,7 +37,7 @@ import (
 	"golang.org/x/time/rate"
 )
 
-var Version = "3.8.0"
+var Version = "3.9.0"
 var agentProcessStartedAt = time.Now()
 var agentBootID = readAgentBootID()
 var runtimeAgentToken atomic.Value
@@ -2773,6 +2773,7 @@ type fxpSpec struct {
 	TCPFastOpen              bool              `json:"tcpFastOpen"`
 	PanelURL                 string            `json:"panelUrl,omitempty"`
 	Token                    string            `json:"token,omitempty"`
+	InstallationID           string            `json:"installationId,omitempty"`
 	RelayExitHost            string            `json:"relayExitHost,omitempty"`
 	RelayExitPort            int               `json:"relayExitPort,omitempty"`
 	UDPRelayExitPort         int               `json:"udpRelayExitPort,omitempty"`
@@ -2857,6 +2858,9 @@ func main() {
 	}
 	cfg.PanelURL = strings.TrimRight(cfg.PanelURL, "/")
 	activeConfigPath = resolvedConfigPath
+	if err := initializeAgentInstallation(resolvedConfigPath, cfg.Token); err != nil {
+		fatal("load installation identity: %v", err)
+	}
 	if err := configureAgentManagementProxy(cfg.ProxyURL); err != nil {
 		fatal("proxy configuration: %v", err)
 	}
@@ -2903,6 +2907,9 @@ func main() {
 	go agentMetricsScheduler(cfg)
 	go agentDNSWatchScheduler()
 	go func() {
+		if agentSuperseded.Load() {
+			return
+		}
 		restorePersistedForwardXRuntimes(cfg)
 		wakeHeartbeat()
 	}()
@@ -2910,6 +2917,10 @@ func main() {
 	metricsOnlyMode := false
 	for {
 		pending := atomic.LoadInt64(&actionPendingCount)
+		if agentSuperseded.Load() {
+			time.Sleep(time.Minute)
+			continue
+		}
 		fromSSE := heartbeatWakeFromSSE.Swap(false)
 		urgentRefresh := heartbeatUrgentWakeFromSSE.Swap(false)
 		forceReconcileWake := heartbeatForceReconcileWake.Swap(false)
@@ -3379,13 +3390,18 @@ func scheduleAgentTCPing(cfg Config, force bool) bool {
 	tcpingScheduleMu.Lock()
 	due := lastTCPingAt.IsZero() || time.Since(lastTCPingAt) >= interval
 	tcpingScheduleMu.Unlock()
-	if !force && !due {
+	// A service can become due between global (jittered) TCPing ticks. Do not
+	// make it wait another whole cycle just because other probes ran recently.
+	servicesOnly := !force && !due
+	if servicesOnly && !agentServiceProbeSchedule.due(state.HostProbeServices, time.Now()) {
 		return false
 	}
-	if scheduleTCPingCollection(cfg, state.RuleLatencyProbes, state.TunnelProbes, state.ForwardGroupProbes, state.HostProbeServices, force) {
-		tcpingScheduleMu.Lock()
-		lastTCPingAt = time.Now()
-		tcpingScheduleMu.Unlock()
+	if scheduleTCPingCollectionMode(cfg, state.RuleLatencyProbes, state.TunnelProbes, state.ForwardGroupProbes, state.HostProbeServices, force, servicesOnly) {
+		if !servicesOnly {
+			tcpingScheduleMu.Lock()
+			lastTCPingAt = time.Now()
+			tcpingScheduleMu.Unlock()
+		}
 		return true
 	}
 	return false
@@ -3598,6 +3614,9 @@ func syncPanelURLFromResponse(panelURL string) {
 }
 
 func register(cfg Config) error {
+	if agentSuperseded.Load() {
+		return nil
+	}
 	ipv4, ipv6 := publicIPs()
 	ipv4Addresses, ipv6Addresses := publicAddressInventory()
 	primaryIP := ipv4
@@ -3620,7 +3639,13 @@ func register(cfg Config) error {
 		"ipv6Addresses": ipv6Addresses,
 	}
 	var out map[string]any
-	return post(cfg, "/api/agent/register", payload, &out)
+	if err := post(cfg, "/api/agent/register", payload, &out); err != nil {
+		return err
+	}
+	if !agentSuperseded.Load() {
+		agentInstallationRegistered.Store(true)
+	}
+	return nil
 }
 
 // logHeartbeatResponse records the control-plane result without including the
@@ -3876,6 +3901,9 @@ func defaultIPv6NetworkInterface(raw []byte) string {
 }
 
 func heartbeat(cfg Config, forceReconcile ...bool) (heartbeatResult, error) {
+	if agentSuperseded.Load() {
+		return heartbeatResult{NextInterval: 300}, nil
+	}
 	startedAt := time.Now()
 	pruneAgentRuntimeData()
 	ipv4, ipv6 := publicIPs()
@@ -3958,6 +3986,7 @@ func heartbeat(cfg Config, forceReconcile ...bool) (heartbeatResult, error) {
 		payload["forceReconcile"] = true
 	}
 	payload["loadAverage"] = systemLoadAverage()
+	payload["connectionStats"] = systemConnectionStats()
 	pluginVersions, pluginSyncSignatures := installedPluginInventory()
 	forwardTools, forwardToolsCheckedAt := forwardToolInventory()
 	payload["forwardTools"] = forwardTools
@@ -4020,6 +4049,9 @@ func heartbeat(cfg Config, forceReconcile ...bool) (heartbeatResult, error) {
 		return heartbeatResult{NextInterval: cfg.Interval}, err
 	}
 	logHeartbeatResponse("full", &resp, time.Since(startedAt))
+	if agentSuperseded.Load() {
+		return heartbeatResult{NextInterval: 300}, nil
+	}
 	compactAgentReports.Store(resp.CompactReports)
 	agentPresenceSupported.Store(resp.PresenceSupported)
 	if resp.TrafficReportInterval > 0 {
@@ -4129,6 +4161,9 @@ func heartbeat(cfg Config, forceReconcile ...bool) (heartbeatResult, error) {
 }
 
 func heartbeatKeepalive(cfg Config) (heartbeatResult, error) {
+	if agentSuperseded.Load() {
+		return heartbeatResult{NextInterval: 300}, nil
+	}
 	startedAt := time.Now()
 	ipv4, ipv6 := publicIPs()
 	primaryIP := ipv4
@@ -4174,6 +4209,7 @@ func heartbeatKeepalive(cfg Config) (heartbeatResult, error) {
 	payload["mimicEnvironment"] = mimicEnvironment(false)
 	payload["ipv4Addresses"], payload["ipv6Addresses"] = publicAddressInventory()
 	payload["loadAverage"] = systemLoadAverage()
+	payload["connectionStats"] = systemConnectionStats()
 	if compactAgentReports.Load() {
 		payload["m"] = []any{
 			cpuUsage(),
@@ -4239,6 +4275,9 @@ func heartbeatKeepalive(cfg Config) (heartbeatResult, error) {
 		return heartbeatResult{NextInterval: cfg.Interval}, err
 	}
 	logHeartbeatResponse("keepalive", &resp, time.Since(startedAt))
+	if agentSuperseded.Load() {
+		return heartbeatResult{NextInterval: 300}, nil
+	}
 	compactAgentReports.Store(resp.CompactReports)
 	agentPresenceSupported.Store(resp.PresenceSupported)
 	if resp.TrafficReportInterval > 0 {
@@ -4279,6 +4318,9 @@ func heartbeatPresenceRetry(cfg Config, expectedGeneration uint64) (int, uint64,
 }
 
 func heartbeatPresenceRequest(cfg Config, expectedGeneration *uint64) (int, uint64, error) {
+	if agentSuperseded.Load() {
+		return 300, 0, nil
+	}
 	receivedRevision, appliedRevision, receivedHash, appliedHash := desiredRevisionSnapshot()
 	payload := map[string]any{
 		"mode":                      "presence",
@@ -4341,14 +4383,7 @@ func tcpingDueInterval(serviceProbes []hostProbeServiceProbe, ruleCount int, lin
 		interval = 30 * time.Second
 	}
 	for _, probe := range serviceProbes {
-		seconds := probe.IntervalSeconds
-		if seconds <= 0 {
-			seconds = 30
-		}
-		if seconds < 5 {
-			seconds = 5
-		}
-		duration := time.Duration(seconds) * time.Second
+		duration := serviceProbeInterval(probe)
 		if duration < interval {
 			interval = duration
 		}
@@ -4847,6 +4882,9 @@ func prepareAgentEventStreamRetry(cfg Config, err error) bool {
 func agentEventStream(cfg Config) {
 	delay := agentEventStreamReconnectMinDelay
 	for {
+		if agentSuperseded.Load() {
+			return
+		}
 		startedAt := time.Now()
 		if err := runAgentEventStream(cfg); err != nil {
 			logAgentCommError("event-stream", err)
@@ -4873,7 +4911,13 @@ func agentEventStream(cfg Config) {
 }
 
 func runAgentEventStream(cfg Config) error {
-	env, err := encrypt(map[string]any{"agentVersion": Version}, cfg.Token)
+	if err := ensureAgentInstallationRegistered(cfg); err != nil {
+		return err
+	}
+	if agentSuperseded.Load() {
+		return nil
+	}
+	env, err := encrypt(map[string]any{"agentVersion": Version, "installationId": currentAgentInstallationID()}, cfg.Token)
 	if err != nil {
 		return err
 	}
@@ -4963,6 +5007,9 @@ func runAgentEventStream(cfg Config) error {
 						}
 						go selfUpgrade(cfg, &up)
 					}
+				} else if msg.Type == "agent-superseded" {
+					markAgentSuperseded()
+					return nil
 				} else if msg.Type == "agent-refresh" {
 					var refresh agentRefreshEvent
 					if err := json.Unmarshal(msg.Data, &refresh); err != nil {
@@ -5060,6 +5107,9 @@ func decodeEventDataForPanel(raw string, token string, panelURL string, serverTi
 // 与心跳路径的 syncDesiredState 共享同一幂等性机制（签名 + desired_state_records.json），
 // 因此即使心跳和 SSE 推送同时触发也不会重复执行。
 func handleAgentDesiredStatePush(cfg Config, push agentDesiredStatePush) {
+	if agentSuperseded.Load() {
+		return
+	}
 	if push.DesiredState == nil && push.PortRuleManifest == nil && len(push.RunningRules) == 0 && len(push.RuleLatencyProbes) == 0 && len(push.StateSignatures) == 0 {
 		return
 	}
@@ -5099,6 +5149,9 @@ func handleActionWithRuntimeSnapshot(cfg Config, a action, releaseRuntimeGate fu
 }
 
 func handleActionJobWithRuntimeSnapshot(cfg Config, a action, releaseRuntimeGate func(), previousRuntime *localActionRuntimeSnapshot, jobResult *actionJobResult) bool {
+	if agentSuperseded.Load() {
+		return false
+	}
 	if strings.TrimSpace(a.StatusType) == "runtime" && pluginAgentTaskIDPattern.MatchString(strings.TrimSpace(a.PluginID)) {
 		releasePluginLock := acquirePluginAgentTaskLock(pluginAgentTask{PluginID: strings.TrimSpace(a.PluginID), Intent: "write"})
 		defer releasePluginLock()
@@ -8009,7 +8062,7 @@ func restartManagedService(name string) {
 
 func sanitizeServiceName(name string) string {
 	name = strings.TrimSpace(name)
-	if name == "" {
+	if name == "" || strings.HasPrefix(name, "-") || name == "." || name == ".." {
 		return ""
 	}
 	for _, r := range name {
@@ -8092,6 +8145,10 @@ func hardenManagedSystemdUnit(unit string) string {
 }
 
 func openRCServiceScript(name, execStart string) string {
+	name = sanitizeServiceName(name)
+	if name == "" {
+		return ""
+	}
 	return strings.Join([]string{
 		"#!/sbin/openrc-run",
 		"name=\"" + name + "\"",
@@ -8110,6 +8167,10 @@ func openRCServiceScript(name, execStart string) string {
 }
 
 func sysVServiceScript(name, execStart string) string {
+	name = sanitizeServiceName(name)
+	if name == "" {
+		return ""
+	}
 	quotedCmd := shellQuote("ulimit -c 0 2>/dev/null || true; exec " + execStart)
 	return strings.Join([]string{
 		"#!/bin/sh",
@@ -8145,6 +8206,10 @@ func sysVServiceScript(name, execStart string) string {
 }
 
 func managedServiceCleanupShell(name string) string {
+	name = sanitizeServiceName(name)
+	if name == "" {
+		return ":"
+	}
 	q := shellQuote(name)
 	return "if command -v systemctl >/dev/null 2>&1 && [ -d /run/systemd/system ]; then systemctl stop " + q + ".service 2>/dev/null || true; systemctl disable " + q + ".service 2>/dev/null || true; systemd_unit=/etc/systemd/system/" + name + ".service; systemd_removed=0; if [ -e \"$systemd_unit\" ]; then rm -f \"$systemd_unit\"; systemd_removed=1; fi; if [ \"$systemd_removed\" = \"1\" ]; then systemctl daemon-reload 2>/dev/null || true; fi; systemctl reset-failed " + q + ".service 2>/dev/null || true; fi; " +
 		"if command -v rc-service >/dev/null 2>&1; then rc-service " + q + " stop 2>/dev/null || true; fi; " +
@@ -8882,6 +8947,9 @@ func ensureCountingChainsWithCleanup(rule runningRule, cleanup bool) bool {
 	}
 	p := strconv.Itoa(rule.SourcePort)
 	mode := countingRuleModeForForwardType(rule.ForwardType)
+	if mode != countingRuleNone && kernelTrafficUnavailable() {
+		return false
+	}
 	if mode == countingRuleKernel {
 		target := iptablesAgentAddress(rule.TargetIP)
 		if !iptablesAgentIsIPAddress(target) || rule.TargetPort <= 0 {
@@ -8964,6 +9032,12 @@ func ensureCountingChainsNonDestructive(rule runningRule, mode countingRuleMode)
 
 func ensureCountingChainsIfNeeded(r runningRule) {
 	if r.SourcePort <= 0 {
+		return
+	}
+	if countingRuleModeForForwardType(r.ForwardType) != countingRuleNone && kernelTrafficUnavailable() {
+		if shouldLogAgentReport("traffic-counting-no-net-admin", 5*time.Minute) {
+			logf("traffic kernel counting unavailable reason=CAP_NET_ADMIN-not-in-bounding-set; GOST/ForwardX can use native traffic counters; other engines need host permissions")
+		}
 		return
 	}
 	signature := countingChainRuleSignature(r)
@@ -10150,7 +10224,7 @@ func fxpSpecPanelCredentialDigest(spec fxpSpec) (string, bool) {
 	if isFXPEntryGroup(spec) {
 		digest := ""
 		for _, entry := range spec.Entries {
-			candidate := fxpPanelCredentialDigest(entry.PanelURL, entry.Token)
+			candidate := agentInstallationBoundCredentialDigest(entry.PanelURL, entry.Token, entry.InstallationID)
 			if candidate == "" || (digest != "" && digest != candidate) {
 				return "", false
 			}
@@ -10158,7 +10232,7 @@ func fxpSpecPanelCredentialDigest(spec fxpSpec) (string, bool) {
 		}
 		return digest, digest != ""
 	}
-	digest := fxpPanelCredentialDigest(spec.PanelURL, spec.Token)
+	digest := agentInstallationBoundCredentialDigest(spec.PanelURL, spec.Token, spec.InstallationID)
 	return digest, digest != ""
 }
 
@@ -10166,7 +10240,7 @@ func currentFXPPanelCredentialDigest() (string, bool) {
 	panelURL := currentPanelURL(Config{})
 	token, _ := runtimeAgentToken.Load().(string)
 	if panelURL != "" && token != "" {
-		return fxpPanelCredentialDigest(panelURL, token), true
+		return agentInstallationBoundCredentialDigest(panelURL, token, currentAgentInstallationID()), true
 	}
 	path := strings.TrimSpace(activeConfigPath)
 	if path == "" {
@@ -10176,7 +10250,7 @@ func currentFXPPanelCredentialDigest() (string, bool) {
 	if err != nil {
 		return "", false
 	}
-	digest := fxpPanelCredentialDigest(currentPanelURL(cfg), cfg.Token)
+	digest := agentInstallationBoundCredentialDigest(currentPanelURL(cfg), cfg.Token, currentAgentInstallationID())
 	return digest, digest != ""
 }
 
@@ -10784,7 +10858,7 @@ func startFXPProcessLockedWithPersistence(cfg Config, spec fxpSpec, actionMessag
 	}
 	originalSpec := spec
 	runtimeExecutable := currentFXPRuntimeExecutableInfo()
-	expectedCredentialDigest := fxpPanelCredentialDigest(currentPanelURL(cfg), cfg.Token)
+	expectedCredentialDigest := agentInstallationBoundCredentialDigest(currentPanelURL(cfg), cfg.Token, currentAgentInstallationID())
 
 	id := fxpServerID(spec)
 	wireGuardRefID := id
@@ -10927,10 +11001,12 @@ func startFXPProcessLockedWithPersistence(cfg Config, spec fxpSpec, actionMessag
 	if spec.Role == "entry" || spec.Role == "sni-splitter" {
 		spec.PanelURL = currentPanelURL(cfg)
 		spec.Token = cfg.Token
+		spec.InstallationID = currentAgentInstallationID()
 	} else if isFXPEntryGroup(spec) {
 		for index := range spec.Entries {
 			spec.Entries[index].PanelURL = currentPanelURL(cfg)
 			spec.Entries[index].Token = cfg.Token
+			spec.Entries[index].InstallationID = currentAgentInstallationID()
 		}
 	}
 	if isFXPEntryGroup(spec) || spec.Role == "exit" {
@@ -12102,19 +12178,23 @@ func stopProtocolGuardRateTimer(timer *time.Timer) {
 }
 
 type protocolGuardServer struct {
-	rule        guardRule
-	tcpLn       net.Listener
-	udpConn     net.PacketConn
-	done        chan struct{}
-	doneOnce    sync.Once
-	ctx         context.Context
-	cancel      context.CancelFunc
-	rateMu      sync.RWMutex
-	rateScope   string
-	rateIn      *protocolGuardSharedRateLimiter
-	rateOut     *protocolGuardSharedRateLimiter
-	rateChanged chan struct{}
-	closed      bool
+	rule         guardRule
+	tcpLn        net.Listener
+	udpConn      net.PacketConn
+	done         chan struct{}
+	doneOnce     sync.Once
+	ctx          context.Context
+	cancel       context.CancelFunc
+	rateMu       sync.RWMutex
+	rateScope    string
+	rateIn       *protocolGuardSharedRateLimiter
+	rateOut      *protocolGuardSharedRateLimiter
+	rateChanged  chan struct{}
+	closed       bool
+	trafficIn    atomic.Uint64
+	trafficOut   atomic.Uint64
+	trafficConns atomic.Uint64
+	trafficEpoch string
 }
 
 func newProtocolGuardServer(rule guardRule) *protocolGuardServer {
@@ -12125,6 +12205,8 @@ func newProtocolGuardServer(rule guardRule) *protocolGuardServer {
 		ctx:    ctx,
 		cancel: cancel,
 	}
+	epoch := sha256.Sum256([]byte(newTrafficReportID()))
+	server.trafficEpoch = hex.EncodeToString(epoch[:])
 	server.updateRateLimits(rule)
 	return server
 }
@@ -13391,6 +13473,7 @@ func (s *protocolGuardServer) serveTCP(cfg Config) {
 }
 
 func (s *protocolGuardServer) handleConn(cfg Config, client net.Conn) {
+	s.trafficConns.Add(1)
 	baseCtx := s.ctx
 	if baseCtx == nil {
 		baseCtx = context.Background()
@@ -13468,7 +13551,8 @@ func (s *protocolGuardServer) copyTCPToTargetWithGuard(ctx context.Context, cfg 
 		if err := s.waitRate(ctx, protocolGuardRateIn, len(chunk)); err != nil {
 			return err
 		}
-		_, err := target.Write(chunk)
+		n, err := target.Write(chunk)
+		s.trafficIn.Add(uint64(n))
 		return err
 	}
 	if err := writeChunk(initial); err != nil {
@@ -13503,7 +13587,9 @@ func (s *protocolGuardServer) copyTCPToClientWithGuard(ctx context.Context, cfg 
 			if err := s.waitRate(ctx, protocolGuardRateOut, len(chunk)); err != nil {
 				return err
 			}
-			if _, writeErr := client.Write(chunk); writeErr != nil {
+			written, writeErr := client.Write(chunk)
+			s.trafficOut.Add(uint64(written))
+			if writeErr != nil {
 				return writeErr
 			}
 		}
@@ -13606,13 +13692,16 @@ func (s *protocolGuardServer) serveUDP() {
 				continue
 			}
 			session = &protocolGuardUDPSession{target: target, last: time.Now()}
+			s.trafficConns.Add(1)
 			sessions[key] = session
 			go s.copyUDPToClient(key, clientAddr, target, sessions, &sessionMu)
 		}
 		session.last = time.Now()
 		target := session.target
 		sessionMu.Unlock()
-		if _, err := target.Write(packet); err != nil {
+		written, err := target.Write(packet)
+		s.trafficIn.Add(uint64(written))
+		if err != nil {
 			sessionMu.Lock()
 			if sessions[key] == session {
 				delete(sessions, key)
@@ -13639,7 +13728,9 @@ func (s *protocolGuardServer) copyUDPToClient(key string, clientAddr net.Addr, t
 			if err := s.waitRate(s.ctx, protocolGuardRateOut, n); err != nil {
 				break
 			}
-			if _, err := s.udpConn.WriteTo(buf[:n], clientAddr); err != nil {
+			written, err := s.udpConn.WriteTo(buf[:n], clientAddr)
+			s.trafficOut.Add(uint64(written))
+			if err != nil {
 				if shouldLogAgentReport(fmt.Sprintf("protocol-guard-udp-reply:%d", s.rule.RuleID), agentReportLogInterval) {
 					logf("protocol guard udp reply failed rule=%d client=%s: %v", s.rule.RuleID, key, err)
 				}
@@ -14386,6 +14477,14 @@ func postToPanelURL(cfg Config, panelURL string, path string, payload any, out a
 }
 
 func postWithClientToPanelURL(client *http.Client, cfg Config, panelURL string, path string, payload any, out any) error {
+	if path != "/api/agent/register" {
+		if err := ensureAgentInstallationRegistered(cfg); err != nil {
+			return err
+		}
+	}
+	if agentSuperseded.Load() {
+		return quietSupersededAgentResponse(out)
+	}
 	negotiationRetryUsed := false
 	rejectionRetryUsed := false
 	var err error
@@ -14425,10 +14524,14 @@ func postOnceWithClient(client *http.Client, cfg Config, path string, payload an
 }
 
 func postOnceWithClientToPanelURL(client *http.Client, cfg Config, panelURL string, path string, payload any, out any) error {
+	if agentSuperseded.Load() {
+		return quietSupersededAgentResponse(out)
+	}
 	startedAt := time.Now()
 	env, err := encrypt(map[string]any{
-		"path":    path,
-		"payload": payload,
+		"path":           path,
+		"payload":        payload,
+		"installationId": currentAgentInstallationID(),
 	}, cfg.Token)
 	if err != nil {
 		return err
@@ -14449,6 +14552,12 @@ func postOnceWithClientToPanelURL(client *http.Client, cfg Config, panelURL stri
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+auth.proof)
 	res, err := client.Do(req)
+	if agentSuperseded.Load() {
+		if res != nil {
+			_ = res.Body.Close()
+		}
+		return quietSupersededAgentResponse(out)
+	}
 	if err != nil {
 		if isTransientAgentCommError(err) {
 			logAgentCommError("post:"+path, err)
@@ -14464,11 +14573,13 @@ func postOnceWithClientToPanelURL(client *http.Client, cfg Config, panelURL stri
 	decodedBody := resBody
 	var respEnv envelope
 	var decryptErr error
+	decryptedResponse := false
 	responseAuthenticated := strings.EqualFold(strings.TrimSpace(authResult), agentAuthResultAccepted)
 	if err := json.Unmarshal(resBody, &respEnv); err == nil && respEnv.V == 1 {
 		if plain, err := decryptForPanel(respEnv, cfg.Token, panelURL, res.Header.Get(encryptedResponseClockHeader)); err == nil {
 			decodedBody = plain
 			responseAuthenticated = true
+			decryptedResponse = true
 		} else {
 			decryptErr = err
 		}
@@ -14507,6 +14618,7 @@ func postOnceWithClientToPanelURL(client *http.Client, cfg Config, panelURL stri
 	if err := json.Unmarshal(decodedBody, out); err != nil {
 		return wrapAgentRequestAttemptError(err, auth, authResult, responseAuthenticated)
 	}
+	observeAgentOwnershipResponse(decodedBody, decryptedResponse)
 	if elapsed := time.Since(startedAt); elapsed >= agentSlowRequestThreshold && shouldLogAgentReport("post-slow:"+path, agentReportLogInterval) {
 		logf("agent request slow path=%s duration=%s status=%d", path, elapsed.Round(time.Millisecond), res.StatusCode)
 	}
@@ -14539,7 +14651,7 @@ func formatPanelErrorBody(body []byte) string {
 }
 
 func logAgentCommError(scope string, err error) {
-	if err == nil {
+	if err == nil || agentSuperseded.Load() {
 		return
 	}
 	scope = strings.TrimSpace(scope)
@@ -15587,20 +15699,14 @@ func logVerbosef(format string, args ...any) {
 
 func logf(format string, args ...any) {
 	message := fmt.Sprintf(format, args...)
-	createdAt := time.Now().Format(time.RFC3339)
+	now := time.Now()
+	createdAt := now.Format(time.RFC3339)
 	line := createdAt + " " + message + "\n"
 	fmt.Print(line)
-	_ = os.MkdirAll(agentLogDir, 0755)
 	agentLogMu.Lock()
 	defer agentLogMu.Unlock()
-	f, err := os.OpenFile(agentLogPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
-	if err == nil {
-		_, _ = f.WriteString(line)
-		info, _ := f.Stat()
-		_ = f.Close()
-		if info != nil && info.Size() > agentLogMaxBytes {
-			trimLogFileTail(agentLogPath, agentLogTailBytes)
-		}
+	if err := appendAgentDailyLog(agentLogPath, now, line); err != nil {
+		reportAgentLogError("write", err)
 	}
 	pruneAgentLocalLogsLocked()
 }
@@ -15668,11 +15774,20 @@ type logFileUsage struct {
 }
 
 func pruneLogDirectory(dir string, primaryPath string, now time.Time, checkRetention bool, limits logPruneLimits) {
+	if err := rotateAgentLogFile(primaryPath, now); err != nil {
+		reportAgentLogError("rotation", err)
+	}
 	paths, err := filepath.Glob(filepath.Join(dir, "*.log"))
 	if err != nil || len(paths) == 0 {
 		paths = []string{primaryPath}
 	}
 	for _, path := range paths {
+		if day, ok := agentLogArchiveDay(primaryPath, path, now.Location()); ok && day.Before(agentLogRetentionStart(now)) {
+			if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
+				reportAgentLogError("cleanup", err)
+			}
+			continue
+		}
 		pruneAgentLocalLogFile(path, now, checkRetention, limits)
 	}
 	enforceLogDirectoryLimit(paths, primaryPath, limits)
@@ -15694,6 +15809,11 @@ func pruneAgentLocalLogFile(path string, now time.Time, checkRetention bool, lim
 		return
 	}
 	cutoff := now.Add(-limits.retention)
+	if filepath.Base(path) == filepath.Base(agentLogPath) {
+		cutoff = agentLogRetentionStart(now)
+	} else if _, ok := agentLogArchiveDay(agentLogPath, path, now.Location()); ok {
+		cutoff = agentLogRetentionStart(now)
+	}
 	if info.ModTime().Before(cutoff) {
 		_ = os.Truncate(path, 0)
 		return
@@ -15714,7 +15834,7 @@ func pruneAgentLocalLogFile(path string, now time.Time, checkRetention bool, lim
 			retained = append(retained, line)
 			continue
 		}
-		if t.After(cutoff) {
+		if !t.Before(cutoff) {
 			retained = append(retained, line)
 			continue
 		}

@@ -140,10 +140,20 @@ func normalizedGostValue(value any) any {
 					// The local API can retain the original casing for additions.
 					// Preserve values (including false/zero) while comparing keys.
 					normalizedMetadata := map[string]any{}
+					collision := false
 					for name, value := range metadata {
-						normalizedMetadata[strings.ToLower(name)] = value
+						lower := strings.ToLower(name)
+						if previous, exists := normalizedMetadata[lower]; exists && !reflect.DeepEqual(previous, value) {
+							collision = true
+						}
+						normalizedMetadata[lower] = value
 					}
-					out[key] = normalizedMetadata
+					if collision {
+						// Conflicting spellings must not compare equal by map order.
+						out[key] = metadata
+					} else {
+						out[key] = normalizedMetadata
+					}
 				} else if item != nil && !ok {
 					out[key] = item
 				}
