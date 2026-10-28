@@ -15,23 +15,14 @@ import { fetchManualProbe, MANUAL_PROBE_QUERY_PATHS } from "./lib/manualProbe";
 import { createTRPCQueryUtils } from "@trpc/react-query";
 import { installDashboardCache } from "./lib/dashboardCache";
 import { readSiteBranding, saveSiteBranding } from "./lib/siteBranding";
+import { shouldRetryQuery } from "./lib/queryPolicy";
 
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       refetchOnWindowFocus: false,
-      retry: (failureCount, error) => {
-        if (error instanceof TRPCClientError) {
-          if (error.message === DATABASE_UNAVAILABLE_MESSAGE) return false;
-          if (
-            error.message === UNAUTHED_ERR_MSG ||
-            error.message === ACCOUNT_DISABLED_ERR_MSG ||
-            error.message === SESSION_REPLACED_ERR_MSG
-          ) return false;
-        }
-        return failureCount < 1;
-      },
+      retry: shouldRetryQuery,
       staleTime: 5_000,
       gcTime: 30 * 60_000,
     },

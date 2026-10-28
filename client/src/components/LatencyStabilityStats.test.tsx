@@ -53,3 +53,12 @@ test("English distinguishes Ping, TCP and hop failures and declares bounded late
     assert.doesNotMatch(legacy, /[\u4e00-\u9fff]/);
   } finally { setLanguagePreference("zh-CN"); await initializeLanguage(); }
 });
+
+test("latency cards adapt to their width and retain complete values", () => {
+  const stats = getLatencyStabilityStats([{ latency: 12345.67, probeCount: 570000, probeSuccesses: 570000 }]);
+  const html = renderToStaticMarkup(<LatencyStabilityStats stats={stats} />);
+  assert.match(html, /grid-cols-\[repeat\(auto-fit,minmax\(min\(100%,6\.5rem\),1fr\)\)\]/);
+  assert.match(html, /570000/);
+  assert.match(html, /12345\.67 ms/);
+  assert.doesNotMatch(html, /truncate|text-ellipsis|line-clamp/);
+});

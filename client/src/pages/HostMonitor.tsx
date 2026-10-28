@@ -10,6 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { pollingInterval } from "@/lib/polling";
+import { adaptivePollingInterval } from "@/lib/queryPolicy";
 import { trpc } from "@/lib/trpc";
 import { isMonitorNotFound, latestMonitorMetric, monitorLatencyYMax, PUBLIC_MONITOR_REFRESH_OPTIONS } from "@/lib/publicMonitor";
 import {
@@ -727,7 +728,7 @@ function HostMonitorDetail({
     {
       enabled: hostId > 0,
       ...PUBLIC_MONITOR_REFRESH_OPTIONS,
-      refetchInterval: pollingInterval("slow", hostId > 0),
+      refetchInterval: adaptivePollingInterval(pollingInterval("slow", hostId > 0)),
     },
   );
   const detailHost = host || detail.data?.host;
@@ -948,7 +949,7 @@ export default function HostMonitor() {
     { path },
     {
       ...PUBLIC_MONITOR_REFRESH_OPTIONS,
-      refetchInterval: pollingInterval("active"),
+      refetchInterval: adaptivePollingInterval(pollingInterval("active")),
     },
   );
   const metricsByHostId = useMemo(() => {

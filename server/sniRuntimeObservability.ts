@@ -174,6 +174,11 @@ export function isRetiredSniHeartbeatProcess(hostId: number, report: any) {
   return retiredAgentProcesses.get(hostId)?.has(agentProcessIdentity(report)) === true;
 }
 
+/** Process identifiers are local to an installation and may recur on a new host. */
+export function resetSniAgentProcessHistory(hostId: number) {
+  retiredAgentProcesses.delete(hostId);
+}
+
 export function acceptSniHeartbeatProcess(host: any, report: any) {
   // Boot/PID are already supplied by every supported SNI Agent. The stored
   // timestamp is a Date, while the report uses seconds; compare it separately.
