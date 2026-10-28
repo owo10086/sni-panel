@@ -26,6 +26,7 @@ import AutoAnimateContainer from "@/components/AutoAnimateContainer";
 import DashboardLayout from "@/components/DashboardLayout";
 import UserSelect from "@/components/UserSelect";
 import { ruleOwnerOptionIds } from "@/lib/userSelection";
+import { migrateStoredRulePageSize } from "@/lib/rulePageSize";
 import { isCompleteRuleSortScope } from "@/lib/ruleSortScope";
 import { LatencyRating } from "@/components/LatencyRating";
 import { LinkTestProbeView, parseLinkTestMessage, type LinkTestPlannedSegment } from "@/components/LinkTestLatencySummary";
@@ -74,6 +75,8 @@ import {
 } from "@/components/ui/table";
 import DataSectionLoading from "@/components/DataSectionLoading";
 import { trpc } from "@/lib/trpc";
+import { useQuery } from "@tanstack/react-query";
+import { getQueryKey } from "@trpc/react-query";
 import { downloadTextFile } from "@/lib/fileDownload";
 import { pollingInterval } from "@/lib/polling";
 import { handoffManualTestResult } from "@/lib/manualTestCache";
@@ -89,7 +92,7 @@ import {
   writeRuleStatusSnapshots,
   type RuleVisualStatusSnapshot,
 } from "@/lib/ruleStatusCache";
-import { batchOperationErrorMessage, chunkBatchItems, isBatchPortConflictError, runBatchOperations } from "@/lib/batchOperations";
+import { batchOperationErrorMessage, chunkBatchItems, isBatchPortConflictError, queryInChunks, runBatchOperations } from "@/lib/batchOperations";
 import { runRuleImport } from "@/lib/ruleImport";
 import {
   RULE_TRANSFER_FILE_KIND,
@@ -366,7 +369,6 @@ const ruleTypeDescriptions = {
 type RuleViewMode = "card" | "table" | "globe";
 type RuleCardSize = "standard" | "compact";
 type RuleDisplayMode = RuleCardSize | "table" | "globe";
-type RulePageSize = 12 | 24 | 36 | 48;
 type RuleGroupType = keyof typeof desktopRuleTypeLabels;
 type RuleGroupCollapsedState = Partial<Record<RuleGroupType, boolean>>;
 type RuleCategory = "all" | "local" | "tunnel" | "chain" | "group" | "sni";
@@ -458,7 +460,6 @@ function normalizeRuleResourceFilter(value: unknown): RuleResourceFilter {
 
 const RULE_VIEW_MODE_STORAGE_KEY = "forwardx.rules.viewMode";
 const RULE_CARD_SIZE_STORAGE_KEY = "forwardx.rules.cardSize";
-const RULE_PAGE_SIZE_STORAGE_KEY = "forwardx.rules.pageSize";
 const RULE_GROUP_COLLAPSED_STORAGE_KEY = "forwardx.rules.groupCollapsed";
 const RULE_CATEGORY_STORAGE_KEY = "forwardx.rules.category";
 const RULE_FILTER_RESOURCE_STORAGE_KEY = "forwardx.rules.filterResource";
@@ -466,7 +467,6 @@ const RULE_SORT_CATEGORY_ORDER: RuleTransferScopeType[] = ["local", "tunnel", "c
 const RULE_SORT_CATEGORY_RANK = new Map<RuleTransferScopeType, number>(
   RULE_SORT_CATEGORY_ORDER.map((category, index) => [category, index]),
 );
-const RULE_PAGE_SIZE_OPTIONS: RulePageSize[] = [12, 24, 36, 48];
 const EMPTY_RULE_CATEGORY_COUNTS: RuleCategoryCounts = { all: 0, local: 0, tunnel: 0, chain: 0, group: 0, sni: 0 };
 const RULE_CATEGORY_COUNTS_CACHE_PREFIX = "forwardx.rules.categoryCounts.v3.";
 const RULE_GLOBE_EARTH_IMAGE_URL = "/globe/earth-dark.jpg";
@@ -558,25 +558,6 @@ function storeRuleCardSize(cardSize: RuleCardSize) {
   if (typeof window === "undefined") return;
   try {
     window.localStorage.setItem(RULE_CARD_SIZE_STORAGE_KEY, cardSize);
-  } catch {
-    // Ignore storage failures so the page still works in restricted browsers.
-  }
-}
-
-function getStoredRulePageSize(fallback: RulePageSize = 12): RulePageSize {
-  if (typeof window === "undefined") return fallback;
-  try {
-    const value = Number(window.localStorage.getItem(RULE_PAGE_SIZE_STORAGE_KEY)) as RulePageSize;
-    return RULE_PAGE_SIZE_OPTIONS.includes(value) ? value : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-function storeRulePageSize(pageSize: RulePageSize) {
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(RULE_PAGE_SIZE_STORAGE_KEY, String(pageSize));
   } catch {
     // Ignore storage failures so the page still works in restricted browsers.
   }
@@ -2307,9 +2288,6 @@ function RulesContent() {
   const [ruleCardSize, setRuleCardSize] = useState<RuleCardSize>(() => getStoredRuleCardSize());
   const effectiveViewMode: RuleViewMode = isMobile ? "card" : viewMode;
   const effectiveRuleCardSize: RuleCardSize = isMobile ? "standard" : ruleCardSize;
-  const [rulePageSize, setRulePageSize] = useState<RulePageSize>(() =>
-    getStoredRulePageSize(getStoredRuleCardSize() === "compact" ? 24 : 12)
-  );
   const [ruleGroupCollapsed, setRuleGroupCollapsed] = useState<RuleGroupCollapsedState>(() => getStoredRuleGroupCollapsed());
   const [expandedSniRuleGroups, setExpandedSniRuleGroups] = useState<Set<string>>(() => new Set());
   const selectedRulesQuery = useMemo(() => {
@@ -2398,7 +2376,12 @@ function RulesContent() {
   const [importSniSourcePort, setImportSniSourcePort] = useState(SNI_DEFAULT_ENTRY_PORT);
   const [importingRules, setImportingRules] = useState(false);
   const importingRulesRef = useRef(false);
-  const rulePageRequest = usePersistentPageRequest("forwardx.rules.page");
+  const [defaultRulePageSize] = useState(() => {
+    migrateStoredRulePageSize();
+    return 20 as const;
+  });
+  const rulePageRequest = usePersistentPageRequest("forwardx.rules.page", defaultRulePageSize);
+  const rulePageSize = rulePageRequest.pageSize;
   const rulePageResource = parseRuleResourceFilter(filterResource);
   const rulePageFilterKey = [filterUser, filterResource, ruleCategory, ruleSearchQuery.trim(), rulePageSize, activePersonalGroupId].join(":");
   const previousRulePageFilterKey = useRef(rulePageFilterKey);
@@ -2514,7 +2497,9 @@ function RulesContent() {
     : rulePageQuery.data !== undefined && !rulePageQuery.isPlaceholderData;
 
   const ownerOptionIds = useMemo(() => ruleOwnerOptionIds(rules || [], createOwnerUserId), [rules, createOwnerUserId]);
-  const { data: users } = trpc.users.optionsByIds.useQuery({ ids: ownerOptionIds }, {
+  const { data: users } = useQuery({
+    queryKey: getQueryKey(trpc.users.optionsByIds, { ids: ownerOptionIds }, "query"),
+    queryFn: () => queryInChunks(ownerOptionIds, 100, (ids) => utils.client.users.optionsByIds.query({ ids })),
     enabled: user?.role === "admin" && ownerOptionIds.length > 0,
     staleTime: 60_000,
     refetchOnWindowFocus: false,
@@ -4404,27 +4389,26 @@ function RulesContent() {
     return map;
   }, [ruleTargetGeoRows]);
   const trafficRangeLabel = translateText("近 24h");
+  type RuleTrafficSummaryRow = Awaited<ReturnType<typeof utils.client.rules.trafficSummary.query>>[number];
 
-  const { data: totalTrafficSummary } = trpc.rules.trafficSummary.useQuery(
-    { hours: 24, range: "total", ruleIds: visibleRuleIdsForMetrics },
-    {
-      enabled: secondaryQueriesReady && visibleRuleIdsForMetrics.length > 0,
-      refetchInterval: pollingInterval("normal"),
-      staleTime: 5000,
-      refetchOnWindowFocus: false,
-      placeholderData: (previousData) => previousData,
-    }
-  );
-  const { data: dailyTrafficSummary, isFetched: dailyTrafficSummaryFetched } = trpc.rules.trafficSummary.useQuery(
-    { hours: 24, range: "24h", ruleIds: visibleRuleIdsForMetrics },
-    {
-      enabled: visibleRuleIdsForMetrics.length > 0,
-      refetchInterval: pollingInterval("normal"),
-      staleTime: 5000,
-      refetchOnWindowFocus: false,
-      placeholderData: (previousData) => previousData,
-    }
-  );
+  const { data: totalTrafficSummary } = useQuery({
+    queryKey: getQueryKey(trpc.rules.trafficSummary, { hours: 24, range: "total", ruleIds: visibleRuleIdsForMetrics }, "query"),
+    queryFn: () => queryInChunks<number, RuleTrafficSummaryRow>(visibleRuleIdsForMetrics, 1000, (ruleIds) => utils.client.rules.trafficSummary.query({ hours: 24, range: "total", ruleIds })),
+    enabled: secondaryQueriesReady && visibleRuleIdsForMetrics.length > 0,
+    refetchInterval: pollingInterval("normal"),
+    staleTime: 5000,
+    refetchOnWindowFocus: false,
+    placeholderData: (previousData) => previousData,
+  });
+  const { data: dailyTrafficSummary, isFetched: dailyTrafficSummaryFetched } = useQuery({
+    queryKey: getQueryKey(trpc.rules.trafficSummary, { hours: 24, range: "24h", ruleIds: visibleRuleIdsForMetrics }, "query"),
+    queryFn: () => queryInChunks<number, RuleTrafficSummaryRow>(visibleRuleIdsForMetrics, 1000, (ruleIds) => utils.client.rules.trafficSummary.query({ hours: 24, range: "24h", ruleIds })),
+    enabled: visibleRuleIdsForMetrics.length > 0,
+    refetchInterval: pollingInterval("normal"),
+    staleTime: 5000,
+    refetchOnWindowFocus: false,
+    placeholderData: (previousData) => previousData,
+  });
   const [stableTotalTrafficSummaryRows, setStableTotalTrafficSummaryRows] = useState<any[]>([]);
   const [stableDailyTrafficSummaryRows, setStableDailyTrafficSummaryRows] = useState<any[]>([]);
   const resetTrafficMutation = trpc.rules.resetTraffic.useMutation({
@@ -4672,8 +4656,7 @@ function RulesContent() {
   const filteredDisplayTotal = Math.max(0, Number(rulePageMeta.totalItems) || 0);
   const ruleStartIndex = Math.max(0, Number(rulePageMeta.ruleStartIndex) || 0);
   const rulePagination = useServerPagination(isRuleGlobeView ? [] : orderedRuleDisplayItems, filteredDisplayTotal, rulePageRequest, {
-    pageSize: rulePageSize,
-    isReady: !isLoading && !!rulePageQuery.data,
+    isReady: !!rulePageQuery.data && !rulePageQuery.isLoading && !rulePageQuery.isPlaceholderData,
   });
   const pagedRuleItems = rulePagination.items;
   const pagedRules = useMemo(
@@ -6802,13 +6785,6 @@ function RulesContent() {
     }
   };
 
-  const handleRulePageSizeChange = (value: string) => {
-    const nextPageSize = Number(value) as RulePageSize;
-    if (!RULE_PAGE_SIZE_OPTIONS.includes(nextPageSize)) return;
-    setRulePageSize(nextPageSize);
-    storeRulePageSize(nextPageSize);
-  };
-
   const toggleRuleGroupCollapsed = (type: RuleGroupType) => {
     setRuleGroupCollapsed((prev) => {
       const next = { ...prev, [type]: !prev[type] };
@@ -7604,17 +7580,6 @@ function RulesContent() {
                 </div>
               </DropdownMenuContent>
             </DropdownMenu>
-            <Select value={String(rulePageSize)} onValueChange={handleRulePageSizeChange}>
-              <SelectTrigger className="h-8 w-full text-xs sm:w-[120px]">
-                <SelectValue placeholder={translateText("每页数量")} />
-              </SelectTrigger>
-              <SelectContent>
-                {RULE_PAGE_SIZE_OPTIONS.map((pageSize) => (
-                  <SelectItem key={pageSize} value={String(pageSize)}>
-                    {translateText("每页")}{pageSize} {translateText("项")}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
 
           {user?.role === "admin" && ruleCategory === "sni" && sniDomainConfiguration.isError && <p role="status" className="text-xs text-destructive">{translateText("域名配置核对加载失败，请稍后刷新。")}</p>}

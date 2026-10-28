@@ -15,8 +15,8 @@ export function userOptionDetail(user: UserOption) {
   return [user.name && user.name !== user.username ? user.username : null, user.email !== user.username ? user.email : null, `#${user.id}`].filter(Boolean).join(" · ");
 }
 
-// Bound metadata hydration to the selected owner and the visible rule page.
+// Include every visible owner; callers split metadata requests at the API limit.
 export function ruleOwnerOptionIds(rules: Array<{ userId?: number | null }>, selected?: number) {
   return [...new Set([selected, ...rules.map(rule => Number(rule.userId))]
-    .filter((id): id is number => Number.isSafeInteger(id) && Number(id) > 0))].slice(0, 100).sort((a, b) => a - b);
+    .filter((id): id is number => Number.isSafeInteger(id) && Number(id) > 0))].sort((a, b) => a - b);
 }
