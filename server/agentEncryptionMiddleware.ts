@@ -15,6 +15,7 @@ import { panelCryptoNowMs } from "./panelClock";
 import { appendPanelLog } from "./_core/panelLogger";
 import { pruneMapEntries, setBoundedMapValue } from "./boundedCache";
 import { databaseHealth } from "./databaseHealthState";
+import { normalizeAgentInstallationId } from "./agentInstallation";
 
 export const AGENT_TUNNEL_PATHS = new Set([
   "/api/agent/register",
@@ -179,12 +180,14 @@ export async function agentEncryptionMiddleware(req: Request, res: Response, nex
     res.setHeader(AGENT_AUTH_RESULT_HEADER, AGENT_AUTH_RESULT_ACCEPTED);
     req.body = payload;
     (req as any).agentToken = token;
+    (req as any).agentInstallationId = normalizeAgentInstallationId(payload?.installationId);
+    const clockKey = `${token}:${(req as any).agentInstallationId}`;
     // Preserve the authenticated envelope time so a delayed pre-offline report
     // cannot serve as a fresh runtime confirmation after reconnection.
-    (req as any).agentReportClockKnown = !hasClocklessAgentAuth(req) || clocklessAgentOffsets.get(token)?.confirmed === true;
-    (req as any).agentReportCreatedAt = agentReportTime(token, envelopeTime, protocolNowMs, hasClocklessAgentAuth(req));
+    (req as any).agentReportClockKnown = !hasClocklessAgentAuth(req) || clocklessAgentOffsets.get(clockKey)?.confirmed === true;
+    (req as any).agentReportCreatedAt = agentReportTime(clockKey, envelopeTime, protocolNowMs, hasClocklessAgentAuth(req));
     (req as any).confirmAgentReportClock = () => {
-      setBoundedMapValue(clocklessAgentOffsets, token!, { offset: protocolNowMs - envelopeTime, confirmed: true }, AGENT_AUTH_FAILURE_CACHE_MAX);
+      setBoundedMapValue(clocklessAgentOffsets, clockKey, { offset: protocolNowMs - envelopeTime, confirmed: true }, AGENT_AUTH_FAILURE_CACHE_MAX);
       (req as any).agentReportCreatedAt = Date.now();
     };
     const tunneledPath = isSyncRequest ? normalizeTunnelPath(req.body?.path) : "";

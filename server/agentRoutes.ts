@@ -1,11 +1,12 @@
-import { Router, Request, Response, NextFunction } from "express";
+import { Router, Request, Response, NextFunction, type RequestHandler } from "express";
 import * as db from "./db";
 import { AGENT_VERSION } from "./_core/systemRouter";
 import { AGENT_ASSET_NAME_SET, getOrFetchAgentAssetPath } from "./agentAssets";
 import { appendPanelLog } from "./_core/panelLogger";
 import { generateInstallScript } from "./agentInstallScripts";
 import { isNginxForwardProtocolEnabled } from "../shared/forwardTypes";
-import { registerAgentEventClient, unregisterAgentEventClient } from "./agentEvents";
+import { registerAgentEventClient, unregisterAgentEventClient, supersedeAgentEventClient } from "./agentEvents";
+import { agentInstallationGate, agentSupersededResponse, claimAgentInstallation, normalizeAgentInstallationId } from "./agentInstallation";
 import { agentEncryptionMiddleware, getAgentTunneledPath } from "./agentEncryptionMiddleware";
 import { AGENT_PANEL_MIGRATION_VERSION, hasAgentVersionChanged, isAgentUpgradeTargetSatisfied, isAgentVersionAtLeast } from "./agentRouteUtils";
 import { resolvePanelUrl } from "./agentPanelUrl";
@@ -16,6 +17,7 @@ import {
   AGENT_AUTH_RESULT_HEADER,
   AGENT_AUTH_RESULT_REJECTED,
   getAgentHostFromRequest,
+  getResolvedAgentToken,
   hasClocklessAgentAuth,
   hasSignedAgentAuthAttempt,
   hasVerifiedAgentAuthProof,
@@ -37,11 +39,55 @@ import { recordAuthenticatedAgentActivity } from "./agentActivity";
 import { issueAgentAuthChallenges } from "./agentAuthChallenge";
 import { panelCryptoNowMs } from "./panelClock";
 import { runAgentRuntimeRecovery } from "./agentRuntimeRecovery";
+import { invalidateSniRuntimeConfirmation, resetSniAgentProcessHistory } from "./sniRuntimeObservability";
+import { clearAgentConnectionStats } from "./agentConnectionStats";
+import { recordForwardGroupHostRuntimeInterruption } from "./forwardGroupAdjustments";
 import { observePresenceCapableHostActivity } from "./agentFastLiveness";
 import { pruneMapEntries, setBoundedMapValue } from "./boundedCache";
 
 const agentRouter = Router();
-const agentApiRouter = Router();
+const agentApiRouter = createAgentApiRouter();
+
+export function createAgentApiRouter() {
+  const router = Router();
+  const post = router.post.bind(router);
+  // All Agent API POST handlers return their async work. Express 4 discards
+  // that promise, so wrap registration rather than awaiting next()/handle().
+  router.post = ((path: string, ...handlers: RequestHandler[]) => post(
+    path,
+    ...handlers.map(handler => fenceAgentInstallation(handler)),
+  )) as typeof router.post;
+  return router;
+}
+
+function fenceAgentInstallation(handler: RequestHandler): RequestHandler {
+  return async (req, res, next) => {
+    let release: (() => void) | undefined;
+    try {
+      const token = getResolvedAgentToken(req);
+      if (token) {
+        const registering = req.path === "/api/agent/register";
+        release = await agentInstallationGate.acquire(token, registering);
+        if (res.destroyed || res.writableEnded) return;
+        if (!registering) {
+          const host = await db.getAgentAuthHostIdentity(token);
+          if (host?.agentInstallationId && host.agentInstallationId !== normalizeAgentInstallationId((req as any).agentInstallationId)) {
+            res.json(agentSupersededResponse);
+            return;
+          }
+        }
+      }
+      // Neither a disconnected client nor finish/next(error) cancels awaited
+      // writes. Keep ownership until the handler actually settles; forward
+      // next immediately so Express error handling retains its normal timing.
+      await handler(req, res, next);
+    } catch (error) {
+      next(error);
+    } finally {
+      release?.();
+    }
+  };
+}
 const VERBOSE_AGENT_EVENTS = /^(1|true|yes|on)$/i.test(String(process.env.FORWARDX_VERBOSE_AGENT_EVENTS || ""));
 
 function parseForwardProtocolSettings(value: string | null | undefined) {
@@ -117,9 +163,11 @@ async function rejectAgentWhenPanelMigrated(req: Request, res: Response, next: N
   }
 }
 
-async function resetAgentRuntimeStateAfterReconnect(hostId: number, reason: string) {
-  await runAgentRuntimeRecovery(hostId, { preserveReportedRuntime: false }, async () => {
+async function resetAgentRuntimeStateAfterReconnect(hostId: number, reason: string, force = false) {
+  await runAgentRuntimeRecovery(hostId, { preserveReportedRuntime: false, force }, async () => {
     await db.resetAgentRuntimeStateForHost(hostId);
+    invalidateSniRuntimeConfirmation(hostId);
+    recordForwardGroupHostRuntimeInterruption(hostId);
     clearTunnelRuntimeStatusForHost(hostId);
     invalidateAgentDesiredStateCache(hostId);
     await refreshAgentsAffectedByHostAddress(hostId, reason);
@@ -144,6 +192,20 @@ async function openAgentEventStream(input: {
   res: Response;
   token: string;
   agentVersion?: string | null;
+  installationId?: unknown;
+}) {
+  const release = await agentInstallationGate.acquire(input.token);
+  try {
+    return await openOwnedAgentEventStream(input);
+  } finally { release(); }
+}
+
+async function openOwnedAgentEventStream(input: {
+  req: Request;
+  res: Response;
+  token: string;
+  agentVersion?: string | null;
+  installationId?: unknown;
 }) {
   const { req, res, token } = input;
   const migratedTo = await db.getSetting("migratedToPanelUrl");
@@ -180,6 +242,13 @@ async function openAgentEventStream(input: {
     return;
   }
   const agentVersion = normalizeAgentText(input.agentVersion, 64);
+  const identity = await db.getAgentAuthHostIdentity(token);
+  if (identity?.agentInstallationId && identity.agentInstallationId !== normalizeAgentInstallationId(input.installationId)) {
+    res.status(200);
+    setAgentEventStreamHeaders(res, "close");
+    res.end(`event: message\ndata: ${JSON.stringify(encryptPayload({ type: "agent-superseded", data: agentSupersededResponse }, token))}\n\n`);
+    return;
+  }
   const agentVersionChanged = hasAgentVersionChanged((host as any).agentVersion, agentVersion);
   const wasOnline = isHostStatusOnline(host);
   recordAuthenticatedAgentActivity(host.id);
@@ -303,6 +372,7 @@ agentRouter.get("/api/stream", async (req: Request, res: Response) => {
       res,
       token,
       agentVersion: payload?.agentVersion,
+      installationId: payload?.installationId,
     });
   } catch (error) {
     const message = agentErrorMessage(error);
@@ -342,7 +412,7 @@ agentRouter.get("/api/agent/events", async (req: Request, res: Response) => {
       return;
     }
     res.setHeader(AGENT_AUTH_RESULT_HEADER, AGENT_AUTH_RESULT_ACCEPTED);
-    await openAgentEventStream({ req, res, token, agentVersion: req.header("X-Agent-Version") });
+    await openAgentEventStream({ req, res, token, agentVersion: req.header("X-Agent-Version"), installationId: req.header("X-Agent-Installation") });
   } catch (error) {
     console.error("[Agent Events] Error:", error);
     res.status(500).json({ error: "Internal server error" });
@@ -355,6 +425,17 @@ agentApiRouter.post("/api/agent/register", async (req: Request, res: Response) =
     const { token, osInfo, cpuInfo, memoryTotal, agentVersion } = req.body;
     if (!token) {
       res.status(400).json({ error: "Token is required" });
+      return;
+    }
+
+    if (token !== getResolvedAgentToken(req)) {
+      res.status(403).json({ error: "Registration token does not match authenticated token" });
+      return;
+    }
+    const rawInstallationId = (req as any).agentInstallationId ?? req.body.installationId;
+    const installationId = normalizeAgentInstallationId(rawInstallationId);
+    if (rawInstallationId && !installationId) {
+      res.status(400).json({ error: "Invalid Agent installation identity" });
       return;
     }
 
@@ -378,6 +459,17 @@ agentApiRouter.post("/api/agent/register", async (req: Request, res: Response) =
 
     const existingHost = await db.getHostByAgentToken(token);
     if (existingHost) {
+      const claim = await claimAgentInstallation(existingHost.id, installationId);
+      if (!claim.accepted) { res.json(agentSupersededResponse); return; }
+      if (claim.changed) {
+        supersedeAgentEventClient(existingHost.id);
+        resetSniAgentProcessHistory(existingHost.id);
+        clearAgentConnectionStats(existingHost.id);
+      }
+      // Invalidate readiness before an address refresh can schedule DDNS.
+      // Registration also bypasses any successful recovery's cooldown.
+      const registrationReason = claim.replaced ? "agent-installation-replaced" : claim.changed ? "agent-installation-bound" : "agent-registered";
+      await resetAgentRuntimeStateAfterReconnect(existingHost.id, registrationReason, true);
       const wasOnline = isHostStatusOnline(existingHost);
       const reportedAddress = mergeAgentReportedAddress(req.body, existingHost);
       const entryChanged = [
@@ -413,8 +505,10 @@ agentApiRouter.post("/api/agent/register", async (req: Request, res: Response) =
       } else if (["ipv4Addresses", "ipv6Addresses"].some(key => (reportedAddress as any)[key] !== (existingHost as any)[key])) {
         scheduleHostDdnsUpdate({ ...existingHost, ...reportedAddress }, "agent-address-inventory-changed");
       }
+      // Replacement can arrive while the previous host still appears online.
+      // Registration must also bypass any successful recovery's cooldown.
+      await resetAgentRuntimeStateAfterReconnect(existingHost.id, claim.changed ? "agent-installation-replaced" : "agent-registered", true);
       if (!wasOnline) {
-        await resetAgentRuntimeStateAfterReconnect(existingHost.id, "agent-reconnected");
         void notifyHostOnlineIfNeeded({ ...existingHost, ...reportedAddress }).catch((error) => {
           console.warn(`[HostStatus] Online notify failed host=${existingHost.id}: ${error instanceof Error ? error.message : String(error)}`);
         });
@@ -442,6 +536,7 @@ agentApiRouter.post("/api/agent/register", async (req: Request, res: Response) =
     });
 
     await db.markAgentTokenUsed(token, hostId);
+    await claimAgentInstallation(hostId, installationId);
     prepareAgentDesiredStateResync(hostId);
     res.json({ success: true, hostId, message: "Host registered" });
   } catch (error) {
