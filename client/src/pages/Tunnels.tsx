@@ -2312,7 +2312,7 @@ function TunnelsContent() {
     nginxCertDragDepthRef.current = 0;
     setNginxCertDragActive(false);
   }, [showCreateTypeDialog, showDialog]);
-  const tunnelPageRequest = usePersistentPageRequest("forwardx.tunnels.page");
+  const tunnelPageRequest = usePersistentPageRequest("forwardx.tunnels.page", 20);
   const tunnelPageFilterKey = linkSearchQuery.trim();
   const previousTunnelPageFilterKey = useRef(tunnelPageFilterKey);
   useEffect(() => {
@@ -2322,7 +2322,7 @@ function TunnelsContent() {
   }, [tunnelPageFilterKey, tunnelPageRequest.setPage]);
   const tunnelPageInput = {
     page: tunnelPageRequest.page,
-    pageSize: 12,
+    pageSize: tunnelPageRequest.pageSize,
     search: linkSearchQuery,
   };
   const tunnelPageQuery = trpc.tunnels.listPage.useQuery(tunnelPageInput, {
@@ -2658,8 +2658,8 @@ function TunnelsContent() {
     Number(tunnelPageQuery.data?.totalItems || 0),
     tunnelPageRequest,
     {
-      pageSize: 12,
-      isReady: !isLoading && !!tunnelPageQuery.data,
+      isReady: activeSection === "tunnels" && !!tunnelPageQuery.data
+        && !tunnelPageQuery.isLoading && !tunnelPageQuery.isPlaceholderData,
     },
   );
   const pagedTunnels = tunnelPagination.items;
@@ -4393,6 +4393,7 @@ function TunnelsContent() {
                   embedded
                   viewMode="card"
                   hideHeaderActions
+                  listEnabled={false}
                   searchQuery={normalizedLinkSearchQuery}
                   editRequest={chainEditRequest}
                   onEditRequestConsumed={() => setChainEditRequest(null)}
