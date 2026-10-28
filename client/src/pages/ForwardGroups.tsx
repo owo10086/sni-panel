@@ -297,6 +297,7 @@ type ForwardGroupsContentProps = {
   viewMode?: ForwardGroupViewMode;
   onViewModeChange?: (viewMode: ForwardGroupViewMode) => void;
   hideHeaderActions?: boolean;
+  listEnabled?: boolean;
   createRequestKey?: number;
   editRequest?: { id: number; requestKey: number } | null;
   onEditRequestConsumed?: () => void;
@@ -782,6 +783,7 @@ export function ForwardGroupsContent({
   viewMode: controlledViewMode,
   onViewModeChange,
   hideHeaderActions = false,
+  listEnabled = true,
   createRequestKey,
   editRequest,
   onEditRequestConsumed,
@@ -827,21 +829,24 @@ export function ForwardGroupsContent({
   const closeResetTimerRef = useRef<number | null>(null);
   const activeGroupMode = mode;
   const viewMode = controlledViewMode ?? internalViewMode;
-  const groupPageRequest = usePersistentPageRequest(`forwardx.forwardGroups.${activeGroupMode}.page`);
-  const groupPageFilterKey = `${activeGroupMode}:${searchQuery.trim()}`;
-  const previousGroupPageFilterKey = useRef(groupPageFilterKey);
+  const groupPageRequest = usePersistentPageRequest(`forwardx.forwardGroups.${activeGroupMode}.page`, 20);
+  const groupPageFilterKey = searchQuery.trim();
+  const previousGroupPageFilter = useRef({ mode: activeGroupMode, search: groupPageFilterKey });
   useEffect(() => {
-    if (previousGroupPageFilterKey.current === groupPageFilterKey) return;
-    previousGroupPageFilterKey.current = groupPageFilterKey;
-    groupPageRequest.setPage(1);
-  }, [groupPageFilterKey, groupPageRequest.setPage]);
+    const previous = previousGroupPageFilter.current;
+    previousGroupPageFilter.current = { mode: activeGroupMode, search: groupPageFilterKey };
+    if (listEnabled && previous.mode === activeGroupMode && previous.search !== groupPageFilterKey) {
+      groupPageRequest.setPage(1);
+    }
+  }, [activeGroupMode, groupPageFilterKey, groupPageRequest.setPage, listEnabled]);
   const groupPageInput = {
     page: groupPageRequest.page,
-    pageSize: 12,
+    pageSize: groupPageRequest.pageSize,
     groupMode: activeGroupMode,
     search: searchQuery,
   } as const;
   const groupPageQuery = trpc.forwardGroups.listPage.useQuery(groupPageInput, {
+    enabled: listEnabled,
     refetchInterval: pollingInterval("normal"),
     staleTime: 10_000,
     refetchOnWindowFocus: false,
@@ -949,8 +954,7 @@ export function ForwardGroupsContent({
   };
   const activeCount = Number(groupPageQuery.data?.enabledItems || 0);
   const groupPagination = useServerPagination(orderedVisibleGroups, Number(groupPageQuery.data?.totalItems || 0), groupPageRequest, {
-    pageSize: 12,
-    isReady: !isLoading && !!groupPageQuery.data,
+    isReady: listEnabled && !!groupPageQuery.data && !groupPageQuery.isLoading && !groupPageQuery.isPlaceholderData,
   });
   const pagedGroups = groupPagination.items;
   const testGroupDetail = useMemo(

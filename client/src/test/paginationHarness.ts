@@ -9,7 +9,7 @@ const require = createRequire(import.meta.url);
 
 // Run real page components and hooks with deterministic effects, without a DOM
 // or dashboard providers. JSX handlers and tRPC query inputs remain executable.
-export function createPaginationHarness(storage = new Map<string, string>(), mocks: Record<string, any> = {}) {
+export function createPaginationHarness(storage = new Map<string, string>(), mocks: Record<string, any> = {}, globals: Record<string, any> = {}) {
   let slots: any[] = [];
   let cursor = 0;
   let dirty = false;
@@ -51,6 +51,7 @@ export function createPaginationHarness(storage = new Map<string, string>(), moc
       compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true },
     }).outputText;
     runInNewContext(source, {
+      ...globals,
       exports: module.exports, module, window: { localStorage },
       require(id: string) {
         if (id in mocks) return mocks[id];
