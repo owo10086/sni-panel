@@ -119,6 +119,24 @@ try {
     assert.ok((await state()).members.every(member => !member.selectionReady), "a new panel process cannot reuse an in-memory readiness decision");
   }
   const configurations = [];
+  const confirmDesired = async (id, extra = {}) => {
+    // Reconnects first acknowledge the new session hash, then provide a table
+    // created after its confirmation boundary.
+    const initial = await heartbeat(id, configurations[id - 1], extra);
+    if (initial.requestLocalState) {
+      mock.timers.tick(1000);
+      await heartbeat(id, configurations[id - 1], extra);
+    }
+    receivedHashes.delete(id);
+    const reply = await heartbeat(id, undefined, extra);
+    const updates = (reply.desiredState?.actions || []).filter(action => action.op === "apply" && action.fxp?.role === "sni-splitter");
+    const ports = new Set(updates.map(action => action.fxp.listenPort));
+    configurations[id - 1] = [
+      ...configurations[id - 1].filter(route => !ports.has(route.port)),
+      ...updates.flatMap(action => action.fxp.sniRoutes.map(route => ({ ...route, port: action.fxp.listenPort, forwardType: "forwardx", protocol: "tcp", sniRouteVersion: action.fxp.sniRouteVersion, ready: true, sourceAllowIps: [] }))),
+    ];
+    return heartbeat(id, configurations[id - 1], extra);
+  };
   for (const id of [1, 2]) {
     if (scenario === "restart-resume" && process.env.FORWARDX_TEST_RESTART_CURRENT_MISSING === "1" && id === 2) {
       await presence(id);
@@ -180,12 +198,8 @@ try {
       'SELECT DISTINCT hostId FROM forward_rules WHERE forwardGroupId=10 ' +
       'AND isForwardGroupTemplate=1'
     ), [{ hostId: 2 }]);
-    assert.equal(Number((await runtime.queryRaw(
-      'SELECT COUNT(*) AS count FROM forward_rules WHERE forwardGroupId=10 ' +
-      'AND hostId=1 AND isForwardGroupTemplate=0 AND pendingDelete=0'
-    ))[0].count), 0);
-
-    const oldReply = await heartbeat(1, configurations[0]);
+    receivedHashes.delete(1);
+    const oldReply = await heartbeat(1, []);
     // The retained member already acknowledged this unchanged configuration.
     // Request a complete desired state to inspect its actual route table.
     receivedHashes.delete(2);
@@ -194,15 +208,27 @@ try {
       .filter(action => action.op === "apply")
       .flatMap(action => action.fxp?.sniRoutes || [])
       .map(route => route.sni).sort();
-    assert.deepEqual(domainsIn(oldReply), []);
+    assert.deepEqual(domainsIn(oldReply), expectedDomains, "the old entrance keeps its complete expected routes while clients can still use the old DNS value");
     assert.deepEqual(domainsIn(newReply), expectedDomains);
     assert.ok(requests.length > requestCount, "member removal must reach the local DNS provider");
     if (dnsFailure) {
       assert.equal((await state()).lastStatus, "error");
       assert.equal((await state()).lastDdnsValue, "127.0.0.1");
+      await advance(270, { renew: [2] });
+      receivedHashes.delete(1);
+      assert.deepEqual(domainsIn(await heartbeat(1, [])), expectedDomains, "provider failure preserves the old entrance before the five-minute fallback");
+      await advance(35, { renew: [2] });
     } else {
       assert.equal((await state()).lastDdnsValue, "127.0.0.2");
+      await advance(50, { renew: [2] });
+      receivedHashes.delete(1);
+      const retainedReply = await heartbeat(1, []);
+      assert.deepEqual(retainedReply.runningRules.map(rule => rule.ruleId).sort((a, b) => a - b), configurations[0].map(rule => rule.ruleId).sort((a, b) => a - b), "the old entrance still receives every required rule during the fixed DNS TTL");
+      assert.ok(!(retainedReply.desiredState?.actions || []).some(action => action.op === "remove"), "the retained entrance receives no removal before the TTL deadline");
+      await advance(12, { renew: [2] });
     }
+    receivedHashes.delete(1);
+    assert.deepEqual(domainsIn(await heartbeat(1, configurations[0])), [], "the old entrance is revoked after its fixed retirement deadline");
   }
 
   if (scenario === "restart-prepare") {
@@ -227,14 +253,15 @@ try {
     await rules.update({ id: root.id, targetIp: "203.0.113.99", targetPort: 20443, rateLimitMbps: 13, maxConnections: 8 });
     await heartbeat(2, configurations[1]);
     await groups.runFailover();
-    assert.equal((await state()).members.find(member => member.id === 102).healthStatus, "unhealthy", "old destination and limits cannot confirm the saved configuration");
+    assert.equal((await state()).members.find(member => member.id === 102).selectionReady, false, "old destination and limits cannot confirm the saved configuration");
     const next = await heartbeat(2);
     const config = next.desiredState.actions.find(action => action.op === "apply" && action.fxp?.role === "sni-splitter").fxp;
     configurations[1] = config.sniRoutes.map(route => ({ ...route, port: config.listenPort, forwardType: "forwardx", protocol: "tcp", sniRouteVersion: config.sniRouteVersion, ready: true }));
     await heartbeat(2, configurations[1]);
     await groups.runFailover();
-    assert.equal((await state()).activeMemberId, 101, "newly recovered backup must finish recovery observation");
-    await advance(25, { renew: [2] });
+    assert.equal((await state()).members.find(member => member.id === 102).selectionReady, true, "a confirmed administrator adjustment does not require recovery observation");
+    assert.equal((await state()).activeMemberId, 101, "the current entrance keeps its configured failure window while its adjustment is pending");
+    await advance(19, { renew: [2] });
     assert.equal((await state()).activeMemberId, 102, "the saved destination is eligible without a new destination probe");
     // A member needs every required splitter port, including a non-default port.
     await rules.create({ forwardGroupId: 10, name: "other port", sourcePort: 18444, targetIp: "203.0.113.11", targetPort: 443, sni: "other.example.com", isEnabled: true });
@@ -256,6 +283,36 @@ try {
     assert.equal((await state()).activeMemberId, activeId + 100);
     await advance(19, { renew: [3 - activeId] });
     assert.equal((await state()).activeMemberId, 103 - activeId, "one stopped port makes the entire member unavailable");
+  }
+  if (scenario.startsWith("adjustment-fault-")) {
+    const fault = scenario.slice("adjustment-fault-".length);
+    await advance(25, { renew: [1, 2] });
+    const root = (await rules.list()).find(rule => rule.sni === "service-0.example.com");
+    if (fault === "expiry") await advance(301, { renew: [2] });
+    await rules.update({ id: root.id, targetIp: "203.0.113.99" });
+    await heartbeat(1, configurations[0]);
+    if (fault === "apply") {
+      await post(1, "rule-status", { ruleId: configurations[0][0].ruleId, sourcePort: 18443, sniRuntimePort: 18443, forwardType: "forwardx", isRunning: false, message: "simulated adjustment apply failure" });
+      // A later configuration report must not hide the failed apply receipt.
+      await heartbeat(1, configurations[0]);
+    }
+    if (fault === "missing") {
+      // service-1 is unrelated to the change to service-0.
+      await heartbeat(1, configurations[0].filter(route => route.sni !== "service-1.example.com"));
+      await heartbeat(1, configurations[0]);
+    }
+    if (fault === "reconnect") await advance(110, { online: [2], renew: [2] });
+    const extra = fault === "restart" ? { agentProcessId: 2001 } : {};
+    if (fault === "restart") await heartbeat(1, undefined, extra);
+    mock.timers.tick(1000);
+    await confirmDesired(1, extra);
+    await confirmDesired(2);
+    await groups.runFailover();
+    assert.equal((await state()).members.find(member => member.id === 101).selectionReady, false, `${fault} during an administrator adjustment still requires recovery observation`);
+    await advance(10, { renew: [2] });
+    assert.equal((await state()).members.find(member => member.id === 101).selectionReady, false, "configuration confirmation cannot shorten a real failure's recovery observation");
+    await advance(15, { renew: [2] });
+    assert.equal((await state()).members.find(member => member.id === 101).selectionReady, true, "a real failure can recover after the full configured observation");
   }
   if (scenario === "windows") {
     await groups.updateFields({ id: 10, chinaHealthCheckEnabled: true, chinaHealthCheckTarget: "www.bing.com:80" });
@@ -477,7 +534,13 @@ try {
     assert.equal(requests.length, firstRequestCount + 1);
     assert.equal(requests.at(-1).domain, "new-entry.example.test", "the same member and address still update a new domain");
     dnsFailure = true;
-    await assert.rejects(() => groups.updateFields({ id: 10, domain: "retry-entry.example.test" }), /simulated DDNS failure/);
+    await assert.rejects(() => groups.updateFields({ id: 10, domain: "retry-entry.example.test" }), error => {
+      assert.match(error.message, /配置已保存/);
+      const aggregate = error instanceof AggregateError ? error : error.cause;
+      assert.ok(aggregate instanceof AggregateError);
+      assert.ok(aggregate.errors.some(cause => /simulated DDNS failure/.test(String(cause.message))));
+      return true;
+    });
     await assert.rejects(() => groups.runFailover(), /simulated DDNS failure/);
     assert.equal((await state()).lastStatus, "error");
     assert.equal((await state()).activeMemberId, 101);
@@ -524,14 +587,15 @@ try {
     await concurrentSave;
     await settle();
     assert.notEqual((await state()).lastStatus, "healthy");
+    const requestsBeforeRecovery = requests.length;
     for (const id of [1, 2]) {
       const result = await heartbeat(id);
       const config = result.desiredState.actions.find(action => action.op === "apply" && action.fxp?.role === "sni-splitter").fxp;
       configurations[id - 1] = config.sniRoutes.map(route => ({ ...route, port: config.listenPort, forwardType: "forwardx", protocol: "tcp", sniRouteVersion: config.sniRouteVersion, ready: true }));
       await heartbeat(id, configurations[id - 1]);
     }
-    const requestsBeforeRecovery = requests.length;
-    await advance(25, { renew: [1, 2] });
+    await groups.runFailover();
+    assert.ok((await state()).members.every(member => member.selectionReady), "complete confirmation immediately ends the administrator adjustment");
     assert.equal((await state()).lastStatus, "healthy");
     assert.ok(requests.length > requestsBeforeRecovery, "a discarded provider response forces later reconciliation even when the address is unchanged");
     const retained = (await state()).lastDdnsValue;
@@ -591,7 +655,7 @@ try {
       }
     }
     await groups.runFailover();
-    assert.equal((await state()).lastStatus, "unknown");
+    assert.equal((await state()).lastStatus, scenario === "pending-normal" ? "healthy" : "unknown");
     await advance(330, { renew: [1, 2] });
     assert.equal((await state()).lastStatus, scenario === "pending-normal" ? "healthy" : "down",
       scenario === "pending-normal" ? "missing ordinary target reports never block a prepared host failover entrance" : "continual evaluations cannot extend a missing report's waiting period forever");

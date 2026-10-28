@@ -36,6 +36,23 @@ export type SniRuntimeGroupStatus = {
   observedAt: number;
   confirmedAt: number;
   interruptedAt: number;
+  interruptionReason: "configuration" | "boundary" | "expired" | "apply-failure" | "missing-route" | "unattributed" | null;
+  interruptionConfiguration: string;
+  // Configuration reports must not erase a failure received between reports.
+  realFailureAt: number;
+};
+
+type SniRuntimeAdjustment = {
+  hostId: number;
+  splitterPort: number;
+  beforeRoutes: SniRuntimeRuleReport[];
+  expectedRoutes: SniRuntimeRuleReport[];
+  startedAt: number;
+  deadlineAt: number;
+};
+type PendingSniRuntimeAdjustment = SniRuntimeAdjustment & {
+  allowedRouteIdentities: Set<string>;
+  unchangedRouteIdentities: Set<string>;
 };
 
 const SNI_RUNTIME_CACHE_MAX_SIZE = 10_000;
@@ -43,6 +60,91 @@ const sniRuntimeStatusCache = new Map<string, SniRuntimeGroupStatus>();
 const sniRuntimeInvalidatedAt = new Map<number, number>();
 const retiredAgentProcesses = new Map<number, Set<string>>();
 const pendingRuntimeSessions = new Map<number, string>();
+const sniRuntimeAdjustments = new Map<string, PendingSniRuntimeAdjustment>();
+const sniRuntimeRetiredRouteIdentities = new Map<string, Set<string>>();
+
+export function sniRuntimeConfigurationIdentity(routes: SniRuntimeRuleReport[]) {
+  const endpoint = (value: unknown) => String(value || "").trim().replace(/^\[|\]$/g, "").toLowerCase();
+  const forwardType = (value: unknown) => String(value || "forwardx").toLowerCase().replace(/^fxp$/, "forwardx");
+  return JSON.stringify(routes.map(route => [
+    Number(route.ruleId || 0), Number(route.port || 0), normalizeSniValue(route.sni),
+    endpoint(route.targetIp), Number(route.targetPort || 0), Number(route.limitIn || 0),
+    Number(route.limitOut || 0), Number(route.maxConnections || 0), Number(route.maxIPs || 0),
+    String(route.accessScope || "").trim(), String(route.protocol || "tcp").toLowerCase(),
+    forwardType(route.forwardType),
+    Array.isArray(route.sourceAllowIps) ? [...route.sourceAllowIps].map(String).sort() : [],
+  ]).sort((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right))));
+}
+
+export function registerSniRuntimeAdjustment(input: SniRuntimeAdjustment) {
+  const key = cacheKey(input.hostId, input.splitterPort);
+  if (sniRuntimeConfigurationIdentity(input.beforeRoutes) === sniRuntimeConfigurationIdentity(input.expectedRoutes)) return;
+  const previous = sniRuntimeAdjustments.get(key);
+  const expectedIdentities = new Set(input.expectedRoutes.map(route => sniRuntimeConfigurationIdentity([route])));
+  const retiredIdentities = new Set(sniRuntimeRetiredRouteIdentities.get(key));
+  for (const route of input.beforeRoutes) {
+    const identity = sniRuntimeConfigurationIdentity([route]);
+    if (!expectedIdentities.has(identity)) retiredIdentities.add(identity);
+  }
+  for (const identity of expectedIdentities) retiredIdentities.delete(identity);
+  setBoundedMapValue(sniRuntimeRetiredRouteIdentities, key, retiredIdentities, SNI_RUNTIME_CACHE_MAX_SIZE);
+  const beforeIdentities = previous?.unchangedRouteIdentities || new Set(input.beforeRoutes.map(route => sniRuntimeConfigurationIdentity([route])));
+  const adjustment = {
+    ...input,
+    beforeRoutes: [...(previous?.beforeRoutes || input.beforeRoutes)],
+    expectedRoutes: [...input.expectedRoutes],
+    allowedRouteIdentities: new Set([
+      ...(previous?.allowedRouteIdentities || input.beforeRoutes.map(route => sniRuntimeConfigurationIdentity([route]))),
+      ...expectedIdentities,
+    ]),
+    unchangedRouteIdentities: new Set([...beforeIdentities].filter(identity => expectedIdentities.has(identity))),
+    startedAt: Math.min(previous?.startedAt ?? input.startedAt, input.startedAt),
+    deadlineAt: Math.min(previous?.deadlineAt ?? input.deadlineAt, input.deadlineAt),
+  };
+  setBoundedMapValue(sniRuntimeAdjustments, key, adjustment, SNI_RUNTIME_CACHE_MAX_SIZE);
+  const current = sniRuntimeStatusCache.get(key);
+  if (current) recordInterruption(current, "configuration", adjustment.startedAt, adjustment.expectedRoutes);
+}
+
+export function getSniRuntimeAdjustment(hostId: number, splitterPort: number, now = Date.now()) {
+  const adjustment = sniRuntimeAdjustments.get(cacheKey(hostId, splitterPort));
+  if (!adjustment) return null;
+  return {
+    startedAt: adjustment.startedAt,
+    deadlineAt: adjustment.deadlineAt,
+    expectedIdentity: sniRuntimeConfigurationIdentity(adjustment.expectedRoutes),
+    expired: now >= adjustment.deadlineAt,
+  };
+}
+
+function recordInterruption(
+  status: SniRuntimeGroupStatus,
+  reason: NonNullable<SniRuntimeGroupStatus["interruptionReason"]>,
+  at: number,
+  routes = status.appliedRoutes,
+) {
+  const previousFailureAt = status.realFailureAt;
+  status.interruptedAt = Math.max(status.interruptedAt, at);
+  if (reason !== "configuration") status.realFailureAt = Math.max(status.realFailureAt, at);
+  // A real interruption wins over an overlapping administrator edit.
+  if ((reason !== "configuration" && at >= previousFailureAt) || !status.realFailureAt) {
+    status.interruptionReason = reason;
+    status.interruptionConfiguration = sniRuntimeConfigurationIdentity(routes);
+  }
+}
+
+function sameRoute(left: SniRuntimeRuleReport, right: SniRuntimeRuleReport) {
+  return sniRuntimeConfigurationIdentity([left]) === sniRuntimeConfigurationIdentity([right]);
+}
+
+function isAdjustmentReport(adjustment: PendingSniRuntimeAdjustment | undefined, routes: SniRuntimeRuleReport[]) {
+  if (!adjustment) return false;
+  // Every unaffected route must remain present. An unrelated missing domain is
+  // a runtime failure even when another route is being edited at the same time.
+  const identities = new Set(routes.map(route => sniRuntimeConfigurationIdentity([route])));
+  return [...adjustment.unchangedRouteIdentities].every(identity => identities.has(identity))
+    && [...identities].every(identity => adjustment.allowedRouteIdentities.has(identity));
+}
 
 export function pendingSniRuntimeSession(hostId: number) {
   return pendingRuntimeSessions.get(hostId);
@@ -98,9 +200,11 @@ export function invalidateSniRuntimeConfirmation(hostId: number, at = Date.now()
   setBoundedMapValue(sniRuntimeInvalidatedAt, hostId, at, SNI_RUNTIME_CACHE_MAX_SIZE);
   for (const [key, status] of sniRuntimeStatusCache) {
     if (status.hostId !== hostId) continue;
-    updateBoundedMapValueInPlace(sniRuntimeStatusCache, key, {
+    const next = {
       ...status, confirmedAt: 0, interruptedAt: at,
-    }, SNI_RUNTIME_CACHE_MAX_SIZE);
+    };
+    recordInterruption(next, "boundary", at);
+    updateBoundedMapValueInPlace(sniRuntimeStatusCache, key, next, SNI_RUNTIME_CACHE_MAX_SIZE);
   }
 }
 
@@ -155,6 +259,9 @@ export function recordSniRuntimeSnapshot(
       observedAt,
       confirmedAt: observedAt,
       interruptedAt: sniRuntimeConfirmationBoundary(hostId),
+      interruptionReason: sniRuntimeConfirmationBoundary(hostId) ? "boundary" : null,
+      interruptionConfiguration: "",
+      realFailureAt: sniRuntimeConfirmationBoundary(hostId),
     };
     group.currentVersion = Math.max(group.currentVersion, normalizedCounter(report?.sniRouteVersion));
     group.unmatchedConnections = Math.max(
@@ -175,41 +282,71 @@ export function recordSniRuntimeSnapshot(
   const observedKeys = new Set(Array.from(groups.keys()).map((splitterPort) => cacheKey(hostId, splitterPort)));
   for (const [key, current] of sniRuntimeStatusCache) {
     if (current.hostId !== hostId || observedKeys.has(key)) continue;
+    const next = {
+      ...current,
+      currentVersion: 0,
+      appliedDomains: [],
+      appliedRuleIds: [],
+      appliedRoutes: [],
+      observedAt,
+      confirmedAt: observedAt,
+    };
+    const adjustment = sniRuntimeAdjustments.get(key);
+    const adjustmentReport = isAdjustmentReport(adjustment, []);
+    const expiredAdjustment = !!adjustment && observedAt >= adjustment.deadlineAt;
+    const attributable = adjustmentReport && !expiredAdjustment;
+    if (expiredAdjustment && adjustmentReport) recordInterruption(next, "unattributed", adjustment!.startedAt);
+    else recordInterruption(next, attributable ? "configuration" : "missing-route", observedAt);
+    if (current.confirmedAt && observedAt - current.confirmedAt >= FORWARD_GROUP_AGENT_HEALTH_FRESHNESS_TTL_MS) {
+      recordInterruption(next, "expired", current.confirmedAt + FORWARD_GROUP_AGENT_HEALTH_FRESHNESS_TTL_MS);
+    }
+    if (attributable && adjustment?.expectedRoutes.length === 0) sniRuntimeAdjustments.delete(key);
     updateBoundedMapValueInPlace(
       sniRuntimeStatusCache,
       key,
-      {
-        ...current,
-        currentVersion: 0,
-        appliedDomains: [],
-        appliedRuleIds: [],
-        appliedRoutes: [],
-        observedAt,
-        confirmedAt: observedAt,
-        interruptedAt: observedAt,
-      },
+      next,
       SNI_RUNTIME_CACHE_MAX_SIZE,
     );
   }
 
   for (const group of groups.values()) {
-    const previous = sniRuntimeStatusCache.get(cacheKey(hostId, group.splitterPort));
+    const key = cacheKey(hostId, group.splitterPort);
+    const previous = sniRuntimeStatusCache.get(key);
+    const adjustment = sniRuntimeAdjustments.get(key);
     group.interruptedAt = Math.max(group.interruptedAt, previous?.interruptedAt || 0);
-    if (previous?.appliedRoutes.some(old => requiredRuleIds?.has(Number(old.ruleId)) && !group.appliedRoutes.some(current =>
-      Number(current.ruleId) === Number(old.ruleId) && sniRouteContentMatches(current, old)))) {
-      group.interruptedAt = observedAt;
+    group.realFailureAt = Math.max(group.realFailureAt, previous?.realFailureAt || 0);
+    group.interruptionReason = previous?.interruptionReason || group.interruptionReason;
+    group.interruptionConfiguration = previous?.interruptionConfiguration || group.interruptionConfiguration;
+    const adjustmentReport = isAdjustmentReport(adjustment, group.appliedRoutes);
+    const expiredAdjustment = !!adjustment && observedAt >= adjustment.deadlineAt;
+    const attributable = adjustmentReport && !expiredAdjustment;
+    const missingRequiredRoute = previous?.appliedRoutes.some(old => requiredRuleIds?.has(Number(old.ruleId)) && !group.appliedRoutes.some(current => sameRoute(current, old)));
+    const retiredIdentities = sniRuntimeRetiredRouteIdentities.get(key);
+    const unplannedConfigurationChange = !adjustment && group.appliedRoutes.some(route =>
+      retiredIdentities?.has(sniRuntimeConfigurationIdentity([route])));
+    const incompleteReport = group.appliedRoutes.length !== (reports || []).filter(report => Number(report.port) === group.splitterPort && normalizeSniValue(report.sni)).length;
+    if (adjustment) {
+      if (observedAt >= adjustment.deadlineAt) recordInterruption(group, "unattributed", adjustment.startedAt);
+      else if (attributable) recordInterruption(group, "configuration", adjustment.startedAt, adjustment.expectedRoutes);
+      else recordInterruption(group, "missing-route", observedAt);
+      if (sniRuntimeConfigurationIdentity(group.appliedRoutes) === sniRuntimeConfigurationIdentity(adjustment.expectedRoutes)) {
+        sniRuntimeAdjustments.delete(key);
+      }
     }
+    if ((missingRequiredRoute || incompleteReport) && !attributable && !(expiredAdjustment && adjustmentReport)) recordInterruption(group, "missing-route", observedAt);
+    if (unplannedConfigurationChange) recordInterruption(group, "unattributed", observedAt);
     if (previous?.confirmedAt && observedAt - previous.confirmedAt >= FORWARD_GROUP_AGENT_HEALTH_FRESHNESS_TTL_MS) {
-      group.interruptedAt = Math.max(group.interruptedAt, previous.confirmedAt + FORWARD_GROUP_AGENT_HEALTH_FRESHNESS_TTL_MS);
+      recordInterruption(group, "expired", previous.confirmedAt + FORWARD_GROUP_AGENT_HEALTH_FRESHNESS_TTL_MS);
     }
-    if (group.appliedRoutes.length !== (reports || []).filter(report => Number(report.port) === group.splitterPort && normalizeSniValue(report.sni)).length) {
-      group.interruptedAt = observedAt;
+    if (group.lastConfigError) {
+      group.confirmedAt = 0;
+      recordInterruption(group, "apply-failure", observedAt);
     }
     group.appliedDomains.sort();
     group.appliedRuleIds.sort((left, right) => left - right);
     setBoundedMapValue(
       sniRuntimeStatusCache,
-      cacheKey(hostId, group.splitterPort),
+      key,
       group,
       SNI_RUNTIME_CACHE_MAX_SIZE,
     );
@@ -239,6 +376,9 @@ export function recordSniRuntimeApplyResult(input: {
     observedAt: 0,
     confirmedAt: 0,
     interruptedAt: 0,
+    interruptionReason: null,
+    interruptionConfiguration: "",
+    realFailureAt: 0,
   };
   const next: SniRuntimeGroupStatus = {
     ...current,
@@ -249,6 +389,7 @@ export function recordSniRuntimeApplyResult(input: {
     lastConfigError: input.success ? "" : String(input.message || "SNI 分流配置应用失败").trim().slice(0, 1000),
     ...(!input.success ? { confirmedAt: 0, interruptedAt: Number(input.observedAt || Date.now()) } : {}),
   };
+  if (!input.success) recordInterruption(next, "apply-failure", Number(input.observedAt || Date.now()));
   setBoundedMapValue(sniRuntimeStatusCache, key, next, SNI_RUNTIME_CACHE_MAX_SIZE);
 }
 

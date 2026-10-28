@@ -144,6 +144,7 @@ import { normalizeSniValue } from "./repositories/repositoryUtils";
 import { getSniRuleGroupKey, isSniEntryAgentVersionSupported } from "@shared/sni";
 import { acknowledgeSniRuntimeSession, beginSniRuntimeSession, pendingSniRuntimeSession, sniRuntimePreviouslyAppliedRuleIds, acceptSniHeartbeatProcess, isRetiredSniHeartbeatProcess, invalidateSniRuntimeConfirmation, recordSniRuntimeSnapshot, renewSniRuntimeConfirmation, sniRuntimeConfirmationBoundary, sniRouteContentMatches } from "./sniRuntimeObservability";
 import { reconcileSniChainRunningStateForHost } from "./sniRuntimeRunningState";
+import { recordForwardGroupHostRuntimeInterruption } from "./forwardGroupAdjustments";
 
 // DNS 解析缓存：ruleId → 主目标上次解析到的 IPv4 地址。
 // 备用出站策略里的域名由 Agent 的 TCP 拨号和健康检查动态解析。
@@ -1555,6 +1556,7 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
       res.json({ success: true, actions: [], nextInterval: 5, requestLocalState: true, reconciliationCoalesced: true, presenceSupported: true });
       return;
     }
+    if (recoveryTriggered) recordForwardGroupHostRuntimeInterruption(Number(host.id));
     const runtimeSessionAcknowledged = failoverSniHost && clocklessReport && acknowledgeSniRuntimeSession(Number(host.id), req.body?.agentLastReceivedHash);
     if (runtimeSessionAcknowledged) {
       // This body was created after receiving our unique session hash. Its

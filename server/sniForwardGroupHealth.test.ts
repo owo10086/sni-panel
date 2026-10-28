@@ -6,9 +6,14 @@ import path from "node:path";
 import test from "node:test";
 
 for (const [scenario, description] of [
-  ["member-release", "removed SNI group hosts stop receiving routes while roots and new entrance remain"],
-  ["member-release-ddns-error", "DNS failure preserves committed member release and old entrance cleanup"],
+  ["member-release", "removed SNI group hosts retain routes through the DNS switch and fixed TTL"],
+  ["member-release-ddns-error", "DNS failure retains the old SNI entrance until the original fallback deadline"],
   ["configuration", "SNI entrance selection checks all configurations and ignores destination results"],
+  ["adjustment-fault-apply", "an apply failure between configuration reports still requires SNI recovery observation"],
+  ["adjustment-fault-missing", "an unrelated missing SNI domain during an adjustment still requires recovery observation"],
+  ["adjustment-fault-restart", "an Agent restart during a SNI adjustment still requires recovery observation"],
+  ["adjustment-fault-reconnect", "an Agent reconnect during a SNI adjustment still requires recovery observation"],
+  ["adjustment-fault-expiry", "an expired SNI confirmation cannot gain an adjustment exemption"],
   ["windows", "SNI, China health and recovery windows advance independently through Agent reports"],
   ["lifecycle", "SNI confirmation expiry, reconnect, process restart and unchanged reports use current evidence"],
   ["ddns", "SNI DDNS reconciles renamed domains, retries failures and rejects obsolete provider responses"],

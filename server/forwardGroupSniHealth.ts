@@ -10,6 +10,8 @@ export type SniMemberHealthObservation = {
   confirmedAt?: number;
   interruptedAt?: number;
   expiresAt?: number;
+  adjustmentStartedAt?: number;
+  adjustmentDeadlineAt?: number;
   message: string;
 };
 
@@ -41,6 +43,11 @@ export function sniMemberHealthSummary(memberId: number) {
   return memberSummaries.get(memberId) || { selectionReady: false, healthMessage: "等待重新确认 SNI 分流运行状态" };
 }
 
+export function sniMemberAdjustmentAllowed(memberId: number, key: string, startedAt: number, recoverMs: number) {
+  const source = memberWindows.get(memberId)?.get(key);
+  return !source?.hadFailure || (source.healthy && source.healthyAt !== null && startedAt - source.healthyAt >= recoverMs);
+}
+
 export function evaluateSniMemberHealthWindows(input: {
   memberId: number;
   previouslyObserved: boolean;
@@ -55,12 +62,17 @@ export function evaluateSniMemberHealthWindows(input: {
     setBoundedMapValue(memberWindows, input.memberId, sources, 10_000);
   }
   const currentKeys = new Set(input.observations.map(observation => observation.key));
-  for (const key of sources.keys()) if (!currentKeys.has(key)) sources.delete(key);
   const results = input.observations.map(rawObservation => {
     let observation = rawObservation;
     let window = sources!.get(observation.key);
     if (!window) {
-      window = { healthy: false, hadFailure: input.previouslyObserved, failureAt: null, healthyAt: null, interruptedAt: 0, pendingAt: null };
+      // A replacement cannot erase an existing recovery constraint for this
+      // member/root rule. Its failure clock still belongs to its own replica.
+      const rootKey = observation.key.startsWith("rule:") ? observation.key.split(":").slice(0, 2).join(":") + ":" : null;
+      const priorFailure = rootKey && [...sources!].some(([key, source]) => key.startsWith(rootKey) && source.hadFailure
+        && (!source.healthy || source.healthyAt === null
+          || (observation.adjustmentStartedAt ?? input.now) - source.healthyAt < input.recoverMs));
+      window = { healthy: false, hadFailure: !!priorFailure || (input.previouslyObserved && observation.adjustmentStartedAt === undefined), failureAt: null, healthyAt: null, interruptedAt: 0, pendingAt: null };
       sources!.set(observation.key, window);
     }
     if (observation.pending && observation.pendingTtlMs) {
@@ -75,16 +87,30 @@ export function evaluateSniMemberHealthWindows(input: {
       window.hadFailure = true;
       window.interruptedAt = interruptedAt;
     }
+    const recoveryAlreadyCompleted = window.healthy && window.healthyAt !== null
+      && observation.adjustmentStartedAt !== undefined && observation.adjustmentStartedAt - window.healthyAt >= input.recoverMs;
+    const adjustment = observation.adjustmentStartedAt !== undefined && (!window.hadFailure || recoveryAlreadyCompleted)
+      && interruptedAt <= window.interruptedAt;
+    if (adjustment && recoveryAlreadyCompleted) window.hadFailure = false;
+    const adjusting = adjustment && input.now < (observation.adjustmentDeadlineAt ?? 0);
+    if (adjustment && !adjusting) {
+      window.hadFailure = true;
+      window.failureAt = observation.adjustmentStartedAt!;
+    }
     if (observation.healthy) {
       if (!window.healthy) window.healthyAt = Math.max(observation.confirmedAt || input.now, interruptedAt);
       window.healthy = true;
       window.failureAt = null;
+    } else if (adjusting) {
+      window.healthy = false;
+      window.healthyAt = null;
+      observation = { ...observation, pending: true, expiresAt: observation.adjustmentDeadlineAt };
     } else {
       if (!observation.pending || window.healthy || window.hadFailure) window.hadFailure = true;
       window.healthy = false;
       window.healthyAt = null;
       if (!observation.pending || window.failureAt || (window.hadFailure && !observation.pendingTtlMs)) {
-        window.failureAt = Math.min(window.failureAt || input.now, observation.failureAt || input.now);
+        window.failureAt = Math.min(window.failureAt || input.now, observation.failureAt || observation.adjustmentStartedAt || input.now);
       }
     }
     const failed = !observation.healthy && (observation.agentFinal
@@ -93,6 +119,7 @@ export function evaluateSniMemberHealthWindows(input: {
       || (window.healthyAt !== null && input.now - window.healthyAt >= input.recoverMs));
     return { observation, window, failed, recovered };
   });
+  for (const key of sources.keys()) if (!currentKeys.has(key)) sources.delete(key);
   const healthy = results.length > 0 && results.every(result => result.observation.healthy);
   const failedLongEnough = results.some(result => result.failed);
   const recoveredLongEnough = healthy && results.every(result => result.recovered);

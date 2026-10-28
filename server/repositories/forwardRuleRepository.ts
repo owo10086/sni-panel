@@ -15,6 +15,7 @@ import { dashboardSummaries } from "../backgroundSummaryCache";
 import { displayQueries } from "../displayQueryCache";
 import { assertRuleStock } from "./productStockRepository";
 import { replacePersonalRuleGroups, withPersonalRuleGroupLock } from "./ruleGroupRepository";
+import { recordForwardGroupRuleRuntimeFailure } from "../forwardGroupAdjustments";
 
 async function invalidateRuleDashboardSummaries(rule: any) {
   if (!rule) return;
@@ -1621,6 +1622,9 @@ export async function updateRuleRunningStatus(id: number, isRunning: boolean, ru
     return;
   }
   await db.update(forwardRules).set({ isRunning, ...(runtimeDiagnostic !== undefined ? {runtimeDiagnostic} : {}), updatedAt: nowDate() }).where(eq(forwardRules.id, id));
+  if (rule && !isRunning && String(runtimeDiagnostic || "").trim()) {
+    await afterDatabaseCommit(() => recordForwardGroupRuleRuntimeFailure(rule));
+  }
   if (rule && (!!rule.isRunning !== isRunning || (runtimeDiagnostic !== undefined && rule.runtimeDiagnostic !== runtimeDiagnostic))) {
     await invalidateRuleDashboardSummaries(rule);
   }

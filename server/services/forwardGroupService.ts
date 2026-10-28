@@ -300,6 +300,7 @@ async function updateForwardGroupFromInputUnlocked(id: number, input: ForwardGro
       await db.replaceForwardGroupMembers(id, normalized.members as any, {
         skipSync: true,
         deferRefresh: options.deferRefresh,
+        previousGroup: existing,
       });
     }
     if (shouldResetChinaHealth) await db.resetForwardGroupChinaHealth(id);
@@ -308,6 +309,14 @@ async function updateForwardGroupFromInputUnlocked(id: number, input: ForwardGro
   if (hasSniRules && String(existing.groupMode) === "failover"
     && (normalized.data.groupMode !== "failover" || normalized.data.groupType !== "host")) {
     throw new Error("承载 SNI 分流规则的转发组必须保持主机型转发组");
+  }
+  if (!enabledChanged && existing.groupType === "host" && existing.groupMode === "failover"
+    && normalized.data.groupType === "host" && normalized.data.groupMode === "failover") {
+    await db.commitForwardGroupMemberChange([id], () => persistConfiguration({ deferRefresh: true }),
+      { preserveRuntime: true, administratorAdjustment: true }, [
+        () => db.runForwardGroupFailover(id, { manual: true, skipRuleSync: true }),
+      ]);
+    return db.getForwardGroupById(id);
   }
   if (membersChanged && normalized.data.groupMode === "entry") {
     const groupIds = await db.getForwardGroupMemberUpdateIds(id);

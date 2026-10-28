@@ -33,7 +33,7 @@ import {
   reserveTunnelExitPort,
   usesSharedTunnelPrimaryListener,
 } from "../repositories/tunnelRepository";
-import { trafficBillingUserLockKey, withKeyedTaskLock, withTrafficBillingUserLock } from "../keyedTaskLock";
+import { withKeyedTaskLock, withTrafficBillingUserLock } from "../keyedTaskLock";
 import { mapWithConcurrency } from "../asyncPool";
 import { afterSniRuleWrite, withSniRuleWrite } from "../sniRuleWrite";
 import { reserveRuleCreateQuota, withRuleCreateQuotaLock, type RuleQuotaReservation } from "../ruleQuotaReservations";
@@ -931,7 +931,7 @@ async function assertExistingRuleWithinQuota(owner: { id: number; maxRules: numb
 }
 
 async function settleTrafficBillingForDeletedRule(rule: any) {
-  const billed = await withKeyedTaskLock(trafficBillingUserLockKey(rule.userId), async () => {
+  const billed = await withTrafficBillingUserLock(rule.userId, async () => {
     const billingResource = await db.findTrafficBillingResourceForRule(rule);
     const fallback = db.trafficBillingResourceCandidatesForRule(rule)[0];
     const resource = billingResource || fallback;
@@ -1070,18 +1070,28 @@ export async function deleteForwardRuleForActor(
       const warningHostIds = new Set<number>([Number(rule.hostId),
         ...(childRules as any[]).map((child: any) => Number(child.hostId)),
         ...await db.getForwardGroupRuleEntryHostIds(Number((rule as any).forwardGroupId || 0))]);
-      for (const child of childRules as any[]) {
-        collectBilling(await settleTrafficBillingForDeletedRule(child));
-        const childTunnelId = Number((child as any).tunnelId || 0);
-        if (childTunnelId > 0) {
-          const tunnel = await db.getTunnelById(childTunnelId);
-          await db.updateTunnel(childTunnelId, { isRunning: false } as any);
-          if (tunnel) await pushTunnelEndpointRefresh(tunnel, `${reasonPrefix}-group-deleted`);
+      const deleteTemplate = async () => {
+        for (const child of childRules as any[]) {
+          collectBilling(await settleTrafficBillingForDeletedRule(child));
+          const childTunnelId = Number((child as any).tunnelId || 0);
+          if (childTunnelId > 0) {
+            const tunnel = await db.getTunnelById(childTunnelId);
+            await db.updateTunnel(childTunnelId, { isRunning: false } as any);
+            if (tunnel) await pushTunnelEndpointRefresh(tunnel, `${reasonPrefix}-group-deleted`);
+          }
+          pushAgentRefresh(Number(child.hostId), `${reasonPrefix}-group-deleted`);
         }
-        pushAgentRefresh(Number(child.hostId), `${reasonPrefix}-group-deleted`);
-      }
-      await reconcileSharedTunnelPortsForRules(childRules as any[]);
-      collectBilling(await settleTrafficBillingForDeletedRule(rule));
+        await reconcileSharedTunnelPortsForRules(childRules as any[]);
+        collectBilling(await settleTrafficBillingForDeletedRule(rule));
+      };
+      const group = await db.getForwardGroupById(Number((rule as any).forwardGroupId));
+      if (group?.groupType === "host" && group.groupMode === "failover") {
+        // Billing precedes the database transaction; delivery callbacks run
+        // after releasing billing so endpoint refresh can safely settle usage.
+        await withDeferredDatabaseCommitCallbacks(() => withTrafficBillingUserLock(rule.userId,
+          () => db.withForwardGroupSyncTransaction(Number(group.id), deleteTemplate,
+            { preserveRuntime: true, administratorAdjustment: true })));
+      } else await deleteTemplate();
       await db.runForwardGroupFailover(Number((rule as any).forwardGroupId || 0));
       // Templates never run on an Agent, so they cannot receive a runtime stop ACK.
       // Their managed children remain pending until each Agent confirms removal.
@@ -1830,10 +1840,10 @@ async function createForwardRuleForContext(
       let id = 0;
       if (options.batch) {
         id = await createTemplateRule();
-      } else if (isForwardChain || isPortGroup || normalizedSni) {
+      } else if (isForwardChain || isPortGroup || normalizedSni || (group.groupType === "host" && group.groupMode === "failover")) {
         // Adding a template must not re-dispatch unchanged, healthy listeners
         // belonging to the existing chain. Runtime-field changes still apply.
-        id = await db.withForwardGroupSyncTransaction(forwardGroupId, createTemplateRule, { preserveRuntime: true });
+        id = await db.withForwardGroupSyncTransaction(forwardGroupId, createTemplateRule, { preserveRuntime: true, administratorAdjustment: true });
       } else {
         id = await createTemplateRule();
         await db.syncForwardGroupRules(forwardGroupId);
@@ -1924,7 +1934,7 @@ async function createRuleBatchForContext(ctx: CreateRuleContext, input: { rules:
         // Billing and quota queues precede the DB transaction. Ordinary
         // creation can use these same queues without a DB/queue deadlock.
         await withDeferredDatabaseCommitCallbacks(() => withTrafficBillingUserLock(userId, () => withRuleCreateQuotaLock(userId, () => groupId
-          ? db.withForwardGroupSyncTransaction(groupId, save, { preserveRuntime: true })
+          ? db.withForwardGroupSyncTransaction(groupId, save, { preserveRuntime: true, administratorAdjustment: true })
           : db.withDatabaseTransaction(save))));
       } catch (error) {
         if (error === noSuccessfulItems) return { results };
@@ -2561,7 +2571,7 @@ export const crudRulesRouter = router({
             await refreshPendingTemplateChildren(retiredChildren as any[], "forward-group-rule-converted");
           };
           if (normalizeSniValue((rule as any).sni) || nextSni) {
-            await db.withForwardGroupSyncTransaction(groupId, convertTemplate, { preserveRuntime: true });
+            await db.withForwardGroupSyncTransaction(groupId, convertTemplate, { preserveRuntime: true, administratorAdjustment: true });
           } else {
             await convertTemplate();
           }
@@ -2728,17 +2738,20 @@ export const crudRulesRouter = router({
           data.protocolBlockReason = null;
         }
         if (keyFieldChanged || groupChanged || data.isEnabled !== undefined) data.isRunning = false;
-        if (!groupChanged && (isForwardChain || isPortGroup || nextSni || normalizeSniValue((rule as any).sni))) {
+        const previousGroup = groupChanged ? await db.getForwardGroupById(groupId) : group;
+        const hostFailoverChange = (group.groupType === "host" && group.groupMode === "failover")
+          || (previousGroup?.groupType === "host" && previousGroup.groupMode === "failover");
+        if (!groupChanged && (isForwardChain || isPortGroup || nextSni || normalizeSniValue((rule as any).sni) || (group.groupType === "host" && group.groupMode === "failover"))) {
           await db.withForwardGroupSyncTransaction(
             activeGroupId,
             () => db.updateForwardRule(input.id, data),
-            { prioritizeTemplateRuleId: input.id, preserveRuntime: true },
+            { prioritizeTemplateRuleId: input.id, preserveRuntime: true, administratorAdjustment: true },
           );
-        } else if (groupChanged && (nextSni || normalizeSniValue((rule as any).sni))) {
+        } else if (groupChanged && (nextSni || normalizeSniValue((rule as any).sni) || hostFailoverChange)) {
           await db.withForwardGroupsSyncTransaction([groupId, activeGroupId], async () => {
             await markTemplateChildrenPendingDelete(input.id, "forward-group-rule-route-changed");
             await db.updateForwardRule(input.id, data);
-          }, { preserveRuntime: true, prioritizeTemplateRuleId: input.id });
+          }, { preserveRuntime: true, prioritizeTemplateRuleId: input.id, administratorAdjustment: true });
           await afterSniRuleWrite(() => db.runForwardGroupFailover(groupId));
         } else {
           if (groupChanged) await markTemplateChildrenPendingDelete(input.id, "forward-group-rule-route-changed");
@@ -2885,8 +2898,8 @@ export const crudRulesRouter = router({
           await db.updateForwardRule(input.id, data);
           await db.clearForwardRuleTunnelExits(input.id);
         };
-        if (nextSni || normalizeSniValue((rule as any).sni)) {
-          await db.withForwardGroupSyncTransaction(groupId, saveConvertedRule, { preserveRuntime: true });
+        if (nextSni || normalizeSniValue((rule as any).sni) || (group.groupType === "host" && group.groupMode === "failover")) {
+          await db.withForwardGroupSyncTransaction(groupId, saveConvertedRule, { preserveRuntime: true, administratorAdjustment: true });
         } else {
           await saveConvertedRule();
           await db.syncForwardGroupRules(groupId);
