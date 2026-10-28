@@ -23,6 +23,7 @@ import {
 } from "@/lib/supportTicketFiles";
 import DashboardLayout from "@/components/DashboardLayout";
 import DataSectionLoading from "@/components/DataSectionLoading";
+import { PersistentPagination, usePersistentPageRequest, useServerPagination } from "@/components/PersistentPagination";
 import { SupportTicketManagementSettings } from "@/components/SupportTicketManagementSettings";
 import {
   SupportTicketMessage,
@@ -1244,7 +1245,8 @@ function TicketList({
   onSettings: () => void;
 }) {
   const utils = trpc.useUtils();
-  const [page, setPage] = useState(1);
+  const pageRequest = usePersistentPageRequest(`forwardx.supportTickets.${admin ? "admin" : "user"}.page`, 20);
+  const { page, setPage, pageSize } = pageRequest;
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<TicketStatus | "all">("all");
   const [priority, setPriority] = useState<TicketPriority | "all">("all");
@@ -1257,6 +1259,7 @@ function TicketList({
   const list = trpc.supportTickets.list.useQuery(
     {
       page,
+      pageSize,
       search: debounced,
       status: status === "all" ? undefined : status,
       priority: priority === "all" ? undefined : priority,
@@ -1267,6 +1270,9 @@ function TicketList({
     },
     { refetchInterval: 30000 },
   );
+  const pagination = useServerPagination(list.data?.items ?? [], list.data?.total ?? 0, pageRequest, {
+    isReady: !!list.data && !list.isLoading && !list.isPlaceholderData,
+  });
   const summary = trpc.supportTickets.summary.useQuery(undefined, {
     refetchInterval: 30000,
   });
@@ -1284,12 +1290,10 @@ function TicketList({
   });
   useEffect(() => {
     setSelected([]);
-  }, [page, debounced, status, priority, category, assigned, unread]);
-  useEffect(() => {
-    const last = Math.max(1, Math.ceil((list.data?.total || 0) / 20));
-    if (list.data && page > last) setPage(last);
-  }, [list.data?.total, page]);
+  }, [page, pageSize, debounced, status, priority, category, assigned, unread]);
+  const bulkLimitExceeded = selected.length > 50;
   const doBulk = async (next: TicketStatus) => {
+    if (bulkLimitExceeded) return;
     const tickets =
       list.data?.items
         .filter((item) => selected.includes(item.id))
@@ -1462,7 +1466,7 @@ function TicketList({
               <Button
                 variant="outline"
                 size="sm"
-                disabled={!selected.length || bulk.isPending}
+                disabled={!selected.length || bulkLimitExceeded || bulk.isPending}
                 onClick={() => void doBulk("resolved")}
               >
                 {t("标记已解决")}
@@ -1470,11 +1474,12 @@ function TicketList({
               <Button
                 variant="outline"
                 size="sm"
-                disabled={!selected.length || bulk.isPending}
+                disabled={!selected.length || bulkLimitExceeded || bulk.isPending}
                 onClick={() => void doBulk("closed")}
               >
                 {t("批量关闭")}
               </Button>
+              {bulkLimitExceeded && <p className="w-full text-xs text-muted-foreground">{t("一次最多批量处理 50 个工单")}</p>}
             </div>
           )}
           {list.isLoading ? (
@@ -1561,34 +1566,7 @@ function TicketList({
               ))}
             </div>
           )}
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <span className="text-xs text-muted-foreground">
-              {t("共 {0} 个工单", [list.data?.total || 0])}
-            </span>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page <= 1 || list.isFetching}
-                onClick={() => setPage((v) => v - 1)}
-              >
-                {t("上一页")}
-              </Button>
-              <span className="whitespace-nowrap text-xs tabular-nums">
-                {page} / {Math.max(1, Math.ceil((list.data?.total || 0) / 20))}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={
-                  page * 20 >= (list.data?.total || 0) || list.isFetching
-                }
-                onClick={() => setPage((v) => v + 1)}
-              >
-                {t("下一页")}
-              </Button>
-            </div>
-          </div>
+          <PersistentPagination pagination={pagination} />
         </CardContent>
       </Card>
       {cannedOpen && <CannedReplies onClose={() => setCannedOpen(false)} />}

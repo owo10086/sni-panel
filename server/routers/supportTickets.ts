@@ -1,5 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
+import { MAX_PAGE_SIZE } from "../../shared/pagination";
 import { adminProcedure, protectedProcedure, router } from "../_core/trpc";
 import { appendPanelLog } from "../_core/panelLogger";
 import { withDatabaseTransaction } from "../dbRuntime";
@@ -80,6 +81,7 @@ export const supportTicketsRouter = router({
     .input(
       z.object({
         page: z.number().int().min(1).max(100000).default(1),
+        pageSize: z.number().int().min(1).max(MAX_PAGE_SIZE).default(20),
         search: z.string().trim().max(120).optional(),
         status: z.enum(TICKET_STATUSES).optional(),
         priority: z.enum(TICKET_PRIORITIES).optional(),

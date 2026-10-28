@@ -245,6 +245,7 @@ export async function listSupportTickets(
   actor: SupportActor,
   input: {
     page: number;
+    pageSize?: number;
     status?: TicketStatus;
     priority?: TicketPriority;
     category?: TicketCategory;
@@ -253,6 +254,7 @@ export async function listSupportTickets(
     unread?: boolean;
   },
 ) {
+  const pageSize = input.pageSize ?? 20;
   const clauses = [actor.role === "admin" ? "1=1" : `t.${q("userId")} = ?`];
   const params: unknown[] = actor.role === "admin" ? [] : [actor.id];
   for (const field of ["status", "priority", "category"] as const)
@@ -291,8 +293,8 @@ export async function listSupportTickets(
   const items = await queryRaw<
     SupportTicket & { ownerName: string; unread: number }
   >(
-    `SELECT t.*, COALESCE(u.${q("displayRemark")}, u.${q("name")}, u.${q("username")}, '') AS ${q("ownerName")}, CASE WHEN ${unread} THEN 1 ELSE 0 END AS unread ${from} ORDER BY t.${q("updatedAt")} DESC, t.id DESC LIMIT 20 OFFSET ?`,
-    [...values, (input.page - 1) * 20],
+    `SELECT t.*, COALESCE(u.${q("displayRemark")}, u.${q("name")}, u.${q("username")}, '') AS ${q("ownerName")}, CASE WHEN ${unread} THEN 1 ELSE 0 END AS unread ${from} ORDER BY t.${q("updatedAt")} DESC, t.id DESC LIMIT ? OFFSET ?`,
+    [...values, pageSize, (input.page - 1) * pageSize],
   );
   return {
     items: items.map((t) => ({
@@ -301,7 +303,7 @@ export async function listSupportTickets(
       unread: !!t.unread,
     })),
     total: Number(count.total),
-    pageSize: 20,
+    pageSize,
   };
 }
 

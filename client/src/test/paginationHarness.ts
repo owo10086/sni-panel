@@ -51,7 +51,7 @@ export function createPaginationHarness(storage = new Map<string, string>(), moc
       compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true },
     }).outputText;
     runInNewContext(source, {
-      exports: module.exports, module, window: { localStorage },
+      exports: module.exports, module, window: { localStorage }, setTimeout, clearTimeout, URLSearchParams,
       require(id: string) {
         if (id in mocks) return mocks[id];
         if (id === "react") return hooks;
