@@ -4,10 +4,11 @@
 
 ## [Unreleased]
 
-## [3.9.0] - 2026-10-28
+## [3.9.0] - 2026-10-29
 
 ### Features and improvements
 
+- Pagination for hosts, rules, tunnels, forward groups, plans, users, billing, affiliates, support tickets and operations lists offers 20, 50, 100, 200, 500 or 1000 rows per page, remembered per list in this browser; changing it returns to page 1 and clears the selection. List endpoints now accept up to 1000 rows per page. Lists that showed 12 rows now default to 20, and the rules page's previous 12/24/36/48 setting maps to 20 or 50. Large pages read status, traffic and owners in batches within existing endpoint limits; bulk ticket status (50), redemption-code deletion (500) and plan drag-sorting (100) are disabled with a hint above their limits.
 - Integrate upstream 2.3.290, 2.3.291 and 2.3.292 web, server, Agent and FXP changes, retaining local SNI, entry-health and DDNS decisions, quotas, billing, Docker coexistence and the committed group-handover fixes.
 - Add stepped bulk rule actions and background progress for enable, pause, restart, delete, copy and edit. Tasks continue across page changes and can stop work that has not started. Execution rechecks live sessions and permissions. A lost enqueue response looks up the original task; an unknown outcome asks the user to inspect rules without replaying writes.
 - Import port lists, ranges, per-line listening ports and exported TXT. Ordinary, SNI and mixed imports keep their single transaction, per-row savepoints, 500-row limit and centralized deployment. Cancellation does not split an active batch. Preserve select-current-page and clear-on-page-change on the main list, plus existing selection across pages in personal groups.
@@ -22,7 +23,7 @@
 
 - Source versions for the panel, Agent and ForwardX FXP runtime are `3.9.0`. A panel-only upgrade accepts legacy Agents until installation identity is bound. Socket collection, active retirement fencing and the LXC traffic fallback require the matching Agent/FXP update.
 - Background tasks live in the panel process and do not promise recovery or resumption after a restart. Replacing a signing key requires signing in again; valid strong keys are retained.
-- This delivery covers local source and validation. Production upgrades, tags and remote publishing are handled separately.
+- The unified release workflow checks the panel package, Agent, FXP, image and docs against the same commit; production upgrades are handled separately.
 
 ## [3.8.0] - 2026-10-25
 
