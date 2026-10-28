@@ -15,6 +15,7 @@ import { databasePoolSettingsForHostCount } from "./databasePoolSizing";
 import { databaseHealth } from "./databaseHealthState";
 import { dashboardSummaries, operationsSummaries } from "./backgroundSummaryCache";
 import { seamlessDatabaseOperation } from "./seamlessMigrationState";
+import { retryTransactionConflicts, type TransactionAttemptState } from "./transactionRetry";
 
 export type DatabaseKind = "mysql" | "sqlite" | "postgresql";
 export const MYSQL_MIN_VERSION = "8.0.13";
@@ -795,13 +796,23 @@ function deferCommittedCallbacks(callbacks: Array<() => Promise<void> | void>) {
   callbacks.length = 0;
 }
 
-export async function withDatabaseTransaction<T>(work: () => Promise<T>): Promise<T> {
-  return seamlessDatabaseOperation("BEGIN", () => reportDatabaseErrors(() => runDatabaseTransaction(work)));
+/** Opt-in retries replay the outer work; external effects belong in afterDatabaseCommit. */
+export async function withDatabaseTransaction<T>(work: () => Promise<T>, options: { retryConflicts?: boolean } = {}): Promise<T> {
+  return seamlessDatabaseOperation("BEGIN", () => reportDatabaseErrors(() => retryTransactionConflicts(
+    state => runDatabaseTransaction(work, state), options.retryConflicts,
+  )));
 }
 
 export class DatabaseSavepointRollbackError extends Error {
   constructor(cause: unknown) {
     super("无法撤回单条保存，已停止整批保存", { cause });
+  }
+}
+
+export class DatabaseTransactionRollbackError extends Error {
+  readonly code = "FORWARDX_WRITE_OUTCOME_UNKNOWN";
+  constructor(cause: unknown, readonly rollbackError: unknown) {
+    super("事务回滚未确认，请核对保存结果", { cause });
   }
 }
 
@@ -835,7 +846,8 @@ export async function withDatabaseSavepoint<T>(work: () => Promise<T>): Promise<
   return result;
 }
 
-async function runDatabaseTransaction<T>(work: () => Promise<T>): Promise<T> {
+async function runDatabaseTransaction<T>(work: () => Promise<T>, attempt: TransactionAttemptState): Promise<T> {
+  // Nested scopes share the outer transaction and never establish a retry boundary.
   if (transactionContext.getStore()) return work();
   if (!_db || !_kind) await connectDatabase();
   if (_kind === "mysql") {
@@ -844,21 +856,34 @@ async function runDatabaseTransaction<T>(work: () => Promise<T>): Promise<T> {
     const afterCommit: Array<() => Promise<void> | void> = [];
     const afterSettled: Array<() => Promise<void> | void> = [];
     let result: T;
+    let workStarted = false;
+    let commitStarted = false;
     try {
       try {
         await connection.beginTransaction();
+        workStarted = true;
         const db = drizzleMysql(reportingDatabaseClient(connection) as any) as Db;
         result = await transactionContext.run({ db, mysqlConnection: connection, afterCommit, afterSettled }, work);
+        commitStarted = true;
         await connection.commit();
         deferCommittedCallbacks(afterCommit);
       } catch (error) {
-        await connection.rollback().catch(() => undefined);
+        // A successful ROLLBACK after a failed COMMIT cannot prove that the
+        // original COMMIT did not already succeed on the server.
+        try {
+          await connection.rollback();
+          attempt.rolledBack = workStarted && !commitStarted;
+        } catch (rollbackError) {
+          if (workStarted) throw new DatabaseTransactionRollbackError(error, rollbackError);
+        }
         throw error;
       } finally {
-        connection.release();
+        try { connection.release(); }
+        catch (error) { attempt.rolledBack = false; throw error; }
       }
     } finally {
-      await runAfterSettledCallbacks(afterSettled);
+      try { await runAfterSettledCallbacks(afterSettled); }
+      catch (error) { attempt.rolledBack = false; throw error; }
     }
     await runAfterCommitCallbacks(afterCommit);
     return result;
@@ -869,21 +894,32 @@ async function runDatabaseTransaction<T>(work: () => Promise<T>): Promise<T> {
     const afterCommit: Array<() => Promise<void> | void> = [];
     const afterSettled: Array<() => Promise<void> | void> = [];
     let result: T;
+    let workStarted = false;
+    let commitStarted = false;
     try {
       try {
         await client.query("BEGIN");
+        workStarted = true;
         const db = drizzlePostgres(reportingDatabaseClient(client) as any) as Db;
         result = await transactionContext.run({ db, postgresClient: client, afterCommit, afterSettled }, work);
+        commitStarted = true;
         await client.query("COMMIT");
         deferCommittedCallbacks(afterCommit);
       } catch (error) {
-        await client.query("ROLLBACK").catch(() => undefined);
+        try {
+          await client.query("ROLLBACK");
+          attempt.rolledBack = workStarted && !commitStarted;
+        } catch (rollbackError) {
+          if (workStarted) throw new DatabaseTransactionRollbackError(error, rollbackError);
+        }
         throw error;
       } finally {
-        client.release();
+        try { client.release(); }
+        catch (error) { attempt.rolledBack = false; throw error; }
       }
     } finally {
-      await runAfterSettledCallbacks(afterSettled);
+      try { await runAfterSettledCallbacks(afterSettled); }
+      catch (error) { attempt.rolledBack = false; throw error; }
     }
     await runAfterCommitCallbacks(afterCommit);
     return result;
@@ -898,13 +934,18 @@ async function runDatabaseTransaction<T>(work: () => Promise<T>): Promise<T> {
     try {
       result = await withSqliteConnectionLock(sqlite, async () => {
         let transactionResult: T;
+        let workStarted = false;
         try {
           sqlite.exec("BEGIN IMMEDIATE");
+          workStarted = true;
           transactionResult = await transactionContext.run({ db, sqlite, afterCommit, afterSettled }, work);
           sqlite.exec("COMMIT");
           deferCommittedCallbacks(afterCommit);
         } catch (error) {
-          try { sqlite.exec("ROLLBACK"); } catch { /* transaction may already be closed */ }
+          try { sqlite.exec("ROLLBACK"); }
+          catch (rollbackError) {
+            if (workStarted) throw new DatabaseTransactionRollbackError(error, rollbackError);
+          }
           throw error;
         }
         return transactionResult;

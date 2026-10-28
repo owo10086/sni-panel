@@ -1,0 +1,4 @@
+interface:
+  display_name: "sni-flow"
+  short_description: "默认六步实施并提交，提交后独立点评；遇冲突等待，执行全部时按推荐继续"
+  default_prompt: "使用 $sni-flow 处理我指定的上游版本，默认完成六步，实施提交后做提交点评；遇到冲突或功能取舍时等我，只有我说“执行全部”时按推荐处理并继续完成。"

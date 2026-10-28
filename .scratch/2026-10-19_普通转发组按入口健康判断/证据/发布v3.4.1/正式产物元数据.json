@@ -1,0 +1,25 @@
+{
+  "total_count": 1,
+  "artifacts": [
+    {
+      "id": 12196745219,
+      "node_id": "MDg6QXJ0aWZhY3QxMjE5Njc0NTIxOQ==",
+      "name": "forwardx-panel-bundle",
+      "size_in_bytes": 47958460,
+      "url": "https://api.github.com/repos/owo10086/sni-panel/actions/artifacts/12196745219",
+      "archive_download_url": "https://api.github.com/repos/owo10086/sni-panel/actions/artifacts/12196745219/zip",
+      "expired": false,
+      "digest": "sha256:2a058b24e3bf883b63a4b5794a93314f8f82b39704062a27b7b0e00309eedf2f",
+      "created_at": "2026-10-19T14:52:49Z",
+      "updated_at": "2026-10-19T14:52:49Z",
+      "expires_at": "2027-01-17T14:43:34Z",
+      "workflow_run": {
+        "id": 39269318538,
+        "repository_id": 1366816469,
+        "head_repository_id": 1366816469,
+        "head_branch": "v3.4.1",
+        "head_sha": "51167e4a95aa8b9e7810443a50b80462ef8b4e96"
+      }
+    }
+  ]
+}

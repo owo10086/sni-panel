@@ -25,7 +25,7 @@ test("resolves provider-specific AI settings and preserves legacy DeepSeek value
   assert.equal(buildAiChatCompletionsUrl("https://legacy.example/chat/completions"), "https://legacy.example/chat/completions");
 });
 
-test("clearing an AI API key removes provider storage and disables AI", () => {
+test("AI settings retain custom models through refresh and clear provider credentials", () => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), "forwardx-ai-settings-"));
   const databasePath = path.join(directory, "settings.db");
   const script = String.raw`
@@ -69,6 +69,37 @@ test("clearing an AI API key removes provider storage and disables AI", () => {
       });
       assert.equal(await db.getSetting("deepseekApiKeySiliconflow"), null);
       assert.equal(await db.getSetting("deepseekAiEnabled"), "false");
+
+      const withoutKey = await caller.listAiModels({ provider: "siliconflow" });
+      assert.equal(withoutKey.configured, false);
+      assert.deepEqual(withoutKey.models, []);
+      await caller.updateSettings({ deepseek: { provider: "deepseek", enabled: true,
+        apiKey: "model-list-secret", model: "custom/private-model" } });
+      const saved = await caller.getSettings();
+      assert.equal(saved.deepseek.model, "custom/private-model");
+      assert.equal(saved.deepseek.providers.deepseek.model, "custom/private-model");
+      assert.ok(!JSON.stringify(saved).includes("model-list-secret"));
+      const originalFetch = globalThis.fetch;
+      let calls = 0;
+      globalThis.fetch = async (url, options) => {
+        calls++;
+        assert.equal(String(url), "https://api.deepseek.com/models");
+        assert.equal(options.headers.Authorization, "Bearer model-list-secret");
+        assert.ok(options.signal);
+        return new Response(JSON.stringify({ data: [{ id: "deepseek-reasoner" }, { id: "deepseek-chat" }] }), { status: 200 });
+      };
+      try {
+        const listed = await caller.listAiModels({ provider: "deepseek", chatOnly: true });
+        assert.equal(listed.error, "");
+        assert.deepEqual(listed.models.map(model => model.id), ["deepseek-chat", "deepseek-reasoner"]);
+        assert.ok(!JSON.stringify(listed).includes("model-list-secret"));
+        assert.equal((await caller.getSettings()).deepseek.model, "custom/private-model", "refresh never replaces the saved custom selection");
+        globalThis.fetch = async () => new Response("unauthorized", { status: 401 });
+        const failed = await caller.listAiModels({ provider: "deepseek" });
+        assert.deepEqual(failed.models, []);
+        assert.match(failed.error, /401/);
+        assert.equal(calls, 1);
+      } finally { globalThis.fetch = originalFetch; }
 
       await db.setSettings({
         deepseekProvider: "deepseek",

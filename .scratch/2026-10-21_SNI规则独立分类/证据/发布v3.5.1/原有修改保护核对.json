@@ -1,0 +1,26 @@
+[
+  {
+    "file": ".gitignore",
+    "unchanged": true
+  },
+  {
+    "file": ".scratch/2026-10-08_合并上游v2.3.282/spec.md",
+    "unchanged": true
+  },
+  {
+    "file": ".scratch/2026-10-17_合并上游v2.3.283/284接续记录.md",
+    "unchanged": true
+  },
+  {
+    "file": "AGENTS.md",
+    "unchanged": true
+  },
+  {
+    "file": "CONTEXT.md",
+    "unchanged": true
+  },
+  {
+    "file": "docs/adr/0008-host-failover-groups-use-entry-health.md",
+    "unchanged": true
+  }
+]

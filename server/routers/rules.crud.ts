@@ -52,6 +52,7 @@ import {
   type SniEntryPortState,
 } from "../sniEntryPort";
 import { assertSniEntryAgentVersions } from "../sniEntryPortOverview";
+import { RuleBatchSaveError } from "../ruleBatchSaveError";
 
 import { resolveRuleOperationOwner } from "../ruleOperationOwner";
 import { personalRuleGroupIdsSchema } from "../../shared/ruleGroups";
@@ -1120,7 +1121,7 @@ export async function toggleForwardRuleForActor(
   actor: { id: number; role: string },
   ruleId: number,
   isEnabled: boolean,
-  options: { reasonPrefix?: string } = {},
+  options: { reasonPrefix?: string; restartOnly?: boolean } = {},
 ) {
   return withKeyedTaskLock(`rule:${ruleId}`, () => withSniRuleWrite(ruleId, {}, async () => {
     let sourcePortReservation: HostPortReservation | null = null;
@@ -1132,6 +1133,8 @@ export async function toggleForwardRuleForActor(
       if (actor.role !== "admin" && rule.userId !== actor.id) throw new Error("无权操作此规则");
       assertRuleWritable(actor, rule);
       if ((rule as any).forwardGroupRuleId) throw new Error("转发组成员规则由系统维护，不能直接开关");
+      // Read under the rule lock so a concurrent pause cannot be undone.
+      if (options.restartOnly && !dbBool(rule.isEnabled)) return { success: true, rule, skipped: true };
       // Administrators may stop forwarding after access is revoked. Enabling
       // still validates the saved owner's account, resource and plan limits.
       const savedOwner = isEnabled ? await db.getUserById(Number(rule.userId)) : null;
@@ -1230,6 +1233,12 @@ export async function toggleForwardRuleForActor(
           await db.syncForwardGroupRules(templateGroupId);
         }
         await afterSniRuleWrite(() => db.runForwardGroupFailover(Number((rule as any).forwardGroupId)));
+        if (options.restartOnly) {
+          const children = (await db.getForwardGroupChildRulesForTemplate(ruleId))
+            .filter((child: any) => dbBool(child.isEnabled) && !dbBool(child.pendingDelete));
+          await db.markForwardRulesNotRunning(children.map((child: any) => Number(child.id)));
+          await refreshPendingTemplateChildren(children, "forward-rule-restarted");
+        }
         for (const entryHostId of await db.getForwardGroupRuleEntryHostIds(Number((rule as any).forwardGroupId))) {
           await refreshRulePortWarningsForHost(entryHostId);
         }
@@ -1243,7 +1252,6 @@ export async function toggleForwardRuleForActor(
       const reasonPrefix = String(options.reasonPrefix || "forward-rule").trim() || "forward-rule";
       if ((rule as any).tunnelId) {
         toggleTunnelForRule = await db.getTunnelById((rule as any).tunnelId);
-        await db.updateTunnel((rule as any).tunnelId, { isRunning: false } as any);
       }
       if (isEnabled) {
         let directTunnelSniState: DirectTunnelSniEntryPortState | null = null;
@@ -1331,6 +1339,7 @@ export async function toggleForwardRuleForActor(
       } else {
         await db.toggleForwardRule(ruleId, false);
       }
+      if (toggleTunnelForRule) await db.updateTunnel((rule as any).tunnelId, { isRunning: false } as any);
       releaseHostPortReservations(directTunnelSniReservations);
       await reconcileSharedTunnelRulePorts(toggleTunnelForRule);
       if (toggleTunnelForRule) await pushTunnelEndpointRefresh(toggleTunnelForRule, `${reasonPrefix}-toggled`);
@@ -1938,7 +1947,10 @@ async function createRuleBatchForContext(ctx: CreateRuleContext, input: { rules:
           : db.withDatabaseTransaction(save))));
       } catch (error) {
         if (error === noSuccessfulItems) return { results };
-        if (!committed) throw error;
+        if (!committed) throw new RuleBatchSaveError(input.rules.map((_, index) => {
+          const result = results[index];
+          return result?.status === "rejected" ? result.reason : undefined;
+        }), error);
         console.warn("[RuleImport] Rules saved; post-commit refresh failed", error);
       }
       const afterSave = async (work: () => Promise<unknown>) => {
@@ -3432,5 +3444,10 @@ export const crudRulesRouter = router({
     }),
   toggle: protectedProcedure
     .input(z.object({ id: z.number(), isEnabled: z.boolean() }))
-    .mutation(async ({ input, ctx }) => toggleForwardRuleForActor(ctx.user, input.id, input.isEnabled))
+    .mutation(async ({ input, ctx }) => toggleForwardRuleForActor(ctx.user, input.id, input.isEnabled)),
+  restart: protectedProcedure
+    .input(z.object({ id: z.number().int().positive() }))
+    .mutation(({ input, ctx }) => toggleForwardRuleForActor(ctx.user, input.id, true, {
+      restartOnly: true, reasonPrefix: "forward-rule-restart",
+    }))
 });

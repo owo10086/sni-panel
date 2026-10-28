@@ -42,3 +42,19 @@ test("support bundle completes immediately for offline Agents", async () => {
   assert.ok(status?.download?.content.includes("forwardx-support-bundle-v1"));
   assert.ok(!status?.download?.content.includes("hidden"));
 });
+
+test("support download includes retained panel archives and redacts their credentials", async () => {
+  const { appendJsonLog, flushJsonLogWrites } = await import("./logFileStore");
+  const file = path.join(process.env.FORWARDX_LOG_DIR!, "panel.jsonl");
+  const retained = new Date();retained.setHours(0, 0, 0, 0);retained.setDate(retained.getDate() - 2);
+  const expired = new Date(retained);expired.setDate(expired.getDate() - 1);
+  appendJsonLog(file, { id: "retained", createdAt: retained.toISOString(), level: "warn", message: "retained-diagnostic token=private-test-token" });
+  appendJsonLog(file, { id: "expired", createdAt: expired.toISOString(), level: "warn", message: "expired-diagnostic" });
+  await flushJsonLogWrites(file);
+  const task = createSupportBundleTask([]);
+  const status = await getSupportBundleTask(task.taskId);
+  assert.equal(status?.complete, true);
+  assert.ok(status?.download?.content.includes("retained-diagnostic"));
+  assert.ok(!status?.download?.content.includes("expired-diagnostic"));
+  assert.ok(!status?.download?.content.includes("private-test-token"));
+});

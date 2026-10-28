@@ -1,3 +1,4 @@
+import type { PersonalRuleGroupChangeFilter } from "../../shared/ruleGroups";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { forwardGroupMembers, forwardGroups, forwardRuleTunnelExits, forwardRules, InsertForwardRule, tunnels, ruleGroupMembers } from "../../drizzle/schema";
 import { afterDatabaseCommit, isDatabaseTransactionActive, withDatabaseTransaction, executeRaw, getDatabaseKind, getDb, insertAndGetId, nowDate } from "../dbRuntime";
@@ -121,6 +122,7 @@ export type ForwardRuleListQuery = PageRequest & {
   includeSniInAll?: boolean;
   personalGroupId?: number | null;
   personalGroupOwnerId?: number;
+  personalGroupChange?: PersonalRuleGroupChangeFilter;
   /** Root resources whose related metadata may participate in user search. */
   searchVisibleHostIds?: number[];
   searchVisibleTunnelIds?: number[];
@@ -334,6 +336,27 @@ function buildForwardRuleSqlFilter(
       conditions.push((input.personalGroupId === 0 ? "NOT EXISTS (" : "EXISTS (") + membership + (input.personalGroupId === 0 ? ")" : " AND " + ruleColumn("pm", "groupId") + " = ?)") );
       params.push(personalOwner);
       if (input.personalGroupId !== 0) params.push(input.personalGroupId);
+    }
+  }
+
+  if (input.personalGroupChange) {
+    const personalOwner = Number(input.personalGroupOwnerId || 0);
+    const groupIds = normalizeForwardRuleIds(input.personalGroupChange.groupIds);
+    if (personalOwner <= 0 || !groupIds.length) conditions.push("1 = 0");
+    else {
+      // Apply eligibility before pagination so sparse memberships do not
+      // produce empty pages or inaccurate totals. Scope both sides to self.
+      conditions.push(ruleColumn("r", "userId") + " = ?");
+      params.push(personalOwner);
+      const selected = inList(groupIds);
+      const membership = " FROM " + quoteIdentifier("rule_group_members") + " pm INNER JOIN " + quoteIdentifier("rule_groups") + " pg ON " + ruleColumn("pg", "id") + " = " + ruleColumn("pm", "groupId") + " AND " + ruleColumn("pg", "userId") + " = " + ruleColumn("pm", "userId") + " WHERE " + ruleColumn("pm", "ruleId") + " = " + ruleColumn("r", "id") + " AND " + ruleColumn("pm", "userId") + " = ? AND " + ruleColumn("pm", "groupId") + " IN " + selected.sql;
+      if (input.personalGroupChange.mode === "remove") {
+        conditions.push("EXISTS (SELECT 1" + membership + ")");
+        params.push(personalOwner, ...selected.params);
+      } else {
+        conditions.push("(SELECT COUNT(DISTINCT " + ruleColumn("pm", "groupId") + ")" + membership + ") < ?");
+        params.push(personalOwner, ...selected.params, groupIds.length);
+      }
     }
   }
 
@@ -1510,6 +1533,7 @@ async function finalizeStoppedForwardRuleDelete(id: number, userId: number) {
   if (retained.length) return false;
   await db.delete(ruleGroupMembers).where(eq(ruleGroupMembers.ruleId, id));
   await db.delete(forwardRuleTunnelExits).where(eq(forwardRuleTunnelExits.ruleId, id));
+  await executeRaw(`DELETE FROM ${quoteIdentifier("resource_traffic_baselines")} WHERE ${quoteIdentifier("ruleId")} = ?`, [id]);
   await db.update(forwardGroupMembers).set({
     ruleId: null,
     updatedAt: nowDate(),

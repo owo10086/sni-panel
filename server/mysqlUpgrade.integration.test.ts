@@ -3,6 +3,7 @@ import { randomBytes } from "node:crypto";
 import test from "node:test";
 import mysql, { type RowDataPacket } from "mysql2/promise";
 import { MYSQL_COMPATIBILITY_FLAGS } from "./mysqlCompatibility";
+import "./databaseUpgrade.compatibility.integration.test";
 
 // Opt-in only. Never migrate or clear the database named in the supplied URL:
 // all work happens in a unique test database created and dropped by this test.

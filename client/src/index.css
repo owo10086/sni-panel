@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "./styles/globe.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -587,6 +588,26 @@ html:not(.capacitor-native) [data-mobile-sidebar="true"] {
   box-sizing: border-box;
   padding-top: var(--forwardx-safe-area-top);
   padding-bottom: var(--forwardx-safe-area-bottom);
+}
+
+/* Keep dialogs inside system bars, including edge-to-edge native WebViews.
+   Flex shrinking respects each panel's own height limit and the usable viewport. */
+.dialog-positioner {
+  --dialog-edge-gap: 0.75rem;
+  padding-top: max(var(--dialog-edge-gap), var(--forwardx-safe-area-top));
+  padding-bottom: max(var(--dialog-edge-gap), var(--forwardx-safe-area-bottom));
+  padding-left: max(var(--dialog-edge-gap), var(--safe-area-inset-left, env(safe-area-inset-left, 0px)));
+  padding-right: max(var(--dialog-edge-gap), var(--safe-area-inset-right, env(safe-area-inset-right, 0px)));
+}
+
+.dialog-positioner > .dialog-panel {
+  flex-shrink: 1;
+}
+
+@media (min-width: 640px) {
+  .dialog-positioner {
+    --dialog-edge-gap: 1.5rem;
+  }
 }
 
 /* Unified scrollbar style and gutter to avoid text overlap with right-side bars */

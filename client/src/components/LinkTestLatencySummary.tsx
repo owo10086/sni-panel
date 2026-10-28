@@ -4,6 +4,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { countryCodeToEmoji, type LinkTestNodeMeta } from "@/lib/linkTestNodeMeta";
 import { cn } from "@/lib/utils";
 import { useEffect, useMemo, useRef, type ReactNode } from "react";
+import { Loader2 } from "lucide-react";
 
 export type LinkTestDetail = {
   success: boolean;
@@ -129,9 +130,27 @@ export function hasPendingLinkTestDetails(parsed: ParsedLinkTestMessage | null |
   return (parsed?.details || []).some((detail) => detail.pending === true);
 }
 
-export function formatLinkTestRoute(detail: LinkTestDetail) {
+function rawLinkTestRoute(detail: LinkTestDetail) {
   const route = String(detail.routeLabel || detail.hopLabel || translateText("链路")).trim();
   return route.replace(/^第\s*\d+\s*跳\s*/, "");
+}
+
+function generatedTargetLabel(detail: LinkTestDetail) {
+  // Persisted tunnel results carry a generated target label. Translate that
+  // endpoint at display time, while retaining host names and stored results.
+  const target = /^出口 -> (目标 .+)$/.exec(String(detail.hopLabel || ""));
+  return target && positiveHostId(detail.toHostId) === null && rawLinkTestRoute(detail).endsWith(`-> ${target[1]}`)
+    ? target[1] : null;
+}
+
+function translateGeneratedTargetLabel(label: string) {
+  return translateText("目标 {0}", [label.slice("目标 ".length)]);
+}
+
+export function formatLinkTestRoute(detail: LinkTestDetail) {
+  const route = rawLinkTestRoute(detail);
+  const target = generatedTargetLabel(detail);
+  return target ? route.slice(0, -target.length) + translateGeneratedTargetLabel(target) : route;
 }
 
 function hasLatencyValue(detail: LinkTestDetail) {
@@ -226,7 +245,7 @@ function isSelfLoopEndpoint(from: string, to: string) {
 }
 
 function parseRouteEndpoints(detail: LinkTestDetail, index: number) {
-  const route = formatLinkTestRoute(detail).replace(/\s+/g, " ").trim();
+  const route = rawLinkTestRoute(detail).replace(/\s+/g, " ").trim();
   const arrowParts = route.split(/\s*(?:->|→|=>|至|到)\s*/).map((item) => item.trim()).filter(Boolean);
   if (arrowParts.length >= 2) {
     return {
@@ -715,9 +734,13 @@ export function LinkTestProbeView({
   wrapDesktopRows?: boolean;
   className?: string;
 }) {
+  const targetDisplayLabels = new Map((parsed.details || []).flatMap(detail => {
+    const target = generatedTargetLabel(detail);
+    return target ? [[target, translateGeneratedTargetLabel(target)] as const] : [];
+  }));
   const effectivePlannedSegments = useMemo(() => {
-    if (!ignorePlannedResultsWhenDetailsPresent || (parsed.details || []).length === 0) return plannedSegments;
-    const backedResultIndex = currentTotalBacksPlannedResult(parsed, plannedSegments || []);
+    if (!ignorePlannedResultsWhenDetailsPresent || (!isTesting && (parsed.details || []).length === 0)) return plannedSegments;
+    const backedResultIndex = isTesting ? -1 : currentTotalBacksPlannedResult(parsed, plannedSegments || []);
     return plannedSegments?.map((segment, index) => index === backedResultIndex
       ? segment
       : {
@@ -727,7 +750,7 @@ export function LinkTestProbeView({
         message: parsed.tunnelProbeTimedOut ? translateText("探测超时") : null,
         pending: false,
       });
-  }, [ignorePlannedResultsWhenDetailsPresent, parsed, plannedSegments]);
+  }, [ignorePlannedResultsWhenDetailsPresent, isTesting, parsed, plannedSegments]);
   const rawSegments = useMemo(
     () => buildProbeSegments({ parsed, fallbackLatencyMs, isSuccess, isTesting, sourceLabel, targetLabel, nodeMeta, plannedSegments: effectivePlannedSegments }),
     [effectivePlannedSegments, fallbackLatencyMs, isSuccess, isTesting, nodeMeta, parsed, sourceLabel, targetLabel],
@@ -811,7 +834,13 @@ export function LinkTestProbeView({
       testing,
       idle,
       ok,
-      label: translateText(label),
+      label: testing ? (
+        <span className="inline-flex items-center gap-1">
+          <Loader2 aria-hidden="true" className="h-3 w-3 shrink-0 animate-spin motion-reduce:animate-none" />
+          {translateText(label)}
+        </span>
+      ) : translateText(label),
+      labelText: translateText(label),
       lineClass: testing ? "bg-primary/70" : idle ? "bg-border" : ok ? "bg-emerald-500/70" : "bg-destructive/70",
       textClass: testing ? "text-primary" : idle ? "text-muted-foreground" : ok ? "text-emerald-600 dark:text-emerald-400" : "text-destructive",
       badgeClass: testing
@@ -852,8 +881,9 @@ export function LinkTestProbeView({
       </>
     );
   };
-  const renderNode = (label: string, segmentMeta?: LinkTestNodeMeta, options?: { wide?: boolean }) => {
+  const renderNode = (label: string, segmentMeta?: LinkTestNodeMeta, options?: { wide?: boolean; target?: boolean }) => {
     const meta = segmentMeta || lookupNodeMeta(nodeMeta, label);
+    const displayLabel = (options?.target && !meta?.label && targetDisplayLabels.get(label)) || label;
     const region = String(meta?.region || "").trim();
     const address = String(meta?.address || "").trim();
     const tooltipContent = lookupNodeTooltipContent(nodeTooltips, label, meta);
@@ -885,8 +915,8 @@ export function LinkTestProbeView({
         )}
         tabIndex={tooltipContent ? 0 : undefined}
       >
-        <span className="block truncate" title={[label, address, region].filter(Boolean).join(" / ") || label}>
-          {shortNodeLabel(label, labelMaxLength)}
+        <span className="block truncate" title={[displayLabel, address, region].filter(Boolean).join(" / ") || displayLabel}>
+          {shortNodeLabel(displayLabel, labelMaxLength)}
         </span>
       </div>
     );
@@ -906,8 +936,9 @@ export function LinkTestProbeView({
       </div>
     );
   };
-  const renderMobileNode = (label: string, segmentMeta?: LinkTestNodeMeta) => {
+  const renderMobileNode = (label: string, segmentMeta?: LinkTestNodeMeta, options?: { target?: boolean }) => {
     const meta = segmentMeta || lookupNodeMeta(nodeMeta, label);
+    const displayLabel = (options?.target && !meta?.label && targetDisplayLabels.get(label)) || label;
     const region = String(meta?.region || "").trim();
     const address = String(meta?.address || "").trim();
     const tooltipContent = lookupNodeTooltipContent(nodeTooltips, label, meta);
@@ -917,11 +948,11 @@ export function LinkTestProbeView({
           "mx-auto flex w-full max-w-[18rem] items-center justify-center gap-2 rounded-md border border-border/70 bg-background px-3 py-2 text-sm font-medium shadow-sm",
           tooltipContent ? "cursor-help focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50" : "",
         )}
-        title={[label, address, region].filter(Boolean).join(" / ") || label}
+        title={[displayLabel, address, region].filter(Boolean).join(" / ") || displayLabel}
         tabIndex={tooltipContent ? 0 : undefined}
       >
         <span className="flex h-4 w-6 shrink-0 items-center justify-center">{renderFlag(meta)}</span>
-        <span className="min-w-0 truncate">{shortNodeLabel(label, 22)}</span>
+        <span className="min-w-0 truncate">{shortNodeLabel(displayLabel, 22)}</span>
       </div>
     );
     if (!tooltipContent) return nodeCard;
@@ -960,13 +991,13 @@ export function LinkTestProbeView({
             {label || (ok ? "--" : translateText("失败"))}
           </span>
         </div>
-        {mobile ? renderMobileNode(segment.to, segment.toMeta) : renderNode(segment.to, segment.toMeta)}
+        {mobile ? renderMobileNode(segment.to, segment.toMeta, { target: !segment.toHostId }) : renderNode(segment.to, segment.toMeta, { target: !segment.toHostId })}
       </div>
     );
   };
 
   const renderDesktopConnector = (segment: ProbeSegment, key: string, widthClass = "min-w-[88px] flex-1", showLabel = true) => {
-    const { testing, label, lineClass, badgeClass } = getSegmentState(segment);
+    const { testing, label, labelText, lineClass, badgeClass } = getSegmentState(segment);
     return (
       <div key={key} className={cn("relative mt-[45px] h-px bg-border", widthClass)}>
         <div
@@ -982,7 +1013,7 @@ export function LinkTestProbeView({
               "absolute left-1/2 top-[-2rem] max-w-[8rem] -translate-x-1/2 truncate rounded-full border bg-background px-2 py-0.5 text-center text-xs font-semibold leading-tight tabular-nums shadow-sm",
               badgeClass,
             )}
-            title={label || undefined}
+            title={labelText || undefined}
           >
             {label || "\u00a0"}
           </span>
@@ -1024,7 +1055,7 @@ export function LinkTestProbeView({
           <div key={`${keyPrefix}-${segment.from}-${segment.to}-${index}`}>
             {firstNode ? renderMobileNode(segment.from, segment.fromMeta) : null}
             {renderMobileConnector(segment, `${keyPrefix}-line-${index}`)}
-            {renderMobileNode(segment.to, segment.toMeta)}
+            {renderMobileNode(segment.to, segment.toMeta, { target: !segment.toHostId })}
           </div>
         );
       })}
@@ -1092,7 +1123,7 @@ export function LinkTestProbeView({
         <div className="space-y-0 py-2 sm:hidden">
           {renderEntryGroupNode(entrySegments, true)}
           {renderMobileConnector(entryConnectorSegment, "mobile-entry-group-line", false)}
-          {renderMobileNode(convergenceLabel, convergenceMeta)}
+          {renderMobileNode(convergenceLabel, convergenceMeta, { target: !entrySegments[0]?.toHostId })}
           {restSegments.length > 0 ? renderMobileLinearSegments(restSegments, "mobile-converged-rest", false) : null}
         </div>
       );
@@ -1102,13 +1133,13 @@ export function LinkTestProbeView({
         <div className="mx-auto flex min-w-full w-max items-start justify-center px-2 py-7">
           {renderEntryGroupNode(entrySegments)}
           {renderDesktopConnector(entryConnectorSegment, "entry-group-line", "w-[96px] shrink-0 flex-none", false)}
-          {renderNode(convergenceLabel, convergenceMeta, { wide: true })}
+          {renderNode(convergenceLabel, convergenceMeta, { wide: true, target: !entrySegments[0]?.toHostId })}
           {restSegments.length > 0 ? (
             <div className="flex items-start">
               {restSegments.map((segment, index) => (
                 <div key={`rest-${segment.from}-${segment.to}-${index}`} className="contents">
                   {renderDesktopConnector(segment, `rest-line-${index}`, index === 0 ? "w-[96px] shrink-0 flex-none" : "min-w-[88px] flex-1")}
-                  {renderNode(segment.to, segment.toMeta, { wide: true })}
+                  {renderNode(segment.to, segment.toMeta, { wide: true, target: !segment.toHostId })}
                 </div>
               ))}
             </div>
@@ -1152,7 +1183,7 @@ export function LinkTestProbeView({
                       {label || (ok ? "--" : translateText("失败"))}
                     </span>
                   </div>
-                  {renderMobileNode(segment.to, segment.toMeta)}
+                  {renderMobileNode(segment.to, segment.toMeta, { target: !segment.toHostId })}
                 </div>
               );
             })}
@@ -1228,7 +1259,7 @@ export function LinkTestProbeView({
                               {label || "\u00a0"}
                             </span>
                           </div>
-                          {renderNode(segment.to, segment.toMeta)}
+                          {renderNode(segment.to, segment.toMeta, { target: !segment.toHostId })}
                         </div>
                       );
                     })}

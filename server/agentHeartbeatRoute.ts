@@ -1,4 +1,6 @@
 import { Router, Request, Response } from "express";
+import { isDatabaseBusyError } from "./databaseHealthState";
+import { SERVICE_BUSY_MESSAGE } from "../shared/databaseHealth";
 import { parseHostLoadAverage } from "../shared/hostLoad";
 import { observeHostResources } from "./operationsMonitor";
 import * as db from "./db";
@@ -38,6 +40,7 @@ import { recordIpSwitchAgentCapability, hasQueuedIpSwitchAgentTasks, takeIpSwitc
 import { hasQueuedPluginAgentTasks, takePluginAgentTasks } from "./pluginAgentTasks";
 import { getAgentPluginInventory, updateAgentPluginInventory } from "./agentPluginInventory";
 import { updateAgentToolInventory } from "./agentToolInventory";
+import { recordAgentConnectionStats } from "./agentConnectionStats";
 import { getAgentHostFromRequest, getAgentPresenceHostFromRequest, getResolvedAgentToken } from "./agentAuth";
 import { normalizeAgentText, normalizeNetworkInterface } from "./agentInputValidation";
 import { pruneMapEntries, setBoundedMapValue } from "./boundedCache";
@@ -1444,6 +1447,19 @@ export function buildNginxRuntimeRetirementPlan() {
   };
 }
 
+let lastAgentDatabaseBusyLogAt = 0;
+function respondAgentDatabaseBusy(error: unknown, res: Response) {
+  if (!isDatabaseBusyError(error)) return false;
+  const now = Date.now();
+  if (now - lastAgentDatabaseBusyLogAt >= 60_000) {
+    lastAgentDatabaseBusyLogAt = now;
+    console.warn("[Agent] Database busy; retrying reports after backpressure");
+  }
+  res.setHeader("Retry-After", "5");
+  res.status(503).json({ error: SERVICE_BUSY_MESSAGE, code: "SERVICE_UNAVAILABLE" });
+  return true;
+}
+
 export function registerAgentHeartbeatRoute(agentRouter: Router) {
 agentRouter.post("/api/agent/presence", async (req: Request, res: Response) => {
   try {
@@ -1471,6 +1487,7 @@ agentRouter.post("/api/agent/presence", async (req: Request, res: Response) => {
     const panelMigration = await getPanelMigrationAgentDirective(Number(host.id));
     res.json(buildPresenceAgentHeartbeatResponse({ panelMigration }));
   } catch (error) {
+    if (respondAgentDatabaseBusy(error, res)) return;
     console.error("[Agent Presence] Error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
@@ -1517,6 +1534,7 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
     logHostName = String((host as any).name || "").trim();
     updateAgentPluginInventory(logHostId, req.body?.pluginVersions, req.body?.pluginSyncSignatures);
     updateAgentToolInventory(logHostId, req.body?.forwardTools, req.body?.forwardToolsCheckedAt);
+    recordAgentConnectionStats(logHostId, req.body?.connectionStats);
     recordIpSwitchAgentCapability(logHostId, req.body?.ipSwitchSupported);
 
     const compactMetrics = Array.isArray(req.body?.m) ? req.body.m : [];
@@ -4097,6 +4115,9 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
           if (fastFailover) {
             service.metadata = { ...(service.metadata || {}), dialTimeout: "3s" };
           }
+          // Private local API counters provide a NET_ADMIN-free fallback. Only
+          // business entry listeners are counted, never tunnel hops or exits.
+          service.metadata = { ...(service.metadata || {}), enableStats: true, "observer.resetTraffic": false };
           if (!tunnel) {
             const targetAddr = sniEntryRuntime
               ? endpointHostPort(sniEntryRuntime.targetIp, sniEntryRuntime.targetPort)
@@ -7882,6 +7903,7 @@ agentRouter.post("/api/agent/heartbeat", async (req: Request, res: Response) => 
       ...(metricsWatching ? { trafficReportInterval: 10 } : {}),
     });
   } catch (error) {
+    if (respondAgentDatabaseBusy(error, res)) return;
     console.error(`[Agent Heartbeat] Error host=${logHostId || "-"} name=${logHostName || "-"}:`, error);
     res.status(500).json({ error: "Internal server error" });
   } finally {

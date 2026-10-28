@@ -5,6 +5,7 @@ import { nanoid } from "nanoid";
 import { protectedProcedure, router } from "../_core/trpc";
 import * as db from "../db";
 import { maskToken } from "./helpers";
+import { isHostStatusOnline } from "../hostStatusNotifier";
 
 function ruleOwnerSummary(owners: Array<{ userId: number; username: string | null; name: string | null; ruleCount: number }>) {
   const visibleOwners = owners.slice(0, 5);
@@ -134,6 +135,7 @@ export const agentTokensRouter = router({
       if (ctx.user.role !== "admin" && token.userId !== ctx.user.id) {
         throw new Error("无权使用该 Token");
       }
-      return { token: token.token };
+      const host = await db.getHostByAgentToken(token.token);
+      return { token: token.token, boundHost: host ? { id: host.id, name: host.name, isOnline: isHostStatusOnline(host) } : null };
     }),
 });

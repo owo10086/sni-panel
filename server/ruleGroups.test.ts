@@ -218,3 +218,32 @@ test("group editor input rejects conflicting membership changes and oversized sa
   assert.equal(personalRuleGroupSaveSchema.safeParse({ name: "test", addRuleIds: [1], removeRuleIds: [1] }).success, false);
   assert.equal(personalRuleGroupSaveSchema.safeParse({ name: "test", addRuleIds: Array.from({ length: 300 }, (_, id) => id + 1), removeRuleIds: Array.from({ length: 201 }, (_, id) => id + 500) }).success, false);
 });
+
+test("personal group change filtering happens before pagination and includes SNI roots only for the owner", async () => {
+  const caller = router.createCaller(context(1));
+  const first = (await caller.savePersonalGroup({ name: "eligible-first" })).id;
+  const second = (await caller.savePersonalGroup({ name: "eligible-second" })).id;
+  const ids: number[] = [];
+  for (let index = 0; index < 23; index++) ids.push(await runtime.insertAndGetId("forward_rules", {
+    ...payload(1, `eligible-${index}`), ...(index === 22 ? { sni: "eligible.example.com" } : {}),
+  }));
+  await caller.moveToPersonalGroups({ ids: ids.slice(0, 21), groupIds: [first, second], mode: "add" });
+  await caller.moveToPersonalGroups({ ids: [ids[21]], groupIds: [first], mode: "add" });
+  const changes = { mode: "add", groupIds: [first, second] };
+  const page = await (caller.personalGroupItems as any)({ search: "eligible-", page: 1, pageSize: 20, personalGroupChange: changes });
+  assert.equal(page.totalItems, 2);
+  assert.deepEqual(new Set(page.items.map((rule: any) => rule.id)), new Set(ids.slice(21)));
+  const remove = await (caller.personalGroupItems as any)({ search: "eligible-", page: 2, pageSize: 20, personalGroupChange: { mode: "remove", groupIds: [first, second] } });
+  assert.equal(remove.totalItems, 22);
+  assert.equal(remove.items.length, 2);
+  const empty = await (caller.personalGroupItems as any)({ personalGroupChange: { mode: "add", groupIds: [] } });
+  assert.equal(empty.totalItems, 0);
+  await assert.rejects((caller.personalGroupItems as any)({ personalGroupChange: { mode: "remove", groupIds: [groupOther] } }), { code: "NOT_FOUND" });
+  const admin = await (router.createCaller(context(3, "admin")).personalGroupItems as any)({ search: "eligible-" });
+  assert.equal(admin.totalItems, 0);
+  // A concurrent deletion must reject the entire application, leaving other memberships intact.
+  await rules.deleteForwardRule(ids[22]);
+  await assert.rejects(caller.moveToPersonalGroups({ ids: ids.slice(21), groupIds: [second], mode: "add" }), { code: "FORBIDDEN" });
+  const remaining = await caller.personalGroupItems({ search: "eligible-21" });
+  assert.deepEqual(remaining.items[0]?.personalGroupIds, [first]);
+});

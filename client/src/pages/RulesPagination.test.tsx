@@ -71,11 +71,14 @@ function setup(storage = new Map<string, string>(), count = 25, grouped = false,
     }),
   }) });
   const mocks: Record<string, any> = {
-    react: { ...harness.hooks, useLayoutEffect: harness.hooks.useEffect, lazy: () => "Lazy", Fragment: "Fragment", Suspense: "Suspense" },
+    react: { ...harness.hooks, useLayoutEffect: harness.hooks.useEffect, useSyncExternalStore: (_subscribe: unknown, snapshot: () => unknown) => snapshot(), lazy: () => "Lazy", Fragment: "Fragment", Suspense: "Suspense" },
     "@/lib/trpc": { trpc },
     "@/components/PersistentPagination": harness.load("client/src/components/PersistentPagination.tsx"),
     "@/components/ui/confirm-dialog": { useConfirmDialog: () => async () => true },
     "@/components/rules/RuleLimitsForm": { newRuleLimitsForm: () => ({}) },
+    "@/components/rules/PersonalRuleGroups": new Proxy({ useRuleGroupBulkEditor: () => ({ isPending: false }) } as Record<string, any>, {
+      get: (target, key) => key in target ? target[key as string] : String(key),
+    }),
     "@/_core/hooks/useAuth": { useAuth: () => ({ user: admin }) },
     "@/hooks/useMobile": { useIsMobile: () => false },
     "@/hooks/useUrlTab": { useUrlTab: () => harness.hooks.useState("all") },

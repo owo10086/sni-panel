@@ -1,0 +1,246 @@
+{
+  "total_count": 2,
+  "jobs": [
+    {
+      "id": 119288957492,
+      "run_id": 39619532759,
+      "workflow_name": "Release Panel",
+      "head_branch": "v3.5.1",
+      "run_url": "https://api.github.com/repos/owo10086/sni-panel/actions/runs/39619532759",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOUXf21c8AAAAbxi0KNA",
+      "head_sha": "948fa84eea48e06c04b18f46b11d28cab8665b0d",
+      "url": "https://api.github.com/repos/owo10086/sni-panel/actions/jobs/119288957492",
+      "html_url": "https://github.com/owo10086/sni-panel/actions/runs/39619532759/job/119288957492",
+      "status": "completed",
+      "conclusion": "failure",
+      "created_at": "2026-10-21T14:44:43Z",
+      "started_at": "2026-10-21T14:44:47Z",
+      "completed_at": "2026-10-21T14:50:20Z",
+      "name": "release-panel",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-10-21T14:44:48Z",
+          "completed_at": "2026-10-21T14:44:49Z"
+        },
+        {
+          "name": "Checkout",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-10-21T14:44:49Z",
+          "completed_at": "2026-10-21T14:44:52Z"
+        },
+        {
+          "name": "Setup pnpm",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-10-21T14:44:52Z",
+          "completed_at": "2026-10-21T14:44:53Z"
+        },
+        {
+          "name": "Setup Node",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-10-21T14:44:53Z",
+          "completed_at": "2026-10-21T14:45:00Z"
+        },
+        {
+          "name": "Setup Go",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-10-21T14:45:00Z",
+          "completed_at": "2026-10-21T14:45:08Z"
+        },
+        {
+          "name": "Resolve release version",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-10-21T14:45:08Z",
+          "completed_at": "2026-10-21T14:45:08Z"
+        },
+        {
+          "name": "Install dependencies",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7,
+          "started_at": "2026-10-21T14:45:08Z",
+          "completed_at": "2026-10-21T14:45:11Z"
+        },
+        {
+          "name": "Check release versions and tag",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 8,
+          "started_at": "2026-10-21T14:45:11Z",
+          "completed_at": "2026-10-21T14:45:12Z"
+        },
+        {
+          "name": "Type check",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 9,
+          "started_at": "2026-10-21T14:45:12Z",
+          "completed_at": "2026-10-21T14:45:48Z"
+        },
+        {
+          "name": "Build panel assets",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 10,
+          "started_at": "2026-10-21T14:45:48Z",
+          "completed_at": "2026-10-21T14:46:10Z"
+        },
+        {
+          "name": "Run panel tests",
+          "status": "completed",
+          "conclusion": "failure",
+          "number": 11,
+          "started_at": "2026-10-21T14:46:10Z",
+          "completed_at": "2026-10-21T14:50:16Z"
+        },
+        {
+          "name": "Run Agent tests and vet",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 12,
+          "started_at": "2026-10-21T14:50:16Z",
+          "completed_at": "2026-10-21T14:50:16Z"
+        },
+        {
+          "name": "Prepare release notes",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 13,
+          "started_at": "2026-10-21T14:50:16Z",
+          "completed_at": "2026-10-21T14:50:16Z"
+        },
+        {
+          "name": "Build bundled Agent assets",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 14,
+          "started_at": "2026-10-21T14:50:16Z",
+          "completed_at": "2026-10-21T14:50:16Z"
+        },
+        {
+          "name": "Verify bundled FXP behavior",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 15,
+          "started_at": "2026-10-21T14:50:16Z",
+          "completed_at": "2026-10-21T14:50:16Z"
+        },
+        {
+          "name": "Package panel runtime bundle",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 16,
+          "started_at": "2026-10-21T14:50:16Z",
+          "completed_at": "2026-10-21T14:50:16Z"
+        },
+        {
+          "name": "Upload panel bundle artifact",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 17,
+          "started_at": "2026-10-21T14:50:16Z",
+          "completed_at": "2026-10-21T14:50:16Z"
+        },
+        {
+          "name": "Publish panel bundle to GitHub Release",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 18,
+          "started_at": "2026-10-21T14:50:16Z",
+          "completed_at": "2026-10-21T14:50:16Z"
+        },
+        {
+          "name": "Post Setup Go",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 33,
+          "started_at": "2026-10-21T14:50:16Z",
+          "completed_at": "2026-10-21T14:50:16Z"
+        },
+        {
+          "name": "Post Setup Node",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 34,
+          "started_at": "2026-10-21T14:50:16Z",
+          "completed_at": "2026-10-21T14:50:16Z"
+        },
+        {
+          "name": "Post Setup pnpm",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 35,
+          "started_at": "2026-10-21T14:50:16Z",
+          "completed_at": "2026-10-21T14:50:16Z"
+        },
+        {
+          "name": "Post Checkout",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 36,
+          "started_at": "2026-10-21T14:50:16Z",
+          "completed_at": "2026-10-21T14:50:16Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 37,
+          "started_at": "2026-10-21T14:50:16Z",
+          "completed_at": "2026-10-21T14:50:16Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/owo10086/sni-panel/check-runs/119288957492",
+      "labels": [
+        "ubuntu-latest"
+      ],
+      "runner_id": 1000001403,
+      "runner_name": "GitHub Actions 1000001403",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 119291897437,
+      "run_id": 39619532759,
+      "workflow_name": "Release Panel",
+      "head_branch": "v3.5.1",
+      "run_url": "https://api.github.com/repos/owo10086/sni-panel/actions/runs/39619532759",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOUXf21c8AAAAbxlnmXQ",
+      "head_sha": "948fa84eea48e06c04b18f46b11d28cab8665b0d",
+      "url": "https://api.github.com/repos/owo10086/sni-panel/actions/jobs/119291897437",
+      "html_url": "https://github.com/owo10086/sni-panel/actions/runs/39619532759/job/119291897437",
+      "status": "completed",
+      "conclusion": "skipped",
+      "created_at": "2026-10-21T14:50:20Z",
+      "started_at": "2026-10-21T14:50:20Z",
+      "completed_at": "2026-10-21T14:50:20Z",
+      "name": "docker-image",
+      "steps": [
+
+      ],
+      "check_run_url": "https://api.github.com/repos/owo10086/sni-panel/check-runs/119291897437",
+      "labels": [
+
+      ],
+      "runner_id": null,
+      "runner_name": null,
+      "runner_group_id": null,
+      "runner_group_name": null
+    }
+  ]
+}

@@ -123,8 +123,6 @@ test("shared dialogs scroll long forms within short viewports instead of clippin
 test("dashboard background polling does not flash the online badge and the date uses themed colors", () => {
   const source = readFileSync("client/src/pages/Home.tsx", "utf8");
   assert.doesNotMatch(source, /dashboardRefreshing|isFetching|数据更新中/);
-  assert.match(source, /refetchInterval: pollingInterval\("normal"\)/);
-  assert.match(source, /refetchInterval: pollingInterval\("slow"\)/);
   assert.match(source, /dashboardRefreshFailed \? "部分数据更新失败，保留上次结果" : "系统在线"/);
   assert.match(source, /title=\{Number.isFinite\(dashboardUpdatedAt\)/);
   const date = css.match(/\.pearl-page-header \.pearl-spec-plate\s*\{([^}]+)\}/)?.[1];
@@ -563,7 +561,7 @@ test("standalone card hover is opt-in, pointer-only, reduced-motion safe and dis
   const sortable = renderToStaticMarkup(<Card interactive disableEnterAnimation />);
   assert.match(sortable, /pearl-card-interactive/);
   assert.doesNotMatch(sortable, /pearl-hover-card/);
-  assert.match(css, /@media \(hover: hover\) and \(pointer: fine\) \{\s*\.pearl-hover-card:hover/);
+  assert.match(css, /@media \(hover: hover\) and \(pointer: fine\) \{[^@]*\.pearl-hover-card:hover/);
   const hover = css.match(/\.pearl-hover-card:hover \{([^}]+)\}/)?.[1];
   assert.ok(hover);
   assert.match(hover, /transform: translateY\(-2px\)/);

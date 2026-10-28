@@ -23,9 +23,10 @@ const (
 )
 
 type trafficBatchKey struct {
-	panelURL   string
-	token      string
-	producerID string
+	installationID string
+	panelURL       string
+	token          string
+	producerID     string
 }
 
 type trafficBatchValue struct {
@@ -88,7 +89,7 @@ func enqueueTrafficForRule(cfg config, ruleID int, bytesIn, bytesOut uint64, con
 		)
 		return
 	}
-	key := trafficBatchKey{panelURL: panelURL, token: token, producerID: fxpTrafficProducerID(cfg)}
+	key := trafficBatchKey{panelURL: panelURL, token: token, producerID: fxpTrafficProducerID(cfg), installationID: cfg.InstallationID}
 	trafficBatchMu.Lock()
 	byRule := trafficBatches[key]
 	if byRule == nil {
@@ -283,6 +284,7 @@ func postTrafficBatch(key trafficBatchKey, pending pendingTrafficBatch) bool {
 		})
 	}
 	env, err := encryptEnvelope(map[string]any{
+		"installationId":   key.installationID,
 		"stats":            stats,
 		"reportId":         pending.reportID,
 		"reportProducerId": key.producerID,

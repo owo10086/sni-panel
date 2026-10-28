@@ -1,9 +1,11 @@
+import { LatencyChartDialogHeader } from "@/components/LatencyChartDialogHeader";
 import { t as translateText } from "@/i18n";
 import { useMotionEnabled } from "@/components/MotionPolicy";
 import { HintSwitch } from "@/components/ui/hint-switch";
 import DashboardLayout from "@/components/DashboardLayout";
 import AnimatedStatValue from "@/components/AnimatedStatValue";
 import { ResourceTrafficSummary } from "@/components/ResourceTrafficSummary";
+import { ResourceTrafficResetButton, ResourceTrafficResetDialog } from "@/components/ResourceTrafficReset";
 import { PortEntryRuntimeSummary } from "@/components/PortEntryRuntimeSummary";
 import { ForwardGroupMembers } from "@/components/ForwardGroupMembers";
 import { LatencyRating } from "@/components/LatencyRating";
@@ -52,6 +54,7 @@ import HostStatusLabel from "@/components/HostStatusLabel";
 import MultiHopEditor from "@/components/MultiHopEditor";
 import { SortableDragHandle, SortableItem, SortableReorderContext, useOptimisticSortableOrder, useSortableReorder } from "@/components/SortableDragHandle";
 import { pollingInterval } from "@/lib/polling";
+import { adaptivePollingInterval } from "@/lib/queryPolicy";
 import { buildLinkAvailabilityIndex } from "@/lib/linkAvailability";
 import { handoffManualTestResult } from "@/lib/manualTestCache";
 import { getTunnelRouteText } from "@/lib/tunnelDisplay";
@@ -517,19 +520,14 @@ function ForwardGroupLatencyDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[96svh] w-[calc(100vw-0.75rem)] max-w-[95vw] flex-col gap-3 overflow-hidden p-3 sm:max-w-3xl sm:p-6">
-        <DialogHeader>
-          <div className="flex flex-col gap-2 pr-9 sm:flex-row sm:items-start sm:justify-between sm:pr-10">
-            <div className="min-w-0">
-              <DialogTitle>{translateText("转发链延迟 - ")}{groupName}</DialogTitle>
-              <DialogDescription>{history.selectedDay ? translateText("{0} 延迟与探测统计。", [history.label]) : translateText("最近 {0} 链路逐跳探测汇总，纯 UDP 规则使用 Ping，其余规则使用 TCPing。", [latencyTimeRangeLabel(timeRangeHours)])}</DialogDescription>
-            </div>
-            <div className="flex flex-wrap items-center gap-2 self-start sm:justify-end">
-              <LatencyTimeRangeSelect value={timeRangeHours} daySelected={!!history.selectedDay} onChange={(hours) => { setTimeRangeHours(hours); history.setSelectedDay(null); }} />
-              <LatencyHistoryTodayButton onClick={history.today} />
-              <LatencyPeakCutToggle id={`forward-group-peak-cut-${groupId}`} checked={peakCutEnabled} onCheckedChange={setPeakCutEnabled} className="shrink-0" />
-            </div>
-          </div>
-        </DialogHeader>
+        <LatencyChartDialogHeader
+          title={<>{translateText("转发链延迟 - ")}{groupName}</>}
+          description={history.selectedDay ? translateText("{0} 延迟与探测统计。", [history.label]) : translateText("最近 {0} 链路逐跳探测汇总，纯 UDP 规则使用 Ping，其余规则使用 TCPing。", [latencyTimeRangeLabel(timeRangeHours)])}
+        >
+          <LatencyTimeRangeSelect value={timeRangeHours} daySelected={!!history.selectedDay} onChange={(hours) => { setTimeRangeHours(hours); history.setSelectedDay(null); }} />
+          <LatencyHistoryTodayButton onClick={history.today} />
+          <LatencyPeakCutToggle id={`forward-group-peak-cut-${groupId}`} checked={peakCutEnabled} onCheckedChange={setPeakCutEnabled} className="shrink-0" />
+        </LatencyChartDialogHeader>
         <div className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain pr-1">
         <div className="h-[42svh] min-h-[220px] rounded-lg border border-border/60 bg-muted/20 p-2 sm:h-[260px] sm:p-3">
           {(isLoading || waitForFreshSeries) && !seriesData ? (
@@ -606,7 +604,7 @@ function ForwardGroupSelfTestDialog({
   const manualTestRef = useRef(false);
   const { data: latest } = trpc.forwardGroups.latestTest.useQuery(
     { groupId, includeActive: optimisticTesting },
-    { enabled: open, refetchInterval: pollingInterval("interactive", open), refetchOnWindowFocus: false }
+    { enabled: open, refetchInterval: adaptivePollingInterval(pollingInterval("interactive", open)), refetchOnWindowFocus: false }
   );
   const lastFailureToastKey = useRef("");
   const testMutation = trpc.forwardGroups.test.useMutation({
@@ -823,6 +821,7 @@ export function ForwardGroupsContent({
   const [latencyGroup, setLatencyGroup] = useState<{ id: number; name: string } | null>(null);
   const [testGroup, setTestGroup] = useState<{ id: number; name: string } | null>(null);
   const [deleteGroup, setDeleteGroup] = useState<any | null>(null);
+  const [resetTrafficGroup, setResetTrafficGroup] = useState<any | null>(null);
   const [advancedSettingsOpen, setAdvancedSettingsOpen] = useState(false);
   const lastCreateRequestKeyRef = useRef(createRequestKey ?? 0);
   const lastEditRequestKeyRef = useRef(0);
@@ -847,7 +846,7 @@ export function ForwardGroupsContent({
   } as const;
   const groupPageQuery = trpc.forwardGroups.listPage.useQuery(groupPageInput, {
     enabled: listEnabled,
-    refetchInterval: pollingInterval("normal"),
+    refetchInterval: adaptivePollingInterval(pollingInterval("normal")),
     staleTime: 10_000,
     refetchOnWindowFocus: false,
     placeholderData: (previousData) => previousData,
@@ -855,7 +854,7 @@ export function ForwardGroupsContent({
   const needsFullGroupList = showDialog || !!latencyGroup || !!testGroup || !!editRequest;
   const fullGroupQuery = trpc.forwardGroups.options.useQuery(undefined, {
     enabled: needsFullGroupList,
-    refetchInterval: pollingInterval("normal"),
+    refetchInterval: adaptivePollingInterval(pollingInterval("normal")),
     staleTime: 10_000,
     refetchOnWindowFocus: false,
     placeholderData: (previousData) => previousData,
@@ -1194,6 +1193,18 @@ export function ForwardGroupsContent({
     },
     onError: (e) => toast.error(e.message || translateText("同步失败")),
   });
+
+  const resetTrafficMutation = trpc.forwardGroups.resetTraffic.useMutation({
+    onSuccess: async () => {
+      setResetTrafficGroup(null);
+      toast.success(translateText("统计流量已重置"));
+      await utils.forwardGroups.listPage.invalidate();
+    },
+    onError: (error) => toast.error(error.message || translateText("重置统计流量失败")),
+  });
+  const resourceTrafficResetAction = (group: any) => normalizeGroupMode(group.groupMode) === "port"
+    ? <ResourceTrafficResetButton disabled={resetTrafficMutation.isPending} onClick={() => setResetTrafficGroup(group)} />
+    : null;
 
   const runFailoverMutation = trpc.forwardGroups.runFailover.useMutation({
     onSuccess: () => {
@@ -1888,11 +1899,12 @@ export function ForwardGroupsContent({
                     </div>
                   </div>
 
-                  <ResourceTrafficSummary summary={group.trafficSummary} showRuleCount={normalizeGroupMode(group.groupMode) === "chain" || isCollectionMode(normalizeGroupMode(group.groupMode))} />
+                  <ResourceTrafficSummary summary={group.trafficSummary} resettable={normalizeGroupMode(group.groupMode) === "port"} showRuleCount={normalizeGroupMode(group.groupMode) === "chain" || isCollectionMode(normalizeGroupMode(group.groupMode))} />
 
                   <div className="action-card-footer flex justify-end gap-1 border-t border-border/40 pt-2">
                     {chainLatencyActions(group)}
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => syncMutation.mutate({ id: group.id })}>
+                    {resourceTrafficResetAction(group)}
+                    <Button variant="ghost" size="icon" className="h-8 w-8" title={translateText("同步规则")} aria-label={translateText("同步规则")} disabled={syncMutation.isPending} onClick={() => syncMutation.mutate({ id: group.id })}>
                       <RefreshCw className="h-3.5 w-3.5" />
                     </Button>
                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(group)}>
@@ -1967,11 +1979,12 @@ export function ForwardGroupsContent({
                     </div>
                   </div>
 
-                  <ResourceTrafficSummary summary={group.trafficSummary} showRuleCount={normalizeGroupMode(group.groupMode) === "chain" || isCollectionMode(normalizeGroupMode(group.groupMode))} />
+                  <ResourceTrafficSummary summary={group.trafficSummary} resettable={normalizeGroupMode(group.groupMode) === "port"} showRuleCount={normalizeGroupMode(group.groupMode) === "chain" || isCollectionMode(normalizeGroupMode(group.groupMode))} />
 
                   <div className="action-card-footer flex justify-end gap-1 border-t border-border/40 pt-2">
                     {chainLatencyActions(group)}
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => syncMutation.mutate({ id: group.id })}>
+                    {resourceTrafficResetAction(group)}
+                    <Button variant="ghost" size="icon" className="h-8 w-8" title={translateText("同步规则")} aria-label={translateText("同步规则")} disabled={syncMutation.isPending} onClick={() => syncMutation.mutate({ id: group.id })}>
                       <RefreshCw className="h-3.5 w-3.5" />
                     </Button>
                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(group)}>
@@ -2051,11 +2064,12 @@ export function ForwardGroupsContent({
                         <div className="mt-1 line-clamp-1 text-xs text-muted-foreground">{normalizeGroupMode(group.groupMode) === "port" ? translateText("转发规则中直接选择") : normalizeGroupMode(group.groupMode) === "chain" ? translateText("规则使用时监听入口端口") : normalizeGroupMode(group.groupMode) === "exit" ? translateText("隧道出口组") : group.lastDdnsValue || translateText("未切换")}</div>
                       </TableCell>
                       <TableCell className="hidden py-3 md:table-cell">{normalizeGroupMode(group.groupMode) === "chain" ? renderChainLatencySummary(group) : isCollectionMode(normalizeGroupMode(group.groupMode)) ? (normalizeGroupMode(group.groupMode) === "entry" ? translateText("固定入口") : translateText("固定出口")) : group.trafficSummary?.ruleCount ?? "—"}</TableCell>
-                      <TableCell className="py-3"><ResourceTrafficSummary summary={group.trafficSummary} compact table showRuleCount={normalizeGroupMode(group.groupMode) === "chain" || isCollectionMode(normalizeGroupMode(group.groupMode))} /></TableCell>
+                      <TableCell className="py-3"><ResourceTrafficSummary summary={group.trafficSummary} resettable={normalizeGroupMode(group.groupMode) === "port"} compact table showRuleCount={normalizeGroupMode(group.groupMode) === "chain" || isCollectionMode(normalizeGroupMode(group.groupMode))} /></TableCell>
                       <TableCell className="py-3 text-right">
                         <div className="flex justify-end gap-1">
                           {chainLatencyActions(group)}
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => syncMutation.mutate({ id: group.id })}>
+                          {resourceTrafficResetAction(group)}
+                          <Button variant="ghost" size="icon" className="h-8 w-8" title={translateText("同步规则")} aria-label={translateText("同步规则")} disabled={syncMutation.isPending} onClick={() => syncMutation.mutate({ id: group.id })}>
                             <RefreshCw className="h-3.5 w-3.5" />
                           </Button>
                           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(group)}>
@@ -2105,11 +2119,11 @@ export function ForwardGroupsContent({
         open={showDialog}
         onOpenChange={handleDialogOpenChange}
       >
-        <DialogContent className={"flex max-h-[92svh] w-[calc(100vw-1rem)] max-w-[95vw] flex-col gap-3 overflow-hidden p-4 sm:p-5 " + (isChainMode || isPortMode ? "sm:max-w-xl" : "sm:max-w-2xl")}>
+        <DialogContent className={"max-h-[92svh] w-[calc(100vw-1rem)] max-w-[95vw] grid-rows-[auto_minmax(0,1fr)_auto] gap-3 overflow-hidden p-4 sm:p-5 " + (isChainMode || isPortMode ? "sm:max-w-xl" : "sm:max-w-2xl")}>
           <DialogHeader>
             <DialogTitle>{dialogTitle}</DialogTitle>
           </DialogHeader>
-          <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pr-1">
+          <div className="min-h-0 touch-pan-y space-y-3 overflow-y-auto overscroll-contain pb-2 pr-1">
             <div className={"grid gap-3 " + (isPortMode ? "sm:grid-cols-2" : isChainMode ? "sm:grid-cols-1" : "sm:grid-cols-2")}>
               <div className="space-y-2">
                 <Label>{isPortMode ? translateText("端口转发名称") : isChainMode ? translateText("转发链名称") : translateText("组名称")}</Label>
@@ -2698,6 +2712,12 @@ export function ForwardGroupsContent({
           onOpenChange={(open) => !open && setTestGroup(null)}
         />
       )}
+      <ResourceTrafficResetDialog
+        name={resetTrafficGroup ? String(resetTrafficGroup.name || "") : null}
+        pending={resetTrafficMutation.isPending}
+        onClose={() => setResetTrafficGroup(null)}
+        onConfirm={() => { if (resetTrafficGroup && !resetTrafficMutation.isPending) resetTrafficMutation.mutate({ id: Number(resetTrafficGroup.id) }); }}
+      />
       <Dialog open={!!deleteGroup} onOpenChange={(open) => !open && setDeleteGroup(null)}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>

@@ -1233,20 +1233,20 @@ export default function Plans() {
       </Dialog>
 
       <Dialog open={editing} onOpenChange={setEditing}>
-        <DialogContent className="flex max-h-[92svh] w-[calc(100vw-1rem)] max-w-[95vw] flex-col overflow-hidden p-0 sm:max-w-2xl">
+        <DialogContent className="max-h-[92svh] w-[calc(100vw-1rem)] max-w-[95vw] grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden p-0 sm:max-w-2xl">
           <DialogHeader className="px-4 pt-4 sm:px-5 sm:pt-5">
             <DialogTitle>{form.id ? translateText("编辑套餐") : translateText("新增套餐")}</DialogTitle>
             <DialogDescription>{translateText("配置套餐限制，并绑定订阅后可用资源。")}</DialogDescription>
           </DialogHeader>
 
-          <Tabs value={planDialogTab} onValueChange={(value) => setPlanDialogTab(value as PlanDialogTab)} className="flex min-h-0 flex-1 flex-col px-4 sm:px-5">
-            <TabsList className="grid h-auto w-full grid-cols-2">
+          <Tabs value={planDialogTab} onValueChange={(value) => setPlanDialogTab(value as PlanDialogTab)} className="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-3 overflow-hidden px-4 sm:px-5">
+            <TabsList className="grid h-auto w-full shrink-0 grid-cols-2">
               <TabsTrigger value="settings">{translateText("套餐设置")}</TabsTrigger>
               <TabsTrigger value="resources">{translateText("资源绑定")}</TabsTrigger>
             </TabsList>
 
-            <div className="min-h-0 flex-1 overflow-y-auto pr-1 [scrollbar-gutter:stable]">
-              <TabsContent value="settings" className="mt-4 space-y-4">
+            <div className="min-h-0 touch-pan-y overflow-y-auto overscroll-contain pb-1 pr-1 [scrollbar-gutter:stable]">
+              <TabsContent value="settings" className="m-0 space-y-4 !animate-none">
                 <div className="grid min-w-0 grid-cols-2 gap-3 md:grid-cols-3 [&>*]:min-w-0">
             <div className="col-span-2 space-y-2 md:col-span-1">
               <Label>{translateText("套餐名称")}</Label>
@@ -1348,7 +1348,7 @@ export default function Plans() {
                 <PlanDescriptionEditor value={form.description} onChange={(description) => setForm({ ...form, description })} />
               </TabsContent>
 
-              <TabsContent value="resources" className="mt-3 space-y-3">
+              <TabsContent value="resources" className="m-0 space-y-3 !animate-none">
                 <div className="space-y-3">
                   {true ? (
                     <>

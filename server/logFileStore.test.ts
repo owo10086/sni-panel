@@ -15,13 +15,13 @@ test("JSON logs batch writes without losing order and serialize maintenance", as
   const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "forwardx-log-"));
   const filePath = path.join(dir, "panel.jsonl");
   try {
-    appendJsonLog(filePath, { id: "old", level: "info", message: "old", createdAt: new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString() });
+    appendJsonLog(filePath, { id: "old", level: "info", message: "old", createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString() });
     appendJsonLog(filePath, { id: "first", level: "info", message: "first", createdAt: new Date().toISOString() });
     appendJsonLog(filePath, { id: "second", level: "warn", message: "second", createdAt: new Date().toISOString() });
     await flushJsonLogWrites(filePath);
 
     const rawLines = (await fs.promises.readFile(filePath, "utf8")).trim().split(/\r?\n/);
-    assert.deepEqual(rawLines.map((line) => JSON.parse(line).id), ["old", "first", "second"]);
+    assert.deepEqual(rawLines.map((line) => JSON.parse(line).id), ["first", "second"]);
 
     const page = await readRecentJsonLogPageAsync(filePath, { limit: 10 });
     assert.deepEqual(page.logs.map((entry) => entry.id), ["second", "first"]);

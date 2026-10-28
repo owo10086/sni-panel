@@ -1,3 +1,4 @@
+import { buildRuleTunnelProbeResult } from "../ruleTunnelProbeResult";
 import { and, desc, eq, isNull, or } from "drizzle-orm";
 import { forwardTests, InsertForwardTest, tunnelLatencyStats } from "../../drizzle/schema";
 import { executeRaw, getDb, insertAndGetId, nowDate, queryRaw, rawAffectedRows } from "../dbRuntime";
@@ -153,6 +154,11 @@ export async function getLatestForwardTest(ruleId: number, options: { includeAct
   const batchCol = quoteIdentifier("batchId");
   const [newest] = await queryRaw<any>(`SELECT * FROM ${table} WHERE ${ruleCol} = ? ORDER BY ${idCol} DESC LIMIT 1`, [ruleId]);
   if (!newest) return undefined;
+  // Every segment belongs to this round; a fast reporter never replaces its siblings.
+  if (String(newest.batchId || "").startsWith("rt-")) {
+    const batch = await queryRaw<any>(`SELECT * FROM ${table} WHERE ${ruleCol} = ? AND ${batchCol} = ? ORDER BY ${idCol}`, [ruleId, newest.batchId]);
+    return buildRuleTunnelProbeResult(batch);
+  }
   if (options.includeActive !== false) {
     if (String(newest.batchId || "").startsWith("fc-")) {
       const batch = await queryRaw<any>(`SELECT * FROM ${table} WHERE ${ruleCol} = ? AND ${batchCol} = ? ORDER BY ${idCol}`, [ruleId, newest.batchId]);

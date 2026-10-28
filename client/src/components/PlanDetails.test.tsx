@@ -55,14 +55,15 @@ test("new-plan templates and editor use preview and the same character limit wit
   assert.match(editorSource, /<PlanDetails description=\{value\}/);
 });
 
-test("card and table edit actions use labeled pencil icons", () => {
+test("card edit actions use labeled pencil icons", () => {
   const source = readFileSync(new URL("../pages/Plans.tsx", import.meta.url), "utf8");
-  assert.equal((source.match(/aria-label=\{translateText\("编辑套餐"\)\}/g) || []).length, 2);
-  assert.equal((source.match(/<Pencil className="h-4 w-4" \/>/g) || []).length, 2);
+  const card = source.slice(source.indexOf("function PlanCard("), source.indexOf("function hostTitle("));
+  assert.equal((card.match(/aria-label=\{translateText\("编辑套餐"\)\}/g) || []).length, 1);
+  assert.equal((card.match(/<Pencil className="h-4 w-4" \/>/g) || []).length, 1);
   assert.doesNotMatch(source, />\{translateText\("编辑"\)\}<\/Button>/);
 });
 
-test("plan management keeps status controls outside the replaceable card content and supports table view", () => {
+test("plan management keeps status controls outside replaceable card content and retains both views", () => {
   const source = readFileSync(new URL("../pages/Plans.tsx", import.meta.url), "utf8");
   const card = source.slice(source.indexOf("function PlanCard("), source.indexOf("function hostTitle("));
   const start = card.indexOf("<PlanDetails");
@@ -70,7 +71,10 @@ test("plan management keeps status controls outside the replaceable card content
   assert.ok(start > 0 && end > start);
   for (const text of ["价格", "资源", "端口", "规则/流量", "连接/IP", "限速", "附加流量"]) assert.ok(card.slice(start, end).includes(text));
   assert.ok(card.indexOf("<PlanStatusQuickToggle") > end);
-  assert.match(source, /TableCell colSpan=\{3\}[\s\S]*?<PlanDetails description=\{plan.description\}/);
+  assert.match(source, /<SortableReorderContext sortable=\{planSortable\} strategy=\{planViewMode === "card" \? "rect" : "vertical"\}>/);
+  assert.match(source, /<PlanCard/);
+  assert.match(source, /<Table/);
+  assert.match(source, /forwardx\.plans\.viewMode/);
 });
 
 test("store replaces default benefits but retains actual price and purchase controls", () => {

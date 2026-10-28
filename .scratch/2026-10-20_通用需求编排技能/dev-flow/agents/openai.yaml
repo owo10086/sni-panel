@@ -1,0 +1,4 @@
+interface:
+  display_name: "dev-flow"
+  short_description: "先确认唯一最新需求，再写规格、审查、开单、实施提交和提交点评"
+  default_prompt: "使用 $dev-flow 处理当前项目的最新需求：没有需求文档就中断，有多份就等我选择，只有唯一需求才继续六步；默认遇冲突等我，我说“执行全部”后按推荐处理，但不能跳过第一步的需求确认。"

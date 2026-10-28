@@ -1,0 +1,36 @@
+{
+  "version": "3.5.0",
+  "commit": "4f1b289f32e1b08fce1bfbf0f3c042d33b6b19f8",
+  "repository": "owo10086/sni-panel",
+  "branch": "main",
+  "tag": "v3.5.0",
+  "releaseUrl": "https://github.com/owo10086/sni-panel/releases/tag/v3.5.0",
+  "allWorkflowsPassed": true,
+  "runs": {
+    "panel": {
+      "id": 39375824982,
+      "conclusion": "success",
+      "url": "https://github.com/owo10086/sni-panel/actions/runs/39375824982"
+    },
+    "agent": {
+      "id": 39375824478,
+      "conclusion": "success",
+      "url": "https://github.com/owo10086/sni-panel/actions/runs/39375824478"
+    },
+    "ci": {
+      "id": 39375825171,
+      "conclusion": "success",
+      "url": "https://github.com/owo10086/sni-panel/actions/runs/39375825171"
+    },
+    "docs": {
+      "id": 39375825229,
+      "conclusion": "success",
+      "url": "https://github.com/owo10086/sni-panel/actions/runs/39375825229"
+    }
+  },
+  "assetsVerified": 6,
+  "imageDigest": "sha256:e82ea5bd7cba35b9c1ffdc2dcdeab617c3054a023e7a2e0f18decc87b8a96c72",
+  "docsUrl": "https://owo10086.github.io/sni-panel/",
+  "productionUpgraded": false,
+  "manualAcceptance": "未进行"
+}

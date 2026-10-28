@@ -1,0 +1,39 @@
+{
+  "beforeRetry": {
+    "user": {
+      "balanceCents": -8,
+      "canAddRules": 1,
+      "forwardAccessPauseReason": null
+    },
+    "child": {
+      "id": 1001,
+      "pendingDelete": 1,
+      "isRunning": 1,
+      "deleteSettlementPending": 0
+    }
+  },
+  "afterRetry": {
+    "user": {
+      "balanceCents": -8,
+      "canAddRules": 1,
+      "forwardAccessPauseReason": null
+    },
+    "childExists": false,
+    "remainingChildren": [
+      {
+        "id": 1002,
+        "isEnabled": 1,
+        "disabledByUser": 0,
+        "pendingDelete": 0
+      }
+    ],
+    "usage": {
+      "settled": 1
+    },
+    "feeRecords": [
+      {
+        "amountCents": 9
+      }
+    ]
+  }
+}

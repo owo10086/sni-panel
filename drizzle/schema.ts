@@ -248,6 +248,7 @@ export const hosts = table("hosts", {
   preferredIpv6: text("preferredIpv6"),
   hostType: varchar("hostType", { length: 32 }).notNull().default("slave"), // 'master' | 'slave'
   agentToken: text("agentToken"),
+  agentInstallationId: varchar("agentInstallationId", { length: 64 }),
   // 用户自定义的入口 IP/域名，为空时回退使用 ip
   entryIp: text("entryIp"),
   // 隧道链路使用的内网/专用入口地址（可选）
@@ -644,6 +645,14 @@ export const tunnelExitNodes = table("tunnel_exit_nodes", {
 export type TunnelExitNode = typeof tunnelExitNodes.$inferSelect;
 export type InsertTunnelExitNode = typeof tunnelExitNodes.$inferInsert;
 
+// Retain superseded identities so an old machine cannot reclaim a Token on restart.
+export const agentInstallations = table("agent_installations", {
+  id: serial("id"),
+  hostId: int("hostId").notNull(),
+  installationId: varchar("installationId", { length: 64 }).notNull(),
+  createdAt: epoch("createdAt").notNull().default(nowDefault()),
+});
+
 export const tunnelHops = table("tunnel_hops", {
   id: serial("id"),
   tunnelId: int("tunnelId").notNull(),
@@ -735,6 +744,19 @@ export const forwardRuleTrafficCounters = table("forward_rule_traffic_counters",
 });
 export type ForwardRuleTrafficCounter = typeof forwardRuleTrafficCounters.$inferSelect;
 export type InsertForwardRuleTrafficCounter = typeof forwardRuleTrafficCounters.$inferInsert;
+
+export const resourceTrafficBaselines = table("resource_traffic_baselines", {
+  id: serial("id"),
+  groupId: int("groupId").notNull(),
+  ruleId: int("ruleId").notNull(),
+  hostId: int("hostId").notNull(),
+  bytesIn: bigint("bytesIn", { mode: "number" }).notNull().default(0),
+  bytesOut: bigint("bytesOut", { mode: "number" }).notNull().default(0),
+  dailyIn: bigint("dailyIn", { mode: "number" }).notNull().default(0),
+  dailyOut: bigint("dailyOut", { mode: "number" }).notNull().default(0),
+  resetDay: epoch("resetDay").notNull(),
+  resetAt: epoch("resetAt").notNull(),
+});
 
 export const trafficStats = table("traffic_stats", {
   id: serial("id"),

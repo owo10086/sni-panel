@@ -20,9 +20,10 @@ import type { ForwardRule } from "../../drizzle/schema";
 import { getSniEntryHostVersionStatuses, getSniEntryPortOverview } from "../sniEntryPortOverview";
 import { assertRuleWritable } from "../../shared/ruleLimits";
 import { personalRuleGroupsRouter } from "./rules.groups";
-import { ruleGroupFilterSchema } from "../../shared/ruleGroups";
-import { getRulePersonalGroupIds } from "../repositories/ruleGroupRepository";
+import { ruleGroupFilterSchema, personalRuleGroupChangeFilterSchema, type PersonalRuleGroupChangeFilter } from "../../shared/ruleGroups";
+import { getRulePersonalGroupIds, assertPersonalRuleGroups } from "../repositories/ruleGroupRepository";
 import { displayQueries } from "../displayQueryCache";
+import { ruleTasksRouter } from "./rules.tasks";
 
 type SniRuntimeEndpointStatus = {
   hostId: number;
@@ -271,6 +272,7 @@ type RuleListCategory = "all" | "local" | "tunnel" | "chain" | "group" | "sni";
 type RuleResourceType = "local" | "tunnel" | "chain" | "group";
 type RuleListFilters = {
   personalGroupId?: number | null;
+  personalGroupChange?: PersonalRuleGroupChangeFilter;
   userId?: number;
   scope?: "self" | "all";
   entryHostId?: number | null;
@@ -294,6 +296,7 @@ async function getRuleListRepositoryInput(
   return {
     ownerUserId,
     personalGroupId: input.personalGroupId,
+    personalGroupChange: input.personalGroupChange,
     personalGroupOwnerId: user.id,
     searchVisibleHostIds: accessScope
       ? Array.from(accessScope.useHostIds || accessScope.hostIds)
@@ -320,8 +323,10 @@ export const rulesRouter = router({
       pageSize: z.number().int().min(1).max(MAX_PAGE_SIZE).default(12),
       search: z.string().max(200).default(""),
       personalGroupId: ruleGroupFilterSchema,
+      personalGroupChange: personalRuleGroupChangeFilterSchema.optional(),
     }))
     .query(async ({ input, ctx }) => {
+      if (input.personalGroupChange) await assertPersonalRuleGroups(ctx.user.id, input.personalGroupChange.groupIds);
       const filters = await getRuleListRepositoryInput({ ...input, category: "all", scope: "self" }, ctx.user);
       const page = await db.getForwardRulesPage({ ...filters, ...input, includeSniInAll: true });
       return withRuleResourceAccess(page, ctx.user);
@@ -351,6 +356,7 @@ export const rulesRouter = router({
   listPage: protectedProcedure
     .input(z.object({
       personalGroupId: ruleGroupFilterSchema,
+      personalGroupChange: personalRuleGroupChangeFilterSchema.optional(),
       page: z.number().int().positive().default(1),
       pageSize: z.number().int().min(1).max(MAX_PAGE_SIZE).default(12),
       userId: z.number().optional(),
@@ -362,6 +368,7 @@ export const rulesRouter = router({
       search: z.string().trim().max(200).optional().default(""),
     }))
     .query(async ({ input, ctx }) => {
+      if (input.personalGroupChange) await assertPersonalRuleGroups(ctx.user.id, input.personalGroupChange.groupIds);
       const repositoryInput = await getRuleListRepositoryInput(input, ctx.user);
       const query = { ...repositoryInput, page: input.page, pageSize: input.pageSize };
       const page = await displayQueries.get(ctx.user, "rules.page", query,
@@ -411,6 +418,7 @@ export const rulesRouter = router({
               userId: ctx.user.role === "admin" ? undefined : ctx.user.id,
               ruleIds: selection.ruleIds,
               since: new Date(Date.now() - 24 * 60 * 60 * 1000),
+              includeLatency: false,
             }),
           ])
           : [[], []];
@@ -457,6 +465,7 @@ export const rulesRouter = router({
   ...portsRulesRouter._def.procedures,
   ...personalRuleGroupsRouter._def.procedures,
   ...crudRulesRouter._def.procedures,
+  ...ruleTasksRouter._def.procedures,
   ...trafficRulesRouter._def.procedures,
   ...selfTestRulesRouter._def.procedures,
 });

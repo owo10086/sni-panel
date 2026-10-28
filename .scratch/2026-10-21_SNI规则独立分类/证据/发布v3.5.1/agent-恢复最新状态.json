@@ -1,0 +1,116 @@
+{
+  "attempt": 2,
+  "conclusion": "",
+  "headSha": "948fa84eea48e06c04b18f46b11d28cab8665b0d",
+  "jobs": [
+    {
+      "completedAt": "0001-01-01T00:00:00Z",
+      "conclusion": "",
+      "databaseId": 119309802021,
+      "name": "build-agent",
+      "startedAt": "2026-10-21T15:25:47Z",
+      "status": "in_progress",
+      "steps": [
+        {
+          "completedAt": "2026-10-21T15:25:49Z",
+          "conclusion": "success",
+          "name": "Set up job",
+          "number": 1,
+          "startedAt": "2026-10-21T15:25:47Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-21T15:25:53Z",
+          "conclusion": "success",
+          "name": "Checkout",
+          "number": 2,
+          "startedAt": "2026-10-21T15:25:49Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-21T15:26:00Z",
+          "conclusion": "success",
+          "name": "Setup Go",
+          "number": 3,
+          "startedAt": "2026-10-21T15:25:53Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-21T15:26:01Z",
+          "conclusion": "success",
+          "name": "Setup Node",
+          "number": 4,
+          "startedAt": "2026-10-21T15:26:00Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-21T15:26:01Z",
+          "conclusion": "success",
+          "name": "Resolve release version",
+          "number": 5,
+          "startedAt": "2026-10-21T15:26:01Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-21T15:26:01Z",
+          "conclusion": "success",
+          "name": "Check release versions and tag",
+          "number": 6,
+          "startedAt": "2026-10-21T15:26:01Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-21T15:26:16Z",
+          "conclusion": "success",
+          "name": "Run Agent tests and vet",
+          "number": 7,
+          "startedAt": "2026-10-21T15:26:01Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-21T15:26:29Z",
+          "conclusion": "success",
+          "name": "Build Linux Agent binaries",
+          "number": 8,
+          "startedAt": "2026-10-21T15:26:16Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "0001-01-01T00:00:00Z",
+          "conclusion": "",
+          "name": "Upload Agent binaries to GitHub Release",
+          "number": 9,
+          "startedAt": "2026-10-21T15:26:29Z",
+          "status": "in_progress"
+        },
+        {
+          "completedAt": "0001-01-01T00:00:00Z",
+          "conclusion": "",
+          "name": "Post Setup Node",
+          "number": 16,
+          "startedAt": "0001-01-01T00:00:00Z",
+          "status": "pending"
+        },
+        {
+          "completedAt": "0001-01-01T00:00:00Z",
+          "conclusion": "",
+          "name": "Post Setup Go",
+          "number": 17,
+          "startedAt": "0001-01-01T00:00:00Z",
+          "status": "pending"
+        },
+        {
+          "completedAt": "0001-01-01T00:00:00Z",
+          "conclusion": "",
+          "name": "Post Checkout",
+          "number": 18,
+          "startedAt": "0001-01-01T00:00:00Z",
+          "status": "pending"
+        }
+      ],
+      "url": "https://github.com/owo10086/sni-panel/actions/runs/39619532778/job/119309802021"
+    }
+  ],
+  "status": "in_progress",
+  "url": "https://github.com/owo10086/sni-panel/actions/runs/39619532778"
+}

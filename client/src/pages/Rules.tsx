@@ -13,7 +13,7 @@ import { RuleLatencyButton } from "@/components/rules/RuleLatencyButton";
 import { SelfTestEvidenceNote } from "@/components/rules/SelfTestEvidenceNote";
 import { RuleLatencyStore } from "@/lib/ruleLatencyStore";
 import { formatRuleTraffic } from "@/lib/ruleTrafficDisplay";
-import { RuleGroupBar, RuleGroupMultiSelect, RuleGroupBulkEditor } from "@/components/rules/PersonalRuleGroups";
+import { RuleGroupBar, RuleGroupMultiSelect, RuleGroupBulkEditor, RuleGroupBulkPagination, RuleGroupBulkApplyButton, useRuleGroupBulkEditor } from "@/components/rules/PersonalRuleGroups";
 import { RuleCardControls } from "@/components/rules/RuleCardControls";
 import { RulePersonalGroupBadges } from "@/components/rules/RulePersonalGroupBadges";
 import { RuleCardMetadata } from "@/components/rules/RuleCardMetadata";
@@ -21,6 +21,7 @@ import { useRuleTableLayout } from "@/hooks/useRuleTableLayout";
 import { ruleTableColumns, type RuleTableColumnId } from "@shared/ruleTableLayout";
 import { NyanpassImportPreview } from "@/components/rules/NyanpassImportPreview";
 import { isAdminManagedRule } from "../../../shared/ruleLimits";
+import { matchesPersonalRuleGroup } from "../../../shared/ruleGroups";
 import { forwardGroupRouteMembers, forwardGroupSelfTestSource } from "../../../shared/forwardGroup";
 import AutoAnimateContainer from "@/components/AutoAnimateContainer";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -79,6 +80,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getQueryKey } from "@trpc/react-query";
 import { downloadTextFile } from "@/lib/fileDownload";
 import { pollingInterval } from "@/lib/polling";
+import { adaptivePollingInterval } from "@/lib/queryPolicy";
 import { handoffManualTestResult } from "@/lib/manualTestCache";
 import {
   buildStableRuleProbeMap,
@@ -92,7 +94,9 @@ import {
   writeRuleStatusSnapshots,
   type RuleVisualStatusSnapshot,
 } from "@/lib/ruleStatusCache";
-import { batchOperationErrorMessage, chunkBatchItems, isBatchPortConflictError, queryInChunks, runBatchOperations } from "@/lib/batchOperations";
+import { batchOperationErrorMessage, chunkBatchItems, queryInChunks, type BatchOperationResult } from "@/lib/batchOperations";
+import { submitRuleTask, ruleTaskScope } from "@/lib/ruleTaskTracker";
+import type { RuleTaskAction, RuleTaskResult, RuleTaskSnapshot } from "@shared/ruleTaskQueue";
 import { runRuleImport } from "@/lib/ruleImport";
 import {
   RULE_TRANSFER_FILE_KIND,
@@ -111,6 +115,12 @@ import {
   parseRuleTransferFile,
   type RuleBulkImportRule,
   type RuleTransferFile,
+  RULE_IMPORT_PORT_TEXT_MAX_LENGTH,
+  parseRuleImportPorts,
+  assignRuleImportPorts,
+  parseManualRuleImportLine,
+  findRuleTransferPortConflict,
+  serializeRuleTransferText,
   type RuleTransferFileRule,
 } from "@/lib/ruleTransfer";
 import { parseCompatibleRuleTransferText, validateNyanpassImportTarget, type CompatibleRuleFile } from "@/lib/nyanpassImport";
@@ -121,6 +131,8 @@ import {
   type EntryAddressFamily,
 } from "@/lib/ruleEntryDisplay";
 import { cn } from "@/lib/utils";
+import { ruleBatchStages, ruleBatchCanAdvance, ruleBatchCategory, ruleBatchModes, ruleBatchModeAvailable, ruleCopySelectionKey, remainingRuleCopyJobs, ruleCopyRetries, type RuleBatchManageMode } from "@/lib/ruleBatchFlow";
+import { RuleTaskOutcomeUnknownError } from "../../../shared/ruleTaskOutcome";
 import {
   Plus,
   Trash2,
@@ -153,8 +165,10 @@ import {
   GitBranch,
   Globe,
   RotateCcw,
+  Play,
+  Pause,
 } from "lucide-react";
-import type { GlobeMethods } from "react-globe.gl";
+import { GlobeWorkspace, globeTooltip, useGlobeScene } from "@/components/GlobeWorkspace";
 import {
   FORWARD_TYPES,
   FORWARD_TYPE_LABELS,
@@ -168,7 +182,7 @@ import {
 import { ruleLatencyProbeMethodForRule } from "@shared/latencyProbe";
 import { getSniRuleGroupKey, isSniEntryAgentVersionSupported, SNI_SPLITTER_MIN_AGENT_VERSION } from "@shared/sni";
 import { formatTrafficMultiplier } from "@shared/trafficMultiplier";
-import { Fragment, lazy, Suspense, useState, useMemo, useEffect, useLayoutEffect, useCallback, useRef, type ReactNode } from "react";
+import { Fragment, lazy, Suspense, useState, useMemo, useEffect, useLayoutEffect, useCallback, useRef, useSyncExternalStore, type ReactNode } from "react";
 import { ContentTransition } from "@/components/ui/content-transition";
 import { useMotionEnabled } from "@/components/MotionPolicy";
 import { toast } from "@/lib/localizedToast";
@@ -375,7 +389,6 @@ type RuleCategory = "all" | "local" | "tunnel" | "chain" | "group" | "sni";
 type RuleCategoryCounts = Record<RuleCategory, number>;
 type RuleTransferScopeType = Exclude<RuleCategory, "all" | "sni">;
 type RuleResourceFilter = "all" | `${RuleTransferScopeType}` | `${RuleTransferScopeType}:${number}`;
-type RuleBatchManageMode = "copy" | "edit" | "export" | "import" | "groups";
 type BatchEditFormData = Pick<RuleFormData, "routeMode" | "forwardType" | "tunnelId" | "forwardGroupId" | "targetIp" | "targetPort">;
 type RuleImportSourceMode = "file" | "manual" | "sni" | "nyanpass";
 type SniRuleDisplayGroup = { key: string; rules: any[] };
@@ -1542,46 +1555,35 @@ function ruleGlobeTargetOffset(anchor: RuleGlobePoint, rule: any, targetText: st
 }
 
 function renderRuleGlobePointTooltip(point: RuleGlobePoint) {
-  const rows = [
-    { label: translateText("类型"), value: point.kind === "target" ? translateText("目标端口") : translateText("转发节点") },
-    { label: translateText("地址"), value: point.addressText || "-" },
-    { label: translateText("地区"), value: point.regionText || translateText("未定位") },
-    ...(point.targetText ? [{ label: translateText("目标"), value: point.targetText }] : []),
-    ...(point.note ? [{ label: translateText("说明"), value: point.note }] : []),
-  ];
-  return `
-    <div style="min-width:250px;max-width:360px;border:1px solid rgba(255,255,255,.14);border-radius:8px;background:rgba(8,13,24,.94);box-shadow:0 18px 44px rgba(0,0,0,.42);backdrop-filter:blur(10px);color:#f8fafc;padding:12px;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;">
-        <div style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px;font-weight:700;">${escapeTooltipHtml(point.name)}</div>
-        <span style="width:9px;height:9px;border-radius:999px;background:${point.color};box-shadow:0 0 16px ${hexToRgba(point.color, .75)};"></span>
-      </div>
-      ${rows.map((row) => `
-        <div style="display:grid;grid-template-columns:42px minmax(0,1fr);gap:8px;align-items:start;margin-top:6px;font-size:12px;line-height:1.45;">
-          <span style="color:#94a3b8;">${escapeTooltipHtml(row.label)}</span>
-          <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;color:#e2e8f0;">${escapeTooltipHtml(row.value)}</span>
-        </div>
-      `).join("")}
-    </div>
-  `;
+  return globeTooltip({
+    title: point.name,
+    color: point.color,
+    rows: [
+      { label: translateText("类型"), value: point.kind === "target" ? translateText("目标端口") : translateText("转发节点") },
+      { label: translateText("地址"), value: point.addressText || "-" },
+      { label: translateText("地区"), value: point.regionText || translateText("未定位") },
+      ...(point.targetText ? [{ label: translateText("目标"), value: point.targetText }] : []),
+      ...(point.note ? [{ label: translateText("说明"), value: point.note }] : []),
+    ],
+  });
 }
 
 function renderRuleGlobePathTooltip(path: RuleGlobePath) {
-  const rows = [
-    { label: translateText("规则"), value: path.rule?.name || translateText("规则 #{0}", [path.rule?.id]) },
-    { label: translateText("入口"), value: `:${path.rule?.sourcePort || "-"}` },
-    { label: translateText("目标"), value: path.targetText },
-    { label: translateText("路径"), value: path.routeText },
-    { label: translateText("末跳"), value: path.finalHopText },
-    { label: translateText("入向"), value: formatBytes(path.bytesIn) },
-    { label: translateText("出向"), value: formatBytes(path.bytesOut) },
-    { label: translateText("连接"), value: String(path.connections || 0) },
-  ];
-  return translateText("\n    <div style=\"min-width:290px;max-width:390px;border:1px solid rgba(255,255,255,.14);border-radius:8px;background:rgba(8,13,24,.94);box-shadow:0 18px 44px rgba(0,0,0,.42);backdrop-filter:blur(10px);color:#f8fafc;padding:12px;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;\">\n      <div style=\"display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;\">\n        <div style=\"min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px;font-weight:700;\">{0}</div>\n        <div style=\"display:flex;align-items:center;gap:6px;color:#cbd5e1;font-size:12px;\">\n          <span style=\"width:8px;height:8px;border-radius:999px;background:{1};box-shadow:0 0 14px {2};\"></span>\n          {3}\n        </div>\n      </div>\n      {4}\n      <div style=\"margin-top:10px;color:#93c5fd;font-size:12px;\">点击编辑规则</div>\n    </div>\n  ", [escapeTooltipHtml(path.rule?.name || translateText("规则 #{0}", [path.rule?.id])), path.color, hexToRgba(path.color, .8), escapeTooltipHtml(formatBytes(path.totalBytes)), rows.map((row) => `
-        <div style="display:grid;grid-template-columns:42px minmax(0,1fr);gap:8px;align-items:start;margin-top:6px;font-size:12px;line-height:1.45;">
-          <span style="color:#94a3b8;">${escapeTooltipHtml(row.label)}</span>
-          <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;color:#e2e8f0;">${escapeTooltipHtml(row.value)}</span>
-        </div>
-      `).join("")]);
+  return globeTooltip({
+    title: path.rule?.name || translateText("规则 #{0}", [path.rule?.id]),
+    color: path.color,
+    status: formatBytes(path.totalBytes),
+    rows: [
+      { label: translateText("入口"), value: `:${path.rule?.sourcePort || "-"}` },
+      { label: translateText("目标"), value: path.targetText },
+      { label: translateText("路径"), value: path.routeText },
+      { label: translateText("末跳"), value: path.finalHopText },
+      { label: translateText("入向"), value: formatBytes(path.bytesIn) },
+      { label: translateText("出向"), value: formatBytes(path.bytesOut) },
+      { label: translateText("连接"), value: String(path.connections || 0) },
+    ],
+    action: translateText("点击编辑规则"),
+  });
 }
 
 function ruleGlobeRouteHostIds(rule: any, tunnelById: Map<number, any>, forwardGroupById: Map<number, any>) {
@@ -1846,12 +1848,11 @@ function RuleTrafficGlobe({
   targetGeoLookupReady: boolean;
   onEditRule: (rule: any) => void;
 }) {
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const globeRef = useRef<GlobeMethods | undefined>(undefined);
-  const [globeReady, setGlobeReady] = useState(false);
-  const [size, setSize] = useState({ width: 1400, height: 780 });
   const [hoveredPath, setHoveredPath] = useState<RuleGlobePath | null>(null);
   const [hoveredPoint, setHoveredPoint] = useState<RuleGlobePoint | null>(null);
+  const [selectedRuleId, setSelectedRuleId] = useState<number | null>(null);
+  const scene = useGlobeScene(Boolean(hoveredPath || hoveredPoint));
+  const { globeRef, size, palette } = scene;
   const [countries, setCountries] = useState<RuleGlobeCountryFeature[]>([]);
   const globeData = useMemo(
     () => buildRuleGlobeData(rules, hosts, tunnels, forwardGroups, trafficByRule, targetGeoByAddress, targetGeoLookupReady),
@@ -1867,7 +1868,6 @@ function RuleTrafficGlobe({
   }, [globeData.points]);
 
   useEffect(() => {
-    if (!globeReady) return;
     let cancelled = false;
     fetch(RULE_GLOBE_COUNTRIES_URL)
       .then((response) => (response.ok ? response.json() : null))
@@ -1881,63 +1881,40 @@ function RuleTrafficGlobe({
     return () => {
       cancelled = true;
     };
-  }, [globeReady]);
-
-  useEffect(() => {
-    const element = containerRef.current;
-    if (!element || typeof ResizeObserver === "undefined") return;
-    const updateSize = () => {
-      const rect = element.getBoundingClientRect();
-      const viewportHeight = typeof window === "undefined" ? 900 : window.innerHeight;
-      const width = Math.max(900, Math.round(rect.width));
-      setSize({
-        width,
-        height: Math.max(720, Math.min(980, Math.round(Math.max(viewportHeight - 240, width * 0.52)))),
-      });
-    };
-    updateSize();
-    const observer = new ResizeObserver(updateSize);
-    observer.observe(element);
-    window.addEventListener("resize", updateSize);
-    return () => {
-      observer.disconnect();
-      window.removeEventListener("resize", updateSize);
-    };
   }, []);
 
-  useEffect(() => {
-    if (!globeReady || !globeRef.current) return;
-    const globe = globeRef.current;
-    const controls = globe.controls();
-    controls.autoRotate = true;
-    controls.autoRotateSpeed = 0.32;
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.08;
-    controls.enablePan = false;
-    controls.rotateSpeed = 0.58;
-    controls.zoomSpeed = 0.85;
-    controls.minDistance = 105;
-    controls.maxDistance = 500;
-    globe.pointOfView({ lat: 18, lng: 108, altitude: 1.28 }, 0);
-  }, [globeReady]);
-
-  useEffect(() => {
-    const controls = globeRef.current?.controls();
-    if (!controls) return;
-    controls.autoRotate = !(hoveredPath || hoveredPoint);
-  }, [hoveredPath, hoveredPoint]);
+  const selectedRoute = globeData.summaries.find((item) => Number(item.rule.id) === selectedRuleId);
+  const activeRuleId = hoveredPath?.rule?.id ?? selectedRoute?.rule.id;
+  const totalTraffic = globeData.summaries.reduce((sum, item) => sum + item.totalBytes, 0);
 
   return (
     <>
-      <div className="hidden overflow-hidden rounded-md border border-border/40 bg-[#030712] shadow-sm md:block">
-        <div
-          ref={containerRef}
-          className="relative min-h-[720px] w-full overflow-hidden"
-          style={{ height: size.height }}
-        >
+      <GlobeWorkspace scene={scene} title={translateText("流量转发图")} subtitle={translateText("全球链路 · 流量与节点分布")}
+        stats={[{ label: translateText("已定位"), value: `${globeData.summaries.length} / ${rules.length}` }, { label: trafficRangeLabel, value: formatBytes(totalTraffic) }, { label: translateText("待定位"), value: globeData.skipped, tone: globeData.skipped ? "warning" : undefined }]}
+        empty={globeData.summaries.length === 0 ? translateText("暂无可定位转发路径") : undefined}
+        legend={<><span className="flex items-center gap-1.5"><span className="h-1.5 w-4 rounded-full bg-primary" />{translateText("流量路径")}</span><span>{translateText("点击路径可编辑规则")}</span></>}
+        sidebar={<>
+          <div className="flex items-center justify-between gap-2 border-b border-border/50 px-4 py-3"><h4 className="text-xs font-semibold">{translateText("流量排行")}</h4><span className="text-[11px] text-muted-foreground">{trafficRangeLabel}</span></div>
+          {selectedRoute && <div className="m-3 rounded-xl border border-primary/20 bg-primary/5 p-3">
+            <div className="flex items-start justify-between gap-2"><span className="min-w-0 break-words text-xs font-semibold">{selectedRoute.rule.name}</span><button type="button" aria-label={translateText("取消选择")} className="text-muted-foreground hover:text-foreground" onClick={() => setSelectedRuleId(null)}>×</button></div>
+            <p className="mt-2 break-words font-mono text-[11px] text-muted-foreground">{selectedRoute.routeText}</p>
+            <div className="mt-3 flex justify-between gap-2 text-xs tabular-nums"><span>↓ {formatBytes(selectedRoute.bytesIn)}</span><span>↑ {formatBytes(selectedRoute.bytesOut)}</span></div>
+            <Button variant="outline" size="sm" className="mt-3 h-7 w-full text-xs" onClick={() => onEditRule(selectedRoute.rule)}>{translateText("编辑规则")}</Button>
+          </div>}
+          <div className="min-h-0 flex-1 space-y-1 overflow-y-auto p-2">
+            {globeData.summaries.slice(0, 50).map((item, index) => <button type="button" key={item.rule.id} className="globe-list-row" data-active={selectedRoute?.rule.id === item.rule.id} aria-pressed={selectedRoute?.rule.id === item.rule.id} onClick={() => { setSelectedRuleId(Number(item.rule.id)); if (item.routePoints[0]) scene.focus(item.routePoints[0]); }}>
+              <div className="flex min-w-0 items-center gap-2"><span className="w-4 shrink-0 text-[10px] tabular-nums text-muted-foreground">{String(index + 1).padStart(2, "0")}</span><span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: item.color }} /><span className="min-w-0 flex-1 truncate text-xs font-medium">{item.rule.name || translateText("规则 #{0}", [item.rule.id])}</span><span className="shrink-0 text-[11px] tabular-nums">{formatBytes(item.totalBytes)}</span></div>
+              <div className="ml-6 mt-1 truncate font-mono text-[10px] text-muted-foreground">{item.targetText}</div>
+              <div className="ml-6 mt-2 h-1 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full" style={{ width: `${totalTraffic ? Math.max(2, item.totalBytes / totalTraffic * 100) : 0}%`, backgroundColor: item.color }} /></div>
+            </button>)}
+            {globeData.summaries.length === 0 && <p className="px-2 py-8 text-center text-xs text-muted-foreground">{translateText("暂无可定位流量路径")}</p>}
+          </div>
+          <div className="border-t border-border/50 px-4 py-3 text-[11px] text-muted-foreground">{translateText("点击排行定位链路")}{globeData.summaries.length > 50 ? ` · ${translateText("显示前 {0} 项", [50])}` : ""}</div>
+        </>}
+      >
           <Suspense
             fallback={
-              <div className="absolute inset-0 flex items-center justify-center bg-[#030712] text-sm text-white/70">
+              <div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />{translateText("正在加载流量转发图")}</div>
             }
           >
@@ -1945,19 +1922,19 @@ function RuleTrafficGlobe({
               ref={globeRef}
               width={size.width}
               height={size.height}
-              backgroundColor="rgba(3,7,18,1)"
+              backgroundColor="rgba(0,0,0,0)"
               globeImageUrl={RULE_GLOBE_EARTH_IMAGE_URL}
               showAtmosphere
-              atmosphereColor="#64748b"
-              atmosphereAltitude={0.22}
+              atmosphereColor={palette.primary}
+              atmosphereAltitude={0.14}
               showGraticules={false}
               globeCurvatureResolution={6}
               polygonsData={countries}
               polygonGeoJsonGeometry="geometry"
               polygonAltitude={(country) => countryFeatureHasCode(country as RuleGlobeCountryFeature, routeCountryCodes) ? 0.014 : 0.004}
-              polygonCapColor={(country) => countryFeatureHasCode(country as RuleGlobeCountryFeature, routeCountryCodes) ? "rgba(20,184,166,.34)" : "rgba(15,23,42,.05)"}
-              polygonSideColor={(country) => countryFeatureHasCode(country as RuleGlobeCountryFeature, routeCountryCodes) ? "rgba(20,184,166,.22)" : "rgba(2,6,23,.14)"}
-              polygonStrokeColor={(country) => countryFeatureHasCode(country as RuleGlobeCountryFeature, routeCountryCodes) ? "rgba(94,234,212,.88)" : "rgba(148,163,184,.22)"}
+              polygonCapColor={(country) => countryFeatureHasCode(country as RuleGlobeCountryFeature, routeCountryCodes) ? palette.cap : "rgba(15,23,42,.03)"}
+              polygonSideColor={(country) => countryFeatureHasCode(country as RuleGlobeCountryFeature, routeCountryCodes) ? palette.side : "rgba(2,6,23,.1)"}
+              polygonStrokeColor={(country) => countryFeatureHasCode(country as RuleGlobeCountryFeature, routeCountryCodes) ? palette.stroke : palette.mutedStroke}
               polygonCapCurvatureResolution={4}
               polygonsTransitionDuration={0}
               pointsData={globeData.points}
@@ -1981,18 +1958,19 @@ function RuleTrafficGlobe({
               pathResolution={12}
               pathColor={(path: object) => {
                 const item = path as RuleGlobePath;
+                if (activeRuleId != null && activeRuleId !== item.rule?.id) return hexToRgba(item.color, 0.12);
                 if (item.variant === "track") return item.trackColor;
                 return hoveredPath?.rule?.id === item.rule?.id ? item.color : hexToRgba(item.color, 0.88);
               }}
               pathStroke={(path: object) => {
                 const item = path as RuleGlobePath;
-                const hovered = hoveredPath?.rule?.id === item.rule?.id;
+                const hovered = activeRuleId === item.rule?.id;
                 return item.variant === "track" ? Math.max(1.1, item.stroke - 0.45) : item.stroke + (hovered ? 0.75 : 0);
               }}
               pathDashLength={(path: object) => (path as RuleGlobePath).variant === "flow" ? 0.16 : 1}
               pathDashGap={(path: object) => (path as RuleGlobePath).variant === "flow" ? 0.085 : 0}
               pathDashInitialGap={(path: object) => (path as RuleGlobePath).dashInitialGap}
-              pathDashAnimateTime={(path: object) => (path as RuleGlobePath).variant === "flow" ? (path as RuleGlobePath).dashAnimateTime : 0}
+              pathDashAnimateTime={(path: object) => scene.motionEnabled && (path as RuleGlobePath).variant === "flow" ? (path as RuleGlobePath).dashAnimateTime : 0}
               pathTransitionDuration={0}
               pathLabel={(path) => renderRuleGlobePathTooltip(path as RuleGlobePath)}
               onPathHover={(path) => setHoveredPath(path as RuleGlobePath | null)}
@@ -2002,47 +1980,11 @@ function RuleTrafficGlobe({
               }}
               showPointerCursor={(objectType) => objectType === "path" || objectType === "point"}
               enablePointerInteraction
-              onGlobeReady={() => setGlobeReady(true)}
+              onGlobeReady={() => scene.setReady(true)}
             />
           </Suspense>
 
-          <div className="pointer-events-none absolute left-4 top-4 rounded-md border border-white/10 bg-black/35 px-3 py-2 text-xs text-white shadow-lg backdrop-blur-md">
-            <div className="font-medium">{translateText("流量转发图")}</div>
-            <div className="mt-1 text-white/70">{translateText("规则 ")}{rules.length}{translateText(" 条 · 已定位 ")}{globeData.summaries.length}{translateText(" 条")}</div>
-            {globeData.skipped > 0 && (
-              <div className="mt-1 text-amber-200/85">{translateText("待定位 ")}{globeData.skipped}{translateText(" 条")}</div>
-            )}
-          </div>
-
-          <div className="pointer-events-none absolute right-4 top-4 flex max-h-[calc(100%-2rem)] w-[min(360px,calc(100%-2rem))] flex-col gap-2 overflow-hidden rounded-md border border-white/10 bg-black/35 p-3 text-xs text-white shadow-lg backdrop-blur-md">
-            <div className="flex items-center justify-between gap-3">
-              <span className="font-medium">{trafficRangeLabel}{translateText(" 流量走向")}</span>
-              <span className="text-white/60">{formatBytes(globeData.summaries.reduce((sum, item) => sum + item.totalBytes, 0))}</span>
-            </div>
-            <div className="min-h-0 space-y-2 overflow-y-auto pr-1">
-              {globeData.summaries.slice(0, 12).map((item) => (
-                <div key={item.rule.id} className="grid grid-cols-[10px_minmax(0,1fr)_auto] items-center gap-2">
-                  <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: item.color, boxShadow: `0 0 12px ${hexToRgba(item.color, .75)}` }} />
-                  <div className="min-w-0">
-                    <div className="truncate font-medium">{item.rule.name || translateText("规则 #{0}", [item.rule.id])}</div>
-                    <div className="truncate text-white/55">{item.targetText}</div>
-                  </div>
-                  <div className="text-right tabular-nums text-white/75">{formatBytes(item.totalBytes)}</div>
-                </div>
-              ))}
-              {globeData.summaries.length === 0 && (
-                <div className="py-2 text-white/60">{translateText("暂无可定位流量路径")}</div>
-              )}
-            </div>
-          </div>
-
-          {globeData.summaries.length === 0 && (
-            <div className="pointer-events-none absolute inset-0 flex items-center justify-center px-6 text-center">
-              <div className="rounded-md border border-white/10 bg-black/35 px-4 py-3 text-sm text-white/80 shadow-lg backdrop-blur-md">{translateText("暂无可定位转发路径")}</div>
-            </div>
-          )}
-        </div>
-      </div>
+      </GlobeWorkspace>
       <Card className="border-border/40 bg-card/60 md:hidden">
         <CardContent className="p-6 text-center text-sm text-muted-foreground">{translateText("3D 流量转发图仅在 PC 端显示。")}</CardContent>
       </Card>
@@ -2137,6 +2079,7 @@ function buildRuleTransferFiles(
   rules: readonly any[],
   scope: Record<string, unknown>,
   fileNameBase: string,
+  format: "json" | "text" = "json",
 ) {
   const chunks = chunkBatchItems(rules, RULE_TRANSFER_MAX_IMPORT_COUNT);
   return chunks.map((chunk, index) => {
@@ -2147,8 +2090,9 @@ function buildRuleTransferFiles(
       scope,
       rules: chunk.map(exportRuleForTransfer),
     };
+    const content = format === "text" ? serializeRuleTransferText(payload.rules) : JSON.stringify(payload, null, 2);
     const partSuffix = chunks.length > 1 ? `-part-${index + 1}-of-${chunks.length}` : "";
-    return { filename: `${fileNameBase}${partSuffix}.json`, content: JSON.stringify(payload, null, 2), ruleCount: chunk.length };
+    return { filename: `${fileNameBase}${partSuffix}.${format === "text" ? "txt" : "json"}`, content, ruleCount: chunk.length };
   });
 }
 
@@ -2208,12 +2152,12 @@ function RulesContent() {
     refetchOnWindowFocus: false,
   });
   const { data: tunnels } = trpc.tunnels.options.useQuery(undefined, {
-    refetchInterval: pollingInterval("normal"),
+    refetchInterval: adaptivePollingInterval(pollingInterval("normal")),
     staleTime: 10000,
     refetchOnWindowFocus: false,
   });
   const { data: forwardGroups, isFetched: forwardGroupsFetched, isError: forwardGroupsError } = trpc.forwardGroups.options.useQuery(undefined, {
-    refetchInterval: pollingInterval("normal"),
+    refetchInterval: adaptivePollingInterval(pollingInterval("normal")),
     staleTime: 10000,
     refetchOnWindowFocus: false,
   });
@@ -2304,6 +2248,7 @@ function RulesContent() {
   }, [filterUser, user?.id, user?.role]);
   const effectiveRulesQuery = selectedRulesQuery || undefined;
   const isOwnRuleScope = user?.role !== "admin" || filterUser === "self" || Number(filterUser) === Number(user?.id);
+  const batchGroupEditor = useRuleGroupBulkEditor({ enabled: showCopyDialog && isOwnRuleScope });
   const personalGroupsQuery = trpc.rules.personalGroups.useQuery(undefined, {
     enabled: !!user?.id,
     staleTime: 30_000,
@@ -2323,7 +2268,17 @@ function RulesContent() {
   const [copyRuleIds, setCopyRuleIds] = useState<number[]>([]);
   const [copyRuleSearch, setCopyRuleSearch] = useState("");
   const [copyRuleCategory, setCopyRuleCategory] = useState<RuleCategory>("all");
+  const [copyRulePersonalGroupId, setCopyRulePersonalGroupId] = useState<number | null>(null);
+  useEffect(() => {
+    if (!copyRulePersonalGroupId || !personalGroupsQuery.data) return;
+    if (personalGroupsQuery.data.groups.some((group) => group.id === copyRulePersonalGroupId)) return;
+    setCopyRulePersonalGroupId(null);
+    setCopyRuleIds([]);
+  }, [copyRulePersonalGroupId, personalGroupsQuery.data]);
   const [copyManageMode, setCopyManageMode] = useState<RuleBatchManageMode>("copy");
+  const [batchStep, setBatchStep] = useState(1);
+  const copyBodyRef = useRef<HTMLDivElement>(null);
+  useEffect(() => { copyBodyRef.current?.scrollTo({ top: 0 }); }, [batchStep, copyManageMode]);
   const [copyTargetScopeType, setCopyTargetScopeType] = useState<RuleTransferScopeType>("local");
   const [copyTargetResourceIds, setCopyTargetResourceIds] = useState<number[]>([]);
   // Keep an eagerly-updated snapshot of the target selection.  React state is
@@ -2347,6 +2302,8 @@ function RulesContent() {
   const [copyTargetSearch, setCopyTargetSearch] = useState("");
   const [copyConflictStrategy, setCopyConflictStrategy] = useState<"skip" | "auto" | "error">("auto");
   const [copyWorking, setCopyWorking] = useState(false);
+  useSyncExternalStore(ruleCopyRetries.subscribe, ruleCopyRetries.snapshot, ruleCopyRetries.snapshot);
+  const copyRetryScope = user ? ruleTaskScope(user.id) : "";
   const [batchEditForm, setBatchEditForm] = useState<BatchEditFormData>({
     routeMode: "local",
     forwardType: defaultForm.forwardType,
@@ -2357,6 +2314,7 @@ function RulesContent() {
   });
   const [showExportDialog, setShowExportDialog] = useState(false);
   const [exportDownloads, setExportDownloads] = useState<ReturnType<typeof buildRuleTransferFiles>>([]);
+  const [exportFormat, setExportFormat] = useState<"json" | "text">("json");
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [exportScopeType, setExportScopeType] = useState<RuleTransferScopeType>("local");
   const [exportResourceId, setExportResourceId] = useState("");
@@ -2374,8 +2332,13 @@ function RulesContent() {
   const [importFileInputKey, setImportFileInputKey] = useState(0);
   const [importManualText, setImportManualText] = useState("");
   const [importSniSourcePort, setImportSniSourcePort] = useState(SNI_DEFAULT_ENTRY_PORT);
+  const [importPortText, setImportPortText] = useState("");
+  const [importRetryState, setImportRetryState] = useState<{ ports: number[]; preservePorts: boolean } | null>(null);
   const [importingRules, setImportingRules] = useState(false);
   const importingRulesRef = useRef(false);
+  // Keep uncertain attempts across dialog resets: reopening the same input
+  // must not create a second job after its accepted result was lost.
+  const [unknownImports, setUnknownImports] = useState<ReadonlySet<string>>(() => new Set());
   const [defaultRulePageSize] = useState(() => {
     migrateStoredRulePageSize();
     return 20 as const;
@@ -2400,7 +2363,7 @@ function RulesContent() {
     category: ruleCategory,
     search: ruleSearchQuery,
   }, {
-    refetchInterval: pollingInterval("normal"),
+    refetchInterval: adaptivePollingInterval(pollingInterval("normal")),
     staleTime: 10_000,
     refetchOnWindowFocus: false,
     placeholderData: (previousData) => previousData,
@@ -2453,7 +2416,7 @@ function RulesContent() {
     || showImportDialog;
   const fullRulesQuery = trpc.rules.list.useQuery(effectiveRulesQuery as any, {
     enabled: needsFullRuleList,
-    refetchInterval: pollingInterval("normal"),
+    refetchInterval: adaptivePollingInterval(pollingInterval("normal")),
     staleTime: 10_000,
     refetchOnWindowFocus: false,
     placeholderData: (previousData: any) => previousData,
@@ -2475,7 +2438,7 @@ function RulesContent() {
     search: ruleSearchQuery,
   }, {
     enabled: secondaryQueriesReady,
-    refetchInterval: pollingInterval("normal"),
+    refetchInterval: adaptivePollingInterval(pollingInterval("normal")),
     staleTime: 10_000,
     refetchOnWindowFocus: false,
     placeholderData: (previousData) => previousData,
@@ -2560,11 +2523,50 @@ function RulesContent() {
   });
   const ruleReorderPending = reorderRulesMutation.isPending;
 
-  const batchCreateMutation = trpc.rules.create.useMutation();
-  const batchUpdateMutation = trpc.rules.update.useMutation();
-  const batchDeleteMutation = trpc.rules.deleteBatch.useMutation();
+  const [ruleTaskEnqueued, setRuleTaskEnqueued] = useState(false);
+  const ruleTaskSubmitting = useRef(false);
+  const ruleTaskPageMounted = useRef(true);
+  useEffect(() => {
+    ruleTaskPageMounted.current = true;
+    return () => { ruleTaskPageMounted.current = false; };
+  }, []);
+  const runQueuedRules = async <T, R,>(items: readonly T[], title: string, action: (item: T) => RuleTaskAction,
+    value: (result: RuleTaskResult, item: T) => R, onSettled?: (task: RuleTaskSnapshot) => void): Promise<Array<BatchOperationResult<T, R> & { taskStatus: RuleTaskResult["status"] }>> => {
+    if (ruleTaskSubmitting.current) throw Error(translateText("已有批量任务正在提交或执行"));
+    if (!user) throw Error(translateText("请先登录"));
+    ruleTaskSubmitting.current = true;
+    try {
+      const task = await submitRuleTask({
+        enqueue: input => utils.client.rules.enqueueTask.mutate(input),
+        lookup: input => utils.client.rules.taskLookup.query(input),
+      }, user.id, title, items.map(action), () => setRuleTaskEnqueued(true), task => {
+        onSettled?.(task);
+        return ruleTaskPageMounted.current;
+      });
+      return (task.results || []).map(result => result.status === "failed" || result.status === "cancelled"
+        ? { item: items[result.index], status: "rejected" as const, taskStatus: result.status, reason: Error(result.error || translateText("任务已停止，该项未执行")) }
+        : { item: items[result.index], status: "fulfilled" as const, taskStatus: result.status, value: value(result, items[result.index]) });
+    } finally { ruleTaskSubmitting.current = false; setRuleTaskEnqueued(false); }
+  };
 
-  const importBatchMutation = trpc.rules.createBatch.useMutation();
+  const runQueuedImport = async (rules: RuleBulkImportRule[], options: { fixedPortFirst?: boolean; retryPortConflicts?: boolean }, onSettled?: (task: RuleTaskSnapshot) => void) => {
+    if (ruleTaskSubmitting.current) throw Error(translateText("已有批量任务正在提交或执行"));
+    if (!user) throw Error(translateText("请先登录"));
+    ruleTaskSubmitting.current = true;
+    try {
+      const task = await submitRuleTask({
+        enqueue: input => utils.client.rules.enqueueTask.mutate(input),
+        lookup: input => utils.client.rules.taskLookup.query(input),
+      }, user.id, "批量导入", [{ operation: "createBatch", conflictStrategy: "error",
+        input: { ...options, rules: rules.map(buildImportRulePayload) } }], () => setRuleTaskEnqueued(true), task => {
+        onSettled?.(task);
+        return ruleTaskPageMounted.current;
+      });
+      return { results: (task.results || []).map(result => result.status === "succeeded"
+        ? { status: "fulfilled" as const, value: result.value! }
+        : { status: "rejected" as const, retryable: result.status === "failed", reason: result.error || translateText("任务已停止，该项未执行") }) };
+    } finally { ruleTaskSubmitting.current = false; setRuleTaskEnqueued(false); }
+  };
 
   const [trafficDetailRule, setTrafficDetailRule] = useState<{ id: number; name: string; isForwardChain?: boolean; probeMethod?: "tcping" | "ping" } | null>(null);
   const [selfTestRule, setSelfTestRule] = useState<{ id: number; name: string } | null>(null);
@@ -2793,9 +2795,11 @@ function RulesContent() {
     setShowDialog(true);
   };
   const openCopyDialog = (initialRuleIds?: number[]) => {
-    setCopyManageMode(transferSourceRules.length ? "copy" : "import");
+    setBatchStep(1);
+    setCopyManageMode(transferSourceRules.length ? "operate" : "import");
     setBatchEditForm(buildEmptyBatchEditForm());
     setCopyRuleCategory(initialRuleIds ? "all" : ruleCategory);
+    setCopyRulePersonalGroupId(isOwnRuleScope ? activePersonalGroupId : null);
     setCopyRuleSearch(initialRuleIds ? "" : ruleSearchQuery);
     const preferredCopyTargetScope: RuleTransferScopeType = canUseSavedLocalForward
       ? "local"
@@ -3477,6 +3481,8 @@ function RulesContent() {
   };
 
   const switchCopyManageMode = (mode: RuleBatchManageMode) => {
+    if (copyActionPending || mode === copyManageMode || !ruleBatchModeAvailable(mode, batchAccess)) return;
+    setBatchStep(1);
     setCopyManageMode(mode);
     if (mode === "edit") {
       commitCopyTargetSelection(copyTargetSelectionRef.current.scopeType, []);
@@ -3596,40 +3602,6 @@ function RulesContent() {
     return payload;
   };
 
-  const createBatchCopyRule = async (rule: any, targetType: RuleTransferScopeType, resource: any) => {
-    if (!canEditRuleConfig(rule)) throw new Error(translateText("SNI 分流规则仅管理员可复制"));
-    const sourcePort = Number(rule.sourcePort || 0);
-    try {
-      await batchCreateMutation.mutateAsync(buildBatchCopyRulePayload(rule, targetType, resource, sourcePort) as any);
-      return { copied: true, skipped: false };
-    } catch (error: any) {
-      if (copyConflictStrategy === "error" || !isBatchPortConflictError(error)) throw error;
-      if (copyConflictStrategy === "auto") {
-        await batchCreateMutation.mutateAsync(buildBatchCopyRulePayload(rule, targetType, resource, 0) as any);
-        return { copied: true, skipped: false };
-      }
-      return { copied: false, skipped: true };
-    }
-  };
-
-  const updateBatchRuleTarget = async (rule: any, override?: RuleBulkEditInput) => {
-    if (!canEditRuleConfig(rule)) throw new Error(translateText("SNI 分流规则仅管理员可修改"));
-    const conflictStrategy = override ? override.conflictStrategy : copyConflictStrategy;
-    const hasRouteSelection = override ? !!(override.routeMode === "tunnel" ? override.tunnelId : override.forwardGroupId) : hasBatchEditRouteSelection;
-    const sourcePort = Number(rule.sourcePort || 0);
-    try {
-      await batchUpdateMutation.mutateAsync(buildBatchEditRulePayload(rule, sourcePort, override) as any);
-      return { updated: true, skipped: false };
-    } catch (error: any) {
-      if (!hasRouteSelection || conflictStrategy === "error" || !isBatchPortConflictError(error)) throw error;
-      if (conflictStrategy === "auto") {
-        await batchUpdateMutation.mutateAsync(buildBatchEditRulePayload(rule, 0, override) as any);
-        return { updated: true, skipped: false };
-      }
-      return { updated: false, skipped: true };
-    }
-  };
-
   const handleCopyRules = async () => {
     if (!canAdd) {
       toast.error(translateText("当前账号没有添加转发规则的权限"));
@@ -3659,26 +3631,24 @@ function RulesContent() {
       toast.error(translateText("请选择目标") + ruleTransferScopeLabels[targetType]);
       return;
     }
-    const targetNames = selectedTargets.map((resource: any) => (
-      `${getTransferResourceLabel(targetType, resource)} (#${Number(resource.id)})`
-    ));
-    const targetSummary = targetNames.length <= 3
-      ? targetNames.join("、")
-      : translateText("{0} 等 {1} 个目标", [targetNames.slice(0, 3).join("、"), targetNames.length]);
+    const selectionKey = ruleCopySelectionKey(targetType, copyRuleIds, targetSelection.resourceIds);
+    const jobs = remainingRuleCopyJobs(selectedTargets.flatMap((resource: any) => (
+      copySelectedRules.map((rule: any) => ({ resource, rule, ruleId: Number(rule.id), resourceId: Number(resource.id) }))
+    )), selectionKey, ruleCopyRetries.get(copyRetryScope, selectionKey));
+    if (!jobs.length) return;
     setCopyWorking(true);
     let copied = 0;
-    let skipped = 0;
+    let outcomeKnown = false;
+    const pairs = jobs.map(({ ruleId, resourceId }) => ({ ruleId, resourceId }));
     try {
-      const jobs: Array<{ resource: any; rule: any }> = selectedTargets.flatMap((resource: any) => (
-        copySelectedRules.map((rule: any) => ({ resource, rule }))
-      ));
-      const results = await runBatchOperations(jobs, 6, ({ resource, rule }) => (
-        createBatchCopyRule(rule, targetType, resource)
-      ));
+      const results = await runQueuedRules(jobs, "批量复制", ({ resource, rule }) => ({ operation: "create", label: `${rule.name || `#${rule.id}`} → ${resource.name || `#${resource.id}`}`.slice(0, 160),
+        input: buildBatchCopyRulePayload(rule, targetType, resource, Number(rule.sourcePort || 0)), conflictStrategy: copyConflictStrategy,
+      }), result => ({ copied: result.status === "succeeded", skipped: result.status === "skipped" }), task => {
+        outcomeKnown = ruleCopyRetries.reconcile(copyRetryScope, selectionKey, pairs, task);
+      });
       for (const result of results) {
         if (result.status === "rejected") continue;
         if (result.value.copied) copied += 1;
-        if (result.value.skipped) skipped += 1;
       }
       await Promise.all([
         utils.rules.list.invalidate(),
@@ -3690,15 +3660,9 @@ function RulesContent() {
       ]);
       if (showCopyDialog) await fullRulesQuery.refetch();
       const failures = results.filter((result) => result.status === "rejected");
-      if (failures.length > 0) {
-        toast.error(translateText("批量复制完成：成功 {0} 条，跳过 {1} 条，失败 {2} 条。{3}", [copied, skipped, failures.length, batchOperationErrorMessage(failures[0].reason)]));
-      } else {
-        toast.success(skipped
-          ? translateText("已复制 {0} 条规则到 {1}，跳过 {2} 条", [copied, targetSummary, skipped])
-          : translateText("已复制 {0} 条规则到 {1}", [copied, targetSummary]));
-        if (copied > 0) setShowCopyDialog(false);
-      }
+      if (!failures.length && copied > 0) setShowCopyDialog(false);
     } catch (error: any) {
+      if (error instanceof RuleTaskOutcomeUnknownError && !outcomeKnown) ruleCopyRetries.remember(copyRetryScope, { selectionKey, failedPairs: [], unknown: true });
       toast.error(translateText("批量复制处理失败：") + (error?.message || translateText("请检查目标配置")));
     } finally {
       setCopyWorking(false);
@@ -3732,13 +3696,14 @@ function RulesContent() {
     }
     setCopyWorking(true);
     let updated = 0;
-    let skipped = 0;
     try {
-      const results = await runBatchOperations(copySelectedRules, 6, (rule) => updateBatchRuleTarget(rule));
+      const results = await runQueuedRules(copySelectedRules, "批量编辑", (rule: any) => ({ operation: "update",
+        input: buildBatchEditRulePayload(rule, Number(rule.sourcePort || 0)), conflictStrategy: hasBatchEditRouteSelection ? copyConflictStrategy : "error",
+      }), result => ({ updated: result.status === "succeeded", skipped: result.status === "skipped" }));
+      setCopyRuleIds(results.filter(result => result.taskStatus === "failed").map(result => Number(result.item.id)));
       for (const result of results) {
         if (result.status === "rejected") continue;
         if (result.value.updated) updated += 1;
-        if (result.value.skipped) skipped += 1;
       }
       invalidateRuleProbeStatuses(results
         .filter((result) => result.status === "fulfilled" && result.value.updated)
@@ -3753,14 +3718,7 @@ function RulesContent() {
       ]);
       if (showCopyDialog) await fullRulesQuery.refetch();
       const failures = results.filter((result) => result.status === "rejected");
-      if (failures.length > 0) {
-        toast.error(translateText("批量编辑完成：成功 {0} 条，跳过 {1} 条，失败 {2} 条。{3}", [updated, skipped, failures.length, batchOperationErrorMessage(failures[0].reason)]));
-      } else {
-        toast.success(skipped
-          ? translateText("已批量编辑 {0} 条，跳过 {1} 条", [updated, skipped])
-          : translateText("已批量编辑 {0} 条规则", [updated]));
-        if (updated > 0) setShowCopyDialog(false);
-      }
+      if (!failures.length && updated > 0) setShowCopyDialog(false);
     } catch (error: any) {
       toast.error(translateText("批量编辑处理失败：") + (error?.message || translateText("请检查目标配置")));
     } finally {
@@ -3778,6 +3736,7 @@ function RulesContent() {
       copySelectedRules,
       { type: "batch", name: translateText("批量管理选中规则") },
       `forwardx-rules-batch-${date}`,
+      exportFormat,
     );
     if (!partCount) return;
     toast.success(partCount > 1
@@ -3785,7 +3744,37 @@ function RulesContent() {
       : translateText("已导出 {0} 条规则", [copySelectedRules.length]));
   };
 
+  const refreshBatchRuleState = async () => {
+    invalidateRuleProbeStatuses(copySelectedRules.map((rule: any) => Number(rule.id)));
+    await Promise.all([
+      utils.rules.list.invalidate(), utils.rules.listPage.invalidate(),
+      utils.rules.mapItems.invalidate(), utils.rules.listSummary.invalidate(),
+      utils.rules.trafficSummary.invalidate(), utils.rules.personalGroups.invalidate(),
+      utils.auth.me.invalidate(), utils.billing.me.invalidate(),
+    ]);
+    await fullRulesQuery.refetch();
+  };
+
+  const handleBatchRuleOperation = async (operation: "enable" | "pause" | "restart") => {
+    if (copyActionPending || !copySelectedRules.length) return;
+    setCopyWorking(true);
+    try {
+      const results = await runQueuedRules(copySelectedRules, operation === "enable" ? "批量启用" : operation === "pause" ? "批量暂停" : "批量重启", (rule: any) => ({
+        operation: operation === "restart" ? "restart" : "toggle",
+        input: operation === "restart" ? { id: Number(rule.id) } : { id: Number(rule.id), isEnabled: operation === "enable" }, conflictStrategy: "error",
+      }), result => result.value || {});
+      const failures = results.filter((result) => result.status === "rejected");
+      setCopyRuleIds(results.filter(result => result.taskStatus === "failed").map(result => Number(result.item.id)));
+      await refreshBatchRuleState();
+    } catch (error) {
+      toast.error(batchOperationErrorMessage(error));
+    } finally {
+      setCopyWorking(false);
+    }
+  };
+
   const handleBatchDeleteRules = async () => {
+    if (copyActionPending) return;
     if (copySelectedRules.length === 0) {
       toast.error(translateText("请选择要删除的规则"));
       return;
@@ -3799,9 +3788,8 @@ function RulesContent() {
     setCopyWorking(true);
     try {
       const requestedIds = Array.from(new Set(copySelectedRules.map((rule: any) => Number(rule.id))));
-      const chunkResults = await runBatchOperations(chunkBatchItems(requestedIds, 500), 2, (ids) => (
-        batchDeleteMutation.mutateAsync({ ids })
-      ));
+      const chunkResults = await runQueuedRules(requestedIds, "批量删除", id => ({ operation: "delete", input: { id }, conflictStrategy: "error" }),
+        (_result, id) => ({ deletedIds: [id], failures: [] as Array<{ id: number; error: string }> }));
       const deletedIdList: number[] = [];
       const failures: Array<{ id: number; error: string }> = [];
       for (const chunkResult of chunkResults) {
@@ -3814,7 +3802,7 @@ function RulesContent() {
           continue;
         }
         const error = batchOperationErrorMessage(chunkResult.reason);
-        failures.push(...chunkResult.item.map((id) => ({ id: Number(id), error })));
+        failures.push({ id: Number(chunkResult.item), error });
       }
       const deletedIds = new Set(deletedIdList);
       invalidateRuleProbeStatuses(deletedIdList);
@@ -3828,11 +3816,6 @@ function RulesContent() {
         utils.rules.personalGroups.invalidate(),
       ]);
       if (showCopyDialog) await fullRulesQuery.refetch();
-      if (failures.length > 0) {
-        toast.error(translateText("批量删除完成：成功 {0} 条，失败 {1} 条。{2}", [deletedIdList.length, failures.length, failures[0]?.error || translateText("请稍后重试")]));
-      } else {
-        toast.success(translateText("已删除 {0} 条规则", [deletedIdList.length]));
-      }
     } catch (error: any) {
       toast.error(translateText("批量删除失败：") + (error?.message || translateText("请稍后重试")));
     } finally {
@@ -4090,12 +4073,14 @@ function RulesContent() {
     };
     return transferSourceRules
       .filter((rule: any) => !rule.forwardGroupRuleId && !rule.forwardGroupMemberId && isRuleSupported(rule))
+      .filter((rule: any) => matchesPersonalRuleGroup(rule.personalGroupIds, isOwnRuleScope ? copyRulePersonalGroupId : null))
       .filter((rule: any) => isForwardRuleVisibleByFilters(rule, batchFilters));
-  }, [copyRuleCategory, copyRuleSearch, isRuleSupported, ruleFilters, transferSourceRules]);
+  }, [copyRuleCategory, copyRulePersonalGroupId, isOwnRuleScope, copyRuleSearch, isRuleSupported, ruleFilters, transferSourceRules]);
   const copySelectedRules = useMemo(() => {
     const selected = new Set(copyRuleIds.map(Number));
-    return transferSourceRules.filter((rule: any) => selected.has(Number(rule.id)) && !rule.forwardGroupRuleId && !rule.forwardGroupMemberId);
-  }, [copyRuleIds, transferSourceRules]);
+    return transferSourceRules.filter((rule: any) => selected.has(Number(rule.id)) && !rule.forwardGroupRuleId && !rule.forwardGroupMemberId
+      && matchesPersonalRuleGroup(rule.personalGroupIds, isOwnRuleScope ? copyRulePersonalGroupId : null));
+  }, [copyRuleIds, copyRulePersonalGroupId, isOwnRuleScope, transferSourceRules]);
   const copyTargetResources = useMemo(() => {
     if (copyTargetScopeType === "local") return availablePortForwardGroups;
     if (copyTargetScopeType === "tunnel") return supportedTunnels;
@@ -4133,7 +4118,19 @@ function RulesContent() {
     return copyTargetResources.filter((resource: any) => selected.has(Number(resource.id)));
   }, [copyTargetResourceIds, copyTargetResources]);
   const copyTargetScopeLabel = ruleTransferScopeLabels[copyTargetScopeType];
-  const copyActionPending = copyWorking || batchCreateMutation.isPending || batchUpdateMutation.isPending || batchDeleteMutation.isPending;
+  const copyActionPending = copyWorking || importingRules || batchGroupEditor.isPending;
+  const batchAccess = { hasRules: transferSourceRules.length > 0, canAdd, isOwnRuleScope };
+  const batchCategory = ruleBatchCategory(copyManageMode);
+  const batchModeLabels: Record<RuleBatchManageMode, string> = {
+    operate: translateText("批量操作"), copy: translateText("批量复制"),
+    edit: translateText("批量编辑"), groups: translateText("调整分组"),
+    import: translateText("批量导入"), export: translateText("批量导出"),
+  };
+  const batchCategories = [
+    { value: "manage", label: translateText("规则管理"), icon: Rows3 },
+    { value: "transfer", label: translateText("导入导出"), icon: ArrowRightLeft },
+  ] as const;
+  const isBatchOperateMode = copyManageMode === "operate";
   const isBatchEditMode = copyManageMode === "edit";
   const isBatchCopyMode = copyManageMode === "copy";
   const isBatchExportMode = copyManageMode === "export";
@@ -4145,17 +4142,25 @@ function RulesContent() {
     && copyableSourceRules.every((rule: any) => copyRuleIds.includes(Number(rule.id)));
   const allVisibleCopyTargetsSelected = filteredCopyTargetResources.length > 0
     && filteredCopyTargetResources.every((resource: any) => copyTargetResourceIds.includes(Number(resource.id)));
-  const batchFlowHintLabel = isBatchEditMode
-    ? translateText("按右侧设置处理")
-    : isBatchExportMode
-      ? translateText("导出左侧已选规则")
-      : translateText("复制到右侧目标");
+  const batchSteps = ruleBatchStages(copyManageMode);
+  const batchIsFinalStep = batchStep === batchSteps.length;
+  const batchStepLabels = {
+    selectRules: translateText("选择规则"), importSource: translateText("导入内容"),
+    configureTarget: translateText("选择目标"), editRules: translateText("编辑内容"),
+    confirm: translateText("确认执行"), operate: translateText("批量操作"),
+    export: translateText("批量导出"), groups: translateText("调整分组"),
+  };
+  const batchSelectionSummary = (
+    <div className="flex min-w-0 items-center justify-between gap-2 rounded-lg bg-muted/40 px-3 py-2 text-sm">
+      <span>{translateText("已选择 {0} 条规则", [selectedBatchRuleCount])}</span>
+      <Button type="button" size="sm" variant="ghost" className="h-7 shrink-0 px-2 text-xs" disabled={copyActionPending} onClick={() => setBatchStep(1)}>{translateText("重新选择")}</Button>
+    </div>
+  );
   const batchRuleSelectionPanel = (
-    <div className="min-w-0 space-y-3 rounded-md border border-border/60 bg-background/55 p-3">
+    <div className="space-y-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0 flex-1 basis-40 space-y-1">
           <Label>{translateText("规则筛选")}</Label>
-          <div className="text-xs text-muted-foreground">{translateText("先选择规则，再根据上方模式填写对应内容。")}</div>
         </div>
         <div className="inline-flex shrink-0 items-center gap-2 self-start whitespace-nowrap rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
           <span>{translateText("已选规则")}</span>
@@ -4163,22 +4168,36 @@ function RulesContent() {
           <span className="text-primary/70">/ {copyableSourceRules.length}</span>
         </div>
       </div>
-      <div className="grid gap-2 sm:grid-cols-[10rem_minmax(0,1fr)]">
-        <Select value={copyRuleCategory} onValueChange={(value) => setCopyRuleCategory(value as RuleCategory)}>
-          <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{translateText("全部规则")}</SelectItem>
-            <SelectItem value="local">{translateText("端口转发")}</SelectItem>
-            <SelectItem value="tunnel">{translateText("隧道转发")}</SelectItem>
-            <SelectItem value="chain">{translateText("转发链")}</SelectItem>
-            <SelectItem value="group">{translateText("转发组")}</SelectItem>
-            <SelectItem value="sni">{translateText("sni规则组")}</SelectItem>
-          </SelectContent>
-        </Select>
+      <div className="grid gap-2">
+        <div className={cn("grid min-w-0 gap-2", isOwnRuleScope && "grid-cols-2")}>
+          <Select value={copyRuleCategory} onValueChange={(value) => setCopyRuleCategory(value as RuleCategory)} disabled={copyActionPending}>
+            <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{translateText("全部规则")}</SelectItem>
+              <SelectItem value="local">{translateText("端口转发")}</SelectItem>
+              <SelectItem value="tunnel">{translateText("隧道转发")}</SelectItem>
+              <SelectItem value="chain">{translateText("转发链")}</SelectItem>
+              <SelectItem value="group">{translateText("转发组")}</SelectItem>
+              <SelectItem value="sni">{translateText("sni规则组")}</SelectItem>
+            </SelectContent>
+          </Select>
+          {isOwnRuleScope && <Select value={copyRulePersonalGroupId === null ? "all" : String(copyRulePersonalGroupId)} disabled={copyActionPending} onValueChange={(value) => {
+            setCopyRulePersonalGroupId(value === "all" ? null : Number(value));
+            setCopyRuleIds([]);
+          }}>
+            <SelectTrigger className="h-9 text-xs" aria-label={translateText("规则分组")}><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{translateText("全部分组")}</SelectItem>
+              {(personalGroupsQuery.data?.groups || []).map((group) => <SelectItem key={group.id} value={String(group.id)}>{group.name}</SelectItem>)}
+              <SelectItem value="0">{translateText("未分组")}</SelectItem>
+            </SelectContent>
+          </Select>}
+        </div>
         <div className="relative">
           <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={copyRuleSearch}
+            disabled={copyActionPending}
             onChange={(event) => setCopyRuleSearch(event.target.value)}
             placeholder={translateText("查找规则名称、端口或目标地址")}
             className="h-9 pl-8 pr-8 text-xs"
@@ -4217,7 +4236,7 @@ function RulesContent() {
         <span className="text-xs text-muted-foreground tabular-nums">
           {copyableSourceRules.length}{translateText(" 项")}</span>
       </div>
-      <div className="max-h-[24rem] space-y-2 overflow-y-auto rounded-md border border-border/60 p-2">
+      <div className="space-y-2 rounded-md border border-border/60 p-2">
         {copyableSourceRules.length > 0 ? copyableSourceRules.map((rule: any) => {
           const category = getRuleCategory(rule, forwardGroupById);
           return (
@@ -4290,7 +4309,9 @@ function RulesContent() {
   const hasBatchEditTargetIpChange = batchEditTargetIp.length > 0;
   const hasBatchEditTargetPortChange = isValidPort(batchEditTargetPort);
   const hasBatchEditChanges = hasBatchEditRouteSelection || hasBatchEditTargetIpChange || hasBatchEditTargetPortChange;
-  const batchCopyDisabled = !canAdd || !copySelectedRules.some(canEditRuleConfig) || copyActionPending || selectedBatchRuleCount === 0 || selectedBatchTargetCount === 0;
+  const currentCopyRetry = ruleCopyRetries.get(copyRetryScope, ruleCopySelectionKey(copyTargetScopeType, copyRuleIds, copyTargetResourceIds));
+  const batchCopyDisabled = !canAdd || !copySelectedRules.some(canEditRuleConfig) || copyActionPending || selectedBatchRuleCount === 0 || selectedBatchTargetCount === 0
+    || !!currentCopyRetry && (currentCopyRetry.unknown || currentCopyRetry.failedPairs.length === 0);
   const batchEditDisabled = copyActionPending || selectedBatchRuleCount === 0 || !hasBatchEditChanges;
   const ruleFilterCacheScope = user?.role === "admin"
     ? `admin-${user?.id || "self"}-${filterUser}`
@@ -4395,7 +4416,7 @@ function RulesContent() {
     queryKey: getQueryKey(trpc.rules.trafficSummary, { hours: 24, range: "total", ruleIds: visibleRuleIdsForMetrics }, "query"),
     queryFn: () => queryInChunks<number, RuleTrafficSummaryRow>(visibleRuleIdsForMetrics, 1000, (ruleIds) => utils.client.rules.trafficSummary.query({ hours: 24, range: "total", ruleIds })),
     enabled: secondaryQueriesReady && visibleRuleIdsForMetrics.length > 0,
-    refetchInterval: pollingInterval("normal"),
+    refetchInterval: adaptivePollingInterval(pollingInterval("normal")),
     staleTime: 5000,
     refetchOnWindowFocus: false,
     placeholderData: (previousData) => previousData,
@@ -4404,7 +4425,7 @@ function RulesContent() {
     queryKey: getQueryKey(trpc.rules.trafficSummary, { hours: 24, range: "24h", ruleIds: visibleRuleIdsForMetrics }, "query"),
     queryFn: () => queryInChunks<number, RuleTrafficSummaryRow>(visibleRuleIdsForMetrics, 1000, (ruleIds) => utils.client.rules.trafficSummary.query({ hours: 24, range: "24h", ruleIds })),
     enabled: visibleRuleIdsForMetrics.length > 0,
-    refetchInterval: pollingInterval("normal"),
+    refetchInterval: adaptivePollingInterval(pollingInterval("normal")),
     staleTime: 5000,
     refetchOnWindowFocus: false,
     placeholderData: (previousData) => previousData,
@@ -4670,11 +4691,18 @@ function RulesContent() {
     ready: ruleListDataReady && !rulePageQuery.isPlaceholderData && !isRuleGlobeView,
   });
   const bulkActions = useRuleBulkActions({ selection: bulkSelection,
-    editRules: async (selectedRules, input) => (await runBatchOperations(selectedRules, 6, (rule) => updateBatchRuleTarget(rule, input)))
+    editRules: async (selectedRules, input) => (await runQueuedRules(selectedRules, "批量编辑", rule => ({
+      operation: "update", input: buildBatchEditRulePayload(rule, Number(rule.sourcePort || 0), input),
+      conflictStrategy: input.conflictStrategy,
+    }), result => ({ updated: !result.value?.skipped })))
       .map((result): RuleBulkOutcome => result.status === "rejected"
         ? { ruleId: Number(result.item.id), outcome: "failed", error: batchOperationErrorMessage(result.reason) }
         : { ruleId: Number(result.item.id), outcome: result.value.updated ? "updated" : "skipped" }),
-    deleteRules: (ids) => batchDeleteMutation.mutateAsync({ ids }),
+    deleteRules: async (ids) => {
+      const results = await runQueuedRules(ids, "批量删除", id => ({ operation: "delete", input: { id }, conflictStrategy: "error" }), () => true);
+      return { deletedIds: results.filter(row => row.status === "fulfilled").map(row => row.item),
+        failures: results.filter(row => row.status === "rejected").map(row => ({ id: row.item, error: batchOperationErrorMessage(row.reason) })) };
+    },
     onChanged: (ids) => { invalidateRuleProbeStatuses(ids); return Promise.all([
       utils.rules.list.invalidate(), utils.rules.listPage.invalidate(), utils.rules.mapItems.invalidate(),
       utils.rules.listSummary.invalidate(), utils.rules.trafficSummary.invalidate(),
@@ -5653,12 +5681,11 @@ function RulesContent() {
     ? nyanpassPaste?.ok && nyanpassPaste.file.importSource === "nyanpass" ? nyanpassPaste.file : null
     : importSourceMode === "file" && importFile?.importSource === "nyanpass" ? importFile : null;
   const isNyanpassImport = importSourceMode === "nyanpass" || !!nyanpassFile;
-  useEffect(() => { setImportNyanpassAcknowledged(false); }, [importResourceId,importScopeType,importNyanpassProtocol,importManualText]);
+  useEffect(() => { setImportNyanpassAcknowledged(false); }, [importResourceId,importScopeType,importNyanpassProtocol,importManualText,importPortText]);
 
-  const importValidation = useMemo<{ ok: boolean; message: string; rules: RuleBulkImportRule[] }>(() => {
-    if (!importResourceId) return { ok: false, message: translateText("请选择{0}", [ruleTransferScopeLabels[importScopeType]]), rules: [] };
+  const baseImportValidation = useMemo<{ ok: boolean; message: string; rules: RuleBulkImportRule[] }>(() => {
     if (importSourceMode === "sni") {
-      if (!SNI_IMPORT_SCOPE_TYPES.includes(importScopeType) || !selectedImportResource) {
+      if (!SNI_IMPORT_SCOPE_TYPES.includes(importScopeType)) {
         return { ok: false, message: translateText("请选择{0}", [ruleTransferScopeLabels[importScopeType]]), rules: [] };
       }
       return sniImportValidation;
@@ -5667,7 +5694,7 @@ function RulesContent() {
       if (nyanpassPaste && !nyanpassPaste.ok) return {ok:false,message:nyanpassPaste.error,rules:[]};
       if (!nyanpassFile) return {ok:false,message:translateText("请选择或粘贴 ny 导出的逐行 JSON 规则"),rules:[]};
       const rules=nyanpassFile.rules.map(rule=>({...rule,protocol:importNyanpassProtocol}));
-      const error=validateNyanpassImportTarget(rules,{protocol:importNyanpassProtocol,scope:importScopeType,resource:selectedImportResource,admin:user?.role === "admin"});
+      const error=selectedImportResource ? validateNyanpassImportTarget(rules,{protocol:importNyanpassProtocol,scope:importScopeType,resource:selectedImportResource,admin:user?.role === "admin"}) : null;
       if (error) return {ok:false,message:error,rules};
       if (!importNyanpassAcknowledged) return {ok:false,message:translateText("请确认实验性导入说明后继续"),rules};
       return {ok:true,message:translateText("ny（实验性）：已识别 {0} 条规则，导入后停用，端口冲突保留为失败项",[rules.length]),rules};
@@ -5681,7 +5708,56 @@ function RulesContent() {
     return { ok: true, message: translateText("已识别 {0} 条{1}规则", [importFile.rules.length, ruleTransferScopeLabels[importScopeType]]), rules: importFile.rules };
   }, [importFile, importFileError, importResourceId, importScopeType, importSourceMode, manualImportValidation,isNyanpassImport,nyanpassPaste,nyanpassFile,importNyanpassProtocol,importNyanpassAcknowledged,selectedImportResource,sniImportValidation,user?.role]);
 
-  const renderNyanpassImportOptions = () => isNyanpassImport ? (
+  const importValidation = useMemo(() => {
+    const parsed = parseRuleImportPorts(importSourceMode === "sni" ? "" : importPortText);
+    if (!parsed.ok) return { ok: false, message: parsed.error, rules: [] as RuleBulkImportRule[], preservePorts: true };
+    const rules = importSourceMode === "sni" ? baseImportValidation.rules : assignRuleImportPorts(baseImportValidation.rules, importRetryState?.ports ?? parsed.ports, importSourceMode === "manual" && !importRetryState);
+    const conflict = importSourceMode === "manual" ? findRuleTransferPortConflict(rules) : null;
+    if (conflict) return { ok: false, message: translateText("第 {0}、{1} 行的监听端口 {2} 重复", [conflict.firstIndex + 1, conflict.secondIndex + 1, conflict.port]), rules, preservePorts: true };
+    if (!selectedImportResource && baseImportValidation.ok) return { ok: false, message: translateText("请选择{0}", [ruleTransferScopeLabels[importScopeType]]), rules, preservePorts: true };
+    return { ...baseImportValidation,
+      rules,
+      preservePorts: isNyanpassImport || importFile?.importSource === "text" || !!parsed.ports.length || !!importRetryState?.preservePorts || (importSourceMode === "manual" && rules.some(rule => rule.sourcePort > 0)),
+    };
+  }, [baseImportValidation, importPortText, importRetryState, isNyanpassImport, importSourceMode, importFile?.importSource, selectedImportResource, importScopeType]);
+
+  const importAttemptKey = JSON.stringify([copyRetryScope, importScopeType, importResourceId,
+    importValidation.rules, importSourceMode === "manual" || isNyanpassImport,
+    importSourceMode === "file" && !importValidation.preservePorts]);
+  const importOutcomeUnknown = unknownImports.has(importAttemptKey);
+
+  const batchImportSourceReady = (importSourceMode === "sni" ? sniImportValidation.ok : isNyanpassImport ? !!nyanpassFile && (!nyanpassPaste || nyanpassPaste.ok)
+    : importSourceMode === "manual" ? manualImportValidation.ok : !!importFile && !importFileError)
+    && (importSourceMode === "sni" || parseRuleImportPorts(importPortText).ok) && importValidation.rules.length > 0
+    && !(importSourceMode === "manual" && findRuleTransferPortConflict(importValidation.rules));
+  const batchImportTargetError = isNyanpassImport && selectedImportResource
+    ? validateNyanpassImportTarget(importValidation.rules, { protocol: importNyanpassProtocol, scope: importScopeType, resource: selectedImportResource, admin: user?.role === "admin" }) : null;
+  const batchCanAdvance = ruleBatchCanAdvance(copyManageMode, batchStep, {
+    busy: copyActionPending, selectedRules: selectedBatchRuleCount, selectedTargets: selectedBatchTargetCount,
+    importSourceReady: !!batchImportSourceReady, importTargetReady: !!selectedImportResource && !batchImportTargetError,
+  });
+
+  const renderExportFormatPicker = () => <div className="space-y-1.5">
+    <Label>{translateText("导出格式")}</Label>
+    <Select value={exportFormat} onValueChange={value => setExportFormat(value as "json" | "text")}>
+      <SelectTrigger aria-label={translateText("导出格式")}><SelectValue /></SelectTrigger>
+      <SelectContent>
+        <SelectItem value="json">{translateText("JSON（完整配置）")}</SelectItem>
+        <SelectItem value="text">{translateText("TXT（监听端口:目标地址:端口）")}</SelectItem>
+      </SelectContent>
+    </Select>
+    {exportFormat === "text" && <p className="text-xs text-muted-foreground">{translateText("仅包含监听端口和目标，可直接重新导入；完整配置请用 JSON。")}</p>}
+  </div>;
+
+  const renderImportPortInput = () => importSourceMode === "sni" ? null : <div className="space-y-1.5">
+    <Label htmlFor="rule-import-ports">{translateText("监听端口")}</Label>
+    <Input id="rule-import-ports" value={importPortText} maxLength={RULE_IMPORT_PORT_TEXT_MAX_LENGTH} disabled={importingRules}
+      onChange={event => { setImportPortText(event.target.value); setImportRetryState(null); }}
+      placeholder="10000-10020,10025" aria-describedby="rule-import-ports-hint" />
+    <p id="rule-import-ports-hint" className="text-xs text-muted-foreground">{translateText(importSourceMode === "manual" ? "仅分配给未指定端口的行，不足随机。" : "按顺序分配，不足随机；留空沿用文件端口。")}</p>
+  </div>;
+
+  const renderNyanpassImportOptions = (showAcknowledgement = true) => isNyanpassImport ? (
     <div className="space-y-2 rounded-md border border-amber-500/30 bg-amber-500/5 p-3 text-xs">
       <p className="font-medium text-amber-700 dark:text-amber-300">{translateText("ny / Nyanpass 导入（实验性）")}</p>
       <p className="text-muted-foreground">{translateText("导出未包含完整协议、启停状态及拓扑。请选择协议；规则导入后停用，不迁移历史流量，不覆盖已有规则或自动更换冲突端口。")}</p>
@@ -5689,14 +5765,16 @@ function RulesContent() {
         <SelectTrigger aria-label={translateText("ny 导入协议")}><SelectValue /></SelectTrigger>
         <SelectContent>{(["tcp","udp","both"] as const).map(value=><SelectItem key={value} value={value}>{formatForwardRuleProtocol(value)}</SelectItem>)}</SelectContent>
       </Select>
-      <label className="flex cursor-pointer items-start gap-2 leading-5">
+      {showAcknowledgement && <label className="flex cursor-pointer items-start gap-2 leading-5">
         <input type="checkbox" className="mt-1 h-4 w-4 shrink-0 accent-primary" checked={importNyanpassAcknowledged} onChange={event=>setImportNyanpassAcknowledged(event.target.checked)} disabled={importingRules} />
         <span>{translateText("我已核对目标资源、协议和预览，接受实验性兼容限制")}</span>
-      </label>
+      </label>}
     </div>
   ) : null;
 
   const resetImportDialog = () => {
+    setImportPortText("");
+    setImportRetryState(null);
     setImportFile(null);
     setImportFileName("");
     setImportFileError("");
@@ -5750,6 +5828,7 @@ function RulesContent() {
   };
 
   const handleImportFileChange = async (event: any) => {
+    setImportRetryState(null);
     const file = event.target.files?.[0];
     setImportFile(null);
     setImportFileError("");
@@ -5769,7 +5848,7 @@ function RulesContent() {
       }
       setImportFile({ ...result.file, rules: result.file.rules.map((rule, index) => ({ ...rule, sourceLineNumber: rule.sourceLineNumber || index + 1 })) });
     } catch {
-      setImportFileError(translateText("文件无法解析，请选择 JSON 格式的规则文件"));
+      setImportFileError(translateText("文件无法解析，请选择 JSON 或 TXT 规则文件"));
     }
   };
 
@@ -5823,6 +5902,10 @@ function RulesContent() {
 
   const handleImportRules = async () => {
     if (importingRulesRef.current) return;
+    if (importOutcomeUnknown) {
+      toast.error(translateText("保存结果暂无法确认，请核对规则后再操作，不要重复提交"));
+      return;
+    }
     if (!importValidation.ok) {
       toast.error(importValidation.message);
       return;
@@ -5830,16 +5913,20 @@ function RulesContent() {
     const clickedAt = performance.now();
     let saveResultsAt: number | undefined;
     let displayed = false;
+    let outcomeKnown = false;
     importingRulesRef.current = true;
     setImportingRules(true);
     try {
       setImportFailures([]);
       const results = await runRuleImport(importValidation.rules, {
-        createBatch: (rules, options) => importBatchMutation.mutateAsync({
-          ...options,
-          rules: rules.map(buildImportRulePayload),
+        createBatch: (rules, options) => runQueuedImport(rules, options, () => {
+          outcomeKnown = true;
+          setUnknownImports(current => {
+            if (!current.has(importAttemptKey)) return current;
+            const next = new Set(current); next.delete(importAttemptKey); return next;
+          });
         }),
-      }, { fixedPortFirst: importSourceMode === "manual" || isNyanpassImport, retryPortConflicts: importSourceMode === "file" && !isNyanpassImport });
+      }, { fixedPortFirst: importSourceMode === "manual" || isNyanpassImport, retryPortConflicts: importSourceMode === "file" && !importValidation.preservePorts });
       saveResultsAt = performance.now();
       const importedCount = results.filter((result) => result.status === "fulfilled").length;
       const failures = results.filter((result) => result.status === "rejected");
@@ -5858,7 +5945,16 @@ function RulesContent() {
         ...(showCopyDialog ? [fullRulesQuery.refetch()] : []),
       ]);
       if (failures.length > 0) {
-        const failedRules = failures.map((result) => result.item);
+        const failedRules = failures.filter(result => result.retryable !== false).map((result) => result.item);
+        if (!failedRules.length) {
+          setShowImportDialog(false);
+          setShowCopyDialog(false);
+          resetImportDialog();
+          toast.info(translateText("任务已停止，该项未执行"));
+          displayed = true;
+          return;
+        }
+        setImportRetryState({ ports: failedRules.map(rule => rule.sourcePort), preservePorts: importValidation.preservePorts });
         if (isNyanpassImport && nyanpassFile) {
           setImportFile({...nyanpassFile,rules:failedRules});
           setImportSourceMode("file");
@@ -5882,13 +5978,15 @@ function RulesContent() {
           : "";
         toast.error(translateText("批量导入完成：成功 {0} 条，失败 {1} 条，已仅保留失败项供重试。{2}", [importedCount, failures.length, firstMessage.startsWith(firstPrefix) ? firstMessage : `${firstPrefix}${firstMessage}`]));
       } else {
-        toast.success(translateText("已导入 {0} 条规则", [importedCount]));
         setShowImportDialog(false);
         setShowCopyDialog(false);
         resetImportDialog();
       }
       displayed = true;
     } catch (error: any) {
+      if (error instanceof RuleTaskOutcomeUnknownError && !outcomeKnown) {
+        setUnknownImports(current => new Set([...current, importAttemptKey]));
+      }
       toast.error(translateText("批量导入处理失败：{0}", [error?.message || translateText("请检查规则配置")]));
     } finally {
       console.info("[RuleImport] " + JSON.stringify({
@@ -5903,15 +6001,15 @@ function RulesContent() {
 
   const downloadRuleTransferFile = (file: ReturnType<typeof buildRuleTransferFiles>[number]) => {
     try {
-      downloadTextFile(file.filename, file.content, "application/json;charset=utf-8");
+      downloadTextFile(file.filename, file.content, file.filename.endsWith(".txt") ? "text/plain;charset=utf-8" : "application/json;charset=utf-8");
       return true;
     } catch (error: unknown) {
       toast.error(error instanceof Error ? error.message : translateText("浏览器未能保存文件，请检查下载权限后重试"));
       return false;
     }
   };
-  const downloadRuleTransferFiles = (rules: readonly any[], scope: Record<string, unknown>, fileNameBase: string) => {
-    const files = buildRuleTransferFiles(rules, scope, fileNameBase);
+  const downloadRuleTransferFiles = (rules: readonly any[], scope: Record<string, unknown>, fileNameBase: string, format: "json" | "text" = "json") => {
+    const files = buildRuleTransferFiles(rules, scope, fileNameBase, format);
     if (files.length === 1) return downloadRuleTransferFile(files[0]) ? 1 : 0;
     setShowCopyDialog(false);
     setExportDownloads(files);
@@ -5938,6 +6036,7 @@ function RulesContent() {
         name: resourceLabel,
       },
       `forwardx-rules-${exportScopeType}-${sanitizeRuleTransferFilePart(resourceLabel)}-${date}`,
+      exportFormat,
     );
     if (!partCount) return;
     toast.success(partCount > 1
@@ -7893,12 +7992,12 @@ function RulesContent() {
           setShowDialog(open);
         }}
       >
-        <DialogContent className="flex max-h-[96svh] w-[calc(100vw-1rem)] flex-col gap-3 overflow-hidden p-4 sm:max-w-2xl sm:p-5">
+        <DialogContent className="max-h-[96svh] w-[calc(100vw-1rem)] grid-rows-[auto_minmax(0,1fr)_auto] gap-3 overflow-hidden p-4 sm:max-w-2xl sm:p-5">
           <DialogHeader>
             <DialogTitle>{editingId ? translateText("编辑规则") : translateText("添加转发规则")}</DialogTitle>
             {!editingId && user?.role === "admin" && <DialogDescription>{translateText("新增规则归属：")}{ruleOperationOwnerLabel}</DialogDescription>}
           </DialogHeader>
-          <div className="min-h-0 flex-1 scroll-pb-28 space-y-3 overflow-y-auto pb-5 pr-1">
+          <div className="min-h-0 touch-pan-y scroll-pb-28 space-y-3 overflow-y-auto overscroll-contain pb-5 pr-1">
             <Tabs
               value={form.routeMode}
               onValueChange={(value) => setRouteMode(value as RuleRouteMode)}
@@ -8453,6 +8552,7 @@ function RulesContent() {
                 onSelect: setExportResourceId,
               })}
             </div>
+            {renderExportFormatPicker()}
             <div className="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
               {exportResourceId
                 ? translateText("将导出 {0} 条{1}规则", [exportableRules.length, ruleTransferScopeLabels[exportScopeType]])
@@ -8473,8 +8573,9 @@ function RulesContent() {
       <Dialog
         open={showImportDialog}
         onOpenChange={(open) => {
+          if (importingRules && !ruleTaskEnqueued) return;
           setShowImportDialog(open);
-          if (!open) resetImportDialog();
+          if (!open && !importingRules) resetImportDialog();
         }}
       >
         <DialogContent className="grid-rows-[auto_minmax(0,1fr)_auto] sm:max-w-2xl">
@@ -8486,6 +8587,7 @@ function RulesContent() {
             <DialogDescription>{translateText("选择范围和规则文件后导入")}</DialogDescription>
           </DialogHeader>
           <div className="min-h-0 min-w-0 space-y-4 overflow-y-auto py-2 pr-1">
+            <div data-rule-task-container="" />
             <div className="grid gap-4 sm:grid-cols-[minmax(0,11rem)_minmax(0,1fr)]">
               <div className="space-y-2">
                 <Label>{translateText("类型")}</Label>
@@ -8526,8 +8628,9 @@ function RulesContent() {
             <div className="space-y-2">
               <Label>{translateText("规则文件")}</Label>
               <Input key={importFileInputKey} type="file" accept=".json,.jsonl,.ndjson,.txt,application/json,text/plain" onChange={handleImportFileChange} />
-              <p className="text-xs text-muted-foreground">{translateText("支持 ForwardX 文件及 ny / Nyanpass 逐行 JSON（实验性）")}</p>
+              <p className="text-xs text-muted-foreground">{translateText("支持 JSON 规则、逐行端口文本及 ny 导出")}</p>
             </div>
+            {renderImportPortInput()}
             {renderNyanpassImportOptions()}
             {isNyanpassImport && <NyanpassImportPreview rules={importValidation.rules} />}
             <div
@@ -8541,76 +8644,93 @@ function RulesContent() {
             >
               {importValidation.message}
             </div>
+            {importOutcomeUnknown && <p role="status" className="text-sm text-amber-600 dark:text-amber-400">{translateText("保存结果暂无法确认，请核对规则后再操作，不要重复提交")}</p>}
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setShowImportDialog(false)} disabled={importingRules}>
-              {translateText("取消")}
+            <Button type="button" variant="outline" onClick={() => setShowImportDialog(false)} disabled={importingRules && !ruleTaskEnqueued}>
+              {translateText(ruleTaskEnqueued ? "后台执行" : "取消")}
             </Button>
-            <Button type="button" onClick={handleImportRules} disabled={!importValidation.ok || importingRules}>
+            <Button type="button" onClick={handleImportRules} disabled={!importValidation.ok || importingRules || importOutcomeUnknown}>
               {importingRules && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {translateText("导入")}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      <Dialog open={showCopyDialog} onOpenChange={(open) => !copyActionPending && setShowCopyDialog(open)}>
-        <DialogContent className="grid-rows-[auto_minmax(0,1fr)_auto] sm:max-w-4xl">
+      <Dialog open={showCopyDialog} onOpenChange={(open) => (!copyActionPending || ruleTaskEnqueued) && setShowCopyDialog(open)}>
+        <DialogContent className={cn("grid-rows-[auto_minmax(0,1fr)_auto] gap-3 overflow-hidden sm:max-w-[640px]", isBatchGroupMode && "h-[min(720px,85svh)]")}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <ClipboardCopy className="h-5 w-5" />{translateText("批量管理转发规则")}</DialogTitle>
             <DialogDescription>{translateText("复制或导入归属：")}{ruleOperationOwnerLabel}{translateText("；编辑不改变归属。")}</DialogDescription>
-          </DialogHeader>
-          <div className="min-h-0 min-w-0 space-y-4 overflow-y-auto pr-1">
-            <div className={segmentedControlClassName}>
-              <div className={cn("grid grid-cols-2 gap-1", isOwnRuleScope ? "sm:grid-cols-5" : "sm:grid-cols-4")}>
-                <button
-                  type="button"
-                  className={routeModeOptionClass(isBatchCopyMode, copyActionPending)}
-                  aria-pressed={isBatchCopyMode}
-                  onClick={() => switchCopyManageMode("copy")}
-                  disabled={copyActionPending || !transferSourceRules.length}
-                >
-                  <ClipboardCopy className="h-4 w-4 shrink-0" />
-                  <span className="truncate">{translateText("批量复制")}</span>
-                </button>
-                <button
-                  type="button"
-                  className={routeModeOptionClass(isBatchEditMode, copyActionPending)}
-                  aria-pressed={isBatchEditMode}
-                  onClick={() => switchCopyManageMode("edit")}
-                  disabled={copyActionPending || !transferSourceRules.length}
-                >
-                  <Pencil className="h-4 w-4 shrink-0" />
-                  <span className="truncate">{translateText("批量编辑")}</span>
-                </button>
-                <button
-                  type="button"
-                  className={routeModeOptionClass(isBatchExportMode, copyActionPending)}
-                  aria-pressed={isBatchExportMode}
-                  onClick={() => switchCopyManageMode("export")}
-                  disabled={copyActionPending || !transferSourceRules.length}
-                >
-                  <Download className="h-4 w-4 shrink-0" />
-                  <span className="truncate">{translateText("批量导出")}</span>
-                </button>
-                <button
-                  type="button"
-                  className={routeModeOptionClass(isBatchImportMode, copyActionPending)}
-                  aria-pressed={isBatchImportMode}
-                  onClick={() => switchCopyManageMode("import")}
-                  disabled={copyActionPending || importingRules || !canAdd}
-                >
-                  <Upload className="h-4 w-4 shrink-0" />
-                  <span className="truncate">{translateText("批量导入")}</span>
-                </button>
-                {isOwnRuleScope && <button type="button" className={routeModeOptionClass(isBatchGroupMode, copyActionPending)} aria-pressed={isBatchGroupMode} onClick={() => switchCopyManageMode("groups")} disabled={copyActionPending}><Layers3 className="h-4 w-4 shrink-0" /><span className="truncate">{translateText("调整分组")}</span></button>}
+            <div className={cn(segmentedControlClassName, "!mt-3")}>
+              <div className="grid grid-cols-2 gap-1">
+                {batchCategories.map(({ value, label, icon: Icon }) => {
+                  const nextMode = ruleBatchModes(value, isOwnRuleScope).find((mode) => ruleBatchModeAvailable(mode, batchAccess));
+                  const disabled = copyActionPending || !nextMode;
+                  return <button key={value} type="button" className={routeModeOptionClass(batchCategory === value, disabled)} aria-pressed={batchCategory === value} disabled={disabled} onClick={() => {
+                    if (batchCategory !== value && nextMode) switchCopyManageMode(nextMode);
+                  }}>
+                    <Icon className="h-4 w-4 shrink-0" /><span className="truncate">{label}</span>
+                  </button>;
+                })}
               </div>
             </div>
+            <div className="flex min-w-0 items-center gap-3 pt-2 text-left">
+              <Label htmlFor="batch-manage-operation" className="shrink-0">{translateText("操作方式")}</Label>
+              <Select value={copyManageMode} onValueChange={(mode) => switchCopyManageMode(mode as RuleBatchManageMode)} disabled={copyActionPending}>
+                <SelectTrigger id="batch-manage-operation" className="min-w-0 flex-1"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {ruleBatchModes(batchCategory, isOwnRuleScope).map((mode) => <SelectItem key={mode} value={mode} disabled={!ruleBatchModeAvailable(mode, batchAccess)}>{batchModeLabels[mode]}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </DialogHeader>
+          <div ref={copyBodyRef} className="min-h-0 touch-pan-y space-y-3 overflow-x-hidden overflow-y-auto overscroll-contain pr-1">
+            <div data-rule-task-container="" />
+            {batchSteps.length > 1 && <div className="flex items-center justify-between gap-2 text-sm font-medium">
+              <span>{batchStepLabels[batchSteps[batchStep - 1]]}</span>
+              <span className="text-xs tabular-nums text-muted-foreground">{batchStep} / {batchSteps.length}</span>
+            </div>}
+            {batchStep > 1 && !isBatchImportMode && batchSelectionSummary}
+            {isBatchCopyMode && currentCopyRetry && <p role="status" className="text-xs text-amber-600 dark:text-amber-400">{currentCopyRetry.unknown
+              ? translateText("保存结果暂无法确认，请核对规则后再操作，不要重复提交")
+              : translateText("再次复制只重试 {0} 个已确认失败的规则与目标组合", [currentCopyRetry.failedPairs.length])}</p>}
+            {isBatchImportMode && importOutcomeUnknown && <p role="status" className="text-xs text-amber-600 dark:text-amber-400">{translateText("保存结果暂无法确认，请核对规则后再操作，不要重复提交")}</p>}
+            {batchStep > 1 && isBatchImportMode && <div className="flex items-center justify-between gap-2 rounded-lg bg-muted/40 px-3 py-2 text-sm">
+              <span>{translateText("待导入 {0} 条规则", [importValidation.rules.length])}</span>
+              <Button type="button" size="sm" variant="ghost" className="h-7 shrink-0 px-2 text-xs" disabled={copyActionPending} onClick={() => setBatchStep(1)}>{translateText("修改内容")}</Button>
+            </div>}
 
-            {isBatchGroupMode ? <RuleGroupBulkEditor /> : isBatchImportMode ? (
+            {batchIsFinalStep && (isBatchCopyMode || isBatchImportMode) ? (
+              <div className="space-y-3">
+                <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-3 rounded-lg border border-border/60 p-3 text-sm">
+                  <dt className="text-muted-foreground">{translateText("操作")}</dt><dd>{isBatchImportMode ? translateText("批量导入") : translateText("批量复制")}</dd>
+                  <dt className="text-muted-foreground">{translateText("所属用户")}</dt><dd className="break-words">{ruleOperationOwnerLabel}</dd>
+                  <dt className="text-muted-foreground">{translateText("目标资源")}</dt>
+                  <dd className="min-w-0 space-y-1 break-words">
+                    {isBatchImportMode ? (selectedImportResource ? getTransferResourceLabel(importScopeType, selectedImportResource) : translateText("请选择目标资源"))
+                      : <>{selectedCopyTargetResources.slice(0, 4).map((resource: any) => <p key={resource.id}>{getTransferResourceLabel(copyTargetScopeType, resource)}</p>)}{selectedBatchTargetCount > 4 && <p className="text-xs text-muted-foreground">{translateText("共 {0} 个目标", [selectedBatchTargetCount])}</p>}</>}
+                  </dd>
+                  <dt className="text-muted-foreground">{translateText("预计新增")}</dt><dd className="tabular-nums">{translateText("{0} 条规则", [isBatchImportMode ? importValidation.rules.length : selectedBatchRuleCount * selectedBatchTargetCount])}</dd>
+                  {!isBatchImportMode && <><dt className="text-muted-foreground">{translateText("端口冲突处理")}</dt><dd>{copyConflictStrategy === "auto" ? translateText("自动分配新端口") : copyConflictStrategy === "skip" ? translateText("跳过冲突规则") : translateText("遇到冲突时报错")}</dd></>}
+                </dl>
+                {isBatchImportMode ? <>
+                  {renderNyanpassImportOptions()}
+                  {isNyanpassImport && <details className="rounded-lg border p-3 text-sm"><summary className="cursor-pointer">{translateText("查看导入预览")}</summary><div className="mt-3"><NyanpassImportPreview rules={importValidation.rules} /></div></details>}
+                  <p role={!importValidation.ok ? "alert" : undefined} className={cn("text-xs leading-5", importValidation.ok ? "text-muted-foreground" : "text-destructive")}>{importValidation.message}</p>
+                </> : <p className="text-xs leading-5 text-muted-foreground">{translateText("复制会保留原规则基础配置，并按当前选择的目标资源生成副本。")}</p>}
+              </div>
+            ) : isBatchOperateMode ? (
+              <div className="space-y-3">
+                {batchRuleSelectionPanel}
+                  <p className="text-xs leading-5 text-muted-foreground">{translateText("重启会重新下发已启用规则，已暂停规则保持暂停，不清空统计。")}</p>
+                  {copyWorking && <div role="status" className="flex items-center gap-2 text-xs text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" />{translateText("处理中...")}</div>}
+              </div>
+            ) : isBatchGroupMode ? <RuleGroupBulkEditor editor={batchGroupEditor} /> : isBatchImportMode ? (
               <>
-              <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_3.5rem_minmax(0,0.82fr)] lg:items-start">
-                <div className="min-w-0 space-y-3 rounded-md border border-border/60 bg-background/55 p-3">
+              <div className="space-y-3">
+                {batchStep === 1 && <div className="space-y-3">
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <div className="min-w-0 flex-1 basis-40 space-y-1">
                       <Label>{translateText("导入内容")}</Label>
@@ -8634,7 +8754,9 @@ function RulesContent() {
                         className={routeModeOptionClass(importSourceMode === "file", importingRules)}
                         aria-pressed={importSourceMode === "file"}
                         onClick={() => {
+                          if (importSourceMode === "file") return;
                           setImportSourceMode("file");
+                          setImportRetryState(null);
                           setImportManualText("");
                           setImportSniSourcePort(SNI_DEFAULT_ENTRY_PORT);
                         }}
@@ -8648,7 +8770,9 @@ function RulesContent() {
                         className={routeModeOptionClass(importSourceMode === "manual", importingRules)}
                         aria-pressed={importSourceMode === "manual"}
                         onClick={() => {
+                          if (importSourceMode === "manual") return;
                           setImportSourceMode("manual");
+                          setImportRetryState(null);
                           setImportFile(null);
                           setImportFileName("");
                           setImportFileError("");
@@ -8682,7 +8806,7 @@ function RulesContent() {
                         </button>
                       )}
                       <button type="button" className={routeModeOptionClass(importSourceMode === "nyanpass", importingRules)} aria-pressed={importSourceMode === "nyanpass"}
-                        onClick={() => {setImportSourceMode("nyanpass");setImportManualText("");setImportFile(null);setImportFileError("");setImportNyanpassAcknowledged(false);}} disabled={importingRules}>
+                        onClick={() => {setImportSourceMode("nyanpass");setImportRetryState(null);setImportManualText("");setImportFile(null);setImportFileError("");setImportNyanpassAcknowledged(false);}} disabled={importingRules}>
                         <span className="whitespace-normal leading-4">{translateText("ny（实验性）")}</span>
                       </button>
                     </div>
@@ -8708,14 +8832,14 @@ function RulesContent() {
                     <Label>{importSourceMode === "file" ? translateText("规则文件") : importSourceMode === "nyanpass" ? translateText("ny 导出内容（逐行 JSON）") : importSourceMode === "sni" ? translateText("SNI 规则列表") : translateText("规则列表")}</Label>
                     {importSourceMode === "file" ? (
                       <><Input key={importFileInputKey} type="file" accept=".json,.jsonl,.ndjson,.txt,application/json,text/plain" onChange={handleImportFileChange} />
-                        <p className="text-xs text-muted-foreground">{translateText("支持 ForwardX 文件及 ny / Nyanpass 逐行 JSON（实验性）")}</p></>
+                        <p className="text-xs text-muted-foreground">{translateText("支持 JSON 规则、逐行端口文本及 ny 导出")}</p></>
                     ) : (
                       <Textarea
                         value={importManualText}
-                        onChange={(event) => setImportManualText(event.target.value)}
+                        onChange={(event) => { setImportManualText(event.target.value); setImportRetryState(null); }}
                         placeholder={importSourceMode === "nyanpass" ? translateText("粘贴 ny 批量导出的内容，每行一条 JSON") : importSourceMode === "sni"
                           ? translateText("{0}\n官网#www.example.com#203.0.113.10#443\nIPv6站点#ipv6.example.com#[2408:xxxx::1]#8443", [translateText(SNI_BULK_IMPORT_LINE_FORMAT)])
-                          : translateText("支持两种格式，可混合填写：\n{0}\n官网#10443#example.com#443\nIPv6服务#18443#[2001:db8::1]#8443\nexample.net:443\n[2001:db8::2]:8443", [translateText(MANUAL_BULK_IMPORT_LINE_FORMAT)])}
+                          : translateText("支持混合填写，亦支持 10443:example.com:443：\n{0}\n官网#10443#example.com#443\nIPv6服务#18443#[2001:db8::1]#8443\nexample.net:443\n[2001:db8::2]:8443", [translateText(MANUAL_BULK_IMPORT_LINE_FORMAT)])}
                         className="min-h-[11rem] resize-y font-mono text-sm"
                       />
                     )}
@@ -8725,18 +8849,20 @@ function RulesContent() {
                       </p>
                     )}
                   </div>
-                  {renderNyanpassImportOptions()}
-                  {(importSourceMode === "file" || importFileName || importFileError || importValidation.ok || String(importManualText || "").trim()) && (
+                  {renderImportPortInput()}
+                  {renderNyanpassImportOptions(false)}
+                  {importSourceMode === "file" && importFileName && <p className="break-words text-xs text-muted-foreground">{importFileName}</p>}
+                  {(importSourceMode === "file" || importFileName || importFileError || importValidation.ok || importPortText.trim() || String(importManualText || "").trim()) && (
                     <div
                       className={`rounded-md border px-3 py-2 text-sm ${
-                        importValidation.ok
+                        batchImportSourceReady
                           ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
-                          : importFileName || importFileError || String(importManualText || "").trim()
+                          : importFileName || importFileError || importPortText.trim() || String(importManualText || "").trim()
                             ? "border-destructive/30 bg-destructive/10 text-destructive"
                             : "border-border/60 bg-muted/30 text-muted-foreground"
                       }`}
                     >
-                      {importValidation.message}
+                      {batchImportSourceReady ? translateText("已识别 {0} 条规则", [importValidation.rules.length]) : importValidation.message}
                     </div>
                   )}
                   {importFailures.length > 0 && <ul className="max-h-48 list-disc space-y-1 overflow-y-auto rounded-md bg-destructive/10 p-3 pl-7 text-xs text-destructive">
@@ -8765,18 +8891,9 @@ function RulesContent() {
                       })}
                     </div>
                   )}
-                </div>
+                </div>}
 
-                <div className="hidden lg:flex min-h-full items-center justify-center">
-                  <div className="flex flex-col items-center gap-2">
-                    <div className="rounded-full border border-primary/20 bg-primary/5 p-3 text-primary shadow-sm">
-                      <ArrowRight className="h-5 w-5" />
-                    </div>
-                    <div className="text-center text-[11px] font-medium leading-4 text-muted-foreground">{translateText("导入到右侧目标")}</div>
-                  </div>
-                </div>
-
-                <div className="min-w-0 space-y-3 rounded-md border border-border/60 bg-background/55 p-3">
+                {batchStep === 2 && <div className="space-y-3">
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <div className="min-w-0 flex-1 basis-40 space-y-1">
                       <Label>{translateText("导入目标")}</Label>
@@ -8796,7 +8913,6 @@ function RulesContent() {
                         setImportScopeType(value as RuleTransferScopeType);
                         setImportResourceId("");
                         setImportResourceSearch("");
-                        resetImportDialog();
                       }}
                     >
                       <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
@@ -8832,7 +8948,7 @@ function RulesContent() {
                     <span className="text-xs text-muted-foreground tabular-nums">
                       {filteredImportResources.length}{translateText(" 项")}</span>
                   </div>
-                  <div className="max-h-[19rem] space-y-2 overflow-y-auto rounded-md border border-border/60 p-2">
+                  <div className="space-y-2 rounded-md border border-border/60 p-2">
                     {filteredImportResources.length > 0 ? filteredImportResources.map((resource: any) => {
                       const selected = String(resource.id) === importResourceId;
                       return (
@@ -8865,66 +8981,22 @@ function RulesContent() {
                       ? translateText("将导入到 {0}", [getTransferResourceLabel(importScopeType, selectedImportResource)])
                       : translateText("请选择{0}", [ruleTransferScopeLabels[importScopeType]])}
                   </div>
-                </div>
+                  {batchImportTargetError && <p role="alert" className="text-xs text-destructive">{batchImportTargetError}</p>}
+                </div>}
               </div>
-              {importSourceMode === "file" && (
-                <div className="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-xs leading-5 text-muted-foreground">{translateText("导入会保留文件中的规则配置，并应用到右侧当前选择的目标资源。")}</div>
+              {batchStep === 2 && importSourceMode === "file" && (
+                <p className="text-xs leading-5 text-muted-foreground">{translateText("导入会保留文件中的规则配置，并应用到所选目标资源。")}</p>
               )}
               </>
             ) : (
             <>
-            <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_3.5rem_minmax(0,0.82fr)] lg:items-start">
-              {batchRuleSelectionPanel}
+            <div className="space-y-3">
+              {isBatchExportMode && <div className="border-b border-border/60 pb-3">{renderExportFormatPicker()}</div>}
+              {(batchStep === 1 || isBatchExportMode) && batchRuleSelectionPanel}
 
-              <div className="hidden lg:flex min-h-full items-center justify-center">
-                <div className="flex flex-col items-center gap-2">
-                  <div className="rounded-full border border-primary/20 bg-primary/5 p-3 text-primary shadow-sm">
-                    <ArrowRight className="h-5 w-5" />
-                  </div>
-                  <div className="text-center text-[11px] font-medium leading-4 text-muted-foreground">
-                    {batchFlowHintLabel}
-                  </div>
-                </div>
-              </div>
-
-              <div className="min-w-0 space-y-3">
-                {isBatchExportMode ? (
-                <div className="space-y-3 rounded-md border border-border/60 bg-background/55 p-3">
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <div className="min-w-0 flex-1 basis-40 space-y-1">
-                      <Label>{translateText("导出内容")}</Label>
-                      <div className="text-xs text-muted-foreground">{translateText("将左侧选中的规则导出为 JSON 文件，便于备份或迁移。")}</div>
-                    </div>
-                    <div className="inline-flex shrink-0 items-center gap-2 self-start whitespace-nowrap rounded-full bg-sky-500/10 px-3 py-1 text-xs font-medium text-sky-700 dark:text-sky-300">
-                      <span>{translateText("待导出")}</span>
-                      <span className="rounded-full bg-background/90 px-2 py-0.5 tabular-nums">{selectedBatchRuleCount}</span>
-                    </div>
-                  </div>
-                  <div className="rounded-md border border-border/60 bg-muted/20 px-3 py-3 text-sm text-muted-foreground">
-                    {selectedBatchRuleCount > 0 ? translateText("将导出 {0} 条选中规则", [selectedBatchRuleCount]) : translateText("请先在左侧选择要导出的规则")}
-                  </div>
-                  {copySelectedRules.length > 0 ? (
-                    <div className="max-h-[19rem] space-y-2 overflow-y-auto rounded-md border border-border/60 p-2">
-                      {copySelectedRules.map((rule: any) => {
-                        const category = getRuleCategory(rule, forwardGroupById);
-                        return (
-                          <div key={rule.id} className="rounded-md border border-border/40 bg-background/70 px-3 py-2">
-                            <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-                              {renderRuleGroupIcon(category, "h-3.5 w-3.5")}
-                              <span className="min-w-0 truncate text-sm font-medium">{rule.name}</span>
-                              <Badge variant="secondary" className="h-5 shrink-0 px-1.5 text-[10px]">{desktopRuleTypeLabels[category]}</Badge>
-                            </div>
-                            <div className="mt-1 truncate text-xs text-muted-foreground">
-                              :{rule.sourcePort} -&gt; {rule.targetIp}:{rule.targetPort} / {forwardTypeDisplayLabel(rule.forwardType)} / {formatForwardRuleProtocol(rule.protocol)}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ) : null}
-                </div>
-                ) : isBatchEditMode ? (
-                <div className="space-y-3 rounded-md border border-border/60 bg-background/55 p-3">
+              {batchStep === 2 && <div className="space-y-3">
+                {isBatchEditMode ? (
+                <div className="space-y-3">
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <div className="min-w-0 flex-1 basis-40 space-y-1">
                       <Label>{translateText("批量编辑内容")}</Label>
@@ -9082,7 +9154,7 @@ function RulesContent() {
                   </div>
                 </div>
                 ) : (
-                <div className="space-y-3 rounded-md border border-border/60 bg-background/55 p-3">
+                <div className="space-y-3">
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <div className="min-w-0 flex-1 basis-40 space-y-1">
                       <Label>{translateText("复制目标")}</Label>
@@ -9176,7 +9248,7 @@ function RulesContent() {
                     <span className="text-xs text-muted-foreground tabular-nums">
                       {filteredCopyTargetResources.length}{translateText(" 项")}</span>
                   </div>
-                  <div className="max-h-[19rem] space-y-2 overflow-y-auto rounded-md border border-border/60 p-2">
+                  <div className="space-y-2 rounded-md border border-border/60 p-2">
                     {filteredCopyTargetResources.length > 0 ? filteredCopyTargetResources.map((resource: any) => (
                       <label
                         key={`${copyTargetScopeType}:${resource.id}`}
@@ -9218,25 +9290,42 @@ function RulesContent() {
                   </div>
                 </div>
                 )}
-              </div>
+              </div>}
             </div>
-            <div className="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-xs leading-5 text-muted-foreground">
+            {(batchStep === 2 || isBatchExportMode) && <p className="text-xs leading-5 text-muted-foreground">
               {isBatchExportMode
-                ? translateText("批量导出会按左侧当前选中的规则生成 JSON 文件，不会受右侧资源范围限制。")
+                ? translateText("按所选规则及格式导出。")
                 : isBatchEditMode
                 ? translateText("仅覆盖已填写项；未选择的入口和留空的目标保持不变。")
                 : translateText("复制会保留原规则基础配置，并按当前选择的目标资源生成副本。")}
-            </div>
+            </p>}
             </>
             )}
           </div>
-          <DialogFooter className="gap-2 sm:justify-between">
-            {isBatchGroupMode ? <Button variant="outline" onClick={() => setShowCopyDialog(false)}>{translateText("关闭")}</Button> : isBatchImportMode ? (
+          <DialogFooter className="gap-2 border-t border-border/50 pt-3 sm:justify-between">
+            {ruleTaskEnqueued ? <Button variant="outline" onClick={() => setShowCopyDialog(false)}>{translateText("后台执行")}</Button> : isBatchOperateMode ? <div className="flex w-full flex-wrap items-center justify-between gap-2">
+              <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap">
+                <Button variant="outline" onClick={() => handleBatchRuleOperation("enable")} disabled={copyActionPending || !selectedBatchRuleCount}><Play className="mr-2 h-4 w-4" />{translateText("启用")}</Button>
+                <Button variant="outline" onClick={() => handleBatchRuleOperation("pause")} disabled={copyActionPending || !selectedBatchRuleCount}><Pause className="mr-2 h-4 w-4" />{translateText("暂停")}</Button>
+                <Button variant="outline" onClick={() => handleBatchRuleOperation("restart")} disabled={copyActionPending || !selectedBatchRuleCount}><RotateCcw className="mr-2 h-4 w-4" />{translateText("重启")}</Button>
+                <Button variant="destructive" onClick={handleBatchDeleteRules} disabled={copyActionPending || !selectedBatchRuleCount}><Trash2 className="mr-2 h-4 w-4" />{translateText("删除所选")}</Button>
+              </div>
+              <Button variant="outline" className="w-full sm:w-auto" disabled={copyActionPending} onClick={() => setShowCopyDialog(false)}>{translateText("关闭")}</Button>
+            </div> : !batchIsFinalStep ? <>
+              <Button variant="outline" disabled={copyActionPending} onClick={() => batchStep > 1 ? setBatchStep(batchStep - 1) : setShowCopyDialog(false)}>{batchStep > 1 ? translateText("上一步") : translateText("取消")}</Button>
+              <Button type="button" disabled={!batchCanAdvance} onClick={() => setBatchStep(batchStep + 1)}>{translateText("下一步")}</Button>
+            </> : isBatchGroupMode ? <div className="flex w-full flex-wrap items-center justify-between gap-2">
+              <RuleGroupBulkPagination editor={batchGroupEditor} />
+              <div className="flex flex-wrap items-center gap-2">
+                <Button type="button" variant="outline" disabled={copyActionPending} onClick={() => setShowCopyDialog(false)}>{translateText("关闭")}</Button>
+                <RuleGroupBulkApplyButton editor={batchGroupEditor} />
+              </div>
+            </div> : isBatchImportMode ? (
               <>
-                <div />
+                <Button variant="outline" onClick={() => setBatchStep(batchStep - 1)} disabled={copyActionPending}>{translateText("上一步")}</Button>
                 <div className="flex flex-wrap gap-2">
                   <Button variant="outline" onClick={() => setShowCopyDialog(false)} disabled={importingRules}>{translateText("取消")}</Button>
-                  <Button type="button" onClick={handleImportRules} disabled={!importValidation.ok || importingRules}>
+                  <Button type="button" onClick={handleImportRules} disabled={!importValidation.ok || importingRules || importOutcomeUnknown}>
                     {importingRules && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}{translateText("导入规则")}</Button>
                 </div>
               </>
@@ -9251,10 +9340,7 @@ function RulesContent() {
               </>
             ) : (
               <>
-                <div className="flex flex-wrap gap-2">
-                  <Button type="button" variant="destructive" onClick={handleBatchDeleteRules} disabled={selectedBatchRuleCount === 0 || copyActionPending}>
-                    {copyWorking ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}{translateText("删除所选")}</Button>
-                </div>
+                <Button variant="outline" onClick={() => setBatchStep(batchStep - 1)} disabled={copyActionPending}>{translateText("上一步")}</Button>
                 <div className="flex flex-wrap gap-2">
                   <Button variant="outline" onClick={() => setShowCopyDialog(false)} disabled={copyActionPending}>{translateText("取消")}</Button>
                   <Button
@@ -9362,7 +9448,7 @@ function SelfTestDialog({
     { ruleId, includeActive: true },
     {
       enabled: open,
-      refetchInterval: pollingInterval("interactive", open),
+      refetchInterval: adaptivePollingInterval(pollingInterval("interactive", open)),
       refetchOnWindowFocus: false,
     }
   );
@@ -9424,7 +9510,9 @@ function SelfTestDialog({
   const isTesting = startMutation.isPending || optimisticTesting || isServerTesting;
   const isSuccess = status === "success";
   const isTimeout = status === "timeout";
-  const parsedMessage = useMemo(() => parseLinkTestMessage(latest?.message), [latest?.message]);
+  const awaitingNewTest = optimisticTesting && (!activeTestId || latestTestId < activeTestId);
+  const displayedMessage = awaitingNewTest ? null : latest?.message;
+  const parsedMessage = useMemo(() => parseLinkTestMessage(displayedMessage), [displayedMessage]);
   const testSource = forwardGroupSelfTestSource(latest);
   const testSegments: LinkTestPlannedSegment[] | undefined = testSource ? [{
     from: testSource.label,
@@ -9463,7 +9551,7 @@ function SelfTestDialog({
 
         <LinkTestProbeView
           parsed={parsedMessage}
-          fallbackLatencyMs={typeof latest?.latencyMs === "number" && latest.latencyMs > 0 ? latest.latencyMs : null}
+          fallbackLatencyMs={!awaitingNewTest && typeof latest?.latencyMs === "number" && latest.latencyMs > 0 ? latest.latencyMs : null}
           isSuccess={isSuccess}
           isTesting={isTesting}
           sourceLabel={testSource?.label || sourceLabel}

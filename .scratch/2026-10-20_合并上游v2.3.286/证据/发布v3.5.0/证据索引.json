@@ -1,0 +1,182 @@
+[
+  {
+    "path": "agent-最新状态.json",
+    "bytes": 18350,
+    "sha256": "2dd0f24c190001b7977815a27fa976eaf9021a9afc114c1a67e7083f9d29c7fe"
+  },
+  {
+    "path": "agent-正式发布.log",
+    "bytes": 43668,
+    "sha256": "5839accd07528151012c66b26f8cbb6d87c7c68ee7c49de085267976713c1f53"
+  },
+  {
+    "path": "bundled-forwardx-agent-linux-amd64-构建来源.log",
+    "bytes": 1073,
+    "sha256": "4555b03466f9ff67b79491d3238225c0719832cc92c5ffcd36381564ee371513"
+  },
+  {
+    "path": "bundled-forwardx-fxp-linux-amd64-构建来源.log",
+    "bytes": 816,
+    "sha256": "36a6c7cade510adca6e56c5c997c1d9d1042104dcabfd11987882d001f6ac685"
+  },
+  {
+    "path": "ci-最新状态.json",
+    "bytes": 22971,
+    "sha256": "a62a28a819c90e40be95308bca8d8bc3b980afed762a9c998ed98bc808a83367"
+  },
+  {
+    "path": "ci-最终完整.log",
+    "bytes": 1281683,
+    "sha256": "af212a358d6972abd6da936ac9cbd7400d9895a358d7101774334de1fafff7f8"
+  },
+  {
+    "path": "docs-最新状态.json",
+    "bytes": 20477,
+    "sha256": "10bd63966f6ee8f2b35e094193f92f22b83c2bb9db5b1ad1fb5ec68c8efaa21a"
+  },
+  {
+    "path": "forwardx-agent-linux-amd64-构建来源.log",
+    "bytes": 1066,
+    "sha256": "9e6b536c290983fa8793704c337c03fc1bef1d48cc1624c5153704c03b6db9ea"
+  },
+  {
+    "path": "forwardx-fxp-linux-amd64-构建来源.log",
+    "bytes": 809,
+    "sha256": "61484c3f5c00f5beca9caeabac597a172f0202179282560a755354d5b591dbd3"
+  },
+  {
+    "path": "panel-发布与镜像完整.log",
+    "bytes": 1204994,
+    "sha256": "ec92531d66be88ae8d8ad37b0b407ac96dd366140203f39e476096b45d71586d"
+  },
+  {
+    "path": "panel-最新状态.json",
+    "bytes": 31633,
+    "sha256": "77a878e46317e0ce4844453693c15ae14847a3dffa56931eeb88bea703e18c37"
+  },
+  {
+    "path": "panel-正式检查与打包.log",
+    "bytes": 619484,
+    "sha256": "a9ea34176e7fdb9a58571e6a5780f6a3d698bdcdac1ec59975517f73f7fe4bf1"
+  },
+  {
+    "path": "release-notes.md",
+    "bytes": 5699,
+    "sha256": "cbb36ca63c7daf5e51efeff4920a73a0b0b4a93a0619aabf9789325893f4cc3f"
+  },
+  {
+    "path": "公开文档-build-info.json",
+    "bytes": 211,
+    "sha256": "f125587f2f66175fe8109df03f46f8935336fa1174f5a3bf8022e2708d00ffe5"
+  },
+  {
+    "path": "公开文档-guide-hosts.txt",
+    "bytes": 57408,
+    "sha256": "ced6afd3bb7bb94814fefe3be403685f6028e2627a631ab9669de5ee944333c2"
+  },
+  {
+    "path": "公开文档-guide-observability-mcp.txt",
+    "bytes": 48193,
+    "sha256": "65cb8a27499e51702d10c9a8808cec16cb4e08ee96cddf82ca26d6e4539ca8eb"
+  },
+  {
+    "path": "公开文档-guide-releases.txt",
+    "bytes": 44094,
+    "sha256": "56115efade4938fb0de4692a15b21446840a9daa9de5c2fcc73cc8ab1ba966b3"
+  },
+  {
+    "path": "公开文档核对.json",
+    "bytes": 444,
+    "sha256": "eb2fc1b40bd0863d15ea8f7760716a66950e4f6d5869bbcc178bf42962fed353"
+  },
+  {
+    "path": "公开版本.json",
+    "bytes": 19692,
+    "sha256": "fb441aa7f38d5a9b43d2023643282550d89129bb2c4aad6939cdb97d39315290"
+  },
+  {
+    "path": "公开镜像核对.json",
+    "bytes": 11579,
+    "sha256": "c043a9b9752cc80d3a61d3a524efde52397b25ce5bff278f7e257c2ef1c7d74e"
+  },
+  {
+    "path": "公开镜像核对运行.log",
+    "bytes": 202,
+    "sha256": "4ad53b77aae5ac37c73a3e0304e20a8adc7ad61478417ad0024414b287ffb6a4"
+  },
+  {
+    "path": "公开附件核对.json",
+    "bytes": 2678,
+    "sha256": "13798a29f716755b3a1056081c0a4828a006d9693841ddfe47af79b554f356a7"
+  },
+  {
+    "path": "公开附件核对运行.log",
+    "bytes": 2360,
+    "sha256": "53b56f359d15e70e73a93ffd5ce2174f8e1c8b71033010728cdeb7bf56969951"
+  },
+  {
+    "path": "公开附件核对首轮.log",
+    "bytes": 255,
+    "sha256": "77cc900b1cd4df3d3a08258dbb9e2cba200b0c50e5564ca7d9b84eac7c0bc445"
+  },
+  {
+    "path": "发布提交.json",
+    "bytes": 248,
+    "sha256": "ec24fbce14dfeafaf822e6f6d9b1223d66ba5425f5ac8d83edc385e08c664462"
+  },
+  {
+    "path": "发布摘要.json",
+    "bytes": 1136,
+    "sha256": "4b4172b6fe885217b6c7e9475806ed24729b350cec6865655d2478aaacfeb50b"
+  },
+  {
+    "path": "文档构建.log",
+    "bytes": 954,
+    "sha256": "7b4ea15722e4a4f800f9a220ddc4f252644f1f82305ce6faade3d7b24c6b3c37"
+  },
+  {
+    "path": "构建.log",
+    "bytes": 22463,
+    "sha256": "8c2ee55c7ce2d2fcb49a5b2ab830327b43c8668a6f6354036f154b3032f2a28a"
+  },
+  {
+    "path": "流程初始状态.json",
+    "bytes": 1227,
+    "sha256": "9690914a72dcc1dc70662be98c91044c9df7228c56b3daf7a5c9b110db4b9e33"
+  },
+  {
+    "path": "版本核对.log",
+    "bytes": 90,
+    "sha256": "1660275fccd217be74ac5c443f0990a05a2be5e023648c7fbf94e3d2a45a4a99"
+  },
+  {
+    "path": "程序构建差异说明.json",
+    "bytes": 555,
+    "sha256": "efe5dad2885c2f79fda0ae4e597880c04fec611c3bb8e4d6d29d07da1c08a544"
+  },
+  {
+    "path": "类型检查.log",
+    "bytes": 164,
+    "sha256": "e7bab9b0d1a8dac9b3e897e4c1f7db644ac05346933d980643e0c92b9d55ab02"
+  },
+  {
+    "path": "远端引用核对.log",
+    "bytes": 176,
+    "sha256": "0384d6141fbb2b6a3cea79eafd738d75c00653b943268032a6c65181c30d3fd2"
+  },
+  {
+    "path": "镜像-latest.log",
+    "bytes": 810,
+    "sha256": "f7909c30a0a7e30394452d8855d22472bdd864a2c4100aba1a817cddc2948963"
+  },
+  {
+    "path": "镜像-v3.5.0.log",
+    "bytes": 810,
+    "sha256": "49a2e8fbd71b4d6dd24a89cdf62654570124ac6dc1c8a12ca4373def0e6c633b"
+  },
+  {
+    "path": "镜像清单.json",
+    "bytes": 857,
+    "sha256": "d76c484e7fbb0bdd327a78a7a1edbe0ba58504dcd1a8c98cc71fcb5636d68ae0"
+  }
+]

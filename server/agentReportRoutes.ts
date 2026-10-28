@@ -46,6 +46,7 @@ import {
 import { clearRuleLatencyQueryCaches } from "./ruleLatencyQueryCache";
 import { agentTcpingReportGate } from "./agentTcpingReportGate";
 import { selectAgentTrafficReportInterval } from "./agentHeartbeatGate";
+import { afterDatabaseCommit } from "./dbRuntime";
 import { pruneMapEntries, setBoundedMapValue } from "./boundedCache";
 import { probeCounterSnapshot, type ProbeCounterSnapshot } from "./repositories/probeCounterRepository";
 import { agentProbeCounterReportGate } from "./agentProbeCounterReportGate";
@@ -69,9 +70,11 @@ async function refreshUserRuleAgents(userId: number, reason: string) {
     hostIds.add(Number(tunnel.entryHostId));
     hostIds.add(Number(tunnel.exitHostId));
   }
-  for (const hostId of hostIds) {
-    if (hostId > 0) pushAgentRefresh(hostId, reason);
-  }
+  await afterDatabaseCommit(() => {
+    for (const hostId of hostIds) {
+      if (hostId > 0) pushAgentRefresh(hostId, reason);
+    }
+  });
 }
 
 function cleanTunnelSeriesKey(value: unknown) {
@@ -732,6 +735,7 @@ agentRouter.post("/api/agent/traffic", async (req: Request, res: Response) => {
     // context when there are no rule deltas to account.
     if (stats.length === 0 && sourceSamples.length === 0) {
       await db.withDatabaseTransaction(async () => {
+        duplicateTrafficReport = false;
         if (trafficReportId && !await db.claimAgentTrafficReport(host.id, trafficReportId, trafficReportProducerId)) {
           duplicateTrafficReport = true;
           return;
@@ -743,7 +747,7 @@ agentRouter.post("/api/agent/traffic", async (req: Request, res: Response) => {
           });
         }
         if (analyticsEnabled && trafficReportId) await recordOperationsSources(host, [], new Map(), new Map(), req.body?.sourceStatus, req.body?.sourceSampledAt);
-      });
+      }, { retryConflicts: true });
       if (duplicateTrafficReport) {
         logTrafficReportSummary({
           hostId: logHostId,
@@ -792,6 +796,11 @@ agentRouter.post("/api/agent/traffic", async (req: Request, res: Response) => {
       .map((context) => Number(context?.rule?.userId || 0))
       .filter((userId) => userId > 0);
     await withTrafficAccountingUserLocks(accountingUserIds, () => db.withDatabaseTransaction(async () => {
+      // Every retry rebuilds response bookkeeping as well as database writes.
+      duplicateTrafficReport = false;
+      acceptedStatCount = routedAwayStatCount = ignoredStatCount = 0;
+      acceptedBytesIn = acceptedBytesOut = 0;
+      strictTrafficAccounting = false;
       // Lock database rows in the same deterministic order as the in-process
       // keyed locks. This protects quota/billing counters when reports arrive
       // concurrently on different panel instances.
@@ -956,9 +965,8 @@ agentRouter.post("/api/agent/traffic", async (req: Request, res: Response) => {
     }
 
     // 累加用户已用流量
-    await mapWithConcurrency(Array.from(quotaTrafficByUser.entries()), 8, async ([userId, totalBytes]) => {
-      if (totalBytes <= 0) return;
-      const user = await db.addUserTraffic(userId, totalBytes);
+    const quotaUsers = await db.addUsersTrafficBatch(quotaTrafficByUser);
+    for (const user of quotaUsers) {
 
       // 检查用户流量配额
       if (user) {
@@ -976,8 +984,8 @@ agentRouter.post("/api/agent/traffic", async (req: Request, res: Response) => {
           await refreshUserRuleAgents(user.id, "user-expired");
         }
       }
-    });
-    }));
+    }
+    }, { retryConflicts: true }));
 
     if (duplicateTrafficReport) {
       logTrafficReportSummary({

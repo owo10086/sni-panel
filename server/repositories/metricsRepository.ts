@@ -28,12 +28,14 @@ import { mapLatencyChartBucket, queryLatencyChartBuckets, queryLatestHistoryRows
 import { scopedTrafficSource } from "./trafficQueryScope";
 import { dashboardSummaries } from "../backgroundSummaryCache";
 import { billingStartOfCalendarDay } from "../../shared/billingTime";
+import { writeMysqlTrafficCounters } from "../mysqlTrafficCounters";
+import { buildRuleTunnelProbeResult } from "../ruleTunnelProbeResult";
 
 const TRAFFIC_BUCKET_MINUTES = 30;
 const TRAFFIC_BUCKET_SECONDS = TRAFFIC_BUCKET_MINUTES * 60;
 const TRAFFIC_BUCKET_RETENTION_HOURS = 72;
 const LEGACY_TRAFFIC_REPORT_RETENTION_HOURS = 7 * 24;
-const SQLITE_LATEST_METRIC_HOST_BATCH_SIZE = 100;
+const LATEST_METRIC_HOST_BATCH_SIZE = 100;
 // v3 repairs bucket gaps left by older best-effort writes. Current traffic
 // writes update raw rows, counters and buckets in one transaction.
 const TRAFFIC_BUCKET_BACKFILL_MARKER = "v3";
@@ -133,31 +135,12 @@ async function queryLatestHostMetricRows(
 ) {
   const q = quoteIdentifier;
 
-  if (getDatabaseKind() !== "sqlite") {
-    const placeholders = hostIds.map(() => "?").join(",");
-    const selected = columns.map((column) => `hm.${q(column)}`).join(",\n                  ");
-    return queryRaw<any>(
-      `SELECT ${columns.map((column) => `ranked.${q(column)}`).join(",\n              ")},
-              ranked.rn
-         FROM (
-           SELECT ${selected},
-                  ROW_NUMBER() OVER (
-                    PARTITION BY hm.${q("hostId")}
-                    ORDER BY hm.${q("recordedAt")} DESC, hm.${q("id")} DESC
-                  ) AS rn
-             FROM ${q("host_metrics")} hm
-            WHERE hm.${q("hostId")} IN (${placeholders})
-         ) ranked
-        WHERE ranked.rn <= 2
-        ORDER BY ranked.${q("hostId")} ASC, ranked.rn ASC`,
-      hostIds,
-    );
-  }
-
+  // Seek the last two samples per host on every dialect. Window-ranking the
+  // entire retained history makes a tiny live summary grow with history size.
   const sortedHostIds = [...hostIds].sort((a, b) => a - b);
   const rows: any[] = [];
-  for (let offset = 0; offset < sortedHostIds.length; offset += SQLITE_LATEST_METRIC_HOST_BATCH_SIZE) {
-    const batch = sortedHostIds.slice(offset, offset + SQLITE_LATEST_METRIC_HOST_BATCH_SIZE);
+  for (let offset = 0; offset < sortedHostIds.length; offset += LATEST_METRIC_HOST_BATCH_SIZE) {
+    const batch = sortedHostIds.slice(offset, offset + LATEST_METRIC_HOST_BATCH_SIZE);
     const innerColumns = columns.map((column) => q(column)).join(", ");
     const outerColumns = columns.map((column) => `recent.${q(column)}`).join(", ");
     const perHostQueries = batch.map(() => (
@@ -723,19 +706,20 @@ async function upsertUserTrafficCountersBatch(rows: AggregatedTrafficRow[]) {
     aggregate.connections += row.connections;
     byUser.set(row.userId, aggregate);
   }
-  const values = Array.from(byUser.values());
+  const values = Array.from(byUser.values()).sort((left, right) => left.userId - right.userId);
   if (values.length === 0) return;
   const q = quoteIdentifier;
   const nowSec = epochSeconds(nowDate());
   const columns = ["userId", "bytesIn", "bytesOut", "connections", "createdAt", "updatedAt"];
   const kind = getDatabaseKind();
-  const suffix = kind === "mysql"
-    ? ` ON DUPLICATE KEY UPDATE
-         ${q("bytesIn")} = ${q("bytesIn")} + VALUES(${q("bytesIn")}),
-         ${q("bytesOut")} = ${q("bytesOut")} + VALUES(${q("bytesOut")}),
-         ${q("connections")} = ${q("connections")} + VALUES(${q("connections")}),
-         ${q("updatedAt")} = VALUES(${q("updatedAt")})`
-    : ` ON CONFLICT (${q("userId")}) DO UPDATE SET
+  if (kind === "mysql") {
+    await writeMysqlTrafficCounters({ table: "user_traffic_counters", columns, keys: ["userId"],
+      rows: values.map(row => [row.userId, row.bytesIn, row.bytesOut, row.connections, nowSec, nowSec]),
+      add: ["bytesIn", "bytesOut", "connections"], replace: ["updatedAt"],
+    }, { query: queryRaw, execute: executeRaw });
+    return;
+  }
+  const suffix = ` ON CONFLICT (${q("userId")}) DO UPDATE SET
          ${q("bytesIn")} = ${kind === "postgresql" ? `${q("user_traffic_counters")}.${q("bytesIn")}` : q("bytesIn")} + ${kind === "postgresql" ? "EXCLUDED" : "excluded"}.${q("bytesIn")},
          ${q("bytesOut")} = ${kind === "postgresql" ? `${q("user_traffic_counters")}.${q("bytesOut")}` : q("bytesOut")} + ${kind === "postgresql" ? "EXCLUDED" : "excluded"}.${q("bytesOut")},
          ${q("connections")} = ${kind === "postgresql" ? `${q("user_traffic_counters")}.${q("connections")}` : q("connections")} + ${kind === "postgresql" ? "EXCLUDED" : "excluded"}.${q("connections")},
@@ -756,16 +740,16 @@ async function upsertForwardRuleTrafficCountersBatch(rows: AggregatedTrafficRow[
   const nowSec = epochSeconds(nowDate());
   const columns = ["ruleId", "hostId", "userId", "bytesIn", "bytesOut", "connections", "createdAt", "updatedAt"];
   const kind = getDatabaseKind();
+  if (kind === "mysql") {
+    await writeMysqlTrafficCounters({ table: "forward_rule_traffic_counters", columns, keys: ["ruleId", "hostId"],
+      rows: rows.map(row => [row.ruleId, row.hostId, row.userId, row.bytesIn, row.bytesOut, row.connections, nowSec, nowSec]),
+      add: ["bytesIn", "bytesOut", "connections"], replace: ["userId", "updatedAt"],
+    }, { query: queryRaw, execute: executeRaw });
+    return;
+  }
   const excluded = kind === "postgresql" ? "EXCLUDED" : "excluded";
   const current = (column: string) => kind === "postgresql" ? `${q("forward_rule_traffic_counters")}.${q(column)}` : q(column);
-  const suffix = kind === "mysql"
-    ? ` ON DUPLICATE KEY UPDATE
-         ${q("userId")} = VALUES(${q("userId")}),
-         ${q("bytesIn")} = ${q("bytesIn")} + VALUES(${q("bytesIn")}),
-         ${q("bytesOut")} = ${q("bytesOut")} + VALUES(${q("bytesOut")}),
-         ${q("connections")} = ${q("connections")} + VALUES(${q("connections")}),
-         ${q("updatedAt")} = VALUES(${q("updatedAt")})`
-    : ` ON CONFLICT (${q("ruleId")}, ${q("hostId")}) DO UPDATE SET
+  const suffix = ` ON CONFLICT (${q("ruleId")}, ${q("hostId")}) DO UPDATE SET
          ${q("userId")} = ${excluded}.${q("userId")},
          ${q("bytesIn")} = ${current("bytesIn")} + ${excluded}.${q("bytesIn")},
          ${q("bytesOut")} = ${current("bytesOut")} + ${excluded}.${q("bytesOut")},
@@ -803,16 +787,16 @@ async function upsertTrafficStatBucketsBatch(rows: AggregatedTrafficRow[]) {
   const nowSec = epochSeconds(nowDate());
   const columns = ["bucketStart", "bucketMinutes", "userId", "ruleId", "hostId", "bytesIn", "bytesOut", "connections", "updatedAt"];
   const kind = getDatabaseKind();
+  if (kind === "mysql") {
+    await writeMysqlTrafficCounters({ table: "traffic_stat_buckets", columns, keys: ["bucketStart", "bucketMinutes", "ruleId", "hostId"],
+      rows: Array.from(byBucket.values()).map(row => [row.bucketStart, TRAFFIC_BUCKET_MINUTES, row.userId, row.ruleId, row.hostId, row.bytesIn, row.bytesOut, row.connections, nowSec]),
+      add: ["bytesIn", "bytesOut", "connections"], replace: ["userId", "updatedAt"],
+    }, { query: queryRaw, execute: executeRaw });
+    return;
+  }
   const excluded = kind === "postgresql" ? "EXCLUDED" : "excluded";
   const current = (column: string) => kind === "postgresql" ? `${q("traffic_stat_buckets")}.${q(column)}` : q(column);
-  const suffix = kind === "mysql"
-    ? ` ON DUPLICATE KEY UPDATE
-         ${q("userId")} = VALUES(${q("userId")}),
-         ${q("bytesIn")} = ${q("bytesIn")} + VALUES(${q("bytesIn")}),
-         ${q("bytesOut")} = ${q("bytesOut")} + VALUES(${q("bytesOut")}),
-         ${q("connections")} = ${q("connections")} + VALUES(${q("connections")}),
-         ${q("updatedAt")} = VALUES(${q("updatedAt")})`
-    : ` ON CONFLICT (${q("bucketStart")}, ${q("bucketMinutes")}, ${q("ruleId")}, ${q("hostId")}) DO UPDATE SET
+  const suffix = ` ON CONFLICT (${q("bucketStart")}, ${q("bucketMinutes")}, ${q("ruleId")}, ${q("hostId")}) DO UPDATE SET
          ${q("userId")} = ${excluded}.${q("userId")},
          ${q("bytesIn")} = ${current("bytesIn")} + ${excluded}.${q("bytesIn")},
          ${q("bytesOut")} = ${current("bytesOut")} + ${excluded}.${q("bytesOut")},
@@ -1127,6 +1111,8 @@ export async function resetRuleTrafficStats(ruleIds: number[]) {
       `DELETE FROM ${q("forward_rule_traffic_counters")} WHERE ${q("ruleId")} IN (${placeholders})`,
       batch,
     );
+    // Resource display offsets must not hide new traffic after a rule reset.
+    await executeRaw(`DELETE FROM ${q("resource_traffic_baselines")} WHERE ${q("ruleId")} IN (${placeholders})`, batch);
     const tcpingResult = await executeRaw(
       `DELETE FROM ${q("tcping_stats")} WHERE ${q("ruleId")} IN (${placeholders})`,
       batch,
@@ -2028,7 +2014,34 @@ export async function getTunnelTrafficSummaries(tunnelIds: number[], userId?: nu
   return getResourceTrafficSummaries("tunnel", tunnelIds, userId);
 }
 
-async function getResourceTrafficSummaries(kind: "group" | "tunnel", resourceIds: number[], userId?: number) {
+type ResourceTrafficBaseline = {
+  groupId: number; ruleId: number; hostId: number;
+  bytesIn: number; bytesOut: number; dailyIn: number; dailyOut: number; resetDay: number;
+};
+
+/** Reset only this resource's presentation, never quota/billing/history or Agent counters. */
+export async function resetPortForwardResourceTraffic(groupId: number) {
+  return withDatabaseTransaction(async () => {
+    const q = quoteIdentifier;
+    const groups = await queryRaw<{ groupMode: string }>(`SELECT ${q("groupMode")} FROM ${q("forward_groups")} WHERE ${q("id")} = ?`, [groupId]);
+    if (!groups[0]) throw new Error("转发资源不存在");
+    if (groups[0].groupMode !== "port") throw new Error("仅端口转发资源支持重置统计流量");
+    const snapshot = new Map<string, ResourceTrafficBaseline>();
+    await getResourceTrafficSummaries("group", [groupId], undefined, snapshot);
+    await executeRaw(`DELETE FROM ${q("resource_traffic_baselines")} WHERE ${q("groupId")} = ?`, [groupId]);
+    const resetAt = epochSeconds(nowDate());
+    const columns = ["groupId", "ruleId", "hostId", "bytesIn", "bytesOut", "dailyIn", "dailyOut", "resetDay", "resetAt"] as const;
+    const rows = Array.from(snapshot.values());
+    for (let offset = 0; offset < rows.length; offset += 100) {
+      const batch = rows.slice(offset, offset + 100);
+      await executeRaw(`INSERT INTO ${q("resource_traffic_baselines")} (${columns.map(q).join(",")}) VALUES ${batch.map(() => `(${columns.map(() => "?").join(",")})`).join(",")}`,
+        batch.flatMap((row) => columns.map((column) => column === "resetAt" ? resetAt : row[column])));
+    }
+    return { success: true, ruleCount: new Set(rows.map((row) => row.ruleId)).size };
+  });
+}
+
+async function getResourceTrafficSummaries(kind: "group" | "tunnel", resourceIds: number[], userId?: number, snapshot?: Map<string, ResourceTrafficBaseline>) {
   const ids = Array.from(new Set(resourceIds.map(Number).filter((id) => Number.isInteger(id) && id > 0)));
   const totals = new Map(ids.map((id) => [id, {
     bytesIn: 0, bytesOut: 0, totalBytes: 0, ruleCount: 0,
@@ -2038,6 +2051,11 @@ async function getResourceTrafficSummaries(kind: "group" | "tunnel", resourceIds
   if (!db || ids.length === 0) return totals;
   const q = quoteIdentifier;
   const placeholders = ids.map(() => "?").join(",");
+  const baselineRows = kind === "group" && !snapshot
+    ? await queryRaw<ResourceTrafficBaseline>(`SELECT * FROM ${q("resource_traffic_baselines")} WHERE ${q("groupId")} IN (${placeholders})`, ids)
+    : [];
+  const baselineKey = (groupId: number, ruleId: number, hostId: number) => `${groupId}:${ruleId}:${hostId}`;
+  const baselines = new Map(baselineRows.map((row) => [baselineKey(Number(row.groupId), Number(row.ruleId), Number(row.hostId)), row]));
   // Include direct references and live managed tunnel children. The latter
   // attribute only their own counters to a tunnel, never the entire template's
   // traffic across other tunnel members. Ownership always comes from the parent.
@@ -2115,6 +2133,16 @@ async function getResourceTrafficSummaries(kind: "group" | "tunnel", resourceIds
   // Bound the size of SQL IN lists for large resources. Guard the empty case:
   // the existing counter API intentionally treats [] as an unfiltered request.
   const since = billingStartOfCalendarDay(nowDate());
+  const resetDay = epochSeconds(since);
+  const capture = (groupId: number, ruleId: number, hostId: number) => {
+    const key = baselineKey(groupId, ruleId, hostId);
+    let row = snapshot?.get(key);
+    if (snapshot && !row) {
+      row = { groupId, ruleId, hostId, bytesIn: 0, bytesOut: 0, dailyIn: 0, dailyOut: 0, resetDay };
+      snapshot.set(key, row);
+    }
+    return row;
+  };
   for (const managedChildren of [false, true]) {
     const ruleIds = Array.from(resourcesByRule)
       .filter(([id, link]) => (id !== link.logicalRuleId) === managedChildren && link.resourceIds.length > 0)
@@ -2127,9 +2155,14 @@ async function getResourceTrafficSummaries(kind: "group" | "tunnel", resourceIds
       for (const row of rows) {
         for (const id of resourcesByRule.get(row.ruleId)?.resourceIds || []) {
           const total = totals.get(id)!;
-          total.bytesIn += row.bytesIn;
-          total.bytesOut += row.bytesOut;
-          total.totalBytes += row.bytesIn + row.bytesOut;
+          const captured = capture(id, row.ruleId, row.hostId);
+          if (captured) { captured.bytesIn += row.bytesIn; captured.bytesOut += row.bytesOut; }
+          const baseline = baselines.get(baselineKey(id, row.ruleId, row.hostId));
+          const bytesIn = Math.max(0, row.bytesIn - Number(baseline?.bytesIn || 0));
+          const bytesOut = Math.max(0, row.bytesOut - Number(baseline?.bytesOut || 0));
+          total.bytesIn += bytesIn;
+          total.bytesOut += bytesOut;
+          total.totalBytes += bytesIn + bytesOut;
         }
       }
       // Tunnel children keep their own traffic attribution; normalizing them
@@ -2140,9 +2173,15 @@ async function getResourceTrafficSummaries(kind: "group" | "tunnel", resourceIds
       for (const row of dailyRows) {
         for (const id of resourcesByRule.get(row.ruleId)?.resourceIds || []) {
           const daily = totals.get(id)!.daily;
-          daily.bytesIn += row.bytesIn;
-          daily.bytesOut += row.bytesOut;
-          daily.totalBytes += row.bytesIn + row.bytesOut;
+          const captured = capture(id, row.ruleId, row.hostId);
+          if (captured) { captured.dailyIn += row.bytesIn; captured.dailyOut += row.bytesOut; }
+          const baseline = baselines.get(baselineKey(id, row.ruleId, row.hostId));
+          const sameDay = Number(baseline?.resetDay) === resetDay;
+          const bytesIn = Math.max(0, row.bytesIn - (sameDay ? Number(baseline?.dailyIn || 0) : 0));
+          const bytesOut = Math.max(0, row.bytesOut - (sameDay ? Number(baseline?.dailyOut || 0) : 0));
+          daily.bytesIn += bytesIn;
+          daily.bytesOut += bytesOut;
+          daily.totalBytes += bytesIn + bytesOut;
         }
       }
     }
@@ -2433,10 +2472,12 @@ export async function getTrafficSummaryByRule(opts: {
             WHERE ${q("ruleId")} IN (${tunnelRuleIdsForTests.map(() => "?").join(",")})
               AND ${q("status")} IN ('success', 'failed', 'timeout')
               AND ${q("message")} LIKE '%"kind":"forward-via-tunnel"%'
+              AND (${q("batchId")} IS NULL OR ${q("batchId")} NOT LIKE 'rt-%')
             GROUP BY ${q("ruleId")}
          ) latest ON latest.${q("ruleId")} = ft.${q("ruleId")} AND latest.${q("updatedAt")} = ft.${q("updatedAt")}
         WHERE ft.${q("status")} IN ('success', 'failed', 'timeout')
           AND ft.${q("message")} LIKE '%"kind":"forward-via-tunnel"%'
+          AND (ft.${q("batchId")} IS NULL OR ft.${q("batchId")} NOT LIKE 'rt-%')
         ORDER BY ft.${q("updatedAt")} DESC, ft.${q("createdAt")} DESC`,
       tunnelRuleIdsForTests,
     )
@@ -2458,6 +2499,43 @@ export async function getTrafficSummaryByRule(opts: {
     if (shouldUseLatencyCandidate(latestByRule.get(ruleId), candidate)) {
       latestByRule.set(ruleId, candidate);
     }
+  }
+  // Manual tunnel tests store separate entry/hop/target samples. Select the
+  // newest settled round and hydrate all its segments in one bounded query.
+  const settledTunnelRows = tunnelRuleIdsForTests.length > 0
+    ? await queryRaw<any>(
+      `SELECT batch.* FROM ${q("forward_tests")} batch
+       INNER JOIN ${q("forward_tests")} chosen
+         ON chosen.${q("ruleId")} = batch.${q("ruleId")} AND chosen.${q("batchId")} = batch.${q("batchId")}
+       INNER JOIN (
+         SELECT ${q("ruleId")}, MAX(${q("id")}) AS ${q("id")}
+         FROM ${q("forward_tests")}
+         WHERE ${q("ruleId")} IN (${tunnelRuleIdsForTests.map(() => "?").join(",")})
+           AND ${q("batchId")} LIKE 'rt-%' AND ${q("batchSettled")} = ${boolLiteral(true)}
+         GROUP BY ${q("ruleId")}
+       ) latest ON latest.${q("id")} = chosen.${q("id")}
+       ORDER BY batch.${q("id")}`,
+      tunnelRuleIdsForTests,
+    ) : [];
+  const settledTunnelBatches = new Map<number, any[]>();
+  for (const row of settledTunnelRows) {
+    const ruleId = Number(row.ruleId);
+    const batch = settledTunnelBatches.get(ruleId) || [];
+    batch.push(row);
+    settledTunnelBatches.set(ruleId, batch);
+  }
+  for (const [ruleId, batch] of settledTunnelBatches) {
+    const result = buildRuleTunnelProbeResult(batch);
+    if (!result || result.status === "running") continue;
+    const candidate = {
+      ruleId,
+      latencyMs: result.latencyMs,
+      isTimeout: result.status !== "success",
+      recordedAt: rowDate(Math.max(...batch.map(row => Number(row.updatedAt || row.createdAt)))),
+      startedAt: rowDate(Math.min(...batch.map(row => Number(row.createdAt)))),
+      testId: Number(result.id), batchId: result.batchId, source: "forward_test",
+    };
+    if (shouldUseLatencyCandidate(latestByRule.get(ruleId), candidate)) latestByRule.set(ruleId, candidate);
   }
   return result.map((item) => {
     const latest = latestByRule.get(item.ruleId);

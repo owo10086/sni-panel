@@ -1,0 +1,43 @@
+{
+  "release": "https://github.com/owo10086/sni-panel/releases/tag/v3.4.1",
+  "publishedAt": "2026-10-19T14:59:32Z",
+  "notesMatch": true,
+  "assets": [
+    {
+      "name": "forwardx-agent-linux-amd64",
+      "size": 11030680,
+      "sha256": "sha256:134ae536d74e56849994d3c9f59482e05a02bbd042aef6b03b05e86ea0bdae8d"
+    },
+    {
+      "name": "forwardx-fxp-linux-amd64",
+      "size": 6852760,
+      "sha256": "sha256:6f6d5a0ee45bf9490a6e5127430accd7b3931ad1a36a0b7d536a920495399514"
+    },
+    {
+      "name": "forwardx-panel-v3.4.1.tar.gz",
+      "size": 47959481,
+      "sha256": "sha256:b7c50990a9bfce3147a39cd497cbf7ca32d17ee801b44576c9285d538cd0b004"
+    },
+    {
+      "name": "forwardx-runtime-linux-amd64",
+      "size": 9673064,
+      "sha256": "sha256:a2aea24efb4597b5f57b35b8e1bbcc59f439b80723854d4371f6828b46682ffb"
+    },
+    {
+      "name": "SHA256SUMS",
+      "size": 426,
+      "sha256": "sha256:2380885f07a93b8349d6c7aac273b57eed05020ecde2ec4544e96275880da0b6"
+    },
+    {
+      "name": "THIRD_PARTY_NOTICES.md",
+      "size": 3360,
+      "sha256": "sha256:3170168a0a0089df145a378c27844f383936405cf4277ed7ace34eef61483bfc"
+    }
+  ],
+  "bundledVersion": "3.4.1",
+  "serverMatchesValidatedLocalBuild": true,
+  "goBuildInfo": {
+    "forwardx-agent-linux-amd64": "/private/tmp/sni-v3.4.1-assets/forwardx-agent-linux-amd64: go1.23.12\n\tpath\tgithub.com/poouo/Forwardx/agent\n\tmod\tgithub.com/poouo/Forwardx/agent\t(devel)\t\n\tdep\tgithub.com/google/btree\tv1.1.2\th1:xf4v41cLI2Z6FxbKm+8Bu+m8ifhj15JuZ9sa0jZCMUU=\n\tdep\tgolang.org/x/crypto\tv0.37.0\th1:kJNSjF/Xp7kU0iB2Z+9viTPMW4EqqsrywMXLJOOsXSE=\n\tdep\tgolang.org/x/net\tv0.39.0\th1:ZCu7HMWDxpXpaiKdhzIfaltL9Lp31x/3fCP11bc6/fY=\n\tdep\tgolang.org/x/sys\tv0.32.0\th1:s77OFDvIQeibCmezSnk/q6iAfkdiQaJi4VzroCFrN20=\n\tdep\tgolang.org/x/time\tv0.7.0\th1:ntUhktv3OPE6TgYxXWv9vKvUSJyIFJlyohwbkEwPrKQ=\n\tdep\tgolang.zx2c4.com/wireguard\tv0.0.0-20250521234502-f333402bd9cb\th1:whnFRlWMcXI9d+ZbWg+4sHnLp52d5yiIPUxMBSt4X9A=\n\tdep\tgvisor.dev/gvisor\tv0.0.0-20250503011706-39ed1f5ac29c\th1:m/r7OM+Y2Ty1sgBQ7Qb27VgIMBW8ZZhT4gLnUyDIhzI=\n\tbuild\t-buildmode=exe\n\tbuild\t-compiler=gc\n\tbuild\t-trimpath=true\n\tbuild\tCGO_ENABLED=0\n\tbuild\tGOARCH=amd64\n\tbuild\tGOOS=linux\n\tbuild\tGOAMD64=v1\n\tbuild\tvcs=git\n\tbuild\tvcs.revision=51167e4a95aa8b9e7810443a50b80462ef8b4e96\n\tbuild\tvcs.time=2026-10-19T14:28:12Z\n\tbuild\tvcs.modified=false\n",
+    "forwardx-fxp-linux-amd64": "/private/tmp/sni-v3.4.1-assets/forwardx-fxp-linux-amd64: go1.23.12\n\tpath\tgithub.com/poouo/Forwardx/forwardx-fxp\n\tmod\tgithub.com/poouo/Forwardx/forwardx-fxp\t(devel)\t\n\tdep\tgithub.com/klauspost/cpuid/v2\tv2.0.9\th1:lgaqFMSdTdQYdZ04uHyN2d/eKdOMyi2YLSvlQIBFYa4=\n\tdep\tlukechampine.com/blake3\tv1.4.1\th1:I3Smz7gso8w4/TunLKec6K2fn+kyKtDxr/xcQEN84Wg=\n\tbuild\t-buildmode=exe\n\tbuild\t-compiler=gc\n\tbuild\t-trimpath=true\n\tbuild\tDefaultGODEBUG=asynctimerchan=1,gotypesalias=0,httpservecontentkeepheaders=1,tls3des=1,tlskyber=0,winreadlinkvolume=0,winsymlink=0,x509keypairleaf=0,x509negativeserial=1\n\tbuild\tCGO_ENABLED=0\n\tbuild\tGOARCH=amd64\n\tbuild\tGOOS=linux\n\tbuild\tGOAMD64=v1\n\tbuild\tvcs=git\n\tbuild\tvcs.revision=51167e4a95aa8b9e7810443a50b80462ef8b4e96\n\tbuild\tvcs.time=2026-10-19T14:28:12Z\n\tbuild\tvcs.modified=false\n"
+  }
+}

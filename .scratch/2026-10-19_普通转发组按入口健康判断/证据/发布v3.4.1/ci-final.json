@@ -1,0 +1,137 @@
+{
+  "conclusion": "success",
+  "createdAt": "2026-10-19T14:52:45Z",
+  "databaseId": 39272921376,
+  "displayTitle": "修正真实FXP网络测试的容器隔离环境",
+  "headBranch": "main",
+  "headSha": "563b1c691827f7ca13d3e8a687663b65f99f6b53",
+  "jobs": [
+    {
+      "completedAt": "2026-10-19T15:13:25Z",
+      "conclusion": "success",
+      "databaseId": 118129661024,
+      "name": "verify",
+      "startedAt": "2026-10-19T14:52:49Z",
+      "status": "completed",
+      "steps": [
+        {
+          "completedAt": "2026-10-19T14:52:51Z",
+          "conclusion": "success",
+          "name": "Set up job",
+          "number": 1,
+          "startedAt": "2026-10-19T14:52:49Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-19T14:52:54Z",
+          "conclusion": "success",
+          "name": "Checkout",
+          "number": 2,
+          "startedAt": "2026-10-19T14:52:51Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-19T14:52:55Z",
+          "conclusion": "success",
+          "name": "Setup pnpm",
+          "number": 3,
+          "startedAt": "2026-10-19T14:52:54Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-19T14:52:59Z",
+          "conclusion": "success",
+          "name": "Setup Node",
+          "number": 4,
+          "startedAt": "2026-10-19T14:52:55Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-19T14:53:10Z",
+          "conclusion": "success",
+          "name": "Setup Go",
+          "number": 5,
+          "startedAt": "2026-10-19T14:52:59Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-19T14:53:13Z",
+          "conclusion": "success",
+          "name": "Install dependencies",
+          "number": 6,
+          "startedAt": "2026-10-19T14:53:10Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-19T15:12:28Z",
+          "conclusion": "success",
+          "name": "Verify panel",
+          "number": 7,
+          "startedAt": "2026-10-19T14:53:13Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-19T15:13:12Z",
+          "conclusion": "success",
+          "name": "Verify Agent and FXP",
+          "number": 8,
+          "startedAt": "2026-10-19T15:12:28Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-19T15:13:21Z",
+          "conclusion": "success",
+          "name": "Verify TCP port limits in an isolated Linux network namespace",
+          "number": 9,
+          "startedAt": "2026-10-19T15:13:12Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-19T15:13:21Z",
+          "conclusion": "success",
+          "name": "Post Setup Go",
+          "number": 15,
+          "startedAt": "2026-10-19T15:13:21Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-19T15:13:21Z",
+          "conclusion": "success",
+          "name": "Post Setup Node",
+          "number": 16,
+          "startedAt": "2026-10-19T15:13:21Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-19T15:13:22Z",
+          "conclusion": "success",
+          "name": "Post Setup pnpm",
+          "number": 17,
+          "startedAt": "2026-10-19T15:13:21Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-19T15:13:22Z",
+          "conclusion": "success",
+          "name": "Post Checkout",
+          "number": 18,
+          "startedAt": "2026-10-19T15:13:22Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-19T15:13:22Z",
+          "conclusion": "success",
+          "name": "Complete job",
+          "number": 19,
+          "startedAt": "2026-10-19T15:13:22Z",
+          "status": "completed"
+        }
+      ],
+      "url": "https://github.com/owo10086/sni-panel/actions/runs/39272921376/job/118129661024"
+    }
+  ],
+  "name": "CI",
+  "status": "completed",
+  "updatedAt": "2026-10-19T15:13:25Z",
+  "url": "https://github.com/owo10086/sni-panel/actions/runs/39272921376"
+}

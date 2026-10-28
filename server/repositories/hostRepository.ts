@@ -517,9 +517,14 @@ export async function getHostOptions(ownerUserId?: number, allowedHostIds?: numb
     // Drizzle expands `db.select().from(hosts)` to every column declared in
     // the current schema, so it is not a real SELECT * fallback when an older
     // database is missing one of those columns. Use the raw driver query,
-    // whose projection is resolved by the database itself, and apply the
-    // visibility predicate in memory.
-    const fallbackRows: Array<Record<string, any>> = await queryRaw<Record<string, any>>(`SELECT * FROM ${quoteIdentifier("hosts")}`);
+    // whose projection is resolved by the database itself. Still constrain
+    // ownership in SQL: a compatibility fallback must not load other tenants.
+    const ids = normalizeIds(allowedHostIds);
+    const scoped = Number(ownerUserId || 0) > 0;
+    const fallbackRows: Array<Record<string, any>> = await queryRaw<Record<string, any>>(
+      `SELECT * FROM ${quoteIdentifier("hosts")}${scoped ? ` WHERE (${quoteIdentifier("userId")} = ?${ids.length ? ` OR ${quoteIdentifier("id")} IN (${ids.map(() => "?").join(",")})` : ""})` : ""}`,
+      scoped ? [Number(ownerUserId), ...ids] : [],
+    );
     const allowed = new Set((allowedHostIds || [])
       .map((id) => Number(id))
       .filter((id) => Number.isInteger(id) && id > 0));
@@ -547,6 +552,18 @@ export async function getHostById(id: number) {
   if (!db) return undefined;
   const r = await db.select().from(hosts).where(eq(hosts.id, id)).limit(1);
   return r[0] ? withComputedOnline(r[0]) : undefined;
+}
+
+/** Batch lookup retains the same liveness calculation as a single-host read. */
+export async function getHostsByIds(hostIds: number[]) {
+  const db = await getDb();
+  if (!db) return [];
+  const ids = normalizeIds(hostIds);
+  const rows: Array<typeof hosts.$inferSelect> = [];
+  for (let index = 0; index < ids.length; index += 400) {
+    rows.push(...await db.select().from(hosts).where(inArray(hosts.id, ids.slice(index, index + 400))));
+  }
+  return rows.map(withComputedOnline);
 }
 
 export async function createHost(host: InsertHost) {
@@ -698,8 +715,11 @@ async function deleteHostRowsUnlocked(id: number): Promise<void> {
   await db.delete(subscriptionPlanHosts).where(eq(subscriptionPlanHosts.hostId, id));
   await db.delete(hostGroupMembers).where(eq(hostGroupMembers.hostId, id));
   await db.delete(hostMetrics).where(eq(hostMetrics.hostId, id));
+  await executeRaw(`DELETE FROM ${quoteIdentifier("agent_installations")} WHERE ${quoteIdentifier("hostId")} = ?`, [id]);
   await db.delete(hostProbeServiceStats).where(eq(hostProbeServiceStats.hostId, id));
   await executeRaw(`DELETE FROM ${quoteIdentifier("host_probe_health")} WHERE ${quoteIdentifier("hostId")} = ?`, [id]);
+  await executeRaw(`DELETE FROM ${quoteIdentifier("resource_alert_service_state")} WHERE ${quoteIdentifier("hostId")} = ?`, [id]);
+  await executeRaw(`DELETE FROM ${quoteIdentifier("operations_alert_state")} WHERE ${quoteIdentifier("hostId")} = ?`, [id]);
   await executeRaw(`DELETE FROM ${quoteIdentifier("host_availability_intervals")} WHERE ${quoteIdentifier("hostId")} = ?`, [id]);
   await afterDatabaseCommit(() => { hostAvailabilityRecorder.forget(id); });
   await db.delete(hostTrafficCounters).where(eq(hostTrafficCounters.hostId, id));

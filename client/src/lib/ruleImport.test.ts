@@ -1,6 +1,14 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { runRuleImport } from "./ruleImport";
+import { RuleTaskOutcomeUnknownError } from "../../../shared/ruleTaskOutcome";
+
+test("an uncertain accepted import is not converted into retryable failed rows", async () => {
+  const error = new RuleTaskOutcomeUnknownError("核对规则后再操作");
+  await assert.rejects(runRuleImport([{ name: "ordinary" }, { name: "SNI" }], {
+    createBatch: async () => { throw error; },
+  }), reason => reason === error);
+});
 import { parseManualBulkImportText, parseRuleTransferFile, parseSniBulkImportText, formatManualBulkImportRuleLine } from "./ruleTransfer";
 
 test("ordinary, SNI and mixed file imports use one save boundary and preserve original results", async () => {

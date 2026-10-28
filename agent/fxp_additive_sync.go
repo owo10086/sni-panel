@@ -145,6 +145,7 @@ func syncFXPAdditive(cfg Config, existing *fxpProcess, desired fxpSpec, persiste
 		for index := range prepared.Entries {
 			prepared.Entries[index].PanelURL = currentPanelURL(cfg)
 			prepared.Entries[index].Token = cfg.Token
+			prepared.Entries[index].InstallationID = currentAgentInstallationID()
 		}
 	}
 	payload, err := json.Marshal(prepared)

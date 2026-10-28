@@ -692,12 +692,12 @@ export default function TrafficBillingConfigManager({
       </Card>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-2xl grid-rows-[auto_minmax(0,1fr)_auto] sm:max-h-[90svh]">
+        <DialogContent className="max-w-2xl grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden sm:max-h-[90svh]">
           <DialogHeader>
             <DialogTitle>{configForm.id ? translateText("编辑计费资源") : translateText("新增计费资源")}</DialogTitle>
             <DialogDescription>{translateText("选择资源并设置每 GB 单价；倍率继承资源配置。")}</DialogDescription>
           </DialogHeader>
-          <div className="min-h-0 overflow-y-auto grid min-w-0 grid-cols-2 gap-3 pr-1 [&>*]:min-w-0">
+          <div className="grid min-h-0 min-w-0 touch-pan-y auto-rows-max grid-cols-2 content-start gap-3 overflow-y-auto overscroll-contain pb-2 pr-1 [&>*]:min-w-0">
             <div className="col-span-2 space-y-2">
               <Label htmlFor="billing-config-name">{translateText("套餐名称")}</Label>
               <Input id="billing-config-name" maxLength={255} value={configForm.name} onChange={(e) => setConfigForm((current) => ({ ...current, name: e.target.value }))} placeholder={translateText("留空使用资源名称")} />
@@ -802,17 +802,17 @@ export default function TrafficBillingConfigManager({
             <div className="col-span-2">
               <PlanDescriptionEditor value={configForm.description} onChange={(description) => setConfigForm((current) => ({ ...current, description }))} />
             </div>
-            <div className="col-span-2 flex items-center justify-between gap-3 rounded-lg border border-border/50 bg-muted/20 p-3">
-              <div className="min-w-0">
+            <div className="col-span-2 flex min-w-0 items-center justify-between gap-3 rounded-lg border border-border/50 bg-muted/20 p-3">
+              <div className="min-w-0 flex-1">
                 <Label className="text-sm">{translateText("启用计费资源")}</Label>
-                <p className="mt-1 text-xs text-muted-foreground">{translateText("停用后该资源不再作为流量计费资源使用。")}</p>
+                <p className="mt-1 text-xs leading-5 text-muted-foreground">{translateText("停用后该资源不再作为流量计费资源使用。")}</p>
               </div>
               <Switch className="shrink-0" checked={configForm.enabled} onCheckedChange={(enabled) => setConfigForm((current) => ({ ...current, enabled }))} />
             </div>
-            <div className="col-span-2 flex items-center justify-between gap-3 rounded-lg border border-border/50 bg-muted/20 p-3">
-              <div className="min-w-0">
+            <div className="col-span-2 flex min-w-0 items-center justify-between gap-3 rounded-lg border border-border/50 bg-muted/20 p-3">
+              <div className="min-w-0 flex-1">
                 <Label className="text-sm">{translateText("需要额外计费权限")}</Label>
-                <p className="mt-1 text-xs text-muted-foreground">{translateText("关闭时普通用户有余额即可使用；开启时需要在用户管理中单独授权。")}</p>
+                <p className="mt-1 text-xs leading-5 text-muted-foreground">{translateText("关闭时普通用户有余额即可使用；开启时需要在用户管理中单独授权。")}</p>
               </div>
               <Switch className="shrink-0" checked={configForm.requiresPermission} onCheckedChange={(requiresPermission) => setConfigForm((current) => ({ ...current, requiresPermission }))} />
             </div>

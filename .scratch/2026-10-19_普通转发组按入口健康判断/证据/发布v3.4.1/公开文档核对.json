@@ -1,0 +1,21 @@
+{
+  "buildInfo": {
+    "version": "3.4.1",
+    "commit": "51167e4a95aa8b9e7810443a50b80462ef8b4e96",
+    "sourceDirty": false,
+    "sourceSha256": "c1f7d5f06d54d934f80ec26818e7072645ae42ac0da1c9b4154db908293878ec",
+    "builtAt": "2026-10-19T14:29:31.231Z"
+  },
+  "groupsPage": {
+    "url": "https://owo10086.github.io/sni-panel/guide/groups.html",
+    "newPolicyPresent": true
+  },
+  "releasePage": {
+    "version": "3.4.1",
+    "agentFxp": "3.4.0",
+    "panelOnlyUpgrade": true
+  },
+  "ddnsPage": {
+    "scopedEntryPolicyPresent": true
+  }
+}

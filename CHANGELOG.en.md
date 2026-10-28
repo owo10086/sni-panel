@@ -4,6 +4,26 @@
 
 ## [Unreleased]
 
+## [3.9.0] - 2026-10-28
+
+### Features and improvements
+
+- Integrate upstream 2.3.290, 2.3.291 and 2.3.292 web, server, Agent and FXP changes, retaining local SNI, entry-health and DDNS decisions, quotas, billing, Docker coexistence and the committed group-handover fixes.
+- Add stepped bulk rule actions and background progress for enable, pause, restart, delete, copy and edit. Tasks continue across page changes and can stop work that has not started. Execution rechecks live sessions and permissions. A lost enqueue response looks up the original task; an unknown outcome asks the user to inspect rules without replaying writes.
+- Import port lists, ranges, per-line listening ports and exported TXT. Ordinary, SNI and mixed imports keep their single transaction, per-row savepoints, 500-row limit and centralized deployment. Cancellation does not split an active batch. Preserve select-current-page and clear-on-page-change on the main list, plus existing selection across pages in personal groups.
+- A new installation can take over an existing host with the same Token. Upgrades retain installation identity; reinstalls create a new one. The panel fences retired identities, while supported older instances stop synchronization and retain existing forwarding. Copying an installation command refreshes Token binding and asks for confirmation when bound.
+- Show host TCP/UDP socket counts, add a GOST traffic fallback for restricted LXC, and improve bounded action inputs, probe scheduling and synchronization. Port resources can reset only their Beijing calendar-day and cumulative traffic display, preserving rule usage, quotas, billing and connections.
+- Display self-test results as they arrive while distinguishing target reachability from evidence of forwarding through the entry. Add searchable, refreshable and custom AI model selection and resource alerts scoped by service, metric and host selection.
+- Reduce repeated queries and batch traffic accounting, with bounded read queues and opt-in conflict retries only after confirmed rollback. Preserve login credentials during temporary database backpressure while continuing to enforce real expiry and revocation.
+- Harden signing secrets and persist random replacements. Bound request sizes, concurrent reception and read time before buffering and parsing. Panel and Agent main logs retain today and the previous two days in their own runtime time zones; panel log filtering, paging and export cover those days.
+- Improve long dialogs, safe areas, sidebar swipes, charts and globes. Preserve card/table views for plans and metered resource management. Native clients and author donation UI remain excluded.
+
+### Versions and upgrade notes
+
+- Source versions for the panel, Agent and ForwardX FXP runtime are `3.9.0`. A panel-only upgrade accepts legacy Agents until installation identity is bound. Socket collection, active retirement fencing and the LXC traffic fallback require the matching Agent/FXP update.
+- Background tasks live in the panel process and do not promise recovery or resumption after a restart. Replacing a signing key requires signing in again; valid strong keys are retained.
+- This delivery covers local source and validation. Production upgrades, tags and remote publishing are handled separately.
+
 ## [3.8.0] - 2026-10-25
 
 ### Fixes and improvements

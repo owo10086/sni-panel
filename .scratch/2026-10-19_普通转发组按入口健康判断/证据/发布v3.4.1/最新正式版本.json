@@ -1,0 +1,40 @@
+{
+  "assets": [
+    {
+      "digest": "sha256:134ae536d74e56849994d3c9f59482e05a02bbd042aef6b03b05e86ea0bdae8d",
+      "name": "forwardx-agent-linux-amd64",
+      "size": 11030680
+    },
+    {
+      "digest": "sha256:6f6d5a0ee45bf9490a6e5127430accd7b3931ad1a36a0b7d536a920495399514",
+      "name": "forwardx-fxp-linux-amd64",
+      "size": 6852760
+    },
+    {
+      "digest": "sha256:b7c50990a9bfce3147a39cd497cbf7ca32d17ee801b44576c9285d538cd0b004",
+      "name": "forwardx-panel-v3.4.1.tar.gz",
+      "size": 47959481
+    },
+    {
+      "digest": "sha256:a2aea24efb4597b5f57b35b8e1bbcc59f439b80723854d4371f6828b46682ffb",
+      "name": "forwardx-runtime-linux-amd64",
+      "size": 9673064
+    },
+    {
+      "digest": "sha256:2380885f07a93b8349d6c7aac273b57eed05020ecde2ec4544e96275880da0b6",
+      "name": "SHA256SUMS",
+      "size": 426
+    },
+    {
+      "digest": "sha256:3170168a0a0089df145a378c27844f383936405cf4277ed7ace34eef61483bfc",
+      "name": "THIRD_PARTY_NOTICES.md",
+      "size": 3360
+    }
+  ],
+  "draft": false,
+  "html_url": "https://github.com/owo10086/sni-panel/releases/tag/v3.4.1",
+  "prerelease": false,
+  "published_at": "2026-10-19T14:59:32Z",
+  "tag_name": "v3.4.1",
+  "target_commitish": "51167e4a95aa8b9e7810443a50b80462ef8b4e96"
+}

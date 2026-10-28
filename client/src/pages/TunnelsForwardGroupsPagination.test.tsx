@@ -8,6 +8,7 @@ import * as tunnelRelay from "@shared/tunnelRelay";
 import * as linkAvailability from "@/lib/linkAvailability";
 import * as tunnelDisplay from "@/lib/tunnelDisplay";
 import * as polling from "@/lib/polling";
+import * as queryPolicy from "@/lib/queryPolicy";
 import * as segmented from "@/components/ui/segmented";
 import { createPaginationHarness, findElements } from "@/test/paginationHarness";
 
@@ -64,6 +65,7 @@ function setup(kind: "tunnels" | "groups", storage = new Map<string, string>()) 
     "@/lib/linkAvailability": linkAvailability,
     "@/lib/tunnelDisplay": tunnelDisplay,
     "@/lib/polling": polling,
+    "@/lib/queryPolicy": queryPolicy,
     "@/components/ui/segmented": segmented,
     "@/hooks/useUrlTab": { useUrlTab: () => [section, (value: string) => { section = value; }] },
     "@/_core/hooks/useAuth": { useAuth: () => ({ user: { role: "admin" }, loading: false }) },

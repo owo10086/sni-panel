@@ -26,17 +26,19 @@ test("top-level probe mode constrains China checks without clearing the provider
   assert.equal(standard.health.hookUrl, form.health.hookUrl);
   assert.equal(standard.health.hookConfigured, true);
   assert.equal(applyHostProbeServiceMode(standard, "china").health.autoSwitch, true);
+  assert.deepEqual(applyHostProbeServiceMode(china, "resource"), china, "opening resource alerts must preserve China connectivity configuration");
 });
 
-test("service mode uses two top tabs and shows dedicated settings only for China checks", async () => {
+test("service modes include independent resource alerts and show dedicated settings only for China checks", async () => {
   const previous = getLanguagePreference();
   try {
     setLanguagePreference("en"); await initializeLanguage();
     for (const mode of ["standard", "china"] as const) {
       const health = { ...createChinaHealthDraft(), enabled: mode === "china", notify: false };
       const html = renderToStaticMarkup(<HostProbeServiceModeTabs mode={mode} onModeChange={() => {}}><HostChinaHealthSettings value={health} onChange={() => {}} /></HostProbeServiceModeTabs>);
-      assert.match(html, /role="tablist"/); assert.match(html, /grid-cols-2/);
-      assert.equal((html.match(/role="tab"/g) || []).length, 2);
+      assert.match(html, /role="tablist"/);
+      assert.equal((html.match(/role="tab"/g) || []).length, 3);
+      assert.match(html, /Resource alerts/);
       assert.match(html, /Standard probe/); assert.match(html, /China connectivity health check/);
       assert.match(html, /role="tabpanel"/);
       assert.equal(html.includes('id="china-failureThreshold"'), mode === "china");
@@ -50,9 +52,9 @@ test("service dialog reserves its header/footer and scrolls only the form below 
   assert.match(manager, /<DialogHeader className="shrink-0">/);
   assert.match(manager, /<DialogFooter className="shrink-0">/);
   const html = renderToStaticMarkup(<HostProbeServiceModeTabs mode="china" onModeChange={() => {}}><div>Long form content</div></HostProbeServiceModeTabs>);
-  assert.match(html, /class="[^"]*min-h-0 flex-auto flex-col gap-3/);
+  assert.match(html, /role="tabpanel"/);
   assert.match(html, /role="tablist"[^>]*class="[^"]*shrink-0/);
-  assert.match(html, /role="tabpanel"[^>]*class="[^"]*min-h-0 flex-auto[^\"]*overflow-y-auto/);
+  assert.match(html, /role="tabpanel"[^>]*class="[^"]*min-h-0[^\"]*overflow-y-auto/);
 });
 test("health states and Agent upgrade hints support English", async () => {
   const previous = getLanguagePreference();

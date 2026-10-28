@@ -1,0 +1,214 @@
+{
+  "attempt": 3,
+  "conclusion": "failure",
+  "headSha": "948fa84eea48e06c04b18f46b11d28cab8665b0d",
+  "jobs": [
+    {
+      "completedAt": "2026-10-21T15:34:03Z",
+      "conclusion": "failure",
+      "databaseId": 119309076176,
+      "name": "release-panel",
+      "startedAt": "2026-10-21T15:24:30Z",
+      "status": "completed",
+      "steps": [
+        {
+          "completedAt": "2026-10-21T15:24:32Z",
+          "conclusion": "success",
+          "name": "Set up job",
+          "number": 1,
+          "startedAt": "2026-10-21T15:24:30Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-21T15:24:35Z",
+          "conclusion": "success",
+          "name": "Checkout",
+          "number": 2,
+          "startedAt": "2026-10-21T15:24:32Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-21T15:24:36Z",
+          "conclusion": "success",
+          "name": "Setup pnpm",
+          "number": 3,
+          "startedAt": "2026-10-21T15:24:35Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-21T15:24:40Z",
+          "conclusion": "success",
+          "name": "Setup Node",
+          "number": 4,
+          "startedAt": "2026-10-21T15:24:36Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-21T15:24:50Z",
+          "conclusion": "success",
+          "name": "Setup Go",
+          "number": 5,
+          "startedAt": "2026-10-21T15:24:40Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-21T15:24:50Z",
+          "conclusion": "success",
+          "name": "Resolve release version",
+          "number": 6,
+          "startedAt": "2026-10-21T15:24:50Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-21T15:24:54Z",
+          "conclusion": "success",
+          "name": "Install dependencies",
+          "number": 7,
+          "startedAt": "2026-10-21T15:24:50Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-21T15:24:54Z",
+          "conclusion": "success",
+          "name": "Check release versions and tag",
+          "number": 8,
+          "startedAt": "2026-10-21T15:24:54Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-21T15:25:17Z",
+          "conclusion": "success",
+          "name": "Type check",
+          "number": 9,
+          "startedAt": "2026-10-21T15:24:54Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-21T15:25:32Z",
+          "conclusion": "success",
+          "name": "Build panel assets",
+          "number": 10,
+          "startedAt": "2026-10-21T15:25:17Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-21T15:34:00Z",
+          "conclusion": "failure",
+          "name": "Run panel tests",
+          "number": 11,
+          "startedAt": "2026-10-21T15:25:32Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-21T15:34:00Z",
+          "conclusion": "skipped",
+          "name": "Run Agent tests and vet",
+          "number": 12,
+          "startedAt": "2026-10-21T15:34:00Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-21T15:34:00Z",
+          "conclusion": "skipped",
+          "name": "Prepare release notes",
+          "number": 13,
+          "startedAt": "2026-10-21T15:34:00Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-21T15:34:00Z",
+          "conclusion": "skipped",
+          "name": "Build bundled Agent assets",
+          "number": 14,
+          "startedAt": "2026-10-21T15:34:00Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-21T15:34:00Z",
+          "conclusion": "skipped",
+          "name": "Verify bundled FXP behavior",
+          "number": 15,
+          "startedAt": "2026-10-21T15:34:00Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-21T15:34:00Z",
+          "conclusion": "skipped",
+          "name": "Package panel runtime bundle",
+          "number": 16,
+          "startedAt": "2026-10-21T15:34:00Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-21T15:34:00Z",
+          "conclusion": "skipped",
+          "name": "Upload panel bundle artifact",
+          "number": 17,
+          "startedAt": "2026-10-21T15:34:00Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-21T15:34:00Z",
+          "conclusion": "skipped",
+          "name": "Publish panel bundle to GitHub Release",
+          "number": 18,
+          "startedAt": "2026-10-21T15:34:00Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-21T15:34:00Z",
+          "conclusion": "skipped",
+          "name": "Post Setup Go",
+          "number": 33,
+          "startedAt": "2026-10-21T15:34:00Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-21T15:34:00Z",
+          "conclusion": "skipped",
+          "name": "Post Setup Node",
+          "number": 34,
+          "startedAt": "2026-10-21T15:34:00Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-21T15:34:00Z",
+          "conclusion": "success",
+          "name": "Post Setup pnpm",
+          "number": 35,
+          "startedAt": "2026-10-21T15:34:00Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-21T15:34:00Z",
+          "conclusion": "success",
+          "name": "Post Checkout",
+          "number": 36,
+          "startedAt": "2026-10-21T15:34:00Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-21T15:34:00Z",
+          "conclusion": "success",
+          "name": "Complete job",
+          "number": 37,
+          "startedAt": "2026-10-21T15:34:00Z",
+          "status": "completed"
+        }
+      ],
+      "url": "https://github.com/owo10086/sni-panel/actions/runs/39619532759/job/119309076176"
+    },
+    {
+      "completedAt": "2026-10-21T15:34:03Z",
+      "conclusion": "skipped",
+      "databaseId": 119314180234,
+      "name": "docker-image",
+      "startedAt": "2026-10-21T15:34:04Z",
+      "status": "completed",
+      "steps": [],
+      "url": "https://github.com/owo10086/sni-panel/actions/runs/39619532759/job/119314180234"
+    }
+  ],
+  "status": "completed",
+  "url": "https://github.com/owo10086/sni-panel/actions/runs/39619532759"
+}

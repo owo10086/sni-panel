@@ -1,0 +1,10 @@
+{
+  "artifactId": 12196745219,
+  "sourceCommit": "51167e4a95aa8b9e7810443a50b80462ef8b4e96",
+  "artifactDigest": "sha256:2a058b24e3bf883b63a4b5794a93314f8f82b39704062a27b7b0e00309eedf2f",
+  "bundleSha256": "b7c50990a9bfce3147a39cd497cbf7ca32d17ee801b44576c9285d538cd0b004",
+  "bundleBytes": 47959481,
+  "panelVersion": "3.4.1",
+  "serverMatchesValidatedLocalBuild": true,
+  "bundledProgramsChecksumsValid": true
+}
