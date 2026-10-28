@@ -1,3 +1,4 @@
+import { MAX_PAGE_SIZE } from "../../shared/pagination";
 import { protectedProcedure, adminProcedure, router } from "../_core/trpc";
 import { z } from "zod";
 import * as db from "../db";
@@ -54,7 +55,7 @@ export const usersRouter = router({
     listPage: adminProcedure
       .input(z.object({
         page: z.number().int().positive().default(1),
-        pageSize: z.number().int().min(1).max(100).default(12),
+        pageSize: z.number().int().min(1).max(MAX_PAGE_SIZE).default(12),
       }))
       .query(async ({ input }) => {
         return db.getUsersPage(input);

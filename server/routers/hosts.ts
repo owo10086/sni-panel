@@ -1,3 +1,4 @@
+import { MAX_PAGE_SIZE } from "../../shared/pagination";
 import { withGroupMemberMutation } from "../groupMemberMutation";
 import { protectedProcedure, adminProcedure, publicProcedure, router } from "../_core/trpc";
 import { TRPCError } from "@trpc/server";
@@ -85,7 +86,7 @@ const hostDdnsRecordTypeSchema = z.enum(["A", "AAAA", "BOTH"]);
 const hostDdnsDomainSchema = z.string().trim().max(253).nullable().optional();
 const pageRequestSchema = z.object({
   page: z.number().int().positive().default(1),
-  pageSize: z.number().int().min(1).max(100).default(12),
+  pageSize: z.number().int().min(1).max(MAX_PAGE_SIZE).default(12),
 });
 const hostProbeTargetSchema = z.string().trim().min(1).max(253).refine(isValidHostOrIp, "Invalid target IP or host");
 const hostProbeIdsSchema = z.array(z.number().int().positive()).max(500).optional();

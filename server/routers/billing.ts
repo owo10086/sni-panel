@@ -1,3 +1,4 @@
+import { MAX_PAGE_SIZE } from "../../shared/pagination";
 import { z } from "zod";
 import { adminProcedure, protectedProcedure, router } from "../_core/trpc";
 import { appendPanelLog } from "../_core/panelLogger";
@@ -9,7 +10,7 @@ import { clearForwardxAiSettingsCache } from "../ai/settings";
 const dateInput = z.string().trim().optional().nullable();
 const billingPageInput = z.object({
   page: z.number().int().min(1).default(1),
-  pageSize: z.number().int().min(1).max(100).default(20),
+  pageSize: z.number().int().min(1).max(MAX_PAGE_SIZE).default(20),
   userId: z.number().int().positive().optional(),
 });
 
@@ -202,7 +203,7 @@ export const billingRouter = router({
   listRedemptionCodesPage: adminProcedure
     .input(z.object({
       page: z.number().int().positive().default(1),
-      pageSize: z.number().int().min(1).max(100).default(50),
+      pageSize: z.number().int().min(1).max(MAX_PAGE_SIZE).default(50),
       usage: z.enum(["all", "unused", "used"]).default("all"),
     }))
     .query(async ({ input }) => db.listRedemptionCodesPage(input)),
@@ -255,7 +256,7 @@ export const billingRouter = router({
   listDiscountCodesPage: adminProcedure
     .input(z.object({
       page: z.number().int().positive().default(1),
-      pageSize: z.number().int().min(1).max(100).default(50),
+      pageSize: z.number().int().min(1).max(MAX_PAGE_SIZE).default(50),
     }))
     .query(async ({ input }) => db.listDiscountCodesPage(input)),
   createDiscountCode: adminProcedure

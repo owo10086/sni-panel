@@ -1719,7 +1719,6 @@ export function ForwardGroupsContent({
     loadingLabel: string;
     emptyTitle: string;
     emptyDescription: string;
-    paginationItemName: string;
   }> = {
     port: {
       title: translateText("端口转发"),
@@ -1728,7 +1727,6 @@ export function ForwardGroupsContent({
       loadingLabel: translateText("正在加载端口转发"),
       emptyTitle: translateText("暂无端口转发"),
       emptyDescription: translateText("创建后可在转发规则中直接选择使用"),
-      paginationItemName: translateText("条端口转发"),
     },
     failover: {
       title: translateText("转发组"),
@@ -1737,7 +1735,6 @@ export function ForwardGroupsContent({
       loadingLabel: translateText("正在加载转发组"),
       emptyTitle: translateText("暂无转发组"),
       emptyDescription: translateText("创建后可在转发规则中使用"),
-      paginationItemName: translateText("个转发组"),
     },
     chain: {
       title: translateText("转发链"),
@@ -1746,7 +1743,6 @@ export function ForwardGroupsContent({
       loadingLabel: translateText("正在加载转发链"),
       emptyTitle: translateText("暂无转发链"),
       emptyDescription: translateText("创建后可在转发规则中使用"),
-      paginationItemName: translateText("条转发链"),
     },
     entry: {
       title: translateText("入口组"),
@@ -1755,7 +1751,6 @@ export function ForwardGroupsContent({
       loadingLabel: translateText("正在加载入口组"),
       emptyTitle: translateText("暂无入口组"),
       emptyDescription: translateText("创建后可供隧道和转发链复用"),
-      paginationItemName: translateText("个入口组"),
     },
     exit: {
       title: translateText("出口组"),
@@ -1764,7 +1759,6 @@ export function ForwardGroupsContent({
       loadingLabel: translateText("正在加载出口组"),
       emptyTitle: translateText("暂无出口组"),
       emptyDescription: translateText("创建后可作为隧道出口使用"),
-      paginationItemName: translateText("个出口组"),
     },
   };
   const currentModeMeta = modeMeta[activeGroupMode];
@@ -1774,7 +1768,6 @@ export function ForwardGroupsContent({
   const loadingLabel = currentModeMeta.loadingLabel;
   const emptyTitle = currentModeMeta.emptyTitle;
   const emptyDescription = currentModeMeta.emptyDescription;
-  const paginationItemName = currentModeMeta.paginationItemName;
   const dialogTitle = editingId ? translateText("编辑{0}", [currentModeMeta.title]) : translateText("添加{0}", [currentModeMeta.title]);
   const contentTransitionKey = `${activeGroupMode}-${normalizedSearchQuery || "all"}-${isLoading ? "loading" : groupPageQuery.isError ? "error" : visibleGroups.length > 0 ? `list-${viewMode}` : "empty"}`;
 
@@ -2087,7 +2080,7 @@ export function ForwardGroupsContent({
         </Card>
           </>
         )}
-          <PersistentPagination pagination={groupPagination} itemName={paginationItemName} className="mt-5" />
+          <PersistentPagination pagination={groupPagination} className="mt-5" />
         </>
       ) : (
         <Card className="border-border/40 bg-card/60">

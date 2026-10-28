@@ -2578,7 +2578,7 @@ function HostsContent() {
               {pagedHosts.map((host) => renderHostCard(host, { compact: false }))}
             </AutoAnimateContainer>
             <div className="md:hidden">
-              <PersistentPagination pagination={hostPagination} itemName={translateText("台主机")} />
+              <PersistentPagination pagination={hostPagination} />
             </div>
           </>
         ) : viewMode === "flat-map" ? (
@@ -2595,7 +2595,7 @@ function HostsContent() {
               {pagedHosts.map((host) => renderHostCard(host, { compact: false }))}
             </AutoAnimateContainer>
             <div className="md:hidden">
-              <PersistentPagination pagination={hostPagination} itemName={translateText("台主机")} />
+              <PersistentPagination pagination={hostPagination} />
             </div>
           </>
         ) : viewMode === "card" || viewMode === "compact-card" ? (
@@ -2718,7 +2718,7 @@ function HostsContent() {
             </Card>
           </>
         )}
-        {viewMode !== "map" && viewMode !== "flat-map" && <PersistentPagination pagination={hostPagination} itemName={translateText("台主机")} />}
+        {viewMode !== "map" && viewMode !== "flat-map" && <PersistentPagination pagination={hostPagination} />}
         </>
       ) : (
         <Card className="border-border/40 bg-card/60 backdrop-blur-md">

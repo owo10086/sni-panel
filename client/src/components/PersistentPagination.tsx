@@ -3,10 +3,14 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { PAGE_SIZE_OPTIONS, type PageSize } from "@shared/pagination";
+import { parsePageSize, readStoredPageSize, writeStoredPageSize } from "@/lib/pageSize";
 
 type PersistentPaginationOptions = {
   storageKey: string;
   pageSize?: number;
+  defaultPageSize?: PageSize;
   isReady?: boolean;
 };
 
@@ -15,6 +19,7 @@ export type PersistentPaginationState<T> = {
   totalPages: number;
   totalItems: number;
   pageSize: number;
+  setPageSize?: (pageSize: number) => void;
   startItem: number;
   endItem: number;
   items: T[];
@@ -26,6 +31,13 @@ export type PersistentPaginationState<T> = {
 export type PersistentPageRequestState = {
   page: number;
   setPage: (page: number) => void;
+  pageSize?: number;
+  setPageSize?: (pageSize: number) => void;
+};
+
+export type PersistentPageSizeRequestState = PersistentPageRequestState & {
+  pageSize: PageSize;
+  setPageSize: (pageSize: number) => void;
 };
 
 function readStoredPage(storageKey: string) {
@@ -47,28 +59,48 @@ function writeStoredPage(storageKey: string, page: number) {
   }
 }
 
-export function usePersistentPageRequest(storageKey: string): PersistentPageRequestState {
-  const [page, setStoredPage] = useState(() => readStoredPage(storageKey));
-
-  useEffect(() => {
-    setStoredPage(readStoredPage(storageKey));
-  }, [storageKey]);
+export function usePersistentPageRequest(storageKey: string, defaultPageSize: PageSize): PersistentPageSizeRequestState;
+export function usePersistentPageRequest(storageKey: string, defaultPageSize?: PageSize): PersistentPageRequestState;
+export function usePersistentPageRequest(storageKey: string, defaultPageSize?: PageSize): PersistentPageRequestState {
+  const readState = () => ({
+    storageKey,
+    page: readStoredPage(storageKey),
+    pageSize: defaultPageSize === undefined ? undefined : readStoredPageSize(storageKey, defaultPageSize),
+  });
+  const [stored, setStored] = useState(readState);
+  // Switching lists restores the target state before issuing its first request.
+  const state = stored.storageKey === storageKey ? stored : readState();
+  if (stored.storageKey !== storageKey) setStored(state);
 
   const setPage = useCallback((nextPage: number) => {
     const normalized = Math.max(1, Math.floor(Number(nextPage) || 1));
-    setStoredPage(normalized);
+    setStored((current) => ({ ...current, page: normalized }));
     writeStoredPage(storageKey, normalized);
   }, [storageKey]);
 
-  return { page, setPage };
+  const setPageSize = useCallback((nextPageSize: number) => {
+    if (defaultPageSize === undefined) return;
+    const pageSize = parsePageSize(nextPageSize, defaultPageSize);
+    setStored((current) => ({ ...current, page: 1, pageSize }));
+    writeStoredPageSize(storageKey, pageSize);
+    writeStoredPage(storageKey, 1);
+  }, [defaultPageSize, storageKey]);
+
+  return {
+    page: state.page,
+    setPage,
+    pageSize: state.pageSize,
+    setPageSize: defaultPageSize === undefined ? undefined : setPageSize,
+  };
 }
 
 export function useServerPagination<T>(
   items: T[],
   totalItems: number,
   request: PersistentPageRequestState,
-  { pageSize = 12, isReady = true }: Omit<PersistentPaginationOptions, "storageKey"> = {},
+  { pageSize: fixedPageSize = 12, isReady = true }: Omit<PersistentPaginationOptions, "storageKey" | "defaultPageSize"> = {},
 ): PersistentPaginationState<T> {
+  const pageSize = request.pageSize ?? fixedPageSize;
   const normalizedTotal = Math.max(0, Math.floor(Number(totalItems) || 0));
   const totalPages = isReady ? Math.max(1, Math.ceil(normalizedTotal / pageSize)) : Math.max(1, request.page);
   const currentPage = isReady ? Math.min(Math.max(request.page, 1), totalPages) : Math.max(request.page, 1);
@@ -90,6 +122,7 @@ export function useServerPagination<T>(
     totalPages,
     totalItems: normalizedTotal,
     pageSize,
+    setPageSize: request.setPageSize,
     startItem,
     endItem,
     items: isReady ? items : [],
@@ -109,79 +142,44 @@ function getPageWindow(currentPage: number, totalPages: number) {
 
 export function usePersistentPagination<T>(
   items: T[],
-  { storageKey, pageSize = 12, isReady = true }: PersistentPaginationOptions,
+  { storageKey, pageSize: fixedPageSize = 12, defaultPageSize, isReady = true }: PersistentPaginationOptions,
 ): PersistentPaginationState<T> {
-  const [page, setStoredPage] = useState(() => readStoredPage(storageKey));
-  const totalItems = items.length;
-  const totalPages = isReady ? Math.max(1, Math.ceil(totalItems / pageSize)) : Math.max(1, page);
-  const currentPage = isReady ? Math.min(Math.max(page, 1), totalPages) : Math.max(page, 1);
-
-  useEffect(() => {
-    setStoredPage(readStoredPage(storageKey));
-  }, [storageKey]);
-
-  useEffect(() => {
-    if (!isReady) return;
-    if (page === currentPage) return;
-    setStoredPage(currentPage);
-    writeStoredPage(storageKey, currentPage);
-  }, [currentPage, isReady, page, storageKey]);
-
-  const setPage = (nextPage: number) => {
-    const raw = Number.isFinite(nextPage) ? Math.floor(nextPage) : 1;
-    const maxPage = isReady ? totalPages : Math.max(1, raw);
-    const clamped = Math.min(Math.max(raw, 1), maxPage);
-    setStoredPage(clamped);
-    writeStoredPage(storageKey, clamped);
-  };
-
+  const request = usePersistentPageRequest(storageKey, defaultPageSize);
+  const pageSize = request.pageSize ?? fixedPageSize;
+  const pagination = useServerPagination(items, items.length, request, { pageSize, isReady });
   const pagedItems = useMemo(() => {
     if (!isReady) return [];
-    const start = (currentPage - 1) * pageSize;
+    const start = (pagination.currentPage - 1) * pageSize;
     return items.slice(start, start + pageSize);
-  }, [currentPage, isReady, items, pageSize]);
-
-  const startItem = totalItems === 0 ? 0 : (currentPage - 1) * pageSize + 1;
-  const endItem = totalItems === 0 ? 0 : Math.min(totalItems, currentPage * pageSize);
-
-  return {
-    currentPage,
-    totalPages,
-    totalItems,
-    pageSize,
-    startItem,
-    endItem,
-    items: pagedItems,
-    setPage,
-    nextPage: () => setPage(currentPage + 1),
-    previousPage: () => setPage(currentPage - 1),
-  };
+  }, [pagination.currentPage, isReady, items, pageSize]);
+  return { ...pagination, items: pagedItems };
 }
 
 export function PersistentPagination<T>({
   pagination,
-  itemName = translateText("项"),
   className,
 }: {
   pagination: PersistentPaginationState<T>;
-  itemName?: string;
   className?: string;
 }) {
-  if (pagination.totalItems <= pagination.pageSize) return null;
+  const hasPageSizeSelector = !!pagination.setPageSize;
+  if (pagination.totalItems <= (hasPageSizeSelector ? PAGE_SIZE_OPTIONS[0] : pagination.pageSize)) return null;
   const pages = getPageWindow(pagination.currentPage, pagination.totalPages);
 
   return (
-    <div className={cn("flex flex-col gap-3 rounded-lg border border-border/40 bg-card/60 px-3 py-3 text-sm sm:flex-row sm:items-center sm:justify-between", className)}>
-      <div className="text-xs tabular-nums text-muted-foreground">{translateText("{0}–{1} / {2} {3}", [pagination.startItem, pagination.endItem, pagination.totalItems, itemName])}</div>
-      <div className="flex items-center justify-between gap-1 sm:justify-end">
+    <div className={cn("flex flex-wrap items-center justify-end gap-3 text-sm", className)}>
+      <div className="text-xs tabular-nums text-muted-foreground">{translateText("共 {0} 条", [pagination.totalItems])}</div>
+      <div className="flex items-center justify-end gap-1">
         <Button
           variant="outline"
           size="sm"
-          className="h-8 gap-1"
+          className="h-8 w-8 p-0"
+          aria-label={translateText("上一页")}
           disabled={pagination.currentPage <= 1}
           onClick={pagination.previousPage}
         >
-          <ChevronLeft className="h-4 w-4" />{translateText("上一页")}</Button>
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
         <span className="px-2 text-xs tabular-nums text-muted-foreground sm:hidden" aria-label={translateText("第 {0} 页，共 {1} 页", [pagination.currentPage, pagination.totalPages])}>{pagination.currentPage} / {pagination.totalPages}</span>
         <div className="hidden items-center gap-1 sm:flex">
           {pages.map((page, index) => {
@@ -191,9 +189,10 @@ export function PersistentPagination<T>({
               <div key={page} className="flex items-center gap-1">
                 {hasGap && <span className="px-1 text-xs text-muted-foreground">...</span>}
                 <Button
-                  variant={page === pagination.currentPage ? "secondary" : "ghost"}
+                  variant={page === pagination.currentPage ? "outline" : "ghost"}
                   size="sm"
-                  className="h-8 min-w-8 px-2"
+                  className={cn("h-8 min-w-8 px-2", page === pagination.currentPage && "border-primary bg-primary/5 text-primary")}
+                  aria-current={page === pagination.currentPage ? "page" : undefined}
                   onClick={() => pagination.setPage(page)}
                 >
                   {page}
@@ -205,12 +204,30 @@ export function PersistentPagination<T>({
         <Button
           variant="outline"
           size="sm"
-          className="h-8 gap-1"
+          className="h-8 w-8 p-0"
+          aria-label={translateText("下一页")}
           disabled={pagination.currentPage >= pagination.totalPages}
           onClick={pagination.nextPage}
-        >{translateText("下一页")}<ChevronRight className="h-4 w-4" />
+        >
+          <ChevronRight className="h-4 w-4" />
         </Button>
       </div>
+      {hasPageSizeSelector && (
+        <div className="flex w-full justify-end sm:w-auto">
+          <Select value={String(pagination.pageSize)} onValueChange={(value) => pagination.setPageSize?.(Number(value))}>
+            <SelectTrigger className="h-8 w-auto min-w-28" aria-label={translateText("{0} 条/页", [pagination.pageSize])}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {PAGE_SIZE_OPTIONS.map((size) => (
+                <SelectItem key={size} value={String(size)} className="data-[state=checked]:bg-accent data-[state=checked]:text-accent-foreground">
+                  {translateText("{0} 条/页", [size])}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
     </div>
   );
 }

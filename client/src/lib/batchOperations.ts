@@ -46,3 +46,15 @@ export function chunkBatchItems<T>(items: readonly T[], sizeValue: number): T[][
   }
   return chunks;
 }
+
+export async function queryInChunks<T, R>(
+  items: readonly T[],
+  limit: number,
+  query: (chunk: T[]) => Promise<readonly R[]>,
+): Promise<R[]> {
+  const results: R[] = [];
+  for (const chunk of chunkBatchItems(items, limit)) {
+    results.push(...await query(chunk));
+  }
+  return results;
+}

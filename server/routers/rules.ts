@@ -1,3 +1,4 @@
+import { MAX_PAGE_SIZE } from "../../shared/pagination";
 import { getDirectSniReadyPorts } from "../sniDirectRuntime";
 import { ruleLimitReason } from "../../shared/ruleLimits";
 import { adminProcedure, protectedProcedure, router } from "../_core/trpc";
@@ -316,7 +317,7 @@ export const rulesRouter = router({
   personalGroupItems: protectedProcedure
     .input(z.object({
       page: z.number().int().positive().default(1),
-      pageSize: z.number().int().min(1).max(100).default(12),
+      pageSize: z.number().int().min(1).max(MAX_PAGE_SIZE).default(12),
       search: z.string().max(200).default(""),
       personalGroupId: ruleGroupFilterSchema,
     }))
@@ -351,7 +352,7 @@ export const rulesRouter = router({
     .input(z.object({
       personalGroupId: ruleGroupFilterSchema,
       page: z.number().int().positive().default(1),
-      pageSize: z.number().int().min(1).max(100).default(12),
+      pageSize: z.number().int().min(1).max(MAX_PAGE_SIZE).default(12),
       userId: z.number().optional(),
       scope: z.enum(["self", "all"]).optional(),
       entryHostId: z.number().int().positive().nullable().optional(),

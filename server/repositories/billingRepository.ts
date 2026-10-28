@@ -38,7 +38,7 @@ import { sqlBool } from "./repositoryUtils";
 import { pushAgentRefresh } from "../agentEvents";
 import { getUserUsableTrafficBillingResourceIds } from "./trafficBillingRepository";
 import { getSetting, setSetting } from "./settingsRepository";
-import { pageResult, pageWindowForTotal, type PageRequest } from "../../shared/pagination";
+import { MAX_PAGE_SIZE, pageResult, pageWindowForTotal, type PageRequest } from "../../shared/pagination";
 import { withKeyedTaskLock, withTrafficBillingUserLock } from "../keyedTaskLock";
 import {
   getUserForwardRuleIdsDisabledByAccess,
@@ -2740,7 +2740,7 @@ export async function listBalanceTransactionsPage(input: PageRequest & { userId?
 }
 
 function normalizeBillingLimit(limit = 100) {
-  return Math.max(1, Math.min(500, Math.floor(Number(limit) || 100)));
+  return Math.max(1, Math.min(MAX_PAGE_SIZE, Math.floor(Number(limit) || 100)));
 }
 
 function billingTime(value: unknown) {

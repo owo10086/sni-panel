@@ -1,3 +1,4 @@
+import { MAX_PAGE_SIZE } from "../../shared/pagination";
 import { z } from "zod";
 import { adminProcedure, protectedProcedure, router } from "../_core/trpc";
 import { appendPanelLog } from "../_core/panelLogger";
@@ -80,7 +81,7 @@ export const plansRouter = router({
   listPage: adminProcedure
     .input(z.object({
       page: z.number().int().positive().default(1),
-      pageSize: z.number().int().min(1).max(100).default(12),
+      pageSize: z.number().int().min(1).max(MAX_PAGE_SIZE).default(12),
     }))
     .query(async ({ input }) => {
       return db.listSubscriptionPlansPage(input);
@@ -145,7 +146,7 @@ export const plansRouter = router({
     .input(z.object({
       userId: z.number().optional(),
       page: z.number().int().positive().default(1),
-      pageSize: z.number().int().min(1).max(100).default(12),
+      pageSize: z.number().int().min(1).max(MAX_PAGE_SIZE).default(12),
     }))
     .query(async ({ input }) => {
       await db.expireUserSubscriptions();

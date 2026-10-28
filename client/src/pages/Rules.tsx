@@ -7848,7 +7848,7 @@ function RulesContent() {
               </Card>
             </>
           )}
-          <PersistentPagination pagination={rulePagination} itemName={translateText("项")} className="mt-5" />
+          <PersistentPagination pagination={rulePagination} className="mt-5" />
         </>
       ) : (
         <Card className="border-border/40 bg-card/60 backdrop-blur-md">

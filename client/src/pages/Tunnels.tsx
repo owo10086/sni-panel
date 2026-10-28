@@ -4338,7 +4338,7 @@ function TunnelsContent() {
         </Card>
           </>
         )}
-          <PersistentPagination pagination={tunnelPagination} itemName={translateText("条隧道")} />
+          <PersistentPagination pagination={tunnelPagination} />
         </>
       ) : (
         <Card className="border-border/40 bg-card/60 backdrop-blur-md">

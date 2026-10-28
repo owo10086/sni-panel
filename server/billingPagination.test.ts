@@ -86,6 +86,11 @@ test("billing SQL pages retain all sources, stable ordering, diagnostics and use
       const anonymous = billingRouter.createCaller({req:{headers:{},socket:{}},res:{},user:null});
       await assert.rejects(anonymous.ledgerPage({page:1}),error=>error.code==="UNAUTHORIZED");
       const admin = billingRouter.createCaller(context(1,"admin"));
+      const fullPage = await admin.ledgerPage({pageSize:1000});
+      assert.ok(fullPage.totalItems > 500);
+      assert.equal(fullPage.items.length,fullPage.totalItems);
+      assert.deepEqual(keys(fullPage.items),keys(adminExpected));
+      await assert.rejects(admin.ledger({limit:501}),error=>error.code==="BAD_REQUEST");
       const balances = await admin.listTransactionsPage({page:16,pageSize:20,userId:2});
       assert.equal(balances.totalItems,310);
       assert.equal(balances.items.length,10);
@@ -99,7 +104,7 @@ test("billing SQL pages retain all sources, stable ordering, diagnostics and use
         {items:[],page:1,pageSize:20,totalItems:0,totalPages:1},"missing viewer never expands scope");
       assert.deepEqual(await billing.listBillingLedger({isAdmin:true},{balance:[],payment:[],subscription:[]}),[]);
       assert.deepEqual(await billing.listBalanceTransactions(undefined,20,[]),[]);
-      await assert.rejects(admin.ledgerPage({pageSize:101}),error=>error.code==="BAD_REQUEST");
+      await assert.rejects(admin.ledgerPage({pageSize:1001}),error=>error.code==="BAD_REQUEST");
 
       // Export uses the same visibility rules, without page/legacy row caps.
       const collect = async options => {
@@ -160,6 +165,46 @@ test("billing SQL pages retain all sources, stable ordering, diagnostics and use
         assert.equal((await readXlsx(await request("?userId=1","admin"))).length,0);
         assert.equal((await request("","admin")).status,429);
       } finally { await new Promise(resolve=>server.close(resolve)); }
+
+      const callers = {};
+      for (const name of ["users","hosts","tunnels","forwardGroups","rules","plans"]) {
+        const module = await import(url("server/routers/"+name+".ts"));
+        callers[name] = module[name+"Router"].createCaller(context(1,"admin"));
+      }
+      const procedures = [
+        [callers.users,"listPage",{},12],
+        [callers.hosts,"listPage",{},12],
+        [callers.tunnels,"listPage",{},12],
+        [callers.forwardGroups,"listPage",{groupMode:"port"},12],
+        [callers.rules,"listPage",{},12],
+        [callers.rules,"personalGroupItems",{},12],
+        [callers.plans,"listPage",{},12],
+        [callers.plans,"subscriptionsPage",{},12],
+        [admin,"listTransactionsPage",{},20],
+        [admin,"ledgerPage",{},20],
+        [admin,"listRedemptionCodesPage",{},50],
+        [admin,"listDiscountCodesPage",{},50],
+      ];
+      for (const [caller,name,input,defaultSize] of procedures) {
+        assert.equal((await caller[name]({...input,pageSize:1000})).pageSize,1000,name+" accepts 1000");
+        await assert.rejects(caller[name]({...input,pageSize:1001}),error=>error.code==="BAD_REQUEST",name+" rejects 1001");
+        assert.equal((await caller[name](input)).pageSize,defaultSize,name+" retains its default");
+      }
+      assert.equal((await callers.tunnels.listPage({pageSize:1})).pageSize,1);
+      for (const [caller,name,input] of [
+        [callers.hosts,"statusSummary",{hostIds:Array.from({length:101},(_,i)=>i+1)}],
+        [callers.hosts,"watchMetrics",{hostIds:Array.from({length:201},(_,i)=>i+1)}],
+        [callers.hosts,"latestMetricsSummary",{hostIds:Array.from({length:501},(_,i)=>i+1)}],
+        [callers.hosts,"trafficSummary",{hostIds:Array.from({length:501},(_,i)=>i+1)}],
+        [callers.users,"optionsByIds",{ids:Array.from({length:101},(_,i)=>i+1)}],
+        [callers.rules,"trafficSummary",{ruleIds:Array.from({length:1001},(_,i)=>i+1)}],
+        [callers.plans,"reorder",{ids:Array.from({length:101},(_,i)=>i+1)}],
+        [admin,"deleteRedemptionCodes",{ids:Array.from({length:501},(_,i)=>i+1)}],
+      ]) await assert.rejects(caller[name](input),error=>error.code==="BAD_REQUEST",name+" retains its cap");
+      for (const [caller,name] of [[callers.hosts,"mapPoints"],[callers.tunnels,"mapItems"],[callers.rules,"mapItems"]]) {
+        await caller[name]({limit:100});
+        await assert.rejects(caller[name]({limit:251}),error=>error.code==="BAD_REQUEST",name+" retains its cap");
+      }
     } finally { await runtime.closeDatabase(); }
   `;
   try {

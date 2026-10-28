@@ -1618,7 +1618,7 @@ function UsersContent() {
         </CardContent>
       </Card>
       {!isLoading && users && users.length > 0 && (
-        <PersistentPagination pagination={userPagination} itemName={translateText("个用户")} />
+        <PersistentPagination pagination={userPagination} />
       )}
         </TabsContent>
 
@@ -1724,7 +1724,7 @@ function UsersContent() {
                   );
                 })}
               </AutoAnimateContainer>
-              <PersistentPagination pagination={subscriptionPagination} itemName={translateText("条订阅")} />
+              <PersistentPagination pagination={subscriptionPagination} />
             </>
           )}
         </TabsContent>

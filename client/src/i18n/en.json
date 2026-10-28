@@ -1,4 +1,8 @@
 {
+  "{0} 条/页": "{0} / page",
+  "一次最多删除 500 个兑换码": "Delete up to 500 redemption codes at a time",
+  "一次最多批量处理 50 个工单": "Process up to 50 tickets at a time",
+  "当前页超过 100 个套餐，请切换到更小的每页条数后再排序": "This page has more than 100 plans. Select a smaller page size before sorting.",
   "sni规则组": "SNI rule groups",
   "查看 sni规则组": "View SNI rule groups",
   "域名配置不一致": "Domain configuration differs",

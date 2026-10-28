@@ -1,3 +1,7 @@
+export const PAGE_SIZE_OPTIONS = [20, 50, 100, 200, 500, 1000] as const;
+export type PageSize = typeof PAGE_SIZE_OPTIONS[number];
+export const MAX_PAGE_SIZE = 1000;
+
 export type PageRequest = {
   page?: number;
   pageSize?: number;
@@ -19,7 +23,7 @@ export type PageWindow = {
 
 export function normalizePageRequest(input: PageRequest | null | undefined, defaultPageSize = 12) {
   const page = Math.max(1, Math.floor(Number(input?.page) || 1));
-  const pageSize = Math.min(100, Math.max(1, Math.floor(Number(input?.pageSize) || defaultPageSize)));
+  const pageSize = Math.min(MAX_PAGE_SIZE, Math.max(1, Math.floor(Number(input?.pageSize) || defaultPageSize)));
   return { page, pageSize };
 }
 

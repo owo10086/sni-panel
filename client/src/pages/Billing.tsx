@@ -21,7 +21,7 @@ import { SlidingTabsList, type SlidingTabItem } from "@/components/ui/sliding-ta
 import { useUrlTab } from "@/hooks/useUrlTab";
 import { trpc } from "@/lib/trpc";
 import { CreditCard, Download, Gift, Package, ReceiptText, Shuffle, TicketPercent, Trash2, WalletCards } from "lucide-react";
-import { useEffect, useMemo, useState, type ElementType, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ElementType, type ReactNode } from "react";
 import { toast } from "@/lib/localizedToast";
 
 const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -252,11 +252,11 @@ export default function Billing() {
   });
   const [ledgerUserId, setLedgerUserId] = useState("all");
   const [redemptionUsageFilter, setRedemptionUsageFilter] = useState<"all" | "unused" | "used">("all");
-  const ledgerPageRequest = usePersistentPageRequest("forwardx.billing.ledger.page");
-  const transactionPageRequest = usePersistentPageRequest("forwardx.billing.transactions.page");
-  const subscriptionPageRequest = usePersistentPageRequest("forwardx.billing.subscriptions.page");
-  const redemptionPageRequest = usePersistentPageRequest("forwardx.billing.redemption.page");
-  const discountPageRequest = usePersistentPageRequest("forwardx.billing.discount.page");
+  const ledgerPageRequest = usePersistentPageRequest("forwardx.billing.ledger.page", 20);
+  const transactionPageRequest = usePersistentPageRequest("forwardx.billing.transactions.page", 20);
+  const subscriptionPageRequest = usePersistentPageRequest("forwardx.billing.subscriptions.page", 20);
+  const redemptionPageRequest = usePersistentPageRequest("forwardx.billing.redemption.page", 50);
+  const discountPageRequest = usePersistentPageRequest("forwardx.billing.discount.page", 50);
 
   const { data: billingSummary, isLoading: billingSummaryLoading } = trpc.billing.summary.useQuery(undefined, {
     staleTime: 10_000,
@@ -271,7 +271,7 @@ export default function Billing() {
   });
   const subscriptionPageQuery = trpc.plans.subscriptionsPage.useQuery({
     page: subscriptionPageRequest.page,
-    pageSize: 20,
+    pageSize: subscriptionPageRequest.pageSize,
   }, {
     enabled: activeTab === "subscriptions",
     staleTime: 10_000,
@@ -281,14 +281,14 @@ export default function Billing() {
   const subscriptions = (subscriptionPageQuery.data?.items || []) as any[];
   const subscriptionsLoading = subscriptionPageQuery.isLoading || subscriptionPageQuery.isPlaceholderData;
   const transactionPageQuery = trpc.billing.listTransactionsPage.useQuery(
-    { page: transactionPageRequest.page, pageSize: 20 },
+    { page: transactionPageRequest.page, pageSize: transactionPageRequest.pageSize },
     { enabled: activeTab === "balance", staleTime: 10_000, refetchOnWindowFocus: false, placeholderData: (previousData) => previousData },
   );
   const transactions = transactionPageQuery.data?.items || [];
   const transactionsLoading = transactionPageQuery.isLoading || transactionPageQuery.isPlaceholderData;
   const ledgerPageQuery = trpc.billing.ledgerPage.useQuery({
     page: ledgerPageRequest.page,
-    pageSize: 20,
+    pageSize: ledgerPageRequest.pageSize,
     userId: ledgerUserId === "all" ? undefined : Number(ledgerUserId),
   }, {
     enabled: activeTab === "ledger",
@@ -300,7 +300,7 @@ export default function Billing() {
   const ledgerLoading = ledgerPageQuery.isLoading || ledgerPageQuery.isPlaceholderData;
   const redemptionPageQuery = trpc.billing.listRedemptionCodesPage.useQuery({
     page: redemptionPageRequest.page,
-    pageSize: 50,
+    pageSize: redemptionPageRequest.pageSize,
     usage: redemptionUsageFilter,
   }, {
     enabled: activeTab === "redeem",
@@ -312,7 +312,7 @@ export default function Billing() {
   const redemptionCodesLoading = redemptionPageQuery.isLoading || redemptionPageQuery.isPlaceholderData;
   const discountPageQuery = trpc.billing.listDiscountCodesPage.useQuery({
     page: discountPageRequest.page,
-    pageSize: 50,
+    pageSize: discountPageRequest.pageSize,
   }, {
     enabled: activeTab === "discount",
     staleTime: 10_000,
@@ -324,32 +324,39 @@ export default function Billing() {
   const { data: featureStatus, isLoading: featureStatusLoading } = trpc.billing.featureStatus.useQuery();
 
   const ledgerPagination = useServerPagination(ledger, Number(ledgerPageQuery.data?.totalItems || 0), ledgerPageRequest,
-    { pageSize: 20, isReady: !ledgerLoading && !!ledgerPageQuery.data });
+    { isReady: !ledgerLoading && !!ledgerPageQuery.data });
   const transactionPagination = useServerPagination(transactions, Number(transactionPageQuery.data?.totalItems || 0), transactionPageRequest,
-    { pageSize: 20, isReady: !transactionsLoading && !!transactionPageQuery.data });
+    { isReady: !transactionsLoading && !!transactionPageQuery.data });
   const subscriptionPagination = useServerPagination(
     subscriptions,
     Number(subscriptionPageQuery.data?.totalItems || 0),
     subscriptionPageRequest,
-    { pageSize: 20, isReady: !subscriptionsLoading && !!subscriptionPageQuery.data },
+    { isReady: !subscriptionsLoading && !!subscriptionPageQuery.data },
   );
   const redemptionPagination = useServerPagination(
     redemptionCodes,
     Number(redemptionPageQuery.data?.totalItems || 0),
     redemptionPageRequest,
-    { pageSize: 50, isReady: !redemptionCodesLoading && !!redemptionPageQuery.data },
+    { isReady: !redemptionCodesLoading && !!redemptionPageQuery.data },
   );
   const discountPagination = useServerPagination(
     discountCodes,
     Number(discountPageQuery.data?.totalItems || 0),
     discountPageRequest,
-    { pageSize: 50, isReady: !discountCodesLoading && !!discountPageQuery.data },
+    { isReady: !discountCodesLoading && !!discountPageQuery.data },
   );
 
+  const previousRedemptionUsageFilter = useRef(redemptionUsageFilter);
   useEffect(() => {
+    if (previousRedemptionUsageFilter.current === redemptionUsageFilter) return;
+    previousRedemptionUsageFilter.current = redemptionUsageFilter;
     redemptionPageRequest.setPage(1);
     setSelectedRedemptionIds([]);
   }, [redemptionUsageFilter, redemptionPageRequest.setPage]);
+
+  useEffect(() => {
+    setSelectedRedemptionIds([]);
+  }, [redemptionPageRequest.page, redemptionPageRequest.pageSize]);
 
   const [redeemType, setRedeemType] = useState<"plan" | "balance">("plan");
   const [redeemCode, setRedeemCode] = useState("");
@@ -511,6 +518,7 @@ export default function Billing() {
     () => redemptionCodes.filter((code: any) => selectedRedemptionSet.has(Number(code.id))),
     [redemptionCodes, selectedRedemptionSet]
   );
+  const redemptionDeleteLimitExceeded = selectedRedemptionIds.length > 500;
   const allFilteredRedemptionSelected = filteredRedemptionIds.length > 0 && filteredRedemptionIds.every((id: number) => selectedRedemptionSet.has(id));
 
   useEffect(() => {
@@ -555,6 +563,7 @@ export default function Billing() {
       toast.error(translateText("请先选择兑换码"));
       return;
     }
+    if (redemptionDeleteLimitExceeded) return;
     const confirmed = await confirmDialog({
       title: translateText("删除兑换码"),
       description: translateText("确认删除选中的 {0} 个兑换码？此操作不会影响已经完成的兑换记录。", [selectedRedemptionIds.length]),
@@ -803,7 +812,7 @@ export default function Billing() {
                 )}
               </CardContent>
             </Card>
-            <PersistentPagination pagination={ledgerPagination} itemName={translateText("条记录")} />
+            <PersistentPagination pagination={ledgerPagination} />
           </TabsContent>
 
           <TabsContent value="subscriptions" className="mt-4">
@@ -869,7 +878,7 @@ export default function Billing() {
                 )}
               </CardContent>
             </Card>
-            <PersistentPagination pagination={subscriptionPagination} itemName={translateText("条订阅")} />
+            <PersistentPagination pagination={subscriptionPagination} />
           </TabsContent>
 
           <TabsContent value="balance" className="mt-4 space-y-4">
@@ -924,7 +933,7 @@ export default function Billing() {
                 )}
               </CardContent>
             </Card>
-            <PersistentPagination pagination={transactionPagination} itemName={translateText("条记录")} />
+            <PersistentPagination pagination={transactionPagination} />
           </TabsContent>
 
           <TabsContent value="redeem" className="mt-4 space-y-4">
@@ -984,11 +993,12 @@ export default function Billing() {
                     <Download className="mr-2 h-4 w-4" />{translateText(" 导出当前")}</Button>
                   <Button type="button" variant="outline" onClick={() => exportRedemptionCodes(selectedRedemptionCodes)} disabled={selectedRedemptionCodes.length === 0}>
                     <Download className="mr-2 h-4 w-4" />{translateText(" 导出所选")}</Button>
-                  <Button type="button" variant="destructive" onClick={deleteSelectedRedemptionCodes} disabled={selectedRedemptionIds.length === 0 || deleteRedemptionCodes.isPending}>
+                  <Button type="button" variant="destructive" onClick={deleteSelectedRedemptionCodes} disabled={selectedRedemptionIds.length === 0 || redemptionDeleteLimitExceeded || deleteRedemptionCodes.isPending}>
                     <Trash2 className="mr-2 h-4 w-4" />{translateText(" 删除所选")}</Button>
                 </div>
               </CardHeader>
               <CardContent>
+                {redemptionDeleteLimitExceeded && <p className="mb-3 text-sm text-muted-foreground">{translateText("一次最多删除 500 个兑换码")}</p>}
                 {redemptionCodesLoading ? (
                   <DataSectionLoading label={translateText("正在加载兑换码")} />
                 ) : (
@@ -1055,7 +1065,7 @@ export default function Billing() {
                 )}
               </CardContent>
             </Card>
-            <PersistentPagination pagination={redemptionPagination} itemName={translateText("个兑换码")} />
+            <PersistentPagination pagination={redemptionPagination} />
           </TabsContent>
 
           <TabsContent value="discount" className="mt-4 space-y-4">
@@ -1159,7 +1169,7 @@ export default function Billing() {
                 )}
               </CardContent>
             </Card>
-            <PersistentPagination pagination={discountPagination} itemName={translateText("个折扣码")} />
+            <PersistentPagination pagination={discountPagination} />
           </TabsContent>
         </Tabs>
       </div>

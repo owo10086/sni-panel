@@ -1179,7 +1179,7 @@ export default function Plans() {
                 )}
               </CardContent>
             </Card>
-            <PersistentPagination pagination={planPagination} itemName={translateText("个套餐")} />
+            <PersistentPagination pagination={planPagination} />
           </TabsContent>
 
           <TabsContent value="billing" className="mt-0">

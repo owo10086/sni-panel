@@ -120,16 +120,17 @@ test("card and dialog typography stay readable without forced desktop enlargemen
   assert.doesNotMatch(html, /line-clamp/);
 });
 
-test("short pagination retains visible range, total, mobile page state and navigation", () => {
+test("short pagination shows record count, page size, mobile page state and accessible arrows", () => {
   const pagination: PersistentPaginationState<never> = {
     currentPage: 2, totalPages: 5, totalItems: 100, pageSize: 20,
-    startItem: 21, endItem: 40, items: [], setPage() {}, nextPage() {}, previousPage() {},
+    startItem: 21, endItem: 40, items: [], setPage() {}, setPageSize() {}, nextPage() {}, previousPage() {},
   };
-  const html = renderToStaticMarkup(<PersistentPagination pagination={pagination} itemName="rules" />);
-  assert.match(html, /21–40 \/ 100 rules/);
+  const html = renderToStaticMarkup(<PersistentPagination pagination={pagination} />);
+  assert.match(html, /共 100 条/);
+  assert.match(html, /20 条\/页/);
   assert.match(html, /aria-label="第 2 页，共 5 页"/);
-  assert.match(html, /上一页/);
-  assert.match(html, /下一页/);
+  assert.match(html, /aria-label="上一页"/);
+  assert.match(html, /aria-label="下一页"/);
 });
 
 test("English help and link selectors update without reloading module-level labels", async () => {
