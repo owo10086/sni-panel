@@ -495,7 +495,10 @@ export const forwardGroups = table("forward_groups", {
   autoFailback: boolean("autoFailback").notNull().default(true),
   isEnabled: boolean("isEnabled").notNull().default(true),
   activeMemberId: int("activeMemberId"),
+  manualTakeoverMemberId: int("manualTakeoverMemberId"),
+  manualTakeoverToken: varchar("manualTakeoverToken", { length: 64 }),
   lastDdnsValue: text("lastDdnsValue"),
+  lastDdnsTtl: int("lastDdnsTtl"),
   lastDdnsAt: epoch("lastDdnsAt"),
   lastFailoverAt: epoch("lastFailoverAt"),
   lastStatus: varchar("lastStatus", { length: 32 }).notNull().default("unknown"),
@@ -532,6 +535,27 @@ export const forwardGroupMembers = table("forward_group_members", {
 });
 export type ForwardGroupMember = typeof forwardGroupMembers.$inferSelect;
 export type InsertForwardGroupMember = typeof forwardGroupMembers.$inferInsert;
+
+// Handoff deadlines use epoch milliseconds, preserving the original instant
+// across restarts without rounding the scheduled TTL or fallback window.
+export const forwardGroupRetirements = table("forward_group_retirements", {
+  id: serial("id"),
+  groupId: int("groupId").notNull(),
+  memberId: int("memberId").notNull(),
+  hostId: int("hostId").notNull(),
+  ruleIds: text("ruleIds").notNull(),
+  provider: varchar("provider", { length: 64 }).notNull(),
+  domain: text("domain").notNull(),
+  recordType: varchar("recordType", { length: 16 }).notNull(),
+  oldValue: text("oldValue").notNull(),
+  startedAt: bigint("startedAt", { mode: "number" }).notNull(),
+  fallbackDeadlineAt: bigint("fallbackDeadlineAt", { mode: "number" }).notNull(),
+  oldTtl: int("oldTtl").notNull(),
+  switchedAt: bigint("switchedAt", { mode: "number" }),
+  switchTtl: int("switchTtl"),
+  retireAt: bigint("retireAt", { mode: "number" }),
+  state: varchar("state", { length: 16 }).notNull().default("pending"),
+});
 
 export const forwardGroupEvents = table("forward_group_events", {
   id: serial("id"),

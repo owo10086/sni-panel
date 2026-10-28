@@ -722,6 +722,7 @@ const IMPORT_TABLE_ORDER = [
   "forward_groups",
   "forward_group_members",
   "forward_rules",
+  "forward_group_retirements",
   "rule_groups",
   "rule_group_members",
   "forward_rule_tunnel_exits",
@@ -1144,7 +1145,12 @@ function mapStoredHostIds(maps: ImportMaps, value: unknown) {
   return mapped.length > 0 ? mapped.sort((a, b) => a - b).join(",") : null;
 }
 
-async function prepareImportRow(table: string, source: Record<string, any>, maps: ImportMaps): Promise<PreparedImportRow | null> {
+async function prepareImportRow(
+  table: string,
+  source: Record<string, any>,
+  maps: ImportMaps,
+  retainedMemberIds: ReadonlyMap<number, number> = new Map(),
+): Promise<PreparedImportRow | null> {
   // Merge imports remap resource/user IDs. Never transplant an old approval
   // onto a different account. Exact-ID seamless snapshots retain these rows.
   if (table === "ai_bot_workflows") return null;
@@ -1213,6 +1219,7 @@ async function prepareImportRow(table: string, source: Record<string, any>, maps
     case "forward_groups":
       row.userId = mapRequiredId(maps, "users", source.userId);
       row.activeMemberId = null;
+      row.manualTakeoverMemberId = null;
       return { row };
 
     case "forward_group_members":
@@ -1228,7 +1235,9 @@ async function prepareImportRow(table: string, source: Record<string, any>, maps
       row.tunnelId = mapOptionalId(maps, "tunnels", source.tunnelId);
       row.forwardGroupId = mapOptionalId(maps, "forward_groups", source.forwardGroupId);
       row.forwardGroupRuleId = null;
-      row.forwardGroupMemberId = mapOptionalId(maps, "forward_group_members", source.forwardGroupMemberId);
+      row.forwardGroupMemberId = mapId(maps, "forward_group_members", source.forwardGroupMemberId)
+        || retainedMemberIds.get(Number(source.id))
+        || mapOptionalId(maps, "forward_group_members", source.forwardGroupMemberId);
       row.isRunning = false;
       row.pendingDelete = source.pendingDelete ?? false;
       return { row };
@@ -1239,6 +1248,15 @@ async function prepareImportRow(table: string, source: Record<string, any>, maps
       row.exitNodeId = mapRequiredId(maps, "tunnel_exit_nodes", source.exitNodeId);
       row.exitHostId = mapRequiredId(maps, "hosts", source.exitHostId);
       return { row, existingWhere: { ruleId: row.ruleId, exitNodeId: row.exitNodeId } };
+
+    case "forward_group_retirements":
+      row.groupId = mapRequiredId(maps, "forward_groups", source.groupId);
+      row.hostId = mapRequiredId(maps, "hosts", source.hostId);
+      // The removed member may already have been deleted. Its ID is only a
+      // historical batch identity, never a live selection reference.
+      row.memberId = mapId(maps, "forward_group_members", source.memberId) || Number(source.memberId);
+      row.ruleIds = JSON.stringify(JSON.parse(String(source.ruleIds)).map((id: number) => mapRequiredId(maps, "forward_rules", id)));
+      return { row };
 
     case "agent_tokens":
       if (!row.token) return null;
@@ -1626,6 +1644,7 @@ async function updateMappedColumn(
 
 async function fixDeferredForwardGroupReferences(snapshot: MigrationSnapshot, maps: ImportMaps) {
   const groupUpdates: Array<{ id: number; value: number }> = [];
+  const manualTakeoverUpdates: Array<{ id: number; value: number }> = [];
   const memberUpdates: Array<{ id: number; value: number }> = [];
   const ruleUpdates: Array<{ id: number; value: number }> = [];
   const errors: string[] = [];
@@ -1635,6 +1654,8 @@ async function fixDeferredForwardGroupReferences(snapshot: MigrationSnapshot, ma
     try {
       const activeMemberId = mapOptionalId(maps, "forward_group_members", group.activeMemberId);
       if (activeMemberId) groupUpdates.push({ id: nextId, value: activeMemberId });
+      const manualTakeoverMemberId = mapOptionalId(maps, "forward_group_members", group.manualTakeoverMemberId);
+      if (manualTakeoverMemberId) manualTakeoverUpdates.push({ id: nextId, value: manualTakeoverMemberId });
     } catch (error) {
       errors.push(`forward_groups#${group.id}: ${error instanceof Error ? error.message : String(error)}`);
     }
@@ -1664,6 +1685,7 @@ async function fixDeferredForwardGroupReferences(snapshot: MigrationSnapshot, ma
 
   await withDatabaseTransaction(async () => {
     await updateMappedColumn("forward_groups", "activeMemberId", groupUpdates);
+    await updateMappedColumn("forward_groups", "manualTakeoverMemberId", manualTakeoverUpdates);
     await updateMappedColumn("forward_group_members", "ruleId", memberUpdates);
     await updateMappedColumn("forward_rules", "forwardGroupRuleId", ruleUpdates);
   });
@@ -1891,6 +1913,23 @@ export async function importMigrationSnapshot(
   const warnings: string[] = [];
   for (const table of MIGRATION_TABLES) maps[table] = new Map();
 
+  // Removed members deliberately have no live row. Only a batch explicitly
+  // owning the same rule/group/member/host can preserve that historical ID;
+  // all other missing member dependencies continue to fail import.
+  const retainedMemberIds = new Map<number, number>();
+  const sourceRules = new Map((snapshot.tables.forward_rules || []).map(rule => [Number(rule.id), rule]));
+  for (const batch of snapshot.tables.forward_group_retirements || []) {
+    let ruleIds: unknown;
+    try { ruleIds = JSON.parse(String(batch.ruleIds)); } catch { continue; }
+    if (!Array.isArray(ruleIds) || !toNumberId(batch.memberId)) continue;
+    for (const id of ruleIds) {
+      const rule = sourceRules.get(Number(id));
+      if (rule && Number(rule.forwardGroupId) === Number(batch.groupId)
+        && Number(rule.forwardGroupMemberId) === Number(batch.memberId)
+        && Number(rule.hostId) === Number(batch.hostId)) retainedMemberIds.set(Number(id), Number(batch.memberId));
+    }
+  }
+
   const totalRows = Math.max(1, IMPORT_TABLE_ORDER.reduce((sum, table) => sum + (snapshot.tables?.[table]?.length || 0), 0));
   let processed = 0;
   let lastProgress = -1;
@@ -1949,7 +1988,7 @@ export async function importMigrationSnapshot(
       // ID. Preserve them without passing through the ID-remapping importer.
       await withDatabaseTransaction(async () => {
         for (const source of rows) {
-          const prepared = await prepareImportRow(table, source, maps);
+          const prepared = await prepareImportRow(table, source, maps, retainedMemberIds);
           if (!prepared?.existingWhere) throw new Error("探测计数头无法完整映射");
           const entries = Object.entries(prepared.existingWhere);
           const existing = await queryRaw(
@@ -1982,7 +2021,7 @@ export async function importMigrationSnapshot(
         const oldId = toNumberId(source.id);
         try {
           if (!oldId) throw new Error("源数据缺少有效 ID");
-          const prepared = await prepareImportRow(table, source, maps);
+          const prepared = await prepareImportRow(table, source, maps, retainedMemberIds);
           if (!prepared) {
             incrementCounter(skipped, table);
             processed += 1;
@@ -2024,7 +2063,7 @@ export async function importMigrationSnapshot(
     if (table === "system_settings") {
       for (const source of rows) {
         try {
-          const prepared = await prepareImportRow(table, source, maps);
+          const prepared = await prepareImportRow(table, source, maps, retainedMemberIds);
           if (!prepared) {
             incrementCounter(skipped, table);
             continue;
@@ -2052,7 +2091,7 @@ export async function importMigrationSnapshot(
       const oldId = toNumberId(source.id);
       try {
         if (!oldId) throw new Error("源数据缺少有效 ID");
-        const prepared = await prepareImportRow(table, source, maps);
+        const prepared = await prepareImportRow(table, source, maps, retainedMemberIds);
         if (!prepared) {
           incrementCounter(skipped, table);
           processed += 1;

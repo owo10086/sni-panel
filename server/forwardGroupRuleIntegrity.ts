@@ -22,6 +22,7 @@ import {
   trafficBillingResourceCandidatesForRule,
 } from "./repositories/trafficBillingRepository";
 import { setUserForwardAccess } from "./repositories/userRepository";
+import { getProtectedForwardGroupRuleIds } from "./forwardGroupRetirement";
 
 const REPAIR_BATCH_SIZE = 200;
 
@@ -391,6 +392,10 @@ async function repairOrphanManagedChildren(hostId?: number) {
       const retired = await withForwardGroupLocks(groupIds, () => retireRuleIf(
         ruleId,
         async () => {
+          // A removed member's live child is intentionally retained during a
+          // persisted DNS handoff, including after panel restart. Recheck while
+          // holding its group lock so a concurrent saved handoff is respected.
+          if ((await getProtectedForwardGroupRuleIds(positiveId(row.groupId) || undefined)).has(ruleId)) return false;
           const current = await managedChildIntegrity(ruleId);
           return isActiveManagedChild(current) && !isValidManagedChild(current);
         },
