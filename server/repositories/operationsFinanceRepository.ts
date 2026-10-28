@@ -32,16 +32,16 @@ export async function getOperationsFinance(start: number, end: number, userId?: 
 }
 export type OperationsFinance = Awaited<ReturnType<typeof getOperationsFinance>>;
 
-export async function getOperationsFinanceLedger(start: number, end: number, userId?: number, page = 0) {
+export async function getOperationsFinanceLedger(start: number, end: number, userId?: number, page = 0, pageSize = OPERATIONS_LEDGER_PAGE_SIZE) {
   const orders = paymentScope(start,end,userId), balances = scope(start,end,q("createdAt"),userId);
   const orderFilter = `${orders.where} AND ${q("orderType")} IN ('balance','plan')`;
   const params = [...orders.params,...balances.params];
   const [counts] = await queryRaw<any>(`SELECT (SELECT COUNT(*) FROM ${q("payment_orders")} WHERE ${orderFilter}) + (SELECT COUNT(*) FROM ${q("balance_transactions")} WHERE ${balances.where}) AS ${q("count")}`,params);
-  const total = Number(counts?.count || 0), lastPage = Math.max(0,Math.ceil(total/OPERATIONS_LEDGER_PAGE_SIZE)-1);
+  const total = Number(counts?.count || 0), lastPage = Math.max(0,Math.ceil(total/pageSize)-1);
   const currentPage = Math.max(0,Math.min(lastPage,Math.trunc(page) || 0));
   const fields = ["id","userId","kind","type","status","amountCents","currency","title","eventAt"];
   const union = `SELECT ${q("id")}, ${q("userId")}, 'payment' AS ${q("kind")}, ${q("orderType")} AS ${q("type")}, ${q("status")}, ${q("amountCents")}, ${q("currency")}, ${q("subject")} AS ${q("title")}, ${paidTime()} AS ${q("eventAt")} FROM ${q("payment_orders")} WHERE ${orderFilter}
     UNION ALL SELECT ${q("id")}, ${q("userId")}, 'balance' AS ${q("kind")}, ${q("type")}, 'completed' AS ${q("status")}, ${q("amountCents")}, 'CNY' AS ${q("currency")}, ${q("description")} AS ${q("title")}, ${q("createdAt")} AS ${q("eventAt")} FROM ${q("balance_transactions")} WHERE ${balances.where}`;
-  const rows = await queryRaw<any>(`SELECT ${fields.map(field=>`l.${q(field)}`).join(",")}, u.${q("username")} FROM (${union}) l LEFT JOIN ${q("users")} u ON u.${q("id")} = l.${q("userId")} ORDER BY l.${q("eventAt")} DESC, l.${q("kind")}, l.${q("id")} DESC LIMIT ${OPERATIONS_LEDGER_PAGE_SIZE} OFFSET ${currentPage*OPERATIONS_LEDGER_PAGE_SIZE}`,params);
-  return {total,page:currentPage,rows:rows.map(row=>({...row,id:Number(row.id),userId:Number(row.userId),amountCents:Number(row.amountCents),eventAt:Number(row.eventAt)})) as Array<{id:number;userId:number;username:string|null;kind:string;type:string;status:string;amountCents:number;currency:string;title:string|null;eventAt:number}>};
+  const rows = await queryRaw<any>(`SELECT ${fields.map(field=>`l.${q(field)}`).join(",")}, u.${q("username")} FROM (${union}) l LEFT JOIN ${q("users")} u ON u.${q("id")} = l.${q("userId")} ORDER BY l.${q("eventAt")} DESC, l.${q("kind")}, l.${q("id")} DESC LIMIT ${pageSize} OFFSET ${currentPage*pageSize}`,params);
+  return {total,page:currentPage,pageSize,rows:rows.map(row=>({...row,id:Number(row.id),userId:Number(row.userId),amountCents:Number(row.amountCents),eventAt:Number(row.eventAt)})) as Array<{id:number;userId:number;username:string|null;kind:string;type:string;status:string;amountCents:number;currency:string;title:string|null;eventAt:number}>};
 }

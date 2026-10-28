@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { adminProcedure, router } from "../_core/trpc";
-import { operationsRange, OPERATIONS_SOURCE_SORTS, CHINA_PROVINCES } from "../../shared/operations";
+import { operationsRange, OPERATIONS_SOURCE_SORTS, OPERATIONS_SOURCE_PAGE_SIZE, CHINA_PROVINCES } from "../../shared/operations";
 import { getOperationsOverview, getOperationsSources, getOperationsSourceDetails, getOperationsProvinceDetails } from "../repositories/operationsRepository";
 import { getSetting, setSetting } from "../repositories/settingsRepository";
 import { OPERATIONS_REPORT_CONFIG_KEY, OPERATIONS_REPORT_TIME_PATTERN, parseOperationsReportConfig } from "../../shared/operationsDailyReport";
@@ -9,9 +9,11 @@ import { getNotificationSettings } from "../notificationSettings";
 import { getNotificationAdminRecipients } from "../notifications";
 import { resolveOperationsSourceGeo } from "../operationsSourceGeo";
 import { createQueryCache } from "../queryCache";
-import { getOperationsFinance, getOperationsFinanceLedger } from "../repositories/operationsFinanceRepository";
+import { getOperationsFinance, getOperationsFinanceLedger, OPERATIONS_LEDGER_PAGE_SIZE } from "../repositories/operationsFinanceRepository";
 import { monitorOverview } from "../operationsMonitor";
 import { operationsSummaries } from "../backgroundSummaryCache";
+
+import { MAX_PAGE_SIZE } from "../../shared/pagination";
 
 const cache = createQueryCache(30);
 const dates = z.object({ from: z.string().length(10), to: z.string().length(10), userId: z.union([z.literal("self"), z.literal("all"), z.number().int().positive()]).default("self") });
@@ -38,24 +40,24 @@ export const operationsRouter = router({
     console.info(`[Operations] daily report ${input.enabled ? "enabled" : "disabled"} time=${input.time} admin=${ctx.user.id}`);
     return { success: true };
   }),
-  monitor: adminProcedure.input(z.object({ page: z.number().int().min(0).max(10000).default(0), ipPage: z.number().int().min(0).max(10000).default(0) }).default({})).query(({ input }) => cache.get(`monitor:${input.page}:${input.ipPage}`, { ttlMs: 5000, staleMs: 0 }, () => monitorOverview(input.page, input.ipPage))),
+  monitor: adminProcedure.input(z.object({ page: z.number().int().min(0).max(10000).default(0), ipPage: z.number().int().min(0).max(10000).default(0), pageSize: z.number().int().min(1).max(MAX_PAGE_SIZE).default(20), ipPageSize: z.number().int().min(1).max(MAX_PAGE_SIZE).default(20) }).default({})).query(({ input }) => cache.get(`monitor:${input.page}:${input.ipPage}:${input.pageSize}:${input.ipPageSize}`, { ttlMs: 5000, staleMs: 0 }, () => monitorOverview(input.page, input.ipPage, input.pageSize, input.ipPageSize))),
   finance: adminProcedure.input(dates).query(({input,ctx})=> {
     const {start,end} = range(input), userId = scopedUserId(input,ctx.user.id);
     return operationsSummaries.get(`${ctx.user.id}:finance:${start}:${end}:${userId ?? "all"}`,()=>getOperationsFinance(start,end,userId));
   }),
-  financeLedger: adminProcedure.input(dates.extend({page:z.number().int().min(0).max(10000).default(0)})).query(({input,ctx})=> {
+  financeLedger: adminProcedure.input(dates.extend({page:z.number().int().min(0).max(10000).default(0),pageSize:z.number().int().min(1).max(MAX_PAGE_SIZE).default(OPERATIONS_LEDGER_PAGE_SIZE)})).query(({input,ctx})=> {
     const {start,end} = range(input), userId = scopedUserId(input,ctx.user.id);
-    return cache.get(`ledger:${start}:${end}:${userId ?? "all"}:${input.page}`,{ttlMs:15000,staleMs:0},()=>getOperationsFinanceLedger(start,end,userId,input.page));
+    return cache.get(`ledger:${start}:${end}:${userId ?? "all"}:${input.page}:${input.pageSize}`,{ttlMs:15000,staleMs:0},()=>getOperationsFinanceLedger(start,end,userId,input.page,input.pageSize));
   }),
   overview: adminProcedure.input(dates).query(({ input, ctx }) => {
     const { start, end } = range(input);
     const userId = scopedUserId(input, ctx.user.id);
     return operationsSummaries.get(`${ctx.user.id}:overview:${start}:${end}:${userId ?? "all"}`, () => getOperationsOverview(start, end, userId));
   }),
-  sources: adminProcedure.input(dates.extend({ page: z.number().int().min(0).max(10000).default(0), search: z.string().max(64).default(""), sort: z.enum(OPERATIONS_SOURCE_SORTS).default("traffic") })).query(({ input, ctx }) => {
+  sources: adminProcedure.input(dates.extend({ page: z.number().int().min(0).max(10000).default(0), pageSize: z.number().int().min(1).max(MAX_PAGE_SIZE).default(OPERATIONS_SOURCE_PAGE_SIZE), search: z.string().max(64).default(""), sort: z.enum(OPERATIONS_SOURCE_SORTS).default("traffic") })).query(({ input, ctx }) => {
     const { start, end } = range(input);
     const userId = scopedUserId(input, ctx.user.id);
-    return cache.get(`sources:${start}:${end}:${userId ?? "all"}:${input.page}:${input.search}:${input.sort}`, { ttlMs: 15000, staleMs: 0 }, () => getOperationsSources(start, end, input.page, input.search, userId, input.sort));
+    return cache.get(`sources:${start}:${end}:${userId ?? "all"}:${input.page}:${input.pageSize}:${input.search}:${input.sort}`, { ttlMs: 15000, staleMs: 0 }, () => getOperationsSources(start, end, input.page, input.search, userId, input.sort, input.pageSize));
   }),
   sourceDetails: adminProcedure.input(dates.extend({ ip: z.string().ip() })).query(({ input, ctx }) => {
     const { start, end } = range(input);

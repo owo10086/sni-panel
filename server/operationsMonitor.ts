@@ -85,16 +85,16 @@ export async function observeHostResources(host: { id: number; name?: string }, 
   });
 }
 
-export async function monitorOverview(page = 0, ipPage = 0) {
+export async function monitorOverview(page = 0, ipPage = 0, pageSize = 20, ipPageSize = 20) {
   const now = Math.floor(Date.now() / 1000);
   const [active, events, counts, admins, hosts, allSettings, healthRows, ipEvents, ipCounts] = await Promise.all([
     queryRaw<any>(`SELECT a.*, h.${q("name")} AS ${q("hostName")} FROM ${q("operations_alert_state")} a INNER JOIN ${q("hosts")} h ON h.${q("id")} = a.${q("hostId")} WHERE a.${q("phase")} IN ('active','recovering') ORDER BY a.${q("since")} DESC LIMIT 50`),
-    queryRaw<any>(`SELECT * FROM ${q("operations_alert_events")} WHERE ${q("createdAt")} >= ? ORDER BY ${q("id")} DESC LIMIT 20 OFFSET ${page * 20}`, [now - 30 * 86400]),
+    queryRaw<any>(`SELECT * FROM ${q("operations_alert_events")} WHERE ${q("createdAt")} >= ? ORDER BY ${q("id")} DESC LIMIT ${pageSize} OFFSET ${page * pageSize}`, [now - 30 * 86400]),
     queryRaw<any>(`SELECT COUNT(*) AS ${q("total")} FROM ${q("operations_alert_events")} WHERE ${q("createdAt")} >= ?`, [now - 30 * 86400]),
     queryRaw<any>(`SELECT COUNT(*) AS ${q("total")}, SUM(CASE WHEN ${q("twoFactorEnabled")} = ${"TRUE"} THEN 1 ELSE 0 END) AS ${q("secured")} FROM ${q("users")} WHERE ${q("role")} = 'admin'`),
     getHosts(), import("./db").then(db => db.getAllSettings()),
     queryRaw<any>(`SELECT p.${q("serviceId")}, s.${q("name")}, s.${q("isEnabled")}, h.${q("name")} AS ${q("hostName")} FROM ${q("host_probe_health")} p INNER JOIN ${q("host_probe_services")} s ON s.${q("id")} = p.${q("serviceId")} INNER JOIN ${q("hosts")} h ON h.${q("id")} = p.${q("hostId")} ORDER BY p.${q("updatedAt")} DESC LIMIT 50`),
-    queryRaw<any>(`SELECT a.${q("id")}, a.${q("serviceId")}, a.${q("status")}, a.${q("newIp")}, a.${q("createdAt")}, a.${q("acknowledged")}, h.${q("name")} AS ${q("hostName")}, s.${q("name")} AS ${q("serviceName")} FROM ${q("host_ip_switch_attempts")} a LEFT JOIN ${q("hosts")} h ON h.${q("id")} = a.${q("hostId")} LEFT JOIN ${q("host_probe_services")} s ON s.${q("id")} = a.${q("serviceId")} WHERE a.${q("createdAt")} >= ? ORDER BY a.${q("id")} DESC LIMIT 20 OFFSET ${ipPage * 20}`, [now - 30 * 86400]),
+    queryRaw<any>(`SELECT a.${q("id")}, a.${q("serviceId")}, a.${q("status")}, a.${q("newIp")}, a.${q("createdAt")}, a.${q("acknowledged")}, h.${q("name")} AS ${q("hostName")}, s.${q("name")} AS ${q("serviceName")} FROM ${q("host_ip_switch_attempts")} a LEFT JOIN ${q("hosts")} h ON h.${q("id")} = a.${q("hostId")} LEFT JOIN ${q("host_probe_services")} s ON s.${q("id")} = a.${q("serviceId")} WHERE a.${q("createdAt")} >= ? ORDER BY a.${q("id")} DESC LIMIT ${ipPageSize} OFFSET ${ipPage * ipPageSize}`, [now - 30 * 86400]),
     queryRaw<any>(`SELECT COUNT(*) AS ${q("total")} FROM ${q("host_ip_switch_attempts")} WHERE ${q("createdAt")} >= ?`, [now - 30 * 86400]),
   ]);
   const healthViews = await getProbeHealthViews(healthRows.map(row => Number(row.serviceId)));
@@ -109,8 +109,8 @@ export async function monitorOverview(page = 0, ipPage = 0) {
   const byId = new Map(hosts.map((host: any) => [host.id, host]));
   const resources = metrics.map((metric: any) => ({ hostId: metric.hostId, hostName: (byId.get(metric.hostId) as any)?.name || `#${metric.hostId}`, cpu: metric.cpuUsage, memory: metric.memoryUsage, disk: metric.diskUsage, sampledAt: metric.recordedAt, stale: Date.now() - new Date(metric.recordedAt).getTime() > 120000 }))
     .sort((a, b) => Number(a.stale) - Number(b.stale) || Math.max(Number(b.cpu), Number(b.memory), Number(b.disk)) - Math.max(Number(a.cpu), Number(a.memory), Number(a.disk))).slice(0, 10);
-  return { active: active.map(row => ({ ...row, stale: now - Number(row.lastSeen) > 120 })), events, total: Number(counts[0]?.total || 0), page, resources,
-    health, ipEvents, ipTotal: Number(ipCounts[0]?.total || 0), ipPage,
+  return { active: active.map(row => ({ ...row, stale: now - Number(row.lastSeen) > 120 })), events, total: Number(counts[0]?.total || 0), page, pageSize, resources,
+    health, ipEvents, ipTotal: Number(ipCounts[0]?.total || 0), ipPage, ipPageSize,
     security: [
       { name: "管理员双因素认证", status: Number(admins[0]?.secured || 0) === Number(admins[0]?.total || 0) ? "ok" : "warning", message: `${Number(admins[0]?.secured || 0)}/${Number(admins[0]?.total || 0)} 个管理员已开启 2FA`, messageTemplate: "{0}/{1} 个管理员已开启 2FA", messageArgs: [Number(admins[0]?.secured || 0), Number(admins[0]?.total || 0)] },
       { name: "面板公开地址", status: /^https:\/\//i.test(allSettings.panelPublicUrl || "") ? "ok" : "warning", message: /^https:\/\//i.test(allSettings.panelPublicUrl || "") ? "公开地址配置为 HTTPS；不替代实际证书验证" : "未配置 HTTPS 公开地址，请检查反向代理和证书" },

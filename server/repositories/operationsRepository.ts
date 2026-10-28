@@ -170,7 +170,7 @@ export async function getOperationsProvinceDetails(start: number, end: number, p
   return {ips,totals:totals[0]};
 }
 
-export async function getOperationsSources(start: number, end: number, page: number, search: string, userId?: number, sort: OperationsSourceSort = "traffic") {
+export async function getOperationsSources(start: number, end: number, page: number, search: string, userId?: number, sort: OperationsSourceSort = "traffic", pageSize = OPERATIONS_SOURCE_PAGE_SIZE) {
   const {code:geoCode,region:geoRegion} = sourceGeoColumns();
   const location = await resolveOperationsSourceGeo(start,end,userId,"",256,search);
   const params: any[] = [start, end], conditions = [`s.${q("dayStart")} >= ? AND s.${q("dayStart")} < ?`];
@@ -181,10 +181,10 @@ export async function getOperationsSources(start: number, end: number, page: num
   const aggregate = `SELECT s.${q("ip")}, SUM(s.${q("bytesIn")}) AS ${q("bytesIn")}, SUM(s.${q("bytesOut")}) AS ${q("bytesOut")}, SUM(s.${q("unknownSamples")}) AS ${q("unknownSamples")}, SUM(s.${q("knownSamples")}) AS ${q("knownSamples")}, COUNT(DISTINCT s.${q("logicalRuleId")}) AS ${q("rules")}, MAX(s.${q("lastSeen")}) AS ${q("lastSeen")} FROM ${q("operations_source_daily")} s WHERE ${where} GROUP BY s.${q("ip")}`;
   const trafficOrder = `CASE WHEN SUM(s.${q("knownSamples")}) = 0 THEN 1 ELSE 0 END, SUM(s.${q("bytesIn")} + s.${q("bytesOut")}) DESC`;
   const order = sort === "rules" ? `COUNT(DISTINCT s.${q("logicalRuleId")}) DESC, ${trafficOrder}` : sort === "recent" ? `MAX(s.${q("lastSeen")}) DESC` : trafficOrder;
-  const offset = Math.max(0, Math.min(10000, Math.trunc(page) || 0)) * OPERATIONS_SOURCE_PAGE_SIZE;
+  const offset = Math.max(0, Math.min(10000, Math.trunc(page) || 0)) * pageSize;
   const hostScope = userId === undefined ? null : operationsHostScope(start, end, userId);
   const [ips, totals, geo, statuses, enabled, foreignIps] = await Promise.all([
-    queryRaw<any>(`${aggregate} ORDER BY ${order}, s.${q("ip")} LIMIT ${OPERATIONS_SOURCE_PAGE_SIZE} OFFSET ${offset}`, params),
+    queryRaw<any>(`${aggregate} ORDER BY ${order}, s.${q("ip")} LIMIT ${pageSize} OFFSET ${offset}`, params),
     queryRaw<any>(`SELECT COUNT(DISTINCT s.${q("ip")} ) AS ${q("ips")}, SUM(s.${q("bytesIn")}) AS ${q("bytesIn")}, SUM(s.${q("bytesOut")}) AS ${q("bytesOut")} FROM ${q("operations_source_daily")} s WHERE ${where}`, params),
     queryRaw<any>(`SELECT ${geoCode} AS ${q("geoCountryCode")}, ${geoRegion} AS ${q("geoRegion")}, COUNT(*) AS ${q("ips")}, SUM(a.${q("bytesIn")}) AS ${q("bytesIn")}, SUM(a.${q("bytesOut")}) AS ${q("bytesOut")}, SUM(a.${q("unknownSamples")}) AS ${q("unknownSamples")}, SUM(a.${q("knownSamples")}) AS ${q("knownSamples")} FROM (${aggregate}) a ${sourceGeoJoin(`a.${q("ip")}`)} GROUP BY ${geoCode}, ${geoRegion}`, [...params,...geoParams()]),
     queryRaw<any>(`SELECT s.${q("hostId")}, h.${q("name")}, s.${q("status")}, s.${q("lastSeen")} FROM ${q("operations_source_status")} s LEFT JOIN ${q("hosts")} h ON h.${q("id")} = s.${q("hostId")}${hostScope ? ` WHERE s.${q("hostId")} IN (${hostScope.sql})` : ""} ORDER BY s.${q("hostId")}`, hostScope?.params || []),
